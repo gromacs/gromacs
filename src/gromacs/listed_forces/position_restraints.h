@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_enerdata_t;
@@ -72,7 +73,7 @@ void posres_wrapper(t_nrnb*                       nrnb,
                     const struct t_pbc*           pbc,
                     const rvec*                   x,
                     gmx_enerdata_t*               enerd,
-                    const real*                   lambda,
+                    gmx::ArrayRef<const real>     lambda,
                     const t_forcerec*             fr,
                     gmx::ForceWithVirial*         forceWithVirial);
 
@@ -84,7 +85,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                            const struct t_pbc*           pbc,
                            const rvec                    x[],
                            gmx_enerdata_t*               enerd,
-                           const real*                   lambda,
+                           gmx::ArrayRef<const real>     lambda,
                            const t_forcerec*             fr);
 
 /*! \brief Helper function that wraps calls to fbposres for

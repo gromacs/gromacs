@@ -108,20 +108,20 @@ class ArrayRefWithPadding;
 } // namespace gmx
 
 //! Type of CPU function to compute a bonded interaction.
-using BondedFunction = real (*)(int              nbonds,
-                                const t_iatom    iatoms[],
-                                const t_iparams  iparams[],
-                                const rvec       x[],
-                                rvec4            f[],
-                                rvec             fshift[],
-                                const t_pbc*     pbc,
-                                real             lambda,
-                                real*            dvdlambda,
-                                const t_mdatoms* md,
-                                t_fcdata*        fcd,
-                                t_disresdata*    disresdata,
-                                t_oriresdata*    oriresdata,
-                                int*             ddgatindex);
+using BondedFunction = real (*)(int                 nbonds,
+                                const t_iatom       iatoms[],
+                                const t_iparams     iparams[],
+                                const rvec          x[],
+                                rvec4               f[],
+                                rvec                fshift[],
+                                const t_pbc*        pbc,
+                                real                lambda,
+                                gmx::ArrayRef<real> dvdlambda,
+                                const t_mdatoms*    md,
+                                t_fcdata*           fcd,
+                                t_disresdata*       disresdata,
+                                t_oriresdata*       oriresdata,
+                                int*                ddgatindex);
 
 //! Getter for finding a callable CPU function to compute an \c ftype interaction.
 BondedFunction bondedFunction(int ftype);
@@ -203,7 +203,7 @@ public:
                    const struct t_pbc*                       pbc,
                    gmx_enerdata_t*                           enerd,
                    t_nrnb*                                   nrnb,
-                   const real*                               lambda,
+                   gmx::ArrayRef<const real>                 lambda,
                    const t_mdatoms*                          md,
                    int*                                      global_atom_index,
                    const gmx::StepWorkload&                  stepWork);

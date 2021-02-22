@@ -127,8 +127,8 @@ struct interaction_const_t
     };
 
     /* VdW */
-    int                    vdwtype          = evdwCUT;
-    int                    vdw_modifier     = eintmodNONE;
+    VanDerWaalsType        vdwtype          = VanDerWaalsType::Cut;
+    InteractionModifiers   vdw_modifier     = InteractionModifiers::None;
     double                 reppow           = 12;
     real                   rvdw             = 1;
     real                   rvdw_switch      = 0;
@@ -139,19 +139,19 @@ struct interaction_const_t
     real                   buckinghamBMax   = 0;
 
     /* type of electrostatics */
-    int eeltype          = eelCUT;
-    int coulomb_modifier = eintmodNONE;
+    CoulombInteractionType eeltype          = CoulombInteractionType::Cut;
+    InteractionModifiers   coulomb_modifier = InteractionModifiers::None;
 
     /* Coulomb */
     real rcoulomb        = 1;
     real rcoulomb_switch = 0;
 
     /* PME/Ewald */
-    real ewaldcoeff_q    = 0;
-    real ewaldcoeff_lj   = 0;
-    int  ljpme_comb_rule = eljpmeGEOM; /* LJ combination rule for the LJ PME mesh part */
-    real sh_ewald        = 0;          /* -sh_ewald is added to the direct space potential */
-    real sh_lj_ewald     = 0;          /* sh_lj_ewald is added to the correction potential */
+    real ewaldcoeff_q  = 0;
+    real ewaldcoeff_lj = 0;
+    LongRangeVdW ljpme_comb_rule = LongRangeVdW::Geom; /* LJ combination rule for the LJ PME mesh part */
+    real sh_ewald                = 0; /* -sh_ewald is added to the direct space potential */
+    real sh_lj_ewald = 0;             /* sh_lj_ewald is added to the correction potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r = 1;

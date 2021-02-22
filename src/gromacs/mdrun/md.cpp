@@ -423,13 +423,13 @@ void gmx::LegacySimulator::do_md()
                                    || constr->numConstraintsTotal() == 0,
                            "Constraints in domain decomposition are only supported with update "
                            "groups if using GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->eConstrAlg != econtSHAKE || constr == nullptr
+        GMX_RELEASE_ASSERT(ir->eConstrAlg != ConstraintAlgorithm::Shake || constr == nullptr
                                    || constr->numConstraintsTotal() == 0,
                            "SHAKE is not supported with GPU update.");
         GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuBufferOps),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->eI == eiMD,
+        GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD,
                            "Only the md integrator is supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->etc != TemperatureCoupling::NoseHoover,
@@ -448,7 +448,7 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(fcdata.orires->nr == 0,
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
-                ir->efep == efepNO
+                ir->efep == FreeEnergyPerturbationType::No
                         || (!haveFepPerturbedMasses(*top_global) && !havePerturbedConstraints(*top_global)),
                 "Free energy perturbation of masses and constraints are not supported with the GPU "
                 "update.");
@@ -496,7 +496,7 @@ void gmx::LegacySimulator::do_md()
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
 
-    update_mdatoms(mdatoms, state->lambda[efptMASS]);
+    update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (ir->bExpanded)
     {
@@ -535,7 +535,7 @@ void gmx::LegacySimulator::do_md()
     /* PME tuning is only supported in the Verlet scheme, with PME for
      * Coulomb. It is not supported with only LJ PME. */
     bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !mdrunOptions.reproducible
-                && ir->cutoff_scheme != ecutsGROUP);
+                && ir->cutoff_scheme != CutoffScheme::Group);
 
     pme_load_balancing_t* pme_loadbal = nullptr;
     if (bPMETune)
@@ -580,11 +580,11 @@ void gmx::LegacySimulator::do_md()
                                state->x.arrayRefWithPadding(),
                                state->v.arrayRefWithPadding(),
                                state->box,
-                               state->lambda[efptBONDED]);
+                               state->lambda[FreeEnergyPerturbationCouplingType::Bonded]);
         }
     }
 
-    if (ir->efep != efepNO)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         /* Set free energy calculation frequency as the greatest common
          * denominator of nstdhdl and repl_ex_nst. */
@@ -607,7 +607,7 @@ void gmx::LegacySimulator::do_md()
      * this is the first step, since we might be restarting from a checkpoint,
      * and in that case we should not do any modifications to the state.
      */
-    bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
+    bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && !ir->bContinuation);
 
     // When restarting from a checkpoint, it can be appropriate to
     // initialize ekind from quantities in the checkpoint. Otherwise,
@@ -681,8 +681,9 @@ void gmx::LegacySimulator::do_md()
             /* At initialization, do not pass x with acceleration-correction mode
              * to avoid (incorrect) correction of the initial coordinates.
              */
-            auto x = (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION) ? ArrayRef<RVec>()
-                                                                     : makeArrayRef(state->x);
+            auto x = (vcm.mode == ComRemovalAlgorithm::LinearAccelerationCorrection)
+                             ? ArrayRef<RVec>()
+                             : makeArrayRef(state->x);
             process_and_stopcm_grp(fplog, &vcm, *mdatoms, x, makeArrayRef(state->v));
             inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
         }
@@ -695,7 +696,7 @@ void gmx::LegacySimulator::do_md()
                                     makeConstArrayRef(state->x),
                                     state->box,
                                     &shouldCheckNumberOfBondedInteractions);
-    if (ir->eI == eiVVAK)
+    if (ir->eI == IntegrationAlgorithm::VVAK)
     {
         /* a second call to get the half step temperature initialized as well */
         /* we do the same call as above, but turn the pressure off -- internally to
@@ -745,7 +746,7 @@ void gmx::LegacySimulator::do_md()
     {
         if (!ir->bContinuation)
         {
-            if (constr && ir->eConstrAlg == econtLINCS)
+            if (constr && ir->eConstrAlg == ConstraintAlgorithm::Lincs)
             {
                 fprintf(fplog,
                         "RMS relative constraint deviation after constraining: %.2e\n",
@@ -754,7 +755,7 @@ void gmx::LegacySimulator::do_md()
             if (EI_STATE_VELOCITY(ir->eI))
             {
                 real temp = enerd->term[F_TEMP];
-                if (ir->eI != eiVV)
+                if (ir->eI != IntegrationAlgorithm::VV)
                 {
                     /* Result of Ekin averaged over velocities of -half
                      * and +half step, while we only have -half step here.
@@ -892,13 +893,13 @@ void gmx::LegacySimulator::do_md()
         t         = t0 + step * ir->delta_t;
 
         // TODO Refactor this, so that nstfep does not need a default value of zero
-        if (ir->efep != efepNO || ir->bSimTemp)
+        if (ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp)
         {
             /* find and set the current lambdas */
             state->lambda = currentLambdas(step, *(ir->fepvals), state->fep_state);
 
-            bDoDHDL     = do_per_step(step, ir->fepvals->nstdhdl);
-            bDoFEP      = ((ir->efep != efepNO) && do_per_step(step, nstfep));
+            bDoDHDL = do_per_step(step, ir->fepvals->nstdhdl);
+            bDoFEP  = ((ir->efep != FreeEnergyPerturbationType::No) && do_per_step(step, nstfep));
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
                            && (!bFirstStep));
         }
@@ -915,7 +916,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         /* Stop Center of Mass motion */
-        bStopCM = (ir->comm_mode != ecmNO && do_per_step(step, ir->nstcomm));
+        bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && do_per_step(step, ir->nstcomm));
 
         /* Determine whether or not to do Neighbour Searching */
         bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
@@ -1034,9 +1035,9 @@ void gmx::LegacySimulator::do_md()
                     fplog, step, t); /* can we improve the information printed here? */
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep != FreeEnergyPerturbationType::No)
         {
-            update_mdatoms(mdatoms, state->lambda[efptMASS]);
+            update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         if (bExchanged)
@@ -1666,7 +1667,7 @@ void gmx::LegacySimulator::do_md()
                         // (not because of a race on state->x being modified on the CPU while H2D is in progress).
                         stateGpu->waitCoordinatesCopiedToDevice(AtomLocality::Local);
                         // If the COM removal changed the velocities on the CPU, this has to be accounted for.
-                        if (vcm.mode != ecmNO)
+                        if (vcm.mode != ComRemovalAlgorithm::No)
                         {
                             stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
                         }
@@ -1682,7 +1683,7 @@ void gmx::LegacySimulator::do_md()
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-        if (ir->efep != efepNO && !EI_VV(ir->eI))
+        if (ir->efep != FreeEnergyPerturbationType::No && !EI_VV(ir->eI))
         {
             /* Sum up the foreign energy and dK/dl terms for md and sd.
                Currently done every step so that dH/dl is correct in the .edr */
@@ -1726,7 +1727,7 @@ void gmx::LegacySimulator::do_md()
             /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
 
             /* use the directly determined last velocity, not actually the averaged half steps */
-            if (bTrotter && ir->eI == eiVV)
+            if (bTrotter && ir->eI == IntegrationAlgorithm::VV)
             {
                 enerd->term[F_EKIN] = last_ekin;
             }
@@ -1753,9 +1754,9 @@ void gmx::LegacySimulator::do_md()
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog,
-                                          ir->fepvals,
-                                          ir->expandedvals,
-                                          ir->bSimTemp ? ir->simtempvals : nullptr,
+                                          ir->fepvals.get(),
+                                          ir->expandedvals.get(),
+                                          ir->bSimTemp ? ir->simtempvals.get() : nullptr,
                                           state_global->dfhist,
                                           state->fep_state,
                                           ir->nstlog,
@@ -1768,8 +1769,8 @@ void gmx::LegacySimulator::do_md()
                                                  t,
                                                  mdatoms->tmass,
                                                  enerd,
-                                                 ir->fepvals,
-                                                 ir->expandedvals,
+                                                 ir->fepvals.get(),
+                                                 ir->expandedvals.get(),
                                                  lastbox,
                                                  PTCouplingArrays{ state->boxv,
                                                                    state->nosehoover_xi,
@@ -1853,7 +1854,8 @@ void gmx::LegacySimulator::do_md()
          * Not done in last step since trajectory writing happens before this call
          * in the MD loop and exchanges would be lost anyway. */
         bNeedRepartition = FALSE;
-        if ((ir->eSwapCoords != eswapNO) && (step > 0) && !bLastStep && do_per_step(step, ir->swap->nstswap))
+        if ((ir->eSwapCoords != SwapType::No) && (step > 0) && !bLastStep
+            && do_per_step(step, ir->swap->nstswap))
         {
             bNeedRepartition = do_swapcoords(cr,
                                              step,

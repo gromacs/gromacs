@@ -104,9 +104,9 @@ void writeParameterInformation(TextWriter* writer, const t_inputrec& ir, bool wr
                                    1000 * ir.delta_t));
     writer->writeLine(formatString("Neighbor searching was performed every %d steps.", ir.nstlist));
     writer->writeLine(formatString("The %s algorithm was used for electrostatic interactions.",
-                                   EELTYPE(ir.coulombtype)));
+                                   enumValueToString(ir.coulombtype)));
     writer->writeLine(formatString("with a cut-off of %g nm.", ir.rcoulomb));
-    if (ir.coulombtype == eelPME)
+    if (ir.coulombtype == CoulombInteractionType::Pme)
     {
         writer->writeLine(
                 formatString("A reciprocal grid of %d x %d x %d cells was used with %dth order "

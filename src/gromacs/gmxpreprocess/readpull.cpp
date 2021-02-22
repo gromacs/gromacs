@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,15 +119,16 @@ static void process_pull_dim(char* dim_buf, ivec dim, const t_pull_coord* pcrd)
     {
         gmx_fatal(FARGS, "All entries in pull dim are N");
     }
-    if ((pcrd->eGeom == epullgDIHEDRAL) && (ndim < 3))
+    if ((pcrd->eGeom == PullGroupGeometry::Dihedral) && (ndim < 3))
     {
         gmx_fatal(FARGS, "Pull geometry dihedral is only useful with pull-dim = Y Y Y");
     }
-    if ((pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS) && (ndim < 2))
+    if ((pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::AngleAxis)
+        && (ndim < 2))
     {
         gmx_fatal(FARGS,
                   "Pull geometry %s is only useful with pull-dim = Y for at least 2 dimensions",
-                  EPULLGEOM(pcrd->eGeom));
+                  enumValueToString(pcrd->eGeom));
     }
 }
 
@@ -142,26 +143,27 @@ static void init_pull_coord(t_pull_coord* pcrd,
     dvec origin, vec;
     char buf[STRLEN];
 
-    if (pcrd->eType == epullCONSTRAINT
-        && (pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgANGLE
-            || pcrd->eGeom == epullgANGLEAXIS || pcrd->eGeom == epullgDIHEDRAL))
+    if (pcrd->eType == PullingAlgorithm::Constraint
+        && (pcrd->eGeom == PullGroupGeometry::Cylinder || pcrd->eGeom == PullGroupGeometry::DirectionRelative
+            || pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::AngleAxis
+            || pcrd->eGeom == PullGroupGeometry::Dihedral))
     {
         gmx_fatal(FARGS,
                   "Pulling of type %s can not be combined with geometry %s. Consider using pull "
                   "type %s.",
-                  epull_names[pcrd->eType],
-                  epullg_names[pcrd->eGeom],
-                  epull_names[epullUMBRELLA]);
+                  enumValueToString(pcrd->eType),
+                  enumValueToString(pcrd->eGeom),
+                  enumValueToString(PullingAlgorithm::Umbrella));
     }
 
-    if (pcrd->eType == epullEXTERNAL)
+    if (pcrd->eType == PullingAlgorithm::External)
     {
         if (pcrd->externalPotentialProvider[0] == '\0')
         {
             sprintf(buf,
                     "The use of pull type '%s' for pull coordinate %d requires that the name of "
                     "the module providing the potential external is set with the option %s%d%s",
-                    epull_names[pcrd->eType],
+                    enumValueToString(pcrd->eType),
                     coord_index_for_output,
                     "pull-coord",
                     coord_index_for_output,
@@ -174,12 +176,12 @@ static void init_pull_coord(t_pull_coord* pcrd,
             sprintf(buf,
                     "The use of pull type '%s' for pull coordinate %d requires that the pull rate "
                     "is zero",
-                    epull_names[pcrd->eType],
+                    enumValueToString(pcrd->eType),
                     coord_index_for_output);
             warning_error(wi, buf);
         }
 
-        if (pcrd->eGeom == epullgCYL)
+        if (pcrd->eGeom == PullGroupGeometry::Cylinder)
         {
             /* Warn the user of a PBC restriction, caused by the fact that
              * there is no reference value with an external pull potential.
@@ -188,8 +190,8 @@ static void init_pull_coord(t_pull_coord* pcrd,
                     "With pull type '%s' and geometry '%s', the distance component along the "
                     "cylinder axis between atoms in the cylinder group and the COM of the pull "
                     "group should be smaller than half the box length",
-                    epull_names[pcrd->eType],
-                    epullg_names[pcrd->eGeom]);
+                    enumValueToString(pcrd->eType),
+                    enumValueToString(pcrd->eGeom));
             warning_note(wi, buf);
         }
     }
@@ -203,7 +205,7 @@ static void init_pull_coord(t_pull_coord* pcrd,
     }
 
     /* Check the given initial reference value and warn for dangerous values */
-    if (pcrd->eGeom == epullgDIST)
+    if (pcrd->eGeom == PullGroupGeometry::Distance)
     {
         if (pcrd->bStart && pcrd->init < 0)
         {
@@ -214,12 +216,12 @@ static void init_pull_coord(t_pull_coord* pcrd,
                     "this value, but only for certain starting distances. "
                     "If this is a mistake you may want to use geometry %s instead.",
                     pcrd->init,
-                    EPULLGEOM(pcrd->eGeom),
-                    EPULLGEOM(epullgDIR));
+                    enumValueToString(pcrd->eGeom),
+                    enumValueToString(PullGroupGeometry::Direction));
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
+    else if (pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::AngleAxis)
     {
         if (pcrd->bStart && (pcrd->init < 0 || pcrd->init > 180))
         {
@@ -230,11 +232,11 @@ static void init_pull_coord(t_pull_coord* pcrd,
                     "This may work, since you have set pull-coord-start to 'yes' which modifies "
                     "this value, but only for certain starting angles.",
                     pcrd->init,
-                    EPULLGEOM(pcrd->eGeom));
+                    enumValueToString(pcrd->eGeom));
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom == epullgDIHEDRAL)
+    else if (pcrd->eGeom == PullGroupGeometry::Dihedral)
     {
         if (pcrd->bStart && (pcrd->init < -180 || pcrd->init > 180))
         {
@@ -244,7 +246,7 @@ static void init_pull_coord(t_pull_coord* pcrd,
                     "This may work, since you have set pull-coord-start to 'yes' which modifies "
                     "this value, but only for certain starting angles.",
                     pcrd->init,
-                    EPULLGEOM(pcrd->eGeom));
+                    enumValueToString(pcrd->eGeom));
             warning(wi, buf);
         }
     }
@@ -253,14 +255,14 @@ static void init_pull_coord(t_pull_coord* pcrd,
     clear_dvec(vec);
     string2dvec(vec_buf, vec);
 
-    if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgDIRPBC
-        || pcrd->eGeom == epullgANGLEAXIS)
+    if (pcrd->eGeom == PullGroupGeometry::Direction || pcrd->eGeom == PullGroupGeometry::Cylinder
+        || pcrd->eGeom == PullGroupGeometry::DirectionPBC || pcrd->eGeom == PullGroupGeometry::AngleAxis)
     {
         if (dnorm2(vec) == 0)
         {
             gmx_fatal(FARGS,
                       "With pull geometry %s the pull vector can not be 0,0,0",
-                      epullg_names[pcrd->eGeom]);
+                      enumValueToString(pcrd->eGeom));
         }
         for (int d = 0; d < DIM; d++)
         {
@@ -288,8 +290,10 @@ static void init_pull_coord(t_pull_coord* pcrd,
                     vec[0],
                     vec[1],
                     vec[2],
-                    EPULLGEOM(pcrd->eGeom),
-                    pcrd->eGeom == epullgANGLE ? EPULLGEOM(epullgANGLEAXIS) : EPULLGEOM(epullgDIR));
+                    enumValueToString(pcrd->eGeom),
+                    pcrd->eGeom == PullGroupGeometry::Angle
+                            ? enumValueToString(PullGroupGeometry::AngleAxis)
+                            : enumValueToString(PullGroupGeometry::Direction));
             warning(wi, buf);
         }
     }
@@ -311,14 +315,15 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
     printStringNoNewline(inp, "Cylinder radius for dynamic reaction force groups (nm)");
     pull->cylinder_r     = get_ereal(inp, "pull-cylinder-r", 1.5, wi);
     pull->constr_tol     = get_ereal(inp, "pull-constr-tol", 1E-6, wi);
-    pull->bPrintCOM      = (get_eeenum(inp, "pull-print-com", yesno_names, wi) != 0);
-    pull->bPrintRefValue = (get_eeenum(inp, "pull-print-ref-value", yesno_names, wi) != 0);
-    pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
+    pull->bPrintCOM      = (getEnum<Boolean>(inp, "pull-print-com", wi) != Boolean::No);
+    pull->bPrintRefValue = (getEnum<Boolean>(inp, "pull-print-ref-value", wi) != Boolean::No);
+    pull->bPrintComp     = (getEnum<Boolean>(inp, "pull-print-components", wi) != Boolean::No);
     pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
     pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
-    pull->bSetPbcRefToPrevStepCOM = (get_eeenum(inp, "pull-pbc-ref-prev-step-com", yesno_names, wi) != 0);
-    pull->bXOutAverage            = (get_eeenum(inp, "pull-xout-average", yesno_names, wi) != 0);
-    pull->bFOutAverage            = (get_eeenum(inp, "pull-fout-average", yesno_names, wi) != 0);
+    pull->bSetPbcRefToPrevStepCOM =
+            (getEnum<Boolean>(inp, "pull-pbc-ref-prev-step-com", wi) != Boolean::No);
+    pull->bXOutAverage = (getEnum<Boolean>(inp, "pull-xout-average", wi) != Boolean::No);
+    pull->bFOutAverage = (getEnum<Boolean>(inp, "pull-fout-average", wi) != Boolean::No);
     printStringNoNewline(inp, "Number of pull groups");
     pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
     printStringNoNewline(inp, "Number of pull coordinates");
@@ -365,20 +370,20 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
     {
         t_pull_coord pullCoord; // = &pull->coord[coordNum - 1];
         sprintf(buf, "pull-coord%d-type", coordNum);
-        pullCoord.eType = get_eeenum(inp, buf, epull_names, wi);
+        pullCoord.eType = getEnum<PullingAlgorithm>(inp, buf, wi);
         sprintf(buf, "pull-coord%d-potential-provider", coordNum);
         setStringEntry(inp, buf, provider, "");
         pullCoord.externalPotentialProvider = gmx_strdup(provider);
         sprintf(buf, "pull-coord%d-geometry", coordNum);
-        pullCoord.eGeom = get_eeenum(inp, buf, epullg_names, wi);
+        pullCoord.eGeom = getEnum<PullGroupGeometry>(inp, buf, wi);
         sprintf(buf, "pull-coord%d-groups", coordNum);
         setStringEntry(inp, buf, groups, "");
 
         switch (pullCoord.eGeom)
         {
-            case epullgDIHEDRAL: pullCoord.ngroup = 6; break;
-            case epullgDIRRELATIVE:
-            case epullgANGLE: pullCoord.ngroup = 4; break;
+            case PullGroupGeometry::Dihedral: pullCoord.ngroup = 6; break;
+            case PullGroupGeometry::DirectionRelative:
+            case PullGroupGeometry::Angle: pullCoord.ngroup = 4; break;
             default: pullCoord.ngroup = 2; break;
         }
 
@@ -397,7 +402,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
                     gmx::formatString("%s should contain %d pull group indices with geometry %s",
                                       buf,
                                       pullCoord.ngroup,
-                                      epullg_names[pullCoord.eGeom]);
+                                      enumValueToString(pullCoord.eGeom));
             set_warning_line(wi, nullptr, -1);
             warning_error(wi, message);
         }
@@ -422,7 +427,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
         sprintf(buf, "pull-coord%d-vec", coordNum);
         setStringEntry(inp, buf, vec_buf, "0.0 0.0 0.0");
         sprintf(buf, "pull-coord%d-start", coordNum);
-        pullCoord.bStart = (get_eeenum(inp, buf, yesno_names, wi) != 0);
+        pullCoord.bStart = (getEnum<Boolean>(inp, buf, wi) != Boolean::No);
         sprintf(buf, "pull-coord%d-init", coordNum);
         pullCoord.init = get_ereal(inp, buf, 0.0, wi);
         sprintf(buf, "pull-coord%d-rate", coordNum);
@@ -532,7 +537,7 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups, gmx::ArrayRef
             gmx_fatal(FARGS, "Identical pull group indices in pull-coord%d-groups", c + 1);
         }
 
-        if (pcrd.eGeom == epullgCYL)
+        if (pcrd.eGeom == PullGroupGeometry::Cylinder)
         {
             if (!pullGroups[pcrd.group[0]].weight.empty())
             {
@@ -557,7 +562,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
     auto mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
     auto md      = mdAtoms->mdatoms();
     atoms2md(mtop, ir, -1, {}, mtop->natoms, mdAtoms.get());
-    if (ir->efep)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         update_mdatoms(md, lambda);
     }
@@ -665,7 +670,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
             pcrd->init = value + init;
         }
 
-        if (pcrd->eGeom == epullgDIST)
+        if (pcrd->eGeom == PullGroupGeometry::Distance)
         {
             if (pcrd->init < 0)
             {
@@ -673,8 +678,8 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
                           "The initial pull distance (%g) needs to be non-negative with geometry "
                           "%s. If you want a signed distance, use geometry %s instead.",
                           pcrd->init,
-                          EPULLGEOM(pcrd->eGeom),
-                          EPULLGEOM(epullgDIR));
+                          enumValueToString(pcrd->eGeom),
+                          enumValueToString(PullGroupGeometry::Direction));
             }
 
             /* TODO: With a positive init but a negative rate things could still
@@ -685,7 +690,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
              * generalization of the pull code makes pull dim available here.
              */
         }
-        else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
+        else if (pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::AngleAxis)
         {
             if (pcrd->init < 0 || pcrd->init > 180)
             {
@@ -695,7 +700,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
                           pcrd->init);
             }
         }
-        else if (pcrd->eGeom == epullgDIHEDRAL)
+        else if (pcrd->eGeom == PullGroupGeometry::Dihedral)
         {
             if (pcrd->init < -180 || pcrd->init > 180)
             {

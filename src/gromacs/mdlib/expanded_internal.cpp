@@ -50,9 +50,10 @@
 
 namespace gmx
 {
-real calculateAcceptanceWeight(int calculationMode, real lambdaEnergyDifference)
+real calculateAcceptanceWeight(LambdaWeightCalculation calculationMode, real lambdaEnergyDifference)
 {
-    if (calculationMode == elamstatsBARKER || calculationMode == elamstatsMINVAR)
+    if (calculationMode == LambdaWeightCalculation::Barker
+        || calculationMode == LambdaWeightCalculation::Minvar)
     {
         /* Barker acceptance rule forumula is used for accumulation of probability for
          * both the Barker variant of the weight accumulation algorithm and the
@@ -77,7 +78,7 @@ real calculateAcceptanceWeight(int calculationMode, real lambdaEnergyDifference)
             return std::exp(-lambdaEnergyDifference) / (1.0 + std::exp(-lambdaEnergyDifference));
         }
     }
-    else if (calculationMode == elamstatsMETROPOLIS)
+    else if (calculationMode == LambdaWeightCalculation::Metropolis)
     {
         /* Metropolis acceptance rule for a jump from state i -> j is defined as
          *     1            (if dE_ij < 0)

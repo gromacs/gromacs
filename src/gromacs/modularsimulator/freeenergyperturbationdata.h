@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
@@ -111,7 +112,7 @@ private:
     std::unique_ptr<Element> element_;
 
     //! The lambda vector
-    std::array<real, efptNR> lambda_;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda_;
     //! The current free energy state
     int currentFEPState_;
 

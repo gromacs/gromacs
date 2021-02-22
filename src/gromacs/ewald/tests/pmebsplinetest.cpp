@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,8 +101,9 @@ public:
         inputRec.nkx         = gridSize[XX];
         inputRec.nky         = gridSize[YY];
         inputRec.nkz         = gridSize[ZZ];
-        inputRec.coulombtype = (moduliType == ModuliType::P3M) ? eelP3M_AD : eelPME;
-        inputRec.pme_order   = pmeOrder;
+        inputRec.coulombtype = (moduliType == ModuliType::P3M) ? CoulombInteractionType::P3mAD
+                                                               : CoulombInteractionType::Pme;
+        inputRec.pme_order = pmeOrder;
 
         /* PME initialization call which checks the inputs and computes the B-spline moduli according to the grid sizes. */
         PmeSafePointer pme = pmeInitEmpty(&inputRec);

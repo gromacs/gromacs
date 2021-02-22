@@ -785,7 +785,7 @@ static real displacementVariance(const t_inputrec& ir, real temperature, real ti
 {
     real kT_fac;
 
-    if (ir.eI == eiBD)
+    if (ir.eI == IntegrationAlgorithm::BD)
     {
         /* Get the displacement distribution from the random component only.
          * With accurate integration the systematic (force) displacement
@@ -914,7 +914,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     /* TODO: Obtain masses through (future) integrator functionality
      *       to avoid scattering the code with (or forgetting) checks.
      */
-    const bool setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
+    const bool setMassesToOne = (ir.eI == IntegrationAlgorithm::BD && ir.bd_fric > 0);
     const auto att            = getVerletBufferAtomtypes(mtop, setMassesToOne);
     GMX_ASSERT(!att.empty(), "We expect at least one type");
 
@@ -928,25 +928,25 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     pot_derivatives_t ljRep  = { 0, 0, 0 };
     real              repPow = mtop.ffparams.reppow;
 
-    if (ir.vdwtype == evdwCUT)
+    if (ir.vdwtype == VanDerWaalsType::Cut)
     {
         real sw_range, md3_pswf;
 
         switch (ir.vdw_modifier)
         {
-            case eintmodNONE:
-            case eintmodPOTSHIFT:
+            case InteractionModifiers::None:
+            case InteractionModifiers::PotShift:
                 /* -dV/dr of -r^-6 and r^-reppow */
                 ljDisp.md1 = -6 * std::pow(ir.rvdw, -7.0);
                 ljRep.md1  = repPow * std::pow(ir.rvdw, -(repPow + 1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
-            case eintmodFORCESWITCH:
+            case InteractionModifiers::ForceSwitch:
                 /* At the cut-off: V=V'=V''=0, so we use only V''' */
                 ljDisp.md3 = -md3_force_switch(6.0, ir.rvdw_switch, ir.rvdw);
                 ljRep.md3  = md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
                 break;
-            case eintmodPOTSWITCH:
+            case InteractionModifiers::PotSwitch:
                 /* At the cut-off: V=V'=V''=0.
                  * V''' is given by the original potential times
                  * the third derivative of the switch function.
@@ -986,11 +986,11 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };
 
-    if (ir.coulombtype == eelCUT || EEL_RF(ir.coulombtype))
+    if (ir.coulombtype == CoulombInteractionType::Cut || EEL_RF(ir.coulombtype))
     {
         real eps_rf, k_rf;
 
-        if (ir.coulombtype == eelCUT)
+        if (ir.coulombtype == CoulombInteractionType::Cut)
         {
             eps_rf = 1;
             k_rf   = 0;
@@ -1015,7 +1015,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
         }
         elec.d2 = elfac * (2.0 / gmx::power3(ir.rcoulomb) + 2 * k_rf);
     }
-    else if (EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD)
+    else if (EEL_PME(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
     {
         real b, rc, br;
 
@@ -1333,7 +1333,7 @@ real minCellSizeForAtomDisplacement(const gmx_mtop_t&      mtop,
      */
     const real temperature = maxReferenceTemperature(ir);
 
-    const bool setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
+    const bool setMassesToOne = (ir.eI == IntegrationAlgorithm::BD && ir.bd_fric > 0);
 
     const auto atomtypes = getVerletBufferAtomtypes(mtop, setMassesToOne);
 

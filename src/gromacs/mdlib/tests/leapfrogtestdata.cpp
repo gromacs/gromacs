@@ -150,7 +150,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         }
     }
 
-    inputRecord_.eI      = eiMD;
+    inputRecord_.eI      = IntegrationAlgorithm::MD;
     inputRecord_.delta_t = timestep_;
 
     state_.flags = 0;

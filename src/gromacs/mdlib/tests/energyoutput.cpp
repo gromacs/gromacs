@@ -102,7 +102,7 @@ struct EnergyOutputTestParameters
     //! Barostat (enum)
     PressureCoupling pressureCouplingScheme;
     //! Integrator
-    int integrator;
+    IntegrationAlgorithm integrator;
     //! Number of saved energy frames (to test averages output).
     int numFrames;
     //! If output should be initialized as a rerun.
@@ -117,17 +117,17 @@ struct EnergyOutputTestParameters
  * require ~10 MB of test data and ~2 sec to run the tests.
  */
 const EnergyOutputTestParameters parametersSets[] = {
-    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, false, false },
-    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, true, false },
-    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, false, true },
-    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 0, false, false },
-    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 10, false, false },
-    { TemperatureCoupling::VRescale, PressureCoupling::No, eiMD, 1, false, false },
-    { TemperatureCoupling::NoseHoover, PressureCoupling::No, eiMD, 1, false, false },
-    { TemperatureCoupling::No, PressureCoupling::ParrinelloRahman, eiMD, 1, false, false },
-    { TemperatureCoupling::No, PressureCoupling::Mttk, eiMD, 1, false, false },
-    { TemperatureCoupling::No, PressureCoupling::No, eiVV, 1, false, false },
-    { TemperatureCoupling::No, PressureCoupling::Mttk, eiVV, 1, false, false }
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::MD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::MD, 1, true, false },
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::MD, 1, false, true },
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::MD, 0, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::MD, 10, false, false },
+    { TemperatureCoupling::VRescale, PressureCoupling::No, IntegrationAlgorithm::MD, 1, false, false },
+    { TemperatureCoupling::NoseHoover, PressureCoupling::No, IntegrationAlgorithm::MD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::ParrinelloRahman, IntegrationAlgorithm::MD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::Mttk, IntegrationAlgorithm::MD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, IntegrationAlgorithm::VV, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::Mttk, IntegrationAlgorithm::VV, 1, false, false }
 };
 
 /*! \brief Test fixture to test energy output.
@@ -205,24 +205,24 @@ public:
         // F_EQM
         inputrec_.bQMMM = true;
         // F_RF_EXCL will not be tested - group scheme is not supported any more
-        inputrec_.cutoff_scheme = ecutsVERLET;
+        inputrec_.cutoff_scheme = CutoffScheme::Verlet;
         // F_COUL_RECIP
-        inputrec_.coulombtype = eelPME;
+        inputrec_.coulombtype = CoulombInteractionType::Pme;
         // F_LJ_RECIP
-        inputrec_.vdwtype = evdwPME;
+        inputrec_.vdwtype = VanDerWaalsType::Pme;
 
         // F_DVDL_COUL, F_DVDL_VDW, F_DVDL_BONDED, F_DVDL_RESTRAINT, F_DKDL and F_DVDL
-        inputrec_.efep                                  = efepYES;
-        inputrec_.fepvals->separate_dvdl[efptCOUL]      = true;
-        inputrec_.fepvals->separate_dvdl[efptVDW]       = true;
-        inputrec_.fepvals->separate_dvdl[efptBONDED]    = true;
-        inputrec_.fepvals->separate_dvdl[efptRESTRAINT] = true;
-        inputrec_.fepvals->separate_dvdl[efptMASS]      = true;
-        inputrec_.fepvals->separate_dvdl[efptCOUL]      = true;
-        inputrec_.fepvals->separate_dvdl[efptFEP]       = true;
+        inputrec_.efep = FreeEnergyPerturbationType::Yes;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul]      = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw]       = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded]    = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Restraint] = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass]      = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul]      = true;
+        inputrec_.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep]       = true;
 
         // F_DISPCORR and F_PDISPCORR
-        inputrec_.eDispCorr = edispcEner;
+        inputrec_.eDispCorr = DispersionCorrectionType::Ener;
         inputrec_.bRot      = true;
 
         // F_ECONSERVED
@@ -231,13 +231,13 @@ public:
         inputrec_.ref_p[ZZ][YY] = 0.0;
 
         // Dipole (mu)
-        inputrec_.ewald_geometry = eewg3DC;
+        inputrec_.ewald_geometry = EwaldGeometry::ThreeDC;
 
         // GMX_CONSTRAINTVIR environment variable should also be
         // set to print constraints and force virials separately.
         gmxSetenv("GMX_CONSTRAINTVIR", "true", 1);
         // To print constrain RMSD, constraints algorithm should be set to LINCS.
-        inputrec_.eConstrAlg = econtLINCS;
+        inputrec_.eConstrAlg = ConstraintAlgorithm::Lincs;
 
         mtop_.bIntermolecularInteractions = false;
 
@@ -355,9 +355,9 @@ public:
         inputrec_.opts.ngtc = 3;
         snew(inputrec_.opts.ref_t, inputrec_.opts.ngtc);
         snew(inputrec_.opts.annealing, inputrec_.opts.ngtc);
-        inputrec_.opts.annealing[0] = eannNO;
-        inputrec_.opts.annealing[1] = eannSINGLE;
-        inputrec_.opts.annealing[2] = eannPERIODIC;
+        inputrec_.opts.annealing[0] = SimulatedAnnealing::No;
+        inputrec_.opts.annealing[1] = SimulatedAnnealing::Single;
+        inputrec_.opts.annealing[2] = SimulatedAnnealing::Periodic;
 
         // This is to keep done_inputrec happy (otherwise sfree() segfaults)
         snew(inputrec_.opts.anneal_time, inputrec_.opts.ngtc);

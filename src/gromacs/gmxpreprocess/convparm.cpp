@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,9 +86,9 @@ static int round_check(real r, int limit, int ftype, const char* name)
     return i;
 }
 
-static void set_ljparams(int comb, double reppow, double v, double w, real* c6, real* c12)
+static void set_ljparams(CombinationRule comb, double reppow, double v, double w, real* c6, real* c12)
 {
-    if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS)
+    if (comb == CombinationRule::Arithmetic || comb == CombinationRule::GeomSigEps)
     {
         if (v >= 0)
         {
@@ -112,7 +112,11 @@ static void set_ljparams(int comb, double reppow, double v, double w, real* c6, 
 /* A return value of 0 means parameters were assigned successfully,
  * returning -1 means this is an all-zero interaction that should not be added.
  */
-static int assign_param(t_functype ftype, t_iparams* newparam, gmx::ArrayRef<const real> old, int comb, double reppow)
+static int assign_param(t_functype                ftype,
+                        t_iparams*                newparam,
+                        gmx::ArrayRef<const real> old,
+                        CombinationRule           comb,
+                        double                    reppow)
 {
     bool all_param_zero = true;
 
@@ -453,7 +457,7 @@ static int assign_param(t_functype ftype, t_iparams* newparam, gmx::ArrayRef<con
 static int enter_params(gmx_ffparams_t*           ffparams,
                         t_functype                ftype,
                         gmx::ArrayRef<const real> forceparams,
-                        int                       comb,
+                        CombinationRule           comb,
                         real                      reppow,
                         int                       start,
                         bool                      bAppend)
@@ -516,7 +520,7 @@ static void append_interaction(InteractionList* ilist, int type, gmx::ArrayRef<c
 
 static void enter_function(const InteractionsOfType* p,
                            t_functype                ftype,
-                           int                       comb,
+                           CombinationRule           comb,
                            real                      reppow,
                            gmx_ffparams_t*           ffparams,
                            InteractionList*          il,
@@ -543,7 +547,7 @@ void convertInteractionsOfType(int                                      atnr,
                                gmx::ArrayRef<const InteractionsOfType>  nbtypes,
                                gmx::ArrayRef<const MoleculeInformation> mi,
                                const MoleculeInformation*               intermolecular_interactions,
-                               int                                      comb,
+                               CombinationRule                          comb,
                                double                                   reppow,
                                real                                     fudgeQQ,
                                gmx_mtop_t*                              mtop)

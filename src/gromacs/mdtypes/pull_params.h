@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,11 +75,11 @@ static const int c_pullCoordNgroupMax = 6;
 struct t_pull_coord
 {
     //! The pull type: umbrella, constraint, ...
-    int eType = 0;
+    PullingAlgorithm eType = PullingAlgorithm::Umbrella;
     //! Name of the module providing   the external potential, only used with eType==epullEXTERNAL
     std::string externalPotentialProvider;
     //! The pull geometry
-    int eGeom = 0;
+    PullGroupGeometry eGeom = PullGroupGeometry::Distance;
     //! The number of groups, depends on eGeom
     int ngroup = 0;
     /*! \brief The pull groups:

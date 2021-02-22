@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,11 +54,11 @@ void LegacySimulator::run()
 {
     switch (inputrec->eI)
     {
-        case eiMD:
-        case eiBD:
-        case eiSD1:
-        case eiVV:
-        case eiVVAK:
+        case IntegrationAlgorithm::MD:
+        case IntegrationAlgorithm::BD:
+        case IntegrationAlgorithm::SD1:
+        case IntegrationAlgorithm::VV:
+        case IntegrationAlgorithm::VVAK:
             if (!EI_DYNAMICS(inputrec->eI))
             {
                 GMX_THROW(APIError(
@@ -73,7 +73,7 @@ void LegacySimulator::run()
                 do_md();
             }
             break;
-        case eiMimic:
+        case IntegrationAlgorithm::Mimic:
             if (doRerun)
             {
                 do_rerun();
@@ -83,19 +83,20 @@ void LegacySimulator::run()
                 do_mimic();
             }
             break;
-        case eiSteep: do_steep(); break;
-        case eiCG: do_cg(); break;
-        case eiNM: do_nm(); break;
-        case eiLBFGS: do_lbfgs(); break;
-        case eiTPI:
-        case eiTPIC:
+        case IntegrationAlgorithm::Steep: do_steep(); break;
+        case IntegrationAlgorithm::CG: do_cg(); break;
+        case IntegrationAlgorithm::NM: do_nm(); break;
+        case IntegrationAlgorithm::LBFGS: do_lbfgs(); break;
+        case IntegrationAlgorithm::TPI:
+        case IntegrationAlgorithm::TPIC:
             if (!EI_TPI(inputrec->eI))
             {
                 GMX_THROW(APIError("do_tpi integrator would be called for a non-TPI integrator"));
             }
             do_tpi();
             break;
-        case eiSD2_REMOVED: GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
+        case IntegrationAlgorithm::SD2Removed:
+            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
         default: GMX_THROW(APIError("Non existing integrator selected"));
     }
 }

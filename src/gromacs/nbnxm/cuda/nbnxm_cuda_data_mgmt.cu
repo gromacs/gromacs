@@ -156,7 +156,7 @@ static void init_nbparam(NBParamGpu*                     nbp,
     }
 
     /* set up LJ-PME parameter lookup table */
-    if (ic->vdwtype == evdwPME)
+    if (ic->vdwtype == VanDerWaalsType::Pme)
     {
         initParamLookupTable(
                 &nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbatParams.nbfp_comb.data(), 2 * ntypes, deviceContext);

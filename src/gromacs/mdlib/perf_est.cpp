@@ -166,7 +166,8 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
     gmx_bool   bSimdBondeds        = FALSE;
 #endif
 
-    bExcl = (ir.cutoff_scheme == ecutsGROUP && inputrecExclForces(&ir) && !EEL_FULL(ir.coulombtype));
+    bExcl = (ir.cutoff_scheme == CutoffScheme::Group && inputrecExclForces(&ir)
+             && !EEL_FULL(ir.coulombtype));
 
     if (bSimdBondeds)
     {
@@ -277,7 +278,7 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     const real nbnxn_refkernel_fac = 8.0;
 #endif
 
-    bQRF = (EEL_RF(ir.coulombtype) || ir.coulombtype == eelCUT);
+    bQRF = (EEL_RF(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Cut);
 
     gmx::ArrayRef<const t_iparams> iparams = mtop.ffparams.iparams;
     atnr                                   = mtop.ffparams.atnr;
@@ -350,12 +351,12 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     c_qlj = (bQRF ? c_nbnxn_qrf_lj : c_nbnxn_qexp_lj);
     c_q   = (bQRF ? c_nbnxn_qrf : c_nbnxn_qexp);
     c_lj  = c_nbnxn_lj;
-    if (ir.vdw_modifier == eintmodPOTSWITCH || EVDW_PME(ir.vdwtype))
+    if (ir.vdw_modifier == InteractionModifiers::PotSwitch || EVDW_PME(ir.vdwtype))
     {
         c_qlj += c_nbnxn_ljexp_add;
         c_lj += c_nbnxn_ljexp_add;
     }
-    if (EVDW_PME(ir.vdwtype) && ir.ljpme_combination_rule == eljpmeLB)
+    if (EVDW_PME(ir.vdwtype) && ir.ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* We don't have LJ-PME LB comb. rule kernels, we use slow kernels */
         c_qlj *= nbnxn_refkernel_fac;
@@ -406,7 +407,7 @@ float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matr
     {
         double grid = ir.nkx * ir.nky * gridNkzFactor;
 
-        int f = ((ir.efep != efepNO && bChargePerturbed) ? 2 : 1);
+        int f = ((ir.efep != FreeEnergyPerturbationType::No && bChargePerturbed) ? 2 : 1);
         cost_redist += c_pme_redist * nq_tot;
         cost_spread += f * c_pme_spread * nq_tot * gmx::power3(ir.pme_order);
         cost_fft += f * c_pme_fft * grid * std::log(grid) / std::log(2.0);
@@ -417,8 +418,8 @@ float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matr
     {
         double grid = ir.nkx * ir.nky * gridNkzFactor;
 
-        int f = ((ir.efep != efepNO && bTypePerturbed) ? 2 : 1);
-        if (ir.ljpme_combination_rule == eljpmeLB)
+        int f = ((ir.efep != FreeEnergyPerturbationType::No && bTypePerturbed) ? 2 : 1);
+        if (ir.ljpme_combination_rule == LongRangeVdW::LB)
         {
             /* LB combination rule: we have 7 mesh terms */
             f *= 7;

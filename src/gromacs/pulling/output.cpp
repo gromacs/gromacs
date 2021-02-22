@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@ static void addToPullxHistory(pull_t* pull)
             pcrdHistory.dr23[m] += pcrd.spatialData.dr23[m];
             pcrdHistory.dr45[m] += pcrd.spatialData.dr45[m];
         }
-        if (pcrd.params.eGeom == epullgCYL)
+        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
         {
             for (int m = 0; m < DIM; m++)
             {
@@ -178,7 +178,7 @@ static void pull_print_coord_dr(FILE*                out,
 
     fprintf(out, "\t%g", pcrdData.value * unit_factor / numValuesInSum);
 
-    if (pullParams.bPrintRefValue && coordParams.eType != epullEXTERNAL)
+    if (pullParams.bPrintRefValue && coordParams.eType != PullingAlgorithm::External)
     {
         fprintf(out, "\t%g", referenceValue * unit_factor / numValuesInSum);
     }
@@ -223,7 +223,7 @@ static void pull_print_x(FILE* out, pull_t* pull, double t)
 
         if (pull->params.bPrintCOM)
         {
-            if (pcrd.params.eGeom == epullgCYL)
+            if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
             {
                 for (int m = 0; m < DIM; m++)
                 {
@@ -457,7 +457,7 @@ static FILE* open_pull_out(const char*             fn,
                 sprintf(buf, "%zu", c + 1);
                 setname[nsets] = gmx_strdup(buf);
                 nsets++;
-                if (pull->params.bPrintRefValue && pull->coord[c].params.eType != epullEXTERNAL)
+                if (pull->params.bPrintRefValue && pull->coord[c].params.eType != PullingAlgorithm::External)
                 {
                     sprintf(buf, "%zu ref", c + 1);
                     setname[nsets] = gmx_strdup(buf);

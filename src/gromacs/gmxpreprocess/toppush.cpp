@@ -67,7 +67,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-void generate_nbparams(int                     comb,
+void generate_nbparams(CombinationRule         comb,
                        int                     ftype,
                        InteractionsOfType*     interactions,
                        PreprocessingAtomTypes* atypes,
@@ -88,7 +88,7 @@ void generate_nbparams(int                     comb,
         case F_LJ:
             switch (comb)
             {
-                case eCOMB_GEOMETRIC:
+                case CombinationRule::Geometric:
                     /* Gromos rules */
                     for (int i = 0; (i < nr); i++)
                     {
@@ -106,7 +106,7 @@ void generate_nbparams(int                     comb,
                     }
                     break;
 
-                case eCOMB_ARITHMETIC:
+                case CombinationRule::Arithmetic:
                     /* c0 and c1 are sigma and epsilon */
                     for (int i = 0; (i < nr); i++)
                     {
@@ -130,7 +130,7 @@ void generate_nbparams(int                     comb,
                     }
 
                     break;
-                case eCOMB_GEOM_SIG_EPS:
+                case CombinationRule::GeomSigEps:
                     /* c0 and c1 are sigma and epsilon */
                     for (int i = 0; (i < nr); i++)
                     {
@@ -155,7 +155,8 @@ void generate_nbparams(int                     comb,
 
                     break;
                 default:
-                    auto message = gmx::formatString("No such combination rule %d", comb);
+                    auto message =
+                            gmx::formatString("No such combination rule %s", enumValueToString(comb));
                     warning_error_and_exit(wi, message, FARGS);
             }
             break;

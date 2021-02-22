@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,14 @@
  * \author Christian Blau <blau@kth.se>
  */
 
+#include <vector>
 #include "gmxpre.h"
 
 #include "freeenergyparameters.h"
 
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 namespace gmx
 {
@@ -51,13 +54,14 @@ namespace gmx
 namespace
 {
 
-std::array<real, efptNR> lambdasAtState(const int stateIndex, double** const lambdaArray, const int lambdaArrayExtent)
+gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>
+lambdasAtState(const int stateIndex, gmx::ArrayRef<const std::vector<double>> lambdaArray, const int lambdaArrayExtent)
 {
-    std::array<real, efptNR> lambda;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda;
     // set lambda from an fep state index from stateIndex, if stateIndex was defined (> -1)
     if (stateIndex >= 0 && stateIndex < lambdaArrayExtent)
     {
-        for (int i = 0; i < efptNR; i++)
+        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
         {
             lambda[i] = lambdaArray[i][stateIndex];
         }
@@ -112,11 +116,12 @@ double currentGlobalLambda(const int64_t step,
  * \param[in] lambdaArray array of lambda values
  * \param[in] lambdaArrayExtent number of lambda values
  */
-std::array<real, efptNR> interpolatedLambdas(const double   currentGlobalLambda,
-                                             double** const lambdaArray,
-                                             const int      lambdaArrayExtent)
+gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>
+interpolatedLambdas(const double                             currentGlobalLambda,
+                    gmx::ArrayRef<const std::vector<double>> lambdaArray,
+                    const int                                lambdaArrayExtent)
 {
-    std::array<real, efptNR> lambda;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda;
     // when there is no lambda value array, set all lambdas to steps * deltaLambdaPerStep
     if (lambdaArrayExtent <= 0)
     {
@@ -127,7 +132,7 @@ std::array<real, efptNR> interpolatedLambdas(const double   currentGlobalLambda,
     // if we run over the boundary of the lambda array, return the boundary array values
     if (currentGlobalLambda <= 0)
     {
-        for (int i = 0; i < efptNR; i++)
+        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
         {
             lambda[i] = lambdaArray[i][0];
         }
@@ -135,7 +140,7 @@ std::array<real, efptNR> interpolatedLambdas(const double   currentGlobalLambda,
     }
     if (currentGlobalLambda >= 1)
     {
-        for (int i = 0; i < efptNR; i++)
+        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
         {
             lambda[i] = lambdaArray[i][lambdaArrayExtent - 1];
         }
@@ -147,7 +152,7 @@ std::array<real, efptNR> interpolatedLambdas(const double   currentGlobalLambda,
     const int fepStateRight = fepStateLeft + 1;
     // interpolate between this state and the next
     const double fracBetween = currentGlobalLambda * (lambdaArrayExtent - 1) - fepStateLeft;
-    for (int i = 0; i < efptNR; i++)
+    for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
     {
         lambda[i] = lambdaArray[i][fepStateLeft]
                     + fracBetween * (lambdaArray[i][fepStateRight] - lambdaArray[i][fepStateLeft]);
@@ -157,7 +162,8 @@ std::array<real, efptNR> interpolatedLambdas(const double   currentGlobalLambda,
 
 } // namespace
 
-std::array<real, efptNR> currentLambdas(const int64_t step, const t_lambda& fepvals, const int currentLambdaState)
+gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>
+currentLambdas(const int64_t step, const t_lambda& fepvals, const int currentLambdaState)
 {
     if (fepvals.delta_lambda == 0)
     {
@@ -171,7 +177,7 @@ std::array<real, efptNR> currentLambdas(const int64_t step, const t_lambda& fepv
             return lambdasAtState(fepvals.init_fep_state, fepvals.all_lambda, fepvals.n_lambda);
         }
 
-        std::array<real, efptNR> lambdas;
+        gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambdas;
         std::fill(std::begin(lambdas), std::end(lambdas), fepvals.init_lambda);
         return lambdas;
     }

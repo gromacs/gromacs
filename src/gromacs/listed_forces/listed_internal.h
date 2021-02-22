@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 /* We reduce the force array in blocks of 32 atoms. This is large enough
  * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
@@ -117,7 +118,7 @@ struct f_thread_t
     //! Group pair energy data for pairs
     gmx_grppairener_t grpp;
     //! Free-energy dV/dl output
-    real dvdl[efptNR];
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl;
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(f_thread_t);
 };

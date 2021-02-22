@@ -37,6 +37,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/stringutil.h"
 #include "topio.h"
 
 #include <cassert>
@@ -87,7 +89,7 @@
 #define OPENDIR '['  /* starting sign for directive */
 #define CLOSEDIR ']' /* ending sign for directive   */
 
-static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, real fudge, int comb)
+static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, real fudge, CombinationRule comb)
 {
     real scaling;
     int  ntp = nbs.size();
@@ -122,7 +124,8 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
              * should be scaled, but not sigma.
              * The sigma values have even indices 0,2, etc.
              */
-            if ((comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) && (j % 2 == 0))
+            if ((comb == CombinationRule::Arithmetic || comb == CombinationRule::GeomSigEps)
+                && (j % 2 == 0))
             {
                 scaling = 1.0;
             }
@@ -247,46 +250,57 @@ static void sum_q(const t_atoms* atoms, int numMols, double* qTotA, double* qTot
     *qTotB += numMols * roundedMoleculeCharge(qmolB, sumAbsQB);
 }
 
-static void get_nbparm(char* nb_str, char* comb_str, int* nb, int* comb, warninp* wi)
+static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, CombinationRule* comb, warninp* wi)
 {
-    int  i;
-    char warn_buf[STRLEN];
-
-    *nb = -1;
-    for (i = 1; (i < eNBF_NR); i++)
+    *nb = VanDerWaalsPotential::Count;
+    for (auto i : gmx::EnumerationArray<VanDerWaalsPotential, bool>::keys())
     {
-        if (gmx_strcasecmp(nb_str, enbf_names[i]) == 0)
+        if (gmx_strcasecmp(nb_str, enumValueToString(i)) == 0)
         {
             *nb = i;
         }
     }
-    if (*nb == -1)
+    if (*nb == VanDerWaalsPotential::Count)
     {
-        *nb = strtol(nb_str, nullptr, 10);
+        int integerValue = strtol(nb_str, nullptr, 10);
+        if ((integerValue < 1) || (integerValue >= static_cast<int>(VanDerWaalsPotential::Count)))
+        {
+            std::string message =
+                    gmx::formatString("Invalid nonbond function selector '%s' using %s",
+                                      nb_str,
+                                      enumValueToString(VanDerWaalsPotential::LJ));
+            warning_error(wi, message);
+            *nb = VanDerWaalsPotential::LJ;
+        }
+        else
+        {
+            *nb = static_cast<VanDerWaalsPotential>(integerValue);
+        }
     }
-    if ((*nb < 1) || (*nb >= eNBF_NR))
+    *comb = CombinationRule::Count;
+    for (auto i : gmx::EnumerationArray<CombinationRule, bool>::keys())
     {
-        sprintf(warn_buf, "Invalid nonbond function selector '%s' using %s", nb_str, enbf_names[1]);
-        warning_error(wi, warn_buf);
-        *nb = 1;
-    }
-    *comb = -1;
-    for (i = 1; (i < eCOMB_NR); i++)
-    {
-        if (gmx_strcasecmp(comb_str, ecomb_names[i]) == 0)
+        if (gmx_strcasecmp(comb_str, enumValueToString(i)) == 0)
         {
             *comb = i;
         }
     }
-    if (*comb == -1)
+    if (*comb == CombinationRule::Count)
     {
-        *comb = strtol(comb_str, nullptr, 10);
-    }
-    if ((*comb < 1) || (*comb >= eCOMB_NR))
-    {
-        sprintf(warn_buf, "Invalid combination rule selector '%s' using %s", comb_str, ecomb_names[1]);
-        warning_error(wi, warn_buf);
-        *comb = 1;
+        int integerValue = strtol(comb_str, nullptr, 10);
+        if ((integerValue < 1) || (integerValue >= static_cast<int>(CombinationRule::Count)))
+        {
+            std::string message =
+                    gmx::formatString("Invalid combination rule selector '%s' using %s",
+                                      comb_str,
+                                      enumValueToString(CombinationRule::Geometric));
+            warning_error(wi, message);
+            *comb = CombinationRule::Geometric;
+        }
+        else
+        {
+            *comb = static_cast<CombinationRule>(integerValue);
+        }
     }
 }
 
@@ -383,7 +397,7 @@ static char** read_topol(const char*                           infile,
                          std::vector<MoleculeInformation>*     molinfo,
                          std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
                          gmx::ArrayRef<InteractionsOfType>     interactions,
-                         int*                                  combination_rule,
+                         CombinationRule*                      combination_rule,
                          double*                               reppow,
                          t_gromppopts*                         opts,
                          real*                                 fudgeQQ,
@@ -396,7 +410,7 @@ static char** read_topol(const char*                           infile,
                          const gmx::MDLogger&                  logger)
 {
     FILE*                out;
-    int                  sl, nb_funct;
+    int                  sl;
     char *               pline = nullptr, **title = nullptr;
     char                 line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
     char                 genpairs[32];
@@ -447,7 +461,7 @@ static char** read_topol(const char*                           infile,
     nbparam = nullptr;              /* The temporary non-bonded matrix */
     pair    = nullptr;              /* The temporary pair interaction matrix */
     std::vector<std::vector<gmx::ExclusionBlock>> exclusionBlocks;
-    nb_funct = F_LJ;
+    VanDerWaalsPotential                          nb_funct = VanDerWaalsPotential::LJ;
 
     *reppow = 12.0; /* Default value for repulsion power     */
 
@@ -618,7 +632,7 @@ static char** read_topol(const char*                           infile,
                                 if (nscan >= 3)
                                 {
                                     bGenPairs = (gmx::equalCaseInsensitive(genpairs, "Y", 1));
-                                    if (nb_funct != eNBF_LJ && bGenPairs)
+                                    if (nb_funct != VanDerWaalsPotential::LJ && bGenPairs)
                                     {
                                         gmx_fatal(FARGS,
                                                   "Generating pair parameters is only supported "
@@ -638,7 +652,8 @@ static char** read_topol(const char*                           infile,
                                     *reppow = fPOW;
                                 }
                             }
-                            nb_funct = ifunc_index(Directive::d_nonbond_params, nb_funct);
+                            nb_funct = static_cast<VanDerWaalsPotential>(ifunc_index(
+                                    Directive::d_nonbond_params, static_cast<int>(nb_funct)));
 
                             break;
                         case Directive::d_atomtypes:
@@ -646,7 +661,7 @@ static char** read_topol(const char*                           infile,
                                     atypes,
                                     &bondAtomType,
                                     pline,
-                                    nb_funct,
+                                    static_cast<int>(nb_funct),
                                     &nbparam,
                                     bGenPairs ? &pair : nullptr,
                                     wi);
@@ -675,7 +690,7 @@ static char** read_topol(const char*                           infile,
                             break;
 
                         case Directive::d_nonbond_params:
-                            push_nbt(d, nbparam, atypes, pline, nb_funct, wi);
+                            push_nbt(d, nbparam, atypes, pline, static_cast<int>(nb_funct), wi);
                             break;
 
                         case Directive::d_implicit_genborn_params: // NOLINT bugprone-branch-clone
@@ -709,9 +724,15 @@ static char** read_topol(const char*                           infile,
                                 }
                                 ntype  = atypes->size();
                                 ncombs = (ntype * (ntype + 1)) / 2;
-                                generate_nbparams(
-                                        *combination_rule, nb_funct, &(interactions[nb_funct]), atypes, wi);
-                                ncopy = copy_nbparams(nbparam, nb_funct, &(interactions[nb_funct]), ntype);
+                                generate_nbparams(*combination_rule,
+                                                  static_cast<int>(nb_funct),
+                                                  &(interactions[static_cast<int>(nb_funct)]),
+                                                  atypes,
+                                                  wi);
+                                ncopy = copy_nbparams(nbparam,
+                                                      static_cast<int>(nb_funct),
+                                                      &(interactions[static_cast<int>(nb_funct)]),
+                                                      ntype);
                                 GMX_LOG(logger.info)
                                         .asParagraph()
                                         .appendTextFormatted(
@@ -722,11 +743,12 @@ static char** read_topol(const char*                           infile,
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs((interactions[nb_funct]),
+                                    gen_pairs((interactions[static_cast<int>(nb_funct)]),
                                               &(interactions[F_LJ14]),
                                               fudgeLJ,
                                               *combination_rule);
-                                    ncopy = copy_nbparams(pair, nb_funct, &(interactions[F_LJ14]), ntype);
+                                    ncopy = copy_nbparams(
+                                            pair, static_cast<int>(nb_funct), &(interactions[F_LJ14]), ntype);
                                     GMX_LOG(logger.info)
                                             .asParagraph()
                                             .appendTextFormatted(
@@ -898,8 +920,8 @@ static char** read_topol(const char*                           infile,
                                                            opts->couple_lam0,
                                                            opts->couple_lam1,
                                                            opts->bCoupleIntra,
-                                                           nb_funct,
-                                                           &(interactions[nb_funct]),
+                                                           static_cast<int>(nb_funct),
+                                                           &(interactions[static_cast<int>(nb_funct)]),
                                                            wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
@@ -1025,7 +1047,7 @@ char** do_top(bool                                  bVerbose,
               bool                                  bZero,
               t_symtab*                             symtab,
               gmx::ArrayRef<InteractionsOfType>     interactions,
-              int*                                  combination_rule,
+              CombinationRule*                      combination_rule,
               double*                               repulsion_power,
               real*                                 fudgeQQ,
               PreprocessingAtomTypes*               atypes,
@@ -1069,13 +1091,13 @@ char** do_top(bool                                  bVerbose,
                        fudgeQQ,
                        molblock,
                        ffParametrizedWithHBondConstraints,
-                       ir->efep != efepNO,
+                       ir->efep != FreeEnergyPerturbationType::No,
                        bZero,
                        EEL_FULL(ir->coulombtype),
                        wi,
                        logger);
 
-    if ((*combination_rule != eCOMB_GEOMETRIC) && (ir->vdwtype == evdwUSER))
+    if ((*combination_rule != CombinationRule::Geometric) && (ir->vdwtype == VanDerWaalsType::User))
     {
         warning(wi,
                 "Using sigma/epsilon based combination rules with"

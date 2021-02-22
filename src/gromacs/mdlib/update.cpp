@@ -854,7 +854,7 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec& inputRecord)
     const t_grpopts* opts = &inputRecord.opts;
     const int        ngtc = opts->ngtc;
 
-    if (inputRecord.eI == eiBD)
+    if (inputRecord.eI == IntegrationAlgorithm::BD)
     {
         bd_rf.resize(ngtc);
     }
@@ -903,7 +903,7 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec& inputRecord)
 
 void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
 {
-    if (inputRecord.eI == eiBD)
+    if (inputRecord.eI == IntegrationAlgorithm::BD)
     {
         if (inputRecord.bd_fric != 0)
         {
@@ -921,7 +921,7 @@ void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
             }
         }
     }
-    if (inputRecord.eI == eiSD1)
+    if (inputRecord.eI == IntegrationAlgorithm::SD1)
     {
         for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
         {
@@ -1304,7 +1304,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec& inputRecord,
     {
         return;
     }
-    if (inputRecord.eI == eiSD1)
+    if (inputRecord.eI == IntegrationAlgorithm::SD1)
     {
         int homenr = md->homenr;
 
@@ -1363,7 +1363,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec& inputRecord,
                       xp_.arrayRefWithPadding(),
                       ArrayRef<RVec>(),
                       state->box,
-                      state->lambda[efptBONDED],
+                      state->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)],
                       dvdlambda,
                       state->v.arrayRefWithPadding(),
                       computeVirial,
@@ -1477,7 +1477,7 @@ void Update::Impl::update_coords(const t_inputrec&                              
 
             switch (inputRecord.eI)
             {
-                case (eiMD):
+                case (IntegrationAlgorithm::MD):
                     do_update_md(start_th,
                                  end_th,
                                  dt,
@@ -1496,7 +1496,7 @@ void Update::Impl::update_coords(const t_inputrec&                              
                                  state->nosehoover_vxi.data(),
                                  M);
                     break;
-                case (eiSD1):
+                case (IntegrationAlgorithm::SD1):
                     do_update_sd(start_th,
                                  end_th,
                                  dt,
@@ -1515,7 +1515,7 @@ void Update::Impl::update_coords(const t_inputrec&                              
                                  sd_,
                                  haveConstraints);
                     break;
-                case (eiBD):
+                case (IntegrationAlgorithm::BD):
                     do_update_bd(start_th,
                                  end_th,
                                  dt,
@@ -1534,8 +1534,8 @@ void Update::Impl::update_coords(const t_inputrec&                              
                                  inputRecord.ld_seed,
                                  DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
-                case (eiVV):
-                case (eiVVAK):
+                case (IntegrationAlgorithm::VV):
+                case (IntegrationAlgorithm::VVAK):
                 {
                     gmx_bool bExtended = (inputRecord.etc == TemperatureCoupling::NoseHoover
                                           || inputRecord.epc == PressureCoupling::ParrinelloRahman
@@ -1589,7 +1589,7 @@ void Update::Impl::update_for_constraint_virial(const t_inputrec& inputRecord,
                                                 const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                                 const gmx_ekindata_t& ekind)
 {
-    GMX_ASSERT(inputRecord.eI == eiMD || inputRecord.eI == eiSD1,
+    GMX_ASSERT(inputRecord.eI == IntegrationAlgorithm::MD || inputRecord.eI == IntegrationAlgorithm::SD1,
                "Only leap-frog is supported here");
 
     // Cast to real for faster code, no loss in precision

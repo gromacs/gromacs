@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <array>
 
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct t_lambda;
@@ -60,7 +61,9 @@ namespace gmx
  * \param[in] currentLambdaState the lambda state to use to set the lambdas, -1 if not set
  * \returns the current lambda-value array
  */
-std::array<real, efptNR> currentLambdas(int64_t step, const t_lambda& fepvals, int currentLambdaState);
+gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> currentLambdas(int64_t         step,
+                                                                               const t_lambda& fepvals,
+                                                                               int currentLambdaState);
 
 } // namespace gmx
 

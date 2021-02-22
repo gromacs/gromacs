@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3142,7 +3142,9 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                     n_lambda_vec = fr->block[i].sub[1].ival[1];
                     for (j = 0; j < n_lambda_vec; j++)
                     {
-                        const char* name = efpt_singular_names[fr->block[i].sub[1].ival[1 + j]];
+                        const char* name =
+                                enumValueToStringSingular(static_cast<FreeEnergyPerturbationCouplingType>(
+                                        fr->block[i].sub[1].ival[1 + j]));
                         if (check)
                         {
                             /* check the components */

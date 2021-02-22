@@ -420,7 +420,7 @@ static void prepare_verlet_scheme(FILE*               fplog,
 {
     // We checked the cut-offs in grompp, but double-check here.
     // We have PME+LJcutoff kernels for rcoulomb>rvdw.
-    if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
+    if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == VanDerWaalsType::Cut)
     {
         GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw,
                            "With Verlet lists and PME we should have rcoulomb>=rvdw");
@@ -916,7 +916,8 @@ int Mdrunner::mdrunner()
     // the inputrec read by the master rank. The ranks can now all run
     // the task-deciding functions and will agree on the result
     // without needing to communicate.
-    const bool useDomainDecomposition = (PAR(cr) && !(EI_TPI(inputrec->eI) || inputrec->eI == eiNM));
+    const bool useDomainDecomposition =
+            (PAR(cr) && !(EI_TPI(inputrec->eI) || inputrec->eI == IntegrationAlgorithm::NM));
 
     // Note that these variables describe only their own node.
     //
@@ -1026,7 +1027,7 @@ int Mdrunner::mdrunner()
     /* NM and TPI parallelize over force/energy calculations, not atoms,
      * so we need to initialize and broadcast the global state.
      */
-    if (inputrec->eI == eiNM || inputrec->eI == eiTPI)
+    if (inputrec->eI == IntegrationAlgorithm::NM || inputrec->eI == IntegrationAlgorithm::TPI)
     {
         if (!MASTER(cr))
         {
@@ -1056,7 +1057,7 @@ int Mdrunner::mdrunner()
 #endif
     }
 
-    if (doRerun && (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
+    if (doRerun && (EI_ENERGY_MINIMIZATION(inputrec->eI) || IntegrationAlgorithm::NM == inputrec->eI))
     {
         gmx_fatal(FARGS,
                   "The .mdp file specified an energy mininization or normal mode algorithm, and "
@@ -1246,7 +1247,7 @@ int Mdrunner::mdrunner()
         gmx_bcast(sizeof(box), box, cr->mpiDefaultCommunicator);
     }
 
-    if (inputrec->cutoff_scheme != ecutsVERLET)
+    if (inputrec->cutoff_scheme != CutoffScheme::Verlet)
     {
         gmx_fatal(FARGS,
                   "This group-scheme .tpr file can no longer be run by mdrun. Please update to the "
@@ -1834,7 +1835,7 @@ int Mdrunner::mdrunner()
         }
 
         t_swap* swap = nullptr;
-        if (inputrec->eSwapCoords != eswapNO)
+        if (inputrec->eSwapCoords != SwapType::No)
         {
             /* Initialize ion swapping code */
             swap = init_swapcoords(fplog,
@@ -1860,7 +1861,7 @@ int Mdrunner::mdrunner()
 
         // cos acceleration is only supported by md, but older tpr
         // files might still combine it with other integrators
-        GMX_RELEASE_ASSERT(inputrec->cos_accel == 0.0 || inputrec->eI == eiMD,
+        GMX_RELEASE_ASSERT(inputrec->cos_accel == 0.0 || inputrec->eI == IntegrationAlgorithm::MD,
                            "cos_acceleration is only supported by integrator=md");
 
         /* Kinetic energy data */
@@ -1915,9 +1916,10 @@ int Mdrunner::mdrunner()
             && ((runScheduleWork.simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME))
                 || runScheduleWork.simulationWork.useGpuBufferOps))
         {
-            GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)
-                                                      ? GpuApiCallBehavior::Async
-                                                      : GpuApiCallBehavior::Sync;
+            GpuApiCallBehavior transferKind =
+                    (inputrec->eI == IntegrationAlgorithm::MD && !doRerun && !useModularSimulator)
+                            ? GpuApiCallBehavior::Async
+                            : GpuApiCallBehavior::Sync;
             GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
                                "GPU device stream manager should be initialized to use GPU.");
             stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(

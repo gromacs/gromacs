@@ -191,7 +191,7 @@ make_cyl_refgrps(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc* p
         clear_dvec(radf_fac0);
         clear_dvec(radf_fac1);
 
-        if (pcrd->params.eGeom == epullgCYL)
+        if (pcrd->params.eGeom == PullGroupGeometry::Cylinder)
         {
             /* pref will be the same group for all pull coordinates */
             const pull_group_work_t& pref  = pull->group[pcrd->params.group[0]];
@@ -309,7 +309,7 @@ make_cyl_refgrps(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc* p
 
         pcrd = &pull->coord[c];
 
-        if (pcrd->params.eGeom == epullgCYL)
+        if (pcrd->params.eGeom == PullGroupGeometry::Cylinder)
         {
             pull_group_work_t*    pdyna       = &pull->dyna[c];
             pull_group_work_t*    pgrp        = &pull->group[pcrd->params.group[1]];
@@ -911,7 +911,8 @@ int pullCheckPbcWithinGroups(const pull_t& pull, const rvec* x, const t_pbc& pbc
         {
             for (int d = 0; d < DIM; d++)
             {
-                if (coordParams.dim[d] && !(coordParams.eGeom == epullgCYL && groupIndex == 0))
+                if (coordParams.dim[d]
+                    && !(coordParams.eGeom == PullGroupGeometry::Cylinder && groupIndex == 0))
                 {
                     dimUsed[coordParams.group[groupIndex]][d] = true;
                 }
@@ -963,7 +964,8 @@ bool pullCheckPbcWithinGroup(const pull_t&                  pull,
             {
                 for (int d = 0; d < DIM; d++)
                 {
-                    if (coordParams.dim[d] && !(coordParams.eGeom == epullgCYL && groupIndex == 0))
+                    if (coordParams.dim[d]
+                        && !(coordParams.eGeom == PullGroupGeometry::Cylinder && groupIndex == 0))
                     {
                         dimUsed[d] = true;
                     }

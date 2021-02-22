@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 #include "modularsimulatorinterfaces.h"
@@ -193,7 +194,7 @@ private:
      * Used if FEP is off, since do_force
      * requires lambda to be allocated anyway
      */
-    std::array<real, efptNR> lambda_;
+    gmx::EnumerationArray<FreeEnergyPerturbationType, real> lambda_;
 
     // Access to ISimulator data
     //! Handles logging.

@@ -44,10 +44,11 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
-
-struct warninp;
-typedef warninp* warninp_t;
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -166,6 +167,7 @@ int get_einp(std::vector<t_inpfile>* inp, const char* name);
 /*! \brief Read option from input and return corresponding enum value
  *
  * If the option is not set, return the first value of the enum as default.
+ * Defined here so we don't need to instantiate the templates in the source file.
  *
  * \tparam EnumType  The type of enum to be returned
  * \param[in]  inp   The input file vector
@@ -174,7 +176,52 @@ int get_einp(std::vector<t_inpfile>* inp, const char* name);
  * \return  Enum value corresponding to read input
  */
 template<typename EnumType>
-EnumType getEnum(std::vector<t_inpfile>* inp, const char* name, warninp* wi);
+EnumType getEnum(std::vector<t_inpfile>* inp, const char* name, warninp* wi)
+{
+    // If there's no valid option, we'll use the EnumType::Default.
+    // Note, this assumes the enum is zero based, which is also assumed by
+    // EnumerationWrapper and EnumerationArray.
+    const auto  defaultEnumValue = EnumType::Default;
+    const auto& defaultName      = enumValueToString(defaultEnumValue);
+    // Get index of option in input
+    const auto ii = get_einp(inp, name);
+    if (ii == -1)
+    {
+        // If the option wasn't set, we return EnumType::Default
+        inp->back().value_.assign(defaultName);
+        return defaultEnumValue;
+    }
+
+    // Check if option string can be mapped to a valid enum value
+    const auto* optionString = (*inp)[ii].value_.c_str();
+    for (auto enumValue : gmx::EnumerationWrapper<EnumType>{})
+    {
+        if (gmx_strcasecmp_min(enumValueToString(enumValue), optionString) == 0)
+        {
+            return enumValue;
+        }
+    }
+
+    // If we get here, the option set is invalid. Print error.
+    std::string errorMessage = gmx::formatString(
+            "Invalid enum '%s' for variable %s, using '%s'\n", optionString, name, defaultName);
+    errorMessage += gmx::formatString("Next time, use one of:");
+    for (auto enumValue : gmx::EnumerationWrapper<EnumType>{})
+    {
+        errorMessage += gmx::formatString(" '%s'", enumValueToString(enumValue));
+    }
+    if (wi != nullptr)
+    {
+        warning_error(wi, errorMessage);
+    }
+    else
+    {
+        fprintf(stderr, "%s\n", errorMessage.c_str());
+    }
+    (*inp)[ii].value_.assign(defaultName);
+    return defaultEnumValue;
+}
+
 
 //! Replace for macro CCTYPE, prints comment string after newline
 void printStringNewline(std::vector<t_inpfile>* inp, const char* line);

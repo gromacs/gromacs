@@ -37,6 +37,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/arrayref.h"
 #include "mdebin_bar.h"
 
 #include <cassert>
@@ -384,7 +385,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
     int       i, j, n;
     double*   lambda_vec;
     int       ndhmax = ir->nstenergy / ir->nstcalcenergy;
-    t_lambda* fep    = ir->fepvals;
+    t_lambda* fep    = ir->fepvals.get();
 
     dhc->temperature    = ir->opts.ref_t[0]; /* only store system temperature */
     dhc->start_time     = 0.;
@@ -402,7 +403,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         /* create the native lambda vectors */
         dhc->lambda_index = fep->init_fep_state;
         dhc->n_lambda_vec = 0;
-        for (i = 0; i < efptNR; i++)
+        for (auto i : keysOf(fep->separate_dvdl))
         {
             if (fep->separate_dvdl[i])
             {
@@ -412,11 +413,11 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         snew(dhc->native_lambda_vec, dhc->n_lambda_vec);
         snew(dhc->native_lambda_components, dhc->n_lambda_vec);
         j = 0;
-        for (i = 0; i < efptNR; i++)
+        for (auto i : keysOf(fep->separate_dvdl))
         {
             if (fep->separate_dvdl[i])
             {
-                dhc->native_lambda_components[j] = i;
+                dhc->native_lambda_components[j] = static_cast<int>(i);
                 if (fep->init_fep_state >= 0 && fep->init_fep_state < fep->n_lambda)
                 {
                     dhc->native_lambda_vec[j] = fep->all_lambda[i][fep->init_fep_state];
@@ -460,9 +461,9 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         /* first count the number of states */
 
         /* add the dhdl's */
-        if (fep->dhdl_derivatives == edhdlderivativesYES)
+        if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
         {
-            for (i = 0; i < efptNR; i++)
+            for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (ir->fepvals->separate_dvdl[i])
                 {
@@ -479,13 +480,13 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         {
             /* include one more for the specification of the state, by lambda or
                fep_state*/
-            if (ir->expandedvals->elmcmove > elmcmoveNO)
+            if (ir->expandedvals->elmcmove > LambdaMoveCalculation::No)
             {
                 dhc->ndh += 1;
                 bExpanded = TRUE;
             }
             /* whether to print energies */
-            if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
+            if (ir->fepvals->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
             {
                 dhc->ndh += 1;
                 bEnergy = TRUE;
@@ -525,10 +526,10 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         }
         /* add the dhdl's */
         n_lambda_components = 0;
-        if (fep->dhdl_derivatives == edhdlderivativesYES)
+        if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
         {
             dhc->dh_dhdl = dhc->dh + n;
-            for (i = 0; i < efptNR; i++)
+            for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (ir->fepvals->separate_dvdl[i])
                 {
@@ -548,9 +549,9 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         }
         else
         {
-            for (i = 0; i < efptNR; i++)
+            for (auto i : keysOf(fep->separate_dvdl))
             {
-                if (ir->fepvals->separate_dvdl[i])
+                if (fep->separate_dvdl[i])
                 {
                     n_lambda_components++; /* count the components */
                 }
@@ -563,9 +564,9 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         {
             int k = 0;
 
-            for (j = 0; j < efptNR; j++)
+            for (auto j : keysOf(fep->separate_dvdl))
             {
-                if (ir->fepvals->separate_dvdl[j])
+                if (fep->separate_dvdl[j])
                 {
                     lambda_vec[k++] = fep->all_lambda[j][i];
                 }
@@ -611,13 +612,13 @@ void done_mde_delta_h_coll(t_mde_delta_h_coll* dhc)
 }
 
 /* add a bunch of samples - note fep_state is double to allow for better data storage */
-void mde_delta_h_coll_add_dh(t_mde_delta_h_coll* dhc,
-                             double              fep_state,
-                             double              energy,
-                             double              pV,
-                             double*             dhdl,
-                             double*             foreign_dU,
-                             double              time)
+void mde_delta_h_coll_add_dh(t_mde_delta_h_coll*   dhc,
+                             double                fep_state,
+                             double                energy,
+                             double                pV,
+                             gmx::ArrayRef<double> dhdl,
+                             double*               foreign_dU,
+                             double                time)
 {
     int i;
 

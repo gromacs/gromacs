@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,7 +119,7 @@ void ewald_LRcorrection(const int         numAtomsLocal,
     real boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
     switch (ir.ewald_geometry)
     {
-        case eewg3D:
+        case EwaldGeometry::ThreeD:
             if (ir.epsilon_surface != 0)
             {
                 dipole_coeff = 2 * M_PI * ONE_4PI_EPS0
@@ -131,7 +131,7 @@ void ewald_LRcorrection(const int         numAtomsLocal,
                 }
             }
             break;
-        case eewg3DC:
+        case EwaldGeometry::ThreeDC:
             dipole_coeff = 2 * M_PI * one_4pi_eps / boxVolume;
             dipcorrA[ZZ] = 2 * dipole_coeff * mutot[0][ZZ];
             dipcorrB[ZZ] = 2 * dipole_coeff * mutot[1][ZZ];
@@ -195,11 +195,11 @@ void ewald_LRcorrection(const int         numAtomsLocal,
              */
             if (dipole_coeff != 0)
             {
-                if (ir.ewald_geometry == eewg3D)
+                if (ir.ewald_geometry == EwaldGeometry::ThreeD)
                 {
                     Vdipole[q] = dipole_coeff * iprod(mutot[q], mutot[q]);
                 }
-                else if (ir.ewald_geometry == eewg3DC)
+                else if (ir.ewald_geometry == EwaldGeometry::ThreeDC)
                 {
                     Vdipole[q] = dipole_coeff * mutot[q][ZZ] * mutot[q][ZZ];
 
@@ -244,7 +244,7 @@ void ewald_LRcorrection(const int         numAtomsLocal,
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
         if (MASTER(cr) && thread == 0)
         {
-            if (ir.epsilon_surface > 0 || ir.ewald_geometry == eewg3DC)
+            if (ir.epsilon_surface > 0 || ir.ewald_geometry == EwaldGeometry::ThreeDC)
             {
                 fprintf(debug,
                         "Total dipole correction: Vdipole=%g\n",

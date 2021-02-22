@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,31 +45,33 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+enum class DistanceRestraintWeighting : int;
+
 typedef real rvec5[5];
 
 /* Distance restraining stuff */
 typedef struct t_disresdata
 {
-    int      dr_weighting; /* Weighting of pairs in one restraint              */
-    gmx_bool dr_bMixed;    /* Use sqrt of the instantaneous times              *
-                            * the time averaged violation                      */
-    real dr_fc;            /* Force constant for disres,                       *
-                            * which is multiplied by a (possibly)              *
-                            * different factor for each restraint              */
-    real  dr_tau;          /* Time constant for disres		          */
-    real  ETerm;           /* multiplication factor for time averaging         */
-    real  ETerm1;          /* 1 - ETerm1                                       */
-    real  exp_min_t_tau;   /* Factor for slowly switching on the force         */
-    int   nres;            /* The number of distance restraints                */
-    int   npair;           /* The number of distance restraint pairs           */
-    int   type_min;        /* The minimum iparam type index for restraints     */
-    real  sumviol;         /* The sum of violations                            */
-    real* rt;              /* The instantaneous distance (npair)               */
-    real* rm3tav;          /* The time averaged distance (npair)               */
-    real* Rtl_6;           /* The instantaneous r^-6 (nres)                    */
-    real* Rt_6;            /* The instantaneous ensemble averaged r^-6 (nres)  */
-    real* Rtav_6;          /* The time and ensemble averaged r^-6 (nres)       */
-    int   nsystems;        /* The number of systems for ensemble averaging     */
+    DistanceRestraintWeighting dr_weighting; /* Weighting of pairs in one restraint              */
+    gmx_bool                   dr_bMixed;    /* Use sqrt of the instantaneous times              *
+                                              * the time averaged violation                      */
+    real dr_fc;                              /* Force constant for disres,                       *
+                                              * which is multiplied by a (possibly)              *
+                                              * different factor for each restraint              */
+    real  dr_tau;                            /* Time constant for disres		          */
+    real  ETerm;                             /* multiplication factor for time averaging         */
+    real  ETerm1;                            /* 1 - ETerm1                                       */
+    real  exp_min_t_tau;                     /* Factor for slowly switching on the force         */
+    int   nres;                              /* The number of distance restraints                */
+    int   npair;                             /* The number of distance restraint pairs           */
+    int   type_min;                          /* The minimum iparam type index for restraints     */
+    real  sumviol;                           /* The sum of violations                            */
+    real* rt;                                /* The instantaneous distance (npair)               */
+    real* rm3tav;                            /* The time averaged distance (npair)               */
+    real* Rtl_6;                             /* The instantaneous r^-6 (nres)                    */
+    real* Rt_6;                              /* The instantaneous ensemble averaged r^-6 (nres)  */
+    real* Rtav_6;                            /* The time and ensemble averaged r^-6 (nres)       */
+    int   nsystems;                          /* The number of systems for ensemble averaging     */
 
     /* TODO: Implement a proper solution for parallel disre indexing */
     const t_iatom* forceatomsStart; /* Pointer to the start of the disre forceatoms */

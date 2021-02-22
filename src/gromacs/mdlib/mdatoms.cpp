@@ -160,7 +160,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
             md->haveVsites = TRUE;
         }
 
-        if (ir.efep != efepNO && PERTURBED(*atom))
+        if (ir.efep != FreeEnergyPerturbationType::No && PERTURBED(*atom))
         {
             md->nPerturbed++;
             if (atom->mB != atom->m)
@@ -181,7 +181,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
     md->tmassA = totalMassA;
     md->tmassB = totalMassB;
 
-    if (ir.efep != efepNO && fp)
+    if (ir.efep != FreeEnergyPerturbationType::No && fp)
     {
         fprintf(fp,
                 "There are %d atoms and %d charges for free energy perturbation\n",
@@ -353,7 +353,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
                 mA = 1.0;
                 mB = 1.0;
             }
-            else if (ir->eI == eiBD)
+            else if (ir->eI == IntegrationAlgorithm::BD)
             {
                 /* With BD the physical masses are irrelevant.
                  * To keep the code simple we use most of the normal MD code path

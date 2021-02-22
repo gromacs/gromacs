@@ -592,7 +592,8 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage += "Multiple time stepping is not supported.\n";
     }
 
-    if (inputrec.eConstrAlg == econtSHAKE && hasAnyConstraints && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
+    if (inputrec.eConstrAlg == ConstraintAlgorithm::Shake && hasAnyConstraints
+        && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
     {
         errorMessage += "SHAKE constraints are not supported.\n";
     }
@@ -613,7 +614,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     {
         errorMessage += "Only a CUDA build is supported.\n";
     }
-    if (inputrec.eI != eiMD)
+    if (inputrec.eI != IntegrationAlgorithm::MD)
     {
         errorMessage += "Only the md integrator is supported.\n";
     }
@@ -650,7 +651,8 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
     }
-    if (inputrec.efep != efepNO && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop)))
+    if (inputrec.efep != FreeEnergyPerturbationType::No
+        && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop)))
     {
         errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
     }
@@ -663,7 +665,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     {
         errorMessage += "Replica exchange simulations are not supported.\n";
     }
-    if (inputrec.eSwapCoords != eswapNO)
+    if (inputrec.eSwapCoords != SwapType::No)
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
     }

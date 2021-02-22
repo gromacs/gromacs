@@ -84,7 +84,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     energyReductionStep_(-1),
     virialReductionStep_(-1),
     vvSchedulingStep_(-1),
-    doStopCM_(inputrec->comm_mode != ecmNO),
+    doStopCM_(inputrec->comm_mode != ComRemovalAlgorithm::No),
     nstcomm_(inputrec->nstcomm),
     nstglobalcomm_(nstglobalcomm),
     lastStep_(inputrec->nsteps + inputrec->init_step),
@@ -136,8 +136,9 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         auto v = statePropagatorData_->velocitiesView();
         // At initialization, do not pass x with acceleration-correction mode
         // to avoid (incorrect) correction of the initial coordinates.
-        auto x = vcm_.mode == ecmLINEAR_ACCELERATION_CORRECTION ? ArrayRefWithPadding<RVec>()
-                                                                : statePropagatorData_->positionsView();
+        auto x = vcm_.mode == ComRemovalAlgorithm::LinearAccelerationCorrection
+                         ? ArrayRefWithPadding<RVec>()
+                         : statePropagatorData_->positionsView();
         process_and_stopcm_grp(
                 fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(), v.unpaddedArrayRef());
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);

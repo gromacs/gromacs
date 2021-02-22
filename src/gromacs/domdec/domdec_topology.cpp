@@ -751,7 +751,7 @@ void dd_make_reverse_top(FILE*                           fplog,
                                       !dd->comm->systemInfo.haveSplitConstraints,
                                       !dd->comm->systemInfo.haveSplitSettles);
 
-    dd->reverse_top = new gmx_reverse_top_t(*mtop, ir->efep != efepNO, rtOptions);
+    dd->reverse_top = new gmx_reverse_top_t(*mtop, ir->efep != FreeEnergyPerturbationType::No, rtOptions);
 
     dd->nbonded_global = dd->reverse_top->numInteractionsToCheck;
 

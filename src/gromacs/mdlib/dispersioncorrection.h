@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,9 @@ struct interaction_const_t;
 struct t_forcerec;
 struct t_forcetable;
 struct t_inputrec;
-
+enum class DispersionCorrectionType : int;
+enum class VanDerWaalsType : int;
+enum class FreeEnergyPerturbationType : int;
 namespace gmx
 {
 template<typename>
@@ -177,11 +179,11 @@ private:
     bool correctFullInteraction() const;
 
     //! Type of dispersion correction
-    int eDispCorr_;
+    DispersionCorrectionType eDispCorr_;
     //! Type of Van der Waals interaction
-    int vdwType_;
+    VanDerWaalsType vdwType_;
     //! Free-energy perturbation
-    int eFep_;
+    FreeEnergyPerturbationType eFep_;
     //! Topology parameters
     TopologyParams topParams_;
     //! Interaction parameters

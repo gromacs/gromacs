@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -331,8 +331,8 @@ static real free_energy_evaluate_single(real                                    
                     + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
     }
 
-    dvdl[efptCOUL] += dvdl_coul;
-    dvdl[efptVDW] += dvdl_vdw;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)] += dvdl_coul;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)] += dvdl_vdw;
 
     *velectot = velecsum;
     *vvdwtot  = vvdwsum;
@@ -389,13 +389,13 @@ static real do_pairs_general(int                 ftype,
             gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", ftype);
     }
 
-    if (fr->efep != efepNO)
+    if (fr->efep != FreeEnergyPerturbationType::No)
     {
         /* Lambda factor for state A=1-lambda and B=lambda */
-        LFC[0] = 1.0 - lambda[efptCOUL];
-        LFV[0] = 1.0 - lambda[efptVDW];
-        LFC[1] = lambda[efptCOUL];
-        LFV[1] = lambda[efptVDW];
+        LFC[0] = 1.0 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+        LFV[0] = 1.0 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+        LFC[1] = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+        LFV[1] = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
 
         /*derivative of the lambda factor for state A and B */
         DLF[0] = -1;
@@ -439,7 +439,7 @@ static real do_pairs_general(int                 ftype,
         switch (ftype)
         {
             case F_LJ14:
-                bFreeEnergy = (fr->efep != efepNO
+                bFreeEnergy = (fr->efep != FreeEnergyPerturbationType::No
                                && (((md->nPerturbed != 0) && (md->bPerturbed[ai] || md->bPerturbed[aj]))
                                    || iparams[itype].lj14.c6A != iparams[itype].lj14.c6B
                                    || iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
@@ -684,7 +684,7 @@ void do_pairs(int                      ftype,
               gmx_grppairener_t*       grppener,
               int*                     global_atom_index)
 {
-    if (ftype == F_LJ14 && fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype)
+    if (ftype == F_LJ14 && fr->ic->vdwtype != VanDerWaalsType::User && !EEL_USER(fr->ic->eeltype)
         && !havePerturbedInteractions && (!stepWork.computeVirial && !stepWork.computeEnergy))
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.

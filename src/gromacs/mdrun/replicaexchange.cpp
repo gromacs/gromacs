@@ -248,7 +248,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
      * but it does guarantee that we can perform replica exchange.
      */
     check_multi_int(fplog, ms, numAtomsInSystem, "the number of atoms", FALSE);
-    check_multi_int(fplog, ms, ir->eI, "the integrator", FALSE);
+    check_multi_int(fplog, ms, static_cast<int>(ir->eI), "the integrator", FALSE);
     check_multi_int64(fplog, ms, ir->init_step + ir->nsteps, "init_step+nsteps", FALSE);
     const int nst = replExParams.exchangeInterval;
     check_multi_int64(
@@ -256,7 +256,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     check_multi_int(fplog, ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
     check_multi_int(fplog, ms, static_cast<int>(ir->epc), "the pressure coupling", FALSE);
-    check_multi_int(fplog, ms, ir->efep, "free energy", FALSE);
+    check_multi_int(fplog, ms, static_cast<int>(ir->efep), "free energy", FALSE);
     check_multi_int(fplog, ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
 
     re->temp = ir->opts.ref_t[0];
@@ -275,7 +275,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 
     re->type = -1;
     bTemp    = repl_quantity(ms, re, ereTEMP, re->temp);
-    if (ir->efep != efepNO)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         bLambda = repl_quantity(ms, re, ereLAMBDA, static_cast<real>(ir->fepvals->init_fep_state));
     }
@@ -318,7 +318,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     if (re->bNPT)
     {
         snew(re->pres, re->nrepl);
-        if (ir->epct == epctSURFACETENSION)
+        if (ir->epct == PressureCouplingType::SurfaceTension)
         {
             pres = ir->ref_p[ZZ][ZZ];
         }

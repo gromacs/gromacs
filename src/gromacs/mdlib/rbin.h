@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,7 @@ void reset_bin(t_bin* b);
 int add_binr(t_bin* b, int nr, const real r[]);
 int add_binr(t_bin* b, gmx::ArrayRef<const real> r);
 int add_bind(t_bin* b, int nr, const double r[]);
+int add_bind(t_bin* b, gmx::ArrayRef<const double> r);
 /* Add reals to the bin. Returns index */
 
 void sum_bin(t_bin* b, const t_commrec* cr);
@@ -69,6 +70,7 @@ void sum_bin(t_bin* b, const t_commrec* cr);
 void extract_binr(t_bin* b, int index, int nr, real r[]);
 void extract_binr(t_bin* b, int index, gmx::ArrayRef<real> r);
 void extract_bind(t_bin* b, int index, int nr, double r[]);
+void extract_bind(t_bin* b, int index, gmx::ArrayRef<double> r);
 /* Extract values from the bin, starting from index (see add_bin) */
 
 #endif

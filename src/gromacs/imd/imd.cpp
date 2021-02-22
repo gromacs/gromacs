@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1286,7 +1286,8 @@ static void imd_check_integrator_parallel(const t_inputrec* ir, const t_commrec*
 {
     if (PAR(cr))
     {
-        if (((ir->eI) == eiSteep) || ((ir->eI) == eiCG) || ((ir->eI) == eiLBFGS) || ((ir->eI) == eiNM))
+        if (((ir->eI) == IntegrationAlgorithm::Steep) || ((ir->eI) == IntegrationAlgorithm::CG)
+            || ((ir->eI) == IntegrationAlgorithm::LBFGS) || ((ir->eI) == IntegrationAlgorithm::NM))
         {
             gmx_fatal(FARGS,
                       "%s Energy minimization via steep, CG, lbfgs and nm in parallel is currently "
@@ -1343,7 +1344,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
                         "%s Integrator '%s' is not supported for Interactive Molecular Dynamics, "
                         "running normally instead",
                         IMDstr,
-                        ei_names[ir->eI]);
+                        enumValueToString(ir->eI));
         return session;
     }
     if (isMultiSim(ms))

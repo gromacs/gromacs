@@ -39,6 +39,7 @@
 
 #include <vector>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/real.h"
 

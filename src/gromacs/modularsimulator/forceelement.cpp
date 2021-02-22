@@ -124,7 +124,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     constr_(constr),
     enforcedRotation_(enforcedRotation)
 {
-    lambda_.fill(0);
+    std::fill(lambda_.begin(), lambda_.end(), 0);
 
     if (doShellFC_ && !DOMAINDECOMP(cr))
     {

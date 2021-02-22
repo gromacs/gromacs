@@ -357,7 +357,7 @@ static void dump_viol(FILE* log, int ndr, t_dr_stats* drs, gmx_bool bLinear)
         fprintf(log,
                 "%6d%5s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n",
                 drs[i].label,
-                yesno_names[drs[i].bCore],
+                booleanValueToString(drs[i].bCore),
                 drs[i].up1,
                 drs[i].r,
                 drs[i].rT3,
@@ -806,7 +806,7 @@ int gmx_disre(int argc, char* argv[])
     }
 
     gmx_localtop_t top(topInfo.mtop()->ffparams);
-    gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
+    gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != FreeEnergyPerturbationType::No);
     const InteractionDefinitions& idef = top.idef;
 
     pbc_null = nullptr;

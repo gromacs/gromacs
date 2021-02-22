@@ -85,7 +85,7 @@ enum class NonbondedResource : int
  */
 static bool nbnxn_simd_supported(const gmx::MDLogger& mdlog, const t_inputrec& inputrec)
 {
-    if (inputrec.vdwtype == evdwPME && inputrec.ljpme_combination_rule == eljpmeLB)
+    if (inputrec.vdwtype == VanDerWaalsType::Pme && inputrec.ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* LJ PME with LB combination rule does 7 mesh operations.
          * This so slow that we don't compile SIMD non-bonded kernels
@@ -344,17 +344,18 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 
 static int getENbnxnInitCombRule(const t_forcerec& forcerec)
 {
-    if (forcerec.ic->vdwtype == evdwCUT
-        && (forcerec.ic->vdw_modifier == eintmodNONE || forcerec.ic->vdw_modifier == eintmodPOTSHIFT)
+    if (forcerec.ic->vdwtype == VanDerWaalsType::Cut
+        && (forcerec.ic->vdw_modifier == InteractionModifiers::None
+            || forcerec.ic->vdw_modifier == InteractionModifiers::PotShift)
         && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
     {
         /* Plain LJ cut-off: we can optimize with combination rules */
         return enbnxninitcombruleDETECT;
     }
-    else if (forcerec.ic->vdwtype == evdwPME)
+    else if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
     {
         /* LJ-PME: we need to use a combination rule for the grid */
-        if (forcerec.ljpme_combination_rule == eljpmeGEOM)
+        if (forcerec.ljpme_combination_rule == LongRangeVdW::Geom)
         {
             return enbnxninitcombruleGEOM;
         }
@@ -405,7 +406,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     const bool haveMultipleDomains = havePPDomainDecomposition(commrec);
 
-    bool bFEP_NonBonded = (forcerec.efep != efepNO) && haveFepPerturbedNBInteractions(mtop);
+    bool bFEP_NonBonded = (forcerec.efep != FreeEnergyPerturbationType::No)
+                          && haveFepPerturbedNBInteractions(mtop);
     PairlistParams pairlistParams(
             kernelSetup.kernelType, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
 

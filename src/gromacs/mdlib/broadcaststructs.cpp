@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,11 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
         {
             switch (i)
             {
-                case estLAMBDA: nblock_bc(communicator, efptNR, state->lambda.data()); break;
+                case estLAMBDA:
+                    nblock_bc(communicator,
+                              static_cast<int>(FreeEnergyPerturbationCouplingType::Count),
+                              state->lambda.data());
+                    break;
                 case estFEPSTATE: block_bc(communicator, state->fep_state); break;
                 case estBOX: block_bc(communicator, state->box); break;
                 case estX: bcastPaddedRVecVector(communicator, &state->x, state->natoms); break;

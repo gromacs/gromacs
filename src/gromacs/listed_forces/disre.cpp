@@ -138,7 +138,7 @@ void init_disres(FILE*                 fplog,
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        if (nmol > 1 && !(*il)[F_DISRES].empty() && ir->eDisre != edrEnsemble)
+        if (nmol > 1 && !(*il)[F_DISRES].empty() && ir->eDisre != DistanceRestraintRefinement::Ensemble)
         {
             gmx_fatal(FARGS,
                       "NMR distance restraints with multiple copies of the same molecule are "
@@ -158,7 +158,7 @@ void init_disres(FILE*                 fplog,
             npair = mtop->ffparams.iparams[type].disres.npair;
             if (np == npair)
             {
-                dd->nres += (ir->eDisre == edrEnsemble ? 1 : nmol);
+                dd->nres += (ir->eDisre == DistanceRestraintRefinement::Ensemble ? 1 : nmol);
                 dd->npair += nmol * npair;
                 np = 0;
 
@@ -440,14 +440,13 @@ real ta_disres(int              nfa,
     real     tav_viol_Rtav7, instant_viol_Rtav7;
     real     up1, up2, low;
     gmx_bool bConservative, bMixed, bViolation;
-    int      dr_weighting;
     gmx_bool dr_bMixed;
 
-    dr_weighting = disresdata->dr_weighting;
-    dr_bMixed    = disresdata->dr_bMixed;
-    Rtl_6        = disresdata->Rtl_6;
-    Rt_6         = disresdata->Rt_6;
-    Rtav_6       = disresdata->Rtav_6;
+    DistanceRestraintWeighting dr_weighting = disresdata->dr_weighting;
+    dr_bMixed                               = disresdata->dr_bMixed;
+    Rtl_6                                   = disresdata->Rtl_6;
+    Rt_6                                    = disresdata->Rt_6;
+    Rtav_6                                  = disresdata->Rtav_6;
 
     tav_viol = instant_viol = mixed_viol = tav_viol_Rtav7 = instant_viol_Rtav7 = 0;
 
@@ -479,7 +478,7 @@ real ta_disres(int              nfa,
         /* save some flops when there is only one pair */
         if (ip[type].disres.type != 2)
         {
-            bConservative = (dr_weighting == edrwConservative) && (npair > 1);
+            bConservative = (dr_weighting == DistanceRestraintWeighting::Conservative) && (npair > 1);
             bMixed        = dr_bMixed;
             Rt            = gmx::invsixthroot(Rt_6[res]);
             Rtav          = gmx::invsixthroot(Rtav_6[res]);

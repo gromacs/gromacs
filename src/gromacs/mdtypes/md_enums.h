@@ -60,8 +60,20 @@
  */
 const char* enum_name(int index, int max_index, const char* const names[]);
 
-//! Boolean strings no or yes
-extern const char* yesno_names[BOOL_NR + 1];
+/*! \brief Enum for setting answer to yes or no
+ */
+enum class Boolean : int
+{
+    No,
+    Yes,
+    Count,
+    Default = No
+};
+
+//! Return name of boolean selection.
+const char* enumValueToString(Boolean enumValue);
+//! Return name of boolean selection for actual bool.
+const char* booleanValueToString(bool value);
 
 //! \brief The two compartments for CompEL setups.
 enum eCompartment
@@ -146,17 +158,17 @@ enum
 };
 
 //! Relative coordinate scaling type for position restraints.
-enum
+enum class RefCoordScaling : int
 {
-    erscNO,
-    erscALL,
-    erscCOM,
-    erscNR
+    No,
+    All,
+    Com,
+    Count,
+    Default = No
 };
-//! String corresponding to relativ coordinate scaling.
-extern const char* erefscaling_names[erscNR + 1];
-//! Macro to select correct coordinate scaling string.
-#define EREFSCALINGTYPE(e) enum_name(e, erscNR, erefscaling_names)
+
+//! String corresponding to relative coordinate scaling.
+const char* enumValueToString(RefCoordScaling enumValue);
 
 //! Trotter decomposition extended variable parts.
 enum
@@ -187,132 +199,132 @@ enum
 };
 
 //! Pressure coupling type
-enum
+enum class PressureCouplingType : int
 {
-    epctISOTROPIC,
-    epctSEMIISOTROPIC,
-    epctANISOTROPIC,
-    epctSURFACETENSION,
-    epctNR
+    Isotropic,
+    SemiIsotropic,
+    Anisotropic,
+    SurfaceTension,
+    Count,
+    Default = Isotropic
 };
 //! String corresponding to pressure coupling type
-extern const char* epcoupltype_names[epctNR + 1];
-//! Macro to select the right string for pcoupl type
-#define EPCOUPLTYPETYPE(e) enum_name(e, epctNR, epcoupltype_names)
+const char* enumValueToString(PressureCouplingType enumValue);
 
 //! \\brief Cutoff scheme
-enum
+enum class CutoffScheme : int
 {
-    ecutsVERLET,
-    ecutsGROUP,
-    ecutsNR
+    Verlet,
+    Group,
+    Count,
+    Default = Verlet
 };
 //! String corresponding to cutoff scheme
-extern const char* ecutscheme_names[ecutsNR + 1];
-//! Macro to select the right string for cutoff scheme
-#define ECUTSCHEME(e) enum_name(e, ecutsNR, ecutscheme_names)
+const char* enumValueToString(CutoffScheme enumValue);
 
 /*! \brief Coulomb / VdW interaction modifiers.
  *
  * grompp replaces eintmodPOTSHIFT_VERLET_UNSUPPORTED by eintmodPOTSHIFT.
  * Exactcutoff is only used by Reaction-field-zero, and is not user-selectable.
  */
-enum eintmod
+enum class InteractionModifiers : int
 {
-    eintmodPOTSHIFT_VERLET_UNSUPPORTED,
-    eintmodPOTSHIFT,
-    eintmodNONE,
-    eintmodPOTSWITCH,
-    eintmodEXACTCUTOFF,
-    eintmodFORCESWITCH,
-    eintmodNR
+    PotShiftVerletUnsupported,
+    PotShift,
+    None,
+    PotSwitch,
+    ExactCutoff,
+    ForceSwitch,
+    Count,
+    Default = PotShiftVerletUnsupported
 };
 //! String corresponding to interaction modifiers
-extern const char* eintmod_names[eintmodNR + 1];
-//! Macro to select the correct string for modifiers
-#define INTMODIFIER(e) enum_name(e, eintmodNR, eintmod_names)
+const char* enumValueToString(InteractionModifiers enumValue);
 
 /*! \brief Cut-off treatment for Coulomb */
-enum
+enum class CoulombInteractionType : int
 {
-    eelCUT,
-    eelRF,
-    eelGRF_NOTUSED,
-    eelPME,
-    eelEWALD,
-    eelP3M_AD,
-    eelPOISSON,
-    eelSWITCH,
-    eelSHIFT,
-    eelUSER,
-    eelGB_NOTUSED,
-    eelRF_NEC_UNSUPPORTED,
-    eelENCADSHIFT_NOTUSED,
-    eelPMEUSER,
-    eelPMESWITCH,
-    eelPMEUSERSWITCH,
-    eelRF_ZERO,
-    eelNR
+    Cut,
+    RF,
+    GRFNotused,
+    Pme,
+    Ewald,
+    P3mAD,
+    Poisson,
+    Switch,
+    Shift,
+    User,
+    GBNotused,
+    RFNecUnsupported,
+    EncadShiftNotused,
+    PmeUser,
+    PmeSwitch,
+    PmeUserSwitch,
+    RFZero,
+    Count,
+    Default = Cut
 };
 //! String corresponding to Coulomb treatment
-extern const char* eel_names[eelNR + 1];
-//! Macro for correct string for Coulomb treatment
-#define EELTYPE(e) enum_name(e, eelNR, eel_names)
+const char* enumValueToString(CoulombInteractionType enumValue);
 
 //! Ewald geometry.
-enum
+enum class EwaldGeometry : int
 {
-    eewg3D,
-    eewg3DC,
-    eewgNR
+    ThreeD,
+    ThreeDC,
+    Count,
+    Default = ThreeD
 };
 //! String corresponding to Ewald geometry
-extern const char* eewg_names[eewgNR + 1];
+const char* enumValueToString(EwaldGeometry enumValue);
 
 //! Macro telling us whether we use reaction field
-#define EEL_RF(e) \
-    ((e) == eelRF || (e) == eelGRF_NOTUSED || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO)
+#define EEL_RF(e)                                                                   \
+    ((e) == CoulombInteractionType::RF || (e) == CoulombInteractionType::GRFNotused \
+     || (e) == CoulombInteractionType::RFNecUnsupported || (e) == CoulombInteractionType::RFZero)
 
 //! Macro telling us whether we use PME
-#define EEL_PME(e) \
-    ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
+#define EEL_PME(e)                                                                             \
+    ((e) == CoulombInteractionType::Pme || (e) == CoulombInteractionType::PmeSwitch            \
+     || (e) == CoulombInteractionType::PmeUser || (e) == CoulombInteractionType::PmeUserSwitch \
+     || (e) == CoulombInteractionType::P3mAD)
 //! Macro telling us whether we use PME or full Ewald
-#define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)
+#define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == CoulombInteractionType::Ewald)
 //! Macro telling us whether we use full electrostatics of any sort
-#define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == eelPOISSON)
+#define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == CoulombInteractionType::Poisson)
 //! Macro telling us whether we use user defined electrostatics
-#define EEL_USER(e) ((e) == eelUSER || (e) == eelPMEUSER || (e) == (eelPMEUSERSWITCH))
+#define EEL_USER(e)                                                                \
+    ((e) == CoulombInteractionType::User || (e) == CoulombInteractionType::PmeUser \
+     || (e) == (CoulombInteractionType::PmeUserSwitch))
 
 //! Van der Waals interaction treatment
-enum
+enum class VanDerWaalsType : int
 {
-    evdwCUT,
-    evdwSWITCH,
-    evdwSHIFT,
-    evdwUSER,
-    evdwENCADSHIFT_UNUSED,
-    evdwPME,
-    evdwNR
+    Cut,
+    Switch,
+    Shift,
+    User,
+    EncadShiftUnused,
+    Pme,
+    Count,
+    Default = Cut
 };
 //! String corresponding to Van der Waals treatment
-extern const char* evdw_names[evdwNR + 1];
-//! Macro for selecting correct string for VdW treatment
-#define EVDWTYPE(e) enum_name(e, evdwNR, evdw_names)
+const char* enumValueToString(VanDerWaalsType enumValue);
 
 //! Type of long-range VdW treatment of combination rules
-enum
+enum class LongRangeVdW : int
 {
-    eljpmeGEOM,
-    eljpmeLB,
-    eljpmeNR
+    Geom,
+    LB,
+    Count,
+    Default = Geom
 };
 //! String for LJPME combination rule treatment
-extern const char* eljpme_names[eljpmeNR + 1];
-//! Macro for correct LJPME comb rule name
-#define ELJPMECOMBNAMES(e) enum_name(e, eljpmeNR, eljpme_names)
+const char* enumValueToString(LongRangeVdW enumValue);
 
 //! Macro to tell us whether we use LJPME
-#define EVDW_PME(e) ((e) == evdwPME)
+#define EVDW_PME(e) ((e) == VanDerWaalsType::Pme)
 
 /*! \brief Integrator algorithm
  *
@@ -322,462 +334,444 @@ extern const char* eljpme_names[eljpmeNR + 1];
  * eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy,
  * and the half step kinetic energy for temperature control
  */
-enum
+enum class IntegrationAlgorithm : int
 {
-    eiMD,
-    eiSteep,
-    eiCG,
-    eiBD,
-    eiSD2_REMOVED,
-    eiNM,
-    eiLBFGS,
-    eiTPI,
-    eiTPIC,
-    eiSD1,
-    eiVV,
-    eiVVAK,
-    eiMimic,
-    eiNR
+    MD,
+    Steep,
+    CG,
+    BD,
+    SD2Removed,
+    NM,
+    LBFGS,
+    TPI,
+    TPIC,
+    SD1,
+    VV,
+    VVAK,
+    Mimic,
+    Count,
+    Default = MD
 };
 //! Name of the integrator algorithm
-extern const char* ei_names[eiNR + 1];
-//! Macro returning integrator string
-#define EI(e) enum_name(e, eiNR, ei_names)
+const char* enumValueToString(IntegrationAlgorithm enumValue);
 //! Do we use MiMiC QM/MM?
-#define EI_MIMIC(e) ((e) == eiMimic)
+#define EI_MIMIC(e) ((e) == IntegrationAlgorithm::Mimic)
 //! Do we use velocity Verlet
-#define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
+#define EI_VV(e) ((e) == IntegrationAlgorithm::VV || (e) == IntegrationAlgorithm::VVAK)
 //! Do we use molecular dynamics
-#define EI_MD(e) ((e) == eiMD || EI_VV(e) || EI_MIMIC(e))
+#define EI_MD(e) ((e) == IntegrationAlgorithm::MD || EI_VV(e) || EI_MIMIC(e))
 //! Do we use stochastic dynamics
-#define EI_SD(e) ((e) == eiSD1)
+#define EI_SD(e) ((e) == IntegrationAlgorithm::SD1)
 //! Do we use any stochastic integrator
-#define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
+#define EI_RANDOM(e) (EI_SD(e) || (e) == IntegrationAlgorithm::BD)
 /*above integrators may not conserve momenta*/
 //! Do we use any type of dynamics
 #define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e))
 //! Or do we use minimization
-#define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
+#define EI_ENERGY_MINIMIZATION(e)                                          \
+    ((e) == IntegrationAlgorithm::Steep || (e) == IntegrationAlgorithm::CG \
+     || (e) == IntegrationAlgorithm::LBFGS)
 //! Do we apply test particle insertion
-#define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
+#define EI_TPI(e) ((e) == IntegrationAlgorithm::TPI || (e) == IntegrationAlgorithm::TPIC)
 //! Do we deal with particle velocities
 #define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
 
 //! Constraint algorithm
-enum
+enum class ConstraintAlgorithm : int
 {
-    econtLINCS,
-    econtSHAKE,
-    econtNR
+    Lincs,
+    Shake,
+    Count,
+    Default = Lincs
 };
 //! String corresponding to constraint algorithm
-extern const char* econstr_names[econtNR + 1];
-//! Macro to select the correct string
-#define ECONSTRTYPE(e) enum_name(e, econtNR, econstr_names)
+const char* enumValueToString(ConstraintAlgorithm enumValue);
 
 //! Distance restraint refinement algorithm
-enum
+enum class DistanceRestraintRefinement : int
 {
-    edrNone,
-    edrSimple,
-    edrEnsemble,
-    edrNR
+    None,
+    Simple,
+    Ensemble,
+    Count,
+    Default = None
 };
 //! String corresponding to distance restraint algorithm
-extern const char* edisre_names[edrNR + 1];
-//! Macro to select the right disre algorithm string
-#define EDISRETYPE(e) enum_name(e, edrNR, edisre_names)
+const char* enumValueToString(DistanceRestraintRefinement enumValue);
 
 //! Distance restraints weighting type
-enum
+enum class DistanceRestraintWeighting : int
 {
-    edrwConservative,
-    edrwEqual,
-    edrwNR
+    Conservative,
+    Equal,
+    Count,
+    Default = Conservative
 };
 //! String corresponding to distance restraint weighting
-extern const char* edisreweighting_names[edrwNR + 1];
-//! Macro corresponding to dr weighting
-#define EDISREWEIGHTING(e) enum_name(e, edrwNR, edisreweighting_names)
+const char* enumValueToString(DistanceRestraintWeighting enumValue);
 
 //! Combination rule algorithm.
-enum
+enum class CombinationRule : int
 {
-    eCOMB_NONE,
-    eCOMB_GEOMETRIC,
-    eCOMB_ARITHMETIC,
-    eCOMB_GEOM_SIG_EPS,
-    eCOMB_NR
+    None,
+    Geometric,
+    Arithmetic,
+    GeomSigEps,
+    Count,
+    Default = Geometric
 };
 //! String for combination rule algorithm
-extern const char* ecomb_names[eCOMB_NR + 1];
-//! Macro to select the comb rule string
-#define ECOMBNAME(e) enum_name(e, eCOMB_NR, ecomb_names)
+const char* enumValueToString(CombinationRule enumValue);
 
 //! Van der Waals potential.
-enum
+enum class VanDerWaalsPotential : int
 {
-    eNBF_NONE,
-    eNBF_LJ,
-    eNBF_BHAM,
-    eNBF_NR
+    None,
+    LJ,
+    Buckingham,
+    Count,
+    Default = LJ
 };
 //! String corresponding to Van der Waals potential
-extern const char* enbf_names[eNBF_NR + 1];
-//! Macro for correct VdW potential string
-#define ENBFNAME(e) enum_name(e, eNBF_NR, enbf_names)
+const char* enumValueToString(VanDerWaalsPotential enumValue);
 
 //! Simulated tempering methods.
-enum
+enum class SimulatedTempering : int
 {
-    esimtempGEOMETRIC,
-    esimtempEXPONENTIAL,
-    esimtempLINEAR,
-    esimtempNR
+    Geometric,
+    Exponential,
+    Linear,
+    Count,
+    Default = Geometric
 };
 //! String corresponding to simulated tempering
-extern const char* esimtemp_names[esimtempNR + 1];
-//! Macro for correct tempering string
-#define ESIMTEMP(e) enum_name(e, esimtempNR, esimtemp_names)
+const char* enumValueToString(SimulatedTempering enumValue);
 
 /*! \brief Free energy perturbation type
- *
- * efepNO, there are no evaluations at other states.
- * efepYES, treated equivalently to efepSTATIC.
- * efepSTATIC, then lambdas do not change during the simulation.
- * efepSLOWGROWTH, then the states change monotonically
- * throughout the simulation.
- * efepEXPANDED, then expanded ensemble simulations are occuring.
  */
-enum
+enum class FreeEnergyPerturbationType : int
 {
-    efepNO,
-    efepYES,
-    efepSTATIC,
-    efepSLOWGROWTH,
-    efepEXPANDED,
-    efepNR
+    //! there are no evaluations at other states
+    No,
+    //! treated equivalently to Static
+    Yes,
+    //! then lambdas do not change during the simulation
+    Static,
+    //! then the states change monotonically throughout the simulation
+    SlowGrowth,
+    //! then expanded ensemble simulations are occuring
+    Expanded,
+    Count,
+    Default = No
 };
 //! String corresponding to FEP type.
-extern const char* efep_names[efepNR + 1];
-//! Macro corresponding to FEP string.
-#define EFEPTYPE(e) enum_name(e, efepNR, efep_names)
+const char* enumValueToString(FreeEnergyPerturbationType enumValue);
 
 //! Free energy pertubation coupling types.
-enum
+enum class FreeEnergyPerturbationCouplingType : int
 {
-    efptFEP,
-    efptMASS,
-    efptCOUL,
-    efptVDW,
-    efptBONDED,
-    efptRESTRAINT,
-    efptTEMPERATURE,
-    efptNR
+    Fep,
+    Mass,
+    Coul,
+    Vdw,
+    Bonded,
+    Restraint,
+    Temperature,
+    Count,
+    Default = Fep
 };
 //! String for FEP coupling type
-extern const char* efpt_names[efptNR + 1];
-//! Long names for FEP coupling type
-extern const char* efpt_singular_names[efptNR + 1];
+const char* enumValueToString(FreeEnergyPerturbationCouplingType enumValue);
+//! String for FEP coupling type, singular mention.
+const char* enumValueToStringSingular(FreeEnergyPerturbationCouplingType enumValue);
 
 /*! \brief What to print for free energy calculations
  *
  * Printing the energy to the free energy dhdl file.
- * YES is an alias to TOTAL, and
+ * Yes is an alias to Total, and
  * will be converted in readir, so we never have to account for it in code.
  */
-enum
+enum class FreeEnergyPrintEnergy : int
 {
-    edHdLPrintEnergyNO,
-    edHdLPrintEnergyTOTAL,
-    edHdLPrintEnergyPOTENTIAL,
-    edHdLPrintEnergyYES,
-    edHdLPrintEnergyNR
+    No,
+    Total,
+    Potential,
+    Yes,
+    Count,
+    Default = No
 };
 //! String corresponding to printing of free energy
-extern const char* edHdLPrintEnergy_names[edHdLPrintEnergyNR + 1];
+const char* enumValueToString(FreeEnergyPrintEnergy enumValue);
 
 /*! \brief How the lambda weights are calculated
- *
- * elamstatsMETROPOLIS - using the metropolis criteria
- * elamstatsBARKER     - using the Barker critera for transition weights,
- *                       also called unoptimized Bennett
- * elamstatsMINVAR     - using Barker + minimum variance for weights
- * elamstatsWL         - Wang-Landu (using visitation counts)
- * elamstatsWWL        - Weighted Wang-Landau (using optimized Gibbs
- *                       weighted visitation counts)
  */
-enum
+enum class LambdaWeightCalculation : int
 {
-    elamstatsNO,
-    elamstatsMETROPOLIS,
-    elamstatsBARKER,
-    elamstatsMINVAR,
-    elamstatsWL,
-    elamstatsWWL,
-    elamstatsNR
+    //! don't calculate
+    No,
+    //! using the metropolis criteria
+    Metropolis,
+    //! using the Barker critera for transition weights, also called unoptimized Bennett
+    Barker,
+    //! using Barker + minimum variance for weights
+    Minvar,
+    //! Wang-Landu (using visitation counts)
+    WL,
+    //! Weighted Wang-Landau (using optimized Gibbs weighted visitation counts)
+    WWL,
+    Count,
+    Default = No
 };
 //! String corresponding to lambda weights
-extern const char* elamstats_names[elamstatsNR + 1];
+const char* enumValueToString(LambdaWeightCalculation enumValue);
 //! Macro telling us whether we use expanded ensemble
-#define ELAMSTATS_EXPANDED(e) ((e) > elamstatsNO)
+#define ELAMSTATS_EXPANDED(e) ((e) > LambdaWeightCalculation::No)
 //! Macro telling us whether we use some kind of Wang-Landau
-#define EWL(e) ((e) == elamstatsWL || (e) == elamstatsWWL)
+#define EWL(e) ((e) == LambdaWeightCalculation::WL || (e) == LambdaWeightCalculation::WWL)
 
 /*! \brief How moves in lambda are calculated
- *
- * elmovemcMETROPOLIS - using the Metropolis criteria, and 50% up and down
- * elmovemcBARKER     - using the Barker criteria, and 50% up and down
- * elmovemcGIBBS      - computing the transition using the marginalized
- *                      probabilities of the lambdas
- * elmovemcMETGIBBS   - computing the transition using the metropolized
- *                      version of Gibbs (Monte Carlo Strategies in
- *                      Scientific computing, Liu, p. 134)
  */
-enum
+enum class LambdaMoveCalculation : int
 {
-    elmcmoveNO,
-    elmcmoveMETROPOLIS,
-    elmcmoveBARKER,
-    elmcmoveGIBBS,
-    elmcmoveMETGIBBS,
-    elmcmoveNR
+    //! don't calculate move
+    No,
+    //! using the Metropolis criteria, and 50% up and down
+    Metropolis,
+    //! using the Barker criteria, and 50% up and down
+    Barker,
+    //! computing the transition using the marginalized probabilities of the lambdas
+    Gibbs,
+    /*! \brief
+     * using the metropolized version of Gibbs
+     *
+     * Monte Carlo Strategies in Scientific computing, Liu, p. 134
+     */
+    MetropolisGibbs,
+    Count,
+    Default = No
 };
 //! String corresponding to lambda moves
-extern const char* elmcmove_names[elmcmoveNR + 1];
+const char* enumValueToString(LambdaMoveCalculation enumValue);
 
 /*! \brief How we decide whether weights have reached equilibrium
- *
- * elmceqNO       - never stop, weights keep going
- * elmceqYES      - fix the weights from the beginning; no movement
- * elmceqWLDELTA  - stop when the WL-delta falls below a certain level
- * elmceqNUMATLAM - stop when we have a certain number of samples at
- *                  every step
- * elmceqSTEPS    - stop when we've run a certain total number of steps
- * elmceqSAMPLES  - stop when we've run a certain total number of samples
- * elmceqRATIO    - stop when the ratio of samples (lowest to highest)
- *                  is sufficiently large
  */
-enum
+enum class LambdaWeightWillReachEquilibrium : int
 {
-    elmceqNO,
-    elmceqYES,
-    elmceqWLDELTA,
-    elmceqNUMATLAM,
-    elmceqSTEPS,
-    elmceqSAMPLES,
-    elmceqRATIO,
-    elmceqNR
+    //! never stop, weights keep going
+    No,
+    //! fix the weights from the beginning; no movement
+    Yes,
+    //! stop when the WL-delta falls below a certain level
+    WLDelta,
+    //! stop when we have a certain number of samples at every step
+    NumAtLambda,
+    //! stop when we've run a certain total number of steps
+    Steps,
+    //! stop when we've run a certain total number of samples
+    Samples,
+    //! stop when the ratio of samples (lowest to highest) is sufficiently large
+    Ratio,
+    Count,
+    Default = No
 };
 //! String corresponding to equilibrium algorithm
-extern const char* elmceq_names[elmceqNR + 1];
+const char* enumValueToString(LambdaWeightWillReachEquilibrium enumValue);
 
 /*! \brief separate_dhdl_file selection
  *
  * NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool
+ * Why was this done this way, just .........
  */
-enum
+enum class SeparateDhdlFile : int
 {
-    esepdhdlfileYES,
-    esepdhdlfileNO,
-    esepdhdlfileNR
+    Yes,
+    No,
+    Count,
+    Default = Yes
 };
 //! String corresponding to separate DHDL file selection
-extern const char* separate_dhdl_file_names[esepdhdlfileNR + 1];
-//! Monster macro for DHDL file selection
-#define SEPDHDLFILETYPE(e) enum_name(e, esepdhdlfileNR, separate_dhdl_file_names)
+const char* enumValueToString(SeparateDhdlFile enumValue);
 
 /*! \brief dhdl_derivatives selection \
  *
  * NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool
+ * Why was this done this way, just .........
  */
-enum
+enum class DhDlDerivativeCalculation : int
 {
-    edhdlderivativesYES,
-    edhdlderivativesNO,
-    edhdlderivativesNR
+    Yes,
+    No,
+    Count,
+    Default = Yes
 };
 //! String for DHDL derivatives
-extern const char* dhdl_derivatives_names[edhdlderivativesNR + 1];
-//! YAMM (Yet another monster macro)
-#define DHDLDERIVATIVESTYPE(e) enum_name(e, edhdlderivativesNR, dhdl_derivatives_names)
+const char* enumValueToString(DhDlDerivativeCalculation enumValue);
 
 /*! \brief Solvent model
  *
  * Distinguishes classical water types with 3 or 4 particles
  */
-enum
+enum class SolventModel : int
 {
-    esolNO,
-    esolSPC,
-    esolTIP4P,
-    esolNR
+    No,
+    Spc,
+    Tip4p,
+    Count,
+    Default = Spc
 };
 //! String corresponding to solvent type
-extern const char* esol_names[esolNR + 1];
-//! Macro lest we print the wrong solvent model string
-#define ESOLTYPE(e) enum_name(e, esolNR, esol_names)
+const char* enumValueToString(SolventModel enumValue);
 
 //! Dispersion correction.
-enum
+enum class DispersionCorrectionType : int
 {
-    edispcNO,
-    edispcEnerPres,
-    edispcEner,
-    edispcAllEnerPres,
-    edispcAllEner,
-    edispcNR
+    No,
+    EnerPres,
+    Ener,
+    AllEnerPres,
+    AllEner,
+    Count,
+    Default = No
 };
 //! String corresponding to dispersion corrections
-extern const char* edispc_names[edispcNR + 1];
-//! Macro for dispcorr string
-#define EDISPCORR(e) enum_name(e, edispcNR, edispc_names)
+const char* enumValueToString(DispersionCorrectionType enumValue);
 
 //! Center of mass motion removal algorithm.
-enum
+enum class ComRemovalAlgorithm : int
 {
-    ecmLINEAR,
-    ecmANGULAR,
-    ecmNO,
-    ecmLINEAR_ACCELERATION_CORRECTION,
-    ecmNR
+    Linear,
+    Angular,
+    No,
+    LinearAccelerationCorrection,
+    Count,
+    Default = Linear
 };
 //! String corresponding to COM removal
-extern const char* ecm_names[ecmNR + 1];
-//! Macro for COM removal string
-#define ECOM(e) enum_name(e, ecmNR, ecm_names)
+const char* enumValueToString(ComRemovalAlgorithm enumValue);
 
 //! Algorithm for simulated annealing.
-enum
+enum class SimulatedAnnealing : int
 {
-    eannNO,
-    eannSINGLE,
-    eannPERIODIC,
-    eannNR
+    No,
+    Single,
+    Periodic,
+    Count,
+    Default = No
 };
 //! String for simulated annealing
-extern const char* eann_names[eannNR + 1];
-//! And macro for simulated annealing string
-#define EANNEAL(e) enum_name(e, eannNR, eann_names)
+const char* enumValueToString(SimulatedAnnealing enumValue);
 
 //! Wall types.
-enum
+enum class WallType : int
 {
-    ewt93,
-    ewt104,
-    ewtTABLE,
-    ewt126,
-    ewtNR
+    NineThree,
+    TenFour,
+    Table,
+    TwelveSix,
+    Count,
+    Default = NineThree
 };
 //! String corresponding to wall type
-extern const char* ewt_names[ewtNR + 1];
-//! Macro for wall type string
-#define EWALLTYPE(e) enum_name(e, ewtNR, ewt_names)
+const char* enumValueToString(WallType enumValue);
 
 //! Pulling algorithm.
-enum
+enum class PullingAlgorithm : int
 {
-    epullUMBRELLA,
-    epullCONSTRAINT,
-    epullCONST_F,
-    epullFLATBOTTOM,
-    epullFLATBOTTOMHIGH,
-    epullEXTERNAL,
-    epullNR
+    Umbrella,
+    Constraint,
+    ConstantForce,
+    FlatBottom,
+    FlatBottomHigh,
+    External,
+    Count,
+    Default = Umbrella
 };
 //! String for pulling algorithm
-extern const char* epull_names[epullNR + 1];
-//! Macro for pulling string
-#define EPULLTYPE(e) enum_name(e, epullNR, epull_names)
+const char* enumValueToString(PullingAlgorithm enumValue);
 
 //! Control of pull groups
-enum
+enum class PullGroupGeometry : int
 {
-    epullgDIST,
-    epullgDIR,
-    epullgCYL,
-    epullgDIRPBC,
-    epullgDIRRELATIVE,
-    epullgANGLE,
-    epullgDIHEDRAL,
-    epullgANGLEAXIS,
-    epullgNR
+    Distance,
+    Direction,
+    Cylinder,
+    DirectionPBC,
+    DirectionRelative,
+    Angle,
+    Dihedral,
+    AngleAxis,
+    Count,
+    Default = Distance
 };
 //! String for pull groups
-extern const char* epullg_names[epullgNR + 1];
-//! Macro for pull group string
-#define EPULLGEOM(e) enum_name(e, epullgNR, epullg_names)
+const char* enumValueToString(PullGroupGeometry enumValue);
 
 //! Enforced rotation groups.
-enum
+enum class EnforcedRotationGroupType : int
 {
-    erotgISO,
-    erotgISOPF,
-    erotgPM,
-    erotgPMPF,
-    erotgRM,
-    erotgRMPF,
-    erotgRM2,
-    erotgRM2PF,
-    erotgFLEX,
-    erotgFLEXT,
-    erotgFLEX2,
-    erotgFLEX2T,
-    erotgNR
+    Iso,
+    Isopf,
+    Pm,
+    Pmpf,
+    Rm,
+    Rmpf,
+    Rm2,
+    Rm2pf,
+    Flex,
+    Flext,
+    Flex2,
+    Flex2t,
+    Count,
+    Default = Iso
 };
 //! Rotation group names
-extern const char* erotg_names[erotgNR + 1];
-//! Macro for rot group names
-#define EROTGEOM(e) enum_name(e, erotgNR, erotg_names)
+const char* enumValueToString(EnforcedRotationGroupType enumValue);
 //! String for rotation group origin names
-extern const char* erotg_originnames[erotgNR + 1];
-//! Macro for rot group origin names
-#define EROTORIGIN(e) enum_name(e, erotgOriginNR, erotg_originnames)
+const char* enumValueToLongString(EnforcedRotationGroupType enumValue);
 
 //! Rotation group fitting type
-enum
+enum class RotationGroupFitting : int
 {
-    erotgFitRMSD,
-    erotgFitNORM,
-    erotgFitPOT,
-    erotgFitNR
+    Rmsd,
+    Norm,
+    Pot,
+    Count,
+    Default = Rmsd
 };
 //! String corresponding to rotation group fitting
-extern const char* erotg_fitnames[erotgFitNR + 1];
-//! Macro for rot group fit names
-#define EROTFIT(e) enum_name(e, erotgFitNR, erotg_fitnames)
+const char* enumValueToString(RotationGroupFitting enumValue);
 
 /*! \brief Direction along which ion/water swaps happen
  *
  * Part of "Computational Electrophysiology" (CompEL) setups
  */
-enum eSwaptype
+enum class SwapType : int
 {
-    eswapNO,
-    eswapX,
-    eswapY,
-    eswapZ,
-    eSwapTypesNR
+    No,
+    X,
+    Y,
+    Z,
+    Count,
+    Default = No
 };
 //! Names for swapping
-extern const char* eSwapTypes_names[eSwapTypesNR + 1];
-//! Macro for swapping string
-#define ESWAPTYPE(e) enum_name(e, eSwapTypesNR, eSwapTypes_names)
+const char* enumValueToString(SwapType enumValue);
 
 /*! \brief Swap group splitting type
  *
  * These are just the fixed groups we need for any setup. In t_swap's grp
  * entry after that follows the variable number of swap groups.
  */
-enum
+enum class SwapGroupSplittingType : int
 {
-    eGrpSplit0,
-    eGrpSplit1,
-    eGrpSolvent,
-    eSwapFixedGrpNR
+    Split0,
+    Split1,
+    Solvent,
+    Count,
+    Default = Solvent
 };
 //! String for swap group splitting
-extern const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
+const char* enumValueToString(SwapGroupSplittingType enumValue);
 
 /*! \brief Types of electrostatics calculations
  *
@@ -785,17 +779,18 @@ extern const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
  * Note that these do NOT necessarily correspond to the user selections
  * in the MDP file; many interactions for instance map to tabulated kernels.
  */
-enum gmx_nbkernel_elec
+enum class NbkernelElecType : int
 {
-    GMX_NBKERNEL_ELEC_NONE,
-    GMX_NBKERNEL_ELEC_COULOMB,
-    GMX_NBKERNEL_ELEC_REACTIONFIELD,
-    GMX_NBKERNEL_ELEC_CUBICSPLINETABLE,
-    GMX_NBKERNEL_ELEC_EWALD,
-    GMX_NBKERNEL_ELEC_NR
+    None,
+    Coulomb,
+    ReactionField,
+    CubicSplineTable,
+    Ewald,
+    Count,
+    Default = None
 };
 //! String corresponding to electrostatics kernels
-extern const char* gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1];
+const char* enumValueToString(NbkernelElecType enumValue);
 
 /*! \brief Types of vdw calculations available
  *
@@ -803,16 +798,17 @@ extern const char* gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1];
  * Note that these do NOT necessarily correspond to the user selections
  * in the MDP file; many interactions for instance map to tabulated kernels.
  */
-enum gmx_nbkernel_vdw
+enum class NbkernelVdwType : int
 {
-    GMX_NBKERNEL_VDW_NONE,
-    GMX_NBKERNEL_VDW_LENNARDJONES,
-    GMX_NBKERNEL_VDW_BUCKINGHAM,
-    GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
-    GMX_NBKERNEL_VDW_LJEWALD,
-    GMX_NBKERNEL_VDW_NR
+    None,
+    LennardJones,
+    Buckingham,
+    CubicSplineTable,
+    LJEwald,
+    Count,
+    Default = None
 };
 //! String corresponding to VdW kernels
-extern const char* gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR + 1];
+const char* enumValueToString(NbkernelVdwType enumValue);
 
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

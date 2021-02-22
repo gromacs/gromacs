@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,9 @@ struct t_fileio;
 struct t_inputrec;
 class t_state;
 struct t_trxframe;
+enum class IntegrationAlgorithm : int;
+enum class SwapType : int;
+enum class LambdaWeightCalculation : int;
 
 namespace gmx
 {
@@ -199,7 +202,7 @@ struct CheckpointHeaderContents
     //! Time string.
     char ftime[CPTSTRLEN];
     //! Which integrator is in use.
-    int eIntegrator;
+    IntegrationAlgorithm eIntegrator;
     //! Which part of the simulation this is.
     int simulation_part;
     //! Which step the checkpoint is at.
@@ -237,7 +240,7 @@ struct CheckpointHeaderContents
     //! Essential dynamics states.
     int nED;
     //! Enum for coordinate swapping.
-    int eSwapCoords;
+    SwapType eSwapCoords;
     //! Whether the checkpoint was written by modular simulator.
     bool isModularSimulatorCheckpoint = false;
 };
@@ -246,7 +249,7 @@ struct CheckpointHeaderContents
 void write_checkpoint_data(t_fileio*                         fp,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
-                           int                               elamstats,
+                           LambdaWeightCalculation           elamstats,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
                            const gmx::MdModulesNotifier&     notifier,

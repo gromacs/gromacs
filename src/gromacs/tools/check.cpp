@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,9 +117,9 @@ static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol
     }
     else
     {
-        if (ir[0]->efep == efepNO)
+        if (ir[0]->efep == FreeEnergyPerturbationType::No)
         {
-            fprintf(stdout, "inputrec->efep = %s\n", efep_names[ir[0]->efep]);
+            fprintf(stdout, "inputrec->efep = %s\n", enumValueToString(ir[0]->efep));
         }
         else
         {
@@ -302,7 +302,7 @@ static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tp
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
         top = std::make_unique<gmx_localtop_t>(mtop.ffparams);
-        gmx_mtop_generate_local_top(mtop, top.get(), ir.efep != efepNO);
+        gmx_mtop_generate_local_top(mtop, top.get(), ir.efep != FreeEnergyPerturbationType::No);
     }
     new_natoms = -1;
     natoms     = -1;

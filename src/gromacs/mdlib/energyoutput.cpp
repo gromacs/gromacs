@@ -80,6 +80,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/smalloc.h"
@@ -177,7 +178,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     nCrmsd_      = 0;
     if (bConstr)
     {
-        if (ncon > 0 && ir->eConstrAlg == econtLINCS)
+        if (ncon > 0 && ir->eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             nCrmsd_ = 1;
         }
@@ -209,14 +210,14 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         bEner_[F_TEMP] = EI_DYNAMICS(ir->eI);
 
         bEner_[F_ECONSERVED] = integratorHasConservedEnergyQuantity(ir);
-        bEner_[F_PDISPCORR]  = (ir->eDispCorr != edispcNO);
+        bEner_[F_PDISPCORR]  = (ir->eDispCorr != DispersionCorrectionType::No);
         bEner_[F_PRES]       = true;
     }
 
     bEner_[F_LJ]           = !bBHAM;
     bEner_[F_BHAM]         = bBHAM;
     bEner_[F_EQM]          = ir->bQMMM;
-    bEner_[F_RF_EXCL]      = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == ecutsGROUP);
+    bEner_[F_RF_EXCL]      = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == CutoffScheme::Group);
     bEner_[F_COUL_RECIP]   = EEL_FULL(ir->coulombtype);
     bEner_[F_LJ_RECIP]     = EVDW_PME(ir->vdwtype);
     bEner_[F_LJ14]         = b14;
@@ -225,12 +226,19 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     bEner_[F_LJC_PAIRS_NB] = false;
 
 
-    bEner_[F_DVDL_COUL]      = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptCOUL];
-    bEner_[F_DVDL_VDW]       = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptVDW];
-    bEner_[F_DVDL_BONDED]    = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptBONDED];
-    bEner_[F_DVDL_RESTRAINT] = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptRESTRAINT];
-    bEner_[F_DKDL]           = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptMASS];
-    bEner_[F_DVDL]           = (ir->efep != efepNO) && ir->fepvals->separate_dvdl[efptFEP];
+    bEner_[F_DVDL_COUL] = (ir->efep != FreeEnergyPerturbationType::No)
+                          && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul];
+    bEner_[F_DVDL_VDW] = (ir->efep != FreeEnergyPerturbationType::No)
+                         && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw];
+    bEner_[F_DVDL_BONDED] = (ir->efep != FreeEnergyPerturbationType::No)
+                            && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded];
+    bEner_[F_DVDL_RESTRAINT] =
+            (ir->efep != FreeEnergyPerturbationType::No)
+            && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Restraint];
+    bEner_[F_DKDL] = (ir->efep != FreeEnergyPerturbationType::No)
+                     && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass];
+    bEner_[F_DVDL] = (ir->efep != FreeEnergyPerturbationType::No)
+                     && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep];
 
     bEner_[F_CONSTR]   = false;
     bEner_[F_CONSTRNC] = false;
@@ -239,7 +247,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     bEner_[F_COUL_SR] = true;
     bEner_[F_EPOT]    = true;
 
-    bEner_[F_DISPCORR]   = (ir->eDispCorr != edispcNO);
+    bEner_[F_DISPCORR]   = (ir->eDispCorr != DispersionCorrectionType::No);
     bEner_[F_DISRESVIOL] = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
     bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     bEner_[F_COM_PULL]   = ((ir->bPull && pull_have_potential(*pull_work)) || ir->bRot);
@@ -527,7 +535,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
 
     /* check whether we're going to write dh histograms */
     dhc_ = nullptr;
-    if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO)
+    if (ir->fepvals->separate_dhdl_file == SeparateDhdlFile::No)
     {
         /* Currently dh histograms are only written with dynamics */
         if (EI_DYNAMICS(ir->eI))
@@ -591,10 +599,10 @@ EnergyOutput::~EnergyOutput()
  */
 static void print_lambda_vector(t_lambda* fep, int i, bool get_native_lambda, bool get_names, char* str)
 {
-    int j, k = 0;
+    int k    = 0;
     int Nsep = 0;
 
-    for (j = 0; j < efptNR; j++)
+    for (auto j : keysOf(fep->separate_dvdl))
     {
         if (fep->separate_dvdl[j])
         {
@@ -606,7 +614,7 @@ static void print_lambda_vector(t_lambda* fep, int i, bool get_native_lambda, bo
     {
         str += sprintf(str, "("); /* set the opening parenthesis*/
     }
-    for (j = 0; j < efptNR; j++)
+    for (auto j : keysOf(fep->separate_dvdl))
     {
         if (fep->separate_dvdl[j])
         {
@@ -623,7 +631,7 @@ static void print_lambda_vector(t_lambda* fep, int i, bool get_native_lambda, bo
             }
             else
             {
-                str += sprintf(str, "%s", efpt_singular_names[j]);
+                str += sprintf(str, "%s", enumValueToStringSingular(j));
             }
             /* print comma for the next item */
             if (k < Nsep - 1)
@@ -647,8 +655,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
                *lambdastate = "\\lambda state";
     int         i, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
-    t_lambda*   fep            = ir->fepvals; /* for simplicity */
-    t_expanded* expand         = ir->expandedvals;
+    t_lambda*   fep            = ir->fepvals.get(); /* for simplicity */
+    t_expanded* expand         = ir->expandedvals.get();
     char        lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
 
     int  nsets_dhdl = 0;
@@ -657,7 +665,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     bool write_pV = false;
 
     /* count the number of different lambda terms */
-    for (i = 0; i < efptNR; i++)
+    for (auto i : keysOf(fep->separate_dvdl))
     {
         if (fep->separate_dvdl[i])
         {
@@ -687,7 +695,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     {
         buf = gmx::formatString("T = %g (K) ", ir->opts.ref_t[0]);
     }
-    if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
+    if ((ir->efep != FreeEnergyPerturbationType::SlowGrowth)
+        && (ir->efep != FreeEnergyPerturbationType::Expanded))
     {
         if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
         {
@@ -706,7 +715,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 
 
     nsets_dhdl = 0;
-    if (fep->dhdl_derivatives == edhdlderivativesYES)
+    if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
     {
         nsets_dhdl = n_lambda_terms;
     }
@@ -715,12 +724,12 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->n_lambda > 0 && (expand->elmcmove > elmcmoveNO))
+    if (fep->n_lambda > 0 && (expand->elmcmove > LambdaMoveCalculation::No))
     {
         nsets += 1; /*add fep state for expanded ensemble */
     }
 
-    if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
+    if (fep->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
     {
         nsets += 1; /* add energy to the dhdl as well */
     }
@@ -737,30 +746,30 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     }
     std::vector<std::string> setname(nsetsextend);
 
-    if (expand->elmcmove > elmcmoveNO)
+    if (expand->elmcmove > LambdaMoveCalculation::No)
     {
         /* state for the fep_vals, if we have alchemical sampling */
         setname[s++] = "Thermodynamic state";
     }
 
-    if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
+    if (fep->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
     {
         std::string energy;
         switch (fep->edHdLPrintEnergy)
         {
-            case edHdLPrintEnergyPOTENTIAL:
+            case FreeEnergyPrintEnergy::Potential:
                 energy = gmx::formatString("%s (%s)", "Potential Energy", unit_energy);
                 break;
-            case edHdLPrintEnergyTOTAL:
-            case edHdLPrintEnergyYES:
+            case FreeEnergyPrintEnergy::Total:
+            case FreeEnergyPrintEnergy::Yes:
             default: energy = gmx::formatString("%s (%s)", "Total Energy", unit_energy);
         }
         setname[s++] = energy;
     }
 
-    if (fep->dhdl_derivatives == edhdlderivativesYES)
+    if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
     {
-        for (i = 0; i < efptNR; i++)
+        for (auto i : keysOf(fep->separate_dvdl))
         {
             if (fep->separate_dvdl[i])
             {
@@ -777,7 +786,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
                     {
                         lam = fep->all_lambda[i][fep->init_fep_state];
                     }
-                    derivative = gmx::formatString("%s %s = %.4f", dhdl, efpt_singular_names[i], lam);
+                    derivative = gmx::formatString("%s %s = %.4f", dhdl, enumValueToStringSingular(i), lam);
                 }
                 setname[s++] = derivative;
             }
@@ -790,7 +799,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
          * from this xvg legend.
          */
 
-        if (expand->elmcmove > elmcmoveNO)
+        if (expand->elmcmove > LambdaMoveCalculation::No)
         {
             nsetsbegin = 1; /* for including the expanded ensemble */
         }
@@ -799,7 +808,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
             nsetsbegin = 0;
         }
 
-        if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
+        if (fep->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
         {
             nsetsbegin += 1;
         }
@@ -859,13 +868,14 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        const rvec              mu_tot,
                                        const gmx::Constraints* constr)
 {
-    int    j, k, kk, n, gid;
-    real   crmsd[2], tmp6[6];
-    real   bs[tricl_boxs_nm.size()], vol, dens, pv, enthalpy;
-    real   eee[egNR];
-    double store_dhdl[efptNR];
-    real   store_energy = 0;
-    real   tmp;
+    int  j, k, kk, n, gid;
+    real crmsd[2], tmp6[6];
+    real bs[tricl_boxs_nm.size()], vol, dens, enthalpy;
+    real eee[egNR];
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double> store_dhdl;
+    real                                                              store_energy = 0;
+    real                                                              tmp;
+    real pv = 0.0; // static analyzer warns about uninitialized variable warnings here.
 
     /* Do NOT use the box in the state variable, but the separate box provided
      * as an argument. This is because we sometimes need to write the box from
@@ -1063,32 +1073,34 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             /* the current free energy state */
 
             /* print the current state if we are doing expanded ensemble */
-            if (expand->elmcmove > elmcmoveNO)
+            if (expand->elmcmove > LambdaMoveCalculation::No)
             {
                 fprintf(fp_dhdl_, " %4d", fep_state);
             }
             /* total energy (for if the temperature changes */
 
-            if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
+            if (fep->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
             {
                 switch (fep->edHdLPrintEnergy)
                 {
-                    case edHdLPrintEnergyPOTENTIAL: store_energy = enerd->term[F_EPOT]; break;
-                    case edHdLPrintEnergyTOTAL:
-                    case edHdLPrintEnergyYES:
+                    case FreeEnergyPrintEnergy::Potential:
+                        store_energy = enerd->term[F_EPOT];
+                        break;
+                    case FreeEnergyPrintEnergy::Total:
+                    case FreeEnergyPrintEnergy::Yes:
                     default: store_energy = enerd->term[F_ETOT];
                 }
                 fprintf(fp_dhdl_, " %#.8g", store_energy);
             }
 
-            if (fep->dhdl_derivatives == edhdlderivativesYES)
+            if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
             {
-                for (int i = 0; i < efptNR; i++)
+                for (auto i : keysOf(fep->separate_dvdl))
                 {
                     if (fep->separate_dvdl[i])
                     {
                         /* assumes F_DVDL is first */
-                        fprintf(fp_dhdl_, " %#.8g", enerd->term[F_DVDL + i]);
+                        fprintf(fp_dhdl_, " %#.8g", enerd->term[F_DVDL + static_cast<int>(i)]);
                     }
                 }
             }
@@ -1110,12 +1122,12 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         if (dhc_ && bDoDHDL)
         {
             int idhdl = 0;
-            for (int i = 0; i < efptNR; i++)
+            for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (fep->separate_dvdl[i])
                 {
                     /* assumes F_DVDL is first */
-                    store_dhdl[idhdl] = enerd->term[F_DVDL + i];
+                    store_dhdl[idhdl] = enerd->term[F_DVDL + static_cast<int>(i)];
                     idhdl += 1;
                 }
             }
@@ -1298,7 +1310,7 @@ void EnergyOutput::printAnnealingTemperatures(FILE* log, const SimulationGroups*
         {
             for (int i = 0; i < opts->ngtc; i++)
             {
-                if (opts->annealing[i] != eannNO)
+                if (opts->annealing[i] != SimulatedAnnealing::No)
                 {
                     fprintf(log,
                             "Current ref_t for group %s: %8.1f\n",

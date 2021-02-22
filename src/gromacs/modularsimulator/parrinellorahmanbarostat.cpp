@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,7 +168,7 @@ void ParrinelloRahmanBarostat::elementSetup()
     if (inputrecPreserveShape(inputrec_))
     {
         auto      box  = statePropagatorData_->box();
-        const int ndim = inputrec_->epct == epctSEMIISOTROPIC ? 2 : 3;
+        const int ndim = inputrec_->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, inputrec_->deform, boxRel_, box, true);
     }
 

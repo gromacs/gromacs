@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ TEST(MultipleTimeStepping, ChecksPmeIsAtLastLevel)
     const GromppMtsOpts mtsOpts = simpleMtsOpts();
 
     t_inputrec ir;
-    ir.coulombtype = eelPME;
+    ir.coulombtype = CoulombInteractionType::Pme;
 
     setAndCheckMtsLevels(mtsOpts, &ir, 1);
 }
@@ -189,7 +189,7 @@ public:
         }
         else if (parameterName == "nstdhdl")
         {
-            ir_.efep             = efepYES;
+            ir_.efep             = FreeEnergyPerturbationType::Yes;
             ir_.fepvals->nstdhdl = interval;
         }
         else
@@ -223,7 +223,7 @@ TEST(MultipleTimeStepping, ChecksIntegrator)
     const GromppMtsOpts mtsOpts = simpleMtsOpts();
 
     t_inputrec ir;
-    ir.eI = eiBD;
+    ir.eI = IntegrationAlgorithm::BD;
 
     setAndCheckMtsLevels(mtsOpts, &ir, 1);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,12 +88,14 @@ template<ConstraintVariable variable>
 void ConstraintsElement<variable>::elementSetup()
 {
     if (!inputrec_->bContinuation
-        && ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD)
-            || (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
+        && ((variable == ConstraintVariable::Positions && inputrec_->eI == IntegrationAlgorithm::MD)
+            || (variable == ConstraintVariable::Velocities && inputrec_->eI == IntegrationAlgorithm::VV)))
     {
-        const real lambdaBonded = freeEnergyPerturbationData_
-                                          ? freeEnergyPerturbationData_->constLambdaView()[efptBONDED]
-                                          : 0;
+        const real lambdaBonded =
+                freeEnergyPerturbationData_
+                        ? freeEnergyPerturbationData_->constLambdaView()[static_cast<int>(
+                                  FreeEnergyPerturbationCouplingType::Bonded)]
+                        : 0;
         // Constrain the initial coordinates and velocities
         do_constrain_first(fplog_,
                            constr_,
@@ -107,7 +109,7 @@ void ConstraintsElement<variable>::elementSetup()
 
         if (isMasterRank_)
         {
-            if (inputrec_->eConstrAlg == econtLINCS)
+            if (inputrec_->eConstrAlg == ConstraintAlgorithm::Lincs)
             {
                 fprintf(fplog_,
                         "RMS relative constraint deviation after constraining: %.2e\n",
@@ -143,7 +145,10 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     ArrayRefWithPadding<RVec> v;
 
     const real lambdaBonded =
-            freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->constLambdaView()[efptBONDED] : 0;
+            freeEnergyPerturbationData_
+                    ? freeEnergyPerturbationData_
+                              ->constLambdaView()[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)]
+                    : 0;
     real dvdlambda = 0;
 
     switch (variable)
@@ -179,7 +184,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
 
     if (calculateVirial)
     {
-        if (inputrec_->eI == eiVV)
+        if (inputrec_->eI == IntegrationAlgorithm::VV)
         {
             // For some reason, the shake virial in VV is reset twice a step.
             // Energy element will only do this once per step.

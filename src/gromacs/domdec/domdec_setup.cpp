@@ -299,8 +299,8 @@ real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox
 /*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec& ir)
 {
-    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) && ir.pbcType == PbcType::Xyz
-            && ir.ewald_geometry == eewg3DC);
+    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
+            && ir.pbcType == PbcType::Xyz && ir.ewald_geometry == EwaldGeometry::ThreeDC);
 }
 
 /*! \brief Estimate cost of PME FFT communication
@@ -633,7 +633,7 @@ static gmx::IVec optimizeDDCells(const gmx::MDLogger& mdlog,
                 .appendTextFormatted(
                         "Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, "
                         "will not decompose in z.",
-                        eewg_names[ir.ewald_geometry]);
+                        enumValueToString(ir.ewald_geometry));
     }
 
 

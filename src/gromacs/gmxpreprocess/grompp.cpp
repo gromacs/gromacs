@@ -586,7 +586,7 @@ static void new_status(const char*                           topfile,
                        std::vector<MoleculeInformation>*     mi,
                        std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
                        gmx::ArrayRef<InteractionsOfType>     interactions,
-                       int*                                  comb,
+                       CombinationRule*                      comb,
                        double*                               reppow,
                        real*                                 fudgeQQ,
                        gmx_bool                              bMorse,
@@ -646,7 +646,7 @@ static void new_status(const char*                           topfile,
         convert_harmonics(*mi, atypes);
     }
 
-    if (ir->eDisre == edrNone)
+    if (ir->eDisre == DistanceRestraintRefinement::None)
     {
         i = rm_interactions(F_DISRES, *mi);
         if (i > 0)
@@ -918,7 +918,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         gmx::ArrayRef<const MoleculeInformation> molinfo,
                         gmx_bool                                 bTopB,
                         const char*                              fn,
-                        int                                      rc_scaling,
+                        RefCoordScaling                          rc_scaling,
                         PbcType                                  pbcType,
                         rvec                                     com,
                         warninp*                                 wi,
@@ -955,7 +955,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
     npbcdim = numPbcDimensions(pbcType);
     GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
     clear_rvec(com);
-    if (rc_scaling != erscNO)
+    if (rc_scaling != RefCoordScaling::No)
     {
         copy_mat(box, invbox);
         for (int j = npbcdim; j < DIM; j++)
@@ -993,7 +993,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                               natoms);
                 }
                 hadAtom[ai] = TRUE;
-                if (rc_scaling == erscCOM)
+                if (rc_scaling == RefCoordScaling::Com)
                 {
                     /* Determine the center of mass of the posres reference coordinates */
                     for (int j = 0; j < npbcdim; j++)
@@ -1017,7 +1017,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                               fn,
                               natoms);
                 }
-                if (rc_scaling == erscCOM && !hadAtom[ai])
+                if (rc_scaling == RefCoordScaling::Com && !hadAtom[ai])
                 {
                     /* Determine the center of mass of the posres reference coordinates */
                     for (int j = 0; j < npbcdim; j++)
@@ -1046,7 +1046,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
         }
         a += nat_molb;
     }
-    if (rc_scaling == erscCOM)
+    if (rc_scaling == RefCoordScaling::Com)
     {
         if (totmass == 0)
         {
@@ -1065,7 +1065,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         com[ZZ]);
     }
 
-    if (rc_scaling != erscNO)
+    if (rc_scaling != RefCoordScaling::No)
     {
         GMX_ASSERT(npbcdim <= DIM, "Only DIM dimensions can have PBC");
 
@@ -1079,7 +1079,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                 {
                     for (int j = 0; j < npbcdim; j++)
                     {
-                        if (rc_scaling == erscALL)
+                        if (rc_scaling == RefCoordScaling::All)
                         {
                             /* Convert from Cartesian to crystal coordinates */
                             xp[i][j] *= invbox[j][j];
@@ -1088,7 +1088,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                                 xp[i][j] += invbox[k][j] * xp[i][k];
                             }
                         }
-                        else if (rc_scaling == erscCOM)
+                        else if (rc_scaling == RefCoordScaling::Com)
                         {
                             /* Subtract the center of mass */
                             xp[i][j] -= com[j];
@@ -1098,7 +1098,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
             }
         }
 
-        if (rc_scaling == erscCOM)
+        if (rc_scaling == RefCoordScaling::Com)
         {
             /* Convert the COM from Cartesian to crystal coordinates */
             for (int j = 0; j < npbcdim; j++)
@@ -1121,7 +1121,7 @@ static void gen_posres(gmx_mtop_t*                              mtop,
                        gmx::ArrayRef<const MoleculeInformation> mi,
                        const char*                              fnA,
                        const char*                              fnB,
-                       int                                      rc_scaling,
+                       RefCoordScaling                          rc_scaling,
                        PbcType                                  pbcType,
                        rvec                                     com,
                        rvec                                     comB,
@@ -1605,11 +1605,12 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
     const int  lincsOrderThreshold      = 4;
     const real shakeToleranceThreshold  = 0.005 * ir->delta_t;
 
-    bool lincsWithSufficientTolerance = (ir->eConstrAlg == econtLINCS && ir->nLincsIter >= lincsIterationThreshold
-                                         && ir->nProjOrder >= lincsOrderThreshold);
-    bool shakeWithSufficientTolerance =
-            (ir->eConstrAlg == econtSHAKE && ir->shake_tol <= 1.1 * shakeToleranceThreshold);
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol <= 1.1 * bufferToleranceThreshold
+    bool lincsWithSufficientTolerance =
+            (ir->eConstrAlg == ConstraintAlgorithm::Lincs
+             && ir->nLincsIter >= lincsIterationThreshold && ir->nProjOrder >= lincsOrderThreshold);
+    bool shakeWithSufficientTolerance = (ir->eConstrAlg == ConstraintAlgorithm::Shake
+                                         && ir->shake_tol <= 1.1 * shakeToleranceThreshold);
+    if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol <= 1.1 * bufferToleranceThreshold
         && (lincsWithSufficientTolerance || shakeWithSufficientTolerance))
     {
         return;
@@ -1631,7 +1632,7 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
                 "and with masses that differ by more than a factor of %g. This means "
                 "that there are likely dynamic modes that are only very weakly coupled.",
                 massFactorThreshold);
-        if (ir->cutoff_scheme == ecutsVERLET)
+        if (ir->cutoff_scheme == CutoffScheme::Verlet)
         {
             message += gmx::formatString(
                     " To ensure good equipartitioning, you need to either not use "
@@ -1639,7 +1640,7 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
                     "hydrogens) or use integrator = %s or decrease one or more tolerances: "
                     "verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order "
                     ">= %d or SHAKE tolerance <= %g",
-                    ei_names[eiSD1],
+                    enumValueToString(IntegrationAlgorithm::SD1),
                     bufferToleranceThreshold,
                     lincsIterationThreshold,
                     lincsOrderThreshold,
@@ -1651,7 +1652,7 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
                     " To ensure good equipartitioning, we suggest to switch to the %s "
                     "cutoff-scheme, since that allows for better control over the Verlet "
                     "buffer size and thus over the energy drift.",
-                    ecutscheme_names[ecutsVERLET]);
+                    enumValueToString(CutoffScheme::Verlet));
         }
         warning(wi, message);
     }
@@ -1828,7 +1829,8 @@ int gmx_grompp(int argc, char* argv[])
     };
     std::vector<MoleculeInformation>     mi;
     std::unique_ptr<MoleculeInformation> intermolecular_interactions;
-    int                                  nvsite, comb;
+    int                                  nvsite;
+    CombinationRule                      comb;
     real                                 fudgeQQ;
     double                               reppow;
     const char*                          mdparin;
@@ -2015,22 +2017,23 @@ int gmx_grompp(int argc, char* argv[])
         }
     }
 
-    if ((count_constraints(&sys, mi, wi) != 0) && (ir->eConstrAlg == econtSHAKE))
+    if ((count_constraints(&sys, mi, wi) != 0) && (ir->eConstrAlg == ConstraintAlgorithm::Shake))
     {
-        if (ir->eI == eiCG || ir->eI == eiLBFGS)
+        if (ir->eI == IntegrationAlgorithm::CG || ir->eI == IntegrationAlgorithm::LBFGS)
         {
-            std::string warningMessage = gmx::formatString("Can not do %s with %s, use %s",
-                                                           EI(ir->eI),
-                                                           econstr_names[econtSHAKE],
-                                                           econstr_names[econtLINCS]);
+            std::string warningMessage =
+                    gmx::formatString("Can not do %s with %s, use %s",
+                                      enumValueToString(ir->eI),
+                                      enumValueToString(ConstraintAlgorithm::Shake),
+                                      enumValueToString(ConstraintAlgorithm::Lincs));
             warning_error(wi, warningMessage);
         }
         if (ir->bPeriodicMols)
         {
             std::string warningMessage =
                     gmx::formatString("Can not do periodic molecules with %s, use %s",
-                                      econstr_names[econtSHAKE],
-                                      econstr_names[econtLINCS]);
+                                      enumValueToString(ConstraintAlgorithm::Shake),
+                                      enumValueToString(ConstraintAlgorithm::Lincs));
             warning_error(wi, warningMessage);
         }
     }
@@ -2169,7 +2172,7 @@ int gmx_grompp(int argc, char* argv[])
 
     checkForUnboundAtoms(&sys, bVerbose, wi, logger);
 
-    if (EI_DYNAMICS(ir->eI) && ir->eI != eiBD)
+    if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::BD)
     {
         check_bonds_timestep(&sys, ir->delta_t, wi);
     }
@@ -2194,7 +2197,7 @@ int gmx_grompp(int argc, char* argv[])
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifier(), ir, wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0)
+    if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0)
     {
         if (EI_DYNAMICS(ir->eI) && inputrec2nboundeddim(ir) == 3)
         {
@@ -2293,7 +2296,7 @@ int gmx_grompp(int argc, char* argv[])
         pr_symtab(debug, 0, "After close", &sys.symtab);
     }
 
-    if (ir->eI == eiMimic)
+    if (ir->eI == IntegrationAlgorithm::Mimic)
     {
         generate_qmexcl(&sys, ir, logger);
     }
@@ -2354,10 +2357,10 @@ int gmx_grompp(int argc, char* argv[])
     /* MRS: eventually figure out better logic for initializing the fep
        values that makes declaring the lambda and declaring the state not
        potentially conflict if not handled correctly. */
-    if (ir->efep != efepNO)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         state.fep_state = ir->fepvals->init_fep_state;
-        for (i = 0; i < efptNR; i++)
+        for (i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
         {
             /* init_lambda trumps state definitions*/
             if (ir->fepvals->init_lambda >= 0)
@@ -2366,7 +2369,7 @@ int gmx_grompp(int argc, char* argv[])
             }
             else
             {
-                if (ir->fepvals->all_lambda[i] == nullptr)
+                if (ir->fepvals->all_lambda[i].empty())
                 {
                     gmx_fatal(FARGS, "Values of lambda not set for a free energy calculation!");
                 }
@@ -2382,7 +2385,12 @@ int gmx_grompp(int argc, char* argv[])
 
     if (ir->bPull)
     {
-        pull = set_pull_init(ir, &sys, state.x.rvec_array(), state.box, state.lambda[efptMASS], wi);
+        pull = set_pull_init(ir,
+                             &sys,
+                             state.x.rvec_array(),
+                             state.box,
+                             state.lambda[FreeEnergyPerturbationCouplingType::Mass],
+                             wi);
     }
 
     /* Modules that supply external potential for pull coordinates
@@ -2405,7 +2413,10 @@ int gmx_grompp(int argc, char* argv[])
                 ir->pbcType,
                 compressibility,
                 &ir->opts,
-                ir->efep != efepNO ? ir->fepvals->all_lambda[efptFEP][ir->fepvals->init_fep_state] : 0,
+                ir->efep != FreeEnergyPerturbationType::No
+                        ? ir->fepvals->all_lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Fep)]
+                                                 [ir->fepvals->init_fep_state]
+                        : 0,
                 sys,
                 wi);
     }
@@ -2438,14 +2449,15 @@ int gmx_grompp(int argc, char* argv[])
          * charges. This will double the cost, but the optimal performance will
          * then probably be at a slightly larger cut-off and grid spacing.
          */
-        if ((ir->efep == efepNO && ratio > 1.0 / 2.0) || (ir->efep != efepNO && ratio > 2.0 / 3.0))
+        if ((ir->efep == FreeEnergyPerturbationType::No && ratio > 1.0 / 2.0)
+            || (ir->efep != FreeEnergyPerturbationType::No && ratio > 2.0 / 3.0))
         {
             warning_note(
                     wi,
                     "The optimal PME mesh load for parallel simulations is below 0.5\n"
                     "and for highly parallel simulations between 0.25 and 0.33,\n"
                     "for higher performance, increase the cut-off and the PME grid spacing.\n");
-            if (ir->efep != efepNO)
+            if (ir->efep != FreeEnergyPerturbationType::No)
             {
                 warning_note(wi,
                              "For free energy simulations, the optimal load limit increases from "
@@ -2479,7 +2491,7 @@ int gmx_grompp(int argc, char* argv[])
                 std::make_unique<gmx::KeyValueTreeObject>(internalParameterBuilder.build());
     }
 
-    if (ir->comm_mode != ecmNO)
+    if (ir->comm_mode != ComRemovalAlgorithm::No)
     {
         const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
         if (ir->nstcomm % nstglobalcomm != 0)

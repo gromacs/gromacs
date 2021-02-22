@@ -231,22 +231,26 @@ void NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)
 
 void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
 {
-    gmxForceCalculator_->interactionConst_->vdwtype      = evdwCUT;
-    gmxForceCalculator_->interactionConst_->vdw_modifier = eintmodPOTSHIFT;
+    gmxForceCalculator_->interactionConst_->vdwtype      = VanDerWaalsType::Cut;
+    gmxForceCalculator_->interactionConst_->vdw_modifier = InteractionModifiers::PotShift;
     gmxForceCalculator_->interactionConst_->rvdw         = options.pairlistCutoff;
 
     switch (options.coulombType)
     {
-        case CoulombType::Pme: gmxForceCalculator_->interactionConst_->eeltype = eelPME; break;
-        case CoulombType::Cutoff: gmxForceCalculator_->interactionConst_->eeltype = eelCUT; break;
+        case CoulombType::Pme:
+            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::Pme;
+            break;
+        case CoulombType::Cutoff:
+            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::Cut;
+            break;
         case CoulombType::ReactionField:
-            gmxForceCalculator_->interactionConst_->eeltype = eelRF;
+            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::RF;
             break;
         case CoulombType::Count: throw InputException("Unsupported electrostatic interaction");
     }
-    gmxForceCalculator_->interactionConst_->coulomb_modifier = eintmodPOTSHIFT;
+    gmxForceCalculator_->interactionConst_->coulomb_modifier = InteractionModifiers::PotShift;
     gmxForceCalculator_->interactionConst_->rcoulomb         = options.pairlistCutoff;
-    // Note: values correspond to ic->coulomb_modifier = eintmodPOTSHIFT
+    // Note: values correspond to ic->coulomb_modifier = InteractionModifiers::PotShift
     gmxForceCalculator_->interactionConst_->dispersion_shift.cpot =
             -1.0 / gmx::power6(gmxForceCalculator_->interactionConst_->rvdw);
     gmxForceCalculator_->interactionConst_->repulsion_shift.cpot =

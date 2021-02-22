@@ -190,6 +190,16 @@ public:
         doInt(&castedValue);
         *enumValue = static_cast<EnumType>(castedValue);
     }
+
+    //! Serialize array of enum values with underlying type.
+    template<typename EnumType>
+    void doEnumArrayAsInt(EnumType* values, int elements)
+    {
+        for (int i = 0; i < elements; i++)
+        {
+            doEnumAsInt<EnumType>(&(values[i]));
+        }
+    }
 };
 
 } // namespace gmx

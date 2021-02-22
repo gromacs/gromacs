@@ -197,8 +197,8 @@ void gmx::LegacySimulator::do_mimic()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by MiMiC.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](int i) {
-            return i != eannNO;
+    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](SimulatedAnnealing i) {
+            return i != SimulatedAnnealing::No;
         }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by MiMiC.");
@@ -334,9 +334,9 @@ void gmx::LegacySimulator::do_mimic()
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
 
-    update_mdatoms(mdatoms, state->lambda[efptMASS]);
+    update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
-    if (ir->efep != efepNO && ir->fepvals->nstdhdl != 0)
+    if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl != 0)
     {
         doFreeEnergyPerturbation = true;
     }
@@ -454,7 +454,7 @@ void gmx::LegacySimulator::do_mimic()
             MimicCommunicator::getCoords(&state_global->x, state_global->natoms);
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep != FreeEnergyPerturbationType::No)
         {
             state->lambda = currentLambdas(step, *(ir->fepvals), state_global->fep_state);
         }
@@ -510,9 +510,9 @@ void gmx::LegacySimulator::do_mimic()
             EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep != FreeEnergyPerturbationType::No)
         {
-            update_mdatoms(mdatoms, state->lambda[efptMASS]);
+            update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
@@ -696,7 +696,7 @@ void gmx::LegacySimulator::do_mimic()
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-        if (ir->efep != efepNO)
+        if (ir->efep != FreeEnergyPerturbationType::No)
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
@@ -712,8 +712,8 @@ void gmx::LegacySimulator::do_mimic()
                                              t,
                                              mdatoms->tmass,
                                              enerd,
-                                             ir->fepvals,
-                                             ir->expandedvals,
+                                             ir->fepvals.get(),
+                                             ir->expandedvals.get(),
                                              state->box,
                                              PTCouplingArrays({ state->boxv,
                                                                 state->nosehoover_xi,

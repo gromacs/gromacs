@@ -106,7 +106,7 @@ void ModularSimulator::run()
 
 void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* builder)
 {
-    if (legacySimulatorData_->inputrec->eI == eiMD)
+    if (legacySimulatorData_->inputrec->eI == IntegrationAlgorithm::MD)
     {
         // The leap frog integration algorithm
         builder->add<ForceElement>();
@@ -131,7 +131,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
             builder->add<ParrinelloRahmanBarostat>(-1);
         }
     }
-    else if (legacySimulatorData_->inputrec->eI == eiVV)
+    else if (legacySimulatorData_->inputrec->eI == IntegrationAlgorithm::VV)
     {
         // The velocity verlet integration algorithm
         builder->add<ForceElement>();
@@ -205,7 +205,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             "or unset both to recover default behavior.");
 
     GMX_RELEASE_ASSERT(
-            !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV
+            !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == IntegrationAlgorithm::VV
               && inputrec->epc == PressureCoupling::ParrinelloRahman),
             "Cannot use a Parrinello-Rahman barostat with md-vv and "
             "GMX_DISABLE_MODULAR_SIMULATOR=ON, "
@@ -213,10 +213,11 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
 
     bool isInputCompatible = conditionalAssert(
-            inputrec->eI == eiMD || inputrec->eI == eiVV,
+            inputrec->eI == IntegrationAlgorithm::MD || inputrec->eI == IntegrationAlgorithm::VV,
             "Only integrators md and md-vv are supported by the modular simulator.");
     isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->eI != eiMD || modularSimulatorExplicitlyTurnedOn,
+                        && conditionalAssert(inputrec->eI != IntegrationAlgorithm::MD
+                                                     || modularSimulatorExplicitlyTurnedOn,
                                              "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular "
                                              "simulator with integrator md.");
     isInputCompatible =
@@ -245,11 +246,13 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                        !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)
                          || inputrecNvtTrotter(inputrec)),
                        "Legacy Trotter decomposition is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->efep == efepNO || inputrec->efep == efepYES
-                                                     || inputrec->efep == efepSLOWGROWTH,
-                                             "Expanded ensemble free energy calculation is not "
-                                             "supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(inputrec->efep == FreeEnergyPerturbationType::No
+                                         || inputrec->efep == FreeEnergyPerturbationType::Yes
+                                         || inputrec->efep == FreeEnergyPerturbationType::SlowGrowth,
+                                 "Expanded ensemble free energy calculation is not "
+                                 "supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(!inputrec->bPull,
                                              "Pulling is not supported by the modular simulator.");
@@ -331,7 +334,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             && conditionalAssert(!doEssentialDynamics,
                                  "Essential dynamics is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->eSwapCoords == eswapNO,
+                        && conditionalAssert(inputrec->eSwapCoords == SwapType::No,
                                              "Ion / water position swapping is not supported by "
                                              "the modular simulator.");
     isInputCompatible =
@@ -359,7 +362,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                              "GMX_FAHCORE not supported by the modular simulator.");
     GMX_RELEASE_ASSERT(
             isInputCompatible
-                    || !(inputrec->eI == eiVV && inputrec->epc == PressureCoupling::ParrinelloRahman),
+                    || !(inputrec->eI == IntegrationAlgorithm::VV
+                         && inputrec->epc == PressureCoupling::ParrinelloRahman),
             "Requested Parrinello-Rahman barostat with md-vv, but other options are not compatible "
             "with the modular simulator. The Parrinello-Rahman barostat is not implemented for "
             "md-vv in the legacy simulator. Use a different pressure control algorithm.");

@@ -169,7 +169,8 @@ void global_stat(const gmx_global_stat* gs,
     bEner       = ((flags & CGLO_ENERGY) != 0);
     bPres       = ((flags & CGLO_PRESSURE) != 0);
     bConstrVir  = ((flags & CGLO_CONSTRAINT) != 0);
-    bEkinAveVel = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
+    bEkinAveVel = (inputrec->eI == IntegrationAlgorithm::VV
+                   || (inputrec->eI == IntegrationAlgorithm::VVAK && bPres));
     bReadEkin   = ((flags & CGLO_READEKIN) != 0);
 
     rb   = gs->rb;
@@ -246,10 +247,10 @@ void global_stat(const gmx_global_stat* gs,
         {
             inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j].data());
         }
-        if (inputrec->efep != efepNO)
+        if (inputrec->efep != FreeEnergyPerturbationType::No)
         {
-            idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
-            idvdlnl = add_bind(rb, efptNR, enerd->dvdl_nonlin);
+            idvdll  = add_bind(rb, enerd->dvdl_lin);
+            idvdlnl = add_bind(rb, enerd->dvdl_nonlin);
             if (enerd->foreignLambdaTerms.numLambdas() > 0)
             {
                 iepl = add_bind(rb,
@@ -263,7 +264,7 @@ void global_stat(const gmx_global_stat* gs,
     {
         icm   = add_binr(rb, DIM * vcm->nr, vcm->group_p[0]);
         imass = add_binr(rb, vcm->nr, vcm->group_mass.data());
-        if (vcm->mode == ecmANGULAR)
+        if (vcm->mode == ComRemovalAlgorithm::Angular)
         {
             icj = add_binr(rb, DIM * vcm->nr, vcm->group_j[0]);
             icx = add_binr(rb, DIM * vcm->nr, vcm->group_x[0]);
@@ -343,10 +344,10 @@ void global_stat(const gmx_global_stat* gs,
         {
             extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j].data());
         }
-        if (inputrec->efep != efepNO)
+        if (inputrec->efep != FreeEnergyPerturbationType::No)
         {
-            extract_bind(rb, idvdll, efptNR, enerd->dvdl_lin);
-            extract_bind(rb, idvdlnl, efptNR, enerd->dvdl_nonlin);
+            extract_bind(rb, idvdll, enerd->dvdl_lin);
+            extract_bind(rb, idvdlnl, enerd->dvdl_nonlin);
             if (enerd->foreignLambdaTerms.numLambdas() > 0)
             {
                 extract_bind(rb,
@@ -363,7 +364,7 @@ void global_stat(const gmx_global_stat* gs,
     {
         extract_binr(rb, icm, DIM * vcm->nr, vcm->group_p[0]);
         extract_binr(rb, imass, vcm->nr, vcm->group_mass.data());
-        if (vcm->mode == ecmANGULAR)
+        if (vcm->mode == ComRemovalAlgorithm::Angular)
         {
             extract_binr(rb, icj, DIM * vcm->nr, vcm->group_j[0]);
             extract_binr(rb, icx, DIM * vcm->nr, vcm->group_x[0]);

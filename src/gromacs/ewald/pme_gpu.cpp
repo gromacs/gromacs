@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -317,7 +317,7 @@ static void pme_gpu_reduce_outputs(const bool            computeEnergyAndVirial,
         GMX_ASSERT(enerd, "Invalid energy output manager");
         forceWithVirial->addVirialContribution(output.coulombVirial_);
         enerd->term[F_COUL_RECIP] += output.coulombEnergy_;
-        enerd->dvdl_lin[efptCOUL] += output.coulombDvdl_;
+        enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul] += output.coulombDvdl_;
     }
     if (output.haveForceOutput_)
     {

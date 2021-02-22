@@ -396,7 +396,7 @@ static void init_em(FILE*                fplog,
     gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda);
 
-    if (ir->eI == eiNM)
+    if (ir->eI == IntegrationAlgorithm::NM)
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
@@ -461,17 +461,17 @@ static void init_em(FILE*                fplog,
                 cr, ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
     }
 
-    update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[efptMASS]);
+    update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
     if (constr)
     {
         // TODO how should this cross-module support dependency be managed?
-        if (ir->eConstrAlg == econtSHAKE && gmx_mtop_ftype_count(top_global, F_CONSTR) > 0)
+        if (ir->eConstrAlg == ConstraintAlgorithm::Shake && gmx_mtop_ftype_count(top_global, F_CONSTR) > 0)
         {
             gmx_fatal(FARGS,
                       "Can not do energy minimization with %s, use %s\n",
-                      econstr_names[econtSHAKE],
-                      econstr_names[econtLINCS]);
+                      enumValueToString(ConstraintAlgorithm::Shake),
+                      enumValueToString(ConstraintAlgorithm::Lincs));
         }
 
         if (!ir->bContinuation)
@@ -490,7 +490,7 @@ static void init_em(FILE*                fplog,
                           ems->s.x.arrayRefWithPadding(),
                           ArrayRef<RVec>(),
                           ems->s.box,
-                          ems->s.lambda[efptFEP],
+                          ems->s.lambda[FreeEnergyPerturbationCouplingType::Fep],
                           &dvdl_constr,
                           gmx::ArrayRefWithPadding<RVec>(),
                           computeVirial,
@@ -743,7 +743,7 @@ static bool do_em_step(const t_commrec*                          cr,
                                   s2->x.arrayRefWithPadding(),
                                   ArrayRef<RVec>(),
                                   s2->box,
-                                  s2->lambda[efptBONDED],
+                                  s2->lambda[FreeEnergyPerturbationCouplingType::Bonded],
                                   &dvdl_constr,
                                   gmx::ArrayRefWithPadding<RVec>(),
                                   false,
@@ -762,14 +762,14 @@ static bool do_em_step(const t_commrec*                          cr,
         }
 
         // We should move this check to the different minimizers
-        if (!validStep && ir->eI != eiSteep)
+        if (!validStep && ir->eI != IntegrationAlgorithm::Steep)
         {
             gmx_fatal(FARGS,
                       "The coordinates could not be constrained. Minimizer '%s' can not handle "
                       "constraint failures, use minimizer '%s' before using '%s'.",
-                      EI(ir->eI),
-                      EI(eiSteep),
-                      EI(ir->eI));
+                      enumValueToString(ir->eI),
+                      enumValueToString(IntegrationAlgorithm::Steep),
+                      enumValueToString(ir->eI));
         }
     }
 
@@ -960,7 +960,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     clear_mat(pres);
 
     /* Communicate stuff when parallel */
-    if (PAR(cr) && inputrec->eI != eiNM)
+    if (PAR(cr) && inputrec->eI != IntegrationAlgorithm::NM)
     {
         wallcycle_start(wcycle, ewcMoveE);
 
@@ -985,8 +985,8 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     if (fr->dispersionCorrection)
     {
         /* Calculate long range corrections to pressure and energy */
-        const DispersionCorrection::Correction correction =
-                fr->dispersionCorrection->calculate(ems->s.box, ems->s.lambda[efptVDW]);
+        const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(
+                ems->s.box, ems->s.lambda[FreeEnergyPerturbationCouplingType::Vdw]);
 
         enerd->term[F_DISPCORR] = correction.energy;
         enerd->term[F_EPOT] += correction.energy;
@@ -1017,7 +1017,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                       f,
                       f.unpaddedArrayRef(),
                       ems->s.box,
-                      ems->s.lambda[efptBONDED],
+                      ems->s.lambda[FreeEnergyPerturbationCouplingType::Bonded],
                       &dvdl_constr,
                       gmx::ArrayRefWithPadding<RVec>(),
                       computeVirial,
@@ -1034,7 +1034,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     clear_mat(ekin);
     enerd->term[F_PRES] = calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    if (inputrec->efep != efepNO)
+    if (inputrec->efep != FreeEnergyPerturbationType::No)
     {
         accumulateKineticLambdaComponents(enerd, ems->s.lambda, *inputrec->fepvals);
     }

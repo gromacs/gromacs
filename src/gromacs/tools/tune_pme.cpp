@@ -890,12 +890,13 @@ static void modify_PMEsettings(int64_t     simsteps,    /* Set this value as num
     write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 }
 
-static gmx_bool can_scale_rvdw(int vdwtype)
+static gmx_bool can_scale_rvdw(VanDerWaalsType vdwtype)
 {
-    return (evdwCUT == vdwtype || evdwPME == vdwtype);
+    return (VanDerWaalsType::Cut == vdwtype || VanDerWaalsType::Pme == vdwtype);
 }
 
-#define EPME_SWITCHED(e) ((e) == eelPMESWITCH || (e) == eelPMEUSERSWITCH)
+#define EPME_SWITCHED(e) \
+    ((e) == CoulombInteractionType::PmeSwitch || (e) == CoulombInteractionType::PmeUserSwitch)
 
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
@@ -944,15 +945,18 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
     /* Check if some kind of PME was chosen */
     if (EEL_PME(ir->coulombtype) == FALSE)
     {
-        gmx_fatal(FARGS, "Can only do optimizations for simulations with %s electrostatics.", EELTYPE(eelPME));
+        gmx_fatal(FARGS,
+                  "Can only do optimizations for simulations with %s electrostatics.",
+                  enumValueToString(CoulombInteractionType::Pme));
     }
 
     /* Check if rcoulomb == rlist, which is necessary for plain PME. */
-    if ((ir->cutoff_scheme != ecutsVERLET) && (eelPME == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
+    if ((ir->cutoff_scheme != CutoffScheme::Verlet)
+        && (CoulombInteractionType::Pme == ir->coulombtype) && !(ir->rcoulomb == ir->rlist))
     {
         gmx_fatal(FARGS,
                   "%s requires rcoulomb (%f) to be equal to rlist (%f).",
-                  EELTYPE(eelPME),
+                  enumValueToString(CoulombInteractionType::Pme),
                   ir->rcoulomb,
                   ir->rlist);
     }
@@ -961,7 +965,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
     {
         gmx_fatal(FARGS,
                   "%s requires rcoulomb (%f) to be equal to or smaller than rlist (%f)",
-                  EELTYPE(ir->coulombtype),
+                  enumValueToString(ir->coulombtype),
                   ir->rcoulomb,
                   ir->rlist);
     }
@@ -1026,13 +1030,13 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
     fprintf(fp, "   Number of particles  : %d\n", mtop.natoms);
 
     /* Print information about settings of which some are potentially modified: */
-    fprintf(fp, "   Coulomb type         : %s\n", EELTYPE(ir->coulombtype));
+    fprintf(fp, "   Coulomb type         : %s\n", enumValueToString(ir->coulombtype));
     fprintf(fp,
             "   Grid spacing x y z   : %f %f %f\n",
             box_size[XX] / ir->nkx,
             box_size[YY] / ir->nky,
             box_size[ZZ] / ir->nkz);
-    fprintf(fp, "   Van der Waals type   : %s\n", EVDWTYPE(ir->vdwtype));
+    fprintf(fp, "   Van der Waals type   : %s\n", enumValueToString(ir->vdwtype));
     if (ir_vdw_switched(ir))
     {
         fprintf(fp, "   rvdw_switch          : %f nm\n", ir->rvdw_switch);
@@ -1095,7 +1099,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
                         &ir->nkz);
 
             /* Adjust other radii since various conditions need to be fulfilled */
-            if (eelPME == ir->coulombtype)
+            if (CoulombInteractionType::Pme == ir->coulombtype)
             {
                 /* plain PME, rcoulomb must be equal to rlist TODO only in the group scheme? */
                 ir->rlist = ir->rcoulomb;
@@ -1108,7 +1112,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
 
             if (bScaleRvdw && can_scale_rvdw(ir->vdwtype))
             {
-                if (ecutsVERLET == ir->cutoff_scheme || evdwPME == ir->vdwtype)
+                if (CutoffScheme::Verlet == ir->cutoff_scheme || VanDerWaalsType::Pme == ir->vdwtype)
                 {
                     /* With either the Verlet cutoff-scheme or LJ-PME,
                        the van der Waals radius must always equal the
@@ -2074,9 +2078,9 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real* rcoulomb)
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
     read_tpx_state(opt2fn("-s", nfile, fnm), ir, &state, &mtop);
-    bFree = (efepNO != ir->efep);
-    bNM   = (eiNM == ir->eI);
-    bSwap = (eswapNO != ir->eSwapCoords);
+    bFree = (FreeEnergyPerturbationType::No != ir->efep);
+    bNM   = (IntegrationAlgorithm::NM == ir->eI);
+    bSwap = (SwapType::No != ir->eSwapCoords);
     bTpi  = EI_TPI(ir->eI);
 
     /* Set these output files on the tuning command-line */

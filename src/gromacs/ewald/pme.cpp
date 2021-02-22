@@ -710,15 +710,15 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
      * not calculating free-energy for Coulomb and/or LJ while gmx_pme_init()
      * configures with free-energy, but that has never been tested.
      */
-    pme->doCoulomb     = EEL_PME(ir->coulombtype);
-    pme->doLJ          = EVDW_PME(ir->vdwtype);
-    pme->bFEP_q        = ((ir->efep != efepNO) && bFreeEnergy_q);
-    pme->bFEP_lj       = ((ir->efep != efepNO) && bFreeEnergy_lj);
-    pme->bFEP          = (pme->bFEP_q || pme->bFEP_lj);
-    pme->nkx           = ir->nkx;
-    pme->nky           = ir->nky;
-    pme->nkz           = ir->nkz;
-    pme->bP3M          = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != nullptr);
+    pme->doCoulomb = EEL_PME(ir->coulombtype);
+    pme->doLJ      = EVDW_PME(ir->vdwtype);
+    pme->bFEP_q    = ((ir->efep != FreeEnergyPerturbationType::No) && bFreeEnergy_q);
+    pme->bFEP_lj   = ((ir->efep != FreeEnergyPerturbationType::No) && bFreeEnergy_lj);
+    pme->bFEP      = (pme->bFEP_q || pme->bFEP_lj);
+    pme->nkx       = ir->nkx;
+    pme->nky       = ir->nky;
+    pme->nkz       = ir->nkz;
+    pme->bP3M = (ir->coulombtype == CoulombInteractionType::P3mAD || getenv("GMX_PME_P3M") != nullptr);
     pme->pme_order     = ir->pme_order;
     pme->ewaldcoeff_q  = ewaldcoeff_q;
     pme->ewaldcoeff_lj = ewaldcoeff_lj;
@@ -849,7 +849,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
      */
     if (pme->doLJ)
     {
-        pme->ngrids = ((ir->ljpme_combination_rule == eljpmeLB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
+        pme->ngrids = ((ir->ljpme_combination_rule == LongRangeVdW::LB) ? DO_Q_AND_LJ_LB : DO_Q_AND_LJ);
     }
     else
     {
@@ -863,7 +863,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     {
         if ((i < DO_Q && pme->doCoulomb && (i == 0 || bFreeEnergy_q))
             || (i >= DO_Q && pme->doLJ
-                && (i == 2 || bFreeEnergy_lj || ir->ljpme_combination_rule == eljpmeLB)))
+                && (i == 2 || bFreeEnergy_lj || ir->ljpme_combination_rule == LongRangeVdW::LB)))
         {
             pmegrids_init(&pme->pmegrid[i],
                           pme->pmegrid_nx,
@@ -1155,7 +1155,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
      */
 
     /* If we are doing LJ-PME with LB, we only do Q here */
-    max_grid_index = (pme->ljpme_combination_rule == eljpmeLB) ? DO_Q : DO_Q_AND_LJ;
+    max_grid_index = (pme->ljpme_combination_rule == LongRangeVdW::LB) ? DO_Q : DO_Q_AND_LJ;
 
     for (grid_index = 0; grid_index < max_grid_index; ++grid_index)
     {
@@ -1387,7 +1387,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     /* For Lorentz-Berthelot combination rules in LJ-PME, we need to calculate
      * seven terms. */
 
-    if (pme->doLJ && pme->ljpme_combination_rule == eljpmeLB)
+    if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* Loop over A- and B-state if we are doing FEP */
         for (fep_state = 0; fep_state < fep_states_lj; ++fep_state)
@@ -1619,7 +1619,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 bFirst = FALSE;
             } /* for (grid_index = 8; grid_index >= 2; --grid_index) */
         }     /* for (fep_state = 0; fep_state < fep_states_lj; ++fep_state) */
-    }         /* if (pme->doLJ && pme->ljpme_combination_rule == eljpmeLB) */
+    }         /* if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB) */
 
     if (stepWork.computeForces && pme->nnodes > 1)
     {

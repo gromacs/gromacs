@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1465,7 +1465,9 @@ static void do_dhdl(t_enxframe*             fr,
                 for (j = 0; j < n_lambda_vec; j++)
                 {
                     native_lambda_vec[j] = fr->block[i].sub[0].dval[5 + j];
-                    lambda_components[j] = efpt_singular_names[fr->block[i].sub[1].ival[2 + j]];
+                    lambda_components[j] =
+                            enumValueToStringSingular(static_cast<FreeEnergyPerturbationCouplingType>(
+                                    fr->block[i].sub[1].ival[2 + j]));
                 }
             }
         }

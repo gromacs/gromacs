@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
@@ -204,7 +205,7 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
         GMX_RELEASE_ASSERT(state->nhchainlength == nh,
                            "The global and local Nose-Hoover chain lengths should match");
 
-        for (int i = 0; i < efptNR; i++)
+        for (auto i : gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>::keys())
         {
             state_local->lambda[i] = state->lambda[i];
         }
@@ -239,7 +240,9 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
         }
         state_local->baros_integral = state->baros_integral;
     }
-    dd_bcast(dd, ((efptNR) * sizeof(real)), state_local->lambda.data());
+    dd_bcast(dd,
+             (static_cast<int>(FreeEnergyPerturbationCouplingType::Count) * sizeof(real)),
+             state_local->lambda.data());
     dd_bcast(dd, sizeof(int), &state_local->fep_state);
     dd_bcast(dd, sizeof(real), &state_local->veta);
     dd_bcast(dd, sizeof(real), &state_local->vol0);

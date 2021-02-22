@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/utility/arrayref.h"
 #include "position_restraints.h"
 
 #include <cassert>
@@ -71,18 +72,18 @@ namespace
 
 /*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()
  */
-void posres_dx(const rvec   x,
-               const rvec   pos0A,
-               const rvec   pos0B,
-               const rvec   comA_sc,
-               const rvec   comB_sc,
-               real         lambda,
-               const t_pbc* pbc,
-               int          refcoord_scaling,
-               int          npbcdim,
-               rvec         dx,
-               rvec         rdist,
-               rvec         dpdl)
+void posres_dx(const rvec      x,
+               const rvec      pos0A,
+               const rvec      pos0B,
+               const rvec      comA_sc,
+               const rvec      comB_sc,
+               real            lambda,
+               const t_pbc*    pbc,
+               RefCoordScaling refcoord_scaling,
+               int             npbcdim,
+               rvec            dx,
+               rvec            rdist,
+               rvec            dpdl)
 {
     int  m, d;
     real posA, posB, L1, ref = 0.;
@@ -98,12 +99,12 @@ void posres_dx(const rvec   x,
         {
             switch (refcoord_scaling)
             {
-                case erscNO:
+                case RefCoordScaling::No:
                     ref      = 0;
                     rdist[m] = L1 * posA + lambda * posB;
                     dpdl[m]  = posB - posA;
                     break;
-                case erscALL:
+                case RefCoordScaling::All:
                     /* Box relative coordinates are stored for dimensions with pbc */
                     posA *= pbc->box[m][m];
                     posB *= pbc->box[m][m];
@@ -117,7 +118,7 @@ void posres_dx(const rvec   x,
                     rdist[m] = 0;
                     dpdl[m]  = posB - posA;
                     break;
-                case erscCOM:
+                case RefCoordScaling::Com:
                     ref      = L1 * comA_sc[m] + lambda * comB_sc[m];
                     rdist[m] = L1 * posA + lambda * posB;
                     dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
@@ -194,7 +195,7 @@ real fbposres(int                   nbonds,
               const rvec            x[],
               gmx::ForceWithVirial* forceWithVirial,
               const t_pbc*          pbc,
-              int                   refcoord_scaling,
+              RefCoordScaling       refcoord_scaling,
               PbcType               pbcType,
               const rvec            com)
 /* compute flat-bottomed positions restraints */
@@ -208,7 +209,7 @@ real fbposres(int                   nbonds,
 
     npbcdim = numPbcDimensions(pbcType);
     GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
-    if (refcoord_scaling == erscCOM)
+    if (refcoord_scaling == RefCoordScaling::Com)
     {
         clear_rvec(com_sc);
         for (m = 0; m < npbcdim; m++)
@@ -337,7 +338,7 @@ real posres(int                   nbonds,
             const struct t_pbc*   pbc,
             real                  lambda,
             real*                 dvdlambda,
-            int                   refcoord_scaling,
+            RefCoordScaling       refcoord_scaling,
             PbcType               pbcType,
             const rvec            comA,
             const rvec            comB)
@@ -349,7 +350,7 @@ real posres(int                   nbonds,
 
     npbcdim = numPbcDimensions(pbcType);
     GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
-    if (refcoord_scaling == erscCOM)
+    if (refcoord_scaling == RefCoordScaling::Com)
     {
         clear_rvec(comA_sc);
         clear_rvec(comB_sc);
@@ -426,7 +427,7 @@ void posres_wrapper(t_nrnb*                       nrnb,
                     const struct t_pbc*           pbc,
                     const rvec*                   x,
                     gmx_enerdata_t*               enerd,
-                    const real*                   lambda,
+                    gmx::ArrayRef<const real>     lambda,
                     const t_forcerec*             fr,
                     gmx::ForceWithVirial*         forceWithVirial)
 {
@@ -439,7 +440,7 @@ void posres_wrapper(t_nrnb*                       nrnb,
                      x,
                      forceWithVirial,
                      fr->pbcType == PbcType::No ? nullptr : pbc,
-                     lambda[efptRESTRAINT],
+                     lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
                      &dvdl,
                      fr->rc_scaling,
                      fr->pbcType,
@@ -449,7 +450,7 @@ void posres_wrapper(t_nrnb*                       nrnb,
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
      */
-    enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
+    enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Restraint] += dvdl;
     inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef.il[F_POSRES].size(), 2));
 }
 
@@ -459,7 +460,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                            const struct t_pbc*           pbc,
                            const rvec                    x[],
                            gmx_enerdata_t*               enerd,
-                           const real*                   lambda,
+                           gmx::ArrayRef<const real>     lambda,
                            const t_forcerec*             fr)
 {
     wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
@@ -470,7 +471,8 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
         real dvdl = 0;
 
         const real lambda_dum =
-                (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
+                (i == 0 ? lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)]
+                        : fepvals->all_lambda[FreeEnergyPerturbationCouplingType::Restraint][i - 1]);
         const real v = posres<false>(idef.il[F_POSRES].size(),
                                      idef.il[F_POSRES].iatoms.data(),
                                      idef.iparams_posres.data(),

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,7 @@ void sum_epot(const gmx_grppairener_t& grpp, real* epot)
 static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
 {
     enerd->term[F_DVDL] = 0.0;
-    for (int i = 0; i < efptNR; i++)
+    for (auto i : keysOf(fepvals.separate_dvdl))
     {
         if (fepvals.separate_dvdl[i])
         {
@@ -140,11 +140,13 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
             int index;
             switch (i)
             {
-                case (efptMASS): index = F_DKDL; break;
-                case (efptCOUL): index = F_DVDL_COUL; break;
-                case (efptVDW): index = F_DVDL_VDW; break;
-                case (efptBONDED): index = F_DVDL_BONDED; break;
-                case (efptRESTRAINT): index = F_DVDL_RESTRAINT; break;
+                case (FreeEnergyPerturbationCouplingType::Mass): index = F_DKDL; break;
+                case (FreeEnergyPerturbationCouplingType::Coul): index = F_DVDL_COUL; break;
+                case (FreeEnergyPerturbationCouplingType::Vdw): index = F_DVDL_VDW; break;
+                case (FreeEnergyPerturbationCouplingType::Bonded): index = F_DVDL_BONDED; break;
+                case (FreeEnergyPerturbationCouplingType::Restraint):
+                    index = F_DVDL_RESTRAINT;
+                    break;
                 default: index = F_DVDL; break;
             }
             enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
@@ -152,8 +154,8 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
             {
                 fprintf(debug,
                         "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
-                        efpt_names[i],
-                        i,
+                        enumValueToString(i),
+                        static_cast<int>(i),
                         enerd->term[index],
                         enerd->dvdl_nonlin[i],
                         enerd->dvdl_lin[i]);
@@ -166,8 +168,8 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
             {
                 fprintf(debug,
                         "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
-                        efpt_names[0],
-                        i,
+                        enumValueToString(FreeEnergyPerturbationCouplingType::Fep),
+                        static_cast<int>(i),
                         enerd->term[F_DVDL],
                         enerd->dvdl_nonlin[i],
                         enerd->dvdl_lin[i]);
@@ -194,7 +196,7 @@ void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const doub
     }
 
     double dvdl_lin = 0;
-    for (int i = 0; i < efptNR; i++)
+    for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
     {
         dvdl_lin += dvdlLinear[i];
     }
@@ -258,7 +260,7 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
 
     // Treat current lambda, the deltaH contribution is 0 as delta-lambda=0 for the current lambda
     accumulateKinetic(0, 0.0, energyTerms[F_DVDL_CONSTR]);
-    if (!fepvals.separate_dvdl[efptMASS])
+    if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
     {
         accumulateKinetic(0, 0.0, energyTerms[F_DKDL]);
     }
@@ -271,13 +273,17 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
          * a linear extrapolation. This is an approximation, but usually
          * quite accurate since constraints change little between lambdas.
          */
-        const int    lambdaIndex = (fepvals.separate_dvdl[efptBONDED] ? efptBONDED : efptFEP);
-        const double dlam        = fepvals.all_lambda[lambdaIndex][i] - lambda[lambdaIndex];
+        const FreeEnergyPerturbationCouplingType lambdaIndex =
+                (fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded]
+                         ? FreeEnergyPerturbationCouplingType::Bonded
+                         : FreeEnergyPerturbationCouplingType::Fep);
+        const double dlam = fepvals.all_lambda[lambdaIndex][i] - lambda[static_cast<int>(lambdaIndex)];
         accumulateKinetic(1 + i, dlam * energyTerms[F_DVDL_CONSTR], energyTerms[F_DVDL_CONSTR]);
 
-        if (!fepvals.separate_dvdl[efptMASS])
+        if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
         {
-            const double dlam = fepvals.all_lambda[efptMASS][i] - lambda[efptMASS];
+            const double dlam = fepvals.all_lambda[FreeEnergyPerturbationCouplingType::Mass][i]
+                                - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Mass)];
             accumulateKinetic(1 + i, dlam * energyTerms[F_DKDL], energyTerms[F_DKDL]);
         }
     }
@@ -287,7 +293,7 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
                                        gmx::ArrayRef<const real> lambda,
                                        const t_lambda&           fepvals)
 {
-    if (fepvals.separate_dvdl[efptBONDED])
+    if (fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded])
     {
         enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
     }
@@ -297,7 +303,7 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
     }
 
     enerd->foreignLambdaTerms.finalizeKineticContributions(
-            enerd->term, enerd->dvdl_lin[efptMASS], lambda, fepvals);
+            enerd->term, enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass], lambda, fepvals);
 
     /* The constrain contribution is now included in other terms, so clear it */
     enerd->term[F_DVDL_CONSTR] = 0;
@@ -326,7 +332,7 @@ void reset_foreign_enerdata(gmx_enerdata_t* enerd)
 
 void reset_dvdl_enerdata(gmx_enerdata_t* enerd)
 {
-    for (int i = 0; i < efptNR; i++)
+    for (auto i : keysOf(enerd->dvdl_lin))
     {
         enerd->dvdl_lin[i]    = 0.0;
         enerd->dvdl_nonlin[i] = 0.0;

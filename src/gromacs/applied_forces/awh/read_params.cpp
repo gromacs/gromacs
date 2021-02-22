@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -186,10 +186,10 @@ void checkPullDimParams(const std::string&   prefix,
     }
 
     /* Grid params for each axis */
-    int eGeom = pull_params.coord[dimParams->coordIndex].eGeom;
+    PullGroupGeometry eGeom = pull_params.coord[dimParams->coordIndex].eGeom;
 
     /* Check that the requested interval is in allowed range */
-    if (eGeom == epullgDIST)
+    if (eGeom == PullGroupGeometry::Distance)
     {
         if (dimParams->origin < 0 || dimParams->end < 0)
         {
@@ -201,10 +201,10 @@ void checkPullDimParams(const std::string&   prefix,
                       dimParams->origin,
                       prefix.c_str(),
                       dimParams->end,
-                      EPULLGEOM(epullgDIR));
+                      enumValueToString(PullGroupGeometry::Direction));
         }
     }
-    else if (eGeom == epullgANGLE || eGeom == epullgANGLEAXIS)
+    else if (eGeom == PullGroupGeometry::Angle || eGeom == PullGroupGeometry::AngleAxis)
     {
         if (dimParams->origin < 0 || dimParams->end > 180)
         {
@@ -215,11 +215,11 @@ void checkPullDimParams(const std::string&   prefix,
                       dimParams->origin,
                       prefix.c_str(),
                       dimParams->end,
-                      EPULLGEOM(epullgANGLE),
-                      EPULLGEOM(epullgANGLEAXIS));
+                      enumValueToString(PullGroupGeometry::Angle),
+                      enumValueToString(PullGroupGeometry::AngleAxis));
         }
     }
-    else if (eGeom == epullgDIHEDRAL)
+    else if (eGeom == PullGroupGeometry::Dihedral)
     {
         if (dimParams->origin < -180 || dimParams->end > 180)
         {
@@ -230,7 +230,7 @@ void checkPullDimParams(const std::string&   prefix,
                       dimParams->origin,
                       prefix.c_str(),
                       dimParams->end,
-                      EPULLGEOM(epullgDIHEDRAL));
+                      enumValueToString(PullGroupGeometry::Dihedral));
         }
     }
 }
@@ -244,11 +244,11 @@ void checkPullDimParams(const std::string&   prefix,
  * \param[in] efep           This is the type of FEP calculation (efep enumerator).
  * \param[in,out] wi         Struct for bookeeping warnings.
  */
-void checkFepLambdaDimParams(const std::string&  prefix,
-                             const AwhDimParams* dimParams,
-                             const t_lambda*     lambdaParams,
-                             const int           efep,
-                             warninp_t           wi)
+void checkFepLambdaDimParams(const std::string&               prefix,
+                             const AwhDimParams*              dimParams,
+                             const t_lambda*                  lambdaParams,
+                             const FreeEnergyPerturbationType efep,
+                             warninp_t                        wi)
 {
     std::string opt;
 
@@ -269,14 +269,14 @@ void checkFepLambdaDimParams(const std::string&  prefix,
                   -1);
     }
 
-    if (efep == efepSLOWGROWTH || lambdaParams->delta_lambda != 0)
+    if (efep == FreeEnergyPerturbationType::SlowGrowth || lambdaParams->delta_lambda != 0)
     {
         gmx_fatal(FARGS,
                   "AWH coupled to the free energy lambda state is not compatible with slow-growth "
                   "and delta-lambda must be 0.");
     }
 
-    if (efep == efepEXPANDED)
+    if (efep == FreeEnergyPerturbationType::Expanded)
     {
         gmx_fatal(FARGS,
                   "AWH is not treated like other expanded ensemble methods. Do not use expanded.");
@@ -441,13 +441,13 @@ void checkDimParams(const std::string& prefix, AwhDimParams* dimParams, const t_
     }
     else if (dimParams->eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
     {
-        if (ir->efep == efepNO)
+        if (ir->efep == FreeEnergyPerturbationType::No)
         {
             gmx_fatal(FARGS,
                       "AWH biasing along a free energy lambda state dimension is only compatible "
                       "with free energy turned on");
         }
-        checkFepLambdaDimParams(prefix, dimParams, ir->fepvals, ir->efep, wi);
+        checkFepLambdaDimParams(prefix, dimParams, ir->fepvals.get(), ir->efep, wi);
     }
     else
     {
@@ -516,7 +516,7 @@ void readBiasParams(std::vector<t_inpfile>* inp,
                              "distribution: no or yes");
     }
     opt                                 = prefix + "-equilibrate-histogram";
-    awhBiasParams->equilibrateHistogram = (get_eeenum(inp, opt, yesno_names, wi) != 0);
+    awhBiasParams->equilibrateHistogram = (getEnum<Boolean>(inp, opt.c_str(), wi) != Boolean::No);
 
     if (bComment)
     {
@@ -547,7 +547,7 @@ void readBiasParams(std::vector<t_inpfile>* inp,
         printStringNoNewline(inp, "Initialize PMF and target with user data: no or yes");
     }
     opt                      = prefix + "-user-data";
-    awhBiasParams->bUserData = get_eeenum(inp, opt, yesno_names, wi);
+    awhBiasParams->bUserData = getEnum<Boolean>(inp, opt.c_str(), wi) != Boolean::No;
 
     if (bComment)
     {
@@ -813,7 +813,7 @@ AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
     printStringNoNewline(
             inp, "When true, biases with share-group>0 are shared between multiple simulations");
     opt                          = "awh-share-multisim";
-    awhParams->shareBiasMultisim = (get_eeenum(inp, opt, yesno_names, wi) != 0);
+    awhParams->shareBiasMultisim = (getEnum<Boolean>(inp, opt.c_str(), wi) != Boolean::No);
 
     printStringNoNewline(inp, "The number of independent AWH biases");
     opt                = "awh-nbias";
@@ -892,7 +892,7 @@ static double get_pull_coord_period(const t_pull_coord& pullCoordParams, const t
 {
     double period = 0;
 
-    if (pullCoordParams.eGeom == epullgDIR)
+    if (pullCoordParams.eGeom == PullGroupGeometry::Direction)
     {
         const real margin = 0.001;
         // Make dims periodic when the interval covers > 95%
@@ -921,7 +921,7 @@ static double get_pull_coord_period(const t_pull_coord& pullCoordParams, const t
             }
         }
     }
-    else if (pullCoordParams.eGeom == epullgDIHEDRAL)
+    else if (pullCoordParams.eGeom == PullGroupGeometry::Dihedral)
     {
         /* The dihedral angle is periodic in -180 to 180 deg */
         period = 360;
@@ -1086,21 +1086,22 @@ static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
 {
     const t_pull_coord& pullCoordParams = pull_params->coord[dimParams->coordIndex];
 
-    if (pullCoordParams.eGeom == epullgDIRPBC)
+    if (pullCoordParams.eGeom == PullGroupGeometry::DirectionPBC)
     {
         gmx_fatal(FARGS,
                   "AWH does not support pull geometry '%s'. "
                   "If the maximum distance between the groups is always "
                   "less than half the box size, "
                   "you can use geometry '%s' instead.",
-                  EPULLGEOM(epullgDIRPBC),
-                  EPULLGEOM(epullgDIR));
+                  enumValueToString(PullGroupGeometry::DirectionPBC),
+                  enumValueToString(PullGroupGeometry::Direction));
     }
 
     dimParams->period = get_pull_coord_period(pullCoordParams, pbc, dimParams->end - dimParams->origin);
     // We would like to check for scaling, but we don't have the full inputrec available here
     if (dimParams->period > 0
-        && !(pullCoordParams.eGeom == epullgANGLE || pullCoordParams.eGeom == epullgDIHEDRAL))
+        && !(pullCoordParams.eGeom == PullGroupGeometry::Angle
+             || pullCoordParams.eGeom == PullGroupGeometry::Dihedral))
     {
         bool coordIsScaled = false;
         for (int d2 = 0; d2 < DIM; d2++)
@@ -1118,7 +1119,7 @@ static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
                     "corresponding box vector, this is not supported.",
                     dimIndex + 1,
                     biasIndex + 1,
-                    EPULLGEOM(pullCoordParams.eGeom));
+                    enumValueToString(pullCoordParams.eGeom));
             warning(wi, mesg.c_str());
         }
     }

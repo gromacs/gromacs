@@ -221,11 +221,11 @@ void LegacySimulator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
+    gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != FreeEnergyPerturbationType::No);
 
     const SimulationGroups* groups = &top_global->groups;
 
-    bCavity = (inputrec->eI == eiTPIC);
+    bCavity = (inputrec->eI == IntegrationAlgorithm::TPIC);
     if (bCavity)
     {
         ptr = getenv("GMX_TPIC_MASSES");
@@ -340,7 +340,7 @@ void LegacySimulator::do_tpi()
 
     snew(x_mol, a_tp1 - a_tp0);
 
-    bDispCorr = (inputrec->eDispCorr != edispcNO);
+    bDispCorr = (inputrec->eDispCorr != DispersionCorrectionType::No);
     bCharge   = FALSE;
     for (i = a_tp0; i < a_tp1; i++)
     {
@@ -569,9 +569,9 @@ void LegacySimulator::do_tpi()
 
     switch (inputrec->eI)
     {
-        case eiTPI: stepblocksize = inputrec->nstlist; break;
-        case eiTPIC: stepblocksize = 1; break;
-        default: gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
+        case IntegrationAlgorithm::TPI: stepblocksize = inputrec->nstlist; break;
+        case IntegrationAlgorithm::TPIC: stepblocksize = 1; break;
+        default: gmx_fatal(FARGS, "Unknown integrator %s", enumValueToString(inputrec->eI));
     }
 
     while (bNotLastFrame)

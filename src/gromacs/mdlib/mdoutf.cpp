@@ -83,9 +83,9 @@ struct gmx_mdoutf
     ener_file_t                   fp_ene;
     const char*                   fn_cpt;
     gmx_bool                      bKeepAndNumCPT;
-    int                           eIntegrator;
+    IntegrationAlgorithm          eIntegrator;
     gmx_bool                      bExpanded;
-    int                           elamstats;
+    LambdaWeightCalculation       elamstats;
     int                           simulation_part;
     FILE*                         fp_dhdl;
     int                           natoms_global;
@@ -206,8 +206,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
         }
         of->fn_cpt = opt2fn("-cpo", nfile, fnm);
 
-        if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0
-            && (ir->fepvals->separate_dhdl_file == esepdhdlfileYES) && EI_DYNAMICS(ir->eI))
+        if ((ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp) && ir->fepvals->nstdhdl > 0
+            && (ir->fepvals->separate_dhdl_file == SeparateDhdlFile::Yes) && EI_DYNAMICS(ir->eI))
         {
             if (restartWithAppending)
             {
@@ -289,10 +289,10 @@ static void write_checkpoint(const char*                     fn,
                              const t_commrec*                cr,
                              ivec                            domdecCells,
                              int                             nppnodes,
-                             int                             eIntegrator,
+                             IntegrationAlgorithm            eIntegrator,
                              int                             simulation_part,
                              gmx_bool                        bExpanded,
-                             int                             elamstats,
+                             LambdaWeightCalculation         elamstats,
                              int64_t                         step,
                              double                          t,
                              t_state*                        state,
@@ -355,7 +355,7 @@ static void write_checkpoint(const char*                     fn,
     int             nED       = (edsamhist ? edsamhist->nED : 0);
 
     swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
-    int            eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
+    SwapType       eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
 
     CheckpointHeaderContents headerContents = { 0,
                                                 { 0 },
@@ -605,8 +605,15 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
 
             if (of->fp_trn)
             {
-                gmx_trr_write_frame(
-                        of->fp_trn, step, t, state_local->lambda[efptFEP], state_local->box, natoms, x, v, f);
+                gmx_trr_write_frame(of->fp_trn,
+                                    step,
+                                    t,
+                                    state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                                    state_local->box,
+                                    natoms,
+                                    x,
+                                    v,
+                                    f);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -617,8 +624,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                velocities and forces to it. */
             else if (of->tng)
             {
-                gmx_fwrite_tng(
-                        of->tng, FALSE, step, t, state_local->lambda[efptFEP], state_local->box, natoms, x, v, f);
+                gmx_fwrite_tng(of->tng,
+                               FALSE,
+                               step,
+                               t,
+                               state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
+                               state_local->box,
+                               natoms,
+                               x,
+                               v,
+                               f);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
                coordinate output) also write forces and velocities to it. */
@@ -628,7 +643,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                FALSE,
                                step,
                                t,
-                               state_local->lambda[efptFEP],
+                               state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                                state_local->box,
                                natoms,
                                x,
@@ -675,7 +690,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                            TRUE,
                            step,
                            t,
-                           state_local->lambda[efptFEP],
+                           state_local->lambda[FreeEnergyPerturbationCouplingType::Fep],
                            state_local->box,
                            of->natoms_x_compressed,
                            xxtc,
@@ -698,7 +713,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                 }
                 if (mdof_flags & MDOF_LAMBDA)
                 {
-                    lambda = state_local->lambda[efptFEP];
+                    lambda = state_local->lambda[FreeEnergyPerturbationCouplingType::Fep];
                 }
                 gmx_fwrite_tng(of->tng, FALSE, step, t, lambda, box, natoms, nullptr, nullptr, nullptr);
             }
@@ -716,7 +731,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                 }
                 if (mdof_flags & MDOF_LAMBDA_COMPRESSED)
                 {
-                    lambda = state_local->lambda[efptFEP];
+                    lambda = state_local->lambda[FreeEnergyPerturbationCouplingType::Fep];
                 }
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, lambda, box, natoms, nullptr, nullptr, nullptr);
             }

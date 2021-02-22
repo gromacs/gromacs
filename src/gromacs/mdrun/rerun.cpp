@@ -209,7 +209,7 @@ void gmx::LegacySimulator::do_rerun()
                     "be available in a different form in a future version of GROMACS, "
                     "e.g. gmx rerun -f.");
 
-    if (ir->efep != efepNO
+    if (ir->efep != FreeEnergyPerturbationType::No
         && (mdAtoms->mdatoms()->nMassPerturbed > 0 || (constr && constr->havePerturbedConstraints())))
     {
         gmx_fatal(FARGS,
@@ -245,8 +245,8 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](int i) {
-            return i != eannNO;
+    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](SimulatedAnnealing i) {
+            return i != SimulatedAnnealing::No;
         }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
@@ -277,7 +277,7 @@ void gmx::LegacySimulator::do_rerun()
     const bool bNS           = true;
 
     const SimulationGroups* groups = &top_global->groups;
-    if (ir->eI == eiMimic)
+    if (ir->eI == IntegrationAlgorithm::Mimic)
     {
         auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
@@ -378,9 +378,9 @@ void gmx::LegacySimulator::do_rerun()
     // the global state to file and potentially for replica exchange.
     // (Global topology should persist.)
 
-    update_mdatoms(mdatoms, state->lambda[efptMASS]);
+    update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
 
-    if (ir->efep != efepNO && ir->fepvals->nstdhdl != 0)
+    if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl != 0)
     {
         doFreeEnergyPerturbation = true;
     }
@@ -555,7 +555,7 @@ void gmx::LegacySimulator::do_rerun()
             t = step;
         }
 
-        if (ir->efep != efepNO && MASTER(cr))
+        if (ir->efep != FreeEnergyPerturbationType::No && MASTER(cr))
         {
             if (rerun_fr.bLambda)
             {
@@ -620,9 +620,9 @@ void gmx::LegacySimulator::do_rerun()
             EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
-        if (ir->efep != efepNO)
+        if (ir->efep != FreeEnergyPerturbationType::No)
         {
-            update_mdatoms(mdatoms, state->lambda[efptMASS]);
+            update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
@@ -793,8 +793,8 @@ void gmx::LegacySimulator::do_rerun()
                                              t,
                                              mdatoms->tmass,
                                              enerd,
-                                             ir->fepvals,
-                                             ir->expandedvals,
+                                             ir->fepvals.get(),
+                                             ir->expandedvals.get(),
                                              state->box,
                                              PTCouplingArrays({ state->boxv,
                                                                 state->nosehoover_xi,
@@ -849,7 +849,8 @@ void gmx::LegacySimulator::do_rerun()
         /* Ion/water position swapping.
          * Not done in last step since trajectory writing happens before this call
          * in the MD loop and exchanges would be lost anyway. */
-        if ((ir->eSwapCoords != eswapNO) && (step > 0) && !isLastStep && do_per_step(step, ir->swap->nstswap))
+        if ((ir->eSwapCoords != SwapType::No) && (step > 0) && !isLastStep
+            && do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
             do_swapcoords(cr,

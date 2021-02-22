@@ -71,7 +71,7 @@ struct t_inputrec;
 struct t_nrnb;
 struct t_pbc;
 class t_state;
-
+enum class ConstraintAlgorithm : int;
 namespace gmx
 {
 template<typename T>
@@ -219,7 +219,7 @@ private:
 };
 
 /*! \brief Generate a fatal error because of too many LINCS/SETTLE warnings. */
-[[noreturn]] void too_many_constraint_warnings(int eConstrAlg, int warncount);
+[[noreturn]] void too_many_constraint_warnings(ConstraintAlgorithm eConstrAlg, int warncount);
 
 /*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
 static inline bool isConstraintFlexible(ArrayRef<const t_iparams> iparams, int iparamsIndex)

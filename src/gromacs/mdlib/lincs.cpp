@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2197,7 +2197,7 @@ static void lincs_warning(gmx_domdec_t*                 dd,
     }
     if (*warncount > maxwarn)
     {
-        too_many_constraint_warnings(econtLINCS, *warncount);
+        too_many_constraint_warnings(ConstraintAlgorithm::Lincs, *warncount);
     }
 }
 
@@ -2294,7 +2294,7 @@ bool constrain_lincs(bool                            computeRmsd,
      * We can also easily check if any constraint length is changed,
      * if not dH/dlambda=0 and we can also set the boolean to FALSE.
      */
-    bool bCalcDHDL = (ir.efep != efepNO && dvdlambda != nullptr);
+    bool bCalcDHDL = (ir.efep != FreeEnergyPerturbationType::No && dvdlambda != nullptr);
 
     if (lincsd->nc == 0 && cr->dd == nullptr)
     {
@@ -2314,7 +2314,7 @@ bool constrain_lincs(bool                            computeRmsd,
         /* We can't use bCalcDHDL here, since NULL can be passed for dvdlambda
          * also with efep!=fepNO.
          */
-        if (ir.efep != efepNO)
+        if (ir.efep != FreeEnergyPerturbationType::No)
         {
             if (hasMassPerturbed && lincsd->matlam != lambda)
             {

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,6 +76,7 @@ struct t_inputrec;
 struct PmeGpu;
 
 enum class PmeRunMode;
+enum class LongRangeVdW : int;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -357,7 +358,7 @@ struct gmx_pme_t
     class EwaldBoxZScaler* boxScaler; /**< The scaling data Ewald uses with walls (set at pme_init constant for the entire run) */
 
 
-    int ljpme_combination_rule; /* Type of combination rule in LJ-PME */
+    LongRangeVdW ljpme_combination_rule; /* Type of combination rule in LJ-PME */
 
     int ngrids; /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
 

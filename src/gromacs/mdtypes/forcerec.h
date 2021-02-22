@@ -173,9 +173,9 @@ private:
     //! Shift force array for computing the virial, size SHIFTS
     std::vector<gmx::RVec> shiftForces_;
 };
-
+// NOLINTNEXTLINE (clang-analyzer-optin.performance.Padding)
 struct t_forcerec
-{ // NOLINT (clang-analyzer-optin.performance.Padding)
+{
     // Declare an explicit constructor and destructor, so they can be
     // implemented in a single source file, so that not every source
     // file that includes this one needs to understand how to find the
@@ -190,10 +190,10 @@ struct t_forcerec
     //! Tells whether atoms inside a molecule can be in different periodic images,
     //  i.e. whether we need to take into account PBC when computing distances inside molecules.
     //  This determines whether PBC must be considered for e.g. bonded interactions.
-    gmx_bool bMolPBC     = FALSE;
-    int      rc_scaling  = 0;
-    rvec     posres_com  = { 0 };
-    rvec     posres_comB = { 0 };
+    gmx_bool        bMolPBC     = FALSE;
+    RefCoordScaling rc_scaling  = RefCoordScaling::No;
+    rvec            posres_com  = { 0 };
+    rvec            posres_comB = { 0 };
 
     gmx_bool use_simd_kernels = FALSE;
 
@@ -206,10 +206,10 @@ struct t_forcerec
      * tabulated we already included the inputrec modification there, so the kernel
      * modification setting will say 'none' in that case.
      */
-    int nbkernel_elec_interaction = 0;
-    int nbkernel_vdw_interaction  = 0;
-    int nbkernel_elec_modifier    = 0;
-    int nbkernel_vdw_modifier     = 0;
+    NbkernelElecType     nbkernel_elec_interaction = NbkernelElecType::None;
+    NbkernelVdwType      nbkernel_vdw_interaction  = NbkernelVdwType::None;
+    InteractionModifiers nbkernel_elec_modifier    = InteractionModifiers::None;
+    InteractionModifiers nbkernel_vdw_modifier     = InteractionModifiers::None;
 
     /* Cut-Off stuff.
      * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
@@ -234,7 +234,7 @@ struct t_forcerec
     std::unique_ptr<t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
-    int efep = 0;
+    FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::No;
 
     /* Information about atom properties for the molecule blocks in the system */
     std::vector<cginfo_mb_t> cginfo_mb;
@@ -262,7 +262,7 @@ struct t_forcerec
 
     /* Data for PPPM/PME/Ewald */
     struct gmx_pme_t* pmedata                = nullptr;
-    int               ljpme_combination_rule = 0;
+    LongRangeVdW      ljpme_combination_rule = LongRangeVdW::Geom;
 
     /* PME/Ewald stuff */
     struct gmx_ewald_tab_t* ewald_table = nullptr;

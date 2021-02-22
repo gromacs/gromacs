@@ -66,6 +66,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
@@ -89,7 +90,7 @@ void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_hist
 {
     if (!bStateFromCP)
     {
-        init_df_history_weights(dfhist, ir->expandedvals, ir->fepvals->n_lambda);
+        init_df_history_weights(dfhist, ir->expandedvals.get(), ir->fepvals->n_lambda);
     }
 }
 
@@ -258,22 +259,22 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, con
         /* calculate the total number of samples */
         switch (expand->elmceq)
         {
-            case elmceqNO:
+            case LambdaWeightWillReachEquilibrium::No:
                 /* We have not equilibrated, and won't, ever. */
                 bDoneEquilibrating = FALSE;
                 break;
-            case elmceqYES:
+            case LambdaWeightWillReachEquilibrium::Yes:
                 /* we have equilibrated -- we're done */
                 bDoneEquilibrating = TRUE;
                 break;
-            case elmceqSTEPS:
+            case LambdaWeightWillReachEquilibrium::Steps:
                 /* first, check if we are equilibrating by steps, if we're still under */
                 if (step < expand->equil_steps)
                 {
                     bDoneEquilibrating = FALSE;
                 }
                 break;
-            case elmceqSAMPLES:
+            case LambdaWeightWillReachEquilibrium::Samples:
                 totalsamples = 0;
                 for (i = 0; i < nlim; i++)
                 {
@@ -284,7 +285,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, con
                     bDoneEquilibrating = FALSE;
                 }
                 break;
-            case elmceqNUMATLAM:
+            case LambdaWeightWillReachEquilibrium::NumAtLambda:
                 for (i = 0; i < nlim; i++)
                 {
                     if (dfhist->n_at_lam[i]
@@ -296,7 +297,7 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, con
                     }
                 }
                 break;
-            case elmceqWLDELTA:
+            case LambdaWeightWillReachEquilibrium::WLDelta:
                 if (EWL(expand->elamstats)) /* This check is in readir as well, but
                                                just to be sure */
                 {
@@ -306,13 +307,13 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, con
                     }
                 }
                 break;
-            case elmceqRATIO:
+            case LambdaWeightWillReachEquilibrium::Ratio:
                 /* we can use the flatness as a judge of good weights, as long as
                    we're not doing minvar, or Wang-Landau.
                    But turn off for now until we figure out exactly how we do this.
                  */
 
-                if (!(EWL(expand->elamstats) || expand->elamstats == elamstatsMINVAR))
+                if (!(EWL(expand->elamstats) || expand->elamstats == LambdaWeightCalculation::Minvar))
                 {
                     /* we want to use flatness -avoiding- the forced-through samples.  Plus, we need
                        to convert to floats for this histogram function. */
@@ -387,12 +388,13 @@ static gmx_bool UpdateWeights(int           nlim,
 
     if (EWL(expand->elamstats))
     {
-        if (expand->elamstats == elamstatsWL) /* Using standard Wang-Landau for weight updates */
+        if (expand->elamstats
+            == LambdaWeightCalculation::WL) /* Using standard Wang-Landau for weight updates */
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta;
             dfhist->wl_histo[fep_state] += 1.0;
         }
-        else if (expand->elamstats == elamstatsWWL)
+        else if (expand->elamstats == LambdaWeightCalculation::WWL)
         /* Using weighted Wang-Landau for weight updates.
          * Very closly equivalent to accelerated weight histogram approach
          * applied to expanded ensemble. */
@@ -434,8 +436,9 @@ static gmx_bool UpdateWeights(int           nlim,
         }
     }
 
-    if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMETROPOLIS
-        || expand->elamstats == elamstatsMINVAR)
+    if (expand->elamstats == LambdaWeightCalculation::Barker
+        || expand->elamstats == LambdaWeightCalculation::Metropolis
+        || expand->elamstats == LambdaWeightCalculation::Minvar)
     {
         maxc = 2 * expand->c_range + 1;
 
@@ -786,7 +789,7 @@ static gmx_bool UpdateWeights(int           nlim,
             lam_variance[fep_state] = clam_varp;
         }
 
-        if (expand->elamstats == elamstatsMINVAR)
+        if (expand->elamstats == LambdaWeightCalculation::Minvar)
         {
             bSufficientSamples = TRUE;
             /* make sure the number of samples in each state are all
@@ -910,7 +913,8 @@ static int ChooseNewLambda(int               nlim,
             accept[ifep]  = 0;
         }
 
-        if ((expand->elmcmove == elmcmoveGIBBS) || (expand->elmcmove == elmcmoveMETGIBBS))
+        if ((expand->elmcmove == LambdaMoveCalculation::Gibbs)
+            || (expand->elmcmove == LambdaMoveCalculation::MetropolisGibbs))
         {
             /* use the Gibbs sampler, with restricted range */
             if (expand->gibbsdeltalam < 0)
@@ -934,7 +938,7 @@ static int ChooseNewLambda(int               nlim,
 
             GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, minfep, maxfep);
 
-            if (expand->elmcmove == elmcmoveGIBBS)
+            if (expand->elmcmove == LambdaMoveCalculation::Gibbs)
             {
                 for (ifep = minfep; ifep <= maxfep; ifep++)
                 {
@@ -952,7 +956,7 @@ static int ChooseNewLambda(int               nlim,
                     r1 -= p_k[lamnew];
                 }
             }
-            else if (expand->elmcmove == elmcmoveMETGIBBS)
+            else if (expand->elmcmove == LambdaMoveCalculation::MetropolisGibbs)
             {
 
                 /* Metropolized Gibbs sampling */
@@ -1074,7 +1078,8 @@ static int ChooseNewLambda(int               nlim,
                 }
             }
         }
-        else if ((expand->elmcmove == elmcmoveMETROPOLIS) || (expand->elmcmove == elmcmoveBARKER))
+        else if ((expand->elmcmove == LambdaMoveCalculation::Metropolis)
+                 || (expand->elmcmove == LambdaMoveCalculation::Barker))
         {
             /* use the metropolis sampler with trial +/- 1 */
             r1 = dist(rng);
@@ -1102,7 +1107,7 @@ static int ChooseNewLambda(int               nlim,
             }
 
             de = weighted_lamee[lamtrial] - weighted_lamee[fep_state];
-            if (expand->elmcmove == elmcmoveMETROPOLIS)
+            if (expand->elmcmove == LambdaMoveCalculation::Metropolis)
             {
                 tprob = 1.0;
                 if (de < 0)
@@ -1115,7 +1120,7 @@ static int ChooseNewLambda(int               nlim,
                         1.0; /* doesn't actually matter, never proposed unless fep_state = ntrial, in which case it's 1.0 anyway */
                 accept[lamtrial] = tprob;
             }
-            else if (expand->elmcmove == elmcmoveBARKER)
+            else if (expand->elmcmove == LambdaMoveCalculation::Barker)
             {
                 if (de > 0) /* Numerically stable version */
                 {
@@ -1170,11 +1175,9 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                                int                 frequency,
                                int64_t             step)
 {
-    int         nlim, i, ifep, jfep;
-    real        dw, dg, dv, Tprint;
-    const char* print_names[efptNR] = { " FEPL", "MassL", "CoulL",   " VdwL",
-                                        "BondL", "RestT", "Temp.(K)" };
-    gmx_bool    bSimTemp            = FALSE;
+    int      nlim, ifep, jfep;
+    real     dw, dg, dv, Tprint;
+    gmx_bool bSimTemp = FALSE;
 
     nlim = fep->n_lambda;
     if (simtemp != nullptr)
@@ -1190,19 +1193,19 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             fprintf(outfile, "  Wang-Landau incrementor is: %11.5g\n", dfhist->wl_delta);
         }
         fprintf(outfile, "  N");
-        for (i = 0; i < efptNR; i++)
+        for (auto i : keysOf(fep->separate_dvdl))
         {
             if (fep->separate_dvdl[i])
             {
-                fprintf(outfile, "%7s", print_names[i]);
+                fprintf(outfile, "%7s", enumValueToString(i));
             }
-            else if ((i == efptTEMPERATURE) && bSimTemp)
+            else if ((i == FreeEnergyPerturbationCouplingType::Temperature) && bSimTemp)
             {
-                fprintf(outfile, "%10s", print_names[i]); /* more space for temperature formats */
+                fprintf(outfile, "%10s", enumValueToString(i)); /* more space for temperature formats */
             }
         }
         fprintf(outfile, "    Count   ");
-        if (expand->elamstats == elamstatsMINVAR)
+        if (expand->elamstats == LambdaWeightCalculation::Minvar)
         {
             fprintf(outfile, "W(in kT)   G(in kT)  dG(in kT)  dV(in kT)\n");
         }
@@ -1226,13 +1229,13 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                                - gmx::square(dfhist->sum_variance[ifep]));
             }
             fprintf(outfile, "%3d", (ifep + 1));
-            for (i = 0; i < efptNR; i++)
+            for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (fep->separate_dvdl[i])
                 {
                     fprintf(outfile, "%7.3f", fep->all_lambda[i][ifep]);
                 }
-                else if (i == efptTEMPERATURE && bSimTemp)
+                else if (i == FreeEnergyPerturbationCouplingType::Temperature && bSimTemp)
                 {
                     fprintf(outfile, "%9.3f", simtemp->temperatures[ifep]);
                 }
@@ -1240,7 +1243,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             if (EWL(expand->elamstats)
                 && (!(dfhist->bEquil))) /* if performing WL and still haven't equilibrated */
             {
-                if (expand->elamstats == elamstatsWL)
+                if (expand->elamstats == LambdaWeightCalculation::WL)
                 {
                     fprintf(outfile, " %8d", static_cast<int>(dfhist->wl_histo[ifep]));
                 }
@@ -1253,7 +1256,7 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             {
                 fprintf(outfile, " %8d", dfhist->n_at_lam[ifep]);
             }
-            if (expand->elamstats == elamstatsMINVAR)
+            if (expand->elamstats == LambdaWeightCalculation::Minvar)
             {
                 fprintf(outfile,
                         " %10.5f %10.5f %10.5f %10.5f",
@@ -1365,8 +1368,8 @@ int ExpandedEnsembleDynamics(FILE*                 log,
     t_simtemp*  simtemp;
     gmx_bool    bIfReset, bSwitchtoOneOverT, bDoneEquilibrating = FALSE;
 
-    expand  = ir->expandedvals;
-    simtemp = ir->simtempvals;
+    expand  = ir->expandedvals.get();
+    simtemp = ir->simtempvals.get();
     nlim    = ir->fepvals->n_lambda;
 
     snew(scaled_lamee, nlim);
@@ -1392,7 +1395,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
     /* we don't need to include the pressure term, since the volume is the same between the two.
        is there some term we are neglecting, however? */
 
-    if (ir->efep != efepNO)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         for (i = 0; i < nlim; i++)
         {
@@ -1469,7 +1472,7 @@ int ExpandedEnsembleDynamics(FILE*                 log,
             fprintf(log,
                     "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n",
                     step,
-                    elmceq_names[expand->elmceq]);
+                    enumValueToString(expand->elmceq));
         }
     }
 

@@ -41,6 +41,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "statepropagatordata.h"
 
 #include "gromacs/commandline/filenm.h"
@@ -164,7 +165,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
                 }
             }
         }
-        if (inputrec->eI == eiVV)
+        if (inputrec->eI == IntegrationAlgorithm::VV)
         {
             vvResetVelocities_ = true;
         }
@@ -358,7 +359,9 @@ void StatePropagatorData::Element::saveState()
     if (freeEnergyPerturbationData_)
     {
         localStateBackup_->fep_state = freeEnergyPerturbationData_->currentFEPState();
-        for (unsigned long i = 0; i < localStateBackup_->lambda.size(); ++i)
+        for (unsigned long i = 0;
+             i < gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>::size();
+             ++i)
         {
             localStateBackup_->lambda[i] = freeEnergyPerturbationData_->constLambdaView()[i];
         }

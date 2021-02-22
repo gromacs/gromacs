@@ -378,8 +378,9 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
         // had to define a function that returns such requirements,
         // and a description string.
         SingleRankChecker checker;
-        checker.applyConstraint(inputrec->eI == eiLBFGS, "L-BFGS minimization");
-        checker.applyConstraint(inputrec->coulombtype == eelEWALD, "Plain Ewald electrostatics");
+        checker.applyConstraint(inputrec->eI == IntegrationAlgorithm::LBFGS, "L-BFGS minimization");
+        checker.applyConstraint(inputrec->coulombtype == CoulombInteractionType::Ewald,
+                                "Plain Ewald electrostatics");
         checker.applyConstraint(doMembed, "Membrane embedding");
         bool useOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
         checker.applyConstraint(useOrientationRestraints, "Orientation restraints");
@@ -437,7 +438,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
     nrank = get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
 
-    if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
+    if (inputrec->eI == IntegrationAlgorithm::NM || EI_TPI(inputrec->eI))
     {
         /* Dims/steps are divided over the nodes iso splitting the atoms.
          * With NM we can't have more ranks than #atoms*#dim. With TPI it's

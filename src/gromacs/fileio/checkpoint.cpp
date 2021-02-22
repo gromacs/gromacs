@@ -1152,7 +1152,14 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         contents->nlambda = 0;
     }
-    do_cpt_int_err(xd, "integrator", &contents->eIntegrator, list);
+    {
+        int integrator = static_cast<int>(contents->eIntegrator);
+        do_cpt_int_err(xd, "integrator", &integrator, list);
+        if (bRead)
+        {
+            contents->eIntegrator = static_cast<IntegrationAlgorithm>(integrator);
+        }
+    }
     if (contents->file_version >= 3)
     {
         do_cpt_int_err(xd, "simulation part #", &contents->simulation_part, list);
@@ -1211,11 +1218,16 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
 
     if (contents->file_version >= 16)
     {
-        do_cpt_int_err(xd, "swap", &contents->eSwapCoords, list);
+        int swapState = static_cast<int>(contents->eSwapCoords);
+        do_cpt_int_err(xd, "swap", &swapState, list);
+        if (bRead)
+        {
+            contents->eSwapCoords = static_cast<SwapType>(swapState);
+        }
     }
     else
     {
-        contents->eSwapCoords = eswapNO;
+        contents->eSwapCoords = SwapType::No;
     }
 
     if (contents->file_version >= 17)
@@ -1290,7 +1302,9 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                             part,
                             i,
                             sflags,
-                            gmx::arrayRefFromArray<real>(state->lambda.data(), state->lambda.size()),
+                            gmx::arrayRefFromArray<real>(
+                                    state->lambda.data(),
+                                    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>::size()),
                             list);
                     break;
                 case estFEPSTATE:
@@ -1428,11 +1442,11 @@ static int do_cpt_ekinstate(XDR* xd, int fflags, ekinstate_t* ekins, FILE* list)
 }
 
 
-static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, int eSwapCoords, swaphistory_t* swapstate, FILE* list)
+static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaphistory_t* swapstate, FILE* list)
 {
     int swap_cpt_version = 2;
 
-    if (eSwapCoords == eswapNO)
+    if (eSwapCoords == SwapType::No)
     {
         return 0;
     }
@@ -2245,7 +2259,7 @@ static int do_cpt_files(XDR* xd, gmx_bool bRead, std::vector<gmx_file_position_t
 void write_checkpoint_data(t_fileio*                         fp,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
-                           int                               elamstats,
+                           LambdaWeightCalculation           elamstats,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
                            const gmx::MdModulesNotifier&     mdModulesNotifier,
@@ -2302,8 +2316,8 @@ void write_checkpoint_data(t_fileio*                         fp,
         {
             headerContents.flags_dfh |= ((1 << edfhWLDELTA) | (1 << edfhWLHISTO));
         }
-        if ((elamstats == elamstatsMINVAR) || (elamstats == elamstatsBARKER)
-            || (elamstats == elamstatsMETROPOLIS))
+        if ((elamstats == LambdaWeightCalculation::Minvar) || (elamstats == LambdaWeightCalculation::Barker)
+            || (elamstats == LambdaWeightCalculation::Metropolis))
         {
             headerContents.flags_dfh |= ((1 << edfhACCUMP) | (1 << edfhACCUMM) | (1 << edfhACCUMP2)
                                          | (1 << edfhACCUMM2) | (1 << edfhSUMMINVAR) | (1 << edfhSUMVAR));
@@ -2520,7 +2534,7 @@ static void read_checkpoint(const char*                    fn,
                             t_fileio*                      logfio,
                             const t_commrec*               cr,
                             const ivec                     dd_nc,
-                            int                            eIntegrator,
+                            IntegrationAlgorithm           eIntegrator,
                             int*                           init_fep_state,
                             CheckpointHeaderContents*      headerContents,
                             t_state*                       state,
@@ -2721,7 +2735,7 @@ static void read_checkpoint(const char*                    fn,
         cp_error();
     }
 
-    if (headerContents->eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
+    if (headerContents->eSwapCoords != SwapType::No && observablesHistory->swapHistory == nullptr)
     {
         observablesHistory->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t{});
     }
@@ -2949,7 +2963,7 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
     fr->bTime     = TRUE;
     fr->time      = headerContents.t;
     fr->bLambda   = TRUE;
-    fr->lambda    = state.lambda[efptFEP];
+    fr->lambda    = state.lambda[FreeEnergyPerturbationCouplingType::Fep];
     fr->fep_state = state.fep_state;
     fr->bAtoms    = FALSE;
     fr->bX        = ((state.flags & (1 << estX)) != 0);

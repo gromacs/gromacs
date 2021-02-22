@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,14 +138,14 @@ enum
 //! Parameters of one pull coodinate
 typedef struct
 {
-    int  pull_type;       //!< such as constraint, umbrella, ...
-    int  geometry;        //!< such as distance, direction, cylinder
-    int  ngroup;          //!< the number of pull groups involved
-    ivec dim;             //!< pull dimension with geometry distance
-    int  ndim;            //!< nr of pull_dim != 0
-    real k;               //!< force constants in tpr file
-    real init_dist;       //!< reference displacement
-    char coord_unit[256]; //!< unit of the displacement
+    PullingAlgorithm  pull_type;       //!< such as constraint, umbrella, ...
+    PullGroupGeometry geometry;        //!< such as distance, direction, cylinder
+    int               ngroup;          //!< the number of pull groups involved
+    ivec              dim;             //!< pull dimension with geometry distance
+    int               ndim;            //!< nr of pull_dim != 0
+    real              k;               //!< force constants in tpr file
+    real              init_dist;       //!< reference displacement
+    char              coord_unit[256]; //!< unit of the displacement
 } t_pullcoord;
 
 //! Parameters of the umbrella potentials
@@ -2108,7 +2108,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
 
         std::strcpy(header->pcrd[i].coord_unit, pull_coordinate_units(&ir->pull->coord[i]));
 
-        if (ir->efep != efepNO && ir->pull->coord[i].k != ir->pull->coord[i].kB)
+        if (ir->efep != FreeEnergyPerturbationType::No && ir->pull->coord[i].k != ir->pull->coord[i].kB)
         {
             gmx_fatal(FARGS,
                       "Seems like you did free-energy perturbation, and you perturbed the force "
@@ -2127,14 +2127,14 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
     }
 
     /* Check pull coords for consistency */
-    int  geom          = -1;
-    ivec thedim        = { 0, 0, 0 };
-    bool geometryIsSet = false;
+    PullGroupGeometry geom          = PullGroupGeometry::Count;
+    ivec              thedim        = { 0, 0, 0 };
+    bool              geometryIsSet = false;
     for (int i = 0; i < ir->pull->ncoord; i++)
     {
         if (coordsel == nullptr || coordsel->bUse[i])
         {
-            if (header->pcrd[i].pull_type != epullUMBRELLA)
+            if (header->pcrd[i].pull_type != PullingAlgorithm::Umbrella)
             {
                 gmx_fatal(FARGS,
                           "%s: Pull coordinate %d is of type \"%s\", expected \"umbrella\". Only "
@@ -2143,7 +2143,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
                           "umbrella coordinates with gmx wham -is\n",
                           fn,
                           i + 1,
-                          epull_names[header->pcrd[i].pull_type]);
+                          enumValueToString(header->pcrd[i].pull_type));
             }
             if (!geometryIsSet)
             {
@@ -2159,9 +2159,9 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
                           "If you want to use only some pull coordinates in WHAM, please select "
                           "them with option gmx wham -is\n",
                           fn,
-                          epullg_names[geom],
+                          enumValueToString(geom),
                           i + 1,
-                          epullg_names[header->pcrd[i].geometry]);
+                          enumValueToString(header->pcrd[i].geometry));
             }
             if (thedim[XX] != header->pcrd[i].dim[XX] || thedim[YY] != header->pcrd[i].dim[YY]
                 || thedim[ZZ] != header->pcrd[i].dim[ZZ])
@@ -2180,7 +2180,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
                           int2YN(header->pcrd[i].dim[YY]),
                           int2YN(header->pcrd[i].dim[ZZ]));
             }
-            if (header->pcrd[i].geometry == epullgCYL)
+            if (header->pcrd[i].geometry == PullGroupGeometry::Cylinder)
             {
                 if (header->pcrd[i].dim[XX] || header->pcrd[i].dim[YY] || (!header->pcrd[i].dim[ZZ]))
                 {
@@ -2211,7 +2211,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
         int maxlen = 0;
         for (int i = 0; i < ir->pull->ncoord; i++)
         {
-            int lentmp = strlen(epullg_names[header->pcrd[i].geometry]);
+            int lentmp = strlen(enumValueToString(header->pcrd[i].geometry));
             maxlen     = (lentmp > maxlen) ? lentmp : maxlen;
         }
         char fmt[STRLEN];
@@ -2223,7 +2223,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
         {
             bool use = (coordsel == nullptr || coordsel->bUse[i]);
             printf(fmt,
-                   epullg_names[header->pcrd[i].geometry],
+                   enumValueToString(header->pcrd[i].geometry),
                    header->pcrd[i].k,
                    header->pcrd[i].init_dist,
                    int2YN(header->pcrd[i].dim[XX]),

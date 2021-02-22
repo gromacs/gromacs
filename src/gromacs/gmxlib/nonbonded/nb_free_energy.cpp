@@ -244,19 +244,21 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     gmx::ArrayRef<const real> nbfp      = fr->nbfp;
     gmx::ArrayRef<const real> nbfp_grid = fr->ljpme_c6grid;
 
-    real*       Vv            = kernel_data->energygrp_vdw;
-    const real  lambda_coul   = kernel_data->lambda[efptCOUL];
-    const real  lambda_vdw    = kernel_data->lambda[efptVDW];
-    real*       dvdl          = kernel_data->dvdl;
-    const auto& scParams      = *ic->softCoreParameters;
-    const real  alpha_coul    = scParams.alphaCoulomb;
-    const real  alpha_vdw     = scParams.alphaVdw;
-    const real  lam_power     = scParams.lambdaPower;
-    const real  sigma6_def    = scParams.sigma6WithInvalidSigma;
-    const real  sigma6_min    = scParams.sigma6Minimum;
-    const bool  doForces      = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
-    const bool  doShiftForces = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
-    const bool  doPotential   = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
+    real*      Vv = kernel_data->energygrp_vdw;
+    const real lambda_coul =
+            kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+    const real lambda_vdw =
+            kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+    gmx::ArrayRef<real> dvdl          = kernel_data->dvdl;
+    const auto&         scParams      = *ic->softCoreParameters;
+    const real          alpha_coul    = scParams.alphaCoulomb;
+    const real          alpha_vdw     = scParams.alphaVdw;
+    const real          lam_power     = scParams.lambdaPower;
+    const real          sigma6_def    = scParams.sigma6WithInvalidSigma;
+    const real          sigma6_min    = scParams.sigma6Minimum;
+    const bool          doForces      = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
+    const bool          doShiftForces = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
+    const bool          doPotential   = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
     // Extract data from interaction_const_t
     const real facel           = ic->epsfac;
@@ -269,7 +271,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const real repulsionShift  = ic->repulsion_shift.cpot;
 
     // Note that the nbnxm kernels do not support Coulomb potential switching at all
-    GMX_ASSERT(ic->coulomb_modifier != eintmodPOTSWITCH,
+    GMX_ASSERT(ic->coulomb_modifier != InteractionModifiers::PotSwitch,
                "Potential switching is not supported for Coulomb with FEP");
 
     real vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
@@ -289,14 +291,14 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = 0.0;
     }
 
-    int icoul;
-    if (ic->eeltype == eelCUT || EEL_RF(ic->eeltype))
+    NbkernelElecType icoul;
+    if (ic->eeltype == CoulombInteractionType::Cut || EEL_RF(ic->eeltype))
     {
-        icoul = GMX_NBKERNEL_ELEC_REACTIONFIELD;
+        icoul = NbkernelElecType::ReactionField;
     }
     else
     {
-        icoul = GMX_NBKERNEL_ELEC_NONE;
+        icoul = NbkernelElecType::None;
     }
 
     real rcutoff_max2 = std::max(ic->rcoulomb, ic->rvdw);
@@ -669,7 +671,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                     }
                 }
             } // end if (bPairIncluded)
-            else if (icoul == GMX_NBKERNEL_ELEC_REACTIONFIELD)
+            else if (icoul == NbkernelElecType::ReactionField)
             {
                 /* For excluded pairs, which are only in this pair list when
                  * using the Verlet scheme, we don't use soft-core.
@@ -840,9 +842,9 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     } // end for (int n = 0; n < nri; n++)
 
 #pragma omp atomic
-    dvdl[efptCOUL] += dvdlCoul;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)] += dvdlCoul;
 #pragma omp atomic
-    dvdl[efptVDW] += dvdlVdw;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)] += dvdlVdw;
 
     /* Estimate flops, average for free energy stuff:
      * 12  flops per outer iteration
@@ -996,14 +998,14 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                t_nrnb*                    nrnb)
 {
     const interaction_const_t& ic = *fr->ic;
-    GMX_ASSERT(EEL_PME_EWALD(ic.eeltype) || ic.eeltype == eelCUT || EEL_RF(ic.eeltype),
+    GMX_ASSERT(EEL_PME_EWALD(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut || EEL_RF(ic.eeltype),
                "Unsupported eeltype with free energy");
     GMX_ASSERT(ic.softCoreParameters, "We need soft-core parameters");
 
     const auto& scParams                   = *ic.softCoreParameters;
     const bool  vdwInteractionTypeIsEwald  = (EVDW_PME(ic.vdwtype));
     const bool  elecInteractionTypeIsEwald = (EEL_PME_EWALD(ic.eeltype));
-    const bool  vdwModifierIsPotSwitch     = (ic.vdw_modifier == eintmodPOTSWITCH);
+    const bool  vdwModifierIsPotSwitch     = (ic.vdw_modifier == InteractionModifiers::PotSwitch);
     bool        scLambdasOrAlphasDiffer    = true;
     const bool  useSimd                    = fr->use_simd_kernels;
 
@@ -1013,7 +1015,8 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
     }
     else
     {
-        if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW]
+        if (kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]
+                    == kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)]
             && scParams.alphaCoulomb == scParams.alphaVdw)
         {
             scLambdasOrAlphasDiffer = false;

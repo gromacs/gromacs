@@ -2700,7 +2700,9 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for vsites: %d x %.1f\n",
-                            (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) ? 3 : 2,
+                            (EEL_PME(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald)
+                                    ? 3
+                                    : 2,
                             av);
                 }
                 break;
@@ -3141,7 +3143,7 @@ void dd_partition_system(FILE*                     fplog,
         /* With the group scheme the sorting array is part of the DD state,
          * but it just got out of sync, so mark as invalid by emptying it.
          */
-        if (ir->cutoff_scheme == ecutsGROUP)
+        if (ir->cutoff_scheme == CutoffScheme::Group)
         {
             comm->sort->sorted.clear();
         }

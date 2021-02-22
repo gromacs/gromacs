@@ -1756,7 +1756,7 @@ static void check_dd_restrictions(const gmx_domdec_t* dd, const t_inputrec* ir, 
         gmx_fatal(FARGS, "Domain decomposition does not work with nstlist=0");
     }
 
-    if (ir->comm_mode == ecmANGULAR && ir->pbcType != PbcType::No)
+    if (ir->comm_mode == ComRemovalAlgorithm::Angular && ir->pbcType != PbcType::No)
     {
         GMX_LOG(mdlog.warning)
                 .appendText(
@@ -1840,8 +1840,9 @@ static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
     /* Unsupported integrators */
     if (!EI_DYNAMICS(ir->eI))
     {
-        auto reasonStr = gmx::formatString(
-                "it is only supported with dynamics, not with integrator '%s'.", EI(ir->eI));
+        auto reasonStr =
+                gmx::formatString("it is only supported with dynamics, not with integrator '%s'.",
+                                  enumValueToString(ir->eI));
         return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
@@ -2039,7 +2040,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
 
     /* We need to decide on update groups early, as this affects communication distances */
     systemInfo.useUpdateGroups = false;
-    if (ir.cutoff_scheme == ecutsVERLET)
+    if (ir.cutoff_scheme == CutoffScheme::Verlet)
     {
         real cutoffMargin = std::sqrt(max_cutoff2(ir.pbcType, box)) - ir.rlist;
         setupUpdateGroups(mdlog, mtop, ir, cutoffMargin, &systemInfo);

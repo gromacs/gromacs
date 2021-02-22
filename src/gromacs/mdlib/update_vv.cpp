@@ -121,7 +121,7 @@ void integrateVVFirstStep(int64_t                   step,
         rvec* vbuf = nullptr;
 
         wallcycle_start(wcycle, ewcUPDATE);
-        if (ir->eI == eiVV && bInitStep)
+        if (ir->eI == IntegrationAlgorithm::VV && bInitStep)
         {
             /* if using velocity verlet with full time step Ekin,
              * take the first half step only to compute the
@@ -151,11 +151,12 @@ void integrateVVFirstStep(int64_t                   step,
          * Think about ways around this in the future?
          * For now, keep this choice in comments.
          */
-        /*bPres = (ir->eI==eiVV || inputrecNptTrotter(ir)); */
-        /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && inputrecNptTrotter(ir)));*/
+        /*bPres = (ir->eI==IntegrationAlgorithm::VV || inputrecNptTrotter(ir)); */
+        /*bTemp = ((ir->eI==IntegrationAlgorithm::VV &&(!bInitStep)) || (ir->eI==IntegrationAlgorithm::VVAK && inputrecNptTrotter(ir)));*/
         bool bPres = TRUE;
-        bool bTemp = ((ir->eI == eiVV && (!bInitStep)) || (ir->eI == eiVVAK));
-        if (bCalcEner && ir->eI == eiVVAK)
+        bool bTemp = ((ir->eI == IntegrationAlgorithm::VV && (!bInitStep))
+                      || (ir->eI == IntegrationAlgorithm::VVAK));
+        if (bCalcEner && ir->eI == IntegrationAlgorithm::VVAK)
         {
             *bSumEkinhOld = TRUE;
         }
@@ -233,10 +234,11 @@ void integrateVVFirstStep(int64_t                   step,
                     copy_mat(shake_vir, state->svir_prev);
                     copy_mat(force_vir, state->fvir_prev);
                 }
-                if ((inputrecNptTrotter(ir) || inputrecNvtTrotter(ir)) && ir->eI == eiVV)
+                if ((inputrecNptTrotter(ir) || inputrecNvtTrotter(ir)) && ir->eI == IntegrationAlgorithm::VV)
                 {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
-                    enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, nullptr, (ir->eI == eiVV), FALSE);
+                    enerd->term[F_TEMP] = sum_ekin(
+                            &(ir->opts), ekind, nullptr, (ir->eI == IntegrationAlgorithm::VV), FALSE);
                     enerd->term[F_EKIN] = trace(ekind->ekin);
                 }
             }
@@ -273,7 +275,7 @@ void integrateVVFirstStep(int64_t                   step,
             }
         }
         /* if it's the initial step, we performed this first step just to get the constraint virial */
-        if (ir->eI == eiVV && bInitStep)
+        if (ir->eI == IntegrationAlgorithm::VV && bInitStep)
         {
             copy_rvecn(vbuf, state->v.rvec_array(), 0, state->natoms);
             sfree(vbuf);
@@ -283,16 +285,17 @@ void integrateVVFirstStep(int64_t                   step,
 
     /* compute the conserved quantity */
     *saved_conserved_quantity = NPT_energy(ir, state, MassQ);
-    if (ir->eI == eiVV)
+    if (ir->eI == IntegrationAlgorithm::VV)
     {
         *last_ekin = enerd->term[F_EKIN];
     }
-    if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres))
+    if ((ir->eDispCorr != DispersionCorrectionType::EnerPres)
+        && (ir->eDispCorr != DispersionCorrectionType::AllEnerPres))
     {
         *saved_conserved_quantity -= enerd->term[F_DISPCORR];
     }
     /* sum up the foreign kinetic energy and dK/dl terms for vv.  currently done every step so that dhdl is correct in the .edr */
-    if (ir->efep != efepNO)
+    if (ir->efep != FreeEnergyPerturbationType::No)
     {
         accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
     }
@@ -342,7 +345,7 @@ void integrateVVSecondStep(int64_t                                  step,
      * and entire integrator for MD.
      */
 
-    if (ir->eI == eiVVAK)
+    if (ir->eI == IntegrationAlgorithm::VVAK)
     {
         cbuf->resize(state->x.size());
         std::copy(state->x.begin(), state->x.end(), cbuf->begin());
@@ -365,7 +368,7 @@ void integrateVVSecondStep(int64_t                                  step,
             *ir, step, dvdl_constr, mdatoms, state, cr, nrnb, wcycle, constr, do_log, do_ene);
     upd->finish_update(*ir, mdatoms, state, wcycle, constr != nullptr);
 
-    if (ir->eI == eiVVAK)
+    if (ir->eI == IntegrationAlgorithm::VVAK)
     {
         /* erase F_EKIN and F_TEMP here? */
         /* just compute the kinetic energy at the half step to perform a trotter step */

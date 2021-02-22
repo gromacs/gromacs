@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,7 @@ struct AwhBiasParams
     double   targetBetaScaling; /**< Beta scaling value for Boltzmann type target distributions. */
     double   targetCutoff; /**< Free energy cutoff value for cutoff type target distribution in kJ/mol.*/
     int      eGrowth;      /**< How the biasing histogram grows. */
-    int      bUserData;    /**< Is there a user-defined initial PMF estimate and target estimate? */
+    bool     bUserData;    /**< Is there a user-defined initial PMF estimate and target estimate? */
     double   errorInitial; /**< Estimated initial free energy error in kJ/mol. */
     int      shareGroup; /**< When >0, the bias is shared with biases of the same group and across multiple simulations when shareBiasMultisim=true */
     gmx_bool equilibrateHistogram; /**< True if the simulation starts out by equilibrating the histogram. */

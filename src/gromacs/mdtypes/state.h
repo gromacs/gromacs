@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,6 +65,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct t_inputrec;
@@ -237,22 +238,22 @@ public:
     int nnhpres;       //!< The number of NH-chains for the MTTK barostat (always 1 or 0)
     int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
     int flags; //!< Set of bit-flags telling which entries are present, see enum at the top of the file
-    int                      fep_state;      //!< indicates which of the alchemical states we are in
-    std::array<real, efptNR> lambda;         //!< Free-energy lambda vector
-    matrix                   box;            //!< Matrix of box vectors
-    matrix                   box_rel;        //!< Relative box vectors to preserve box shape
-    matrix                   boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
-    matrix                   pres_prev;      //!< Pressure of the previous step for pcoupl
-    matrix                   svir_prev;      //!< Shake virial for previous step for pcoupl
-    matrix                   fvir_prev;      //!< Force virial of the previous step for pcoupl
-    std::vector<double>      nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
-    std::vector<double>      nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
-    std::vector<double>      nhpres_xi;      //!< Pressure Nose-Hoover coordinates
-    std::vector<double>      nhpres_vxi;     //!< Pressure Nose-Hoover velocities
-    std::vector<double>      therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
-    double                   baros_integral; //!< For Berendsen P-coupling conserved quantity
-    real                     veta;           //!< Trotter based isotropic P-coupling
-    real vol0; //!< Initial volume,required for computing MTTK conserved quantity
+    int fep_state; //!< indicates which of the alchemical states we are in
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda; //!< Free-energy lambda vector
+    matrix                                                          box; //!< Matrix of box vectors
+    matrix              box_rel;        //!< Relative box vectors to preserve box shape
+    matrix              boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
+    matrix              pres_prev;      //!< Pressure of the previous step for pcoupl
+    matrix              svir_prev;      //!< Shake virial for previous step for pcoupl
+    matrix              fvir_prev;      //!< Force virial of the previous step for pcoupl
+    std::vector<double> nosehoover_xi;  //!< Nose-Hoover coordinates (ngtc)
+    std::vector<double> nosehoover_vxi; //!< Nose-Hoover velocities (ngtc)
+    std::vector<double> nhpres_xi;      //!< Pressure Nose-Hoover coordinates
+    std::vector<double> nhpres_vxi;     //!< Pressure Nose-Hoover velocities
+    std::vector<double> therm_integral; //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+    double              baros_integral; //!< For Berendsen P-coupling conserved quantity
+    real                veta;           //!< Trotter based isotropic P-coupling
+    real                vol0; //!< Initial volume,required for computing MTTK conserved quantity
     PaddedHostVector<gmx::RVec> x;    //!< The coordinates (natoms)
     PaddedHostVector<gmx::RVec> v;    //!< The velocities (natoms)
     PaddedHostVector<gmx::RVec> cg_p; //!< p vector for conjugate gradient minimization

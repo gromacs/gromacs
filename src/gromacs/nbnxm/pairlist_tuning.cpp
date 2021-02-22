@@ -79,7 +79,7 @@
  */
 static bool supportsDynamicPairlistGenerationInterval(const t_inputrec& ir)
 {
-    return ir.cutoff_scheme == ecutsVERLET && EI_DYNAMICS(ir.eI)
+    return ir.cutoff_scheme == CutoffScheme::Verlet && EI_DYNAMICS(ir.eI)
            && !(EI_MD(ir.eI) && ir.etc == TemperatureCoupling::No) && ir.verletbuf_tol > 0;
 }
 

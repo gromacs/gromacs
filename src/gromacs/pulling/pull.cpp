@@ -37,6 +37,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/stringutil.h"
 #include "pull.h"
 
 #include "config.h"
@@ -132,13 +133,15 @@ pull_group_work_t::pull_group_work_t(const t_pull_group& params,
 
 bool pull_coordinate_is_angletype(const t_pull_coord* pcrd)
 {
-    return (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgDIHEDRAL || pcrd->eGeom == epullgANGLEAXIS);
+    return (pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::Dihedral
+            || pcrd->eGeom == PullGroupGeometry::AngleAxis);
 }
 
 static bool pull_coordinate_is_directional(const t_pull_coord* pcrd)
 {
-    return (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgDIRPBC
-            || pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgCYL);
+    return (pcrd->eGeom == PullGroupGeometry::Direction || pcrd->eGeom == PullGroupGeometry::DirectionPBC
+            || pcrd->eGeom == PullGroupGeometry::DirectionRelative
+            || pcrd->eGeom == PullGroupGeometry::Cylinder);
 }
 
 const char* pull_coordinate_units(const t_pull_coord* pcrd)
@@ -333,7 +336,7 @@ static void apply_forces_coord(struct pull_t*               pull,
 
     const pull_coord_work_t& pcrd = pull->coord[coord];
 
-    if (pcrd.params.eGeom == epullgCYL)
+    if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
     {
         apply_forces_cyl_grp(&pull->dyna[coord],
                              pcrd.spatialData.cyl_dev,
@@ -354,7 +357,7 @@ static void apply_forces_coord(struct pull_t*               pull,
     }
     else
     {
-        if (pcrd.params.eGeom == epullgDIRRELATIVE)
+        if (pcrd.params.eGeom == PullGroupGeometry::DirectionRelative)
         {
             /* We need to apply the torque forces to the pull groups
              * that define the pull vector.
@@ -485,7 +488,7 @@ static void low_get_pull_coord_dr(const struct pull_t*     pull,
     copy_dvec(xref, xrefr);
 
     dvec dref = { 0, 0, 0 };
-    if (pcrd->params.eGeom == epullgDIRPBC)
+    if (pcrd->params.eGeom == PullGroupGeometry::DirectionPBC)
     {
         for (int m = 0; m < DIM; m++)
         {
@@ -522,13 +525,13 @@ static void low_get_pull_coord_dr(const struct pull_t*     pull,
                   pcrd->params.group[groupIndex1],
                   sqrt(dr2),
                   sqrt(0.98 * 0.98 * max_dist2),
-                  pcrd->params.eGeom == epullgDIR
+                  pcrd->params.eGeom == PullGroupGeometry::Direction
                           ? "You might want to consider using \"pull-geometry = "
                             "direction-periodic\" instead.\n"
                           : "");
     }
 
-    if (pcrd->params.eGeom == epullgDIRPBC)
+    if (pcrd->params.eGeom == PullGroupGeometry::DirectionPBC)
     {
         dvec_inc(dr, dref);
     }
@@ -546,8 +549,9 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
     /* With AWH pulling we allow for periodic pulling with geometry=direction.
      * TODO: Store a periodicity flag instead of checking for external pull provider.
      */
-    if (pcrd->params.eGeom == epullgDIRPBC
-        || (pcrd->params.eGeom == epullgDIR && pcrd->params.eType == epullEXTERNAL))
+    if (pcrd->params.eGeom == PullGroupGeometry::DirectionPBC
+        || (pcrd->params.eGeom == PullGroupGeometry::Direction
+            && pcrd->params.eType == PullingAlgorithm::External))
     {
         md2 = -1;
     }
@@ -556,7 +560,7 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         md2 = static_cast<double>(max_pull_distance2(pcrd, pbc));
     }
 
-    if (pcrd->params.eGeom == epullgDIRRELATIVE)
+    if (pcrd->params.eGeom == PullGroupGeometry::DirectionRelative)
     {
         /* We need to determine the pull vector */
         dvec vec;
@@ -593,15 +597,16 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
     pull_group_work_t* pgrp0 = &pull->group[pcrd->params.group[0]];
     pull_group_work_t* pgrp1 = &pull->group[pcrd->params.group[1]];
 
-    low_get_pull_coord_dr(pull,
-                          pcrd,
-                          pbc,
-                          pgrp1->x,
-                          pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x,
-                          0,
-                          1,
-                          md2,
-                          spatialData.dr01);
+    low_get_pull_coord_dr(
+            pull,
+            pcrd,
+            pbc,
+            pgrp1->x,
+            pcrd->params.eGeom == PullGroupGeometry::Cylinder ? pull->dyna[coord_ind].x : pgrp0->x,
+            0,
+            1,
+            md2,
+            spatialData.dr01);
 
     if (pcrd->params.ngroup >= 4)
     {
@@ -640,10 +645,10 @@ static void make_periodic_2pi(double* x)
 /* This function should always be used to modify pcrd->value_ref */
 static void low_set_pull_coord_reference_value(pull_coord_work_t* pcrd, int coord_ind, double value_ref)
 {
-    GMX_ASSERT(pcrd->params.eType != epullEXTERNAL,
+    GMX_ASSERT(pcrd->params.eType != PullingAlgorithm::External,
                "The pull coord reference value should not be used with type external-potential");
 
-    if (pcrd->params.eGeom == epullgDIST)
+    if (pcrd->params.eGeom == PullGroupGeometry::Distance)
     {
         if (value_ref < 0)
         {
@@ -653,7 +658,8 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t* pcrd, int coor
                       value_ref);
         }
     }
-    else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgANGLEAXIS)
+    else if (pcrd->params.eGeom == PullGroupGeometry::Angle
+             || pcrd->params.eGeom == PullGroupGeometry::AngleAxis)
     {
         if (value_ref < 0 || value_ref > M_PI)
         {
@@ -664,7 +670,7 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t* pcrd, int coor
                       value_ref * pull_conversion_factor_internal2userinput(&pcrd->params));
         }
     }
-    else if (pcrd->params.eGeom == epullgDIHEDRAL)
+    else if (pcrd->params.eGeom == PullGroupGeometry::Dihedral)
     {
         /* Allow pulling to be periodic for dihedral angles by remapping the reference value to the interval [-pi, pi). */
         make_periodic_2pi(&value_ref);
@@ -721,14 +727,14 @@ static void get_pull_coord_distance(struct pull_t* pull, int coord_ind, const t_
 
     switch (pcrd->params.eGeom)
     {
-        case epullgDIST:
+        case PullGroupGeometry::Distance:
             /* Pull along the vector between the com's */
             spatialData.value = dnorm(spatialData.dr01);
             break;
-        case epullgDIR:
-        case epullgDIRPBC:
-        case epullgDIRRELATIVE:
-        case epullgCYL:
+        case PullGroupGeometry::Direction:
+        case PullGroupGeometry::DirectionPBC:
+        case PullGroupGeometry::DirectionRelative:
+        case PullGroupGeometry::Cylinder:
             /* Pull along vec */
             spatialData.value = 0;
             for (m = 0; m < DIM; m++)
@@ -736,11 +742,13 @@ static void get_pull_coord_distance(struct pull_t* pull, int coord_ind, const t_
                 spatialData.value += spatialData.vec[m] * spatialData.dr01[m];
             }
             break;
-        case epullgANGLE:
+        case PullGroupGeometry::Angle:
             spatialData.value = gmx_angle_between_dvecs(spatialData.dr01, spatialData.dr23);
             break;
-        case epullgDIHEDRAL: spatialData.value = get_dihedral_angle_coord(&spatialData); break;
-        case epullgANGLEAXIS:
+        case PullGroupGeometry::Dihedral:
+            spatialData.value = get_dihedral_angle_coord(&spatialData);
+            break;
+        case PullGroupGeometry::AngleAxis:
             spatialData.value = gmx_angle_between_dvecs(spatialData.dr01, spatialData.vec);
             break;
         default: gmx_incons("Unsupported pull type in get_pull_coord_distance");
@@ -770,14 +778,14 @@ static double get_pull_coord_deviation(struct pull_t* pull, int coord_ind, const
     dev = pcrd->spatialData.value - pcrd->value_ref;
 
     /* Check that values are allowed */
-    if (pcrd->params.eGeom == epullgDIST && pcrd->spatialData.value == 0)
+    if (pcrd->params.eGeom == PullGroupGeometry::Distance && pcrd->spatialData.value == 0)
     {
         /* With no vector we can not determine the direction for the force,
          * so we set the force to zero.
          */
         dev = 0;
     }
-    else if (pcrd->params.eGeom == epullgDIHEDRAL)
+    else if (pcrd->params.eGeom == PullGroupGeometry::Dihedral)
     {
         /* The reference value is in [-pi, pi). The coordinate value is in (-pi, pi].
            Thus, the unwrapped deviation is here in (-2pi, 2pi].
@@ -844,7 +852,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
         pcrd = &pull->coord[c];
 
-        if (pcrd->params.eType != epullCONSTRAINT)
+        if (pcrd->params.eType != PullingAlgorithm::Constraint)
         {
             continue;
         }
@@ -866,7 +874,8 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                     spatialData.dr01[ZZ]);
         }
 
-        if (pcrd->params.eGeom == epullgDIR || pcrd->params.eGeom == epullgDIRPBC)
+        if (pcrd->params.eGeom == PullGroupGeometry::Direction
+            || pcrd->params.eGeom == PullGroupGeometry::DirectionPBC)
         {
             /* Select the component along vec */
             a = 0;
@@ -907,7 +916,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
             pcrd = &pull->coord[c];
 
-            if (pcrd->params.eType != epullCONSTRAINT)
+            if (pcrd->params.eType != PullingAlgorithm::Constraint)
             {
                 continue;
             }
@@ -930,7 +939,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
             switch (pcrd->params.eGeom)
             {
-                case epullgDIST:
+                case PullGroupGeometry::Distance:
                     if (pcrd->value_ref <= 0)
                     {
                         gmx_fatal(
@@ -969,9 +978,9 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                     dsvmul(lambda * rm * pgrp0->invtm, r_ij[c], dr0);
                     dr_tot[c] += -lambda * dnorm(r_ij[c]);
                     break;
-                case epullgDIR:
-                case epullgDIRPBC:
-                case epullgCYL:
+                case PullGroupGeometry::Direction:
+                case PullGroupGeometry::DirectionPBC:
+                case PullGroupGeometry::Cylinder:
                     /* A 1-dimensional constraint along a vector */
                     a = 0;
                     for (m = 0; m < DIM; m++)
@@ -1041,7 +1050,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
         /* Check if all constraints are fullfilled now */
         for (pull_coord_work_t& coord : pull->coord)
         {
-            if (coord.params.eType != epullCONSTRAINT)
+            if (coord.params.eType != PullingAlgorithm::Constraint)
             {
                 continue;
             }
@@ -1051,12 +1060,12 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
             switch (coord.params.eGeom)
             {
-                case epullgDIST:
+                case PullGroupGeometry::Distance:
                     bConverged = fabs(dnorm(unc_ij) - coord.value_ref) < pull->params.constr_tol;
                     break;
-                case epullgDIR:
-                case epullgDIRPBC:
-                case epullgCYL:
+                case PullGroupGeometry::Direction:
+                case PullGroupGeometry::DirectionPBC:
+                case PullGroupGeometry::Cylinder:
                     for (m = 0; m < DIM; m++)
                     {
                         vec[m] = coord.spatialData.vec[m];
@@ -1065,6 +1074,11 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                     dsvmul(inpr, vec, unc_ij);
                     bConverged = fabs(diprod(unc_ij, vec) - coord.value_ref) < pull->params.constr_tol;
                     break;
+                default:
+                    GMX_ASSERT(false,
+                               gmx::formatString("Geometry %s not handled here",
+                                                 enumValueToString(coord.params.eGeom))
+                                       .c_str());
             }
 
             if (!bConverged)
@@ -1149,7 +1163,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
         pcrd = &pull->coord[c];
 
-        if (pcrd->params.eType != epullCONSTRAINT)
+        if (pcrd->params.eType != PullingAlgorithm::Constraint)
         {
             continue;
         }
@@ -1161,7 +1175,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                    * dt * dt);
         pcrd->scalarForce += force;
 
-        if (vir != nullptr && pcrd->params.eGeom != epullgDIRPBC && bMaster)
+        if (vir != nullptr && pcrd->params.eGeom != PullGroupGeometry::DirectionPBC && bMaster)
         {
             double f_invr;
 
@@ -1199,7 +1213,7 @@ static void add_virial_coord_dr(tensor vir, const dvec dr, const dvec f)
 /* Adds the pull contribution to the virial */
 static void add_virial_coord(tensor vir, const pull_coord_work_t& pcrd, const PullCoordVectorForces& forces)
 {
-    if (vir != nullptr && pcrd.params.eGeom != epullgDIRPBC)
+    if (vir != nullptr && pcrd.params.eGeom != PullGroupGeometry::DirectionPBC)
     {
         /* Add the pull contribution for each distance vector to the virial. */
         add_virial_coord_dr(vir, pcrd.spatialData.dr01, forces.force01);
@@ -1227,15 +1241,15 @@ static void calc_pull_coord_scalar_force_and_potential(pull_coord_work_t* pcrd,
 
     switch (pcrd->params.eType)
     {
-        case epullUMBRELLA:
-        case epullFLATBOTTOM:
-        case epullFLATBOTTOMHIGH:
+        case PullingAlgorithm::Umbrella:
+        case PullingAlgorithm::FlatBottom:
+        case PullingAlgorithm::FlatBottomHigh:
             /* The only difference between an umbrella and a flat-bottom
              * potential is that a flat-bottom is zero above or below
                the reference value.
              */
-            if ((pcrd->params.eType == epullFLATBOTTOM && dev < 0)
-                || (pcrd->params.eType == epullFLATBOTTOMHIGH && dev > 0))
+            if ((pcrd->params.eType == PullingAlgorithm::FlatBottom && dev < 0)
+                || (pcrd->params.eType == PullingAlgorithm::FlatBottomHigh && dev > 0))
             {
                 dev = 0;
             }
@@ -1244,12 +1258,12 @@ static void calc_pull_coord_scalar_force_and_potential(pull_coord_work_t* pcrd,
             *V += 0.5 * k * gmx::square(dev);
             *dVdl += 0.5 * dkdl * gmx::square(dev);
             break;
-        case epullCONST_F:
+        case PullingAlgorithm::ConstantForce:
             pcrd->scalarForce = -k;
             *V += k * pcrd->spatialData.value;
             *dVdl += dkdl * pcrd->spatialData.value;
             break;
-        case epullEXTERNAL:
+        case PullingAlgorithm::External:
             gmx_incons(
                     "the scalar pull force should not be calculated internally for pull type "
                     "external");
@@ -1265,7 +1279,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
     /* The geometry of the coordinate determines how the scalar force relates to the force on each group */
     PullCoordVectorForces forces;
 
-    if (params.eGeom == epullgDIST)
+    if (params.eGeom == PullGroupGeometry::Distance)
     {
         double invdr01 = spatialData.value > 0 ? 1. / spatialData.value : 0.;
         for (int m = 0; m < DIM; m++)
@@ -1273,7 +1287,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
             forces.force01[m] = pcrd.scalarForce * spatialData.dr01[m] * invdr01;
         }
     }
-    else if (params.eGeom == epullgANGLE)
+    else if (params.eGeom == PullGroupGeometry::Angle)
     {
 
         double cos_theta, cos_theta2;
@@ -1317,7 +1331,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
             clear_dvec(forces.force23);
         }
     }
-    else if (params.eGeom == epullgANGLEAXIS)
+    else if (params.eGeom == PullGroupGeometry::AngleAxis)
     {
         double cos_theta, cos_theta2;
 
@@ -1348,7 +1362,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
             clear_dvec(forces.force01);
         }
     }
-    else if (params.eGeom == epullgDIHEDRAL)
+    else if (params.eGeom == PullGroupGeometry::Dihedral)
     {
         double m2, n2, tol, sqrdist_32;
         dvec   dr32;
@@ -1436,7 +1450,7 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
 
     pull_coord_work_t* pcrd = &pull->coord[coord_index];
 
-    if (pcrd->params.eType != epullEXTERNAL)
+    if (pcrd->params.eType != PullingAlgorithm::External)
     {
         gmx_fatal(
                 FARGS,
@@ -1444,8 +1458,8 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
                 "which of type '%s', whereas external potentials are only supported with type '%s'",
                 provider,
                 coord_index + 1,
-                epull_names[pcrd->params.eType],
-                epull_names[epullEXTERNAL]);
+                enumValueToString(pcrd->params.eType),
+                enumValueToString(PullingAlgorithm::External));
     }
 
     GMX_RELEASE_ASSERT(!pcrd->params.externalPotentialProvider.empty(),
@@ -1491,7 +1505,7 @@ static void check_external_potential_registration(const struct pull_t* pull)
         size_t c;
         for (c = 0; c < pull->coord.size(); c++)
         {
-            if (pull->coord[c].params.eType == epullEXTERNAL
+            if (pull->coord[c].params.eType == PullingAlgorithm::External
                 && !pull->coord[c].bExternalPotentialProviderHasBeenRegistered)
             {
                 break;
@@ -1533,7 +1547,7 @@ void apply_external_pull_coord_force(struct pull_t*        pull,
         pcrd = &pull->coord[coord_index];
 
         GMX_RELEASE_ASSERT(
-                pcrd->params.eType == epullEXTERNAL,
+                pcrd->params.eType == PullingAlgorithm::External,
                 "The pull force can only be set externally on pull coordinates of external type");
 
         GMX_ASSERT(pcrd->bExternalPotentialProviderHasBeenRegistered,
@@ -1574,7 +1588,7 @@ static PullCoordVectorForces do_pull_pot_coord(struct pull_t* pull,
 {
     pull_coord_work_t& pcrd = pull->coord[coord_ind];
 
-    assert(pcrd.params.eType != epullCONSTRAINT);
+    assert(pcrd.params.eType != PullingAlgorithm::Constraint);
 
     double dev = get_pull_coord_deviation(pull, coord_ind, pbc, t);
 
@@ -1623,7 +1637,8 @@ real pull_potential(struct pull_t*        pull,
 
             /* For external potential the force is assumed to be given by an external module by a
                call to apply_pull_coord_external_force */
-            if (pcrd->params.eType == epullCONSTRAINT || pcrd->params.eType == epullEXTERNAL)
+            if (pcrd->params.eType == PullingAlgorithm::Constraint
+                || pcrd->params.eType == PullingAlgorithm::External)
             {
                 continue;
             }
@@ -1821,8 +1836,8 @@ static void init_pull_group_index(FILE*              fplog,
      * But we still want to have the correct mass-weighted COMs.
      * So we store the real masses in the weights.
      */
-    const bool setWeights =
-            (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD);
+    const bool setWeights = (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
+                             || ir->eI == IntegrationAlgorithm::BD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
     std::vector<real>& weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
@@ -1851,7 +1866,7 @@ static void init_pull_group_index(FILE*              fplog,
         }
         const t_atom& atom = mtopGetAtomParameters(mtop, ii, &molb);
         real          m;
-        if (ir->efep == efepNO)
+        if (ir->efep == FreeEnergyPerturbationType::No)
         {
             m = atom.m;
         }
@@ -1874,7 +1889,7 @@ static void init_pull_group_index(FILE*              fplog,
             w *= m;
             m = 1;
         }
-        else if (ir->eI == eiBD)
+        else if (ir->eI == IntegrationAlgorithm::BD)
         {
             real mbd;
             if (ir->bd_fric != 0.0F)
@@ -1926,7 +1941,8 @@ static void init_pull_group_index(FILE*              fplog,
     if (fplog)
     {
         fprintf(fplog, "Pull group %d: %5zu atoms, mass %9.3f", g, pg->params.ind.size(), tmass);
-        if (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
+        if (!pg->params.weight.empty() || EI_ENERGY_MINIMIZATION(ir->eI)
+            || ir->eI == IntegrationAlgorithm::BD)
         {
             fprintf(fplog, ", weighted mass %9.3f", wmass * wmass / wwmass);
         }
@@ -2020,14 +2036,14 @@ struct pull_t* init_pull(FILE*                     fplog,
 
         switch (pcrd->params.eGeom)
         {
-            case epullgDIST:
-            case epullgDIRRELATIVE: /* Direction vector is determined at each step */
-            case epullgANGLE:
-            case epullgDIHEDRAL: break;
-            case epullgDIR:
-            case epullgDIRPBC:
-            case epullgCYL:
-            case epullgANGLEAXIS:
+            case PullGroupGeometry::Distance:
+            case PullGroupGeometry::DirectionRelative: /* Direction vector is determined at each step */
+            case PullGroupGeometry::Angle:
+            case PullGroupGeometry::Dihedral: break;
+            case PullGroupGeometry::Direction:
+            case PullGroupGeometry::DirectionPBC:
+            case PullGroupGeometry::Cylinder:
+            case PullGroupGeometry::AngleAxis:
                 copy_rvec_to_dvec(pull_params->coord[c].vec, pcrd->spatialData.vec);
                 break;
             default:
@@ -2042,27 +2058,29 @@ struct pull_t* init_pull(FILE*                     fplog,
                  */
                 gmx_fatal(FARGS,
                           "Pull geometry not supported for pull coordinate %d. The geometry enum "
-                          "%d in the input is larger than that supported by the code (up to %d). "
+                          "%s in the input is larger than that supported by the code (up to %d). "
                           "You are probably reading a tpr file generated with a newer version of "
-                          "Gromacs with an binary from an older version of Gromacs.",
+                          "GROMACS with an binary from an older version of Gromacs.",
                           c + 1,
-                          pcrd->params.eGeom,
-                          epullgNR - 1);
+                          enumValueToString(pcrd->params.eGeom),
+                          static_cast<int>(PullGroupGeometry::Count) - 1);
         }
 
-        if (pcrd->params.eType == epullCONSTRAINT)
+        if (pcrd->params.eType == PullingAlgorithm::Constraint)
         {
             /* Check restrictions of the constraint pull code */
-            if (pcrd->params.eGeom == epullgCYL || pcrd->params.eGeom == epullgDIRRELATIVE
-                || pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL
-                || pcrd->params.eGeom == epullgANGLEAXIS)
+            if (pcrd->params.eGeom == PullGroupGeometry::Cylinder
+                || pcrd->params.eGeom == PullGroupGeometry::DirectionRelative
+                || pcrd->params.eGeom == PullGroupGeometry::Angle
+                || pcrd->params.eGeom == PullGroupGeometry::Dihedral
+                || pcrd->params.eGeom == PullGroupGeometry::AngleAxis)
             {
                 gmx_fatal(FARGS,
                           "Pulling of type %s can not be combined with geometry %s. Consider using "
                           "pull type %s.",
-                          epull_names[pcrd->params.eType],
-                          epullg_names[pcrd->params.eGeom],
-                          epull_names[epullUMBRELLA]);
+                          enumValueToString(pcrd->params.eType),
+                          enumValueToString(pcrd->params.eGeom),
+                          enumValueToString(PullingAlgorithm::Umbrella));
             }
 
             GMX_RELEASE_ASSERT(
@@ -2076,12 +2094,13 @@ struct pull_t* init_pull(FILE*                     fplog,
             pull->bPotential = TRUE;
         }
 
-        if (pcrd->params.eGeom == epullgCYL)
+        if (pcrd->params.eGeom == PullGroupGeometry::Cylinder)
         {
             pull->bCylinder = TRUE;
         }
-        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL
-                 || pcrd->params.eGeom == epullgANGLEAXIS)
+        else if (pcrd->params.eGeom == PullGroupGeometry::Angle
+                 || pcrd->params.eGeom == PullGroupGeometry::Dihedral
+                 || pcrd->params.eGeom == PullGroupGeometry::AngleAxis)
         {
             pull->bAngle = TRUE;
         }
@@ -2093,7 +2112,7 @@ struct pull_t* init_pull(FILE*                     fplog,
         for (int i = 0; i < pcrd->params.ngroup; i++)
         {
             int groupIndex = pcrd->params.group[i];
-            if (groupIndex > 0 && !(pcrd->params.eGeom == epullgCYL && i == 0))
+            if (groupIndex > 0 && !(pcrd->params.eGeom == PullGroupGeometry::Cylinder && i == 0))
             {
                 pull->group[groupIndex].needToCalcCom = true;
             }
@@ -2103,7 +2122,7 @@ struct pull_t* init_pull(FILE*                     fplog,
         if (pcrd->params.rate == 0)
         {
             /* Initialize the constant reference value */
-            if (pcrd->params.eType != epullEXTERNAL)
+            if (pcrd->params.eType != PullingAlgorithm::External)
             {
                 low_set_pull_coord_reference_value(
                         pcrd, c, pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
@@ -2122,7 +2141,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             }
         }
 
-        if (pcrd->params.eType == epullEXTERNAL)
+        if (pcrd->params.eType == PullingAlgorithm::External)
         {
             GMX_RELEASE_ASSERT(
                     pcrd->params.rate == 0,
@@ -2245,7 +2264,7 @@ struct pull_t* init_pull(FILE*                     fplog,
                         {
                             pulldim[m] = 1;
 
-                            if (coord.params.eType == epullCONSTRAINT)
+                            if (coord.params.eType == PullingAlgorithm::Constraint)
                             {
                                 bConstraint    = TRUE;
                                 pulldim_con[m] = 1;
@@ -2303,7 +2322,7 @@ struct pull_t* init_pull(FILE*                     fplog,
     {
         for (const pull_coord_work_t& coord : pull->coord)
         {
-            if (coord.params.eGeom == epullgCYL)
+            if (coord.params.eGeom == PullGroupGeometry::Cylinder)
             {
                 if (pull->group[coord.params.group[0]].params.ind.empty())
                 {
@@ -2447,7 +2466,7 @@ bool pull_have_constraint(const pull_params_t& pullParameters)
 {
     for (int c = 0; c < pullParameters.ncoord; c++)
     {
-        if (pullParameters.coord[c].eType == epullCONSTRAINT)
+        if (pullParameters.coord[c].eType == PullingAlgorithm::Constraint)
         {
             return true;
         }

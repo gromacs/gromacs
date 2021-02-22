@@ -46,6 +46,8 @@
 
 #include "gromacs/utility/real.h"
 
+enum class LambdaWeightCalculation : int;
+
 namespace gmx
 {
 /*! \brief Calculates the acceptance weight for a lambda state transition
@@ -54,7 +56,7 @@ namespace gmx
  * \param[in] lambdaEnergyDifference  The difference in energy between the two states
  * \return  The acceptance weight
  */
-real calculateAcceptanceWeight(int calculationMode, real lambdaEnergyDifference);
+real calculateAcceptanceWeight(LambdaWeightCalculation calculationMode, real lambdaEnergyDifference);
 } // namespace gmx
 
 #endif // GMX_MDLIB_EXPANDEDINTERNAL_H

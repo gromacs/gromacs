@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,7 +195,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
     if (!inputrec_->bContinuation)
     {
         real temp = enerd_->term[F_TEMP];
-        if (inputrec_->eI != eiVV)
+        if (inputrec_->eI != IntegrationAlgorithm::VV)
         {
             /* Result of Ekin averaged over velocities of -half
              * and +half step, while we only have -half step here.
@@ -263,8 +263,8 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
             time,
             mdAtoms_->mdatoms()->tmass,
             enerd_,
-            inputrec_->fepvals,
-            inputrec_->expandedvals,
+            inputrec_->fepvals.get(),
+            inputrec_->expandedvals.get(),
             statePropagatorData_->constPreviousBox(),
             PTCouplingArrays({ parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->boxVelocities() : nullMatrix,
                                {},

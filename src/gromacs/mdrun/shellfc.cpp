@@ -907,8 +907,8 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   shfc->adir_xnold.arrayRefWithPadding(),
                   {},
                   box,
-                  lambda[efptBONDED],
-                  &(dvdlambda[efptBONDED]),
+                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)],
+                  &(dvdlambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)]),
                   {},
                   computeVirial,
                   nullptr,
@@ -922,8 +922,8 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   shfc->adir_xnew.arrayRefWithPadding(),
                   {},
                   box,
-                  lambda[efptBONDED],
-                  &(dvdlambda[efptBONDED]),
+                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)],
+                  &(dvdlambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)]),
                   {},
                   computeVirial,
                   nullptr,
@@ -949,8 +949,8 @@ static void init_adir(gmx_shellfc_t*            shfc,
                   shfc->adir_xnew.arrayRefWithPadding(),
                   acc_dir,
                   box,
-                  lambda[efptBONDED],
-                  &(dvdlambda[efptBONDED]),
+                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)],
+                  &(dvdlambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Bonded)]),
                   {},
                   computeVirial,
                   nullptr,
@@ -1135,7 +1135,7 @@ void relax_shell_flexcon(FILE*                         fplog,
             sf_dir += md->massT[i] * norm2(shfc->acc_dir[i]);
         }
     }
-    accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
+    accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
     Epot[Min] = enerd->term[F_EPOT];
 
     df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), shells, nflexcon, &sf_dir, &Epot[Min]);
@@ -1249,7 +1249,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                  nullptr,
                  shellfc_flags,
                  ddBalanceRegionHandler);
-        accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
+        accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());
         if (gmx_debug_at)
         {
             pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), homenr);

@@ -177,7 +177,7 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const gmx_ffparams_t& forc
             c6j  = forceFieldParams.iparams[j * (atnr + 1)].lj.c6;
             c12j = forceFieldParams.iparams[j * (atnr + 1)].lj.c12;
             c6   = std::sqrt(c6i * c6j);
-            if (forceRec.ljpme_combination_rule == eljpmeLB && !gmx_numzero(c6)
+            if (forceRec.ljpme_combination_rule == LongRangeVdW::LB && !gmx_numzero(c6)
                 && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
                 sigmai = gmx::sixthroot(c12i / c6i);
@@ -325,7 +325,7 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_f
                 {
                     SET_CGINFO_HAS_Q(atomInfo);
                 }
-                if (fr->efep != efepNO && PERTURBED(atom))
+                if (fr->efep != FreeEnergyPerturbationType::No && PERTURBED(atom))
                 {
                     SET_CGINFO_FEP(atomInfo);
                 }
@@ -390,7 +390,7 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
     fr->q2sum[0] = q2sum;
     fr->c6sum[0] = c6sum;
 
-    if (fr->efep != efepNO)
+    if (fr->efep != FreeEnergyPerturbationType::No)
     {
         qsum  = 0;
         q2sum = 0;
@@ -420,7 +420,7 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
     }
     if (log)
     {
-        if (fr->efep == efepNO)
+        if (fr->efep == FreeEnergyPerturbationType::No)
         {
             fprintf(log, "System total charge: %.3f\n", fr->qsum[0]);
         }
@@ -649,7 +649,7 @@ static void initCoulombEwaldParameters(FILE*                fp,
     {
         fprintf(fp, "Will do PME sum in reciprocal space for electrostatic interactions.\n");
 
-        if (ir.coulombtype == eelP3M_AD)
+        if (ir.coulombtype == CoulombInteractionType::P3mAD)
         {
             please_cite(fp, "Hockney1988");
             please_cite(fp, "Ballenegger2012");
@@ -659,7 +659,7 @@ static void initCoulombEwaldParameters(FILE*                fp,
             please_cite(fp, "Essmann95a");
         }
 
-        if (ir.ewald_geometry == eewg3DC)
+        if (ir.ewald_geometry == EwaldGeometry::ThreeDC)
         {
             if (fp)
             {
@@ -681,7 +681,7 @@ static void initCoulombEwaldParameters(FILE*                fp,
         fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n", 1 / ic->ewaldcoeff_q);
     }
 
-    if (ic->coulomb_modifier == eintmodPOTSHIFT)
+    if (ic->coulomb_modifier == InteractionModifiers::PotShift)
     {
         GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
         ic->sh_ewald = std::erfc(ic->ewaldcoeff_q * ic->rcoulomb) / ic->rcoulomb;
@@ -711,7 +711,7 @@ static void initVdwEwaldParameters(FILE* fp, const t_inputrec& ir, interaction_c
         fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for LJ Ewald\n", 1 / ic->ewaldcoeff_lj);
     }
 
-    if (ic->vdw_modifier == eintmodPOTSHIFT)
+    if (ic->vdw_modifier == InteractionModifiers::PotShift)
     {
         real crc2       = gmx::square(ic->ewaldcoeff_lj * ic->rvdw);
         ic->sh_lj_ewald = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1) / gmx::power6(ic->rvdw);
@@ -860,22 +860,22 @@ static void init_interaction_const(FILE*                 fp,
 
     switch (ic->vdw_modifier)
     {
-        case eintmodPOTSHIFT:
+        case InteractionModifiers::PotShift:
             /* Only shift the potential, don't touch the force */
             ic->dispersion_shift.cpot = -1.0 / gmx::power6(ic->rvdw);
             ic->repulsion_shift.cpot  = -1.0 / gmx::power12(ic->rvdw);
             break;
-        case eintmodFORCESWITCH:
+        case InteractionModifiers::ForceSwitch:
             /* Switch the force, switch and shift the potential */
             force_switch_constants(6.0, ic->rvdw_switch, ic->rvdw, &ic->dispersion_shift);
             force_switch_constants(12.0, ic->rvdw_switch, ic->rvdw, &ic->repulsion_shift);
             break;
-        case eintmodPOTSWITCH:
+        case InteractionModifiers::PotSwitch:
             /* Switch the potential and force */
             potential_switch_constants(ic->rvdw_switch, ic->rvdw, &ic->vdw_switch);
             break;
-        case eintmodNONE:
-        case eintmodEXACTCUTOFF:
+        case InteractionModifiers::None:
+        case InteractionModifiers::ExactCutoff:
             /* Nothing to do here */
             break;
         default: gmx_incons("unimplemented potential modifier");
@@ -902,7 +902,8 @@ static void init_interaction_const(FILE*                 fp,
     /* Reaction-field */
     if (EEL_RF(ic->eeltype))
     {
-        GMX_RELEASE_ASSERT(ic->eeltype != eelGRF_NOTUSED, "GRF is no longer supported");
+        GMX_RELEASE_ASSERT(ic->eeltype != CoulombInteractionType::GRFNotused,
+                           "GRF is no longer supported");
         ic->reactionFieldPermitivity = ir.epsilon_rf;
 
         calc_rffac(fp,
@@ -917,7 +918,7 @@ static void init_interaction_const(FILE*                 fp,
         /* For plain cut-off we might use the reaction-field kernels */
         ic->reactionFieldPermitivity = ic->epsilon_r;
         ic->reactionFieldCoefficient = 0;
-        if (ir.coulomb_modifier == eintmodPOTSHIFT)
+        if (ir.coulomb_modifier == InteractionModifiers::PotShift)
         {
             ic->reactionFieldShift = 1 / ic->rcoulomb;
         }
@@ -940,7 +941,7 @@ static void init_interaction_const(FILE*                 fp,
         }
         fprintf(fp, "Potential shift: LJ r^-12: %.3e r^-6: %.3e", ic->repulsion_shift.cpot, dispersion_shift);
 
-        if (ic->eeltype == eelCUT)
+        if (ic->eeltype == CoulombInteractionType::Cut)
         {
             fprintf(fp, ", Coulomb %.e", -ic->reactionFieldShift);
         }
@@ -951,7 +952,7 @@ static void init_interaction_const(FILE*                 fp,
         fprintf(fp, "\n");
     }
 
-    if (ir.efep != efepNO)
+    if (ir.efep != FreeEnergyPerturbationType::No)
     {
         GMX_RELEASE_ASSERT(ir.fepvals, "ir.fepvals should be set wth free-energy");
         ic->softCoreParameters = std::make_unique<interaction_const_t::SoftCoreParameters>(*ir.fepvals);
@@ -992,9 +993,10 @@ void init_forcerec(FILE*                            fp,
         fr->n_tpi = 0;
     }
 
-    if (ir.coulombtype == eelRF_NEC_UNSUPPORTED || ir.coulombtype == eelGRF_NOTUSED)
+    if (ir.coulombtype == CoulombInteractionType::RFNecUnsupported
+        || ir.coulombtype == CoulombInteractionType::GRFNotused)
     {
-        gmx_fatal(FARGS, "%s electrostatics is no longer supported", eel_names[ir.coulombtype]);
+        gmx_fatal(FARGS, "%s electrostatics is no longer supported", enumValueToString(ir.coulombtype));
     }
 
     if (ir.bAdress)
@@ -1098,7 +1100,7 @@ void init_forcerec(FILE*                            fp,
     const interaction_const_t* ic = fr->ic;
 
     /* TODO: Replace this Ewald table or move it into interaction_const_t */
-    if (ir.coulombtype == eelEWALD)
+    if (ir.coulombtype == CoulombInteractionType::Ewald)
     {
         init_ewald_tab(&(fr->ewald_table), ir, fp);
     }
@@ -1106,49 +1108,58 @@ void init_forcerec(FILE*                            fp,
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
     switch (ic->eeltype)
     {
-        case eelCUT: fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_COULOMB; break;
-
-        case eelRF:
-        case eelRF_ZERO: fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_REACTIONFIELD; break;
-
-        case eelSWITCH:
-        case eelSHIFT:
-        case eelUSER:
-        case eelPMESWITCH:
-        case eelPMEUSER:
-        case eelPMEUSERSWITCH:
-            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+        case CoulombInteractionType::Cut:
+            fr->nbkernel_elec_interaction = NbkernelElecType::Coulomb;
             break;
 
-        case eelPME:
-        case eelP3M_AD:
-        case eelEWALD: fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_EWALD; break;
+        case CoulombInteractionType::RF:
+        case CoulombInteractionType::RFZero:
+            fr->nbkernel_elec_interaction = NbkernelElecType::ReactionField;
+            break;
+
+        case CoulombInteractionType::Switch:
+        case CoulombInteractionType::Shift:
+        case CoulombInteractionType::User:
+        case CoulombInteractionType::PmeSwitch:
+        case CoulombInteractionType::PmeUser:
+        case CoulombInteractionType::PmeUserSwitch:
+            fr->nbkernel_elec_interaction = NbkernelElecType::CubicSplineTable;
+            break;
+
+        case CoulombInteractionType::Pme:
+        case CoulombInteractionType::P3mAD:
+        case CoulombInteractionType::Ewald:
+            fr->nbkernel_elec_interaction = NbkernelElecType::Ewald;
+            break;
 
         default:
-            gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", eel_names[ic->eeltype]);
+            gmx_fatal(FARGS, "Unsupported electrostatic interaction: %s", enumValueToString(ic->eeltype));
     }
     fr->nbkernel_elec_modifier = ic->coulomb_modifier;
 
     /* Vdw: Translate from mdp settings to kernel format */
     switch (ic->vdwtype)
     {
-        case evdwCUT:
+        case VanDerWaalsType::Cut:
             if (fr->bBHAM)
             {
-                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+                fr->nbkernel_vdw_interaction = NbkernelVdwType::Buckingham;
             }
             else
             {
-                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LENNARDJONES;
+                fr->nbkernel_vdw_interaction = NbkernelVdwType::LennardJones;
             }
             break;
-        case evdwPME: fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_LJEWALD; break;
+        case VanDerWaalsType::Pme: fr->nbkernel_vdw_interaction = NbkernelVdwType::LJEwald; break;
 
-        case evdwSWITCH:
-        case evdwSHIFT:
-        case evdwUSER: fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE; break;
+        case VanDerWaalsType::Switch:
+        case VanDerWaalsType::Shift:
+        case VanDerWaalsType::User:
+            fr->nbkernel_vdw_interaction = NbkernelVdwType::CubicSplineTable;
+            break;
 
-        default: gmx_fatal(FARGS, "Unsupported vdw interaction: %s", evdw_names[ic->vdwtype]);
+        default:
+            gmx_fatal(FARGS, "Unsupported vdw interaction: %s", enumValueToString(ic->vdwtype));
     }
     fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 
@@ -1161,7 +1172,7 @@ void init_forcerec(FILE*                            fp,
      */
     if (EEL_USER(fr->ic->eeltype))
     {
-        gmx_fatal(FARGS, "Electrostatics type %s is currently not supported", eel_names[ir.coulombtype]);
+        gmx_fatal(FARGS, "Electrostatics type %s is currently not supported", enumValueToString(ir.coulombtype));
     }
 
     fr->bvdwtab  = FALSE;
@@ -1210,7 +1221,7 @@ void init_forcerec(FILE*                            fp,
     fr->egp_flags = ir.opts.egp_flags;
 
     /* Van der Waals stuff */
-    if ((ic->vdwtype != evdwCUT) && (ic->vdwtype != evdwUSER) && !fr->bBHAM)
+    if ((ic->vdwtype != VanDerWaalsType::Cut) && (ic->vdwtype != VanDerWaalsType::User) && !fr->bBHAM)
     {
         if (ic->rvdw_switch >= ic->rvdw)
         {
@@ -1220,7 +1231,7 @@ void init_forcerec(FILE*                            fp,
         {
             fprintf(fp,
                     "Using %s Lennard-Jones, switch between %g and %g nm\n",
-                    (ic->eeltype == eelSWITCH) ? "switched" : "shifted",
+                    (ic->eeltype == CoulombInteractionType::Switch) ? "switched" : "shifted",
                     ic->rvdw_switch,
                     ic->rvdw);
         }
@@ -1231,7 +1242,7 @@ void init_forcerec(FILE*                            fp,
         gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }
 
-    if (fr->bBHAM && (ic->vdwtype == evdwSHIFT || ic->vdwtype == evdwSWITCH))
+    if (fr->bBHAM && (ic->vdwtype == VanDerWaalsType::Shift || ic->vdwtype == VanDerWaalsType::Switch))
     {
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
@@ -1264,7 +1275,7 @@ void init_forcerec(FILE*                            fp,
 
     /* Wall stuff */
     fr->nwall = ir.nwall;
-    if (ir.nwall && ir.wall_type == ewtTABLE)
+    if (ir.nwall && ir.wall_type == WallType::Table)
     {
         make_wall_tables(fp, ir, tabfn, &mtop.groups, fr);
     }
@@ -1361,7 +1372,7 @@ void init_forcerec(FILE*                            fp,
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
 
-    if (ir.eDispCorr != edispcNO)
+    if (ir.eDispCorr != DispersionCorrectionType::No)
     {
         fr->dispersionCorrection = std::make_unique<DispersionCorrection>(
                 mtop, ir, fr->bBHAM, fr->ntype, fr->nbfp, *fr->ic, tabfn);

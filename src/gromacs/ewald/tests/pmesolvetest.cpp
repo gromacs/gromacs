@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,13 +98,13 @@ public:
         inputRec.nky         = gridSize[YY];
         inputRec.nkz         = gridSize[ZZ];
         inputRec.pme_order   = 4;
-        inputRec.coulombtype = eelPME;
+        inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = epsilon_r;
         switch (method)
         {
             case PmeSolveAlgorithm::Coulomb: break;
 
-            case PmeSolveAlgorithm::LennardJones: inputRec.vdwtype = evdwPME; break;
+            case PmeSolveAlgorithm::LennardJones: inputRec.vdwtype = VanDerWaalsType::Pme; break;
 
             default: GMX_THROW(InternalError("Unknown PME solver"));
         }

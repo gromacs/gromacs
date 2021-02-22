@@ -192,7 +192,7 @@ real do_ewald(const t_inputrec& ir,
         snew(et->tab_qxyz, natoms);
     }
 
-    bFreeEnergy = (ir.efep != efepNO);
+    bFreeEnergy = (ir.efep != FreeEnergyPerturbationType::No);
 
     clear_mat(lrvir);
 

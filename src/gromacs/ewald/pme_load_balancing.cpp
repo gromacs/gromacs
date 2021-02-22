@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -184,7 +184,7 @@ struct pme_load_balancing_t
     int                      start;    /**< start of setup index range to consider in stage>0 */
     int                      end;      /**< end   of setup index range to consider in stage>0 */
     int                      elimited; /**< was the balancing limited, uses enum above */
-    int                      cutoff_scheme; /**< Verlet or group cut-offs */
+    CutoffScheme             cutoff_scheme; /**< Verlet or group cut-offs */
 
     int stage; /**< the current stage */
 
@@ -406,7 +406,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
         set.rcut_coulomb = pme_lb->rcut_coulomb_start;
     }
 
-    if (pme_lb->cutoff_scheme == ecutsVERLET)
+    if (pme_lb->cutoff_scheme == CutoffScheme::Verlet)
     {
         /* Never decrease the Coulomb and VdW list buffers */
         set.rlistOuter = std::max(set.rcut_coulomb + pme_lb->rbufOuter_coulomb,
@@ -831,7 +831,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     nbv->changePairlistRadii(set->rlistOuter, set->rlistInner);
     ic->ewaldcoeff_q = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
-    if (ic->coulomb_modifier == eintmodPOTSHIFT)
+    if (ic->coulomb_modifier == InteractionModifiers::PotShift)
     {
         GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
         ic->sh_ewald = std::erfc(ic->ewaldcoeff_q * ic->rcoulomb) / ic->rcoulomb;
@@ -841,7 +841,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
         ic->rvdw          = set->rcut_coulomb;
         ic->ewaldcoeff_lj = set->ewaldcoeff_lj;
-        if (ic->vdw_modifier == eintmodPOTSHIFT)
+        if (ic->vdw_modifier == InteractionModifiers::PotShift)
         {
             real crc2;
 
@@ -1075,7 +1075,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
         fr->rlist = fr->nbv->pairlistOuterRadius();
 
-        if (ir.eDispCorr != edispcNO)
+        if (ir.eDispCorr != DispersionCorrectionType::No)
         {
             fr->dispersionCorrection->setParameters(*fr->ic);
         }

@@ -75,10 +75,10 @@ using gmx::RVec;
 
 static void clearEwaldThreadOutput(ewald_corr_thread_t* ewc_t)
 {
-    ewc_t->Vcorr_q        = 0;
-    ewc_t->Vcorr_lj       = 0;
-    ewc_t->dvdl[efptCOUL] = 0;
-    ewc_t->dvdl[efptVDW]  = 0;
+    ewc_t->Vcorr_q                                        = 0;
+    ewc_t->Vcorr_lj                                       = 0;
+    ewc_t->dvdl[FreeEnergyPerturbationCouplingType::Coul] = 0;
+    ewc_t->dvdl[FreeEnergyPerturbationCouplingType::Vdw]  = 0;
     clear_mat(ewc_t->vir_q);
     clear_mat(ewc_t->vir_lj);
 }
@@ -91,8 +91,10 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
     {
         dest.Vcorr_q += ewc_t[t].Vcorr_q;
         dest.Vcorr_lj += ewc_t[t].Vcorr_lj;
-        dest.dvdl[efptCOUL] += ewc_t[t].dvdl[efptCOUL];
-        dest.dvdl[efptVDW] += ewc_t[t].dvdl[efptVDW];
+        dest.dvdl[FreeEnergyPerturbationCouplingType::Coul] +=
+                ewc_t[t].dvdl[FreeEnergyPerturbationCouplingType::Coul];
+        dest.dvdl[FreeEnergyPerturbationCouplingType::Vdw] +=
+                ewc_t[t].dvdl[FreeEnergyPerturbationCouplingType::Vdw];
         m_add(dest.vir_q, ewc_t[t].vir_q, dest.vir_q);
         m_add(dest.vir_lj, ewc_t[t].vir_lj, dest.vir_lj);
     }
@@ -122,7 +124,7 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
      */
-    if ((computePmeOnCpu || fr->ic->eeltype == eelEWALD || haveEwaldSurfaceTerm)
+    if ((computePmeOnCpu || fr->ic->eeltype == CoulombInteractionType::Ewald || haveEwaldSurfaceTerm)
         && stepWork.computeNonbondedForces)
     {
         int  status = 0;
@@ -159,22 +161,23 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                          * the forces in the normal, single forceWithVirial->force_ array.
                          */
                         const rvec* x = as_rvec_array(coordinates.data());
-                        ewald_LRcorrection(md->homenr,
-                                           cr,
-                                           nthreads,
-                                           t,
-                                           *fr,
-                                           ir,
-                                           md->chargeA,
-                                           md->chargeB,
-                                           (md->nChargePerturbed != 0),
-                                           x,
-                                           box,
-                                           mu_tot,
-                                           as_rvec_array(forceWithVirial->force_.data()),
-                                           &ewc_t.Vcorr_q,
-                                           lambda[efptCOUL],
-                                           &ewc_t.dvdl[efptCOUL]);
+                        ewald_LRcorrection(
+                                md->homenr,
+                                cr,
+                                nthreads,
+                                t,
+                                *fr,
+                                ir,
+                                md->chargeA,
+                                md->chargeB,
+                                (md->nChargePerturbed != 0),
+                                x,
+                                box,
+                                mu_tot,
+                                as_rvec_array(forceWithVirial->force_.data()),
+                                &ewc_t.Vcorr_q,
+                                lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                                &ewc_t.dvdl[FreeEnergyPerturbationCouplingType::Coul]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 }
@@ -190,7 +193,12 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                 /* This is not in a subcounter because it takes a
                    negligible and constant-sized amount of time */
                 ewaldOutput.Vcorr_q += ewald_charge_correction(
-                        cr, fr, lambda[efptCOUL], box, &ewaldOutput.dvdl[efptCOUL], ewaldOutput.vir_q);
+                        cr,
+                        fr,
+                        lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                        box,
+                        &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul],
+                        ewaldOutput.vir_q);
             }
 
             if (computePmeOnCpu)
@@ -226,10 +234,10 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                             ewaldOutput.vir_lj,
                             &Vlr_q,
                             &Vlr_lj,
-                            lambda[efptCOUL],
-                            lambda[efptVDW],
-                            &ewaldOutput.dvdl[efptCOUL],
-                            &ewaldOutput.dvdl[efptVDW],
+                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
+                            &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul],
+                            &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Vdw],
                             stepWork);
                     wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
@@ -259,7 +267,7 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
             }
         }
 
-        if (fr->ic->eeltype == eelEWALD)
+        if (fr->ic->eeltype == CoulombInteractionType::Ewald)
         {
             const rvec* x = as_rvec_array(coordinates.data());
             Vlr_q         = do_ewald(ir,
@@ -272,8 +280,8 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                              md->homenr,
                              ewaldOutput.vir_q,
                              fr->ic->ewaldcoeff_q,
-                             lambda[efptCOUL],
-                             &ewaldOutput.dvdl[efptCOUL],
+                             lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                             &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul],
                              fr->ewald_table);
         }
 
@@ -282,8 +290,10 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
         // long-range virial contribution.
         forceWithVirial->addVirialContribution(ewaldOutput.vir_q);
         forceWithVirial->addVirialContribution(ewaldOutput.vir_lj);
-        enerd->dvdl_lin[efptCOUL] += ewaldOutput.dvdl[efptCOUL];
-        enerd->dvdl_lin[efptVDW] += ewaldOutput.dvdl[efptVDW];
+        enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul] +=
+                ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul];
+        enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Vdw] +=
+                ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Vdw];
         enerd->term[F_COUL_RECIP] = Vlr_q + ewaldOutput.Vcorr_q;
         enerd->term[F_LJ_RECIP]   = Vlr_lj + ewaldOutput.Vcorr_lj;
 

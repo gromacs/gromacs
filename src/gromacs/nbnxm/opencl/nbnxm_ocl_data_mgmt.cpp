@@ -138,9 +138,9 @@ static void init_nbparam(NBParamGpu*                     nbp,
     nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.ljCombinationRule);
     nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic, deviceContext.deviceInfo());
 
-    if (ic->vdwtype == evdwPME)
+    if (ic->vdwtype == VanDerWaalsType::Pme)
     {
-        if (ic->ljpme_comb_rule == eljpmeGEOM)
+        if (ic->ljpme_comb_rule == LongRangeVdW::Geom)
         {
             GMX_ASSERT(nbatParams.ljCombinationRule == LJCombinationRule::Geometric,
                        "Combination rule mismatch!");
@@ -172,7 +172,7 @@ static void init_nbparam(NBParamGpu*                     nbp,
         initParamLookupTable(&nbfp, nullptr, nbatParams.nbfp.data(), nnbfp, deviceContext);
         nbp->nbfp = nbfp;
 
-        if (ic->vdwtype == evdwPME)
+        if (ic->vdwtype == VanDerWaalsType::Pme)
         {
             DeviceBuffer<float> nbfp_comb;
             initParamLookupTable(&nbfp_comb, nullptr, nbatParams.nbfp_comb.data(), nnbfp_comb, deviceContext);

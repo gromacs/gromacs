@@ -235,17 +235,18 @@ static void clear_constraint_quantity_nonlocal(gmx_domdec_t* dd, ArrayRef<RVec> 
     }
 }
 
-void too_many_constraint_warnings(int eConstrAlg, int warncount)
+void too_many_constraint_warnings(ConstraintAlgorithm eConstrAlg, int warncount)
 {
-    gmx_fatal(
-            FARGS,
-            "Too many %s warnings (%d)\n"
-            "If you know what you are doing you can %s"
-            "set the environment variable GMX_MAXCONSTRWARN to -1,\n"
-            "but normally it is better to fix the problem",
-            (eConstrAlg == econtLINCS) ? "LINCS" : "SETTLE",
-            warncount,
-            (eConstrAlg == econtLINCS) ? "adjust the lincs warning threshold in your mdp file\nor " : "\n");
+    gmx_fatal(FARGS,
+              "Too many %s warnings (%d)\n"
+              "If you know what you are doing you can %s"
+              "set the environment variable GMX_MAXCONSTRWARN to -1,\n"
+              "but normally it is better to fix the problem",
+              (eConstrAlg == ConstraintAlgorithm::Lincs) ? "LINCS" : "SETTLE",
+              warncount,
+              (eConstrAlg == ConstraintAlgorithm::Lincs)
+                      ? "adjust the lincs warning threshold in your mdp file\nor "
+                      : "\n");
 }
 
 //! Writes out coordinates.
@@ -439,7 +440,7 @@ bool Constraints::Impl::apply(bool                      bLog,
         invdt = 1.0 / scaled_delta_t;
     }
 
-    if (ir.efep != efepNO && EI_DYNAMICS(ir.eI))
+    if (ir.efep != FreeEnergyPerturbationType::No && EI_DYNAMICS(ir.eI))
     {
         /* Set the constraint lengths for the step at which this configuration
          * is meant to be. The invmasses should not be changed.
@@ -534,7 +535,7 @@ bool Constraints::Impl::apply(bool                      bLog,
             {
                 fprintf(log,
                         "Constraint error in algorithm %s at step %s\n",
-                        econstr_names[econtLINCS],
+                        enumValueToString(ConstraintAlgorithm::Lincs),
                         gmx_step_str(step, buf));
             }
             bDump = TRUE;
@@ -568,7 +569,7 @@ bool Constraints::Impl::apply(bool                      bLog,
             {
                 fprintf(log,
                         "Constraint error in algorithm %s at step %s\n",
-                        econstr_names[econtSHAKE],
+                        enumValueToString(ConstraintAlgorithm::Shake),
                         gmx_step_str(step, buf));
             }
             bDump = TRUE;
@@ -702,7 +703,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                 warncount_settle++;
                 if (warncount_settle > maxwarn)
                 {
-                    too_many_constraint_warnings(-1, warncount_settle);
+                    too_many_constraint_warnings(ConstraintAlgorithm::Count, warncount_settle);
                 }
                 bDump = TRUE;
 
@@ -1016,11 +1017,11 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top,
         /* With DD we might also need to call LINCS on a domain no constraints for
          * communicating coordinates to other nodes that do have constraints.
          */
-        if (ir.eConstrAlg == econtLINCS)
+        if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             set_lincs(*idef, numAtoms_, inverseMasses_, lambda_, EI_DYNAMICS(ir.eI), cr, lincsd);
         }
-        if (ir.eConstrAlg == econtSHAKE)
+        if (ir.eConstrAlg == ConstraintAlgorithm::Shake)
         {
             if (cr->dd)
             {
@@ -1154,7 +1155,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
             }
         }
 
-        if (ir.eConstrAlg == econtLINCS)
+        if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             lincsd = init_lincs(log,
                                 mtop,
@@ -1165,7 +1166,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                                 ir.nProjOrder);
         }
 
-        if (ir.eConstrAlg == econtSHAKE)
+        if (ir.eConstrAlg == ConstraintAlgorithm::Shake)
         {
             if (DOMAINDECOMP(cr) && ddHaveSplitConstraints(*cr->dd))
             {
@@ -1335,7 +1336,7 @@ void do_constrain_first(FILE*                     fplog,
                       gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
-    if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
+    if (EI_STATE_VELOCITY(ir->eI) && ir->eI != IntegrationAlgorithm::VV)
     {
         auto subX = x.paddedArrayRef().subArray(start, end);
         auto subV = v.paddedArrayRef().subArray(start, end);
@@ -1405,7 +1406,7 @@ void constrain_velocities(gmx::Constraints* constr,
                       state->v.arrayRefWithPadding(),
                       state->v.arrayRefWithPadding().unpaddedArrayRef(),
                       state->box,
-                      state->lambda[efptBONDED],
+                      state->lambda[FreeEnergyPerturbationCouplingType::Bonded],
                       dvdlambda,
                       ArrayRefWithPadding<RVec>(),
                       computeVirial,
@@ -1435,7 +1436,7 @@ void constrain_coordinates(gmx::Constraints*         constr,
                       std::move(xp),
                       ArrayRef<RVec>(),
                       state->box,
-                      state->lambda[efptBONDED],
+                      state->lambda[FreeEnergyPerturbationCouplingType::Bonded],
                       dvdlambda,
                       state->v.arrayRefWithPadding(),
                       computeVirial,

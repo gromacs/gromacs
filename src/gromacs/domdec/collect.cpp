@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "atomdistribution.h"
@@ -272,7 +273,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
         GMX_RELEASE_ASSERT(state->nhchainlength == nh,
                            "The global and local Nose-Hoover chain lengths should match");
 
-        for (int i = 0; i < efptNR; i++)
+        for (auto i : gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>::keys())
         {
             state->lambda[i] = state_local->lambda[i];
         }

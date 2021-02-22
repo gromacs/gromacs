@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 
 #include "gromacs/mdtypes/inputrec.h"
 
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 
@@ -76,7 +78,9 @@ struct FreeEnergyParameterTestParameters
     //! the current simulation step
     int64_t step = 0;
     //! the expected lambda at the current simulation step
-    std::array<real, efptNR> expectedLambdas = { -1, -1, -1, -1, -1, -1, -1 };
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> expectedLambdas = { -1, -1, -1,
+                                                                                        -1, -1, -1,
+                                                                                        -1 };
 };
 
 
@@ -143,18 +147,18 @@ public:
      * \param[in] nLambda
      * \returns nLambda * eftpNR matrix with pre-defined values
      */
-    double** getLambdaMatrix(int nLambda)
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> getLambdaMatrix(int nLambda)
     {
-        for (int i = 0; i < efptNR; ++i)
+        for (auto i : keysOf(allLambda_))
         {
-            allLambda_[i] = defaultLambdaArrayForTest_[nLambda].data();
+            allLambda_[i] = defaultLambdaArrayForTest_[nLambda];
         }
-        return allLambda_.data();
+        return allLambda_;
     }
 
 private:
     //! Construction aide for double ** matrix without snew
-    std::array<double*, efptNR> allLambda_;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> allLambda_;
     //! a set of default lambda arrays for different lengths
     std::vector<std::vector<double>> defaultLambdaArrayForTest_ = { {}, { 0.8 }, { 0.2, 0.8 }, { 0.2, 0.8, 0.8 } };
 };

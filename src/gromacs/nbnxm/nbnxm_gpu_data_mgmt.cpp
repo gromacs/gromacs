@@ -338,7 +338,7 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic,
                                                    const DeviceInformation&   deviceInfo)
 {
-    if (ic->eeltype == eelCUT)
+    if (ic->eeltype == CoulombInteractionType::Cut)
     {
         return ElecType::Cut;
     }
@@ -346,7 +346,7 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic
     {
         return ElecType::RF;
     }
-    else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
+    else if ((EEL_PME(ic->eeltype) || ic->eeltype == CoulombInteractionType::Ewald))
     {
         return nbnxn_gpu_pick_ewald_kernel_type(*ic, deviceInfo);
     }
@@ -354,22 +354,21 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic
     {
         /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
         GMX_THROW(gmx::InconsistentInputError(
-                gmx::formatString("The requested electrostatics type %s (%d) is not implemented in "
+                gmx::formatString("The requested electrostatics type %s is not implemented in "
                                   "the GPU accelerated kernels!",
-                                  EELTYPE(ic->eeltype),
-                                  ic->eeltype)));
+                                  enumValueToString(ic->eeltype))));
     }
 }
 
 
 enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, LJCombinationRule ljCombinationRule)
 {
-    if (ic->vdwtype == evdwCUT)
+    if (ic->vdwtype == VanDerWaalsType::Cut)
     {
         switch (ic->vdw_modifier)
         {
-            case eintmodNONE:
-            case eintmodPOTSHIFT:
+            case InteractionModifiers::None:
+            case InteractionModifiers::PotShift:
                 switch (ljCombinationRule)
                 {
                     case LJCombinationRule::None: return VdwType::Cut;
@@ -381,19 +380,18 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, LJCombinat
                                 "the GPU accelerated kernels!",
                                 enumValueToString(ljCombinationRule))));
                 }
-            case eintmodFORCESWITCH: return VdwType::FSwitch;
-            case eintmodPOTSWITCH: return VdwType::PSwitch;
+            case InteractionModifiers::ForceSwitch: return VdwType::FSwitch;
+            case InteractionModifiers::PotSwitch: return VdwType::PSwitch;
             default:
                 GMX_THROW(gmx::InconsistentInputError(
-                        gmx::formatString("The requested VdW interaction modifier %s (%d) is not "
+                        gmx::formatString("The requested VdW interaction modifier %s is not "
                                           "implemented in the GPU accelerated kernels!",
-                                          INTMODIFIER(ic->vdw_modifier),
-                                          ic->vdw_modifier)));
+                                          enumValueToString(ic->vdw_modifier))));
         }
     }
-    else if (ic->vdwtype == evdwPME)
+    else if (ic->vdwtype == VanDerWaalsType::Pme)
     {
-        if (ic->ljpme_comb_rule == eljpmeGEOM)
+        if (ic->ljpme_comb_rule == LongRangeVdW::Geom)
         {
             assert(ljCombinationRule == LJCombinationRule::Geometric);
             return VdwType::EwaldGeom;
@@ -407,9 +405,8 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, LJCombinat
     else
     {
         GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
-                "The requested VdW type %s (%d) is not implemented in the GPU accelerated kernels!",
-                EVDWTYPE(ic->vdwtype),
-                ic->vdwtype)));
+                "The requested VdW type %s is not implemented in the GPU accelerated kernels!",
+                enumValueToString(ic->vdwtype))));
     }
 }
 

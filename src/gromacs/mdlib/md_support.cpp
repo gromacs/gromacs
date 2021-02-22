@@ -323,7 +323,8 @@ void compute_globals(gmx_global_stat*               gstat,
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
 
-    bEkinAveVel = (ir->eI == eiVV || (ir->eI == eiVVAK && bPres) || bReadEkin);
+    bEkinAveVel = (ir->eI == IntegrationAlgorithm::VV
+                   || (ir->eI == IntegrationAlgorithm::VVAK && bPres) || bReadEkin);
 
     /* in initalization, it sums the shake virial in vv, and to
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
@@ -396,7 +397,7 @@ void compute_globals(gmx_global_stat*               gstat,
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
-        enerd->dvdl_lin[efptMASS] = static_cast<double>(dvdl_ekin);
+        enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass] = static_cast<double>(dvdl_ekin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
@@ -520,7 +521,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
      * with what is needed, so we correct this here.
      */
     state->flags = 0;
-    if (ir->efep != efepNO || ir->bExpanded)
+    if (ir->efep != FreeEnergyPerturbationType::No || ir->bExpanded)
     {
         state->flags |= (1 << estLAMBDA);
         state->flags |= (1 << estFEPSTATE);

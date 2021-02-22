@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -153,12 +153,12 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
 
     ArrayRef<const MtsLevel> mtsLevels = ir.mtsLevels;
 
-    if (!(ir.eI == eiMD || ir.eI == eiSD1))
+    if (!(ir.eI == IntegrationAlgorithm::MD || ir.eI == IntegrationAlgorithm::SD1))
     {
         errorMessages.push_back(gmx::formatString(
                 "Multiple time stepping is only supported with integrators %s and %s",
-                ei_names[eiMD],
-                ei_names[eiSD1]));
+                enumValueToString(IntegrationAlgorithm::MD),
+                enumValueToString(IntegrationAlgorithm::SD1)));
     }
 
     if ((EEL_FULL(ir.coulombtype) || EVDW_PME(ir.vdwtype))
@@ -189,7 +189,7 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
     {
         errorMessages.push_back(mesg.value());
     }
-    if (ir.efep != efepNO)
+    if (ir.efep != FreeEnergyPerturbationType::No)
     {
         if ((mesg = checkMtsInterval(mtsLevels, "nstdhdl", ir.fepvals->nstdhdl)))
         {

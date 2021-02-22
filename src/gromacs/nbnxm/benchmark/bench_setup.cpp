@@ -146,12 +146,13 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions& optio
 {
     interaction_const_t ic;
 
-    ic.vdwtype      = evdwCUT;
-    ic.vdw_modifier = eintmodPOTSHIFT;
+    ic.vdwtype      = VanDerWaalsType::Cut;
+    ic.vdw_modifier = InteractionModifiers::PotShift;
     ic.rvdw         = options.pairlistCutoff;
 
-    ic.eeltype          = (options.coulombType == BenchMarkCoulomb::Pme ? eelPME : eelRF);
-    ic.coulomb_modifier = eintmodPOTSHIFT;
+    ic.eeltype = (options.coulombType == BenchMarkCoulomb::Pme ? CoulombInteractionType::Pme
+                                                               : CoulombInteractionType::RF);
+    ic.coulomb_modifier = InteractionModifiers::PotShift;
     ic.rcoulomb         = options.pairlistCutoff;
 
     // Reaction-field with reactionFieldPermitivity=inf

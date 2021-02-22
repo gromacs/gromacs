@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,11 +111,11 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                              "Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, "
                              "rm2-pf, flex, flex-t, flex2, flex2-t");
         sprintf(buf, "rot-type%d", g);
-        rotg->eType = get_eenum(inp, buf, erotg_names);
+        rotg->eType = getEnum<EnforcedRotationGroupType>(inp, buf, wi);
 
         printStringNoNewline(inp, "Use mass-weighting of the rotation group positions");
         sprintf(buf, "rot-massw%d", g);
-        rotg->bMassW = get_eenum(inp, buf, yesno_names);
+        rotg->bMassW = getEnum<Boolean>(inp, buf, wi) != Boolean::No;
 
         printStringNoNewline(inp, "Rotation vector, will get normalized");
         sprintf(buf, "rot-vec%d", g);
@@ -135,7 +135,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                 "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
                 RotStr,
                 g,
-                erotg_names[rotg->eType],
+                enumValueToString(rotg->eType),
                 vec[0],
                 vec[1],
                 vec[2]);
@@ -148,8 +148,10 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         sprintf(buf, "rot-pivot%d", g);
         setStringEntry(inp, buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
-        if ((rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM)
-            || (rotg->eType == erotgRM2))
+        if ((rotg->eType == EnforcedRotationGroupType::Iso)
+            || (rotg->eType == EnforcedRotationGroupType::Pm)
+            || (rotg->eType == EnforcedRotationGroupType::Rm)
+            || (rotg->eType == EnforcedRotationGroupType::Rm2))
         {
             string2dvec(s_vec, vec);
         }
@@ -194,7 +196,9 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                 inp, "Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
         sprintf(buf, "rot-eps%d", g);
         rotg->eps = get_ereal(inp, buf, 1e-4, wi);
-        if ((rotg->eps <= 0.0) && (rotg->eType == erotgRM2 || rotg->eType == erotgFLEX2))
+        if ((rotg->eps <= 0.0)
+            && (rotg->eType == EnforcedRotationGroupType::Rm2
+                || rotg->eType == EnforcedRotationGroupType::Flex2))
         {
             sprintf(warn_buf, "rot-eps%d <= 0", g);
             warning_error(wi, warn_buf);
@@ -204,13 +208,13 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                 inp,
                 "Fitting method to determine angle of rotation group (rmsd, norm, or potential)");
         sprintf(buf, "rot-fit-method%d", g);
-        rotg->eFittype = get_eenum(inp, buf, erotg_fitnames);
+        rotg->eFittype = getEnum<RotationGroupFitting>(inp, buf, wi);
         printStringNoNewline(inp,
                              "For fit type 'potential', nr. of angles around the reference for "
                              "which the pot. is evaluated");
         sprintf(buf, "rot-potfit-nsteps%d", g);
         rotg->PotAngle_nstep = get_eint(inp, buf, 21, wi);
-        if ((rotg->eFittype == erotgFitPOT) && (rotg->PotAngle_nstep < 1))
+        if ((rotg->eFittype == RotationGroupFitting::Pot) && (rotg->PotAngle_nstep < 1))
         {
             sprintf(warn_buf, "rot-potfit-nsteps%d < 1", g);
             warning_error(wi, warn_buf);

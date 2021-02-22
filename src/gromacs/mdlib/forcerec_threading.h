@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,15 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 struct ewald_corr_thread_t
 {
-    real   Vcorr_q;
-    real   Vcorr_lj;
-    real   dvdl[efptNR];
-    tensor vir_q;
-    tensor vir_lj;
+    real                                                            Vcorr_q;
+    real                                                            Vcorr_lj;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl;
+    tensor                                                          vir_q;
+    tensor                                                          vir_lj;
 };
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
 {
-    lambda_.fill(0);
+    std::fill(lambda_.begin(), lambda_.end(), 0);
     // The legacy implementation only filled the lambda vector in state_global, which is only
     // available on master. We have the lambda vector available everywhere, so we pass a `true`
     // for isMaster on all ranks. See #3647.
@@ -109,7 +109,7 @@ int FreeEnergyPerturbationData::currentFEPState()
 
 void FreeEnergyPerturbationData::updateMDAtoms()
 {
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
+    update_mdatoms(mdAtoms_->mdatoms(), lambda_[FreeEnergyPerturbationCouplingType::Mass]);
 }
 
 namespace
@@ -204,7 +204,7 @@ void FreeEnergyPerturbationData::readCheckpointToTrxFrame(t_trxframe* trxFrame,
     {
         FreeEnergyPerturbationData freeEnergyPerturbationData;
         freeEnergyPerturbationData.doCheckpointData(&readCheckpointData.value());
-        trxFrame->lambda    = freeEnergyPerturbationData.lambda_[efptFEP];
+        trxFrame->lambda = freeEnergyPerturbationData.lambda_[FreeEnergyPerturbationCouplingType::Fep];
         trxFrame->fep_state = freeEnergyPerturbationData.currentFEPState_;
     }
     else

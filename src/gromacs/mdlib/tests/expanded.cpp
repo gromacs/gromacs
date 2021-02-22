@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/expanded_internal.h"
 #include "gromacs/mdtypes/md_enums.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "testutils/testasserts.h"
 
 namespace gmx
@@ -70,10 +71,11 @@ class CalculateAcceptanceWeightSimple : public ::testing::Test, public ::testing
 // Check that unimplemented calculation modes throw
 TEST_P(CalculateAcceptanceWeightSimple, UnknownCalculationModeThrows)
 {
-    for (auto calculationMode = 0; calculationMode < elamstatsNR; ++calculationMode)
+    for (auto calculationMode : gmx::EnumerationArray<LambdaWeightCalculation, bool>::keys())
     {
-        if (calculationMode != elamstatsBARKER && calculationMode != elamstatsMINVAR
-            && calculationMode != elamstatsMETROPOLIS)
+        if (calculationMode != LambdaWeightCalculation::Barker
+            && calculationMode != LambdaWeightCalculation::Minvar
+            && calculationMode != LambdaWeightCalculation::Metropolis)
         {
             EXPECT_THROW_GMX(calculateAcceptanceWeight(calculationMode, GetParam()), NotImplementedError);
         }
@@ -82,21 +84,21 @@ TEST_P(CalculateAcceptanceWeightSimple, UnknownCalculationModeThrows)
 // Check that implemented calculation modes don't throw
 TEST_P(CalculateAcceptanceWeightSimple, KnownCalculationModeDoesNotThrow)
 {
-    EXPECT_NO_THROW(calculateAcceptanceWeight(elamstatsMETROPOLIS, GetParam()));
-    EXPECT_NO_THROW(calculateAcceptanceWeight(elamstatsBARKER, GetParam()));
-    EXPECT_NO_THROW(calculateAcceptanceWeight(elamstatsMINVAR, GetParam()));
+    EXPECT_NO_THROW(calculateAcceptanceWeight(LambdaWeightCalculation::Metropolis, GetParam()));
+    EXPECT_NO_THROW(calculateAcceptanceWeight(LambdaWeightCalculation::Barker, GetParam()));
+    EXPECT_NO_THROW(calculateAcceptanceWeight(LambdaWeightCalculation::Minvar, GetParam()));
 }
 // Barker and MinVar are expected to be equal
 TEST_P(CalculateAcceptanceWeightSimple, BarkerAndMinVarAreIdentical)
 {
-    EXPECT_EQ(calculateAcceptanceWeight(elamstatsBARKER, GetParam()),
-              calculateAcceptanceWeight(elamstatsMINVAR, GetParam()));
+    EXPECT_EQ(calculateAcceptanceWeight(LambdaWeightCalculation::Barker, GetParam()),
+              calculateAcceptanceWeight(LambdaWeightCalculation::Minvar, GetParam()));
 }
 
 /*! \brief Test fixture accepting a calculation mode and an input value for
  *         calculateAcceptanceWeight as well as the expected output value
  */
-using RegressionTuple = std::tuple<int, real, real>;
+using RegressionTuple = std::tuple<LambdaWeightCalculation, real, real>;
 class CalculateAcceptanceWeightRangeRegression :
     public ::testing::Test,
     public ::testing::WithParamInterface<RegressionTuple>
@@ -119,20 +121,21 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
         RegressionTests,
         CalculateAcceptanceWeightRangeRegression,
-        ::testing::Values(RegressionTuple{ elamstatsMETROPOLIS, 0.0, 1.0 },
-                          RegressionTuple{ elamstatsMETROPOLIS, GMX_REAL_NEGZERO, 1.0 },
-                          RegressionTuple{ elamstatsMETROPOLIS, GMX_REAL_EPS, 1.0 },
-                          RegressionTuple{ elamstatsMETROPOLIS, -1.0, 1.0 },
-                          RegressionTuple{ elamstatsMETROPOLIS, -GMX_REAL_MAX, 1.0 },
-                          RegressionTuple{ elamstatsMETROPOLIS, 1.0, std::exp(-1.0) },
-                          RegressionTuple{ elamstatsMETROPOLIS, GMX_REAL_MAX, 0.0 },
-                          RegressionTuple{ elamstatsBARKER, 0.0, 0.5 },
-                          RegressionTuple{ elamstatsBARKER, GMX_REAL_NEGZERO, 0.5 },
-                          RegressionTuple{ elamstatsBARKER, GMX_REAL_EPS, 0.5 },
-                          RegressionTuple{ elamstatsBARKER, -1.0, 1.0 / (1.0 + std::exp(-1.0)) },
-                          RegressionTuple{ elamstatsBARKER, -GMX_REAL_MAX, 1.0 },
-                          RegressionTuple{ elamstatsBARKER, 1.0, 1.0 / (1.0 + std::exp(1.0)) },
-                          RegressionTuple{ elamstatsBARKER, GMX_REAL_MAX, 0.0 }));
+        ::testing::Values(
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, 0.0, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, GMX_REAL_NEGZERO, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, GMX_REAL_EPS, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, -1.0, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, -GMX_REAL_MAX, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, 1.0, std::exp(-1.0) },
+                RegressionTuple{ LambdaWeightCalculation::Metropolis, GMX_REAL_MAX, 0.0 },
+                RegressionTuple{ LambdaWeightCalculation::Barker, 0.0, 0.5 },
+                RegressionTuple{ LambdaWeightCalculation::Barker, GMX_REAL_NEGZERO, 0.5 },
+                RegressionTuple{ LambdaWeightCalculation::Barker, GMX_REAL_EPS, 0.5 },
+                RegressionTuple{ LambdaWeightCalculation::Barker, -1.0, 1.0 / (1.0 + std::exp(-1.0)) },
+                RegressionTuple{ LambdaWeightCalculation::Barker, -GMX_REAL_MAX, 1.0 },
+                RegressionTuple{ LambdaWeightCalculation::Barker, 1.0, 1.0 / (1.0 + std::exp(1.0)) },
+                RegressionTuple{ LambdaWeightCalculation::Barker, GMX_REAL_MAX, 0.0 }));
 
 } // namespace
 } // namespace test

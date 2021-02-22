@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -323,7 +323,7 @@ void set_box_rel(const t_inputrec* ir, t_state* state)
 
     if (inputrecPreserveShape(ir))
     {
-        const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
+        const int ndim = ir->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, ir->deform, state->box_rel, state->box, true);
     }
 }
@@ -332,7 +332,7 @@ void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box)
 {
     if (inputrecPreserveShape(ir))
     {
-        const int ndim = ir->epct == epctSEMIISOTROPIC ? 2 : 3;
+        const int ndim = ir->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, ir->deform, box_rel, box, false);
     }
 }
@@ -356,12 +356,12 @@ void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* f
        t_state.  This function works, but could probably use a logic
        rewrite to keep all the different types of efep straight. */
 
-    if ((ir.efep == efepNO) && (!ir.bSimTemp))
+    if ((ir.efep == FreeEnergyPerturbationType::No) && (!ir.bSimTemp))
     {
         return;
     }
 
-    const t_lambda* fep = ir.fepvals;
+    const t_lambda* fep = ir.fepvals.get();
     if (isMaster)
     {
         *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
@@ -369,7 +369,7 @@ void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* f
                                              to prevent this.*/
     }
 
-    for (int i = 0; i < efptNR; i++)
+    for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
     {
         double thisLambda;
         /* overwrite lambda state with init_lambda for now for backwards compatibility */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions& mdrunOptions,
                                               const t_forcerec*   fr)
 {
     return (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !mdrunOptions.reproducible
-            && inputrec->cutoff_scheme != ecutsGROUP);
+            && inputrec->cutoff_scheme != CutoffScheme::Group);
 }
 
 PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                 isVerbose,

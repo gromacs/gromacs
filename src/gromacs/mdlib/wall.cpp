@@ -192,11 +192,11 @@ real do_walls(const t_inputrec&              ir,
         ntw[w] = 2 * ntype * ir.wall_atomtype[w];
         switch (ir.wall_type)
         {
-            case ewt93:
+            case WallType::NineThree:
                 fac_d[w] = ir.wall_density[w] * M_PI / 6;
                 fac_r[w] = ir.wall_density[w] * M_PI / 45;
                 break;
-            case ewt104:
+            case WallType::TenFour:
                 fac_d[w] = ir.wall_density[w] * M_PI / 2;
                 fac_r[w] = ir.wall_density[w] * M_PI / 5;
                 break;
@@ -272,11 +272,11 @@ real do_walls(const t_inputrec&              ir,
                     real r1, r2, r4, Vd, Vr;
                     switch (ir.wall_type)
                     {
-                        case ewtTABLE:
+                        case WallType::Table:
                             tableForce(r, *fr.wall_tab[w][gid[i]], Cd, Cr, &V, &F);
                             F *= lamfac;
                             break;
-                        case ewt93:
+                        case WallType::NineThree:
                             r1 = 1 / r;
                             r2 = r1 * r1;
                             r4 = r2 * r2;
@@ -285,7 +285,7 @@ real do_walls(const t_inputrec&              ir,
                             V  = Vr - Vd;
                             F  = lamfac * (9 * Vr - 3 * Vd) * r1;
                             break;
-                        case ewt104:
+                        case WallType::TenFour:
                             r1 = 1 / r;
                             r2 = r1 * r1;
                             r4 = r2 * r2;
@@ -294,7 +294,7 @@ real do_walls(const t_inputrec&              ir,
                             V  = Vr - Vd;
                             F  = lamfac * (10 * Vr - 4 * Vd) * r1;
                             break;
-                        case ewt126:
+                        case WallType::TwelveSix:
                             r1 = 1 / r;
                             r2 = r1 * r1;
                             r4 = r2 * r2;

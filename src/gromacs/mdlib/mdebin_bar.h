@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #define _mdebin_bar_h
 
 #include "gromacs/mdlib/energyoutput.h"
+#include "gromacs/utility/arrayref.h"
 
 /* The functions & data structures here describe writing
    energy differences (or their histogram )for use with g_bar */
@@ -146,13 +147,13 @@ void done_mde_delta_h_coll(t_mde_delta_h_coll* dhc);
  */
 
 /* add a bunch of samples - note fep_state is double to allow for better data storage */
-void mde_delta_h_coll_add_dh(t_mde_delta_h_coll* dhc,
-                             double              fep_state,
-                             double              energy,
-                             double              pV,
-                             double*             dhdl,
-                             double*             foreign_dU,
-                             double              time);
+void mde_delta_h_coll_add_dh(t_mde_delta_h_coll*   dhc,
+                             double                fep_state,
+                             double                energy,
+                             double                pV,
+                             gmx::ArrayRef<double> dhdl,
+                             double*               foreign_dU,
+                             double                time);
 
 /* write the data associated with the du blocks collection as a collection
     of mdebin blocks.

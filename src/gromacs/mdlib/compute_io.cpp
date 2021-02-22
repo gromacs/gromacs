@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,8 @@ static int div_nsteps(int nsteps, int nst)
 double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl)
 {
 
-    int    nsteps = ir->nsteps;
-    int    i, nxtcatoms = 0;
+    int    nsteps    = ir->nsteps;
+    int    nxtcatoms = 0;
     int    nstx, nstv, nstf, nste, nstlog, nstxtc;
     double cio;
 
@@ -93,13 +93,13 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
     /* t_energy contains doubles, but real is written to edr */
     cio += (1.0 * nste) * nrener * 3 * sizeof(real);
 
-    if ((ir->efep != efepNO || ir->bSimTemp) && (ir->fepvals->nstdhdl > 0))
+    if ((ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp) && (ir->fepvals->nstdhdl > 0))
     {
         int ndh    = ir->fepvals->n_lambda;
         int ndhdl  = 0;
         int nchars = 0;
 
-        for (i = 0; i < efptNR; i++)
+        for (auto i : keysOf(ir->fepvals->separate_dvdl))
         {
             if (ir->fepvals->separate_dvdl[i])
             {
@@ -107,15 +107,15 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
             }
         }
 
-        if (ir->fepvals->separate_dhdl_file == esepdhdlfileYES)
+        if (ir->fepvals->separate_dhdl_file == SeparateDhdlFile::Yes)
         {
             nchars = 8 + ndhdl * 8 + ndh * 10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
-            if (ir->expandedvals->elmcmove > elmcmoveNO)
+            if (ir->expandedvals->elmcmove > LambdaMoveCalculation::No)
             {
                 nchars += 5; /* alchemical state */
             }
 
-            if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
+            if (ir->fepvals->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
             {
                 nchars += 12; /* energy for dhdl */
             }
@@ -127,11 +127,11 @@ double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& grou
             if (ir->fepvals->dh_hist_size <= 0)
             {
                 int ndh_tot = ndh + ndhdl;
-                if (ir->expandedvals->elmcmove > elmcmoveNO)
+                if (ir->expandedvals->elmcmove > LambdaMoveCalculation::No)
                 {
                     ndh_tot += 1;
                 }
-                if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
+                if (ir->fepvals->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
                 {
                     ndh_tot += 1;
                 }
