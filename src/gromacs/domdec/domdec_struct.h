@@ -69,8 +69,9 @@ struct gmx_domdec_constraints_t;
 struct gmx_domdec_specat_comm_t;
 class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
-struct gmx_reverse_top_t;
 struct t_inputrec;
+struct gmx_mtop_t;
+struct ReverseTopOptions;
 
 namespace gmx
 {
@@ -158,6 +159,15 @@ struct UnitCellInfo
     bool haveScrewPBC;
 };
 
+struct gmx_reverse_top_t
+{
+    gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
+    ~gmx_reverse_top_t();
+
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
 struct gmx_domdec_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, only partial for now
@@ -197,9 +207,9 @@ struct gmx_domdec_t
     std::unique_ptr<AtomDistribution> ma;
 
     /* Global atom number to interaction list */
-    gmx_reverse_top_t* reverse_top    = nullptr;
-    int                nbonded_global = 0;
-    int                nbonded_local  = 0;
+    std::unique_ptr<gmx_reverse_top_t> reverse_top;
+    int                                nbonded_global = 0;
+    int                                nbonded_local  = 0;
 
     /* Whether we have non-self exclusion */
     bool haveExclusions = false;

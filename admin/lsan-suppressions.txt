@@ -37,7 +37,6 @@ leak:make_dd_indices
 leak:make_exclusions_zone
 leak:make_fep_list
 leak:make_pull_groups
-leak:make_reverse_top
 leak:make_rotation_groups
 leak:make_swap_groups
 leak:make_tables

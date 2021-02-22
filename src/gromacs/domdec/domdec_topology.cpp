@@ -150,10 +150,10 @@ struct ReverseTopOptions
 };
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
-struct gmx_reverse_top_t
+struct gmx_reverse_top_t::Impl
 {
     //! Constructs a reverse topology from \p mtop
-    gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
+    Impl(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
 
     //! @cond Doxygen_Suppress
     //! Options for the setup of this reverse topology
@@ -182,6 +182,7 @@ struct gmx_reverse_top_t
     std::vector<thread_work_t> th_work;
     //! @endcond
 };
+
 
 /*! \brief Returns the number of atom entries for il in gmx_reverse_top_t */
 static int nral_rt(int ftype)
@@ -298,7 +299,7 @@ static std::string printMissingInteractionsMolblock(t_commrec*               cr,
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (dd_check_ftype(ftype, rt.options))
+        if (dd_check_ftype(ftype, rt.impl_->options))
         {
             flagInteractionsForType(
                     ftype, idef.il[ftype], ril, atomRange, numAtomsPerMolecule, cr->dd->globalAtomIndices, isAssigned);
@@ -379,7 +380,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
         const gmx::Range<int> atomRange(a_start, a_end);
 
         auto warning = printMissingInteractionsMolblock(
-                cr, rt, *(moltype.name), rt.ril_mt[molb.type], atomRange, moltype.atoms.nr, molb.nmol, idef);
+                cr, rt, *(moltype.name), rt.impl_->ril_mt[molb.type], atomRange, moltype.atoms.nr, molb.nmol, idef);
 
         GMX_LOG(mdlog.warning).appendText(warning);
     }
@@ -422,7 +423,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
              * and add these constraints when doing F_CONSTR.
              */
-            if (dd_check_ftype(ftype, dd->reverse_top->options) && ftype != F_CONSTRNC)
+            if (dd_check_ftype(ftype, dd->reverse_top->impl_->options) && ftype != F_CONSTRNC)
             {
                 int n = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
@@ -653,10 +654,19 @@ static int make_reverse_ilist(const InteractionLists&  ilist,
     return nint_mt;
 }
 
-/*! \brief Generate the reverse topology */
 gmx_reverse_top_t::gmx_reverse_top_t(const gmx_mtop_t&        mtop,
-                                     const bool               useFreeEnergy,
+                                     bool                     useFreeEnergy,
                                      const ReverseTopOptions& reverseTopOptions) :
+    impl_(std::make_unique<Impl>(mtop, useFreeEnergy, reverseTopOptions))
+{
+}
+
+gmx_reverse_top_t::~gmx_reverse_top_t() {}
+
+/*! \brief Generate the reverse topology */
+gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
+                              const bool               useFreeEnergy,
+                              const ReverseTopOptions& reverseTopOptions) :
     options(reverseTopOptions)
 {
     bInterAtomicInteractions = mtop.bIntermolecularInteractions;
@@ -756,9 +766,10 @@ void dd_make_reverse_top(FILE*                           fplog,
                                       !dd->comm->systemInfo.haveSplitConstraints,
                                       !dd->comm->systemInfo.haveSplitSettles);
 
-    dd->reverse_top = new gmx_reverse_top_t(*mtop, ir->efep != FreeEnergyPerturbationType::No, rtOptions);
+    dd->reverse_top = std::make_unique<gmx_reverse_top_t>(
+            *mtop, ir->efep != FreeEnergyPerturbationType::No, rtOptions);
 
-    dd->nbonded_global = dd->reverse_top->numInteractionsToCheck;
+    dd->nbonded_global = dd->reverse_top->impl_->numInteractionsToCheck;
 
     dd->haveExclusions = false;
     for (const gmx_molblock_t& molb : mtop->molblock)
@@ -1276,7 +1287,7 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
     int mol   = 0;
     int i_mol = 0;
 
-    const auto ddBondedChecking = rt->options.ddBondedChecking;
+    const auto ddBondedChecking = rt->impl_->options.ddBondedChecking;
 
     int nbonded_local = 0;
 
@@ -1284,16 +1295,16 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
     {
         /* Get the global atom number */
         const int i_gl = globalAtomIndices[i];
-        global_atomnr_to_moltype_ind(rt->mbi, i_gl, &mb, &mt, &mol, &i_mol);
+        global_atomnr_to_moltype_ind(rt->impl_->mbi, i_gl, &mb, &mt, &mol, &i_mol);
         /* Check all intramolecular interactions assigned to this atom */
-        gmx::ArrayRef<const int>     index = rt->ril_mt[mt].index;
-        gmx::ArrayRef<const t_iatom> rtil  = rt->ril_mt[mt].il;
+        gmx::ArrayRef<const int>     index = rt->impl_->ril_mt[mt].index;
+        gmx::ArrayRef<const t_iatom> rtil  = rt->impl_->ril_mt[mt].il;
 
         check_assign_interactions_atom(i,
                                        i_gl,
                                        mol,
                                        i_mol,
-                                       rt->ril_mt[mt].numAtomsInMolecule,
+                                       rt->impl_->ril_mt[mt].numAtomsInMolecule,
                                        index,
                                        rtil,
                                        FALSE,
@@ -1315,17 +1326,17 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
                                        &nbonded_local);
 
 
-        if (rt->bIntermolecularInteractions)
+        if (rt->impl_->bIntermolecularInteractions)
         {
             /* Check all intermolecular interactions assigned to this atom */
-            index = rt->ril_intermol.index;
-            rtil  = rt->ril_intermol.il;
+            index = rt->impl_->ril_intermol.index;
+            rtil  = rt->impl_->ril_intermol.il;
 
             check_assign_interactions_atom(i,
                                            i_gl,
                                            mol,
                                            i_mol,
-                                           rt->ril_mt[mt].numAtomsInMolecule,
+                                           rt->impl_->ril_mt[mt].numAtomsInMolecule,
                                            index,
                                            rtil,
                                            TRUE,
@@ -1443,7 +1454,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
 {
     int nzone_bondeds = 0;
 
-    if (dd->reverse_top->bInterAtomicInteractions)
+    if (dd->reverse_top->impl_->bInterAtomicInteractions)
     {
         nzone_bondeds = zones->n;
     }
@@ -1458,7 +1469,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
     /* We only use exclusions from i-zones to i- and j-zones */
     const int numIZonesForExclusions = (dd->haveExclusions ? zones->iZones.size() : 0);
 
-    gmx_reverse_top_t* rt = dd->reverse_top;
+    gmx_reverse_top_t* rt = dd->reverse_top.get();
 
     real rc2 = rc * rc;
 
@@ -1474,7 +1485,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
         const int cg0 = zones->cg_range[izone];
         const int cg1 = zones->cg_range[izone + 1];
 
-        const int numThreads = rt->th_work.size();
+        const int numThreads = rt->impl_->th_work.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int thread = 0; thread < numThreads; thread++)
         {
@@ -1491,25 +1502,25 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                 }
                 else
                 {
-                    idef_t = &rt->th_work[thread].idef;
+                    idef_t = &rt->impl_->th_work[thread].idef;
                     idef_t->clear();
                 }
 
-                rt->th_work[thread].nbonded = make_bondeds_zone(rt,
-                                                                dd->globalAtomIndices,
-                                                                *dd->ga2la,
-                                                                zones,
-                                                                mtop->molblock,
-                                                                bRCheckMB,
-                                                                rcheck,
-                                                                bRCheck2B,
-                                                                rc2,
-                                                                pbc_null,
-                                                                cg_cm,
-                                                                idef->iparams.data(),
-                                                                idef_t,
-                                                                izone,
-                                                                gmx::Range<int>(cg0t, cg1t));
+                rt->impl_->th_work[thread].nbonded = make_bondeds_zone(rt,
+                                                                       dd->globalAtomIndices,
+                                                                       *dd->ga2la,
+                                                                       zones,
+                                                                       mtop->molblock,
+                                                                       bRCheckMB,
+                                                                       rcheck,
+                                                                       bRCheck2B,
+                                                                       rc2,
+                                                                       pbc_null,
+                                                                       cg_cm,
+                                                                       idef->iparams.data(),
+                                                                       idef_t,
+                                                                       izone,
+                                                                       gmx::Range<int>(cg0t, cg1t));
 
                 if (izone < numIZonesForExclusions)
                 {
@@ -1522,7 +1533,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                     else
                     {
                         // Threads > 0 store in temporary storage, starting at list index 0
-                        excl_t = &rt->th_work[thread].excl;
+                        excl_t = &rt->impl_->th_work[thread].excl;
                         excl_t->clear();
                     }
 
@@ -1530,7 +1541,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                     make_exclusions_zone(dd->globalAtomIndices,
                                          *dd->ga2la,
                                          zones,
-                                         rt->mbi,
+                                         rt->impl_->mbi,
                                          mtop->moltype,
                                          cginfo,
                                          excl_t,
@@ -1543,23 +1554,23 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
 
-        if (rt->th_work.size() > 1)
+        if (rt->impl_->th_work.size() > 1)
         {
-            combine_idef(idef, rt->th_work);
+            combine_idef(idef, rt->impl_->th_work);
         }
 
-        for (const thread_work_t& th_work : rt->th_work)
+        for (const thread_work_t& th_work : rt->impl_->th_work)
         {
             nbonded_local += th_work.nbonded;
         }
 
         if (izone < numIZonesForExclusions)
         {
-            for (std::size_t th = 1; th < rt->th_work.size(); th++)
+            for (std::size_t th = 1; th < rt->impl_->th_work.size(); th++)
             {
-                lexcls->appendListOfLists(rt->th_work[th].excl);
+                lexcls->appendListOfLists(rt->impl_->th_work[th].excl);
             }
-            for (const thread_work_t& th_work : rt->th_work)
+            for (const thread_work_t& th_work : rt->impl_->th_work)
             {
                 *excl_count += th_work.excl_count;
             }
@@ -1598,7 +1609,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
     bool bRCheckMB = false;
     bool bRCheck2B = false;
 
-    if (dd->reverse_top->bInterAtomicInteractions)
+    if (dd->reverse_top->impl_->bInterAtomicInteractions)
     {
         /* We need to check to which cell bondeds should be assigned */
         rc = dd_cutoff_twobody(dd);
@@ -1674,7 +1685,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
 
 void dd_sort_local_top(gmx_domdec_t* dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop)
 {
-    if (dd->reverse_top->ilsort == ilsortNO_FE)
+    if (dd->reverse_top->impl_->ilsort == ilsortNO_FE)
     {
         ltop->idef.ilsort = ilsortNO_FE;
     }
