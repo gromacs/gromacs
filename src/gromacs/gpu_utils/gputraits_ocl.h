@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,11 +46,21 @@
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/math/vectypes.h"
 
 using DeviceTexture = void*;
 
 //! \brief Single GPU call timing event
 using CommandEvent = cl_event;
+
+//! Convenience alias for 2-wide float
+using Float2 = cl_float2;
+
+//! Convenience alias for 3-wide float. Not using cl_float3 due to alignment issues.
+using Float3 = gmx::RVec;
+
+//! Convenience alias for 4-wide float.
+using Float4 = cl_float4;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.
