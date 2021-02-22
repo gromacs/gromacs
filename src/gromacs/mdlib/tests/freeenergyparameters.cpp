@@ -137,28 +137,14 @@ public:
         fepvals.init_fep_state = GetParam().initFepState;
         fepvals.init_lambda    = GetParam().initLambda;
         fepvals.delta_lambda   = GetParam().deltaLambda;
-        fepvals.all_lambda     = getLambdaMatrix(GetParam().nLambda);
-        fepvals.n_lambda       = GetParam().nLambda;
+        std::fill(fepvals.all_lambda.begin(),
+                  fepvals.all_lambda.end(),
+                  defaultLambdaArrayForTest_[GetParam().nLambda]);
+        fepvals.n_lambda = GetParam().nLambda;
         return fepvals;
     }
 
-    /*! \brief construct a lambda matrix
-     *
-     * \param[in] nLambda
-     * \returns nLambda * eftpNR matrix with pre-defined values
-     */
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> getLambdaMatrix(int nLambda)
-    {
-        for (auto i : keysOf(allLambda_))
-        {
-            allLambda_[i] = defaultLambdaArrayForTest_[nLambda];
-        }
-        return allLambda_;
-    }
-
 private:
-    //! Construction aide for double ** matrix without snew
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> allLambda_;
     //! a set of default lambda arrays for different lengths
     std::vector<std::vector<double>> defaultLambdaArrayForTest_ = { {}, { 0.8 }, { 0.2, 0.8 }, { 0.2, 0.8, 0.8 } };
 };

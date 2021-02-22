@@ -190,12 +190,17 @@ public:
  *
  * See file documentation for usage example.
  *
+ * Note that if clang-tidy gives strange errors referring to the line
+ * number of the struct declaration, these likely refer to the
+ * compiler-generated constructors. Simplification of the calling code
+ * might eliminate that call and thus the clang-tidy error.
+ *
  * \tparam  EnumType   The enum (class) type.
  * \tparam  DataType   Type of the data stored in the array.
  * \tparam  ArraySize  Size in entries of the array.
  */
 template<typename EnumType, typename DataType, EnumType ArraySize = EnumType::Count>
-struct EnumerationArray final // NOLINT(readability-braces-around-statements)
+struct EnumerationArray final
 {
     //! Convenience alias
     using EnumerationWrapperType = EnumerationWrapper<EnumType, ArraySize>;
