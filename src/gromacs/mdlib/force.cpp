@@ -282,7 +282,7 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                              fr->ic->ewaldcoeff_q,
                              lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                              &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul],
-                             fr->ewald_table);
+                             fr->ewald_table.get());
         }
 
         /* Note that with separate PME nodes we get the real energies later */

@@ -68,15 +68,30 @@
 
 #include <stdio.h>
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
+struct t_complex;
 
-/* Forward declaration of type for managing Ewald tables */
-struct gmx_ewald_tab_t;
+struct gmx_ewald_tab_t
+{
+    gmx_ewald_tab_t(const t_inputrec& ir, FILE* fp);
+
+    ~gmx_ewald_tab_t();
+
+    int nx;
+    int ny;
+    int nz;
+    int kmax;
+
+    std::vector<t_complex> tab_xy;
+    std::vector<t_complex> tab_qxyz;
+};
 
 /*! \brief Initialize the tables used in the Ewald long-ranged part */
 void init_ewald_tab(struct gmx_ewald_tab_t** et, const t_inputrec& ir, FILE* fp);

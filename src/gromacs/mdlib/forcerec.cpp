@@ -1107,7 +1107,7 @@ void init_forcerec(FILE*                            fp,
     /* TODO: Replace this Ewald table or move it into interaction_const_t */
     if (ir.coulombtype == CoulombInteractionType::Ewald)
     {
-        init_ewald_tab(&(fr->ewald_table), ir, fp);
+        fr->ewald_table = std::make_unique<gmx_ewald_tab_t>(ir, fp);
     }
 
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */

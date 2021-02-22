@@ -265,7 +265,7 @@ struct t_forcerec
     LongRangeVdW      ljpme_combination_rule = LongRangeVdW::Geom;
 
     /* PME/Ewald stuff */
-    struct gmx_ewald_tab_t* ewald_table = nullptr;
+    std::unique_ptr<gmx_ewald_tab_t> ewald_table;
 
     /* Non bonded Parameter lists */
     int               ntype = 0; /* Number of atom types */
