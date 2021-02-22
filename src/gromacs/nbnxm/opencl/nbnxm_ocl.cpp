@@ -530,7 +530,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     /* local/nonlocal offset and length used for xq and f */
     int adat_begin, adat_len;
 
-    cl_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -562,12 +562,12 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     if (atomLocality == AtomLocality::Local)
     {
         adat_begin = 0;
-        adat_len   = adat->natoms_local;
+        adat_len   = adat->numAtomsLocal;
     }
     else
     {
-        adat_begin = adat->natoms_local;
-        adat_len   = adat->natoms - adat->natoms_local;
+        adat_begin = adat->numAtomsLocal;
+        adat_len   = adat->numAtoms - adat->numAtomsLocal;
     }
 
     /* beginning of timed HtoD section */
@@ -622,7 +622,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
  */
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
-    cl_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
@@ -717,11 +717,11 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                                                           &nbparams_params,
                                                           &adat->xq,
                                                           &adat->f,
-                                                          &adat->e_lj,
-                                                          &adat->e_el,
-                                                          &adat->fshift,
-                                                          &adat->lj_comb,
-                                                          &adat->shift_vec,
+                                                          &adat->eLJ,
+                                                          &adat->eElec,
+                                                          &adat->fShift,
+                                                          &adat->ljComb,
+                                                          &adat->shiftVec,
                                                           &nbp->nbfp,
                                                           &nbp->nbfp_comb,
                                                           &nbp->coulomb_tab,
@@ -736,15 +736,15 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     {
         const auto kernelArgs = prepareGpuKernelArguments(kernel,
                                                           config,
-                                                          &adat->ntypes,
+                                                          &adat->numTypes,
                                                           &nbparams_params,
                                                           &adat->xq,
                                                           &adat->f,
-                                                          &adat->e_lj,
-                                                          &adat->e_el,
-                                                          &adat->fshift,
-                                                          &adat->atom_types,
-                                                          &adat->shift_vec,
+                                                          &adat->eLJ,
+                                                          &adat->eElec,
+                                                          &adat->fShift,
+                                                          &adat->atomTypes,
+                                                          &adat->shiftVec,
                                                           &nbp->nbfp,
                                                           &nbp->nbfp_comb,
                                                           &nbp->coulomb_tab,
@@ -793,7 +793,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
  */
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    cl_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
@@ -898,7 +898,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                                                       config,
                                                       &nbparams_params,
                                                       &adat->xq,
-                                                      &adat->shift_vec,
+                                                      &adat->shiftVec,
                                                       &plist->sci,
                                                       &plist->cj4,
                                                       &plist->imask,
@@ -945,7 +945,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                "Non-local stream is indicating that the copy back event is enqueued at the "
                "beginning of the copy back function.");
 
-    cl_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     cl_timers_t*        t            = nb->timers;
     bool                bDoTime      = nb->bDoTime;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -1013,10 +1013,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         if (stepWork.computeVirial)
         {
             static_assert(
-                    sizeof(*nb->nbst.fshift) == sizeof(Float3),
+                    sizeof(*nb->nbst.fShift) == sizeof(Float3),
                     "Sizes of host- and device-side shift vector elements should be the same.");
-            copyFromDeviceBuffer(nb->nbst.fshift,
-                                 &adat->fshift,
+            copyFromDeviceBuffer(nb->nbst.fShift,
+                                 &adat->fShift,
                                  0,
                                  SHIFTS,
                                  deviceStream,
@@ -1027,20 +1027,20 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            static_assert(sizeof(*nb->nbst.e_lj) == sizeof(float),
+            static_assert(sizeof(*nb->nbst.eLJ) == sizeof(float),
                           "Sizes of host- and device-side LJ energy terms should be the same.");
-            copyFromDeviceBuffer(nb->nbst.e_lj,
-                                 &adat->e_lj,
+            copyFromDeviceBuffer(nb->nbst.eLJ,
+                                 &adat->eLJ,
                                  0,
                                  1,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
                                  bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
-            static_assert(sizeof(*nb->nbst.e_el) == sizeof(float),
+            static_assert(sizeof(*nb->nbst.eElec) == sizeof(float),
                           "Sizes of host- and device-side electrostatic energy terms should be the "
                           "same.");
-            copyFromDeviceBuffer(nb->nbst.e_el,
-                                 &adat->e_el,
+            copyFromDeviceBuffer(nb->nbst.eElec,
+                                 &adat->eElec,
                                  0,
                                  1,
                                  deviceStream,

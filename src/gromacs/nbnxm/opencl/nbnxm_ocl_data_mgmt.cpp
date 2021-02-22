@@ -103,16 +103,16 @@ static unsigned int gpu_min_ci_balanced_factor = 50;
 /*! \brief Initializes the atomdata structure first time, it only gets filled at
     pair-search.
  */
-static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, const DeviceContext& deviceContext)
+static void init_atomdata_first(NBAtomData* ad, int ntypes, const DeviceContext& deviceContext)
 {
-    ad->ntypes = ntypes;
+    ad->numTypes = ntypes;
 
-    allocateDeviceBuffer(&ad->shift_vec, SHIFTS * DIM, deviceContext);
-    ad->bShiftVecUploaded = CL_FALSE;
+    allocateDeviceBuffer(&ad->shiftVec, SHIFTS * DIM, deviceContext);
+    ad->shiftVecUploaded = false;
 
-    allocateDeviceBuffer(&ad->fshift, SHIFTS * DIM, deviceContext);
-    allocateDeviceBuffer(&ad->e_lj, 1, deviceContext);
-    allocateDeviceBuffer(&ad->e_el, 1, deviceContext);
+    allocateDeviceBuffer(&ad->fShift, SHIFTS * DIM, deviceContext);
+    allocateDeviceBuffer(&ad->eLJ, 1, deviceContext);
+    allocateDeviceBuffer(&ad->eElec, 1, deviceContext);
 
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_atomdata */
@@ -120,8 +120,8 @@ static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, const DeviceConte
     ad->f  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
-    ad->natoms = -1;
-    ad->nalloc = -1;
+    ad->numAtoms      = -1;
+    ad->numAtomsAlloc = -1;
 }
 
 
@@ -206,7 +206,7 @@ static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
 {
 
     cl_int           cl_error;
-    cl_atomdata_t*   adat = nb->atdat;
+    NBAtomData*      adat = nb->atdat;
     cl_command_queue ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
 
     size_t local_work_size[3]  = { 1, 1, 1 };
@@ -223,9 +223,9 @@ static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
     global_work_size[0] = ((shifts + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
 
     arg_no   = 0;
-    cl_error = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fshift));
-    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_lj));
-    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_el));
+    cl_error = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fShift));
+    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->eLJ));
+    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->eElec));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
     GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 
@@ -264,7 +264,7 @@ static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
  *  Initializes members of the atomdata and nbparam structs and
  *  clears e/fshift output buffers.
  */
-static void nbnxn_ocl_init_const(cl_atomdata_t*                  atomData,
+static void nbnxn_ocl_init_const(NBAtomData*                     atomData,
                                  NBParamGpu*                     nbParams,
                                  const interaction_const_t*      ic,
                                  const PairlistParams&           listParams,
@@ -304,9 +304,9 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     nb->dev_rundata = new gmx_device_runtime_data_t();
 
     /* init nbst */
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.e_lj), sizeof(*nb->nbst.e_lj));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.e_el), sizeof(*nb->nbst.e_el));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.fshift), SHIFTS * sizeof(*nb->nbst.fshift));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.eLJ), sizeof(*nb->nbst.eLJ));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.eElec), sizeof(*nb->nbst.eElec));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.fShift), SHIFTS * sizeof(*nb->nbst.fShift));
 
     init_plist(nb->plist[InteractionLocality::Local]);
 
@@ -372,7 +372,7 @@ static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
         return;
     }
 
-    cl_atomdata_t*      atomData    = nb->atdat;
+    NBAtomData*         atomData    = nb->atdat;
     const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     clearDeviceBufferAsync(&atomData->f, 0, natoms_clear, localStream);
@@ -381,7 +381,7 @@ static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
 //! This function is documented in the header file
 void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 {
-    nbnxn_ocl_clear_f(nb, nb->atdat->natoms);
+    nbnxn_ocl_clear_f(nb, nb->atdat->numAtoms);
     /* clear shift force array and energies if the outputs were
        used in the current step */
     if (computeVirial)
@@ -398,22 +398,22 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 //! This function is documented in the header file
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
-    cl_atomdata_t*      adat        = nb->atdat;
+    NBAtomData*         adat        = nb->atdat;
     const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
-    if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
+    if (nbatom->bDynamicBox || !adat->shiftVecUploaded)
     {
         static_assert(sizeof(Float3) == sizeof(nbatom->shift_vec[0]),
                       "Sizes of host- and device-side shift vectors should be the same.");
-        copyToDeviceBuffer(&adat->shift_vec,
+        copyToDeviceBuffer(&adat->shiftVec,
                            reinterpret_cast<const Float3*>(nbatom->shift_vec.data()),
                            0,
                            SHIFTS,
                            localStream,
                            GpuApiCallBehavior::Async,
                            nullptr);
-        adat->bShiftVecUploaded = CL_TRUE;
+        adat->shiftVecUploaded = true;
     }
 }
 
@@ -425,7 +425,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     bool                 realloced;
     bool                 bDoTime       = nb->bDoTime;
     cl_timers_t*         timers        = nb->timers;
-    cl_atomdata_t*       d_atdat       = nb->atdat;
+    NBAtomData*          d_atdat       = nb->atdat;
     const DeviceContext& deviceContext = *nb->deviceContext_;
     const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
 
@@ -440,17 +440,17 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
     /* need to reallocate if we have to copy more atoms than the amount of space
        available and only allocate if we haven't initialized yet, i.e d_atdat->natoms == -1 */
-    if (natoms > d_atdat->nalloc)
+    if (natoms > d_atdat->numAtomsAlloc)
     {
         nalloc = over_alloc_small(natoms);
 
         /* free up first if the arrays have already been initialized */
-        if (d_atdat->nalloc != -1)
+        if (d_atdat->numAtomsAlloc != -1)
         {
             freeDeviceBuffer(&d_atdat->f);
             freeDeviceBuffer(&d_atdat->xq);
-            freeDeviceBuffer(&d_atdat->lj_comb);
-            freeDeviceBuffer(&d_atdat->atom_types);
+            freeDeviceBuffer(&d_atdat->ljComb);
+            freeDeviceBuffer(&d_atdat->atomTypes);
         }
 
 
@@ -460,19 +460,19 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         if (useLjCombRule(nb->nbparam->vdwType))
         {
             // Two Lennard-Jones parameters per atom
-            allocateDeviceBuffer(&d_atdat->lj_comb, nalloc, deviceContext);
+            allocateDeviceBuffer(&d_atdat->ljComb, nalloc, deviceContext);
         }
         else
         {
-            allocateDeviceBuffer(&d_atdat->atom_types, nalloc, deviceContext);
+            allocateDeviceBuffer(&d_atdat->atomTypes, nalloc, deviceContext);
         }
 
-        d_atdat->nalloc = nalloc;
-        realloced       = true;
+        d_atdat->numAtomsAlloc = nalloc;
+        realloced              = true;
     }
 
-    d_atdat->natoms       = natoms;
-    d_atdat->natoms_local = nbat->natoms_local;
+    d_atdat->numAtoms      = natoms;
+    d_atdat->numAtomsLocal = nbat->natoms_local;
 
     /* need to clear GPU f output if realloc happened */
     if (realloced)
@@ -484,7 +484,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     {
         static_assert(sizeof(float) == sizeof(*nbat->params().lj_comb.data()),
                       "Size of the LJ parameters element should be equal to the size of float2.");
-        copyToDeviceBuffer(&d_atdat->lj_comb,
+        copyToDeviceBuffer(&d_atdat->ljComb,
                            reinterpret_cast<const Float2*>(nbat->params().lj_comb.data()),
                            0,
                            natoms,
@@ -496,7 +496,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     {
         static_assert(sizeof(int) == sizeof(*nbat->params().type.data()),
                       "Sizes of host- and device-side atom types should be the same.");
-        copyToDeviceBuffer(&d_atdat->atom_types,
+        copyToDeviceBuffer(&d_atdat->atomTypes,
                            nbat->params().type.data(),
                            0,
                            natoms,
@@ -592,12 +592,12 @@ void gpu_free(NbnxmGpu* nb)
     /* Free atdat */
     freeDeviceBuffer(&(nb->atdat->xq));
     freeDeviceBuffer(&(nb->atdat->f));
-    freeDeviceBuffer(&(nb->atdat->e_lj));
-    freeDeviceBuffer(&(nb->atdat->e_el));
-    freeDeviceBuffer(&(nb->atdat->fshift));
-    freeDeviceBuffer(&(nb->atdat->lj_comb));
-    freeDeviceBuffer(&(nb->atdat->atom_types));
-    freeDeviceBuffer(&(nb->atdat->shift_vec));
+    freeDeviceBuffer(&(nb->atdat->eLJ));
+    freeDeviceBuffer(&(nb->atdat->eElec));
+    freeDeviceBuffer(&(nb->atdat->fShift));
+    freeDeviceBuffer(&(nb->atdat->ljComb));
+    freeDeviceBuffer(&(nb->atdat->atomTypes));
+    freeDeviceBuffer(&(nb->atdat->shiftVec));
     sfree(nb->atdat);
 
     /* Free nbparam */
@@ -624,14 +624,14 @@ void gpu_free(NbnxmGpu* nb)
     }
 
     /* Free nbst */
-    pfree(nb->nbst.e_lj);
-    nb->nbst.e_lj = nullptr;
+    pfree(nb->nbst.eLJ);
+    nb->nbst.eLJ = nullptr;
 
-    pfree(nb->nbst.e_el);
-    nb->nbst.e_el = nullptr;
+    pfree(nb->nbst.eElec);
+    nb->nbst.eElec = nullptr;
 
-    pfree(nb->nbst.fshift);
-    nb->nbst.fshift = nullptr;
+    pfree(nb->nbst.fShift);
+    nb->nbst.fShift = nullptr;
 
     freeGpuProgram(nb->dev_rundata->program);
     delete nb->dev_rundata;

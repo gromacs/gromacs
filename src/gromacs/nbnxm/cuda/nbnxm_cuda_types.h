@@ -64,67 +64,6 @@
 /*! \brief cluster size = number of atoms per cluster. */
 static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
-/* All structs prefixed with "cu_" hold data used in GPU calculations and
- * are passed to the kernels, except cu_timers_t. */
-/*! \cond */
-typedef struct cu_atomdata cu_atomdata_t;
-/*! \endcond */
-
-
-/** \internal
- * \brief Staging area for temporary data downloaded from the GPU.
- *
- *  The energies/shift forces get downloaded here first, before getting added
- *  to the CPU-side aggregate values.
- */
-struct nb_staging_t
-{
-    //! LJ energy
-    float* e_lj = nullptr;
-    //! electrostatic energy
-    float* e_el = nullptr;
-    //! shift forces
-    Float3* fshift = nullptr;
-};
-
-/** \internal
- * \brief Nonbonded atom data - both inputs and outputs.
- */
-struct cu_atomdata
-{
-    //! number of atoms
-    int natoms;
-    //! number of local atoms
-    int natoms_local;
-    //! allocation size for the atom data (xq, f)
-    int nalloc;
-
-    //! atom coordinates + charges, size natoms
-    DeviceBuffer<Float4> xq;
-    //! force output array, size natoms
-    DeviceBuffer<Float3> f;
-
-    //! LJ energy output, size 1
-    DeviceBuffer<float> e_lj;
-    //! Electrostatics energy input, size 1
-    DeviceBuffer<float> e_el;
-
-    //! shift forces
-    DeviceBuffer<Float3> fshift;
-
-    //! number of atom types
-    int ntypes;
-    //! atom type indices, size natoms
-    DeviceBuffer<int> atom_types;
-    //! sqrt(c6),sqrt(c12) size natoms
-    DeviceBuffer<Float2> lj_comb;
-
-    //! shifts
-    DeviceBuffer<Float3> shift_vec;
-    //! true if the shift vector has been uploaded
-    bool bShiftVecUploaded;
-};
-
 /** \internal
  * \brief Typedef of actual timer type.
  */
@@ -146,7 +85,7 @@ struct NbnxmGpu
     bool bNonLocalStreamDoneMarked = false;
 
     /*! \brief atom data */
-    cu_atomdata_t* atdat = nullptr;
+    NBAtomData* atdat = nullptr;
     /*! \brief array of atom indices */
     int* atomIndices = nullptr;
     /*! \brief size of atom indices */
@@ -170,7 +109,7 @@ struct NbnxmGpu
     /*! \brief pair-list data structures (local and non-local) */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded */
-    nb_staging_t nbst;
+    NBStagingData nbst;
     /*! \brief local and non-local GPU streams */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
 

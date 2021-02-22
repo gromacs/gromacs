@@ -183,12 +183,12 @@ static inline void getGpuAtomRange(const AtomDataT*   atomData,
     if (atomLocality == AtomLocality::Local)
     {
         *atomRangeBegin = 0;
-        *atomRangeLen   = atomData->natoms_local;
+        *atomRangeLen   = atomData->numAtomsLocal;
     }
     else
     {
-        *atomRangeBegin = atomData->natoms_local;
-        *atomRangeLen   = atomData->natoms - atomData->natoms_local;
+        *atomRangeBegin = atomData->numAtomsLocal;
+        *atomRangeLen   = atomData->numAtoms - atomData->numAtomsLocal;
     }
 }
 
@@ -241,7 +241,6 @@ static void countPruneKernelTime(GpuTimers*                 timers,
  * Note that this function should always be called after the transfers into the
  * staging buffers has completed.
  *
- * \tparam     StagingData    Type of staging data
  * \param[in]  nbst           Nonbonded staging data
  * \param[in]  iLocality      Interaction locality specifier
  * \param[in]  reduceEnergies True if energy reduction should be done
@@ -250,7 +249,7 @@ static void countPruneKernelTime(GpuTimers*                 timers,
  * \param[out] e_el           Variable to accumulate electrostatic energy into
  * \param[out] fshift         Pointer to the array of shift forces to accumulate into
  */
-static inline void gpu_reduce_staged_outputs(const nb_staging_t&       nbst,
+static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
                                              const InteractionLocality iLocality,
                                              const bool                reduceEnergies,
                                              const bool                reduceFshift,
@@ -263,15 +262,15 @@ static inline void gpu_reduce_staged_outputs(const nb_staging_t&       nbst,
     {
         if (reduceEnergies)
         {
-            *e_lj += *nbst.e_lj;
-            *e_el += *nbst.e_el;
+            *e_lj += *nbst.eLJ;
+            *e_el += *nbst.eElec;
         }
 
         if (reduceFshift)
         {
             for (int i = 0; i < SHIFTS; i++)
             {
-                rvec_inc(fshift[i], nbst.fshift[i]);
+                rvec_inc(fshift[i], nbst.fShift[i]);
             }
         }
     }

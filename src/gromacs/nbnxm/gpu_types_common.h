@@ -73,6 +73,60 @@
 //! Default for the prune kernel's j4 processing concurrency.
 static constexpr int c_pruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
 
+/*! \internal
+ * \brief Staging area for temporary data downloaded from the GPU.
+ *
+ * Since SYCL buffers already have host-side storage, this is a bit redundant.
+ * But it allows prefetching of the data from GPU, and brings GPU backends closer together.
+ */
+struct NBStagingData
+{
+    //! LJ energy
+    float* eLJ = nullptr;
+    //! electrostatic energy
+    float* eElec = nullptr;
+    //! shift forces
+    Float3* fShift = nullptr;
+};
+
+/** \internal
+ * \brief Nonbonded atom data - both inputs and outputs.
+ */
+struct NBAtomData
+{
+    //! number of atoms
+    int numAtoms;
+    //! number of local atoms
+    int numAtomsLocal;
+    //! allocation size for the atom data (xq, f)
+    int numAtomsAlloc;
+
+    //! atom coordinates + charges, size \ref numAtoms
+    DeviceBuffer<Float4> xq;
+    //! force output array, size \ref numAtoms
+    DeviceBuffer<Float3> f;
+
+    //! LJ energy output, size 1
+    DeviceBuffer<float> eLJ;
+    //! Electrostatics energy input, size 1
+    DeviceBuffer<float> eElec;
+
+    //! shift forces
+    DeviceBuffer<Float3> fShift;
+
+    //! number of atom types
+    int numTypes;
+    //! atom type indices, size \ref numAtoms
+    DeviceBuffer<int> atomTypes;
+    //! sqrt(c6),sqrt(c12) size \ref numAtoms
+    DeviceBuffer<Float2> ljComb;
+
+    //! shifts
+    DeviceBuffer<Float3> shiftVec;
+    //! true if the shift vector has been uploaded
+    bool shiftVecUploaded;
+};
+
 /** \internal
  * \brief Parameters required for the GPU nonbonded calculations.
  */

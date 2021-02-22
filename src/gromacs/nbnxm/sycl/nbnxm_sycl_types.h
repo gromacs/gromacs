@@ -55,60 +55,6 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
-/*! \internal
- * \brief Staging area for temporary data downloaded from the GPU.
- *
- * Since SYCL buffers already have host-side storage, this is a bit redundant.
- * But it allows prefetching of the data from GPU, and brings GPU backends closer together.
- */
-struct nb_staging_t
-{
-    //! LJ energy
-    float* e_lj = nullptr;
-    //! electrostatic energy
-    float* e_el = nullptr;
-    //! shift forces
-    Float3* fshift = nullptr;
-};
-
-/** \internal
- * \brief Nonbonded atom data - both inputs and outputs.
- */
-struct sycl_atomdata_t
-{
-    //! number of atoms
-    int natoms;
-    //! number of local atoms
-    int natoms_local; //
-    //! allocation size for the atom data (xq, f)
-    int numAlloc;
-
-    //! atom coordinates + charges, size \ref natoms
-    DeviceBuffer<Float4> xq;
-    //! force output array, size \ref natoms
-    DeviceBuffer<Float3> f;
-
-    //! LJ energy output, size 1
-    DeviceBuffer<float> eLJ;
-    //! Electrostatics energy input, size 1
-    DeviceBuffer<float> eElec;
-
-    //! shift forces
-    DeviceBuffer<Float3> fShift;
-
-    //! number of atom types
-    int numTypes;
-    //! atom type indices, size \ref natoms
-    DeviceBuffer<int> atomTypes;
-    //! sqrt(c6),sqrt(c12) size \ref natoms
-    DeviceBuffer<Float2> ljComb;
-
-    //! shifts
-    DeviceBuffer<Float3> shiftVec;
-    //! true if the shift vector has been uploaded
-    bool shiftVecUploaded;
-};
-
 class GpuEventSynchronizer;
 
 /*! \internal
@@ -126,13 +72,13 @@ struct NbnxmGpu
     /*! \brief true indicates that the nonlocal_done event was marked */
     bool bNonLocalStreamDoneMarked = false;
     /*! \brief atom data */
-    sycl_atomdata_t* atdat = nullptr;
+    NBAtomData* atdat = nullptr;
 
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded. Will be removed in SYCL. */
-    nb_staging_t nbst;
+    NBStagingData nbst;
     /*! \brief local and non-local GPU streams */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
 

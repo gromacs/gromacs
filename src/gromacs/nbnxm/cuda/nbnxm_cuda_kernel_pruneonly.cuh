@@ -104,7 +104,7 @@
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(const cu_atomdata_t    atdat,
+        void nbnxn_kernel_prune_cuda(const NBAtomData       atdat,
                                      const NBParamGpu       nbparam,
                                      const Nbnxm::gpu_plist plist,
                                      int                    numParts,
@@ -115,9 +115,9 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
 extern template __global__ void
-nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
+nbnxn_kernel_prune_cuda<true>(const NBAtomData, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
 extern template __global__ void
-nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
+nbnxn_kernel_prune_cuda<false>(const NBAtomData, const NBParamGpu, const Nbnxm::gpu_plist, int, int);
 #else
 {
 
@@ -125,7 +125,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const NBParamGpu, const Nbnx
     const nbnxn_sci_t* pl_sci    = plist.sci;
     nbnxn_cj4_t*       pl_cj4    = plist.cj4;
     const float4*      xq        = atdat.xq;
-    const float3*      shift_vec = asFloat3(atdat.shift_vec);
+    const float3*      shift_vec = asFloat3(atdat.shiftVec);
 
     float rlistOuter_sq = nbparam.rlistOuter_sq;
     float rlistInner_sq = nbparam.rlistInner_sq;

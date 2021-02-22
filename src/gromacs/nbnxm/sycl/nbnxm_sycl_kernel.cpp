@@ -962,7 +962,7 @@ cl::sycl::event chooseAndLaunchNbnxmKernel(bool          doPruneNBL,
 
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    sycl_atomdata_t*    adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     const bool          doPruneNBL   = (plist->haveFreshList && !nb->didPrune[iloc]);

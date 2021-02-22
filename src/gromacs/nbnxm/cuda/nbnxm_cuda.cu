@@ -122,7 +122,7 @@ namespace Nbnxm
 constexpr static int c_bufOpsThreadsPerBlock = 128;
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t, const NBParamGpu, const gpu_plist, bool);
+typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomData, const NBParamGpu, const gpu_plist, bool);
 
 /*********************************/
 
@@ -456,7 +456,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     int adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
-    cu_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -488,12 +488,12 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     if (atomLocality == AtomLocality::Local)
     {
         adat_begin = 0;
-        adat_len   = adat->natoms_local;
+        adat_len   = adat->numAtomsLocal;
     }
     else
     {
-        adat_begin = adat->natoms_local;
-        adat_len   = adat->natoms - adat->natoms_local;
+        adat_begin = adat->numAtomsLocal;
+        adat_len   = adat->numAtoms - adat->numAtomsLocal;
     }
 
     /* beginning of timed HtoD section */
@@ -546,7 +546,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
  */
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    cu_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
@@ -667,7 +667,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    cu_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
@@ -811,7 +811,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                "beginning of the copy back function.");
 
     /* extract the data */
-    cu_atomdata_t*      adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     cu_timers_t*        t            = nb->timers;
     bool                bDoTime      = nb->bDoTime;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -872,24 +872,24 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            static_assert(sizeof(nb->nbst.fshift[0]) == sizeof(adat->fshift[0]),
+            static_assert(sizeof(nb->nbst.fShift[0]) == sizeof(adat->fShift[0]),
                           "Sizes of host- and device-side shift vectors should be the same.");
             copyFromDeviceBuffer(
-                    nb->nbst.fshift, &adat->fshift, 0, SHIFTS, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    nb->nbst.fShift, &adat->fShift, 0, SHIFTS, deviceStream, GpuApiCallBehavior::Async, nullptr);
         }
 
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            static_assert(sizeof(nb->nbst.e_lj[0]) == sizeof(adat->e_lj[0]),
+            static_assert(sizeof(nb->nbst.eLJ[0]) == sizeof(adat->eLJ[0]),
                           "Sizes of host- and device-side LJ energy terms should be the same.");
             copyFromDeviceBuffer(
-                    nb->nbst.e_lj, &adat->e_lj, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
-            static_assert(sizeof(nb->nbst.e_el[0]) == sizeof(adat->e_el[0]),
+                    nb->nbst.eLJ, &adat->eLJ, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
+            static_assert(sizeof(nb->nbst.eElec[0]) == sizeof(adat->eElec[0]),
                           "Sizes of host- and device-side electrostatic energy terms should be the "
                           "same.");
             copyFromDeviceBuffer(
-                    nb->nbst.e_el, &adat->e_el, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    nb->nbst.eElec, &adat->eElec, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
         }
     }
 
@@ -929,7 +929,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    cu_atomdata_t* adat = nb->atdat;
+    NBAtomData* adat = nb->atdat;
 
     const int                  numColumns      = grid.numColumns();
     const int                  cellOffset      = grid.cellOffset();

@@ -87,7 +87,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                "beginning of the copy back function.");
 
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-    sycl_atomdata_t*    adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
 
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
@@ -138,24 +138,24 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            GMX_ASSERT(sizeof(*nb->nbst.fshift) == adat->fShift.elementSize(),
+            GMX_ASSERT(sizeof(*nb->nbst.fShift) == adat->fShift.elementSize(),
                        "Sizes of host- and device-side shift vector elements should be the same.");
             copyFromDeviceBuffer(
-                    nb->nbst.fshift, &adat->fShift, 0, SHIFTS, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    nb->nbst.fShift, &adat->fShift, 0, SHIFTS, deviceStream, GpuApiCallBehavior::Async, nullptr);
         }
 
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            GMX_ASSERT(sizeof(*nb->nbst.e_lj) == sizeof(float),
+            GMX_ASSERT(sizeof(*nb->nbst.eLJ) == sizeof(float),
                        "Sizes of host- and device-side LJ energy terms should be the same.");
             copyFromDeviceBuffer(
-                    nb->nbst.e_lj, &adat->eLJ, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
-            GMX_ASSERT(sizeof(*nb->nbst.e_el) == sizeof(float),
+                    nb->nbst.eLJ, &adat->eLJ, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
+            GMX_ASSERT(sizeof(*nb->nbst.eElec) == sizeof(float),
                        "Sizes of host- and device-side electrostatic energy terms should be the "
                        "same.");
             copyFromDeviceBuffer(
-                    nb->nbst.e_el, &adat->eElec, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    nb->nbst.eElec, &adat->eElec, 0, 1, deviceStream, GpuApiCallBehavior::Async, nullptr);
         }
     }
 }
@@ -168,7 +168,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
-    sycl_atomdata_t*    adat         = nb->atdat;
+    NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
