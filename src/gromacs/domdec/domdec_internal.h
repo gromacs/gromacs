@@ -797,15 +797,20 @@ static constexpr double DD_CELL_MARGIN2 = 1.00005;
 /*! \brief With pressure scaling, keep cell sizes 2% above the limit to allow for some scaling */
 static constexpr double DD_PRES_SCALE_MARGIN = 1.02;
 
+/*! \endcond */
+
+//! \internal \brief Reverse topology class
 struct gmx_reverse_top_t
 {
+    //! Constructor
     gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
+    //! Destructor
     ~gmx_reverse_top_t();
 
+    //! Private implementation definition
     struct Impl;
+    //! Private implementation declaration
     std::unique_ptr<Impl> impl_;
 };
-
-/*! \endcond */
 
 #endif
