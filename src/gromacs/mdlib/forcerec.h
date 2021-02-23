@@ -101,10 +101,10 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  *
  * \param[in]  fplog              File for printing
  * \param[in]  mdlog              File for printing
- * \param[out] fr                 The forcerec
- * \param[in]  ir                 Inputrec structure
+ * \param[out] forcerec                 The forcerec
+ * \param[in]  inputrec                 Inputrec structure
  * \param[in]  mtop               Molecular topology
- * \param[in]  cr                 Communication structures
+ * \param[in]  commrec                 Communication structures
  * \param[in]  box                Simulation box
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
@@ -113,10 +113,10 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  */
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
-                   t_forcerec*                      fr,
-                   const t_inputrec&                ir,
+                   t_forcerec*                      forcerec,
+                   const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,
-                   const t_commrec*                 cr,
+                   const t_commrec*                 commrec,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,
