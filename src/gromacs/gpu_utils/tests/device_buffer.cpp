@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #    include "gromacs/gpu_utils/device_context.h"
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/hostallocator.h"
 
 #    include "testutils/test_hardware_environment.h"
 #    include "testutils/testasserts.h"
@@ -142,72 +143,99 @@ const gmx::RVec c_initialValue<gmx::RVec> = { 1, -2, 3 };
 
 TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDevice)
 {
-    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    for (auto transferKind : { GpuApiCallBehavior::Sync, GpuApiCallBehavior::Async })
     {
-        const DeviceContext& deviceContext = testDevice->deviceContext();
-        const DeviceStream&  deviceStream  = testDevice->deviceStream();
-        setActiveDevice(testDevice->deviceInfo());
+        PinningPolicy pinningPolicy = (transferKind == GpuApiCallBehavior::Async)
+                                              ? PinningPolicy::PinnedIfSupported
+                                              : PinningPolicy::CannotBePinned;
+        for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+        {
+            const DeviceContext& deviceContext = testDevice->deviceContext();
+            const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            setActiveDevice(testDevice->deviceInfo());
 
-        DeviceBuffer<TypeParam> buffer;
-        int                     numValues = 123;
-        allocateDeviceBuffer(&buffer, numValues, deviceContext);
-        std::vector<TypeParam> valuesIn(numValues);
-        std::vector<TypeParam> valuesOut(numValues);
+            DeviceBuffer<TypeParam> buffer;
+            int                     numValues = 123;
+            allocateDeviceBuffer(&buffer, numValues, deviceContext);
+            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
+            HostVector<TypeParam> valuesOut(numValues, { pinningPolicy });
 
-        std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
+            std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
-        copyToDeviceBuffer(
-                &buffer, valuesIn.data(), 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        copyFromDeviceBuffer(
-                valuesOut.data(), &buffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
-        freeDeviceBuffer(&buffer);
+            copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream, transferKind, nullptr);
+            copyFromDeviceBuffer(
+                    valuesOut.data(), &buffer, 0, numValues, deviceStream, transferKind, nullptr);
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn))
+                    << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
+            freeDeviceBuffer(&buffer);
+        }
     }
 }
 
 TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
 {
-    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+    for (auto transferKind : { GpuApiCallBehavior::Sync, GpuApiCallBehavior::Async })
     {
-        const DeviceContext& deviceContext = testDevice->deviceContext();
-        const DeviceStream&  deviceStream  = testDevice->deviceStream();
-        setActiveDevice(testDevice->deviceInfo());
+        PinningPolicy pinningPolicy = (transferKind == GpuApiCallBehavior::Async)
+                                              ? PinningPolicy::PinnedIfSupported
+                                              : PinningPolicy::CannotBePinned;
+        for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+        {
+            const DeviceContext& deviceContext = testDevice->deviceContext();
+            const DeviceStream&  deviceStream  = testDevice->deviceStream();
+            setActiveDevice(testDevice->deviceInfo());
 
-        DeviceBuffer<TypeParam> buffer;
-        int                     numValues = 123;
-        allocateDeviceBuffer(&buffer, 2 * numValues, deviceContext);
-        std::vector<TypeParam> valuesIn(numValues);
-        std::vector<TypeParam> valuesOut(2 * numValues);
+            DeviceBuffer<TypeParam> buffer;
+            int                     numValues = 123;
+            allocateDeviceBuffer(&buffer, 2 * numValues, deviceContext);
+            HostVector<TypeParam> valuesIn(numValues, { pinningPolicy });
+            HostVector<TypeParam> valuesOut(2 * numValues, { pinningPolicy });
 
-        std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
+            std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
-        // Fill the buffer with two copies of valuesIn, one after the other.
-        copyToDeviceBuffer(
-                &buffer, valuesIn.data(), 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        copyToDeviceBuffer(
-                &buffer, valuesIn.data(), numValues, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        // Do the same copying on the CPU, so we can test it works
-        // correctly.
-        valuesIn.insert(valuesIn.end(), valuesIn.begin(), valuesIn.end());
+            // Fill the buffer with two copies of valuesIn, one after the other.
+            copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream, transferKind, nullptr);
+            copyToDeviceBuffer(
+                    &buffer, valuesIn.data(), numValues, numValues, deviceStream, transferKind, nullptr);
+            // Wait until GPU is done andd o the same copying on the CPU, so we can test it works correctly.
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            valuesIn.insert(valuesIn.end(), valuesIn.begin(), valuesIn.end());
 
-        copyFromDeviceBuffer(
-                valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
+            copyFromDeviceBuffer(
+                    valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream, transferKind, nullptr);
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn))
+                    << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
 
-        SCOPED_TRACE("Checking the copy respects the output range");
+            SCOPED_TRACE("Checking the copy respects the output range");
 
-        // Remove the first element, and push another copy of the last
-        // element, so we can check that a copy of all of the data
-        // skipping the first element correctly over-writes exactly
-        // all but one of the old values.
-        valuesIn.erase(valuesIn.begin());
-        valuesIn.push_back(valuesIn.back());
-        copyFromDeviceBuffer(
-                valuesOut.data(), &buffer, 1, 2 * numValues - 1, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-        EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
+            // Remove the first element, and push another copy of the last
+            // element, so we can check that a copy of all of the data
+            // skipping the first element correctly over-writes exactly
+            // all but one of the old values.
+            valuesIn.erase(valuesIn.begin());
+            valuesIn.push_back(valuesIn.back());
+            copyFromDeviceBuffer(
+                    valuesOut.data(), &buffer, 1, 2 * numValues - 1, deviceStream, transferKind, nullptr);
+            if (transferKind == GpuApiCallBehavior::Async)
+            {
+                deviceStream.synchronize();
+            }
+            EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn))
+                    << "Changed after H2D and D2H " << enumValueToString(transferKind) << " copy.";
+        }
     }
 }
-
 
 } // namespace
 } // namespace test

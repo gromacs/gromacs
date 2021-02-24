@@ -45,11 +45,20 @@
 #include "config.h"
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/stringutil.h"
 
 #ifdef _MSC_VER
 #    pragma warning(disable : 6237)
 #endif
+
+const char* enumValueToString(GpuApiCallBehavior enumValue)
+{
+    static constexpr gmx::EnumerationArray<GpuApiCallBehavior, const char*> s_gpuApiCallBehaviorNames = {
+        "Synchronous", "Asynchronous"
+    };
+    return s_gpuApiCallBehaviorNames[enumValue];
+}
 
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why nonbondeds on a GPU are not supported.
