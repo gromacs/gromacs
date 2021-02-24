@@ -529,7 +529,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
-    cl_timers_t*        t            = nb->timers;
+    Nbnxm::GpuTimers*   timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -561,7 +561,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_h2d.openTimingRegion(deviceStream);
+        timers->xf[atomLocality].nb_h2d.openTimingRegion(deviceStream);
     }
 
     /* HtoD x, q */
@@ -573,11 +573,11 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
                        atomsRange.size(),
                        deviceStream,
                        GpuApiCallBehavior::Async,
-                       bDoTime ? t->xf[atomLocality].nb_h2d.fetchNextEvent() : nullptr);
+                       bDoTime ? timers->xf[atomLocality].nb_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_h2d.closeTimingRegion(deviceStream);
+        timers->xf[atomLocality].nb_h2d.closeTimingRegion(deviceStream);
     }
 
     /* When we get here all misc operations issued in the local stream as well as
@@ -613,7 +613,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
-    cl_timers_t*        t            = nb->timers;
+    Nbnxm::GpuTimers*   timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -655,7 +655,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        t->interaction[iloc].nb_k.openTimingRegion(deviceStream);
+        timers->interaction[iloc].nb_k.openTimingRegion(deviceStream);
     }
 
     /* kernel launch config */
@@ -685,7 +685,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    auto*          timingEvent  = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
+    auto* timingEvent = bDoTime ? timers->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_calc_nb";
     const auto     kernel =
             select_nbnxn_kernel(nb,
@@ -745,7 +745,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
 
     if (bDoTime)
     {
-        t->interaction[iloc].nb_k.closeTimingRegion(deviceStream);
+        timers->interaction[iloc].nb_k.closeTimingRegion(deviceStream);
     }
 }
 
@@ -784,7 +784,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     NBAtomData*         adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
-    cl_timers_t*        t            = nb->timers;
+    Nbnxm::GpuTimers*   timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
     bool                bDoTime      = nb->bDoTime;
 
@@ -834,7 +834,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     GpuRegionTimer* timer = nullptr;
     if (bDoTime)
     {
-        timer = &(plist->haveFreshList ? t->interaction[iloc].prune_k : t->interaction[iloc].rollingPrune_k);
+        timer = &(plist->haveFreshList ? timers->interaction[iloc].prune_k
+                                       : timers->interaction[iloc].rollingPrune_k);
     }
 
     /* beginning of timed prune calculation section */
@@ -933,7 +934,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                "beginning of the copy back function.");
 
     NBAtomData*         adat         = nb->atdat;
-    cl_timers_t*        t            = nb->timers;
+    Nbnxm::GpuTimers*   timers       = nb->timers;
     bool                bDoTime      = nb->bDoTime;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
@@ -958,7 +959,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_d2h.openTimingRegion(deviceStream);
+        timers->xf[atomLocality].nb_d2h.openTimingRegion(deviceStream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
@@ -978,7 +979,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                          atomsRange.size(),
                          deviceStream,
                          GpuApiCallBehavior::Async,
-                         bDoTime ? t->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+                         bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
 
     /* kick off work */
     cl_error = clFlush(deviceStream.stream());
@@ -1009,7 +1010,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                                  SHIFTS,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
-                                 bDoTime ? t->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
         }
 
         /* DtoH energies */
@@ -1023,7 +1024,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                                  1,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
-                                 bDoTime ? t->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
             static_assert(sizeof(*nb->nbst.eElec) == sizeof(float),
                           "Sizes of host- and device-side electrostatic energy terms should be the "
                           "same.");
@@ -1033,13 +1034,13 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                                  1,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
-                                 bDoTime ? t->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
         }
     }
 
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_d2h.closeTimingRegion(deviceStream);
+        timers->xf[atomLocality].nb_d2h.closeTimingRegion(deviceStream);
     }
 }
 

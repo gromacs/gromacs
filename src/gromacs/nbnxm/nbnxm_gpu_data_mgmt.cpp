@@ -258,7 +258,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
         }
     }
 
-    gpu_timers_t::Interaction& iTimers = nb->timers->interaction[iloc];
+    GpuTimers::Interaction& iTimers = nb->timers->interaction[iloc];
 
     if (bDoTime)
     {

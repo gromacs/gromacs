@@ -297,7 +297,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
-    nb->timers = new cl_timers_t();
+    nb->timers = new Nbnxm::GpuTimers();
     snew(nb->timings, 1);
 
     /* set device info, just point it to the right GPU among the detected ones */
@@ -424,7 +424,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     int                  nalloc, natoms;
     bool                 realloced;
     bool                 bDoTime       = nb->bDoTime;
-    cl_timers_t*         timers        = nb->timers;
+    Nbnxm::GpuTimers*    timers        = nb->timers;
     NBAtomData*          d_atdat       = nb->atdat;
     const DeviceContext& deviceContext = *nb->deviceContext_;
     const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];

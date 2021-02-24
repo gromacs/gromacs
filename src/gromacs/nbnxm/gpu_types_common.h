@@ -205,7 +205,7 @@ using gmx::InteractionLocality;
  * The two-sized arrays hold the local and non-local values and should always
  * be indexed with eintLocal/eintNonlocal.
  */
-struct gpu_timers_t
+struct GpuTimers
 {
     /*! \internal
      * \brief Timers for local or non-local coordinate/force transfers
@@ -244,7 +244,7 @@ struct gpu_timers_t
     //! timers for coordinate/force transfers (every step)
     gmx::EnumerationArray<AtomLocality, XFTransfers> xf;
     //! timers for interaction related transfers
-    gmx::EnumerationArray<InteractionLocality, Nbnxm::gpu_timers_t::Interaction> interaction;
+    gmx::EnumerationArray<InteractionLocality, Nbnxm::GpuTimers::Interaction> interaction;
 };
 
 /*! \internal

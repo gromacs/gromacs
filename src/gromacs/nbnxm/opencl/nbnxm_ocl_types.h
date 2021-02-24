@@ -127,11 +127,6 @@ typedef struct cl_nbparam_params
 } cl_nbparam_params_t;
 
 
-/** \internal
- * \brief Typedef of actual timer type.
- */
-typedef struct Nbnxm::gpu_timers_t cl_timers_t;
-
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
  */
@@ -206,7 +201,7 @@ struct NbnxmGpu
     //! True if event-based timing is enabled.
     bool bDoTime = false;
     //! OpenCL event-based timers.
-    cl_timers_t* timers = nullptr;
+    Nbnxm::GpuTimers* timers = nullptr;
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
     gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 };

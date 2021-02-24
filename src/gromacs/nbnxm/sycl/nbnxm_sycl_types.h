@@ -85,7 +85,7 @@ struct NbnxmGpu
     /*! \brief True if event-based timing is enabled. Always false for SYCL. */
     bool bDoTime = false;
     /*! \brief Dummy timers. */
-    Nbnxm::gpu_timers_t* timers = nullptr;
+    Nbnxm::GpuTimers* timers = nullptr;
     /*! \brief Dummy timing data. */
     gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 

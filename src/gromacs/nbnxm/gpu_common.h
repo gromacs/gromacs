@@ -193,19 +193,18 @@ static inline gmx::Range<int> getGpuAtomRange(const NBAtomData* atomData, const 
  *   - 1st pass prune: ran during the current step (prior to the force kernel);
  *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
  *
- * Note that the resetting of cu_timers_t::didPrune and cu_timers_t::didRollingPrune should happen
- * after calling this function.
+ * Note that the resetting of Nbnxm::GpuTimers::didPrune and Nbnxm::GpuTimers::didRollingPrune
+ * should happen after calling this function.
  *
  * \param[in] timers   structs with GPU timer objects
  * \param[inout] timings  GPU task timing data
  * \param[in] iloc        interaction locality
  */
-template<typename GpuTimers>
-static void countPruneKernelTime(GpuTimers*                 timers,
+static void countPruneKernelTime(Nbnxm::GpuTimers*          timers,
                                  gmx_wallclock_gpu_nbnxn_t* timings,
                                  const InteractionLocality  iloc)
 {
-    gpu_timers_t::Interaction& iTimers = timers->interaction[iloc];
+    GpuTimers::Interaction& iTimers = timers->interaction[iloc];
 
     // We might have not done any pruning (e.g. if we skipped with empty domains).
     if (!iTimers.didPrune && !iTimers.didRollingPrune)
@@ -281,7 +280,6 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
  *      counters could end up being inconsistent due to not being incremented
  *      on some of the node when this is skipped on empty local domains!
  *
- * \tparam     GpuTimers         GPU timers type
  * \tparam     GpuPairlist       Pair list type
  * \param[out] timings           Pointer to the NB GPU timings data
  * \param[in]  timers            Pointer to GPU timers data
@@ -291,9 +289,9 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
  * \param[in]  doTiming          True if timing is enabled.
  *
  */
-template<typename GpuTimers, typename GpuPairlist>
+template<typename GpuPairlist>
 static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
-                                          GpuTimers*                 timers,
+                                          Nbnxm::GpuTimers*          timers,
                                           const GpuPairlist*         plist,
                                           AtomLocality               atomLocality,
                                           const gmx::StepWorkload&   stepWork,

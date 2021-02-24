@@ -64,11 +64,6 @@
 /*! \brief cluster size = number of atoms per cluster. */
 static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
-/** \internal
- * \brief Typedef of actual timer type.
- */
-typedef struct Nbnxm::gpu_timers_t cu_timers_t;
-
 /*! \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
@@ -140,7 +135,7 @@ struct NbnxmGpu
     /*! \brief True if event-based timing is enabled. */
     bool bDoTime = false;
     /*! \brief CUDA event-based timers. */
-    cu_timers_t* timers = nullptr;
+    Nbnxm::GpuTimers* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
     gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 };
