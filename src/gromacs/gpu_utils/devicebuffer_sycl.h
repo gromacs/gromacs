@@ -55,6 +55,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits_sycl.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -353,6 +354,23 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     {
         ev.wait_and_throw();
     }
+}
+
+/*! \brief
+ * Performs the device-to-device data copy, synchronous or asynchronously on request.
+ *
+ * \tparam        ValueType                Raw value type of the \p buffer.
+ */
+template<typename ValueType>
+void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* /* destinationDeviceBuffer */,
+                              DeviceBuffer<ValueType>* /* sourceDeviceBuffer */,
+                              size_t /* numValues */,
+                              const DeviceStream& /* deviceStream */,
+                              GpuApiCallBehavior /* transferKind */,
+                              CommandEvent* /*timingEvent*/)
+{
+    // SYCL-TODO
+    gmx_fatal(FARGS, "D2D copy stub was called. Not yet implemented in SYCL.");
 }
 
 

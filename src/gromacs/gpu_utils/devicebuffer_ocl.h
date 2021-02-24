@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,6 +225,23 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
 
         default: throw;
     }
+}
+
+/*! \brief
+ * Performs the device-to-device data copy, synchronous or asynchronously on request.
+ *
+ * \tparam        ValueType                Raw value type of the \p buffer.
+ */
+template<typename ValueType>
+void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* /* destinationDeviceBuffer */,
+                              DeviceBuffer<ValueType>* /* sourceDeviceBuffer */,
+                              size_t /* numValues */,
+                              const DeviceStream& /* deviceStream */,
+                              GpuApiCallBehavior /* transferKind */,
+                              CommandEvent* /*timingEvent*/)
+{
+    // OpenCL-TODO
+    gmx_fatal(FARGS, "D2D copy stub was called. Not yet implemented in OpenCL.");
 }
 
 /*! \brief

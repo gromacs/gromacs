@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,6 +204,59 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            break;
+
+        default: throw;
+    }
+}
+
+/*! \brief
+ * Performs the device-to-device data copy, synchronous or asynchronously on request.
+ *
+ * \tparam        ValueType                Raw value type of the \p buffer.
+ * \param[in,out] destinationDeviceBuffer  Device-side buffer to copy to
+ * \param[in]     sourceDeviceBuffer       Device-side buffer to copy from
+ * \param[in]     numValues                Number of values to copy.
+ * \param[in]     deviceStream             GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind             Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent              A dummy pointer to the D2D copy timing event to be filled
+ * in. Not used in CUDA implementation.
+ */
+template<typename ValueType>
+void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
+                              DeviceBuffer<ValueType>* sourceDeviceBuffer,
+                              size_t                   numValues,
+                              const DeviceStream&      deviceStream,
+                              GpuApiCallBehavior       transferKind,
+                              CommandEvent* /*timingEvent*/)
+{
+    if (numValues == 0)
+    {
+        return;
+    }
+    GMX_ASSERT(destinationDeviceBuffer, "needs a destination buffer pointer");
+    GMX_ASSERT(sourceDeviceBuffer, "needs a source buffer pointer");
+
+    cudaError_t  stat;
+    const size_t bytes = numValues * sizeof(ValueType);
+    switch (transferKind)
+    {
+        case GpuApiCallBehavior::Async:
+            stat = cudaMemcpyAsync(*destinationDeviceBuffer,
+                                   *sourceDeviceBuffer,
+                                   bytes,
+                                   cudaMemcpyDeviceToDevice,
+                                   deviceStream.stream());
+            GMX_RELEASE_ASSERT(
+                    stat == cudaSuccess,
+                    ("Asynchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            break;
+
+        case GpuApiCallBehavior::Sync:
+            stat = cudaMemcpy(*destinationDeviceBuffer, *sourceDeviceBuffer, bytes, cudaMemcpyDeviceToDevice);
+            GMX_RELEASE_ASSERT(
+                    stat == cudaSuccess,
+                    ("Synchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
             break;
 
         default: throw;
