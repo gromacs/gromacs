@@ -42,6 +42,7 @@
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 template<typename AllocatorType>
 static void bcastPaddedRVecVector(MPI_Comm                                     communicator,
@@ -72,20 +73,22 @@ void broadcastStateWithoutDynamics(MPI_Comm communicator,
     block_bc(communicator, state->natoms);
     block_bc(communicator, state->flags);
 
-    for (int i = 0; i < estNR; i++)
+    for (auto i : gmx::EnumerationArray<StateEntry, bool>::keys())
     {
-        if (state->flags & (1 << i))
+        if (state->flags & enumValueToBitMask(i))
         {
             switch (i)
             {
-                case estLAMBDA:
+                case StateEntry::Lambda:
                     nblock_bc(communicator,
                               static_cast<int>(FreeEnergyPerturbationCouplingType::Count),
                               state->lambda.data());
                     break;
-                case estFEPSTATE: block_bc(communicator, state->fep_state); break;
-                case estBOX: block_bc(communicator, state->box); break;
-                case estX: bcastPaddedRVecVector(communicator, &state->x, state->natoms); break;
+                case StateEntry::FepState: block_bc(communicator, state->fep_state); break;
+                case StateEntry::Box: block_bc(communicator, state->box); break;
+                case StateEntry::X:
+                    bcastPaddedRVecVector(communicator, &state->x, state->natoms);
+                    break;
                 default:
                     GMX_RELEASE_ASSERT(false,
                                        "The state has a dynamic entry, while no dynamic entries "

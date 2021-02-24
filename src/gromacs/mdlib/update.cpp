@@ -1450,11 +1450,11 @@ void Update::Impl::update_coords(const t_inputrec&                              
     real dt = inputRecord.delta_t;
 
     /* We need to update the NMR restraint history when time averaging is used */
-    if (state->flags & (1 << estDISRE_RM3TAV))
+    if (state->flags & enumValueToBitMask(StateEntry::DisreRm3Tav))
     {
         update_disres_history(*fcdata.disres, &state->hist);
     }
-    if (state->flags & (1 << estORIRE_DTAV))
+    if (state->flags & enumValueToBitMask(StateEntry::OrireDtav))
     {
         update_orires_history(*fcdata.orires, &state->hist);
     }

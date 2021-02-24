@@ -701,7 +701,7 @@ static bool do_em_step(const t_commrec*                          cr,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
 
-        if (s2->flags & (1 << estCGP))
+        if (s2->flags & enumValueToBitMask(StateEntry::Cgp))
         {
             /* Copy the CG p vector */
             const rvec* p1 = s1->cg_p.rvec_array();
@@ -1196,7 +1196,7 @@ void LegacySimulator::do_cg()
     if (MASTER(cr))
     {
         // In CG, the state is extended with a search direction
-        state_global->flags |= (1 << estCGP);
+        state_global->flags |= enumValueToBitMask(StateEntry::Cgp);
 
         // Ensure the extra per-atom state array gets allocated
         state_change_natoms(state_global, state_global->natoms);

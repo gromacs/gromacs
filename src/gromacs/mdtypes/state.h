@@ -94,42 +94,52 @@ using PaddedHostVector = gmx::PaddedHostVector<T>;
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-enum
+enum class StateEntry : int
 {
-    estLAMBDA,
-    estBOX,
-    estBOX_REL,
-    estBOXV,
-    estPRES_PREV,
-    estNH_XI,
-    estTHERM_INT,
-    estX,
-    estV,
-    estSDX_NOTSUPPORTED,
-    estCGP,
-    estLD_RNG_NOTSUPPORTED,
-    estLD_RNGI_NOTSUPPORTED,
-    estDISRE_INITF,
-    estDISRE_RM3TAV,
-    estORIRE_INITF,
-    estORIRE_DTAV,
-    estSVIR_PREV,
-    estNH_VXI,
-    estVETA,
-    estVOL0,
-    estNHPRES_XI,
-    estNHPRES_VXI,
-    estFVIR_PREV,
-    estFEPSTATE,
-    estMC_RNG_NOTSUPPORTED,
-    estMC_RNGI_NOTSUPPORTED,
-    estBAROS_INT,
-    estPULLCOMPREVSTEP,
-    estNR
+    Lambda,
+    Box,
+    BoxRel,
+    BoxV,
+    PressurePrevious,
+    Nhxi,
+    ThermInt,
+    X,
+    V,
+    SDxNotSupported,
+    Cgp,
+    LDRngNotSupported,
+    LDRngINotSupported,
+    DisreInitF,
+    DisreRm3Tav,
+    OrireInitF,
+    OrireDtav,
+    SVirPrev,
+    Nhvxi,
+    Veta,
+    Vol0,
+    Nhpresxi,
+    Nhpresvxi,
+    FVirPrev,
+    FepState,
+    MCRngNotSupported,
+    MCRngINotSupported,
+    BarosInt,
+    PullComPrevStep,
+    Count
 };
 
-//! \brief The names of the state entries, defined in src/gmxlib/checkpoint.c
-extern const char* est_names[estNR];
+//! \brief The names of the state entries, defined in src/gromacs/fileio/checkpoint.cpp
+const char* enumValueToString(StateEntry enumValue);
+/*! \brief Convert enum to bitmask value.
+ *
+ * Used for setting flags in checkpoint header and verifying which flags are set.
+ */
+template<typename Enum>
+inline int enumValueToBitMask(Enum enumValue)
+{
+    static_assert(static_cast<int>(Enum::Count) <= std::numeric_limits<int>::digits);
+    return 1 << static_cast<int>(enumValue);
+}
 
 /*! \libinternal \brief History information for NMR distance and orientation restraints
  *

@@ -4,7 +4,7 @@
  * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,20 +228,20 @@ static void print_cg_move(FILE*               fplog,
 
 static void rotate_state_atom(t_state* state, int a)
 {
-    if (state->flags & (1 << estX))
+    if (state->flags & enumValueToBitMask(StateEntry::X))
     {
         auto x = makeArrayRef(state->x);
         /* Rotate the complete state; for a rectangular box only */
         x[a][YY] = state->box[YY][YY] - x[a][YY];
         x[a][ZZ] = state->box[ZZ][ZZ] - x[a][ZZ];
     }
-    if (state->flags & (1 << estV))
+    if (state->flags & enumValueToBitMask(StateEntry::V))
     {
         auto v   = makeArrayRef(state->v);
         v[a][YY] = -v[a][YY];
         v[a][ZZ] = -v[a][ZZ];
     }
-    if (state->flags & (1 << estCGP))
+    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
     {
         auto cg_p   = makeArrayRef(state->cg_p);
         cg_p[a][YY] = -cg_p[a][YY];
@@ -571,8 +571,8 @@ void dd_redistribute_cg(FILE*         fplog,
     }
 
     // Positions are always present, so there's nothing to flag
-    bool bV   = (state->flags & (1 << estV)) != 0;
-    bool bCGP = (state->flags & (1 << estCGP)) != 0;
+    bool bV   = (state->flags & enumValueToBitMask(StateEntry::V)) != 0;
+    bool bCGP = (state->flags & enumValueToBitMask(StateEntry::Cgp)) != 0;
 
     DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->ncg_home);
     gmx::ArrayRef<int>  move = moveBuffer.buffer;

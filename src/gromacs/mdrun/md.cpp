@@ -546,7 +546,7 @@ void gmx::LegacySimulator::do_md()
 
     if (!ir->bContinuation)
     {
-        if (state->flags & (1U << estV))
+        if (state->flags & enumValueToBitMask(StateEntry::V))
         {
             auto v = makeArrayRef(state->v);
             /* Set the velocities of vsites, shells and frozen atoms to zero */
@@ -1915,7 +1915,7 @@ void gmx::LegacySimulator::do_md()
         /* With all integrators, except VV, we need to retain the pressure
          * at the current step for coupling at the next step.
          */
-        if ((state->flags & (1U << estPRES_PREV))
+        if ((state->flags & enumValueToBitMask(StateEntry::PressurePrevious))
             && (bGStatEveryStep || (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling

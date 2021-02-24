@@ -3008,11 +3008,11 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
             // of the tpx file.
             if (tpx->bX)
             {
-                state->flags |= (1 << estX);
+                state->flags |= enumValueToBitMask(StateEntry::X);
             }
             if (tpx->bV)
             {
-                state->flags |= (1 << estV);
+                state->flags |= enumValueToBitMask(StateEntry::V);
             }
             state_change_natoms(state, tpx->natoms);
         }
@@ -3028,7 +3028,7 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
     {
         if (serializer->reading())
         {
-            state->flags |= (1 << estX);
+            state->flags |= enumValueToBitMask(StateEntry::X);
         }
         serializer->doRvecArray(x, tpx->natoms);
     }
@@ -3038,7 +3038,7 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
     {
         if (serializer->reading())
         {
-            state->flags |= (1 << estV);
+            state->flags |= enumValueToBitMask(StateEntry::V);
         }
         if (!v)
         {
@@ -3242,8 +3242,8 @@ static TpxFileHeader populateTpxHeader(const t_state& state, const t_inputrec* i
     header.lambda         = state.lambda[FreeEnergyPerturbationCouplingType::Fep];
     header.bIr            = ir != nullptr;
     header.bTop           = mtop != nullptr;
-    header.bX             = (state.flags & (1 << estX)) != 0;
-    header.bV             = (state.flags & (1 << estV)) != 0;
+    header.bX             = (state.flags & enumValueToBitMask(StateEntry::X)) != 0;
+    header.bV             = (state.flags & enumValueToBitMask(StateEntry::V)) != 0;
     header.bF             = false;
     header.bBox           = true;
     header.fileVersion    = tpx_version;

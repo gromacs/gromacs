@@ -2616,15 +2616,15 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
     GMX_RELEASE_ASSERT(cgsort.ssize() == dd->ncg_home, "We should sort all the home atom groups");
 
-    if (state->flags & (1 << estX))
+    if (state->flags & enumValueToBitMask(StateEntry::X))
     {
         orderVector(cgsort, makeArrayRef(state->x), rvecBuffer.buffer);
     }
-    if (state->flags & (1 << estV))
+    if (state->flags & enumValueToBitMask(StateEntry::V))
     {
         orderVector(cgsort, makeArrayRef(state->v), rvecBuffer.buffer);
     }
-    if (state->flags & (1 << estCGP))
+    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
     {
         orderVector(cgsort, makeArrayRef(state->cg_p), rvecBuffer.buffer);
     }

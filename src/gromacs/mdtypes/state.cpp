@@ -167,15 +167,15 @@ void state_change_natoms(t_state* state, int natoms)
 
     /* We need padding, since we might use SIMD access, but the
      * containers here all ensure that. */
-    if (state->flags & (1 << estX))
+    if (state->flags & enumValueToBitMask(StateEntry::X))
     {
         state->x.resizeWithPadding(natoms);
     }
-    if (state->flags & (1 << estV))
+    if (state->flags & enumValueToBitMask(StateEntry::V))
     {
         state->v.resizeWithPadding(natoms);
     }
-    if (state->flags & (1 << estCGP))
+    if (state->flags & enumValueToBitMask(StateEntry::Cgp))
     {
         state->cg_p.resizeWithPadding(natoms);
     }
@@ -206,17 +206,17 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
     cmp_rvecs(stdout, "box_rel", DIM, st1->box_rel, st2->box_rel, FALSE, ftol, abstol);
     fprintf(stdout, "comparing boxv\n");
     cmp_rvecs(stdout, "boxv", DIM, st1->boxv, st2->boxv, FALSE, ftol, abstol);
-    if (st1->flags & (1 << estSVIR_PREV))
+    if (st1->flags & enumValueToBitMask(StateEntry::SVirPrev))
     {
         fprintf(stdout, "comparing shake vir_prev\n");
         cmp_rvecs(stdout, "svir_prev", DIM, st1->svir_prev, st2->svir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1 << estFVIR_PREV))
+    if (st1->flags & enumValueToBitMask(StateEntry::FVirPrev))
     {
         fprintf(stdout, "comparing force vir_prev\n");
         cmp_rvecs(stdout, "fvir_prev", DIM, st1->fvir_prev, st2->fvir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1 << estPRES_PREV))
+    if (st1->flags & enumValueToBitMask(StateEntry::PressurePrevious))
     {
         fprintf(stdout, "comparing prev_pres\n");
         cmp_rvecs(stdout, "pres_prev", DIM, st1->pres_prev, st2->pres_prev, FALSE, ftol, abstol);
@@ -250,12 +250,14 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
     cmp_int(stdout, "natoms", -1, st1->natoms, st2->natoms);
     if (st1->natoms == st2->natoms)
     {
-        if ((st1->flags & (1 << estX)) && (st2->flags & (1 << estX)))
+        if ((st1->flags & enumValueToBitMask(StateEntry::X))
+            && (st2->flags & enumValueToBitMask(StateEntry::X)))
         {
             fprintf(stdout, "comparing x\n");
             cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
         }
-        if ((st1->flags & (1 << estV)) && (st2->flags & (1 << estV)))
+        if ((st1->flags & enumValueToBitMask(StateEntry::V))
+            && (st2->flags & enumValueToBitMask(StateEntry::V)))
         {
             fprintf(stdout, "comparing v\n");
             cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);

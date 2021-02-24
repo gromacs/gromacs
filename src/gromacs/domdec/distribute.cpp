@@ -262,15 +262,15 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
 
     state_change_natoms(state_local, dd->comm->atomRanges.numHomeAtoms());
 
-    if (state_local->flags & (1 << estX))
+    if (state_local->flags & enumValueToBitMask(StateEntry::X))
     {
         distributeVec(dd, DDMASTER(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>(), state_local->x);
     }
-    if (state_local->flags & (1 << estV))
+    if (state_local->flags & enumValueToBitMask(StateEntry::V))
     {
         distributeVec(dd, DDMASTER(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>(), state_local->v);
     }
-    if (state_local->flags & (1 << estCGP))
+    if (state_local->flags & enumValueToBitMask(StateEntry::Cgp))
     {
         distributeVec(dd, DDMASTER(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>(), state_local->cg_p);
     }

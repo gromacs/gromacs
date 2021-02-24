@@ -199,10 +199,10 @@ void init_disres(FILE*                 fplog,
 
         hist = &state->hist;
         /* Set the "history lack" factor to 1 */
-        state->flags |= (1 << estDISRE_INITF);
+        state->flags |= enumValueToBitMask(StateEntry::DisreInitF);
         hist->disre_initf = 1.0;
         /* Allocate space for the r^-3 time averages */
-        state->flags |= (1 << estDISRE_RM3TAV);
+        state->flags |= enumValueToBitMask(StateEntry::DisreRm3Tav);
         hist->ndisrepairs = dd->npair;
         snew(hist->disre_rm3tav, hist->ndisrepairs);
     }

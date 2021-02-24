@@ -714,10 +714,10 @@ static void new_status(const char*                           topfile,
     /* It would be nice to get rid of the copies below, but we don't know
      * a priori if the number of atoms in confin matches what we expect.
      */
-    state->flags |= (1 << estX);
+    state->flags |= enumValueToBitMask(StateEntry::X);
     if (v != nullptr)
     {
-        state->flags |= (1 << estV);
+        state->flags |= enumValueToBitMask(StateEntry::V);
     }
     state_change_natoms(state, state->natoms);
     std::copy(x, x + state->natoms, state->x.data());
@@ -778,7 +778,7 @@ static void new_status(const char*                           topfile,
             opts->seed = static_cast<int>(gmx::makeRandomSeed());
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("Setting gen_seed to %d", opts->seed);
         }
-        state->flags |= (1 << estV);
+        state->flags |= enumValueToBitMask(StateEntry::V);
         maxwell_speed(opts->tempi, opts->seed, sys, state->v.rvec_array(), logger);
 
         stop_cm(logger, state->natoms, mass, state->x.rvec_array(), state->v.rvec_array());

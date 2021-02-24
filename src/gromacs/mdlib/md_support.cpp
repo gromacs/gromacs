@@ -523,58 +523,58 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
     state->flags = 0;
     if (ir->efep != FreeEnergyPerturbationType::No || ir->bExpanded)
     {
-        state->flags |= (1 << estLAMBDA);
-        state->flags |= (1 << estFEPSTATE);
+        state->flags |= enumValueToBitMask(StateEntry::Lambda);
+        state->flags |= enumValueToBitMask(StateEntry::FepState);
     }
-    state->flags |= (1 << estX);
+    state->flags |= enumValueToBitMask(StateEntry::X);
     GMX_RELEASE_ASSERT(state->x.size() == state->natoms,
                        "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
-        state->flags |= (1 << estV);
+        state->flags |= enumValueToBitMask(StateEntry::V);
     }
 
     state->nnhpres = 0;
     if (ir->pbcType != PbcType::No)
     {
-        state->flags |= (1 << estBOX);
+        state->flags |= enumValueToBitMask(StateEntry::Box);
         if (inputrecPreserveShape(ir))
         {
-            state->flags |= (1 << estBOX_REL);
+            state->flags |= enumValueToBitMask(StateEntry::BoxRel);
         }
         if ((ir->epc == PressureCoupling::ParrinelloRahman) || (ir->epc == PressureCoupling::Mttk))
         {
-            state->flags |= (1 << estBOXV);
+            state->flags |= enumValueToBitMask(StateEntry::BoxV);
             if (!useModularSimulator)
             {
-                state->flags |= (1 << estPRES_PREV);
+                state->flags |= enumValueToBitMask(StateEntry::PressurePrevious);
             }
         }
         if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
         {
             state->nnhpres = 1;
-            state->flags |= (1 << estNHPRES_XI);
-            state->flags |= (1 << estNHPRES_VXI);
-            state->flags |= (1 << estSVIR_PREV);
-            state->flags |= (1 << estFVIR_PREV);
-            state->flags |= (1 << estVETA);
-            state->flags |= (1 << estVOL0);
+            state->flags |= enumValueToBitMask(StateEntry::Nhpresxi);
+            state->flags |= enumValueToBitMask(StateEntry::Nhpresvxi);
+            state->flags |= enumValueToBitMask(StateEntry::SVirPrev);
+            state->flags |= enumValueToBitMask(StateEntry::FVirPrev);
+            state->flags |= enumValueToBitMask(StateEntry::Veta);
+            state->flags |= enumValueToBitMask(StateEntry::Vol0);
         }
         if (ir->epc == PressureCoupling::Berendsen || ir->epc == PressureCoupling::CRescale)
         {
-            state->flags |= (1 << estBAROS_INT);
+            state->flags |= enumValueToBitMask(StateEntry::BarosInt);
         }
     }
 
     if (ir->etc == TemperatureCoupling::NoseHoover)
     {
-        state->flags |= (1 << estNH_XI);
-        state->flags |= (1 << estNH_VXI);
+        state->flags |= enumValueToBitMask(StateEntry::Nhxi);
+        state->flags |= enumValueToBitMask(StateEntry::Nhvxi);
     }
 
     if (ir->etc == TemperatureCoupling::VRescale || ir->etc == TemperatureCoupling::Berendsen)
     {
-        state->flags |= (1 << estTHERM_INT);
+        state->flags |= enumValueToBitMask(StateEntry::ThermInt);
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
@@ -588,6 +588,6 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
 
     if (ir->pull && ir->pull->bSetPbcRefToPrevStepCOM)
     {
-        state->flags |= (1 << estPULLCOMPREVSTEP);
+        state->flags |= enumValueToBitMask(StateEntry::PullComPrevStep);
     }
 }
