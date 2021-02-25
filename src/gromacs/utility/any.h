@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,9 +56,12 @@ namespace gmx
 {
 
 /*! \libinternal \brief
- * Represents a dynamically typed value of an arbitrary type.
+ * Represents a dynamically typed value of an arbitrary type - deprecated.
  *
- * To create a any, either initialize it as empty, or with the create()
+ * New uses of this type should be avoided - prefer std::any or
+ * std::variant.
+ *
+ * To create an Any, either initialize it as empty, or with the create()
  * method (or the equivalent constructor, if the type parameter can be deduced
  * and is clear to the reader from the context).
  *
@@ -72,6 +75,11 @@ namespace gmx
  * Methods in this class do not throw unless otherwise indicated.
  *
  * This provides essentially the same functionality as boost::any.
+ *
+ * It would be good to replace the current uses of this type with
+ * std::any or std::variant, but see
+ * https://gitlab.com/gromacs/gromacs/-/issues/3951 for discussion
+ * about the things that have blocked such attempts.
  *
  * \ingroup module_utility
  */
