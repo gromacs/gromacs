@@ -173,15 +173,29 @@ gmx_add_gtest_executable(${exename} MPI
         domain_decomposition.cpp
         minimize.cpp
         mimic.cpp
-        multisim.cpp
-        multisimtest.cpp
-        replicaexchange.cpp
         pmetest.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+# Multi sim only makes sense with real MPI, and ideally at least 4 ranks,
+# to allow for multiple simulations (>= 2 sims) each using DD (>= 2 ranks per sim)
+set(testname "MdrunMultiSimTests")
+set(exename "mdrun-multisim-test")
+
+gmx_add_gtest_executable(${exename} MPI
+    CPP_SOURCE_FILES
+        # files with code for tests
+        multisim.cpp
+        multisimtest.cpp
+        replicaexchange.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 4 INTEGRATION_TEST IGNORE_LEAKS)
 
 # Tests that only make sense to run with multiple ranks and/or real
 # MPI are implemented here. Special case for slow PME tests

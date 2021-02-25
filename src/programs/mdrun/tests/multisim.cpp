@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/md_enums.h"
+
 #include "multisimtest.h"
 
 namespace gmx
@@ -66,11 +68,7 @@ namespace test
  * that it is disabled. There's no elegant way to conditionally
  * disable a test at run time, so currently there is no feedback if
  * only one rank is available. However, the test harness knows to run
- * this test with more than one rank.
- *
- * Strictly, this test does not need to be parameterized, but
- * conditionally disabling it with respect to GMX_LIB_MPI is easier if
- * it is parameterized. */
+ * this test with more than one rank. */
 TEST_P(MultiSimTest, ExitsNormally)
 {
     runExitsNormallyTest();
@@ -78,21 +76,17 @@ TEST_P(MultiSimTest, ExitsNormally)
 
 TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
 {
-    if (size_ <= 1)
+    if (!mpiSetupValid())
     {
-        /* Can't test multi-sim without multiple ranks. */
+        // MPI setup is not suitable for multi-sim
         return;
     }
     SimulationRunner runner(&fileManager_);
     runner.useTopGroAndNdxFromDatabase("spc2");
 
-    const char* pcoupl = GetParam();
     // Do some different small numbers of steps in each simulation
-    int numSteps = rank_ % 4;
-    organizeMdpFile(&runner, pcoupl, numSteps);
-    /* Call grompp on every rank - the standard callGrompp() only runs
-       grompp on rank 0. */
-    EXPECT_EQ(0, runner.callGromppOnThisRank());
+    int numSteps = simulationNumber_ % 4;
+    runGrompp(&runner, numSteps);
 
     ASSERT_EQ(0, runner.callMdrun(*mdrunCaller_));
 }
@@ -100,19 +94,39 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest, ::testing::Values("pcoupl = no"));
+INSTANTIATE_TEST_CASE_P(InNvt,
+                        MultiSimTest,
+                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                             NumRanksPerSimulation(2)),
+                                           ::testing::Values(IntegrationAlgorithm::MD),
+                                           ::testing::Values(TemperatureCoupling::VRescale),
+                                           ::testing::Values(PressureCoupling::No)));
 #else
 // Test needs real MPI to run
-INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest, ::testing::Values("pcoupl = no"));
+INSTANTIATE_TEST_CASE_P(DISABLED_InNvt,
+                        MultiSimTest,
+                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                             NumRanksPerSimulation(2)),
+                                           ::testing::Values(IntegrationAlgorithm::MD),
+                                           ::testing::Values(TemperatureCoupling::VRescale),
+                                           ::testing::Values(PressureCoupling::No)));
 #endif
 
 //! Convenience typedef
 typedef MultiSimTest MultiSimTerminationTest;
 
-TEST_F(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+TEST_P(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
 {
     runMaxhTest();
 }
+
+INSTANTIATE_TEST_CASE_P(InNvt,
+                        MultiSimTerminationTest,
+                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                             NumRanksPerSimulation(2)),
+                                           ::testing::Values(IntegrationAlgorithm::MD),
+                                           ::testing::Values(TemperatureCoupling::VRescale),
+                                           ::testing::Values(PressureCoupling::No)));
 
 } // namespace test
 } // namespace gmx

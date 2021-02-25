@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -70,24 +71,39 @@ TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
 
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
+
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables,
-                        ReplicaExchangeEnsembleTest,
-                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+INSTANTIATE_TEST_CASE_P(
+        WithDifferentControlVariables,
+        ReplicaExchangeEnsembleTest,
+        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
+                           ::testing::Values(IntegrationAlgorithm::MD),
+                           ::testing::Values(TemperatureCoupling::VRescale),
+                           ::testing::Values(PressureCoupling::No, PressureCoupling::Berendsen)));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables,
-                        ReplicaExchangeEnsembleTest,
-                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+INSTANTIATE_TEST_CASE_P(
+        DISABLED_WithDifferentControlVariables,
+        ReplicaExchangeEnsembleTest,
+        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
+                           ::testing::Values(IntegrationAlgorithm::MD),
+                           ::testing::Values(TemperatureCoupling::VRescale),
+                           ::testing::Values(PressureCoupling::No, PressureCoupling::Berendsen)));
 #endif
 
 //! Convenience typedef
 typedef MultiSimTest ReplicaExchangeTerminationTest;
 
-TEST_F(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
+TEST_P(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
 {
     mdrunCaller_->addOption("-replex", 1);
     runMaxhTest();
 }
 
+INSTANTIATE_TEST_CASE_P(InNvt,
+                        ReplicaExchangeTerminationTest,
+                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1)),
+                                           ::testing::Values(IntegrationAlgorithm::MD),
+                                           ::testing::Values(TemperatureCoupling::VRescale),
+                                           ::testing::Values(PressureCoupling::No)));
 } // namespace test
 } // namespace gmx

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,10 @@
 
 #include "moduletest.h"
 
+enum class IntegrationAlgorithm : int;
+enum class PressureCoupling : int;
+enum class TemperatureCoupling : int;
+
 namespace gmx
 {
 namespace test
@@ -60,6 +64,23 @@ namespace test
 
 //! Convenience typedef
 typedef std::unique_ptr<CommandLine> CommandLinePointer;
+
+//! Test flag setting the number of ranks per simulation
+class NumRanksPerSimulation final
+{
+public:
+    //! Explicit constructor
+    explicit NumRanksPerSimulation(int value) : value_(value) {}
+    //! Implicit conversion to int
+    operator int() const { return value_; }
+
+private:
+    //! Internal state
+    int value_;
+};
+
+//! The parameters of the MultiSimTest class
+typedef std::tuple<NumRanksPerSimulation, IntegrationAlgorithm, TemperatureCoupling, PressureCoupling> MultiSimTestParams;
 
 /*! \internal
  * \brief Test fixture for multi-sim functionality.
@@ -69,10 +90,16 @@ typedef std::unique_ptr<CommandLine> CommandLinePointer;
  *
  * \ingroup module_mdrun_integration_tests
  */
-class MultiSimTest : public MdrunTestFixtureBase, public ::testing::WithParamInterface<const char*>
+class MultiSimTest : public MdrunTestFixtureBase, public ::testing::WithParamInterface<MultiSimTestParams>
 {
 public:
     MultiSimTest();
+
+    /*! \brief Check whether the MPI setup is valid
+     *
+     * Excludes MPI setups which are not supported by multi-sim
+     */
+    bool mpiSetupValid() const;
 
     /*! \brief Organize the .mdp file for this rank
      *
@@ -81,15 +108,33 @@ public:
      * and doing it this way allows this function to be re-used
      * for testing replica-exchange.
      *
-     * \param runner          The simulation runner that uses the
-     *                        mdp file that is organized.
-     * \param controlVariable Allows parameterization to work with
+     * The mdp options, specifically the temperature and pressure
+     * coupling, allow parameterization to work with
      * T, P or (later) lambda as the control variable, by passing a
-     * string with "mdp-param = value" such that different paths
-     * in init_replica_exchange() are followed.
-     * \param numSteps        Number of MD steps to perform.
+     * string with a value for the respective mdp option such that
+     * different paths in init_replica_exchange() are followed.
+     *
+     * \param runner      The simulation runner that uses the
+     *                    mdp file that is organized.
+     * \param integrator  Value for the mdp option `integrator`
+     * \param tcoupl      Value for the mdp option `tcoupl`
+     * \param pcoupl      Value for the mdp option `pcoupl`
+     * \param numSteps    Number of MD steps to perform.
      */
-    void organizeMdpFile(SimulationRunner* runner, const char* controlVariable, int numSteps = 2);
+    void organizeMdpFile(SimulationRunner*    runner,
+                         IntegrationAlgorithm integrator,
+                         TemperatureCoupling  tcoupl,
+                         PressureCoupling     pcoupl,
+                         int                  numSteps) const;
+
+    /*! \brief Run grompp on the ranks that need to run it
+     *
+     * Adds an MPI barrier to ensure that all ranks have written before returning
+     *
+     * \param runner    The simulation runner to run grompp on
+     * \param numSteps  Number of MD steps to perform
+     */
+    void runGrompp(SimulationRunner* runner, int numSteps = 2) const;
     //! Test that a basic simulation works
     void runExitsNormallyTest();
     //! Test that mdrun -maxh and restart works
@@ -98,6 +143,10 @@ public:
     int size_;
     //! MPI rank of this process
     int rank_;
+    //! Number of ranks per simulation
+    int numRanksPerSimulation_;
+    //! The simulation this rank belongs to (equal to `int( rank_ / numRanksPerSimulation_)`)
+    int simulationNumber_;
     //! Object for building the mdrun command line
     CommandLinePointer mdrunCaller_;
     //! Manages temporary files during the test.
