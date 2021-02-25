@@ -25,6 +25,15 @@ after the call that uses the sites. Now it should work, but we have not tested t
 
 :issue:`3866`
 
+Fix mass perturbation to dH/dlambda
+"""""""""""""""""""""""""""""""""""
+
+The contribution for perturbed mass was missing in dH/dlambda.
+Note that this contribution was not missing from the foreign energy
+differences used for the Bennett acceptance ratio method.
+
+:issue:`3943`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
