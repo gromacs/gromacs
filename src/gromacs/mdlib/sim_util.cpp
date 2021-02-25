@@ -1297,33 +1297,6 @@ void do_force(FILE*                               fplog,
         haveCopiedXFromGpu = true;
     }
 
-    // If coordinates are to be sent to PME task from CPU memory, perform that send here.
-    // Otherwise the send will occur after H2D coordinate transfer.
-    if (GMX_MPI && !thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu && stepWork.computeSlowForces)
-    {
-        /* Send particle coordinates to the pme nodes */
-        if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
-        {
-            GMX_ASSERT(haveCopiedXFromGpu,
-                       "a wait should only be triggered if copy has been scheduled");
-            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
-        }
-
-        gmx_pme_send_coordinates(fr,
-                                 cr,
-                                 box,
-                                 as_rvec_array(x.unpaddedArrayRef().data()),
-                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
-                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
-                                 (stepWork.computeVirial || stepWork.computeEnergy),
-                                 step,
-                                 simulationWork.useGpuPmePpCommunication,
-                                 reinitGpuPmePpComms,
-                                 pmeSendCoordinatesFromGpu,
-                                 localXReadyOnDevice,
-                                 wcycle);
-    }
-
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
@@ -1351,11 +1324,16 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // If coordinates are to be sent to PME task from GPU memory, perform that send here.
-    // Otherwise the send will occur before the H2D coordinate transfer.
-    if (!thisRankHasDuty(cr, DUTY_PME) && pmeSendCoordinatesFromGpu)
+    if (GMX_MPI && !thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces)
     {
         /* Send particle coordinates to the pme nodes */
+        if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
+        {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
         gmx_pme_send_coordinates(fr,
                                  cr,
                                  box,
