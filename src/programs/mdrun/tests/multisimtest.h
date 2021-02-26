@@ -120,21 +120,27 @@ public:
      * \param tcoupl      Value for the mdp option `tcoupl`
      * \param pcoupl      Value for the mdp option `pcoupl`
      * \param numSteps    Number of MD steps to perform.
+     * \param doRegression  Whether the mdp file will be used for
+     *                      regression tests, request use of
+     *                      reproducible parameters
      */
     void organizeMdpFile(SimulationRunner*    runner,
                          IntegrationAlgorithm integrator,
                          TemperatureCoupling  tcoupl,
                          PressureCoupling     pcoupl,
-                         int                  numSteps) const;
+                         int                  numSteps,
+                         bool                 doRegression) const;
 
     /*! \brief Run grompp on the ranks that need to run it
      *
      * Adds an MPI barrier to ensure that all ranks have written before returning
      *
-     * \param runner    The simulation runner to run grompp on
-     * \param numSteps  Number of MD steps to perform
+     * \param runner        The simulation runner to run grompp on
+     * \param numSteps      Number of MD steps to perform
+     * \param doRegression  Whether to write trajectories during the simulation
+     * \param maxWarnings   Number of grompp warning tolerated
      */
-    void runGrompp(SimulationRunner* runner, int numSteps = 2) const;
+    void runGrompp(SimulationRunner* runner, int numSteps = 2, bool doRegression = false, int maxWarnings = 0) const;
     //! Test that a basic simulation works
     void runExitsNormallyTest();
     //! Test that mdrun -maxh and restart works

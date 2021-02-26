@@ -122,7 +122,8 @@ void MultiSimTest::organizeMdpFile(SimulationRunner*    runner,
                                    IntegrationAlgorithm integrator,
                                    TemperatureCoupling  tcoupl,
                                    PressureCoupling     pcoupl,
-                                   int                  numSteps) const
+                                   int                  numSteps,
+                                   bool                 doRegression) const
 {
     GMX_RELEASE_ASSERT(mpiSetupValid(), "Creating the mdp file without valid MPI setup is useless.");
     const real  baseTemperature = 298;
@@ -138,12 +139,24 @@ void MultiSimTest::organizeMdpFile(SimulationRunner*    runner,
             "tau-t = 1\n"
             "ref-t = %f\n"
             // pressure coupling (if active)
-            "tau-p = 1\n"
+            "tau-p = 2\n"
             "ref-p = %f\n"
             "compressibility = 4.5e-5\n"
             // velocity generation
             "gen-vel = yes\n"
-            "gen-temp = %f\n",
+            "gen-temp = %f\n"
+            "gen-seed = %d\n"
+            // v-rescale and c-rescale use ld-seed
+            "ld-seed = %d\n"
+            // Two systems are used: spc2    non-interacting also at cutoff 1nm
+            //                       tip3p5  has box length of 1.86
+            "rcoulomb = 0.7\n"
+            "rvdw = 0.7\n"
+            // Trajectory output if required
+            "nstxout = %d\n"
+            "nstvout = %d\n"
+            "nstfout = %d\n"
+            "nstenergy = %d\n",
             enumValueToString(integrator),
             enumValueToString(tcoupl),
             enumValueToString(pcoupl),
@@ -155,11 +168,24 @@ void MultiSimTest::organizeMdpFile(SimulationRunner*    runner,
                starting PE decreases on the first step more for the
                replicas with higher number, which will tend to force
                replica exchange to occur. */
-            std::max(baseTemperature - 10 * rank_, real(0)));
+            std::max(baseTemperature - 10 * rank_, real(0)),
+            // If we do regression, we need reproducible velocity
+            // generation, which can be different per simulation
+            (doRegression ? 671324 + simulationNumber_ : -1),
+            // If we do regression, we need reproducible temperature and
+            // pressure coupling, which can be different per simulation
+            (doRegression ? 51203 + simulationNumber_ : -1),
+            // If we do regression, write one intermediate point
+            (doRegression ? int(numSteps / 2) : 0),
+            (doRegression ? int(numSteps / 2) : 0),
+            (doRegression ? int(numSteps / 2) : 0),
+            // If we do regression, print energies every step so
+            // we're sure to catch the replica exchange steps
+            (doRegression ? 1 : 1000));
     runner->useStringAsMdpFile(mdpFileContents);
 }
 
-void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps) const
+void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps, bool doRegression, int maxWarnings) const
 {
     // Call grompp once per simulation
     if (rank_ % numRanksPerSimulation_ == 0)
@@ -167,8 +193,10 @@ void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps) const
         const auto& simulator = std::get<1>(GetParam());
         const auto& tcoupl    = std::get<2>(GetParam());
         const auto& pcoupl    = std::get<3>(GetParam());
-        organizeMdpFile(runner, simulator, tcoupl, pcoupl, numSteps);
-        EXPECT_EQ(0, runner->callGromppOnThisRank());
+        organizeMdpFile(runner, simulator, tcoupl, pcoupl, numSteps, doRegression);
+        CommandLine caller;
+        caller.addOption("-maxwarn", maxWarnings);
+        EXPECT_EQ(0, runner->callGromppOnThisRank(caller));
     }
 
 #if GMX_LIB_MPI
