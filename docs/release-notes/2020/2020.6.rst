@@ -18,13 +18,13 @@ Cosine acceleration failed to abort if it could not be run
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Cosine acceleration is only compatible with the leap-frog
-integrator (mdp option `integrator = md`). Gromacs did, however,
+integrator (:mdp:`integrator = md`). |Gromacs| did, however,
 accept input files requesting cosine acceleration for other
 integration algorithms, and did report viscosity-related
 quantities from these simulations. Since the cosine acceleration
 was never applied in these cases, any results obtained from
 simulations with enabled cosine acceleration and integrators
-other than `md` should be regarded as invalid.
+other than ``md`` should be regarded as invalid.
 
 :issue:`3903`
 
