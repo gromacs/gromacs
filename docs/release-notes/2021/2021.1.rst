@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix MiMiC with virtual sites
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It is likely that MiMiC with virtual sites has not worked
+correctly because the call to construct the sites was placed
+after the call that uses the sites. Now it should work, but we have not tested that it does.
+
+:issue:`3866`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
