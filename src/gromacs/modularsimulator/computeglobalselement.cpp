@@ -309,7 +309,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
             energyData_->needToSumEkinhOld(),
             flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     checkNumberOfBondedInteractions(
-            mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
+            mdlog_, cr_, totalNumberOfBondedInteractions_, *top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
     if (flags & CGLO_STOPCM && !isInit)
     {
         process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);

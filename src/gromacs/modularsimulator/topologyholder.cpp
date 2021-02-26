@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
         //       TopologyHolder has no access to the forces, so we are passing a nullptr
         //       TODO: Find a unique approach to resizing the forces in modular simulator (#3461)
         mdAlgorithmsSetupAtomData(
-                cr, inputrec, globalTopology, localTopology_.get(), fr, nullptr, mdAtoms, constr, vsite, nullptr);
+                cr, *inputrec, globalTopology, localTopology_.get(), fr, nullptr, mdAtoms, constr, vsite, nullptr);
     }
     // Send copy of initial topology to clients
     updateLocalTopology();

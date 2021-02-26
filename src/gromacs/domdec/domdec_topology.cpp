@@ -389,7 +389,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
 void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
                                    t_commrec*                     cr,
                                    int                            local_count,
-                                   const gmx_mtop_t*              top_global,
+                                   const gmx_mtop_t&              top_global,
                                    const gmx_localtop_t*          top_local,
                                    gmx::ArrayRef<const gmx::RVec> x,
                                    const matrix                   box)
@@ -451,7 +451,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
         }
     }
 
-    printMissingInteractionsAtoms(mdlog, cr, *top_global, top_local->idef);
+    printMissingInteractionsAtoms(mdlog, cr, top_global, top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
 
     std::string errorMessage;
@@ -747,9 +747,9 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
 
 void dd_make_reverse_top(FILE*                           fplog,
                          gmx_domdec_t*                   dd,
-                         const gmx_mtop_t*               mtop,
+                         const gmx_mtop_t&               mtop,
                          const gmx::VirtualSitesHandler* vsite,
-                         const t_inputrec*               ir,
+                         const t_inputrec&               inputrec,
                          const DDBondedChecking          ddBondedChecking)
 {
     if (fplog)
@@ -767,14 +767,14 @@ void dd_make_reverse_top(FILE*                           fplog,
                                       !dd->comm->systemInfo.haveSplitSettles);
 
     dd->reverse_top = std::make_unique<gmx_reverse_top_t>(
-            *mtop, ir->efep != FreeEnergyPerturbationType::No, rtOptions);
+            mtop, inputrec.efep != FreeEnergyPerturbationType::No, rtOptions);
 
     dd->nbonded_global = dd->reverse_top->impl_->numInteractionsToCheck;
 
     dd->haveExclusions = false;
-    for (const gmx_molblock_t& molb : mtop->molblock)
+    for (const gmx_molblock_t& molb : mtop.molblock)
     {
-        const int maxNumExclusionsPerAtom = getMaxNumExclusionsPerAtom(mtop->moltype[molb.type].excls);
+        const int maxNumExclusionsPerAtom = getMaxNumExclusionsPerAtom(mtop.moltype[molb.type].excls);
         // We checked above that max 1 exclusion means only self exclusions
         if (maxNumExclusionsPerAtom > 1)
         {
@@ -1440,7 +1440,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 /*! \brief Generate and store all required local bonded interactions in \p idef and local exclusions in \p lexcls */
 static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                     gmx_domdec_zones_t*     zones,
-                                    const gmx_mtop_t*       mtop,
+                                    const gmx_mtop_t&       mtop,
                                     const int*              cginfo,
                                     gmx_bool                bRCheckMB,
                                     ivec                    rcheck,
@@ -1510,7 +1510,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                                                        dd->globalAtomIndices,
                                                                        *dd->ga2la,
                                                                        zones,
-                                                                       mtop->molblock,
+                                                                       mtop.molblock,
                                                                        bRCheckMB,
                                                                        rcheck,
                                                                        bRCheck2B,
@@ -1542,13 +1542,13 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                          *dd->ga2la,
                                          zones,
                                          rt->impl_->mbi,
-                                         mtop->moltype,
+                                         mtop.moltype,
                                          cginfo,
                                          excl_t,
                                          izone,
                                          cg0t,
                                          cg1t,
-                                         mtop->intermolecularExclusionGroup);
+                                         mtop.intermolecularExclusionGroup);
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1665,7 +1665,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
 
     dd->nbonded_local = make_local_bondeds_excls(dd,
                                                  zones,
-                                                 &mtop,
+                                                 mtop,
                                                  fr->cginfo.data(),
                                                  bRCheckMB,
                                                  rcheck,
@@ -2074,8 +2074,8 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
 }
 
 void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
-                           const gmx_mtop_t*      mtop,
-                           const t_inputrec*      ir,
+                           const gmx_mtop_t&      mtop,
+                           const t_inputrec&      inputrec,
                            ArrayRef<const RVec>   x,
                            const matrix           box,
                            const DDBondedChecking ddBondedChecking,
@@ -2085,14 +2085,14 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
     bonded_distance_t bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t bd_mb = { 0, -1, -1, -1 };
 
-    bool bExclRequired = inputrecExclForces(ir);
+    bool bExclRequired = inputrecExclForces(&inputrec);
 
     *r_2b         = 0;
     *r_mb         = 0;
     int at_offset = 0;
-    for (const gmx_molblock_t& molb : mtop->molblock)
+    for (const gmx_molblock_t& molb : mtop.molblock)
     {
-        const gmx_moltype_t& molt = mtop->moltype[molb.type];
+        const gmx_moltype_t& molt = mtop.moltype[molb.type];
         if (molt.atoms.nr == 1 || molb.nmol == 0)
         {
             at_offset += molb.nmol * molt.atoms.nr;
@@ -2100,7 +2100,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
         else
         {
             t_graph graph;
-            if (ir->pbcType != PbcType::No)
+            if (inputrec.pbcType != PbcType::No)
             {
                 graph = mk_graph_moltype(molt);
             }
@@ -2109,8 +2109,8 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
             for (int mol = 0; mol < molb.nmol; mol++)
             {
                 getWholeMoleculeCoordinates(&molt,
-                                            &mtop->ffparams,
-                                            ir->pbcType,
+                                            &mtop.ffparams,
+                                            inputrec.pbcType,
                                             &graph,
                                             box,
                                             x.subArray(at_offset, molt.atoms.nr),
@@ -2138,13 +2138,13 @@ void dd_bonded_cg_distance(const gmx::MDLogger&   mdlog,
         }
     }
 
-    if (mtop->bIntermolecularInteractions)
+    if (mtop.bIntermolecularInteractions)
     {
-        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist,
+        GMX_RELEASE_ASSERT(mtop.intermolecular_ilist,
                            "We should have an ilist when intermolecular interactions are on");
 
         bonded_distance_intermol(
-                *mtop->intermolecular_ilist, ddBondedChecking, x, ir->pbcType, box, &bd_2b, &bd_mb);
+                *mtop.intermolecular_ilist, ddBondedChecking, x, inputrec.pbcType, box, &bd_2b, &bd_mb);
     }
 
     *r_2b = sqrt(bd_2b.r2);

@@ -168,7 +168,7 @@ void dd_init_bondeds(FILE*                           fplog,
                      gmx_domdec_t*                   dd,
                      const gmx_mtop_t&               mtop,
                      const gmx::VirtualSitesHandler* vsite,
-                     const t_inputrec*               ir,
+                     const t_inputrec&               inputrec,
                      DDBondedChecking                ddBondedChecking,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb);
 
@@ -268,7 +268,7 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 [[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
                                                 t_commrec*                     cr,
                                                 int                            local_count,
-                                                const gmx_mtop_t*              top_global,
+                                                const gmx_mtop_t&              top_global,
                                                 const gmx_localtop_t*          top_local,
                                                 gmx::ArrayRef<const gmx::RVec> x,
                                                 const matrix                   box);
@@ -276,9 +276,9 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE*                           fplog,
                          gmx_domdec_t*                   dd,
-                         const gmx_mtop_t*               mtop,
+                         const gmx_mtop_t&               mtop,
                          const gmx::VirtualSitesHandler* vsite,
-                         const t_inputrec*               ir,
+                         const t_inputrec&               inputrec,
                          DDBondedChecking                ddBondedChecking);
 
 /*! \brief Generate the local topology and virtual site data */
@@ -307,8 +307,8 @@ t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cgi
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
-                           const gmx_mtop_t*              mtop,
-                           const t_inputrec*              ir,
+                           const gmx_mtop_t&              mtop,
+                           const t_inputrec&              ir,
                            gmx::ArrayRef<const gmx::RVec> x,
                            const matrix                   box,
                            DDBondedChecking               ddBondedChecking,

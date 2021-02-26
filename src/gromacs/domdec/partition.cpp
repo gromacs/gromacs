@@ -2672,7 +2672,7 @@ void reset_dd_statistics_counters(gmx_domdec_t* dd)
     comm->load_pme = 0;
 }
 
-void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
+void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* fplog)
 {
     gmx_domdec_comm_t* comm = cr->dd->comm;
 
@@ -2700,7 +2700,8 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for vsites: %d x %.1f\n",
-                            (EEL_PME(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald)
+                            (EEL_PME(inputrec.coulombtype)
+                             || inputrec.coulombtype == CoulombInteractionType::Ewald)
                                     ? 3
                                     : 2,
                             av);
@@ -2711,7 +2712,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for LINCS:  %d x %.1f\n",
-                            1 + ir->nLincsIter,
+                            1 + inputrec.nLincsIter,
                             av);
                 }
                 break;
@@ -2720,7 +2721,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
     }
     fprintf(fplog, "\n");
 
-    if (comm->ddSettings.recordLoad && EI_DYNAMICS(ir->eI))
+    if (comm->ddSettings.recordLoad && EI_DYNAMICS(inputrec.eI))
     {
         print_dd_load_av(fplog, cr->dd);
     }
@@ -2735,7 +2736,7 @@ void dd_partition_system(FILE*                     fplog,
                          int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
-                         const t_inputrec*         ir,
+                         const t_inputrec&         inputrec,
                          gmx::ImdSession*          imdSession,
                          pull_t*                   pull_work,
                          t_state*                  state_local,
@@ -2768,8 +2769,8 @@ void dd_partition_system(FILE*                     fplog,
 
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
-    bBoxChanged = (bMasterState || inputrecDeform(ir));
-    if (ir->epc != PressureCoupling::No)
+    bBoxChanged = (bMasterState || inputrecDeform(&inputrec));
+    if (inputrec.epc != PressureCoupling::No)
     {
         /* With nstpcouple > 1 pressure coupling happens.
          * one step after calculating the pressure.
@@ -2780,7 +2781,7 @@ void dd_partition_system(FILE*                     fplog,
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */
-        int n = ir->nstpcouple;
+        int n = inputrec.nstpcouple;
         if (n == 1)
         {
             step_pcoupl = step - 1;
@@ -2807,7 +2808,7 @@ void dd_partition_system(FILE*                     fplog,
          * Since it requires (possibly expensive) global communication,
          * we might want to do DLB less frequently.
          */
-        if (bBoxChanged || ir->epc != PressureCoupling::No)
+        if (bBoxChanged || inputrec.epc != PressureCoupling::No)
         {
             bDoDLB = bBoxChanged;
         }
@@ -2823,14 +2824,15 @@ void dd_partition_system(FILE*                     fplog,
         bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
 
         /* Print load every nstlog, first and last step to the log file */
-        bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) || comm->n_load_collect == 0
-                    || (ir->nsteps >= 0 && (step + ir->nstlist > ir->init_step + ir->nsteps)));
+        bLogLoad = ((inputrec.nstlog > 0 && step % inputrec.nstlog == 0) || comm->n_load_collect == 0
+                    || (inputrec.nsteps >= 0
+                        && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
 
         /* Avoid extra communication due to verbose screen output
          * when nstglobalcomm is set.
          */
         if (bDoDLB || bLogLoad || bCheckWhetherToTurnDlbOn
-            || (bVerbose && (ir->nstlist == 0 || nstglobalcomm <= ir->nstlist)))
+            || (bVerbose && (inputrec.nstlist == 0 || nstglobalcomm <= inputrec.nstlist)))
         {
             get_load_distribution(dd, wcycle);
             if (DDMASTER(dd))
@@ -3143,7 +3145,7 @@ void dd_partition_system(FILE*                     fplog,
         /* With the group scheme the sorting array is part of the DD state,
          * but it just got out of sync, so mark as invalid by emptying it.
          */
-        if (ir->cutoff_scheme == CutoffScheme::Group)
+        if (inputrec.cutoff_scheme == CutoffScheme::Group)
         {
             comm->sort->sorted.clear();
         }
@@ -3225,10 +3227,10 @@ void dd_partition_system(FILE*                     fplog,
                     /* Only for inter-cg constraints we need special code */
                     n = dd_make_local_constraints(dd,
                                                   n,
-                                                  &top_global,
+                                                  top_global,
                                                   fr->cginfo.data(),
                                                   constr,
-                                                  ir->nProjOrder,
+                                                  inputrec.nProjOrder,
                                                   top_local->idef.il);
                 }
                 break;
@@ -3254,7 +3256,7 @@ void dd_partition_system(FILE*                     fplog,
     }
     else
     {
-        if (EEL_FULL(ir->coulombtype) && dd->haveExclusions)
+        if (EEL_FULL(inputrec.coulombtype) && dd->haveExclusions)
         {
             nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
         }
@@ -3276,7 +3278,7 @@ void dd_partition_system(FILE*                     fplog,
                         nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
-    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(cr, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
@@ -3303,7 +3305,7 @@ void dd_partition_system(FILE*                     fplog,
     }
 
     // The pull group construction can need the atom sets updated above
-    if (ir->bPull)
+    if (inputrec.bPull)
     {
         /* Update the local pull groups */
         dd_make_local_pull_groups(cr, pull_work);
@@ -3331,7 +3333,7 @@ void dd_partition_system(FILE*                     fplog,
         write_dd_pdb("dd_dump",
                      step,
                      "dump",
-                     &top_global,
+                     top_global,
                      cr,
                      -1,
                      state_local->x.rvec_array(),
@@ -3366,7 +3368,7 @@ void dd_partition_system(FILE*                     fplog,
 void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
                                      t_commrec*                     cr,
                                      int                            totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t*              top_global,
+                                     const gmx_mtop_t&              top_global,
                                      const gmx_localtop_t*          top_local,
                                      gmx::ArrayRef<const gmx::RVec> x,
                                      const matrix                   box,

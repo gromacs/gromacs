@@ -222,7 +222,7 @@ static void walk_out(int                       con,
 
 /*! \brief Looks up SETTLE constraints for a range of charge-groups */
 static void atoms_to_settles(gmx_domdec_t*                         dd,
-                             const gmx_mtop_t*                     mtop,
+                             const gmx_mtop_t&                     mtop,
                              const int*                            cginfo,
                              gmx::ArrayRef<const std::vector<int>> at2settle_mt,
                              int                                   cg_start,
@@ -240,16 +240,16 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
         {
             int a_gl  = dd->globalAtomIndices[a];
             int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
+            mtopGetMolblockIndex(&mtop, a_gl, &mb, nullptr, &a_mol);
 
-            const gmx_molblock_t* molb   = &mtop->molblock[mb];
+            const gmx_molblock_t* molb   = &mtop.molblock[mb];
             int                   settle = at2settle_mt[molb->type][a_mol];
 
             if (settle >= 0)
             {
                 int offset = a_gl - a_mol;
 
-                const int* ia1 = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms.data();
+                const int* ia1 = mtop.moltype[molb->type].ilist[F_SETTLE].iatoms.data();
 
                 int      a_gls[3];
                 gmx_bool bAssign = FALSE;
@@ -297,7 +297,7 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
 
 /*! \brief Looks up constraint for the local atoms */
 static void atoms_to_constraints(gmx_domdec_t*                         dd,
-                                 const gmx_mtop_t*                     mtop,
+                                 const gmx_mtop_t&                     mtop,
                                  const int*                            cginfo,
                                  gmx::ArrayRef<const ListOfLists<int>> at2con_mt,
                                  int                                   nrec,
@@ -321,12 +321,12 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
             int a_gl  = dd->globalAtomIndices[a];
             int molnr = 0;
             int a_mol = 0;
-            mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
+            mtopGetMolblockIndex(&mtop, a_gl, &mb, &molnr, &a_mol);
 
-            const gmx_molblock_t& molb = mtop->molblock[mb];
+            const gmx_molblock_t& molb = mtop.molblock[mb];
 
-            gmx::ArrayRef<const int> ia1 = mtop->moltype[molb.type].ilist[F_CONSTR].iatoms;
-            gmx::ArrayRef<const int> ia2 = mtop->moltype[molb.type].ilist[F_CONSTRNC].iatoms;
+            gmx::ArrayRef<const int> ia1 = mtop.moltype[molb.type].ilist[F_CONSTR].iatoms;
+            gmx::ArrayRef<const int> ia2 = mtop.moltype[molb.type].ilist[F_CONSTRNC].iatoms;
 
             /* Calculate the global constraint number offset for the molecule.
              * This is only required for the global index to make sure
@@ -398,7 +398,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
 
 int dd_make_local_constraints(gmx_domdec_t*                  dd,
                               int                            at_start,
-                              const struct gmx_mtop_t*       mtop,
+                              const struct gmx_mtop_t&       mtop,
                               const int*                     cginfo,
                               gmx::Constraints*              constr,
                               int                            nrec,
@@ -563,7 +563,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     return at_end;
 }
 
-void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop)
+void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
 {
     if (debug)
     {
@@ -573,16 +573,16 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop)
     dd->constraints              = new gmx_domdec_constraints_t;
     gmx_domdec_constraints_t* dc = dd->constraints;
 
-    dc->molb_con_offset.resize(mtop->molblock.size());
-    dc->molb_ncon_mol.resize(mtop->molblock.size());
+    dc->molb_con_offset.resize(mtop.molblock.size());
+    dc->molb_ncon_mol.resize(mtop.molblock.size());
 
     int ncon = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_molblock_t* molb = &mtop->molblock[mb];
+        const gmx_molblock_t* molb = &mtop.molblock[mb];
         dc->molb_con_offset[mb]    = ncon;
-        dc->molb_ncon_mol[mb]      = mtop->moltype[molb->type].ilist[F_CONSTR].size() / 3
-                                + mtop->moltype[molb->type].ilist[F_CONSTRNC].size() / 3;
+        dc->molb_ncon_mol[mb]      = mtop.moltype[molb->type].ilist[F_CONSTR].size() / 3
+                                + mtop.moltype[molb->type].ilist[F_CONSTRNC].size() / 3;
         ncon += molb->nmol * dc->molb_ncon_mol[mb];
     }
 
@@ -594,7 +594,7 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop)
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
-    int numKeysEstimate = std::min(mtop->natoms / 20, mtop->natoms / (2 * dd->nnodes));
+    int numKeysEstimate = std::min(mtop.natoms / 20, mtop.natoms / (2 * dd->nnodes));
     dc->ga2la           = std::make_unique<gmx::HashedMap<int>>(numKeysEstimate);
 
     dc->nthread = gmx_omp_nthreads_get(emntDomdec);

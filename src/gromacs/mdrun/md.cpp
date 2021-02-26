@@ -384,7 +384,7 @@ void gmx::LegacySimulator::do_md()
                             1,
                             state_global,
                             *top_global,
-                            ir,
+                            *ir,
                             imdSession,
                             pull_work,
                             state,
@@ -407,7 +407,7 @@ void gmx::LegacySimulator::do_md()
         state = state_global;
 
         /* Generate and initialize new topology */
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, *ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
 
         upd.setNumAtoms(state->natoms);
     }
@@ -691,7 +691,7 @@ void gmx::LegacySimulator::do_md()
     checkNumberOfBondedInteractions(mdlog,
                                     cr,
                                     totalNumberOfBondedInteractions,
-                                    top_global,
+                                    *top_global,
                                     &top,
                                     makeConstArrayRef(state->x),
                                     state->box,
@@ -1002,7 +1002,7 @@ void gmx::LegacySimulator::do_md()
                                     nstglobalcomm,
                                     state_global,
                                     *top_global,
-                                    ir,
+                                    *ir,
                                     imdSession,
                                     pull_work,
                                     state,
@@ -1071,7 +1071,7 @@ void gmx::LegacySimulator::do_md()
             checkNumberOfBondedInteractions(mdlog,
                                             cr,
                                             totalNumberOfBondedInteractions,
-                                            top_global,
+                                            *top_global,
                                             &top,
                                             makeConstArrayRef(state->x),
                                             state->box,
@@ -1647,7 +1647,7 @@ void gmx::LegacySimulator::do_md()
                 checkNumberOfBondedInteractions(mdlog,
                                                 cr,
                                                 totalNumberOfBondedInteractions,
-                                                top_global,
+                                                *top_global,
                                                 &top,
                                                 makeConstArrayRef(state->x),
                                                 state->box,
@@ -1891,7 +1891,7 @@ void gmx::LegacySimulator::do_md()
                                 1,
                                 state_global,
                                 *top_global,
-                                ir,
+                                *ir,
                                 imdSession,
                                 pull_work,
                                 state,

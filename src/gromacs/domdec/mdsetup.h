@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* 
  * This is called at the start of serial runs and during domain decomposition.
  *
  * \param[in]     cr         Communication record
- * \param[in]     ir         Input parameter record
+ * \param[in]     inputrec   Input parameter record
  * \param[in]     top_global The global topology
  * \param[in,out] top        The local topology
  * \param[in,out] fr         The force calculation parameter/data record
@@ -88,7 +88,7 @@ void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* 
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
 void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
-                               const t_inputrec*    ir,
+                               const t_inputrec&    inputrec,
                                const gmx_mtop_t&    top_global,
                                gmx_localtop_t*      top,
                                t_forcerec*          fr,

@@ -597,7 +597,7 @@ static TaskTarget findTaskTarget(const char* optionString)
 static void finish_run(FILE*                     fplog,
                        const gmx::MDLogger&      mdlog,
                        const t_commrec*          cr,
-                       const t_inputrec*         inputrec,
+                       const t_inputrec&         inputrec,
                        t_nrnb                    nrnb[],
                        gmx_wallcycle_t           wcycle,
                        gmx_walltime_accounting_t walltime_accounting,
@@ -622,7 +622,7 @@ static void finish_run(FILE*                     fplog,
        Further, we only report performance for dynamical integrators,
        because those are the only ones for which we plan to
        consider doing any optimizations. */
-    bool printReport = EI_DYNAMICS(inputrec->eI) && SIMMASTER(cr);
+    bool printReport = EI_DYNAMICS(inputrec.eI) && SIMMASTER(cr);
 
     if (printReport && !walltime_accounting_get_valid_finish(walltime_accounting))
     {
@@ -714,9 +714,9 @@ static void finish_run(FILE*                     fplog,
                         nbnxn_gpu_timings,
                         &pme_gpu_timings);
 
-        if (EI_DYNAMICS(inputrec->eI))
+        if (EI_DYNAMICS(inputrec.eI))
         {
-            delta_t = inputrec->delta_t;
+            delta_t = inputrec.delta_t;
         }
 
         if (fplog)
@@ -1893,7 +1893,7 @@ int Mdrunner::mdrunner()
                             cr->dd,
                             mtop,
                             vsite.get(),
-                            inputrec.get(),
+                            *inputrec,
                             domdecOptions.checkBondedInteractions ? DDBondedChecking::All
                                                                   : DDBondedChecking::ExcludeZeroLimit,
                             fr->cginfo_mb);
@@ -1992,7 +1992,7 @@ int Mdrunner::mdrunner()
     finish_run(fplog,
                mdlog,
                cr,
-               inputrec.get(),
+               *inputrec,
                &nrnb,
                wcycle,
                walltime_accounting,

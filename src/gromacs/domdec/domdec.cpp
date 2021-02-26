@@ -1706,7 +1706,7 @@ static real* get_slb_frac(const gmx::MDLogger& mdlog, const char* dir, int nc, c
     return slb_frac;
 }
 
-static int multi_body_bondeds_count(const gmx_mtop_t* mtop)
+static int multi_body_bondeds_count(const gmx_mtop_t& mtop)
 {
     int                  n     = 0;
     gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
@@ -1741,22 +1741,22 @@ static int dd_getenv(const gmx::MDLogger& mdlog, const char* env_var, int def)
     return nst;
 }
 
-static void check_dd_restrictions(const gmx_domdec_t* dd, const t_inputrec* ir, const gmx::MDLogger& mdlog)
+static void check_dd_restrictions(const gmx_domdec_t* dd, const t_inputrec& inputrec, const gmx::MDLogger& mdlog)
 {
-    if (ir->pbcType == PbcType::Screw
+    if (inputrec.pbcType == PbcType::Screw
         && (dd->numCells[XX] == 1 || dd->numCells[YY] > 1 || dd->numCells[ZZ] > 1))
     {
         gmx_fatal(FARGS,
                   "With pbc=%s can only do domain decomposition in the x-direction",
-                  c_pbcTypeNames[ir->pbcType].c_str());
+                  c_pbcTypeNames[inputrec.pbcType].c_str());
     }
 
-    if (ir->nstlist == 0)
+    if (inputrec.nstlist == 0)
     {
         gmx_fatal(FARGS, "Domain decomposition does not work with nstlist=0");
     }
 
-    if (ir->comm_mode == ComRemovalAlgorithm::Angular && ir->pbcType != PbcType::No)
+    if (inputrec.comm_mode == ComRemovalAlgorithm::Angular && inputrec.pbcType != PbcType::No)
     {
         GMX_LOG(mdlog.warning)
                 .appendText(
@@ -1811,14 +1811,14 @@ static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
  * \param [in] dlbOption   Enum value for the DLB option.
  * \param [in] bRecordLoad True if the load balancer is recording load information.
  * \param [in] mdrunOptions  Options for mdrun.
- * \param [in] ir          Pointer mdrun to input parameters.
+ * \param [in] inputrec    Pointer mdrun to input parameters.
  * \returns                DLB initial/startup state.
  */
 static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
                                          DlbOption                dlbOption,
                                          gmx_bool                 bRecordLoad,
                                          const gmx::MdrunOptions& mdrunOptions,
-                                         const t_inputrec*        ir)
+                                         const t_inputrec&        inputrec)
 {
     DlbState dlbState = DlbState::offCanTurnOn;
 
@@ -1838,11 +1838,11 @@ static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
     }
 
     /* Unsupported integrators */
-    if (!EI_DYNAMICS(ir->eI))
+    if (!EI_DYNAMICS(inputrec.eI))
     {
         auto reasonStr =
                 gmx::formatString("it is only supported with dynamics, not with integrator '%s'.",
-                                  enumValueToString(ir->eI));
+                                  enumValueToString(inputrec.eI));
         return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
@@ -2051,7 +2051,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
     systemInfo.haveInterDomainBondeds =
             (!systemInfo.moleculesAreAlwaysWhole || mtop.bIntermolecularInteractions);
     systemInfo.haveInterDomainMultiBodyBondeds =
-            (systemInfo.haveInterDomainBondeds && multi_body_bondeds_count(&mtop) > 0);
+            (systemInfo.haveInterDomainBondeds && multi_body_bondeds_count(mtop) > 0);
 
     if (systemInfo.useUpdateGroups)
     {
@@ -2145,7 +2145,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
                                                                   ? DDBondedChecking::All
                                                                   : DDBondedChecking::ExcludeZeroLimit;
 
-                dd_bonded_cg_distance(mdlog, &mtop, &ir, xGlobal, box, ddBondedChecking, &r_2b, &r_mb);
+                dd_bonded_cg_distance(mdlog, mtop, ir, xGlobal, box, ddBondedChecking, &r_2b, &r_mb);
             }
             gmx_bcast(sizeof(r_2b), &r_2b, communicator);
             gmx_bcast(sizeof(r_mb), &r_mb, communicator);
@@ -2391,8 +2391,8 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
                           const DDSystemInfo&  systemInfo,
                           const DDGridSetup&   ddGridSetup,
                           const int            numPPRanks,
-                          const gmx_mtop_t*    mtop,
-                          const t_inputrec*    ir,
+                          const gmx_mtop_t&    mtop,
+                          const t_inputrec&    ir,
                           const gmx_ddbox_t&   ddbox)
 {
     gmx_domdec_comm_t* comm = dd->comm;
@@ -2421,9 +2421,9 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
          *       but that is not yet available here. But this anyhow only
          *       affect performance up to the second dd_partition_system call.
          */
-        const int homeAtomCountEstimate = mtop->natoms / numPPRanks;
+        const int homeAtomCountEstimate = mtop.natoms / numPPRanks;
         comm->updateGroupsCog           = std::make_unique<gmx::UpdateGroupsCog>(
-                *mtop, systemInfo.updateGroupingPerMoleculetype, maxReferenceTemperature(*ir), homeAtomCountEstimate);
+                mtop, systemInfo.updateGroupingPerMoleculetype, maxReferenceTemperature(ir), homeAtomCountEstimate);
     }
 
     /* Set the DD setup given by ddGridSetup */
@@ -2503,11 +2503,11 @@ void dd_init_bondeds(FILE*                           fplog,
                      gmx_domdec_t*                   dd,
                      const gmx_mtop_t&               mtop,
                      const gmx::VirtualSitesHandler* vsite,
-                     const t_inputrec*               ir,
+                     const t_inputrec&               inputrec,
                      const DDBondedChecking          ddBondedChecking,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb)
 {
-    dd_make_reverse_top(fplog, dd, &mtop, vsite, ir, ddBondedChecking);
+    dd_make_reverse_top(fplog, dd, mtop, vsite, inputrec, ddBondedChecking);
 
     gmx_domdec_comm_t* comm = dd->comm;
 
@@ -2525,8 +2525,8 @@ void dd_init_bondeds(FILE*                           fplog,
 
 static void writeSettings(gmx::TextWriter*   log,
                           gmx_domdec_t*      dd,
-                          const gmx_mtop_t*  mtop,
-                          const t_inputrec*  ir,
+                          const gmx_mtop_t&  mtop,
+                          const t_inputrec&  ir,
                           gmx_bool           bDynLoadBal,
                           real               dlb_scale,
                           const gmx_ddbox_t* ddbox)
@@ -2582,7 +2582,7 @@ static void writeSettings(gmx::TextWriter*   log,
     }
 
     const bool haveInterDomainVsites =
-            (countInterUpdategroupVsites(*mtop, comm->systemInfo.updateGroupingPerMoleculetype) != 0);
+            (countInterUpdategroupVsites(mtop, comm->systemInfo.updateGroupingPerMoleculetype) != 0);
 
     if (comm->systemInfo.haveInterDomainBondeds || haveInterDomainVsites
         || comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)
@@ -2642,7 +2642,7 @@ static void writeSettings(gmx::TextWriter*   log,
         if (comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)
         {
             std::string separation =
-                    gmx::formatString("atoms separated by up to %d constraints", 1 + ir->nProjOrder);
+                    gmx::formatString("atoms separated by up to %d constraints", 1 + ir.nProjOrder);
             log->writeLineFormatted("%40s  %-7s %6.3f nm\n", separation.c_str(), "(-rcon)", limit);
         }
         log->ensureLineBreak();
@@ -2651,8 +2651,8 @@ static void writeSettings(gmx::TextWriter*   log,
 
 static void logSettings(const gmx::MDLogger& mdlog,
                         gmx_domdec_t*        dd,
-                        const gmx_mtop_t*    mtop,
-                        const t_inputrec*    ir,
+                        const gmx_mtop_t&    mtop,
+                        const t_inputrec&    ir,
                         real                 dlb_scale,
                         const gmx_ddbox_t*   ddbox)
 {
@@ -2674,7 +2674,7 @@ static void logSettings(const gmx::MDLogger& mdlog,
 static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
                                 gmx_domdec_t*        dd,
                                 real                 dlb_scale,
-                                const t_inputrec*    ir,
+                                const t_inputrec&    inputrec,
                                 const gmx_ddbox_t*   ddbox)
 {
     int npulse       = 0;
@@ -2683,7 +2683,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
 
     gmx_domdec_comm_t* comm = dd->comm;
 
-    bool bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
+    bool bNoCutOff = (inputrec.rvdw == 0 || inputrec.rcoulomb == 0);
 
     /* Determine the maximum number of comm. pulses in one dimension */
 
@@ -2735,7 +2735,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     }
 
     comm->maxpulse       = 1;
-    comm->bVacDLBNoLimit = (ir->pbcType == PbcType::No);
+    comm->bVacDLBNoLimit = (inputrec.pbcType == PbcType::No);
     for (int d = 0; d < dd->ndim; d++)
     {
         comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
@@ -2794,14 +2794,14 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType)
 static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
                                   gmx_domdec_t*        dd,
                                   real                 dlb_scale,
-                                  const gmx_mtop_t*    mtop,
-                                  const t_inputrec*    ir,
+                                  const gmx_mtop_t&    mtop,
+                                  const t_inputrec&    inputrec,
                                   const gmx_ddbox_t*   ddbox)
 {
     gmx_domdec_comm_t* comm        = dd->comm;
     DDRankSetup&       ddRankSetup = comm->ddRankSetup;
 
-    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    if (EEL_PME(inputrec.coulombtype) || EVDW_PME(inputrec.vdwtype))
     {
         init_ddpme(dd, &ddRankSetup.ddpme[0], 0);
         if (ddRankSetup.npmedecompdim >= 2)
@@ -2827,12 +2827,12 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     }
     if (!isDlbDisabled(comm))
     {
-        set_cell_limits_dlb(mdlog, dd, dlb_scale, ir, ddbox);
+        set_cell_limits_dlb(mdlog, dd, dlb_scale, inputrec, ddbox);
     }
 
-    logSettings(mdlog, dd, mtop, ir, dlb_scale, ddbox);
+    logSettings(mdlog, dd, mtop, inputrec, dlb_scale, ddbox);
 
-    const real vol_frac = (ir->pbcType == PbcType::No)
+    const real vol_frac = (inputrec.pbcType == PbcType::No)
                                   ? (1 - 1 / static_cast<double>(dd->nnodes))
                                   : ((1 + comm_box_frac(dd->numCells, comm->systemInfo.cutoff, *ddbox))
                                      / static_cast<double>(dd->nnodes));
@@ -2840,7 +2840,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     {
         fprintf(debug, "Volume fraction for all DD zones: %f\n", vol_frac);
     }
-    int natoms_tot = mtop->natoms;
+    int natoms_tot = mtop.natoms;
 
     dd->ga2la = new gmx_ga2la_t(natoms_tot, static_cast<int>(vol_frac * natoms_tot));
 }
@@ -2882,8 +2882,8 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
         ddSettings.recordLoad = (wallcycle_have_counter() && recload > 0);
     }
 
-    ddSettings.initialDlbState = determineInitialDlbState(
-            mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, &ir);
+    ddSettings.initialDlbState =
+            determineInitialDlbState(mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, ir);
     GMX_LOG(mdlog.info)
             .appendTextFormatted("Dynamic load balancing: %s",
                                  edlbs_names[static_cast<int>(ddSettings.initialDlbState)]);
@@ -3050,15 +3050,15 @@ gmx_domdec_t* DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomS
                   systemInfo_,
                   ddGridSetup_,
                   ddRankSetup_.numPPRanks,
-                  &mtop_,
-                  &ir_,
+                  mtop_,
+                  ir_,
                   ddbox_);
 
     setupGroupCommunication(mdlog_, ddSettings_, pmeRanks_, cr_, mtop_.natoms, dd);
 
     if (thisRankHasDuty(cr_, DUTY_PP))
     {
-        set_ddgrid_parameters(mdlog_, dd, options_.dlbScaling, &mtop_, &ir_, &ddbox_);
+        set_ddgrid_parameters(mdlog_, dd, options_.dlbScaling, mtop_, ir_, &ddbox_);
 
         setup_neighbor_relations(dd);
     }

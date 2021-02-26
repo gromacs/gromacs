@@ -303,7 +303,7 @@ void gmx::LegacySimulator::do_mimic()
                             1,
                             state_global,
                             *top_global,
-                            ir,
+                            *ir,
                             imdSession,
                             pull_work,
                             state,
@@ -324,7 +324,7 @@ void gmx::LegacySimulator::do_mimic()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, *ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
     }
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -374,7 +374,7 @@ void gmx::LegacySimulator::do_mimic()
     checkNumberOfBondedInteractions(mdlog,
                                     cr,
                                     totalNumberOfBondedInteractions,
-                                    top_global,
+                                    *top_global,
                                     &top,
                                     makeConstArrayRef(state->x),
                                     state->box,
@@ -489,7 +489,7 @@ void gmx::LegacySimulator::do_mimic()
                                 nstglobalcomm,
                                 state_global,
                                 *top_global,
-                                ir,
+                                *ir,
                                 imdSession,
                                 pull_work,
                                 state,
@@ -662,7 +662,7 @@ void gmx::LegacySimulator::do_mimic()
             checkNumberOfBondedInteractions(mdlog,
                                             cr,
                                             totalNumberOfBondedInteractions,
-                                            top_global,
+                                            *top_global,
                                             &top,
                                             makeConstArrayRef(state->x),
                                             state->box,

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
  * Copyright (c) 2010,2012,2013,2014,2015 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,13 +63,13 @@ void dd_clear_local_constraint_indices(gmx_domdec_t* dd);
 /*! \brief Sets up communication and atom indices for all local+connected constraints */
 int dd_make_local_constraints(struct gmx_domdec_t*           dd,
                               int                            at_start,
-                              const struct gmx_mtop_t*       mtop,
+                              const struct gmx_mtop_t&       mtop,
                               const int*                     cginfo,
                               gmx::Constraints*              constr,
                               int                            nrec,
                               gmx::ArrayRef<InteractionList> il_local);
 
 /*! \brief Initializes the data structures for constraint communication */
-void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop);
+void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop);
 
 #endif

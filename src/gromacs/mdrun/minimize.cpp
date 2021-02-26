@@ -435,7 +435,7 @@ static void init_em(FILE*                fplog,
                             1,
                             state_global,
                             *top_global,
-                            ir,
+                            *ir,
                             imdSession,
                             pull_work,
                             &ems->s,
@@ -458,7 +458,7 @@ static void init_em(FILE*                fplog,
         state_change_natoms(&ems->s, ems->s.natoms);
 
         mdAlgorithmsSetupAtomData(
-                cr, ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
+                cr, *ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -803,7 +803,7 @@ static void em_dd_partition_system(FILE*                fplog,
                         1,
                         nullptr,
                         *top_global,
-                        ir,
+                        *ir,
                         imdSession,
                         pull_work,
                         &ems->s,

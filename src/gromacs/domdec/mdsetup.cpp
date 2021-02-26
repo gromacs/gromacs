@@ -64,7 +64,7 @@ namespace gmx
  * for initialization and atom-data setup.
  */
 void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
-                               const t_inputrec*    ir,
+                               const t_inputrec&    inputrec,
                                const gmx_mtop_t&    top_global,
                                gmx_localtop_t*      top,
                                t_forcerec*          fr,
@@ -99,7 +99,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     }
 
     atoms2md(&top_global,
-             ir,
+             &inputrec,
              numAtomIndex,
              usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(),
              numHomeAtoms,
@@ -112,7 +112,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     }
     else
     {
-        gmx_mtop_generate_local_top(top_global, top, ir->efep != FreeEnergyPerturbationType::No);
+        gmx_mtop_generate_local_top(top_global, top, inputrec.efep != FreeEnergyPerturbationType::No);
     }
 
     if (vsite)
