@@ -266,6 +266,7 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-TSAN.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-UBSAN.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-10.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-10-coverage.gitlab-ci.yml'  
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-7-cuda-10.2.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-8-cuda-11.0.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-8-cuda-11.0-release.gitlab-ci.yml'

@@ -685,6 +685,12 @@ if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
+if (GMX_BUILD_FOR_COVERAGE)
+    # Set flags for coverage build here instead having to do so manually
+    set(CMAKE_C_FLAGS "-g --coverage")
+    set(CMAKE_CXX_FLAGS "-g --coverage")
+endif()
+
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
@@ -738,15 +744,6 @@ endif()
 #COPYING file: Only necessary for binary distributions.
 #Simpler to always install.
 install(FILES COPYING DESTINATION ${GMX_INSTALL_GMXDATADIR} COMPONENT data)
-
-if (GMX_BUILD_FOR_COVERAGE)
-    # Code heavy with asserts makes conditional coverage close to useless metric,
-    # as by design most of the false branches are impossible to trigger in
-    # correctly functioning code.  And the benefit of testing those that could
-    # be triggered by using an API against its specification isn't usually
-    # worth the effort.
-    add_definitions(-DNDEBUG -DGMX_DISABLE_ASSERTS)
-endif()
 
 if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
