@@ -107,7 +107,7 @@ void dd_move_x_constraints(gmx_domdec_t*            dd,
                            const matrix             box,
                            gmx::ArrayRef<gmx::RVec> x0,
                            gmx::ArrayRef<gmx::RVec> x1,
-                           gmx_bool                 bX1IsCoord)
+                           bool                     bX1IsCoord)
 {
     if (dd->constraint_comm)
     {

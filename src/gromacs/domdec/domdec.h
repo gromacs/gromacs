@@ -111,7 +111,7 @@ gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(con
  *
  * This means it can be reset, even after a new DD partitioning.
  */
-void dd_store_state(struct gmx_domdec_t* dd, t_state* state);
+void dd_store_state(struct gmx_domdec_t& dd, t_state* state);
 
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t* domdec_zones(struct gmx_domdec_t* dd);
@@ -123,13 +123,13 @@ int dd_numAtomsZones(const gmx_domdec_t& dd);
 int dd_numHomeAtoms(const gmx_domdec_t& dd);
 
 /*! \brief Returns the atom range in the local state for atoms that need to be present in mdatoms */
-int dd_natoms_mdatoms(const gmx_domdec_t* dd);
+int dd_natoms_mdatoms(const gmx_domdec_t& dd);
 
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */
-int dd_natoms_vsite(const gmx_domdec_t* dd);
+int dd_natoms_vsite(const gmx_domdec_t& dd);
 
 /*! \brief Sets the atom range for atom in the local state for atoms received in constraints communication */
-void dd_get_constraint_range(const gmx_domdec_t* dd, int* at_start, int* at_end);
+void dd_get_constraint_range(const gmx_domdec_t& dd, int* at_start, int* at_end);
 
 /*! \libinternal \brief Struct for passing around the number of PME domains */
 struct NumPmeDomains
@@ -145,10 +145,10 @@ NumPmeDomains getNumPmeDomains(const gmx_domdec_t* dd);
 std::vector<int> get_pme_ddranks(const t_commrec* cr, int pmenodeid);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
-int dd_pme_maxshift_x(const gmx_domdec_t* dd);
+int dd_pme_maxshift_x(const gmx_domdec_t& dd);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim y */
-int dd_pme_maxshift_y(const gmx_domdec_t* dd);
+int dd_pme_maxshift_y(const gmx_domdec_t& dd);
 
 /*! \brief Return whether constraints, not including settles, cross domain boundaries */
 bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
@@ -176,7 +176,7 @@ void dd_init_bondeds(FILE*                           fplog,
 bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd);
 
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
-gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType);
+bool dd_bonded_molpbc(const gmx_domdec_t& dd, PbcType pbcType);
 
 /*! \brief Change the DD non-bonded communication cut-off.
  *
@@ -188,7 +188,7 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType);
  * \param[in] x                Position vector, used for computing the dimensions of the system
  * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list cutoff distance
  */
-gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested);
+bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested);
 
 /*! \brief Set up communication for averaging GPU wait times over domains
  *
@@ -245,7 +245,7 @@ void dd_move_x_constraints(struct gmx_domdec_t*     dd,
                            const matrix             box,
                            gmx::ArrayRef<gmx::RVec> x0,
                            gmx::ArrayRef<gmx::RVec> x1,
-                           gmx_bool                 bX1IsCoord);
+                           bool                     bX1IsCoord);
 
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x);
@@ -294,10 +294,10 @@ void dd_make_local_top(struct gmx_domdec_t*       dd,
                        gmx_localtop_t*            ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
-void dd_sort_local_top(gmx_domdec_t* dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
+void dd_sort_local_top(gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
 
 /*! \brief Construct local state */
-void dd_init_local_state(struct gmx_domdec_t* dd, const t_state* state_global, t_state* local_state);
+void dd_init_local_state(gmx_domdec_t& dd, const t_state* state_global, t_state* local_state);
 
 /*! \brief Generate a list of links between atoms that are linked by bonded interactions
  *

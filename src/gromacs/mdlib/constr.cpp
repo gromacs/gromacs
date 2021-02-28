@@ -223,7 +223,7 @@ bool Constraints::havePerturbedConstraints() const
 }
 
 //! Clears constraint quantities for atoms in nonlocal region.
-static void clear_constraint_quantity_nonlocal(gmx_domdec_t* dd, ArrayRef<RVec> q)
+static void clear_constraint_quantity_nonlocal(gmx_domdec_t& dd, ArrayRef<RVec> q)
 {
     int nonlocal_at_start, nonlocal_at_end, at;
 
@@ -269,7 +269,7 @@ static void write_constr_pdb(const char*          fn,
     if (DOMAINDECOMP(cr))
     {
         dd = cr->dd;
-        dd_get_constraint_range(dd, &dd_ac0, &dd_ac1);
+        dd_get_constraint_range(*dd, &dd_ac0, &dd_ac1);
         start  = 0;
         homenr = dd_ac1;
     }
@@ -500,7 +500,7 @@ bool Constraints::Impl::apply(bool                      bLog,
              * We never actually use these values, but we do increment them,
              * so we should avoid uninitialized variables and overflows.
              */
-            clear_constraint_quantity_nonlocal(cr->dd, v.unpaddedArrayRef());
+            clear_constraint_quantity_nonlocal(*cr->dd, v.unpaddedArrayRef());
         }
     }
 

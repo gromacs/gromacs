@@ -424,7 +424,7 @@ static void init_em(FILE*                fplog,
 
     if (DOMAINDECOMP(cr))
     {
-        dd_init_local_state(cr->dd, state_global, &ems->s);
+        dd_init_local_state(*cr->dd, state_global, &ems->s);
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog,
@@ -448,7 +448,7 @@ static void init_em(FILE*                fplog,
                             nrnb,
                             nullptr,
                             FALSE);
-        dd_store_state(cr->dd, &ems->s);
+        dd_store_state(*cr->dd, &ems->s);
     }
     else
     {
@@ -816,7 +816,7 @@ static void em_dd_partition_system(FILE*                fplog,
                         nrnb,
                         wcycle,
                         FALSE);
-    dd_store_state(cr->dd, &ems->s);
+    dd_store_state(*cr->dd, &ems->s);
 }
 
 namespace

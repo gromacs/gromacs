@@ -111,7 +111,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
     if (DOMAINDECOMP(cr))
     {
         auto localState = std::make_unique<t_state>();
-        dd_init_local_state(cr->dd, globalState, localState.get());
+        dd_init_local_state(*cr->dd, globalState, localState.get());
         stateHasVelocities = ((localState->flags & enumValueToBitMask(StateEntry::V)) != 0);
         setLocalState(std::move(localState));
     }

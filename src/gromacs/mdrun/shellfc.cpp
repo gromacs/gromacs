@@ -1008,10 +1008,10 @@ void relax_shell_flexcon(FILE*                         fplog,
 
     if (DOMAINDECOMP(cr))
     {
-        nat = dd_natoms_vsite(cr->dd);
+        nat = dd_natoms_vsite(*cr->dd);
         if (nflexcon > 0)
         {
-            dd_get_constraint_range(cr->dd, &dd_ac0, &dd_ac1);
+            dd_get_constraint_range(*cr->dd, &dd_ac0, &dd_ac1);
             nat = std::max(nat, dd_ac1);
         }
     }

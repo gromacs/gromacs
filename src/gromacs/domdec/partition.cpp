@@ -3294,8 +3294,8 @@ void dd_partition_system(FILE*                     fplog,
                                 mdatoms->sqrt_c6B,
                                 mdatoms->sigmaA,
                                 mdatoms->sigmaB,
-                                dd_pme_maxshift_x(dd),
-                                dd_pme_maxshift_y(dd));
+                                dd_pme_maxshift_x(*dd),
+                                dd_pme_maxshift_y(*dd));
     }
 
     if (dd->atomSets != nullptr)

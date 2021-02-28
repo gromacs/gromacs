@@ -292,7 +292,7 @@ void gmx::LegacySimulator::do_mimic()
     {
         stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
-        dd_init_local_state(cr->dd, state_global, state);
+        dd_init_local_state(*cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
         dd_partition_system(fplog,

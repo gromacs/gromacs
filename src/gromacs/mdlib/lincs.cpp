@@ -1898,7 +1898,7 @@ void set_lincs(const InteractionDefinitions& idef,
         {
             int start;
 
-            dd_get_constraint_range(cr->dd, &start, &natoms);
+            dd_get_constraint_range(*cr->dd, &start, &natoms);
         }
         else
         {

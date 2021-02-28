@@ -1067,7 +1067,7 @@ void init_forcerec(FILE*                            fplog,
         }
         else
         {
-            forcerec->bMolPBC = dd_bonded_molpbc(commrec->dd, forcerec->pbcType);
+            forcerec->bMolPBC = dd_bonded_molpbc(*commrec->dd, forcerec->pbcType);
 
             /* With Ewald surface correction it is useful to support e.g. running water
              * in parallel with update groups.

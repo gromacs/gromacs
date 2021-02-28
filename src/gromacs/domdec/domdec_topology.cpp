@@ -1683,9 +1683,9 @@ void dd_make_local_top(gmx_domdec_t*       dd,
     ltop->idef.ilsort = ilsortUNKNOWN;
 }
 
-void dd_sort_local_top(gmx_domdec_t* dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop)
+void dd_sort_local_top(gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop)
 {
-    if (dd->reverse_top->impl_->ilsort == ilsortNO_FE)
+    if (dd.reverse_top->impl_->ilsort == ilsortNO_FE)
     {
         ltop->idef.ilsort = ilsortNO_FE;
     }
@@ -1695,7 +1695,7 @@ void dd_sort_local_top(gmx_domdec_t* dd, const t_mdatoms* mdatoms, gmx_localtop_
     }
 }
 
-void dd_init_local_state(gmx_domdec_t* dd, const t_state* state_global, t_state* state_local)
+void dd_init_local_state(gmx_domdec_t& dd, const t_state* state_global, t_state* state_local)
 {
     int buf[NITEM_DD_INIT_LOCAL_STATE];
 
@@ -1707,7 +1707,7 @@ void dd_init_local_state(gmx_domdec_t* dd, const t_state* state_global, t_state*
         buf[3] = state_global->nhchainlength;
         buf[4] = state_global->dfhist ? state_global->dfhist->nlambda : 0;
     }
-    dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE * sizeof(int), buf);
+    dd_bcast(&dd, NITEM_DD_INIT_LOCAL_STATE * sizeof(int), buf);
 
     init_gtc_state(state_local, buf[1], buf[2], buf[3]);
     init_dfhist_state(state_local, buf[4]);

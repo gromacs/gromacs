@@ -205,20 +205,20 @@ gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(con
     return dd.comm->systemInfo.updateGroupingPerMoleculetype;
 }
 
-void dd_store_state(gmx_domdec_t* dd, t_state* state)
+void dd_store_state(gmx_domdec_t& dd, t_state* state)
 {
-    if (state->ddp_count != dd->ddp_count)
+    if (state->ddp_count != dd.ddp_count)
     {
         gmx_incons("The MD state does not match the domain decomposition state");
     }
 
-    state->cg_gl.resize(dd->ncg_home);
-    for (int i = 0; i < dd->ncg_home; i++)
+    state->cg_gl.resize(dd.ncg_home);
+    for (int i = 0; i < dd.ncg_home; i++)
     {
-        state->cg_gl[i] = dd->globalAtomGroupIndices[i];
+        state->cg_gl[i] = dd.globalAtomGroupIndices[i];
     }
 
-    state->ddp_count_cg_gl = dd->ddp_count;
+    state->ddp_count_cg_gl = dd.ddp_count;
 }
 
 gmx_domdec_zones_t* domdec_zones(gmx_domdec_t* dd)
@@ -236,24 +236,24 @@ int dd_numHomeAtoms(const gmx_domdec_t& dd)
     return dd.comm->atomRanges.numHomeAtoms();
 }
 
-int dd_natoms_mdatoms(const gmx_domdec_t* dd)
+int dd_natoms_mdatoms(const gmx_domdec_t& dd)
 {
     /* We currently set mdatoms entries for all atoms:
      * local + non-local + communicated for vsite + constraints
      */
 
-    return dd->comm->atomRanges.numAtomsTotal();
+    return dd.comm->atomRanges.numAtomsTotal();
 }
 
-int dd_natoms_vsite(const gmx_domdec_t* dd)
+int dd_natoms_vsite(const gmx_domdec_t& dd)
 {
-    return dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites);
+    return dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites);
 }
 
-void dd_get_constraint_range(const gmx_domdec_t* dd, int* at_start, int* at_end)
+void dd_get_constraint_range(const gmx_domdec_t& dd, int* at_start, int* at_end)
 {
-    *at_start = dd->comm->atomRanges.start(DDAtomRanges::Type::Constraints);
-    *at_end   = dd->comm->atomRanges.end(DDAtomRanges::Type::Constraints);
+    *at_start = dd.comm->atomRanges.start(DDAtomRanges::Type::Constraints);
+    *at_end   = dd.comm->atomRanges.end(DDAtomRanges::Type::Constraints);
 }
 
 void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_wallcycle* wcycle)
@@ -670,15 +670,14 @@ static std::vector<int> dd_interleaved_pme_ranks(const DDRankSetup& ddRankSetup)
     return pmeRanks;
 }
 
-static int gmx_ddcoord2pmeindex(const t_commrec* cr, int x, int y, int z)
+static int gmx_ddcoord2pmeindex(const gmx_domdec_t& dd, int x, int y, int z)
 {
     ivec coords;
 
-    gmx_domdec_t* dd = cr->dd;
-    coords[XX]       = x;
-    coords[YY]       = y;
-    coords[ZZ]       = z;
-    const int slab   = ddindex2pmeindex(dd->comm->ddRankSetup, dd_index(dd->numCells, coords));
+    coords[XX]     = x;
+    coords[YY]     = y;
+    coords[ZZ]     = z;
+    const int slab = ddindex2pmeindex(dd.comm->ddRankSetup, dd_index(dd.numCells, coords));
 
     return slab;
 }
@@ -706,7 +705,7 @@ static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
         {
             if (cr->dd->comm->ddRankSetup.usePmeOnlyRanks)
             {
-                nodeid = ddindex + gmx_ddcoord2pmeindex(cr, x, y, z);
+                nodeid = ddindex + gmx_ddcoord2pmeindex(*cr->dd, x, y, z);
             }
             else
             {
@@ -818,7 +817,7 @@ std::vector<int> get_pme_ddranks(const t_commrec* cr, const int pmenodeid)
                 else
                 {
                     /* The slab corresponds to the nodeid in the PME group */
-                    if (gmx_ddcoord2pmeindex(cr, x, y, z) == pmenodeid)
+                    if (gmx_ddcoord2pmeindex(*cr->dd, x, y, z) == pmenodeid)
                     {
                         ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
                     }
@@ -944,9 +943,9 @@ static void init_ddpme(gmx_domdec_t* dd, gmx_ddpme_t* ddpme, int dimind)
     set_slb_pme_dim_f(dd, ddpme->dim, &ddpme->slb_dim_f);
 }
 
-int dd_pme_maxshift_x(const gmx_domdec_t* dd)
+int dd_pme_maxshift_x(const gmx_domdec_t& dd)
 {
-    const DDRankSetup& ddRankSetup = dd->comm->ddRankSetup;
+    const DDRankSetup& ddRankSetup = dd.comm->ddRankSetup;
 
     if (ddRankSetup.ddpme[0].dim == XX)
     {
@@ -958,9 +957,9 @@ int dd_pme_maxshift_x(const gmx_domdec_t* dd)
     }
 }
 
-int dd_pme_maxshift_y(const gmx_domdec_t* dd)
+int dd_pme_maxshift_y(const gmx_domdec_t& dd)
 {
-    const DDRankSetup& ddRankSetup = dd->comm->ddRankSetup;
+    const DDRankSetup& ddRankSetup = dd.comm->ddRankSetup;
 
     if (ddRankSetup.ddpme[0].dim == YY)
     {
@@ -2779,15 +2778,15 @@ bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd)
     return dd.comm->systemInfo.moleculesAreAlwaysWhole;
 }
 
-gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType)
+bool dd_bonded_molpbc(const gmx_domdec_t& dd, PbcType pbcType)
 {
     /* If each molecule is a single charge group
      * or we use domain decomposition for each periodic dimension,
      * we do not need to take pbc into account for the bonded interactions.
      */
-    return (pbcType != PbcType::No && dd->comm->systemInfo.haveInterDomainBondeds
-            && !(dd->numCells[XX] > 1 && dd->numCells[YY] > 1
-                 && (dd->numCells[ZZ] > 1 || pbcType == PbcType::XY)));
+    return (pbcType != PbcType::No && dd.comm->systemInfo.haveInterDomainBondeds
+            && !(dd.numCells[XX] > 1 && dd.numCells[YY] > 1
+                 && (dd.numCells[ZZ] > 1 || pbcType == PbcType::XY)));
 }
 
 /*! \brief Sets grid size limits and PP-PME setup, prints settings to log */
@@ -3156,7 +3155,7 @@ static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::Array
     return TRUE;
 }
 
-gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested)
+bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested)
 {
     bool bCutoffAllowed = test_dd_cutoff(cr, box, x, cutoffRequested);
 

@@ -82,9 +82,9 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
 
     if (usingDomDec)
     {
-        numAtomIndex  = dd_natoms_mdatoms(cr->dd);
+        numAtomIndex  = dd_natoms_mdatoms(*cr->dd);
         numHomeAtoms  = dd_numHomeAtoms(*cr->dd);
-        numTotalAtoms = dd_natoms_mdatoms(cr->dd);
+        numTotalAtoms = dd_natoms_mdatoms(*cr->dd);
     }
     else
     {
@@ -108,7 +108,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
-        dd_sort_local_top(cr->dd, mdatoms, top);
+        dd_sort_local_top(*cr->dd, mdatoms, top);
     }
     else
     {
