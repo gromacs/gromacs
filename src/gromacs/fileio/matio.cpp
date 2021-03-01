@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 #include <regex>
 #include <string>
 
@@ -256,29 +257,28 @@ static char* line2string(char** line)
 }
 
 //! If a label named \c label is found in \c line, return it. Otherwise return empty string.
-static std::string findLabelInLine(const std::string& line, const std::string& label)
+static std::optional<std::string> findLabelInLine(const std::string& line, const std::string& label)
 {
-    std::regex  re(".*" + label + "\"(.*)\"");
+    std::regex  re(".*\\s" + label + ":[\\s]*\"(.*)\"");
     std::smatch match;
     if (std::regex_search(line, match, re) && match.size() > 1)
     {
-        return match.str(1);
+        return std::make_optional<std::string>(match.str(1));
     }
-    return std::string();
+    return std::nullopt;
 }
 
 //! Read and return a matrix from \c in
 static t_matrix read_xpm_entry(FILE* in)
 {
-    char *       line_buf = nullptr, *line = nullptr, *str, buf[256] = { 0 };
-    int          i, m, col_len, nch                                  = 0, llmax;
-    int          llalloc = 0;
-    unsigned int r, g, b;
-    double       u;
-    gmx_bool     bGetOnWithIt, bSetLine;
-    t_xpmelmt    c;
-
-    t_matrix mm;
+    char *                     line_buf = nullptr, *line = nullptr, *str;
+    std::optional<std::string> title, legend, xLabel, yLabel, matrixType;
+    int                        i, m, col_len, nch = 0, llmax;
+    int                        llalloc = 0;
+    unsigned int               r, g, b;
+    double                     u;
+    gmx_bool                   bGetOnWithIt, bSetLine;
+    t_xpmelmt                  c;
 
     llmax = STRLEN;
 
@@ -286,11 +286,26 @@ static t_matrix read_xpm_entry(FILE* in)
            && (std::strncmp(line_buf, "static", 6) != 0))
     {
         std::string lineString = line_buf;
-        mm.title               = findLabelInLine(lineString, "title");
-        mm.legend              = findLabelInLine(lineString, "legend");
-        mm.label_x             = findLabelInLine(lineString, "x-label");
-        mm.label_y             = findLabelInLine(lineString, "y-label");
-        findLabelInLine(lineString, "type"); // discard the returned string
+        if (!title.has_value())
+        {
+            title = findLabelInLine(lineString, "title");
+        }
+        if (!legend.has_value())
+        {
+            legend = findLabelInLine(lineString, "legend");
+        }
+        if (!xLabel.has_value())
+        {
+            xLabel = findLabelInLine(lineString, "x-label");
+        }
+        if (!yLabel.has_value())
+        {
+            yLabel = findLabelInLine(lineString, "y-label");
+        }
+        if (!matrixType.has_value())
+        {
+            matrixType = findLabelInLine(lineString, "type");
+        }
     }
 
     if (!line_buf || strncmp(line_buf, "static", 6) != 0)
@@ -298,7 +313,14 @@ static t_matrix read_xpm_entry(FILE* in)
         gmx_input("Invalid XPixMap");
     }
 
-    if (buf[0] && (gmx_strcasecmp(buf, "Discrete") == 0))
+    t_matrix mm;
+
+    mm.title   = title.value_or("");
+    mm.legend  = legend.value_or("");
+    mm.label_x = xLabel.value_or("");
+    mm.label_y = yLabel.value_or("");
+
+    if (matrixType.has_value() && (gmx_strcasecmp(matrixType->c_str(), "Discrete") == 0))
     {
         mm.bDiscrete = TRUE;
     }
@@ -438,7 +460,6 @@ static t_matrix read_xpm_entry(FILE* in)
         {
             line = std::strstr(line, "x-axis");
             skipstr(line);
-            mm.axis_x.resize(0);
             mm.axis_x.reserve(mm.nx + 1);
             while (sscanf(line, "%lf", &u) == 1)
             {
@@ -458,7 +479,6 @@ static t_matrix read_xpm_entry(FILE* in)
         {
             line = std::strstr(line, "y-axis");
             skipstr(line);
-            mm.axis_y.resize(0);
             mm.axis_y.reserve(mm.ny + 1);
             while (sscanf(line, "%lf", &u) == 1)
             {

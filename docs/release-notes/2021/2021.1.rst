@@ -46,12 +46,20 @@ usually lead to obviously incorrect outliers in analysis output.
 
 :issue:`3900`
 
-Fix range checking bug in gmx covar
-"""""""""""""""""""""""""""""""""""
+Fix range checking bug in ``gmx covar``
+"""""""""""""""""""""""""""""""""""""""
 
 A check was inverted causing range checking to be applied wrong.
 
 :issue:`3902`
+
+Fix various bugs in ``gmx xpm2ps``
+""""""""""""""""""""""""""""""""""
+
+Numerous minor issues were introduced in refactoring since
+|Gromacs| 5.1, now fixed.
+
+:issue:`3881`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -929,7 +929,7 @@ static void ps_mat(const char*             outf,
             ps_rgb(&out, BLACK);
             ps_strfont(&out, psr->titfont, psr->titfontsize);
             std::string buf;
-            if (!mat2.empty() || mat[i].title == mat2[i].title)
+            if (mat2.empty() || mat[i].title == mat2[i].title)
             {
                 buf = mat[i].title;
             }
