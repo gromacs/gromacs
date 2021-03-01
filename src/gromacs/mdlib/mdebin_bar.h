@@ -130,10 +130,10 @@ struct t_mde_delta_h_coll
 
 
 /* initialize a collection of delta h histograms/sets
-    dhc = the collection
-    ir = the input record */
+    dhc      = the collection
+    inputrec = the input record */
 
-void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir);
+void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec);
 
 void done_mde_delta_h_coll(t_mde_delta_h_coll* dhc);
 

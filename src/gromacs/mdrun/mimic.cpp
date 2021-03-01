@@ -255,8 +255,8 @@ void gmx::LegacySimulator::do_mimic()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   top_global,
-                                   ir,
+                                   *top_global,
+                                   *ir,
                                    pull_work,
                                    mdoutf_get_fp_dhdl(outf),
                                    true,

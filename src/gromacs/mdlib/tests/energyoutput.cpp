@@ -621,8 +621,8 @@ TEST_P(EnergyOutputTest, CheckOutput)
     MdModulesNotifier             mdModulesNotifier;
     std::unique_ptr<EnergyOutput> energyOutput =
             std::make_unique<EnergyOutput>(energyFile_,
-                                           &mtop_,
-                                           &inputrec_,
+                                           mtop_,
+                                           inputrec_,
                                            nullptr,
                                            nullptr,
                                            parameters.isRerun,

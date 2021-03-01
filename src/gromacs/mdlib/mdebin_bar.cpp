@@ -380,23 +380,23 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
 }
 
 /* initialize the collection*/
-void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
+void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
 {
     int       i, j, n;
     double*   lambda_vec;
-    int       ndhmax = ir->nstenergy / ir->nstcalcenergy;
-    t_lambda* fep    = ir->fepvals.get();
+    int       ndhmax = inputrec.nstenergy / inputrec.nstcalcenergy;
+    t_lambda* fep    = inputrec.fepvals.get();
 
-    dhc->temperature    = ir->opts.ref_t[0]; /* only store system temperature */
+    dhc->temperature    = inputrec.opts.ref_t[0]; /* only store system temperature */
     dhc->start_time     = 0.;
-    dhc->delta_time     = ir->delta_t * ir->fepvals->nstdhdl;
+    dhc->delta_time     = inputrec.delta_t * inputrec.fepvals->nstdhdl;
     dhc->start_time_set = FALSE;
 
     /* this is the compatibility lambda value. If it is >=0, it is valid,
        and there is either an old-style lambda or a slow growth simulation. */
-    dhc->start_lambda = ir->fepvals->init_lambda;
+    dhc->start_lambda = inputrec.fepvals->init_lambda;
     /* for continuous change of lambda values */
-    dhc->delta_lambda = ir->fepvals->delta_lambda * ir->fepvals->nstdhdl;
+    dhc->delta_lambda = inputrec.fepvals->delta_lambda * inputrec.fepvals->nstdhdl;
 
     if (dhc->start_lambda < 0)
     {
@@ -465,7 +465,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         {
             for (auto i : keysOf(fep->separate_dvdl))
             {
-                if (ir->fepvals->separate_dvdl[i])
+                if (inputrec.fepvals->separate_dvdl[i])
                 {
                     dhc->ndh += 1;
                     dhc->ndhdl += 1;
@@ -473,25 +473,25 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
             }
         }
         /* add the lambdas */
-        dhc->nlambda = ir->fepvals->lambda_stop_n - ir->fepvals->lambda_start_n;
+        dhc->nlambda = inputrec.fepvals->lambda_stop_n - inputrec.fepvals->lambda_start_n;
         dhc->ndh += dhc->nlambda;
         /* another compatibility check */
         if (dhc->start_lambda < 0)
         {
             /* include one more for the specification of the state, by lambda or
                fep_state*/
-            if (ir->expandedvals->elmcmove > LambdaMoveCalculation::No)
+            if (inputrec.expandedvals->elmcmove > LambdaMoveCalculation::No)
             {
                 dhc->ndh += 1;
                 bExpanded = TRUE;
             }
             /* whether to print energies */
-            if (ir->fepvals->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
+            if (inputrec.fepvals->edHdLPrintEnergy != FreeEnergyPrintEnergy::No)
             {
                 dhc->ndh += 1;
                 bEnergy = TRUE;
             }
-            if (ir->epc > PressureCoupling::No)
+            if (inputrec.epc > PressureCoupling::No)
             {
                 dhc->ndh += 1; /* include pressure-volume work */
                 bPV = TRUE;
@@ -508,8 +508,8 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         {
             dhc->dh_expanded = dhc->dh + n;
             mde_delta_h_init(dhc->dh + n,
-                             ir->fepvals->dh_hist_size,
-                             ir->fepvals->dh_hist_spacing,
+                             inputrec.fepvals->dh_hist_size,
+                             inputrec.fepvals->dh_hist_spacing,
                              ndhmax,
                              dhbtEXPANDED,
                              0,
@@ -520,8 +520,14 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         if (bEnergy)
         {
             dhc->dh_energy = dhc->dh + n;
-            mde_delta_h_init(
-                    dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing, ndhmax, dhbtEN, 0, 0, nullptr);
+            mde_delta_h_init(dhc->dh + n,
+                             inputrec.fepvals->dh_hist_size,
+                             inputrec.fepvals->dh_hist_spacing,
+                             ndhmax,
+                             dhbtEN,
+                             0,
+                             0,
+                             nullptr);
             n++;
         }
         /* add the dhdl's */
@@ -531,12 +537,12 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
             dhc->dh_dhdl = dhc->dh + n;
             for (auto i : keysOf(fep->separate_dvdl))
             {
-                if (ir->fepvals->separate_dvdl[i])
+                if (inputrec.fepvals->separate_dvdl[i])
                 {
                     /* we give it init_lambda for compatibility */
                     mde_delta_h_init(dhc->dh + n,
-                                     ir->fepvals->dh_hist_size,
-                                     ir->fepvals->dh_hist_spacing,
+                                     inputrec.fepvals->dh_hist_size,
+                                     inputrec.fepvals->dh_hist_spacing,
                                      ndhmax,
                                      dhbtDHDL,
                                      n_lambda_components,
@@ -560,7 +566,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         /* add the lambdas */
         dhc->dh_du = dhc->dh + n;
         snew(lambda_vec, n_lambda_components);
-        for (i = ir->fepvals->lambda_start_n; i < ir->fepvals->lambda_stop_n; i++)
+        for (i = inputrec.fepvals->lambda_start_n; i < inputrec.fepvals->lambda_stop_n; i++)
         {
             int k = 0;
 
@@ -573,8 +579,8 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
             }
 
             mde_delta_h_init(dhc->dh + n,
-                             ir->fepvals->dh_hist_size,
-                             ir->fepvals->dh_hist_spacing,
+                             inputrec.fepvals->dh_hist_size,
+                             inputrec.fepvals->dh_hist_spacing,
                              ndhmax,
                              dhbtDH,
                              0,
@@ -586,8 +592,14 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         if (bPV)
         {
             dhc->dh_pv = dhc->dh + n;
-            mde_delta_h_init(
-                    dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing, ndhmax, dhbtPV, 0, 0, nullptr);
+            mde_delta_h_init(dhc->dh + n,
+                             inputrec.fepvals->dh_hist_size,
+                             inputrec.fepvals->dh_hist_spacing,
+                             ndhmax,
+                             dhbtPV,
+                             0,
+                             0,
+                             nullptr);
             n++;
         }
     }

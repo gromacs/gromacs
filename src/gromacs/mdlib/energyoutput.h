@@ -134,7 +134,7 @@ public:
      *
      * \param[in] fp_ene     Energy output file.
      * \param[in] mtop       Topology.
-     * \param[in] ir         Input parameters.
+     * \param[in] inputrec   Input parameters.
      * \param[in] pull_work  Pulling simulations data
      * \param[in] fp_dhdl    FEP file.
      * \param[in] isRerun    Is this is a rerun instead of the simulations.
@@ -143,8 +143,8 @@ public:
      * \param[in] mdModulesNotifier Notifications to MD modules.
      */
     EnergyOutput(ener_file*               fp_ene,
-                 const gmx_mtop_t*        mtop,
-                 const t_inputrec*        ir,
+                 const gmx_mtop_t&        mtop,
+                 const t_inputrec&        inputrec,
                  const pull_t*            pull_work,
                  FILE*                    fp_dhdl,
                  bool                     isRerun,

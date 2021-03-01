@@ -124,8 +124,8 @@ namespace gmx
  * \todo Write free-energy output also to energy file (after adding more tests)
  */
 EnergyOutput::EnergyOutput(ener_file*               fp_ene,
-                           const gmx_mtop_t*        mtop,
-                           const t_inputrec*        ir,
+                           const gmx_mtop_t&        mtop,
+                           const t_inputrec&        inputrec,
                            const pull_t*            pull_work,
                            FILE*                    fp_dhdl,
                            bool                     isRerun,
@@ -157,18 +157,18 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     int                     i, j, ni, nj, n, k, kk, ncon, nset;
     bool                    bBHAM, b14;
 
-    if (EI_DYNAMICS(ir->eI))
+    if (EI_DYNAMICS(inputrec.eI))
     {
-        delta_t_ = ir->delta_t;
+        delta_t_ = inputrec.delta_t;
     }
     else
     {
         delta_t_ = 0;
     }
 
-    groups = &mtop->groups;
+    groups = &mtop.groups;
 
-    bBHAM = (mtop->ffparams.numTypes() > 0) && (mtop->ffparams.functype[0] == F_BHAM);
+    bBHAM = (mtop.ffparams.numTypes() > 0) && (mtop.ffparams.functype[0] == F_BHAM);
     b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
 
     ncon         = gmx_mtop_ftype_count(mtop, F_CONSTR);
@@ -178,7 +178,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     nCrmsd_      = 0;
     if (bConstr)
     {
-        if (ncon > 0 && ir->eConstrAlg == ConstraintAlgorithm::Lincs)
+        if (ncon > 0 && inputrec.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             nCrmsd_ = 1;
         }
@@ -205,40 +205,40 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
 
     if (!isRerun)
     {
-        bEner_[F_EKIN] = EI_DYNAMICS(ir->eI);
-        bEner_[F_ETOT] = EI_DYNAMICS(ir->eI);
-        bEner_[F_TEMP] = EI_DYNAMICS(ir->eI);
+        bEner_[F_EKIN] = EI_DYNAMICS(inputrec.eI);
+        bEner_[F_ETOT] = EI_DYNAMICS(inputrec.eI);
+        bEner_[F_TEMP] = EI_DYNAMICS(inputrec.eI);
 
-        bEner_[F_ECONSERVED] = integratorHasConservedEnergyQuantity(ir);
-        bEner_[F_PDISPCORR]  = (ir->eDispCorr != DispersionCorrectionType::No);
+        bEner_[F_ECONSERVED] = integratorHasConservedEnergyQuantity(&inputrec);
+        bEner_[F_PDISPCORR]  = (inputrec.eDispCorr != DispersionCorrectionType::No);
         bEner_[F_PRES]       = true;
     }
 
-    bEner_[F_LJ]           = !bBHAM;
-    bEner_[F_BHAM]         = bBHAM;
-    bEner_[F_EQM]          = ir->bQMMM;
-    bEner_[F_RF_EXCL]      = (EEL_RF(ir->coulombtype) && ir->cutoff_scheme == CutoffScheme::Group);
-    bEner_[F_COUL_RECIP]   = EEL_FULL(ir->coulombtype);
-    bEner_[F_LJ_RECIP]     = EVDW_PME(ir->vdwtype);
+    bEner_[F_LJ]   = !bBHAM;
+    bEner_[F_BHAM] = bBHAM;
+    bEner_[F_EQM]  = inputrec.bQMMM;
+    bEner_[F_RF_EXCL] = (EEL_RF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
+    bEner_[F_COUL_RECIP]   = EEL_FULL(inputrec.coulombtype);
+    bEner_[F_LJ_RECIP]     = EVDW_PME(inputrec.vdwtype);
     bEner_[F_LJ14]         = b14;
     bEner_[F_COUL14]       = b14;
     bEner_[F_LJC14_Q]      = false;
     bEner_[F_LJC_PAIRS_NB] = false;
 
 
-    bEner_[F_DVDL_COUL] = (ir->efep != FreeEnergyPerturbationType::No)
-                          && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul];
-    bEner_[F_DVDL_VDW] = (ir->efep != FreeEnergyPerturbationType::No)
-                         && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw];
-    bEner_[F_DVDL_BONDED] = (ir->efep != FreeEnergyPerturbationType::No)
-                            && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded];
+    bEner_[F_DVDL_COUL] = (inputrec.efep != FreeEnergyPerturbationType::No)
+                          && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul];
+    bEner_[F_DVDL_VDW] = (inputrec.efep != FreeEnergyPerturbationType::No)
+                         && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw];
+    bEner_[F_DVDL_BONDED] = (inputrec.efep != FreeEnergyPerturbationType::No)
+                            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded];
     bEner_[F_DVDL_RESTRAINT] =
-            (ir->efep != FreeEnergyPerturbationType::No)
-            && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Restraint];
-    bEner_[F_DKDL] = (ir->efep != FreeEnergyPerturbationType::No)
-                     && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass];
-    bEner_[F_DVDL] = (ir->efep != FreeEnergyPerturbationType::No)
-                     && ir->fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep];
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Restraint];
+    bEner_[F_DKDL] = (inputrec.efep != FreeEnergyPerturbationType::No)
+                     && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass];
+    bEner_[F_DVDL] = (inputrec.efep != FreeEnergyPerturbationType::No)
+                     && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep];
 
     bEner_[F_CONSTR]   = false;
     bEner_[F_CONSTRNC] = false;
@@ -247,10 +247,10 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     bEner_[F_COUL_SR] = true;
     bEner_[F_EPOT]    = true;
 
-    bEner_[F_DISPCORR]   = (ir->eDispCorr != DispersionCorrectionType::No);
+    bEner_[F_DISPCORR]   = (inputrec.eDispCorr != DispersionCorrectionType::No);
     bEner_[F_DISRESVIOL] = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
     bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-    bEner_[F_COM_PULL]   = ((ir->bPull && pull_have_potential(*pull_work)) || ir->bRot);
+    bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
 
     MdModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
     mdModulesNotifier.simulationSetupNotifications_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
@@ -269,16 +269,16 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         }
     }
 
-    epc_            = isRerun ? PressureCoupling::No : ir->epc;
-    bDiagPres_      = !TRICLINIC(ir->ref_p) && !isRerun;
-    ref_p_          = (ir->ref_p[XX][XX] + ir->ref_p[YY][YY] + ir->ref_p[ZZ][ZZ]) / DIM;
-    bTricl_         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
-    bDynBox_        = inputrecDynamicBox(ir);
-    etc_            = isRerun ? TemperatureCoupling::No : ir->etc;
-    bNHC_trotter_   = inputrecNvtTrotter(ir) && !isRerun;
-    bPrintNHChains_ = ir->bPrintNHChains && !isRerun;
-    bMTTK_          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)) && !isRerun;
-    bMu_            = inputrecNeedMutot(ir);
+    epc_       = isRerun ? PressureCoupling::No : inputrec.epc;
+    bDiagPres_ = !TRICLINIC(inputrec.ref_p) && !isRerun;
+    ref_p_     = (inputrec.ref_p[XX][XX] + inputrec.ref_p[YY][YY] + inputrec.ref_p[ZZ][ZZ]) / DIM;
+    bTricl_    = TRICLINIC(inputrec.compress) || TRICLINIC(inputrec.deform);
+    bDynBox_   = inputrecDynamicBox(&inputrec);
+    etc_       = isRerun ? TemperatureCoupling::No : inputrec.etc;
+    bNHC_trotter_   = inputrecNvtTrotter(&inputrec) && !isRerun;
+    bPrintNHChains_ = inputrec.bPrintNHChains && !isRerun;
+    bMTTK_          = (inputrecNptTrotter(&inputrec) || inputrecNphTrotter(&inputrec)) && !isRerun;
+    bMu_            = inputrecNeedMutot(&inputrec);
     bPres_          = !isRerun;
 
     ebin_ = mk_ebin();
@@ -326,7 +326,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     {
         imu_ = get_ebin_space(ebin_, asize(mu_nm), mu_nm, unit_dipole_D);
     }
-    if (ir->cos_accel != 0)
+    if (inputrec.cos_accel != 0)
     {
         ivcos_ = get_ebin_space(ebin_, asize(vcos_nm), vcos_nm, unit_vel);
         ivisc_ = get_ebin_space(ebin_, asize(visc_nm), visc_nm, unit_invvisc_SI);
@@ -406,7 +406,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
 
     nTC_  = isRerun ? 0 : groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
-    nNHC_ = ir->opts.nhchainlength; /* shorthand for number of NH chains */
+    nNHC_ = inputrec.opts.nhchainlength; /* shorthand for number of NH chains */
     if (bMTTK_)
     {
         nTCP_ = 1; /* assume only one possible coupling system for barostat
@@ -535,31 +535,31 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
 
     /* check whether we're going to write dh histograms */
     dhc_ = nullptr;
-    if (ir->fepvals->separate_dhdl_file == SeparateDhdlFile::No)
+    if (inputrec.fepvals->separate_dhdl_file == SeparateDhdlFile::No)
     {
         /* Currently dh histograms are only written with dynamics */
-        if (EI_DYNAMICS(ir->eI))
+        if (EI_DYNAMICS(inputrec.eI))
         {
             snew(dhc_, 1);
 
-            mde_delta_h_coll_init(dhc_, ir);
+            mde_delta_h_coll_init(dhc_, inputrec);
         }
         fp_dhdl_ = nullptr;
-        snew(dE_, ir->fepvals->n_lambda);
+        snew(dE_, inputrec.fepvals->n_lambda);
     }
     else
     {
         fp_dhdl_ = fp_dhdl;
-        snew(dE_, ir->fepvals->n_lambda);
+        snew(dE_, inputrec.fepvals->n_lambda);
     }
-    if (ir->bSimTemp)
+    if (inputrec.bSimTemp)
     {
         int i;
-        snew(temperatures_, ir->fepvals->n_lambda);
-        numTemperatures_ = ir->fepvals->n_lambda;
-        for (i = 0; i < ir->fepvals->n_lambda; i++)
+        snew(temperatures_, inputrec.fepvals->n_lambda);
+        numTemperatures_ = inputrec.fepvals->n_lambda;
+        for (i = 0; i < inputrec.fepvals->n_lambda; i++)
         {
-            temperatures_[i] = ir->simtempvals->temperatures[i];
+            temperatures_[i] = inputrec.simtempvals->temperatures[i];
         }
     }
     else
@@ -567,9 +567,9 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         numTemperatures_ = 0;
     }
 
-    if (EI_MD(ir->eI) && !simulationsShareState)
+    if (EI_MD(inputrec.eI) && !simulationsShareState)
     {
-        conservedEnergyTracker_ = std::make_unique<EnergyDriftTracker>(mtop->natoms);
+        conservedEnergyTracker_ = std::make_unique<EnergyDriftTracker>(mtop.natoms);
     }
 }
 

@@ -1250,8 +1250,8 @@ void LegacySimulator::do_cg()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   top_global,
-                                   inputrec,
+                                   *top_global,
+                                   *inputrec,
                                    pull_work,
                                    nullptr,
                                    false,
@@ -1967,8 +1967,8 @@ void LegacySimulator::do_lbfgs()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   top_global,
-                                   inputrec,
+                                   *top_global,
+                                   *inputrec,
                                    pull_work,
                                    nullptr,
                                    false,
@@ -2735,8 +2735,8 @@ void LegacySimulator::do_steep()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   top_global,
-                                   inputrec,
+                                   *top_global,
+                                   *inputrec,
                                    pull_work,
                                    nullptr,
                                    false,
