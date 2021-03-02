@@ -205,7 +205,7 @@ gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(con
     return dd.comm->systemInfo.updateGroupingPerMoleculetype;
 }
 
-void dd_store_state(gmx_domdec_t& dd, t_state* state)
+void dd_store_state(const gmx_domdec_t& dd, t_state* state)
 {
     if (state->ddp_count != dd.ddp_count)
     {

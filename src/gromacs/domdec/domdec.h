@@ -111,7 +111,7 @@ gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(con
  *
  * This means it can be reset, even after a new DD partitioning.
  */
-void dd_store_state(struct gmx_domdec_t& dd, t_state* state);
+void dd_store_state(const gmx_domdec_t& dd, t_state* state);
 
 /*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
 struct gmx_domdec_zones_t* domdec_zones(struct gmx_domdec_t* dd);
@@ -294,10 +294,10 @@ void dd_make_local_top(struct gmx_domdec_t*       dd,
                        gmx_localtop_t*            ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
-void dd_sort_local_top(gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
+void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
 
 /*! \brief Construct local state */
-void dd_init_local_state(gmx_domdec_t& dd, const t_state* state_global, t_state* local_state);
+void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_state* local_state);
 
 /*! \brief Generate a list of links between atoms that are linked by bonded interactions
  *
