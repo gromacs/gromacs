@@ -155,7 +155,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
         totalMassA += nmol * atom->m;
         totalMassB += nmol * atom->mB;
 
-        if (atom->ptype == eptVSite)
+        if (atom->ptype == ParticleType::VSite)
         {
             md->haveVsites = TRUE;
         }

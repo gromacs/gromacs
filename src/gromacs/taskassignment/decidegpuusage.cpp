@@ -657,7 +657,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
     }
     const auto particleTypes = gmx_mtop_particletype_count(mtop);
-    if (particleTypes[eptShell] > 0)
+    if (particleTypes[ParticleType::Shell] > 0)
     {
         errorMessage += "Shells are not supported.\n";
     }

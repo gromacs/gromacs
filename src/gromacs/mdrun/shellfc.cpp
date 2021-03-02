@@ -270,22 +270,21 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
 #define NBT asize(bondtypes)
     const gmx_ffparams_t* ffparams;
 
-    const std::array<int, eptNR> numParticles = gmx_mtop_particletype_count(*mtop);
+    const gmx::EnumerationArray<ParticleType, int> numParticles = gmx_mtop_particletype_count(*mtop);
     if (fplog)
     {
         /* Print the number of each particle type */
-        int pType = 0;
-        for (const auto& n : numParticles)
+        for (const auto entry : gmx::keysOf(numParticles))
         {
-            if (n != 0)
+            const int number = numParticles[entry];
+            if (number != 0)
             {
-                fprintf(fplog, "There are: %d %ss\n", n, ptype_str[pType]);
+                fprintf(fplog, "There are: %d %ss\n", number, enumValueToString(entry));
             }
-            pType++;
         }
     }
 
-    nshell = numParticles[eptShell];
+    nshell = numParticles[ParticleType::Shell];
 
     if (nshell == 0 && nflexcon == 0)
     {
@@ -328,7 +327,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     {
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (local.ptype == eptShell)
+        if (local.ptype == ParticleType::Shell)
         {
             shell_index[i] = nshell++;
         }
@@ -370,12 +369,12 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
                         case F_ANHARM_POL:
-                            if (atom[ia[1]].ptype == eptShell)
+                            if (atom[ia[1]].ptype == ParticleType::Shell)
                             {
                                 aS = ia[1];
                                 aN = ia[2];
                             }
-                            else if (atom[ia[2]].ptype == eptShell)
+                            else if (atom[ia[2]].ptype == ParticleType::Shell)
                             {
                                 aS = ia[2];
                                 aN = ia[1];
@@ -584,7 +583,7 @@ void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellf
     shells.clear();
     for (int i = a0; i < a1; i++)
     {
-        if (md->ptype[i] == eptShell)
+        if (md->ptype[i] == ParticleType::Shell)
         {
             if (dd)
             {
@@ -853,9 +852,8 @@ static void init_adir(gmx_shellfc_t*            shfc,
                       ArrayRef<const real>      lambda,
                       real*                     dvdlambda)
 {
-    double          dt, w_dt;
-    int             n, d;
-    unsigned short* ptype;
+    double dt, w_dt;
+    int    n, d;
 
     if (DOMAINDECOMP(cr))
     {
@@ -872,7 +870,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
     rvec* x_old = as_rvec_array(xOld.paddedArrayRef().data());
     rvec* x     = as_rvec_array(xCurrent.paddedArrayRef().data());
 
-    ptype = md->ptype;
+    const ParticleType* ptype = md->ptype;
 
     dt = ir->delta_t;
 
@@ -883,7 +881,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
+            if ((ptype[n] != ParticleType::VSite) && (ptype[n] != ParticleType::Shell))
             {
                 xnold[n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
                 xnew[n][d]  = 2 * x[n][d] - x_old[n][d] + f[n][d] * w_dt * dt;

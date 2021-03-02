@@ -1180,7 +1180,7 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
         (*newatom)[atM[j]].m = (*newatom)[atM[j]].mB = mM[j];
         (*newatom)[atM[j]].q = (*newatom)[atM[j]].qB = 0.0;
         (*newatom)[atM[j]].type = (*newatom)[atM[j]].typeB = tpM;
-        (*newatom)[atM[j]].ptype                           = eptAtom;
+        (*newatom)[atM[j]].ptype                           = ParticleType::Atom;
         (*newatom)[atM[j]].resind                          = at->atom[i0].resind;
         (*newatom)[atM[j]].elem[0]                         = 'M';
         (*newatom)[atM[j]].elem[1]                         = '\0';
@@ -1376,7 +1376,7 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     (*newatom)[atM].m = (*newatom)[atM].mB = mM;
     (*newatom)[atM].q = (*newatom)[atM].qB = 0.0;
     (*newatom)[atM].type = (*newatom)[atM].typeB = tpM;
-    (*newatom)[atM].ptype                        = eptAtom;
+    (*newatom)[atM].ptype                        = ParticleType::Atom;
     (*newatom)[atM].resind                       = at->atom[i0].resind;
     (*newatom)[atM].elem[0]                      = 'M';
     (*newatom)[atM].elem[1]                      = '\0';
@@ -2174,7 +2174,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         newatom[ni0 + j].m = newatom[ni0 + j].mB = mtot / NMASS;
                         newatom[ni0 + j].q = newatom[ni0 + j].qB = 0.0;
                         newatom[ni0 + j].type = newatom[ni0 + j].typeB = tpM;
-                        newatom[ni0 + j].ptype                         = eptAtom;
+                        newatom[ni0 + j].ptype                         = ParticleType::Atom;
                         newatom[ni0 + j].resind                        = at->atom[i0].resind;
                         newatom[ni0 + j].elem[0]                       = 'M';
                         newatom[ni0 + j].elem[1]                       = '\0';

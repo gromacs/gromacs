@@ -47,11 +47,18 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-const char* ptype_str[eptNR + 1] = { "Atom", "Nucleus", "Shell", "Bond", "VSite", nullptr };
+const char* enumValueToString(ParticleType enumValue)
+{
+    static constexpr gmx::EnumerationArray<ParticleType, const char*> particleTypeNames = {
+        "Atom", "Nucleus", "Shell", "Bond", "VSite"
+    };
+    return particleTypeNames[enumValue];
+}
 
 void init_atom(t_atoms* at)
 {
@@ -173,7 +180,7 @@ void init_t_atoms(t_atoms* atoms, int natoms, gmx_bool bPdbinfo)
 
 void gmx_pdbinfo_init_default(t_pdbinfo* pdbinfo)
 {
-    pdbinfo->type         = epdbATOM;
+    pdbinfo->type         = PdbRecordType::Atom;
     pdbinfo->atomnr       = 0;
     pdbinfo->altloc       = ' ';
     pdbinfo->atomnm[0]    = '\0';
@@ -268,7 +275,7 @@ static void pr_atom(FILE* fp, int indent, const char* title, const t_atom* atom,
                     i,
                     atom[i].type,
                     atom[i].typeB,
-                    ptype_str[atom[i].ptype],
+                    enumValueToString(atom[i].ptype),
                     atom[i].m,
                     atom[i].q,
                     atom[i].mB,
@@ -342,7 +349,7 @@ static void compareAtom(FILE* fp, int index, const t_atom* a1, const t_atom* a2,
     if (a2)
     {
         cmp_us(fp, "atom.type", index, a1->type, a2->type);
-        cmp_us(fp, "atom.ptype", index, a1->ptype, a2->ptype);
+        cmpEnum<ParticleType>(fp, "atom.ptype", a1->ptype, a2->ptype);
         cmp_int(fp, "atom.resind", index, a1->resind, a2->resind);
         cmp_int(fp, "atom.atomnumber", index, a1->atomnumber, a2->atomnumber);
         cmp_real(fp, "atom.m", index, a1->m, a2->m, relativeTolerance, absoluteTolerance);
@@ -386,7 +393,7 @@ static void comparePdbinfo(FILE*            fp,
                            real             absoluteTolerance)
 {
     fprintf(fp, "comparing t_pdbinfo\n");
-    cmp_int(fp, "type", pdb, pdb1.type, pdb2.type);
+    cmpEnum<PdbRecordType>(fp, "type", pdb1.type, pdb2.type);
     cmp_int(fp, "atomnr", pdb, pdb1.atomnr, pdb2.atomnr);
     cmp_uc(fp, "altloc", pdb, pdb1.altloc, pdb2.altloc);
     cmp_str(fp, "atomnm", pdb, pdb1.atomnm, pdb2.atomnm);

@@ -353,9 +353,9 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
     return n;
 }
 
-std::array<int, eptNR> gmx_mtop_particletype_count(const gmx_mtop_t& mtop)
+gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_mtop_t& mtop)
 {
-    std::array<int, eptNR> count = { { 0 } };
+    gmx::EnumerationArray<ParticleType, int> count = { { 0 } };
 
     for (const auto& molblock : mtop.molblock)
     {
@@ -1004,7 +1004,7 @@ std::vector<int> get_atom_index(const gmx_mtop_t* mtop)
     {
         const t_atom& local = atomP.atom();
         int           index = atomP.globalAtomNumber();
-        if (local.ptype == eptAtom)
+        if (local.ptype == ParticleType::Atom)
         {
             atom_index.push_back(index);
         }

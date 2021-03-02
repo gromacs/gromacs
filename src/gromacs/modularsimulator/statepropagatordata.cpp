@@ -149,7 +149,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
             // Set the velocities of vsites, shells and frozen atoms to zero
             for (int i = 0; i < mdatoms->homenr; i++)
             {
-                if (mdatoms->ptype[i] == eptShell)
+                if (mdatoms->ptype[i] == ParticleType::Shell)
                 {
                     clear_rvec(v[i]);
                 }

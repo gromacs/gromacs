@@ -48,6 +48,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+enum class ParticleType : int;
+
 typedef struct t_mdatoms
 {
     //! Total mass in state A
@@ -111,7 +113,7 @@ typedef struct t_mdatoms
     //! Type of atom in the B state
     int* typeB;
     //! Particle type
-    unsigned short* ptype;
+    ParticleType* ptype;
     //! Group index for temperature coupling
     unsigned short* cTC;
     //! Group index for energy matrix

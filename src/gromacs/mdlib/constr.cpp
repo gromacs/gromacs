@@ -304,7 +304,7 @@ static void write_constr_pdb(const char*          fn,
         }
         mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, nullptr);
         gmx_fprintf_pdb_atomline(out,
-                                 epdbATOM,
+                                 PdbRecordType::Atom,
                                  ii + 1,
                                  anm,
                                  ' ',

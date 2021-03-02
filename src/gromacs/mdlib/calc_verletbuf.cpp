@@ -291,7 +291,7 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
                     int  aj    = ilist.iatoms[i + j + 2];
                     real coeff = ffparams.iparams[ilist.iatoms[i + j]].vsiten.a;
                     real m_aj;
-                    if (moltype.atoms.atom[aj].ptype == eptVSite)
+                    if (moltype.atoms.atom[aj].ptype == ParticleType::VSite)
                     {
                         m_aj = vsite_m[aj];
                     }
@@ -397,7 +397,7 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
 
         for (a = 0; a < atoms->nr; a++)
         {
-            if (atoms->atom[a].ptype == eptVSite)
+            if (atoms->atom[a].ptype == ParticleType::VSite)
             {
                 prop[a].mass = vsite_m[a];
             }

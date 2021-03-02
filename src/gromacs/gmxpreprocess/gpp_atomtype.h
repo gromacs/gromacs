@@ -60,7 +60,7 @@ struct t_atomtypes;
 class InteractionOfType;
 struct InteractionsOfType;
 struct t_symtab;
-
+enum class ParticleType : int;
 namespace gmx
 {
 template<typename>
@@ -127,7 +127,7 @@ public:
      * \param[in] nt Internal number of atom type.
      * \returns The optional particle type.
      */
-    std::optional<int> atomParticleTypeFromAtomType(int nt) const;
+    std::optional<ParticleType> atomParticleTypeFromAtomType(int nt) const;
 
     /*! \brief
      * Get bond atom parameter of atom from internal atom type number.

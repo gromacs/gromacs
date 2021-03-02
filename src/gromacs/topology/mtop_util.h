@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 struct gmx_localtop_t;
 struct t_atom;
@@ -207,7 +208,7 @@ int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype);
 int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, int unsigned if_flags);
 
 /* Returns the count of atoms for each particle type */
-std::array<int, eptNR> gmx_mtop_particletype_count(const gmx_mtop_t& mtop);
+gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_mtop_t& mtop);
 
 /* Returns a single t_atoms struct for the whole system */
 t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop);

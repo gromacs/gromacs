@@ -43,6 +43,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
@@ -135,6 +136,6 @@ void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-std::array<int, eptNR> countPtypes(FILE* fplog, const gmx_mtop_t* mtop);
+gmx::EnumerationArray<ParticleType, int> countPtypes(FILE* fplog, const gmx_mtop_t* mtop);
 
 #endif

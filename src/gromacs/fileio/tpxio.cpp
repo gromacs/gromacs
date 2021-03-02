@@ -2294,7 +2294,7 @@ static void do_atom(gmx::ISerializer* serializer, t_atom* atom)
     serializer->doReal(&atom->qB);
     serializer->doUShort(&atom->type);
     serializer->doUShort(&atom->typeB);
-    serializer->doInt(&atom->ptype);
+    serializer->doEnumAsInt(&atom->ptype);
     serializer->doInt(&atom->resind);
     serializer->doInt(&atom->atomnumber);
     if (serializer->reading())

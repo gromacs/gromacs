@@ -597,7 +597,7 @@ static int low_make_reverse_ilist(const InteractionLists&  il_mt,
                             r_il[r_index[a] + count[a] + 2 + nral] = 0;
                             for (int j = 2; j < 1 + nral; j++)
                             {
-                                if (atom[ia[j]].ptype == eptVSite)
+                                if (atom[ia[j]].ptype == ParticleType::VSite)
                                 {
                                     r_il[r_index[a] + count[a] + 2 + nral] |= (2 << j);
                                 }

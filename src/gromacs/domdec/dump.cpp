@@ -120,7 +120,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
                         cx[ZZ] = grid_r[i * 2 + z][ZZ];
                         mvmul(tric, cx, r);
                         gmx_fprintf_pdb_atomline(out,
-                                                 epdbATOM,
+                                                 PdbRecordType::Atom,
                                                  a++,
                                                  "CA",
                                                  ' ',
@@ -208,7 +208,7 @@ void write_dd_pdb(const char*       fn,
             b = dd->comm->zones.n + 1;
         }
         gmx_fprintf_pdb_atomline(out,
-                                 epdbATOM,
+                                 PdbRecordType::Atom,
                                  ii + 1,
                                  atomname,
                                  ' ',

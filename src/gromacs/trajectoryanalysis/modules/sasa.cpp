@@ -242,7 +242,7 @@ void connolly_plot(const char*  fn,
             xnew[ii0][ZZ]           = dots[k++];
             if (atoms->pdbinfo != nullptr)
             {
-                atoms->pdbinfo[ii0].type   = epdbATOM;
+                atoms->pdbinfo[ii0].type   = PdbRecordType::Atom;
                 atoms->pdbinfo[ii0].atomnr = ii0;
                 atoms->pdbinfo[ii0].bfac   = 0.0;
                 atoms->pdbinfo[ii0].occup  = 0.0;
@@ -266,7 +266,7 @@ void connolly_plot(const char*  fn,
         {
             int ii0                 = i;
             aaa.atomname[ii0]       = put_symtab(symtab, atomnm);
-            aaa.pdbinfo[ii0].type   = epdbATOM;
+            aaa.pdbinfo[ii0].type   = PdbRecordType::Atom;
             aaa.pdbinfo[ii0].atomnr = ii0;
             aaa.atom[ii0].resind    = 0;
             xnew[ii0][XX]           = dots[k++];

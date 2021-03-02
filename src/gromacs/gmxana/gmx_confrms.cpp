@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -758,7 +758,7 @@ int gmx_confrms(int argc, char* argv[])
                 /* Avoid segfaults when writing the pdb-file */
                 for (i = 0; i < atoms1->nr; i++)
                 {
-                    atoms1->pdbinfo[i].type         = eptAtom;
+                    atoms1->pdbinfo[i].type         = PdbRecordType::Atom;
                     atoms1->pdbinfo[i].occup        = 1.00;
                     atoms1->pdbinfo[i].bAnisotropic = FALSE;
                     if (bBfac)
@@ -787,7 +787,7 @@ int gmx_confrms(int argc, char* argv[])
 
                 for (i = 0; i < atoms2->nr; i++)
                 {
-                    atoms2->pdbinfo[i].type         = eptAtom;
+                    atoms2->pdbinfo[i].type         = PdbRecordType::Atom;
                     atoms2->pdbinfo[i].occup        = 1.00;
                     atoms2->pdbinfo[i].bAnisotropic = FALSE;
                     if (bBfac)

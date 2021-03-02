@@ -468,7 +468,8 @@ static void check_vel(gmx_mtop_t* mtop, rvec v[])
     {
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (local.ptype == eptShell || local.ptype == eptBond || local.ptype == eptVSite)
+        if (local.ptype == ParticleType::Shell || local.ptype == ParticleType::Bond
+            || local.ptype == ParticleType::VSite)
         {
             clear_rvec(v[i]);
         }
@@ -482,7 +483,7 @@ static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, warninp* wi)
     for (const AtomProxy atomP : AtomRange(*mtop))
     {
         const t_atom& local = atomP.atom();
-        if (local.ptype == eptShell || local.ptype == eptBond)
+        if (local.ptype == ParticleType::Shell || local.ptype == ParticleType::Bond)
         {
             nshells++;
         }
@@ -1171,7 +1172,8 @@ static int nrdf_internal(const t_atoms* atoms)
     for (i = 0; i < atoms->nr; i++)
     {
         /* Vsite ptype might not be set here yet, so also check the mass */
-        if ((atoms->atom[i].ptype == eptAtom || atoms->atom[i].ptype == eptNucleus) && atoms->atom[i].m > 0)
+        if ((atoms->atom[i].ptype == ParticleType::Atom || atoms->atom[i].ptype == ParticleType::Nucleus)
+            && atoms->atom[i].m > 0)
         {
             nmass++;
         }
@@ -1454,7 +1456,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t* molt, gmx_bool bVerbose, w
     int numDanglingAtoms = 0;
     for (int a = 0; a < atoms->nr; a++)
     {
-        if (atoms->atom[a].ptype != eptVSite && count[a] == 0)
+        if (atoms->atom[a].ptype != ParticleType::VSite && count[a] == 0)
         {
             if (bVerbose)
             {

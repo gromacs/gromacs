@@ -145,7 +145,7 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
 double check_mol(const gmx_mtop_t* mtop, warninp* wi)
 {
     char   buf[256];
-    int    i, ri, pt;
+    int    i, ri;
     double q;
     real   m, mB;
 
@@ -158,13 +158,13 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
         for (i = 0; (i < atoms->nr); i++)
         {
             q += molb.nmol * atoms->atom[i].q;
-            m  = atoms->atom[i].m;
-            mB = atoms->atom[i].mB;
-            pt = atoms->atom[i].ptype;
+            m               = atoms->atom[i].m;
+            mB              = atoms->atom[i].mB;
+            ParticleType pt = atoms->atom[i].ptype;
             /* If the particle is an atom or a nucleus it must have a mass,
              * else, if it is a shell, a vsite or a bondshell it can have mass zero
              */
-            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
+            if (((m <= 0.0) || (mB <= 0.0)) && ((pt == ParticleType::Atom) || (pt == ParticleType::Nucleus)))
             {
                 ri = atoms->atom[i].resind;
                 sprintf(buf,
@@ -176,7 +176,7 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
                         mB);
                 warning_error(wi, buf);
             }
-            else if (((m != 0) || (mB != 0)) && (pt == eptVSite))
+            else if (((m != 0) || (mB != 0)) && (pt == ParticleType::VSite))
             {
                 ri = atoms->atom[i].resind;
                 sprintf(buf,

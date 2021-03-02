@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,38 +49,40 @@
 struct t_symtab;
 
 /* The particle type */
-enum
+enum class ParticleType : int
 {
-    eptAtom,
-    eptNucleus,
-    eptShell,
-    eptBond,
-    eptVSite,
-    eptNR
+    Atom,
+    Nucleus,
+    Shell,
+    Bond,
+    VSite,
+    Count
 };
 
 /* The particle type names */
-extern const char* ptype_str[eptNR + 1];
+const char* enumValueToString(ParticleType enumValue);
 
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file
  */
-enum PDB_record
+enum class PdbRecordType : int
 {
-    epdbATOM,
-    epdbHETATM,
-    epdbANISOU,
-    epdbCRYST1,
-    epdbCOMPND,
-    epdbMODEL,
-    epdbENDMDL,
-    epdbTER,
-    epdbHEADER,
-    epdbTITLE,
-    epdbREMARK,
-    epdbCONECT,
-    epdbNR
+    Atom,
+    Hetatm,
+    Anisou,
+    Cryst1,
+    Compound,
+    Model,
+    EndModel,
+    Ter,
+    Header,
+    Title,
+    Remark,
+    Conect,
+    Count
 };
+
+const char* enumValueToString(PdbRecordType enumValue);
 
 typedef struct t_atom
 {
@@ -88,7 +90,7 @@ typedef struct t_atom
     real           mB, qB;     /* Mass and charge for Free Energy calc */
     unsigned short type;       /* Atom type                            */
     unsigned short typeB;      /* Atom type for Free Energy calc       */
-    int            ptype;      /* Particle type                        */
+    ParticleType   ptype;      /* Particle type                        */
     int            resind;     /* Index into resinfo (in t_atoms)      */
     int            atomnumber; /* Atomic Number or 0                   */
     char           elem[4];    /* Element name                         */
@@ -106,14 +108,14 @@ typedef struct t_resinfo
 
 typedef struct t_pdbinfo
 {
-    int      type;         /* PDB record name                      */
-    int      atomnr;       /* PDB atom number                      */
-    char     altloc;       /* Alternate location indicator         */
-    char     atomnm[6];    /* True atom name including leading spaces */
-    real     occup;        /* Occupancy                            */
-    real     bfac;         /* B-factor                             */
-    gmx_bool bAnisotropic; /* (an)isotropic switch                 */
-    int      uij[6];       /* Anisotropic B-factor                 */
+    PdbRecordType type;         /* PDB record name                      */
+    int           atomnr;       /* PDB atom number                      */
+    char          altloc;       /* Alternate location indicator         */
+    char          atomnm[6];    /* True atom name including leading spaces */
+    real          occup;        /* Occupancy                            */
+    real          bfac;         /* B-factor                             */
+    gmx_bool      bAnisotropic; /* (an)isotropic switch                 */
+    int           uij[6];       /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
 //! Contains indices into group names for different groups.

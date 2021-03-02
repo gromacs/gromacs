@@ -753,7 +753,7 @@ static void do_update_vv_vel(int                  start,
                              real                 dt,
                              const ivec           nFreeze[],
                              const real           invmass[],
-                             const unsigned short ptype[],
+                             const ParticleType   ptype[],
                              const unsigned short cFREEZE[],
                              rvec                 v[],
                              const rvec           f[],
@@ -786,7 +786,7 @@ static void do_update_vv_vel(int                  start,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != ParticleType::Shell) && !nFreeze[gf][d])
             {
                 v[n][d] = mv1 * (mv1 * v[n][d] + 0.5 * (w_dt * mv2 * f[n][d]));
             }
@@ -802,7 +802,7 @@ static void do_update_vv_pos(int                  start,
                              int                  nrend,
                              real                 dt,
                              const ivec           nFreeze[],
-                             const unsigned short ptype[],
+                             const ParticleType   ptype[],
                              const unsigned short cFREEZE[],
                              const rvec           x[],
                              rvec                 xprime[],
@@ -837,7 +837,7 @@ static void do_update_vv_pos(int                  start,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != ParticleType::Shell) && !nFreeze[gf][d])
             {
                 xprime[n][d] = mr1 * (mr1 * x[n][d] + mr2 * dt * v[n][d]);
             }
@@ -974,7 +974,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&  sd,
                               real                 dt,
                               const ivec           nFreeze[],
                               const real           invmass[],
-                              const unsigned short ptype[],
+                              const ParticleType   ptype[],
                               const unsigned short cFREEZE[],
                               const unsigned short cTC[],
                               const rvec           x[],
@@ -1020,7 +1020,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&  sd,
 
         for (int d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptShell) && !nFreeze[freezeGroup][d])
+            if ((ptype[n] != ParticleType::Shell) && !nFreeze[freezeGroup][d])
             {
                 if (updateType == SDUpdate::ForcesOnly)
                 {
@@ -1075,7 +1075,7 @@ static void do_update_sd(int         start,
                          const rvec* gmx_restrict f,
                          const ivec               nFreeze[],
                          const real               invmass[],
-                         const unsigned short     ptype[],
+                         const ParticleType       ptype[],
                          const unsigned short     cFREEZE[],
                          const unsigned short     cTC[],
                          int                      seed,
@@ -1120,7 +1120,7 @@ static void do_update_bd(int         start,
                          const rvec* gmx_restrict f,
                          const ivec               nFreeze[],
                          const real               invmass[],
-                         const unsigned short     ptype[],
+                         const ParticleType       ptype[],
                          const unsigned short     cFREEZE[],
                          const unsigned short     cTC[],
                          real                     friction_coefficient,
@@ -1160,7 +1160,7 @@ static void do_update_bd(int         start,
         }
         for (d = 0; (d < DIM); d++)
         {
-            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != ParticleType::Shell) && !nFreeze[gf][d])
             {
                 if (friction_coefficient != 0)
                 {

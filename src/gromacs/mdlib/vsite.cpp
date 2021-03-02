@@ -2686,7 +2686,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                                  gmx::ArrayRef<int>              taskIndex,
                                  ArrayRef<const InteractionList> ilist,
                                  ArrayRef<const t_iparams>       ip,
-                                 const unsigned short*           ptype)
+                                 const ParticleType*             ptype)
 {
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -2721,7 +2721,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                     /* Do a range check to avoid a harmless race on taskIndex */
                     if (iat[j] < tData->rangeStart || iat[j] >= tData->rangeEnd || taskIndex[iat[j]] != thread)
                     {
-                        if (!tData->useInterdependentTask || ptype[iat[j]] == eptVSite)
+                        if (!tData->useInterdependentTask || ptype[iat[j]] == ParticleType::VSite)
                         {
                             /* At least one constructing atom is a vsite
                              * that is not assigned to the same thread.
@@ -2751,7 +2751,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                     /* Do a range check to avoid a harmless race on taskIndex */
                     if (iat[j] < tData->rangeStart || iat[j] >= tData->rangeEnd || taskIndex[iat[j]] != thread)
                     {
-                        GMX_ASSERT(ptype[iat[j]] != eptVSite,
+                        GMX_ASSERT(ptype[iat[j]] != ParticleType::VSite,
                                    "A vsite to be assigned in assignVsitesToThread has a vsite as "
                                    "a constructing atom that does not belong to our task, such "
                                    "vsites should be assigned to the single 'master' task");
@@ -2944,7 +2944,7 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
         int thread = 0;
         for (int i = 0; i < mdatoms.nr; i++)
         {
-            if (mdatoms.ptype[i] == eptVSite)
+            if (mdatoms.ptype[i] == ParticleType::VSite)
             {
                 /* vsites are not assigned to a task yet */
                 taskIndex_[i] = -1;

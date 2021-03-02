@@ -2999,7 +2999,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
         nrdf2[i]            = 0;
-        if (local.ptype == eptAtom || local.ptype == eptNucleus)
+        if (local.ptype == ParticleType::Atom || local.ptype == ParticleType::Nucleus)
         {
             int g = getGroupType(groups, SimulationAtomGroupType::Freeze, i);
             for (int d = 0; d < DIM; d++)
@@ -3041,8 +3041,10 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
                      */
                     int ai = as + ia[i + 1];
                     int aj = as + ia[i + 2];
-                    if (((atom[ia[i + 1]].ptype == eptNucleus) || (atom[ia[i + 1]].ptype == eptAtom))
-                        && ((atom[ia[i + 2]].ptype == eptNucleus) || (atom[ia[i + 2]].ptype == eptAtom)))
+                    if (((atom[ia[i + 1]].ptype == ParticleType::Nucleus)
+                         || (atom[ia[i + 1]].ptype == ParticleType::Atom))
+                        && ((atom[ia[i + 2]].ptype == ParticleType::Nucleus)
+                            || (atom[ia[i + 2]].ptype == ParticleType::Atom)))
                     {
                         if (nrdf2[ai] > 0)
                         {

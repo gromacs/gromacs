@@ -931,7 +931,7 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt, const gmx::MDLogger& l
             {
                 /* The virtual site */
                 int avsite                     = ia[i + 1];
-                molt->atoms.atom[avsite].ptype = eptVSite;
+                molt->atoms.atom[avsite].ptype = ParticleType::VSite;
 
                 i += nra + 1;
             }

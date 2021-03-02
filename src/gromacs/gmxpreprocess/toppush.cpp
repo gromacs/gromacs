@@ -281,17 +281,19 @@ void push_at(t_symtab*                  symtab,
              t_nbparam***               pair,
              warninp*                   wi)
 {
-    typedef struct
+    struct t_xlate
     {
-        const char* entry;
-        int         ptype;
-    } t_xlate;
-    t_xlate xl[eptNR] = {
-        { "A", eptAtom }, { "N", eptNucleus }, { "S", eptShell },
-        { "B", eptBond }, { "V", eptVSite },
+        const char*  entry;
+        ParticleType ptype;
     };
+    gmx::EnumerationArray<ParticleType, t_xlate> xl;
+    xl[ParticleType::Atom]    = { "A", ParticleType::Atom };
+    xl[ParticleType::Nucleus] = { "N", ParticleType::Nucleus };
+    xl[ParticleType::Shell]   = { "S", ParticleType::Shell };
+    xl[ParticleType::Bond]    = { "B", ParticleType::Bond };
+    xl[ParticleType::VSite]   = { "V", ParticleType::VSite };
 
-    int     nfields, j, pt, nfp0 = -1;
+    int     nfields, nfp0 = -1;
     int     nread;
     char    type[STRLEN], btype[STRLEN], ptype[STRLEN];
     double  m, q;
@@ -529,19 +531,15 @@ void push_at(t_symtab*                  symtab,
     {
         sprintf(ptype, "V");
     }
-    for (j = 0; (j < eptNR); j++)
-    {
-        if (gmx_strcasecmp(ptype, xl[j].entry) == 0)
-        {
-            break;
-        }
-    }
-    if (j == eptNR)
+    auto entry = std::find_if(xl.begin(), xl.end(), [ptype](const t_xlate& type) {
+        return gmx_strcasecmp(ptype, type.entry) == 0;
+    });
+    if (entry == xl.end())
     {
         auto message = gmx::formatString("Invalid particle type %s", ptype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    pt = xl[j].ptype;
+    ParticleType pt = entry->ptype;
 
     atom->q     = q;
     atom->m     = m;
@@ -1303,23 +1301,23 @@ void push_cmaptype(Directive                         d,
 }
 
 
-static void push_atom_now(t_symtab* symtab,
-                          t_atoms*  at,
-                          int       atomnr,
-                          int       atomicnumber,
-                          int       type,
-                          char*     ctype,
-                          int       ptype,
-                          char*     resnumberic,
-                          char*     resname,
-                          char*     name,
-                          real      m0,
-                          real      q0,
-                          int       typeB,
-                          char*     ctypeB,
-                          real      mB,
-                          real      qB,
-                          warninp*  wi)
+static void push_atom_now(t_symtab*    symtab,
+                          t_atoms*     at,
+                          int          atomnr,
+                          int          atomicnumber,
+                          int          type,
+                          char*        ctype,
+                          ParticleType ptype,
+                          char*        resnumberic,
+                          char*        resname,
+                          char*        name,
+                          real         m0,
+                          real         q0,
+                          int          typeB,
+                          char*        ctypeB,
+                          real         mB,
+                          real         qB,
+                          warninp*     wi)
 {
     int           j, resind = 0, resnr;
     unsigned char ric;
@@ -1405,7 +1403,6 @@ static void push_atom_now(t_symtab* symtab,
 
 void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, char* line, warninp* wi)
 {
-    int  ptype;
     int  cgnumber, atomnr, nscan;
     char id[STRLEN], ctype[STRLEN], ctypeB[STRLEN], resnumberic[STRLEN], resname[STRLEN],
             name[STRLEN], check[STRLEN];
@@ -1425,7 +1422,7 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
         auto message = gmx::formatString("Atomtype %s not found", ctype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    ptype = *atypes->atomParticleTypeFromAtomType(*type);
+    ParticleType ptype = *atypes->atomParticleTypeFromAtomType(*type);
 
     /* Set default from type */
     q0         = *atypes->atomChargeFromAtomType(*type);
@@ -2649,7 +2646,7 @@ int add_atomtype_decoupled(t_symtab* symtab, PreprocessingAtomTypes* at, t_nbpar
     /* Type for decoupled atoms could be anything,
      * this should be changed automatically later when required.
      */
-    atom.ptype = eptAtom;
+    atom.ptype = ParticleType::Atom;
 
     std::array<real, MAXFORCEPARAM> forceParam = { 0.0 };
     nr = at->addType(symtab, atom, "decoupled", InteractionOfType({}, forceParam, ""), -1, 0);

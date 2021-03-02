@@ -130,7 +130,7 @@ std::optional<real> PreprocessingAtomTypes::atomChargeFromAtomType(int nt) const
     return isSet(nt) ? std::make_optional(impl_->types[nt].atom_.q) : std::nullopt;
 }
 
-std::optional<int> PreprocessingAtomTypes::atomParticleTypeFromAtomType(int nt) const
+std::optional<ParticleType> PreprocessingAtomTypes::atomParticleTypeFromAtomType(int nt) const
 {
     return isSet(nt) ? std::make_optional(impl_->types[nt].atom_.ptype) : std::nullopt;
 }

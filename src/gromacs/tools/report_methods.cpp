@@ -79,7 +79,7 @@ void writeSystemInformation(TextWriter* writer, const gmx_mtop_t& top, bool writ
     aloop = gmx_mtop_atomloop_block_init(&top);
     while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
     {
-        if (atom->ptype == eptVSite)
+        if (atom->ptype == ParticleType::VSite)
         {
             nvsite += nmol;
         }
