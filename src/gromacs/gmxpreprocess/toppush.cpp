@@ -96,8 +96,8 @@ void generate_nbparams(CombinationRule         comb,
                         {
                             for (int nf = 0; (nf < nrfp); nf++)
                             {
-                                ci             = atypes->atomNonBondedParamFromAtomType(i, nf);
-                                cj             = atypes->atomNonBondedParamFromAtomType(j, nf);
+                                ci             = *atypes->atomNonBondedParamFromAtomType(i, nf);
+                                cj             = *atypes->atomNonBondedParamFromAtomType(j, nf);
                                 c              = std::sqrt(ci * cj);
                                 forceParam[nf] = c;
                             }
@@ -112,10 +112,10 @@ void generate_nbparams(CombinationRule         comb,
                     {
                         for (int j = 0; (j < nr); j++)
                         {
-                            ci0           = atypes->atomNonBondedParamFromAtomType(i, 0);
-                            cj0           = atypes->atomNonBondedParamFromAtomType(j, 0);
-                            ci1           = atypes->atomNonBondedParamFromAtomType(i, 1);
-                            cj1           = atypes->atomNonBondedParamFromAtomType(j, 1);
+                            ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
+                            cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
+                            ci1           = *atypes->atomNonBondedParamFromAtomType(i, 1);
+                            cj1           = *atypes->atomNonBondedParamFromAtomType(j, 1);
                             forceParam[0] = (fabs(ci0) + fabs(cj0)) * 0.5;
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -136,10 +136,10 @@ void generate_nbparams(CombinationRule         comb,
                     {
                         for (int j = 0; (j < nr); j++)
                         {
-                            ci0           = atypes->atomNonBondedParamFromAtomType(i, 0);
-                            cj0           = atypes->atomNonBondedParamFromAtomType(j, 0);
-                            ci1           = atypes->atomNonBondedParamFromAtomType(i, 1);
-                            cj1           = atypes->atomNonBondedParamFromAtomType(j, 1);
+                            ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
+                            cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
+                            ci1           = *atypes->atomNonBondedParamFromAtomType(i, 1);
+                            cj1           = *atypes->atomNonBondedParamFromAtomType(j, 1);
                             forceParam[0] = std::sqrt(std::fabs(ci0 * cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -167,12 +167,12 @@ void generate_nbparams(CombinationRule         comb,
             {
                 for (int j = 0; (j < nr); j++)
                 {
-                    ci0           = atypes->atomNonBondedParamFromAtomType(i, 0);
-                    cj0           = atypes->atomNonBondedParamFromAtomType(j, 0);
-                    ci2           = atypes->atomNonBondedParamFromAtomType(i, 2);
-                    cj2           = atypes->atomNonBondedParamFromAtomType(j, 2);
-                    bi            = atypes->atomNonBondedParamFromAtomType(i, 1);
-                    bj            = atypes->atomNonBondedParamFromAtomType(j, 1);
+                    ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
+                    cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
+                    ci2           = *atypes->atomNonBondedParamFromAtomType(i, 2);
+                    cj2           = *atypes->atomNonBondedParamFromAtomType(j, 2);
+                    bi            = *atypes->atomNonBondedParamFromAtomType(i, 1);
+                    bj            = *atypes->atomNonBondedParamFromAtomType(j, 1);
                     forceParam[0] = std::sqrt(ci0 * cj0);
                     if ((bi == 0) || (bj == 0))
                     {
@@ -291,8 +291,8 @@ void push_at(t_symtab*                  symtab,
         { "B", eptBond }, { "V", eptVSite },
     };
 
-    int     nr, nfields, j, pt, nfp0 = -1;
-    int     batype_nr, nread;
+    int     nfields, j, pt, nfp0 = -1;
+    int     nread;
     char    type[STRLEN], btype[STRLEN], ptype[STRLEN];
     double  m, q;
     double  c[MAXFORCEPARAM];
@@ -553,9 +553,10 @@ void push_at(t_symtab*                  symtab,
 
     InteractionOfType interactionType({}, forceParam, "");
 
-    batype_nr = bondAtomType->addBondAtomType(symtab, btype);
+    auto batype_nr = bondAtomType->addBondAtomType(symtab, btype);
 
-    if ((nr = at->atomTypeFromName(type)) != NOTSET)
+    auto atomType = at->atomTypeFromName(type);
+    if (atomType.has_value())
     {
         auto message = gmx::formatString(
                 "Atomtype %s was defined previously (e.g. in the forcefield files), "
@@ -567,19 +568,16 @@ void push_at(t_symtab*                  symtab,
                 "to suppress this warning with -maxwarn.",
                 type);
         warning(wi, message);
-        if ((at->setType(nr, symtab, *atom, type, interactionType, batype_nr, atomnr)) == NOTSET)
+        auto newAtomType = at->setType(*atomType, symtab, *atom, type, interactionType, batype_nr, atomnr);
+        if (!newAtomType.has_value())
         {
             auto message = gmx::formatString("Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, message, FARGS);
         }
     }
-    else if ((at->addType(symtab, *atom, type, interactionType, batype_nr, atomnr)) == NOTSET)
-    {
-        auto message = gmx::formatString("Adding atomtype %s failed", type);
-        warning_error_and_exit(wi, message, FARGS);
-    }
     else
     {
+        at->addType(symtab, *atom, type, interactionType, batype_nr, atomnr);
         /* Add space in the non-bonded parameters matrix */
         realloc_nb_params(at, nbparam, pair);
     }
@@ -758,23 +756,23 @@ static std::vector<int> atomTypesFromAtomNames(const PreprocessingAtomTypes*    
     {
         if (atomTypes != nullptr)
         {
-            int atomType = atomTypes->atomTypeFromName(name);
-            if (atomType == NOTSET)
+            auto atomType = atomTypes->atomTypeFromName(name);
+            if (!atomType.has_value())
             {
                 auto message = gmx::formatString("Unknown atomtype %s\n", name);
                 warning_error_and_exit(wi, message, FARGS);
             }
-            atomTypesFromAtomNames.emplace_back(atomType);
+            atomTypesFromAtomNames.emplace_back(*atomType);
         }
         else if (bondAtomTypes != nullptr)
         {
-            int atomType = bondAtomTypes->bondAtomTypeFromName(name);
-            if (atomType == NOTSET)
+            auto bondAtomType = bondAtomTypes->bondAtomTypeFromName(name);
+            if (!bondAtomType.has_value())
             {
                 auto message = gmx::formatString("Unknown bond_atomtype %s\n", name);
                 warning_error_and_exit(wi, message, FARGS);
             }
-            atomTypesFromAtomNames.emplace_back(atomType);
+            atomTypesFromAtomNames.emplace_back(*bondAtomType);
         }
     }
     return atomTypesFromAtomNames;
@@ -1013,13 +1011,13 @@ void push_dihedraltype(Directive                         d,
         }
         else
         {
-            int atomNumber;
-            if ((atomNumber = bondAtomType->bondAtomTypeFromName(alc[i])) == NOTSET)
+            auto atomNumber = bondAtomType->bondAtomTypeFromName(alc[i]);
+            if (!atomNumber.has_value())
             {
                 auto message = gmx::formatString("Unknown bond_atomtype %s", alc[i]);
                 warning_error_and_exit(wi, message, FARGS);
             }
-            atoms.emplace_back(atomNumber);
+            atoms.emplace_back(*atomNumber);
         }
     }
     for (int i = 0; (i < nrfp); i++)
@@ -1043,7 +1041,6 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
     int         i, f, n, ftype, nrfp;
     double      c[4], dum;
     real        cr[4];
-    int         ai, aj;
     t_nbparam*  nbp;
     bool        bId;
 
@@ -1120,17 +1117,19 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
     }
 
     /* Put the parameters in the matrix */
-    if ((ai = atypes->atomTypeFromName(a0)) == NOTSET)
+    auto ai = atypes->atomTypeFromName(a0);
+    if (!ai.has_value())
     {
         auto message = gmx::formatString("Atomtype %s not found", a0);
         warning_error_and_exit(wi, message, FARGS);
     }
-    if ((aj = atypes->atomTypeFromName(a1)) == NOTSET)
+    auto aj = atypes->atomTypeFromName(a1);
+    if (!aj.has_value())
     {
         auto message = gmx::formatString("Atomtype %s not found", a1);
         warning_error_and_exit(wi, message, FARGS);
     }
-    nbp = &(nbt[std::max(ai, aj)][std::min(ai, aj)]);
+    nbp = &(nbt[std::max(*ai, *aj)][std::min(*ai, *aj)]);
 
     if (nbp->bSet)
     {
@@ -1280,7 +1279,7 @@ void push_cmaptype(Directive                         d,
     {
         /* Assign a grid number to each cmap_type */
         GMX_RELEASE_ASSERT(bondAtomType != nullptr, "Need valid PreprocessingBondAtomType object");
-        bt[F_CMAP].cmapAtomTypes.emplace_back(bondAtomType->bondAtomTypeFromName(alc[i]));
+        bt[F_CMAP].cmapAtomTypes.emplace_back(*bondAtomType->bondAtomTypeFromName(alc[i]));
     }
 
     /* Assign a type number to this cmap */
@@ -1407,7 +1406,7 @@ static void push_atom_now(t_symtab* symtab,
 void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, char* line, warninp* wi)
 {
     int  ptype;
-    int  cgnumber, atomnr, type, typeB, nscan;
+    int  cgnumber, atomnr, nscan;
     char id[STRLEN], ctype[STRLEN], ctypeB[STRLEN], resnumberic[STRLEN], resname[STRLEN],
             name[STRLEN], check[STRLEN];
     double m, q, mb, qb;
@@ -1420,19 +1419,20 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
         return;
     }
     sscanf(id, "%d", &atomnr);
-    if ((type = atypes->atomTypeFromName(ctype)) == NOTSET)
+    auto type = atypes->atomTypeFromName(ctype);
+    if (!type.has_value())
     {
         auto message = gmx::formatString("Atomtype %s not found", ctype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    ptype = atypes->atomParticleTypeFromAtomType(type);
+    ptype = *atypes->atomParticleTypeFromAtomType(*type);
 
     /* Set default from type */
-    q0    = atypes->atomChargeFromAtomType(type);
-    m0    = atypes->atomMassFromAtomType(type);
-    typeB = type;
-    qB    = q0;
-    mB    = m0;
+    q0         = *atypes->atomChargeFromAtomType(*type);
+    m0         = *atypes->atomMassFromAtomType(*type);
+    auto typeB = type;
+    qB         = q0;
+    mB         = m0;
 
     /* Optional parameters */
     nscan = sscanf(line, "%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf%s", &q, &m, ctypeB, &qb, &mb, check);
@@ -1446,13 +1446,14 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
             m0 = mB = m;
             if (nscan > 2)
             {
-                if ((typeB = atypes->atomTypeFromName(ctypeB)) == NOTSET)
+                typeB = atypes->atomTypeFromName(ctypeB);
+                if (!typeB.has_value())
                 {
                     auto message = gmx::formatString("Atomtype %s not found", ctypeB);
                     warning_error_and_exit(wi, message, FARGS);
                 }
-                qB = atypes->atomChargeFromAtomType(typeB);
-                mB = atypes->atomMassFromAtomType(typeB);
+                qB = *atypes->atomChargeFromAtomType(*typeB);
+                mB = *atypes->atomMassFromAtomType(*typeB);
                 if (nscan > 3)
                 {
                     qB = qb;
@@ -1472,8 +1473,8 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
     push_atom_now(symtab,
                   at,
                   atomnr,
-                  atypes->atomNumberFromAtomType(type),
-                  type,
+                  *atypes->atomNumberFromAtomType(*type),
+                  *type,
                   ctype,
                   ptype,
                   resnumberic,
@@ -1481,7 +1482,7 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
                   name,
                   m0,
                   q0,
-                  typeB,
+                  *typeB,
                   typeB == type ? ctype : ctypeB,
                   mB,
                   qB,

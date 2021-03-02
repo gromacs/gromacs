@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,16 +112,16 @@ static void print_resatoms(FILE* out, const PreprocessingAtomTypes& atype, const
 
     for (int j = 0; (j < rtpDBEntry.natom()); j++)
     {
-        int         tp   = rtpDBEntry.atom[j].type;
-        const char* tpnm = atype.atomNameFromAtomType(tp);
-        if (tpnm == nullptr)
+        int  tp   = rtpDBEntry.atom[j].type;
+        auto tpnm = atype.atomNameFromAtomType(tp);
+        if (!tpnm.has_value())
         {
             gmx_fatal(FARGS, "Incorrect atomtype (%d)", tp);
         }
         fprintf(out,
                 "%6s  %6s  %8.3f  %6d\n",
                 *(rtpDBEntry.atomname[j]),
-                tpnm,
+                *tpnm,
                 rtpDBEntry.atom[j].q,
                 rtpDBEntry.cgnr[j]);
     }
@@ -147,8 +147,8 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
         r0->atom.emplace_back();
         r0->atom.back().q = q;
         r0->cgnr.push_back(cg);
-        int j = atype->atomTypeFromName(buf1);
-        if (j == NOTSET)
+        auto j = atype->atomTypeFromName(buf1);
+        if (!j.has_value())
         {
             gmx_fatal(FARGS,
                       "Atom type %s (residue %s) not found in atomtype "
@@ -156,8 +156,8 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
                       buf1,
                       r0->resname.c_str());
         }
-        r0->atom.back().type = j;
-        r0->atom.back().m    = atype->atomMassFromAtomType(j);
+        r0->atom.back().type = *j;
+        r0->atom.back().m    = *atype->atomMassFromAtomType(*j);
     }
 
     return TRUE;

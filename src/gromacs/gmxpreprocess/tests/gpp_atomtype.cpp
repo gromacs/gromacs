@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,20 +124,20 @@ TEST_F(PreprocessingAtomTypesTest, CorrectNameFound)
 TEST_F(PreprocessingAtomTypesTest, WrongNameNotFound)
 {
     EXPECT_EQ(addType("Foo", 1, 2), 0);
-    EXPECT_EQ(atypes_.atomTypeFromName("Bar"), NOTSET);
+    EXPECT_FALSE(atypes_.atomTypeFromName("Bar").has_value());
 }
 
 TEST_F(PreprocessingAtomTypesTest, CorrectNameFromTypeNumber)
 {
     EXPECT_EQ(addType("Foo", 1, 2), 0);
     EXPECT_EQ(addType("Bar", 3, 4), 1);
-    EXPECT_STREQ(atypes_.atomNameFromAtomType(0), "Foo");
-    EXPECT_STREQ(atypes_.atomNameFromAtomType(1), "Bar");
+    EXPECT_STREQ(*atypes_.atomNameFromAtomType(0), "Foo");
+    EXPECT_STREQ(*atypes_.atomNameFromAtomType(1), "Bar");
 }
 
 TEST_F(PreprocessingAtomTypesTest, NoNameFromIncorrectTypeNumber)
 {
-    EXPECT_EQ(atypes_.atomNameFromAtomType(-1), nullptr);
+    EXPECT_FALSE(atypes_.atomNameFromAtomType(-1).has_value());
 }
 
 } // namespace

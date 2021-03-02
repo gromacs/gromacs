@@ -1149,12 +1149,16 @@ static void set_wall_atomtype(PreprocessingAtomTypes* at,
     }
     for (i = 0; i < ir->nwall; i++)
     {
-        ir->wall_atomtype[i] = at->atomTypeFromName(opts->wall_atomtype[i]);
-        if (ir->wall_atomtype[i] == NOTSET)
+        auto atomType = at->atomTypeFromName(opts->wall_atomtype[i]);
+        if (!atomType.has_value())
         {
             std::string warningMessage = gmx::formatString(
                     "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
             warning_error(wi, warningMessage.c_str());
+        }
+        else
+        {
+            ir->wall_atomtype[i] = *atomType;
         }
     }
 }

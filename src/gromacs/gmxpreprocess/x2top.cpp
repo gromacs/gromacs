@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,9 +330,8 @@ static void print_rtp(const char*                             filenm,
                       PreprocessingAtomTypes*                 atypes,
                       int                                     cgnr[])
 {
-    FILE*       fp;
-    int         i, tp;
-    const char* tpnm;
+    FILE* fp;
+    int   i, tp;
 
     fp = gmx_fio_fopen(filenm, "w");
     fprintf(fp, "; %s\n", title);
@@ -342,12 +341,13 @@ static void print_rtp(const char*                             filenm,
     fprintf(fp, "[ atoms ]\n");
     for (i = 0; (i < atoms->nr); i++)
     {
-        tp = atoms->atom[i].type;
-        if ((tpnm = atypes->atomNameFromAtomType(tp)) == nullptr)
+        tp        = atoms->atom[i].type;
+        auto tpnm = atypes->atomNameFromAtomType(tp);
+        if (!tpnm.has_value())
         {
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
-        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], tpnm, atoms->atom[i].q, cgnr[i]);
+        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], *tpnm, atoms->atom[i].q, cgnr[i]);
     }
     print_pl(fp, plist, F_BONDS, "bonds", atoms->atomname);
     print_pl(fp, plist, F_ANGLES, "angles", atoms->atomname);

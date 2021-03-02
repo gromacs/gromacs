@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,18 +135,18 @@ TEST_F(PreprocessingBondAtomTypeTest, CorrectNameFound)
 TEST_F(PreprocessingBondAtomTypeTest, WrongNameNotFound)
 {
     EXPECT_EQ(addType("Foo"), 0);
-    EXPECT_EQ(bat_.bondAtomTypeFromName("Bar"), NOTSET);
+    EXPECT_FALSE(bat_.bondAtomTypeFromName("Bar").has_value());
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, CorrectNameFromTypeNumber)
 {
     EXPECT_EQ(addType("Foo"), 0);
     EXPECT_EQ(addType("Bar"), 1);
-    EXPECT_STREQ(bat_.atomNameFromBondAtomType(0), "Foo");
-    EXPECT_STREQ(bat_.atomNameFromBondAtomType(1), "Bar");
+    EXPECT_STREQ(*bat_.atomNameFromBondAtomType(0), "Foo");
+    EXPECT_STREQ(*bat_.atomNameFromBondAtomType(1), "Bar");
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, NoNameFromIncorrectTypeNumber)
 {
-    EXPECT_EQ(bat_.atomNameFromBondAtomType(-1), nullptr);
+    EXPECT_FALSE(bat_.atomNameFromBondAtomType(-1).has_value());
 }

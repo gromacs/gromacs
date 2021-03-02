@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -608,15 +609,13 @@ static int get_atype(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidu
 
 static int vsite_nm2type(const char* name, PreprocessingAtomTypes* atype)
 {
-    int tp;
-
-    tp = atype->atomTypeFromName(name);
-    if (tp == NOTSET)
+    auto tp = atype->atomTypeFromName(name);
+    if (!tp.has_value())
     {
         gmx_fatal(FARGS, "Dummy mass type (%s) not found in atom type database", name);
     }
 
-    return tp;
+    return *tp;
 }
 
 static real get_amass(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueType* rt)
@@ -1970,7 +1969,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             count_bonds(i, &plist[F_BONDS], at->atomname, &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
             /* get Heavy atom type */
             tpHeavy = get_atype(Heavy, at, rtpFFDB, &rt);
-            strcpy(tpname, atype->atomNameFromAtomType(tpHeavy));
+            strcpy(tpname, *atype->atomNameFromAtomType(tpHeavy));
 
             bWARNING       = FALSE;
             bAddVsiteParam = TRUE;
@@ -2068,7 +2067,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
                     strcpy(nexttpname,
-                           atype->atomNameFromAtomType(get_atype(heavies[0], at, rtpFFDB, &rt)));
+                           *atype->atomNameFromAtomType(get_atype(heavies[0], at, rtpFFDB, &rt)));
                     std::string ch = get_dummymass_name(vsiteconflist, tpname, nexttpname);
                     std::string name;
                     if (ch.empty())
