@@ -1893,7 +1893,8 @@ AWH adaptive biasing
       The applied biasing potential is the convolution of the bias function and a
       set of harmonic umbrella potentials (see :mdp-value:`awh-potential=umbrella` below). This results
       in a smooth potential function and force. The resolution of the potential is set
-      by the force constant of each umbrella, see :mdp:`awh1-dim1-force-constant`.
+      by the force constant of each umbrella, see :mdp:`awh1-dim1-force-constant`. This option is not
+      compatible with using the free energy lambda state as an AWH reaction coordinate.
 
    .. mdp-value:: umbrella
 
@@ -1901,8 +1902,9 @@ AWH adaptive biasing
       using Monte-Carlo sampling.  The force constant is set with
       :mdp:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
-      There are no advantages to using an umbrella.
-      This option is mainly for comparison and testing purposes.
+      This is option is required when using the free energy lambda state as an AWH reaction coordinate.
+      Apart from that, this option is mainly for comparison
+      and testing purposes as there are no advantages to using an umbrella.
 
 .. mdp:: awh-share-multisim
 
@@ -2098,7 +2100,7 @@ AWH adaptive biasing
       The lambda states to use are specified by :mdp:`fep-lambdas`, :mdp:`vdw-lambdas`,
       :mdp:`coul-lambdas` etc. This is not compatible with delta-lambda. It also requires
       calc-lambda-neighbors to be -1. With multiple time-stepping, AWH should
-      be in the slow level.
+      be in the slow level. This option requires :mdp-value:`awh-potential=umbrella`.
 
 .. mdp:: awh1-dim1-coord-index
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -277,8 +277,6 @@ public:
      * \param[in] step                        Step number, needed for the random number generator.
      * \param[in] seed                        Random seed.
      * \param[in] indexSeed                   Second random seed, should be the bias Index.
-     * \param[in] onlySampleUmbrellaGridpoint Only sample the umbrella gridpoint without calculating
-     * force and potential.
      * \returns the new potential value.
      */
     double moveUmbrella(const std::vector<DimParams>& dimParams,
@@ -288,8 +286,7 @@ public:
                         gmx::ArrayRef<double>         biasForce,
                         int64_t                       step,
                         int64_t                       seed,
-                        int                           indexSeed,
-                        bool                          onlySampleUmbrellaGridpoint);
+                        int                           indexSeed);
 
 private:
     /*! \brief

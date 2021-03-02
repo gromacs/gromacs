@@ -843,14 +843,26 @@ void checkAwhParams(const AwhParams* awhParams, const t_inputrec* ir, warninp_t 
         }
     }
 
-    if (haveFepLambdaDim && awhParams->nstSampleCoord % ir->nstcalcenergy != 0)
+    if (haveFepLambdaDim)
     {
-        opt          = "awh-nstsample";
-        auto message = formatString(
-                "%s (%d) should be a multiple of nstcalcenergy (%d) when using AWH for sampling an "
-                "FEP lambda dimension",
-                opt.c_str(), awhParams->nstSampleCoord, ir->nstcalcenergy);
-        warning_error(wi, message);
+        if (awhParams->nstSampleCoord % ir->nstcalcenergy != 0)
+        {
+            opt          = "awh-nstsample";
+            auto message = formatString(
+                    "%s (%d) should be a multiple of nstcalcenergy (%d) when using AWH for "
+                    "sampling an FEP lambda dimension",
+                    opt.c_str(), awhParams->nstSampleCoord, ir->nstcalcenergy);
+            warning_error(wi, message);
+        }
+        if (awhParams->ePotential != eawhpotentialUMBRELLA)
+        {
+            opt          = "awh-potential";
+            auto message = formatString(
+                    "%s (%s) must be set to %s when using AWH for sampling an FEP lambda dimension",
+                    opt.c_str(), eawhpotential_names[awhParams->ePotential],
+                    eawhpotential_names[eawhpotentialUMBRELLA]);
+            warning_error(wi, message);
+        }
     }
 
     /* Do a final consistency check before returning */

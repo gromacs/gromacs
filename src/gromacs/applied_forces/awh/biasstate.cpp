@@ -543,17 +543,11 @@ double BiasState::moveUmbrella(const std::vector<DimParams>& dimParams,
                                gmx::ArrayRef<double>         biasForce,
                                int64_t                       step,
                                int64_t                       seed,
-                               int                           indexSeed,
-                               bool                          onlySampleUmbrellaGridpoint)
+                               int                           indexSeed)
 {
     /* Generate and set a new coordinate reference value */
     coordState_.sampleUmbrellaGridpoint(grid, coordState_.gridpointIndex(), probWeightNeighbor,
                                         step, seed, indexSeed);
-
-    if (onlySampleUmbrellaGridpoint)
-    {
-        return 0;
-    }
 
     std::vector<double> newForce(dimParams.size());
     double              newPotential = calcUmbrellaForceAndPotential(

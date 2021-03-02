@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,10 +156,7 @@ public:
          *   eawhgrowth:
          *     eawhgrowthLINEAR:     final, normal update phase
          *     ewahgrowthEXP_LINEAR: intial phase, updated size is constant
-         *   eawhpotential (test both, but for the FEP lambda state dimension MC will in practice be used,
-         *                  except that eawhpotentialCONVOLVED also gives a potential output):
-         *     eawhpotentialUMBRELLA:  MC on lambda state
-         *     eawhpotentialCONVOLVED: MD on a convolved potential landscape (falling back to MC on lambda state)
+         *   eawhpotential (test only eawhpotentialUMBRELLA (MC) for FEP lambda dimensions)
          *   disableUpdateSkips (should not affect the results):
          *     BiasParams::DisableUpdateSkips::yes: update the point state for every sample
          *     BiasParams::DisableUpdateSkips::no:  update the point state at an interval > 1 sample
@@ -269,7 +266,7 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
 INSTANTIATE_TEST_CASE_P(WithParameters,
                         BiasFepLambdaStateTest,
                         ::testing::Combine(::testing::Values(eawhgrowthLINEAR, eawhgrowthEXP_LINEAR),
-                                           ::testing::Values(eawhpotentialUMBRELLA, eawhpotentialCONVOLVED),
+                                           ::testing::Values(eawhpotentialUMBRELLA),
                                            ::testing::Values(BiasParams::DisableUpdateSkips::yes,
                                                              BiasParams::DisableUpdateSkips::no)));
 
@@ -277,7 +274,7 @@ INSTANTIATE_TEST_CASE_P(WithParameters,
 TEST(BiasFepLambdaStateTest, DetectsCovering)
 {
     const AwhFepLambdaStateTestParameters params =
-            getAwhFepLambdaTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
+            getAwhFepLambdaTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialUMBRELLA);
 
     const double mdTimeStep = 0.1;
 

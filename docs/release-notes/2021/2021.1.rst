@@ -34,6 +34,16 @@ differences used for the Bennett acceptance ratio method.
 
 :issue:`3943`
 
+Running AWH with a convolved potential and an FEP dimension gives wrong results.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The output PMF is wrong when using awh-potential = convolved with a
+pull dimension combined with an FEP dimension. The FEP dimension
+always uses an umbrella potential and the combination does not work
+properly. This has been disabled in grompp.
+
+:issue:`3946`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
