@@ -271,6 +271,7 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-8-cuda-11.0.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-8-cuda-11.0-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-9-release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.hipsycl-dev.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-opencl.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-opencl-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-sycl.gitlab-ci.yml'

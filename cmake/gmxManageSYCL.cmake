@@ -55,6 +55,10 @@ if(GMX_SYCL_HIPSYCL)
         message(FATAL_ERROR "hipSYCL can only be built with Clang++ compiler")
     endif()
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
+    # -Wno-unknown-cuda-version because Clang-11 complains about CUDA 11.0-11.2, despite working fine with them.
+    # -Wno-unknown-attributes because hipSYCL does not support reqd_sub_group_size (because it can only do some sub group sizes).
+    # --hipsycl-explicit-multipass is needed when building for both CUDA and HIP.
+    set(HIPSYCL_SYCLCC_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes --hipsycl-explicit-multipass")
     find_package(hipsycl REQUIRED)
 else()
     if(CMAKE_CXX_COMPILER MATCHES "dpcpp")

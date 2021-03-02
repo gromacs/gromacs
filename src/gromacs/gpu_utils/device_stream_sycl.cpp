@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,12 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext,
         const bool deviceSupportsTiming = device.get_info<cl::sycl::info::device::queue_profiling>();
         if (deviceSupportsTiming)
         {
+#if (!GMX_SYCL_HIPSYCL)
+            /* Support for profiling and even the `::enable_profile` property is added in
+             * https://github.com/illuhad/hipSYCL/pull/428, which is not merged at the
+             * time of writing */
             propertyList = cl::sycl::property::queue::enable_profiling();
+#endif
         }
     }
     stream_ = cl::sycl::queue(deviceContext.context(), device, propertyList);

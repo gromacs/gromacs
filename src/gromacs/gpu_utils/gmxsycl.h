@@ -52,11 +52,13 @@
 #ifndef GMX_GPU_UTILS_GMXSYCL_H
 #define GMX_GPU_UTILS_GMXSYCL_H
 
+#include "config.h"
+
 /* Some versions of Intel ICPX compiler (at least 2021.1.1 and 2021.1.2) fail to unroll a loop
  * in sycl::accessor::__init, and emit -Wpass-failed=transform-warning. This is a useful
  * warning, but mostly noise right now. Probably related to using shared memory accessors.
  * The unroll directive was introduced in https://github.com/intel/llvm/pull/2449. */
-#if defined(__INTEL_LLVM_COMPILER)
+#if GMX_SYCL_DPCPP
 #    include <CL/sycl/version.hpp>
 #    define DISABLE_UNROLL_WARNINGS \
         ((__SYCL_COMPILER_VERSION >= 20201113) && (__SYCL_COMPILER_VERSION <= 20201214))
@@ -68,6 +70,29 @@
 #    pragma clang diagnostic push
 #    pragma clang diagnostic ignored "-Wpass-failed"
 #endif
+
+// For hipSYCL, we need to activate floating-point atomics
+#if GMX_SYCL_HIPSYCL
+#    define HIPSYCL_EXT_FP_ATOMICS
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-variable"
+#    pragma clang diagnostic ignored "-Wunused-parameter"
+#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+#    pragma clang diagnostic ignored "-Wshadow-field"
+#    pragma clang diagnostic ignored "-Wctad-maybe-unsupported"
+#    pragma clang diagnostic ignored "-Wdeprecated-copy-dtor"
+#    pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
+#    pragma clang diagnostic ignored "-Wunused-template"
+#    pragma clang diagnostic ignored "-Wsign-compare"
+#    pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
+#    pragma clang diagnostic ignored "-Wdeprecated-copy"
+#    pragma clang diagnostic ignored "-Wnewline-eof"
+#    pragma clang diagnostic ignored "-Wextra-semi"
+#    pragma clang diagnostic ignored "-Wsuggest-override"
+#    pragma clang diagnostic ignored "-Wsuggest-destructor-override"
+#    pragma clang diagnostic ignored "-Wgcc-compat"
+#endif
+
 
 #ifdef DIM
 #    if DIM != 3
@@ -85,6 +110,10 @@
 #    pragma clang diagnostic pop
 #endif
 
+#if GMX_SYCL_HIPSYCL
+#    pragma clang diagnostic pop
+#endif
+
 #undef DISABLE_UNROLL_WARNINGS
 
 /* Exposing Intel-specific extensions in a manner compatible with SYCL2020 provisional spec.
@@ -97,10 +126,10 @@ namespace sycl_2020
 {
 namespace detail
 {
-#if defined(__SYCL_COMPILER_VERSION) // Intel DPCPP compiler
+#if GMX_SYCL_DPCPP
 // Confirmed to work for 2021.1-beta10 (20201005), 2021.1.1 (20201113), 2021.1.2 (20201214).
 namespace origin = cl::sycl::ONEAPI;
-#elif defined(__HIPSYCL__)
+#elif GMX_SYCL_HIPSYCL
 namespace origin = cl::sycl;
 #else
 #    error "Unsupported version of SYCL compiler"
@@ -112,7 +141,7 @@ using detail::origin::memory_scope;
 using detail::origin::plus;
 using detail::origin::sub_group;
 
-#if defined(__SYCL_COMPILER_VERSION) // Intel DPCPP compiler
+#if GMX_SYCL_DPCPP
 using detail::origin::atomic_ref;
 template<typename... Args>
 bool group_any_of(Args&&... args)
@@ -124,8 +153,8 @@ auto group_reduce(Args&&... args) -> decltype(detail::origin::reduce(std::forwar
 {
     return detail::origin::reduce(std::forward<Args>(args)...);
 }
-#elif defined(__HIPSYCL__)
-// No atomic_ref in hipSYCL yet (2021-01-29)
+#elif GMX_SYCL_HIPSYCL
+// No atomic_ref in hipSYCL yet (2021-02-22)
 using detail::origin::group_any_of;
 using detail::origin::group_reduce;
 #else

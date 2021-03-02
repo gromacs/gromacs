@@ -103,8 +103,20 @@ static DeviceStatus isDeviceCompatible(const cl::sycl::device& syclDevice)
         // Host device does not support subgroups or even querying for sub_group_sizes
         return DeviceStatus::Incompatible;
     }
+
+#if GMX_SYCL_HIPSYCL
+    /* At the time of writing:
+     * 1. SYCL NB kernels currently don't support sub_group size of 32 or 64, which are the only
+     * ones available on NVIDIA and AMD hardware, respectively. That's not a fundamental limitation,
+     * but requires porting more OpenCL code, see #3934.
+     * 2. hipSYCL does not support cl::sycl::info::device::sub_group_sizes,
+     * see https://github.com/illuhad/hipSYCL/pull/449
+     */
+    const std::vector<size_t> supportedSubGroupSizes{ warpSize };
+#else
     const std::vector<size_t> supportedSubGroupSizes =
             syclDevice.get_info<cl::sycl::info::device::sub_group_sizes>();
+#endif
     const size_t requiredSubGroupSizeForNBNXM = 8;
     if (std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), requiredSubGroupSizeForNBNXM)
         == supportedSubGroupSizes.end())

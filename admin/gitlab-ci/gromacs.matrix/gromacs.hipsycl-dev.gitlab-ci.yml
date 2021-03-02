@@ -1,0 +1,44 @@
+# Test goal: build with hipSYCL (both CUDA and ROCm backends) to check SYCL code compatibility
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: Clang newest supported
+#   GPU: hipSYCL
+#   Scope: configure, build
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: RelWithAssert
+#   Compiler: Clang 11
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+
+gromacs:hipsycl-dev:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-sycl
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='cuda:sm_60,sm_61,sm_70,sm_75;hip:gfx900'"
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
+    COMPILER_MAJOR_VERSION: 11
+
+gromacs:hipsycl-dev:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    # Not using ccache because it plays poorly with syclcc-launcher
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:hipsycl-dev:configure
+

@@ -41,6 +41,7 @@
 #ifndef GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
 #define GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
 
+#include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 
@@ -98,28 +99,6 @@ static inline cl::sycl::id<3> unflattenId(cl::sycl::id<1> id1d)
     const unsigned     z       = id / rangeXY;
     const unsigned     xy      = id % rangeXY;
     return cl::sycl::id<3>(xy % rangeX, xy / rangeX, z);
-}
-
-//! \brief Convenience wrapper to do atomic addition to a global buffer
-template<cl::sycl::access::mode Mode, class IndexType>
-static inline void atomicFetchAdd(DeviceAccessor<float, Mode> acc, const IndexType idx, const float val)
-{
-    if (cl::sycl::isnormal(val))
-    {
-        sycl_2020::atomic_ref<float, sycl_2020::memory_order::relaxed, sycl_2020::memory_scope::device, cl::sycl::access::address_space::global_space>
-                fout_atomic(acc[idx]);
-        fout_atomic.fetch_add(val);
-    }
-}
-
-static inline float shuffleDown(float var, unsigned int delta, sycl_2020::sub_group sg)
-{
-    return sg.shuffle_down(var, delta);
-}
-
-static inline float shuffleUp(float var, unsigned int delta, sycl_2020::sub_group sg)
-{
-    return sg.shuffle_up(var, delta);
 }
 
 } // namespace Nbnxm

@@ -98,16 +98,22 @@ public:
      */
     inline void markEvent(const DeviceStream& deviceStream)
     {
+#    if GMX_SYCL_HIPSYCL
+        deviceStream.stream().wait_and_throw(); // SYCL-TODO: Use CUDA/HIP-specific solutions
+#    else
         GMX_ASSERT(!event_.has_value(), "Do not call markEvent more than once!");
         // Relies on SYCL_INTEL_enqueue_barrier
         event_ = deviceStream.stream().submit_barrier();
+#    endif
     }
     /*! \brief Synchronizes the host thread on the marked event.
      * As in the OpenCL implementation, the event is released.
      */
     inline void waitForEvent()
     {
+#    if (!GMX_SYCL_HIPSYCL)
         event_->wait_and_throw();
+#    endif
         event_.reset();
     }
     /*! \brief Checks the completion of the underlying event and resets the object if it was. */
@@ -126,10 +132,14 @@ public:
      */
     inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
+#    if GMX_SYCL_HIPSYCL
+        deviceStream.stream().wait_and_throw(); // SYCL-TODO: Use CUDA/HIP-specific solutions
+#    else
         // Relies on SYCL_INTEL_enqueue_barrier
         const std::vector<cl::sycl::event> waitlist{ event_.value() };
         deviceStream.stream().submit_barrier(waitlist);
         event_.reset();
+#    endif
     }
     //! Reset the event to unmarked state.
     inline void reset() { event_.reset(); }

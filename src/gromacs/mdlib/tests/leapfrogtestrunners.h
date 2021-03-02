@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,12 @@
 
 #include "leapfrogtestdata.h"
 
-#define HAVE_GPU_LEAPFROG (GMX_GPU_CUDA || GMX_GPU_SYCL)
+/*
+ * LeapFrog is available with CUDA and SYCL.
+ * However, the use of float3 in CPU code makes it hard to compile with hipSYCL until
+ * Issue #3312 is resolved.
+ */
+#define HAVE_GPU_LEAPFROG (GMX_GPU_CUDA || (GMX_GPU_SYCL && !GMX_SYCL_HIPSYCL))
 
 namespace gmx
 {

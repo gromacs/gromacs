@@ -91,7 +91,7 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
      * For clSize == But we need to set specific sub_group size >= 32 for clSize == 8 for correctness,
      * but it causes very poor performance.
      */
-    constexpr int requiredSubGroupSize = (c_clSize == 4) ? 16 : warpSize;
+    constexpr int gmx_unused requiredSubGroupSize = (c_clSize == 4) ? 16 : warpSize;
 
     /* Requirements:
      * Work group (block) must have range (c_clSize, c_clSize, ...) (for localId calculation, easy
