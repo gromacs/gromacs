@@ -366,17 +366,6 @@ check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
 
-# Aligned memory allocation. We need to check for both mm_malloc(),
-# posix_memalign(), memalign(), and on windows also _aligned_malloc()
-include(gmxTestMMMalloc)
-gmx_test_mm_malloc(HAVE__MM_MALLOC)
-check_cxx_symbol_exists(posix_memalign    stdlib.h     HAVE_POSIX_MEMALIGN)
-check_cxx_symbol_exists(memalign          stdlib.h     HAVE_MEMALIGN)
-if(MSVC)
-    # No need to waste time on this test on platforms where it will never be true
-    check_cxx_symbol_exists(_aligned_malloc   stdlib.h     HAVE__ALIGNED_MALLOC)
-endif()
-
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 

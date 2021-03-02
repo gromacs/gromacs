@@ -50,18 +50,6 @@
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
 
-#include "config.h"
-
-#include <stdio.h>
-
-#if GMX_NATIVE_WINDOWS
-#    include <windows.h>
-#elif HAVE_XMMINTRIN_H
-#    include <xmmintrin.h>
-#endif
-
-#include "gromacs/utility/basedefinitions.h"
-
 /*! \addtogroup module_utility
  * \{
  */
@@ -113,21 +101,7 @@ void gmx_omp_set_num_threads(int num_threads);
  * allocated for \p *message.
  * If the return value is `true`, \p *message is NULL.
  */
-gmx_bool gmx_omp_check_thread_affinity(char** message);
-
-/*! \brief
- * Pause for use in a spin-wait loop.
- */
-static inline void gmx_pause()
-{
-#if GMX_NATIVE_WINDOWS
-    YieldProcessor();
-#elif HAVE_XMMINTRIN_H
-    _mm_pause();
-#else
-    // No wait for unknown architecture
-#endif
-}
+bool gmx_omp_check_thread_affinity(char** message);
 
 /*! \} */
 

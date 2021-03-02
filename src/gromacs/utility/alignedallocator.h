@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,11 +71,11 @@ public:
      *
      * The memory will always be aligned to 128 bytes, which is our
      * estimate of the longest cache lines on architectures currently in use.
-     * It will also be padded by the same amount at the end of the
-     * area, to help avoid false cache sharing.
+     * It will also be a multiple of that amount, to adhere to implementation
+     * requirements and help avoid false cache sharing.
      *
-     *  \note Memory allocated with this routine must be released with
-     *        gmx::AlignedAllocationPolicy::free(), and absolutely not the system free().
+     *  \note Memory allocated with this routine should be released with
+     *        gmx::PageAlignedAllocationPolicy::free() or std::free.
      */
     static void* malloc(std::size_t bytes);
     /*! \brief Free aligned memory
@@ -83,8 +83,7 @@ public:
      *  \param p  Memory pointer previously returned from malloc()
      *
      *  \note This routine should only be called with pointers obtained from
-     *        gmx::AlignedAllocationPolicy::malloc(), and absolutely not any
-     *        pointers obtained the system malloc().
+     *        gmx::AlignedAllocationPolicy::malloc().
      */
     static void free(void* p);
 };
@@ -133,8 +132,8 @@ public:
      *
      * \return Valid pointer if the allocation worked, otherwise nullptr.
      *
-     *  \note Memory allocated with this routine must be released with
-     *        gmx::PageAlignedAllocationPolicy::free(), and absolutely not the system free().
+     *  \note Memory allocated with this routine should be released with
+     *        gmx::PageAlignedAllocationPolicy::free() or std::free.
      */
     static void* malloc(std::size_t bytes);
     /*! \brief Free aligned memory
@@ -142,8 +141,7 @@ public:
      *  \param p  Memory pointer previously returned from malloc()
      *
      *  \note This routine should only be called with pointers obtained from
-     *        gmx::PageAlignedAllocationPolicy::malloc(), and absolutely not any
-     *        pointers obtained the system malloc().
+     *        gmx::PageAlignedAllocationPolicy::malloc().
      */
     static void free(void* p);
 };

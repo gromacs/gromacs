@@ -50,14 +50,6 @@
 
 #include <memory>
 
-#if HAVE_MM_MALLOC_H
-#    include <mm_malloc.h>
-#elif HAVE_MALLOC_H
-#    include <malloc.h>
-#elif HAVE_XMMINTRIN_H
-#    include <xmmintrin.h>
-#endif
-
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>
 #endif
@@ -66,127 +58,8 @@
 #    include <windows.h> // only for the page size query purposes
 #endif
 
-#include "gromacs/utility/gmxassert.h"
-
 namespace gmx
 {
-
-namespace
-{
-
-/*! \brief Allocate aligned memory in a fully portable way
- *
- *  \param bytes  Amount of memory (bytes) to allocate. The routine will return
- *                nullptr if the allocation fails. However, note that asking for
- *                zero bytes will return a pointer that is non-null and properly
- *                aligned (but obviously you cannot use it, since you promised
- *                not to access data beyond the 0 bytes you asked for).
- *
- *  \param alignment  Alignment specification in bytes, must be a power of 2.
- *
- * \return Nonzero pointer if the allocation worked, otherwise nullptr.
- *  This routine should only be called from alignedMalloc(), which also does
- *  the checking for valid values. This particular function is used for platforms
- *  where we have no control of the alignment of memory returned by the system.
- *  Instead, we increase the amount of memory requested internally such that we
- *  both can create a pointer inside this memory that fulfills the memory
- *  alignment requested, and that we have room to store the original pointer
- *  just before this area.
- *
- *  \note This is an internal routine that should only be called from
- *        gmx::alignedMalloc(). Just like system-provided routines, it provides
- *        memory that is aligned - but not padded.
- */
-gmx_unused void* alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
-{
-    // The amount of extra memory (beyound what the user asked for) we need is:
-    // - sizeof(void *), to store the original pointer
-    // - alignment, to make sure we have an aligned pointer in the area
-    void* pMalloc = malloc(bytes + sizeof(void*) + alignment);
-
-    if (pMalloc == nullptr)
-    {
-        return nullptr;
-    }
-
-    // Convert pMalloc to size_t (so we work with raw bytes), add the space we
-    // need to save the original pointer, and (alignment-1) bytes, and then mask
-    // out the lowest bits.
-    std::size_t mask     = ~static_cast<std::size_t>(alignment - 1);
-    void*       pAligned = reinterpret_cast<void*>(
-            (reinterpret_cast<std::size_t>(pMalloc) + sizeof(void*) + alignment - 1) & mask);
-
-    // Store original pointer. Since we allocated at least sizeof(void *) extra
-    // space this is always a valid memory location.
-    reinterpret_cast<void**>(pAligned)[-1] = pMalloc;
-
-    return pAligned;
-}
-
-
-/*! \brief Free aligned memory
- *
- *  \param p  Memory pointer previously returned from
- *            gmx::internal::alignedFreePortable().
- *
- *  Since this routine relies on the original pointer being stored just before
- *  the memory area p points to, bad things will happen if you call this routine
- *  with a pointer obtained any other way, or if you call the system free()
- *  with a pointer obtained from std::alignedMalloc().
- *
- * \note  This is an internal routine that should only be called from
- *        gmx::alignedFree().
- */
-gmx_unused void alignedFreeGeneric(void* p)
-{
-    if (p)
-    {
-        // Pick up the pointer stored just below p, and use that to call free()
-        free(reinterpret_cast<void**>(p)[-1]);
-    }
-}
-
-//! Implement malloc of \c bytes of memory, aligned to \c alignment.
-void* mallocImpl(std::size_t bytes, std::size_t alignment)
-{
-    void* p = nullptr;
-
-#if HAVE__MM_MALLOC
-    p = _mm_malloc(bytes, alignment);
-#elif HAVE_POSIX_MEMALIGN
-    if (posix_memalign(&p, alignment, bytes) != 0)
-    {
-        p = nullptr;
-    }
-#elif HAVE_MEMALIGN
-    p = memalign(alignment, bytes);
-#elif HAVE__ALIGNED_MALLOC
-    p = _aligned_malloc(bytes, alignment);
-#else
-    p = internal::alignedMallocGeneric(bytes, alignment);
-#endif
-
-    return p;
-}
-
-//! Free aligned memory allocated with mallocImpl().
-void freeImpl(void* p)
-{
-    if (p)
-    {
-#if HAVE__MM_MALLOC
-        _mm_free(p);
-#elif HAVE_POSIX_MEMALIGN || HAVE_MEMALIGN
-        free(p);
-#elif HAVE__ALIGNED_MALLOC
-        _aligned_free(p);
-#else
-        internal::alignedFreeGeneric(p);
-#endif
-    }
-}
-
-} // namespace
 
 // === AlignedAllocationPolicy
 
@@ -210,16 +83,15 @@ std::size_t AlignedAllocationPolicy::alignment()
 
 void* AlignedAllocationPolicy::malloc(std::size_t bytes)
 {
-    // Pad memory at the end with another alignment bytes to avoid false sharing
-    auto size = alignment();
-    bytes += size;
-
-    return mallocImpl(bytes, size);
+    // Adhere to the implementation requirements. Also avoids false
+    // sharing.
+    auto multiplesOfAlignment = (bytes / alignment() + 1) * alignment();
+    return std::aligned_alloc(alignment(), multiplesOfAlignment);
 }
 
 void AlignedAllocationPolicy::free(void* p)
 {
-    freeImpl(p);
+    std::free(p);
 }
 
 // === PageAlignedAllocationPolicy
@@ -265,12 +137,15 @@ std::size_t PageAlignedAllocationPolicy::alignment()
 
 void* PageAlignedAllocationPolicy::malloc(std::size_t bytes)
 {
-    return mallocImpl(bytes, alignment());
+    // Adhere to the implementation requirements. Also avoids false
+    // sharing.
+    auto multiplesOfAlignment = (bytes / alignment() + 1) * alignment();
+    return std::aligned_alloc(alignment(), multiplesOfAlignment);
 }
 
 void PageAlignedAllocationPolicy::free(void* p)
 {
-    freeImpl(p);
+    std::free(p);
 }
 
 } // namespace gmx

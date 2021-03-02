@@ -95,7 +95,7 @@ void gmx_omp_set_num_threads(int num_threads)
 #endif
 }
 
-gmx_bool gmx_omp_check_thread_affinity(char** message)
+bool gmx_omp_check_thread_affinity(char** message)
 {
     bool shouldSetAffinity = true;
 

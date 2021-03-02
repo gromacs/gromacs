@@ -193,12 +193,6 @@
    fun:_Unwind_RaiseException
    fun:__cxa_throw
 }
-{
-   posix_memalign
-   Memcheck:Leak
-   ...
-   fun:posix_memalign
-}
 
 # Intel compiler on MacOS
 {

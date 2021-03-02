@@ -66,8 +66,6 @@
 
 #include <stddef.h>
 
-#include "gromacs/utility/basedefinitions.h"
-
 /*! \brief
  * \Gromacs wrapper for malloc().
  *

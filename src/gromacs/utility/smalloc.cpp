@@ -47,14 +47,8 @@
 
 #include <mutex>
 
-#ifdef WITH_DMALLOC
-#    include <dmalloc.h>
-#endif
-
 #include <cstring>
 
-#include "gromacs/utility/alignedallocator.h"
-#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
 #    include "gromacs/utility/basenetwork.h"
@@ -208,10 +202,7 @@ void save_free(const char gmx_unused* name, const char gmx_unused* file, int gmx
 }
 
 /* Pointers allocated with this routine should only be freed
- * with save_free_aligned, however this will only matter
- * on systems that lack posix_memalign() and memalign() when
- * freeing memory that needed to be adjusted to achieve
- * the necessary alignment. */
+ * with save_free_aligned. */
 void* save_malloc_aligned(const char* name, const char* file, int line, size_t nelem, size_t elsize, size_t alignment)
 {
     void* p = nullptr;
@@ -226,20 +217,6 @@ void* save_malloc_aligned(const char* name, const char* file, int line, size_t n
                   file,
                   line);
     }
-
-    size_t alignmentSize = gmx::AlignedAllocationPolicy::alignment();
-    if (alignment > alignmentSize)
-    {
-        gmx_fatal(errno,
-                  __FILE__,
-                  __LINE__,
-                  "Cannot allocate aligned memory with alignment > %zu bytes\n(called from file "
-                  "%s, line %d)",
-                  alignmentSize,
-                  file,
-                  line);
-    }
-
 
     if (nelem == 0 || elsize == 0)
     {
@@ -260,15 +237,19 @@ void* save_malloc_aligned(const char* name, const char* file, int line, size_t n
         }
 #endif
 
-        p = gmx::AlignedAllocationPolicy::malloc(nelem * elsize);
+        // Adhere to the implementation requirements. Also avoids false
+        // sharing.
+        size_t bytes                = nelem * elsize;
+        auto   multiplesOfAlignment = (bytes / alignment + 1) * alignment;
+        p                           = std::aligned_alloc(alignment, multiplesOfAlignment);
 
         if (p == nullptr)
         {
             gmx_fatal(errno,
                       __FILE__,
                       __LINE__,
-                      "Not enough memory. Failed to allocate %zu aligned elements of size %zu for "
-                      "%s\n(called from file %s, line %d)",
+                      "Not enough memory or invalid alignment. Failed to allocate %zu aligned "
+                      "elements of size %zu for %s\n(called from file %s, line %d)",
                       nelem,
                       elsize,
                       name,
@@ -289,10 +270,10 @@ void* save_calloc_aligned(const char* name, const char* file, int line, size_t n
     return aligned;
 }
 
-/* This routine can NOT be called with any pointer */
+/* This routine should only be called with pointers obtained from save_*_aligned family of functions */
 void save_free_aligned(const char gmx_unused* name, const char gmx_unused* file, int gmx_unused line, void* ptr)
 {
-    gmx::AlignedAllocationPolicy::free(ptr);
+    std::free(ptr);
 }
 
 void set_over_alloc_dd(bool set)
