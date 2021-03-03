@@ -24,14 +24,14 @@ stages:
   - nightly-deploy
   # Release work for packaging code
   - release-package
-  # Release checksum verification
-  - release-verify
   # Configure code for release builds
   - release-configure
   # Release work for packaging code
   - release-build
   # Tests for release code
   - release-tests
+  # Release checksum verification
+  - release-verify
   # Prepare for deploying artifacts
   - release-prepare-deploy
   # Deploy stage for release builds

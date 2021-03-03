@@ -182,7 +182,9 @@ archive:configure:release:
     when: always
     expire_in: 1 week
     paths:
-      - $BUILD_DIR/*log
+      - $BUILD_DIR/*logs
+      - $BUILD_DIR/bin
+      - $BUILD_DIR/lib
       - gromacs*tar.gz
 
 archive:build:
@@ -205,7 +207,7 @@ archive:package:
   variables:
     BUILD_DIR: build-package
 
-release-verify:
+checksum-verify:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
   stage: release-verify
   extends:
@@ -217,30 +219,69 @@ release-verify:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
+    BUILD_DIR: build-package
   script:
+    - VALID_BUILD=true
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
-    - if [[ $GROMACS_RELEASE != "true" ]] ; then
-      VERSION=$VERSION-dev ;
+    - if [[ "$GROMACS_RELEASE" != "true" ]] ; then
+      VERSION="$VERSION"-dev ;
       fi
     - REGTEST_COMPARE=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['regressiontest-md5sum'])"`
-    - SOURCENAME=gromacs-$VERSION
-    - SOURCETARBALL=$SOURCENAME.tar.gz
-    - SOURCE_MD5SUM=`md5sum $SOURCETARBALL | awk '{print $1}'`
-    - REGTESTNAME=regressiontests-$VERSION
-    - REGTESTTARBALL=$REGTESTNAME.tar.gz
-    - REGTEST_MD5SUM=`md5sum $REGTESTTARBALL | awk '{print $1}'`
+    - SOURCENAME=gromacs-"$VERSION"
+    - SOURCETARBALL="$SOURCENAME".tar.gz
+    - SOURCE_MD5SUM=`md5sum "$SOURCETARBALL" | awk '{print $1}'`
+    - REGTESTNAME=regressiontests-"$VERSION"
+    - REGTESTTARBALL="$REGTESTNAME".tar.gz
+    - REGTEST_MD5SUM=`md5sum "$REGTESTTARBALL" | awk '{print $1}'`
     - echo "$SOURCETARBALL md5sum = $SOURCE_MD5SUM"
     - echo "$REGTESTTARBALL md5sum = $REGTEST_MD5SUM"
     - echo "$REGTESTTARBALL reference md5sum = $REGTEST_COMPARE"
-    - if [[ $REGTEST_COMPARE != $REGTEST_MD5SUM && $GROMACS_RELEASE == "true" ]] ; then
+    - if [[ "$REGTEST_COMPARE" != "$REGTEST_MD5SUM" && "$GROMACS_RELEASE" == "true" ]] ; then
       echo "Mismatch in regressiontest md5sums";
+      VALID_BUILD=false;
+      fi
+    - if [[ "$VALID_BUILD" != "true" ]] ; then
       exit 1;
       fi
   dependencies:
     - archive:package
     - regressiontests:package
+    - prepare-release-version
+
+version-verify:
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
+  stage: release-verify
+  extends:
+    - .variables:default
+    - .rules:nightly-only-for-release
+  cache: {}
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_REQUEST: 2Gi
+    BUILD_DIR: release-doc-builds
+  script:
+    - VALID_BUILD=true
+    - VERSION=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - if [[ "$GROMACS_RELEASE" != "true" ]] ; then
+      VERSION="$VERSION"-dev ;
+      fi
+    - VERSION_FROM_BINARY=`"${BUILD_DIR}"/bin/gmx --version | grep "GROMACS version" | awk '{print $3}'`
+    - echo "Version name from CMake = $VERSION"
+    - echo "Version name from binary = $VERSION_FROM_BINARY"
+    - if [[ "$VERSION" != "$VERSION_FROM_BINARY" && "$GROMACS_RELEASE" == "true" ]] ; then
+      echo "Version names don't match";
+      VALID_BUILD=false;
+      fi
+    - if [[ "$VALID_BUILD" != "true" ]] ; then
+      exit 1;
+      fi
+  dependencies:
+    - webpage:dependencies
     - prepare-release-version
 
 archive:nightly-webpage:
