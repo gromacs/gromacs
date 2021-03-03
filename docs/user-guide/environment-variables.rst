@@ -498,9 +498,6 @@ Analysis and Core Functions
         terminal residues (NXXX and CXXX) as :ref:`rtp` entries that are normally renamed. Setting
         this environment variable disables this renaming.
 
-``GMX_PATH_GZIP``
-        ``gunzip`` executable, used by :ref:`gmx wham`.
-
 ``GMX_FONT``
         name of X11 font used by :ref:`gmx view`.
 

@@ -43,3 +43,11 @@ in favor of better-named alternatives:
 * ``GMX_CUDA_NB_EWALD_TWINCUT`` and ``GMX_OCL_NB_EWALD_TWINCUT`` (use ``GMX_GPU_NB_EWALD_TWINCUT``)
 
 :issue:`3803`
+
+Removed the ability for gmx wham to read .pdo files
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Files in .pdo format were written by |Gromacs| versions prior to 4.0.
+That is so long ago that being able to read them is no longer
+relevant, so this capability was deprecated in version 2021. If you do
+need to read such files, please use an older version of |Gromacs|.

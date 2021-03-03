@@ -53,7 +53,6 @@
 #include <cstring>
 
 #include <algorithm>
-#include <sstream>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
@@ -96,14 +95,13 @@ enum
     enNr
 };
 /*! \brief
- * enum for type of input files (pdos, tpr, or pullf)
+ * enum for type of input files (tpr or pullx/pullf)
  */
 enum
 {
     whamin_unknown,
     whamin_tpr,
     whamin_pullxf,
-    whamin_pdo
 };
 
 /*! \brief enum for bootstrapping method
@@ -162,25 +160,12 @@ typedef struct
     gmx_bool     bPrintComp;     //!< Components of pull distance written to pullx.xvg ?
 
     /*!\}*/
-    /*!
-     * \name Using PDO files common until gromacs 3.x
-     */
-    /*!\{*/
-    int    nSkip;
-    char   Reference[256];
-    int    nPull;
-    int    nDim;
-    ivec   Dims;
-    char   PullName[4][256];
-    double UmbPos[4][3];
-    double UmbCons[4][3];
-    /*!\}*/
 } t_UmbrellaHeader;
 
 //! Data in the umbrella histograms
 typedef struct
 {
-    int      nPull; //!< nr of pull groups in this pdo or pullf/x file
+    int      nPull; //!< nr of pull groups in this pullf/pullx file
     double** Histo; //!< nPull histograms
     double** cum;   //!< nPull cumulative distribution functions
     int      nBin;  //!< nr of bins. identical to opt->bins
@@ -231,9 +216,9 @@ typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Paddin
      */
     /*!\{*/
     const char *fnTpr, *fnPullf, *fnCoordSel;
-    const char *fnPdo, *fnPullx;            //!< file names of input
-    gmx_bool    bTpr, bPullf, bPdo, bPullx; //!< input file types given?
-    real        tmin, tmax, dt;             //!< only read input within tmin and tmax with dt
+    const char* fnPullx;              //!< file names of input
+    gmx_bool    bTpr, bPullf, bPullx; //!< input file types given?
+    real        tmin, tmax, dt;       //!< only read input within tmin and tmax with dt
 
     gmx_bool bInitPotByIntegration; //!< before WHAM, guess potential by force integration. Yields 1.5 to 2 times faster convergence
     int stepUpdateContrib; //!< update contribution table every ... iterations. Accelerates WHAM.
@@ -450,112 +435,6 @@ static void setup_tab(const char* fn, t_UmbrellaOptions* opt)
            opt->tabDz);
 }
 
-//! Read the header of an PDO file (position, force const, nr of groups)
-static void read_pdo_header(FILE* file, t_UmbrellaHeader* header, t_UmbrellaOptions* opt)
-{
-    char               line[2048];
-    char               Buffer0[256], Buffer1[256], Buffer2[256], Buffer3[256], Buffer4[256];
-    int                i;
-    std::istringstream ist;
-
-    /*  line 1 */
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Error reading header from pdo file\n");
-    }
-    ist.str(line);
-    ist >> Buffer0 >> Buffer1 >> Buffer2;
-    if (std::strcmp(Buffer1, "UMBRELLA") != 0)
-    {
-        gmx_fatal(FARGS,
-                  "This does not appear to be a valid pdo file. Found %s, expected %s\n"
-                  "(Found in first line: `%s')\n",
-                  Buffer1,
-                  "UMBRELLA",
-                  line);
-    }
-    if (std::strcmp(Buffer2, "3.0") != 0)
-    {
-        gmx_fatal(FARGS, "This does not appear to be a version 3.0 pdo file");
-    }
-
-    /*  line 2 */
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Error reading header from pdo file\n");
-    }
-    ist.str(line);
-    ist >> Buffer0 >> Buffer1 >> Buffer2 >> header->Dims[0] >> header->Dims[1] >> header->Dims[2];
-    /* printf("%d %d %d\n", header->Dims[0],header->Dims[1],header->Dims[2]); */
-
-    header->nDim = header->Dims[0] + header->Dims[1] + header->Dims[2];
-    if (header->nDim != 1)
-    {
-        gmx_fatal(FARGS, "Currently only supports one dimension");
-    }
-
-    /* line3 */
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Error reading header from pdo file\n");
-    }
-    ist.str(line);
-    ist >> Buffer0 >> Buffer1 >> header->nSkip;
-
-    /* line 4 */
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Error reading header from pdo file\n");
-    }
-    ist.str(line);
-    ist >> Buffer0 >> Buffer1 >> Buffer2 >> header->Reference;
-
-    /* line 5 */
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Error reading header from pdo file\n");
-    }
-    ist.str(line);
-    ist >> Buffer0 >> Buffer1 >> Buffer2 >> Buffer3 >> Buffer4 >> header->nPull;
-
-    if (opt->verbose)
-    {
-        printf("\tFound nPull=%d , nSkip=%d, ref=%s\n", header->nPull, header->nSkip, header->Reference);
-    }
-
-    for (i = 0; i < header->nPull; ++i)
-    {
-        if (fgets(line, 2048, file) == nullptr)
-        {
-            gmx_fatal(FARGS, "Error reading header from pdo file\n");
-        }
-        ist.str(line);
-        ist >> Buffer0 >> Buffer1 >> Buffer2 >> header->PullName[i];
-        ist >> Buffer0 >> Buffer1 >> header->UmbPos[i][0];
-        ist >> Buffer0 >> Buffer1 >> header->UmbCons[i][0];
-
-        if (opt->verbose)
-        {
-            printf("\tpullgroup %d, pullname = %s, UmbPos = %g, UmbConst = %g\n",
-                   i,
-                   header->PullName[i],
-                   header->UmbPos[i][0],
-                   header->UmbCons[i][0]);
-        }
-    }
-
-    if (fgets(line, 2048, file) == nullptr)
-    {
-        gmx_fatal(FARGS, "Cannot read from file\n");
-    }
-    ist.str(line);
-    ist >> Buffer3;
-    if (std::strcmp(Buffer3, "#####") != 0)
-    {
-        gmx_fatal(FARGS, "Expected '#####', found %s. Hick.\n", Buffer3);
-    }
-}
-
 //! smarter fgets
 static char* fgets3(FILE* fp, char ptr[], int* len)
 {
@@ -585,220 +464,6 @@ static char* fgets3(FILE* fp, char ptr[], int* len)
     }
 
     return ptr;
-}
-
-/*! \brief Read the data columns of and PDO file.
- *
- *  TO DO: Get rid of the scanf function to avoid the clang warning.
- *         At the moment, this warning is avoided by hiding the format string
- *         the variable fmtlf.
- */
-static void read_pdo_data(FILE*              file,
-                          t_UmbrellaHeader*  header,
-                          int                fileno,
-                          t_UmbrellaWindow*  win,
-                          t_UmbrellaOptions* opt,
-                          gmx_bool           bGetMinMax,
-                          real*              mintmp,
-                          real*              maxtmp)
-{
-    int               i, inttemp, bins, count, ntot;
-    real              minval, maxval, minfound = 1e20, maxfound = -1e20;
-    double            temp, time, time0 = 0, dt;
-    char*             ptr    = nullptr;
-    t_UmbrellaWindow* window = nullptr;
-    gmx_bool          timeok, dt_ok = true;
-    char *            tmpbuf = nullptr, fmt[256], fmtign[256], fmtlf[5] = "%lf";
-    int               len = STRLEN, dstep = 1;
-    const int         blocklen = 4096;
-    int*              lennow   = nullptr;
-
-    if (!bGetMinMax)
-    {
-        bins   = opt->bins;
-        minval = opt->min;
-        maxval = opt->max;
-
-        window = win + fileno;
-        /* Need to alocate memory and set up structure */
-        window->nPull = header->nPull;
-        window->nBin  = bins;
-
-        snew(window->Histo, window->nPull);
-        snew(window->z, window->nPull);
-        snew(window->k, window->nPull);
-        snew(window->pos, window->nPull);
-        snew(window->N, window->nPull);
-        snew(window->Ntot, window->nPull);
-        snew(window->g, window->nPull);
-        snew(window->bsWeight, window->nPull);
-
-        window->bContrib = nullptr;
-
-        if (opt->bCalcTauInt)
-        {
-            snew(window->ztime, window->nPull);
-        }
-        else
-        {
-            window->ztime = nullptr;
-        }
-        snew(lennow, window->nPull);
-
-        for (i = 0; i < window->nPull; ++i)
-        {
-            window->z[i]        = 1;
-            window->bsWeight[i] = 1.;
-            snew(window->Histo[i], bins);
-            window->k[i]    = header->UmbCons[i][0];
-            window->pos[i]  = header->UmbPos[i][0];
-            window->N[i]    = 0;
-            window->Ntot[i] = 0;
-            window->g[i]    = 1.;
-            if (opt->bCalcTauInt)
-            {
-                window->ztime[i] = nullptr;
-            }
-        }
-
-        /* Done with setup */
-    }
-    else
-    {
-        minfound = 1e20;
-        maxfound = -1e20;
-        minval = maxval = bins = 0; /* Get rid of warnings */
-    }
-
-    count = 0;
-    snew(tmpbuf, len);
-    while ((ptr = fgets3(file, tmpbuf, &len)) != nullptr)
-    {
-        trim(ptr);
-
-        if (ptr[0] == '#' || std::strlen(ptr) < 2)
-        {
-            continue;
-        }
-
-        /* Initiate format string */
-        fmtign[0] = '\0';
-        std::strcat(fmtign, "%*s");
-
-        sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
-        /* Round time to fs */
-        time = 1.0 / 1000 * (gmx::roundToInt64(time * 1000));
-
-        /* get time step of pdo file */
-        if (count == 0)
-        {
-            time0 = time;
-        }
-        else if (count == 1)
-        {
-            dt = time - time0;
-            if (opt->dt > 0.0)
-            {
-                dstep = gmx::roundToInt(opt->dt / dt);
-                if (dstep == 0)
-                {
-                    dstep = 1;
-                }
-            }
-            if (!bGetMinMax)
-            {
-                window->dt = dt * dstep;
-            }
-        }
-        count++;
-
-        dt_ok  = ((count - 1) % dstep == 0);
-        timeok = (dt_ok && time >= opt->tmin && time <= opt->tmax);
-        /* if (opt->verbose)
-           printf(" time = %f, (tmin,tmax)=(%e,%e), dt_ok=%d timeok=%d\n",
-           time,opt->tmin, opt->tmax, dt_ok,timeok); */
-
-        if (timeok)
-        {
-            for (i = 0; i < header->nPull; ++i)
-            {
-                std::strcpy(fmt, fmtign);
-                std::strcat(fmt, "%lf");    /* Creating a format stings such as "%*s...%*s%lf" */
-                std::strcat(fmtign, "%*s"); /* ignoring one more entry in the next loop */
-                if (sscanf(ptr, fmt, &temp))
-                {
-                    temp += header->UmbPos[i][0];
-                    if (bGetMinMax)
-                    {
-                        if (temp < minfound)
-                        {
-                            minfound = temp;
-                        }
-                        if (temp > maxfound)
-                        {
-                            maxfound = temp;
-                        }
-                    }
-                    else
-                    {
-                        if (opt->bCalcTauInt)
-                        {
-                            /* save time series for autocorrelation analysis */
-                            ntot = window->Ntot[i];
-                            if (ntot >= lennow[i])
-                            {
-                                lennow[i] += blocklen;
-                                srenew(window->ztime[i], lennow[i]);
-                            }
-                            window->ztime[i][ntot] = temp;
-                        }
-
-                        temp -= minval;
-                        temp /= (maxval - minval);
-                        temp *= bins;
-                        temp = std::floor(temp);
-
-                        inttemp = static_cast<int>(temp);
-                        if (opt->bCycl)
-                        {
-                            if (inttemp < 0)
-                            {
-                                inttemp += bins;
-                            }
-                            else if (inttemp >= bins)
-                            {
-                                inttemp -= bins;
-                            }
-                        }
-
-                        if (inttemp >= 0 && inttemp < bins)
-                        {
-                            window->Histo[i][inttemp] += 1.;
-                            window->N[i]++;
-                        }
-                        window->Ntot[i]++;
-                    }
-                }
-            }
-        }
-        if (time > opt->tmax)
-        {
-            if (opt->verbose)
-            {
-                printf("time %f larger than tmax %f, stop reading pdo file\n", time, opt->tmax);
-            }
-            break;
-        }
-    }
-
-    if (bGetMinMax)
-    {
-        *mintmp = minfound;
-        *maxtmp = maxfound;
-    }
-
-    sfree(lennow);
-    sfree(tmpbuf);
 }
 
 /*! \brief Set identical weights for all histograms
@@ -1810,7 +1475,7 @@ static void do_bootstrapping(const char*        fnres,
     printf("Wrote boot strap result to %s\n", fnres);
 }
 
-//! Return type of input file based on file extension (xvg, pdo, or tpr)
+//! Return type of input file based on file extension (xvg or tpr)
 static int whaminFileType(char* fn)
 {
     int len;
@@ -1823,17 +1488,16 @@ static int whaminFileType(char* fn)
     {
         return whamin_pullxf;
     }
-    else if (std::strcmp(fn + len - 3, "pdo") == 0 || std::strcmp(fn + len - 6, "pdo.gz") == 0)
-    {
-        return whamin_pdo;
-    }
     else
     {
-        gmx_fatal(FARGS, "Unknown file type of %s. Should be tpr, xvg, or pdo.\n", fn);
+        gmx_fatal(FARGS,
+                  "Unknown file type of %s. Should be tpr or xvg. Use GROMACS 2021 or earlier to "
+                  "read pdo files.\n",
+                  fn);
     }
 }
 
-//! Read the files names in pdo-files.dat, pullf/x-files.dat, tpr-files.dat
+//! Read the files names in pullf/pullx-files.dat, tpr-files.dat
 static void read_wham_in(const char* fn, char*** filenamesRet, int* nfilesRet, t_UmbrellaOptions* opt)
 {
     char **filename = nullptr, tmp[WHAM_MAXFILELEN + 2];
@@ -1872,188 +1536,6 @@ static void read_wham_in(const char* fn, char*** filenamesRet, int* nfilesRet, t
     }
     *filenamesRet = filename;
     *nfilesRet    = nread;
-}
-
-//! Open a file or a pipe to a gzipped file
-static FILE* open_pdo_pipe(const char* fn, t_UmbrellaOptions* opt, gmx_bool* bPipeOpen)
-{
-    char            Buffer[2048], gunzip[1024], *Path = nullptr;
-    FILE*           pipe   = nullptr;
-    static gmx_bool bFirst = true;
-
-    /* gzipped pdo file? */
-    if ((std::strcmp(fn + std::strlen(fn) - 3, ".gz") == 0))
-    {
-        /* search gunzip executable */
-        if (!(Path = getenv("GMX_PATH_GZIP")))
-        {
-            if (gmx_fexist("/bin/gunzip"))
-            {
-                sprintf(gunzip, "%s", "/bin/gunzip");
-            }
-            else if (gmx_fexist("/usr/bin/gunzip"))
-            {
-                sprintf(gunzip, "%s", "/usr/bin/gunzip");
-            }
-            else
-            {
-                gmx_fatal(FARGS,
-                          "Cannot find executable gunzip in /bin or /usr/bin.\n"
-                          "You may want to define the path to gunzip "
-                          "with the environment variable GMX_PATH_GZIP.");
-            }
-        }
-        else
-        {
-            sprintf(gunzip, "%s/gunzip", Path);
-            if (!gmx_fexist(gunzip))
-            {
-                gmx_fatal(FARGS,
-                          "Cannot find executable %s. Please define the path to gunzip"
-                          " in the environmental varialbe GMX_PATH_GZIP.",
-                          gunzip);
-            }
-        }
-        if (bFirst)
-        {
-            printf("Using gunzip executable %s\n", gunzip);
-            bFirst = false;
-        }
-        if (!gmx_fexist(fn))
-        {
-            gmx_fatal(FARGS, "File %s does not exist.\n", fn);
-        }
-        sprintf(Buffer, "%s -c < %s", gunzip, fn);
-        if (opt->verbose)
-        {
-            printf("Executing command '%s'\n", Buffer);
-        }
-#if HAVE_PIPES
-        if ((pipe = popen(Buffer, "r")) == nullptr)
-        {
-            gmx_fatal(FARGS, "Unable to open pipe to `%s'\n", Buffer);
-        }
-#else
-        gmx_fatal(FARGS, "Cannot open a compressed file on platform without pipe support");
-#endif
-        *bPipeOpen = TRUE;
-    }
-    else
-    {
-        pipe       = gmx_ffopen(fn, "r");
-        *bPipeOpen = FALSE;
-    }
-
-    return pipe;
-}
-
-//! Close file or pipe
-static void pdo_close_file(FILE* fp)
-{
-#if HAVE_PIPES
-    pclose(fp);
-#else
-    gmx_ffclose(fp);
-#endif
-}
-
-//! Reading all pdo files
-static void read_pdo_files(char** fn, int nfiles, t_UmbrellaHeader* header, t_UmbrellaWindow* window, t_UmbrellaOptions* opt)
-{
-    FILE*    file;
-    real     mintmp, maxtmp, done = 0.;
-    int      i;
-    gmx_bool bPipeOpen;
-    /* char Buffer0[1000]; */
-
-    if (nfiles < 1)
-    {
-        gmx_fatal(FARGS, "No files found. Hick.");
-    }
-
-    /* if min and max are not given, get min and max from the input files */
-    if (opt->bAuto)
-    {
-        printf("Automatic determination of boundaries from %d pdo files...\n", nfiles);
-        opt->min = 1e20;
-        opt->max = -1e20;
-        for (i = 0; i < nfiles; ++i)
-        {
-            file = open_pdo_pipe(fn[i], opt, &bPipeOpen);
-            /*fgets(Buffer0,999,file);
-               fprintf(stderr,"First line '%s'\n",Buffer0); */
-            done = 100.0 * (i + 1) / nfiles;
-            fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done);
-            fflush(stdout);
-            if (opt->verbose)
-            {
-                printf("\n");
-            }
-            read_pdo_header(file, header, opt);
-            /* here only determine min and max of this window */
-            read_pdo_data(file, header, i, nullptr, opt, TRUE, &mintmp, &maxtmp);
-            if (maxtmp > opt->max)
-            {
-                opt->max = maxtmp;
-            }
-            if (mintmp < opt->min)
-            {
-                opt->min = mintmp;
-            }
-            if (bPipeOpen)
-            {
-                pdo_close_file(file);
-            }
-            else
-            {
-                gmx_ffclose(file);
-            }
-        }
-        printf("\n");
-        printf("\nDetermined boundaries to %f and %f\n\n", opt->min, opt->max);
-        if (opt->bBoundsOnly)
-        {
-            printf("Found option -boundsonly, now exiting.\n");
-            exit(0);
-        }
-    }
-    /* store stepsize in profile */
-    opt->dz = (opt->max - opt->min) / opt->bins;
-
-    /* Having min and max, we read in all files */
-    /* Loop over all files */
-    for (i = 0; i < nfiles; ++i)
-    {
-        done = 100.0 * (i + 1) / nfiles;
-        fprintf(stdout, "\rOpening %s ... [%2.0f%%]", fn[i], done);
-        fflush(stdout);
-        if (opt->verbose)
-        {
-            printf("\n");
-        }
-        file = open_pdo_pipe(fn[i], opt, &bPipeOpen);
-        read_pdo_header(file, header, opt);
-        /* load data into window */
-        read_pdo_data(file, header, i, window, opt, FALSE, nullptr, nullptr);
-        if ((window + i)->Ntot[0] == 0)
-        {
-            fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fn[i]);
-        }
-        if (bPipeOpen)
-        {
-            pdo_close_file(file);
-        }
-        else
-        {
-            gmx_ffclose(file);
-        }
-    }
-    printf("\n");
-    for (i = 0; i < nfiles; ++i)
-    {
-        sfree(fn[i]);
-    }
-    sfree(fn);
 }
 
 //! translate 0/1 to N/Y to write pull dimensions
@@ -2449,7 +1931,7 @@ static void read_pull_xf(const char*        fn,
         /* Do you want that time frame? */
         t = 1.0 / 1000 * (gmx::roundToInt64((y[0][i] * 1000))); /* round time to fs */
 
-        /* get time step of pdo file and get dstep from opt->dt */
+        /* get time step and get dstep from opt->dt */
         if (i == 0)
         {
             time0 = t;
@@ -3368,27 +2850,7 @@ int gmx_wham(int argc, char* argv[])
         "  provides the pull force output file names ([TT]pullf.xvg[tt]) with option [TT]-if[tt].",
         "  From the pull force the position in the umbrella potential is",
         "  computed. This does not work with tabulated umbrella potentials.",
-        "* With option [TT]-ip[tt], the user provides file names of (gzipped) [REF].pdo[ref] ",
-        "  files, i.e.",
-        "  the GROMACS 3.3 umbrella output files. If you have some unusual",
-        "  reaction coordinate you may also generate your own [REF].pdo[ref] files and",
-        "  feed them with the [TT]-ip[tt] option into to [THISMODULE]. The [REF].pdo[ref] file ",
-        "  header must be similar to the following::",
         "",
-        "  # UMBRELLA      3.0",
-        "  # Component selection: 0 0 1",
-        "  # nSkip 1",
-        "  # Ref. Group 'TestAtom'",
-        "  # Nr. of pull groups 2",
-        "  # Group 1 'GR1'  Umb. Pos. 5.0 Umb. Cons. 1000.0",
-        "  # Group 2 'GR2'  Umb. Pos. 2.0 Umb. Cons. 500.0",
-        "  #####",
-        "",
-        "  The number of pull groups, umbrella positions, force constants, and names ",
-        "  may (of course) differ. Following the header, a time column and ",
-        "  a data column for each pull group follows (i.e. the displacement",
-        "  with respect to the umbrella center). Up to four pull groups are possible ",
-        "  per [REF].pdo[ref] file at present.[PAR]",
         "By default, all pull coordinates found in all pullx/pullf files are used in WHAM. If ",
         "only ",
         "some of the pull coordinates should be used, a pull coordinate selection file (option ",
@@ -3413,7 +2875,7 @@ int gmx_wham(int argc, char* argv[])
         "",
         "Always check whether the histograms sufficiently overlap.[PAR]",
         "The umbrella potential is assumed to be harmonic and the force constants are ",
-        "read from the [REF].tpr[ref] or [REF].pdo[ref] files. If a non-harmonic umbrella force ",
+        "read from the [REF].tpr[ref] files. If a non-harmonic umbrella force ",
         "was applied ",
         "a tabulated potential can be provided with [TT]-tab[tt].",
         "",
@@ -3466,7 +2928,7 @@ int gmx_wham(int argc, char* argv[])
         "less robust) method such as fitting to a double exponential, you can ",
         "compute the IACTs with [gmx-analyze] and provide them to [THISMODULE] with the file ",
         "[TT]iact-in.dat[tt] (option [TT]-iiact[tt]), which should contain one line per ",
-        "input file ([REF].pdo[ref] or pullx/f file) and one column per pull coordinate in the ",
+        "input file (pullx/pullf file) and one column per pull coordinate in the ",
         "respective file.",
         "",
         "Error analysis",
@@ -3618,7 +3080,6 @@ int gmx_wham(int argc, char* argv[])
         { efDAT, "-ix", "pullx-files", ffOPTRD }, /* wham input: pullf.xvg's and tprs           */
         { efDAT, "-if", "pullf-files", ffOPTRD }, /* wham input: pullf.xvg's and tprs           */
         { efDAT, "-it", "tpr-files", ffOPTRD },   /* wham input: tprs                           */
-        { efDAT, "-ip", "pdo-files", ffOPTRD },   /* wham input: pdo files (gmx3 style)         */
         { efDAT, "-is", "coordsel", ffOPTRD },    /* input: select pull coords to use           */
         { efXVG, "-o", "profile", ffWRITE },      /* output file for profile                     */
         { efXVG, "-hist", "histo", ffWRITE },     /* output file for histograms                  */
@@ -3634,7 +3095,7 @@ int gmx_wham(int argc, char* argv[])
     t_UmbrellaWindow* window = nullptr;
     double *          profile, maxchange = 1e20;
     gmx_bool          bMinSet, bMaxSet, bAutoSet, bExact = FALSE;
-    char **           fninTpr, **fninPull, **fninPdo;
+    char **           fninTpr, **fninPull;
     const char*       fnPull;
     FILE *            histout, *profout;
     char              xlabel[STRLEN], ylabel[256], title[256];
@@ -3687,7 +3148,6 @@ int gmx_wham(int argc, char* argv[])
     opt.bProf0Set = opt2parg_bSet("-zprof0", asize(pa), pa);
 
     opt.bTab         = opt2bSet("-tab", NFILE, fnm);
-    opt.bPdo         = opt2bSet("-ip", NFILE, fnm);
     opt.bTpr         = opt2bSet("-it", NFILE, fnm);
     opt.bPullx       = opt2bSet("-ix", NFILE, fnm);
     opt.bPullf       = opt2bSet("-if", NFILE, fnm);
@@ -3696,21 +3156,14 @@ int gmx_wham(int argc, char* argv[])
     {
         gmx_fatal(FARGS,
                   "Force input does not work with tabulated potentials. "
-                  "Provide pullx.xvg or pdo files!");
+                  "Provide pullx.xvg files!");
     }
 
-    if (!opt.bPdo && !WHAMBOOLXOR(opt.bPullx, opt.bPullf))
+    if (!WHAMBOOLXOR(opt.bPullx, opt.bPullf))
     {
         gmx_fatal(FARGS, "Give either pullx (-ix) OR pullf (-if) data. Not both.");
     }
-    if (!opt.bPdo && !(opt.bTpr || opt.bPullf || opt.bPullx))
-    {
-        gmx_fatal(FARGS,
-                  "gmx wham supports three input modes, pullx, pullf, or pdo file input."
-                  "\n\n Check gmx wham -h !");
-    }
 
-    opt.fnPdo      = opt2fn("-ip", NFILE, fnm);
     opt.fnTpr      = opt2fn("-it", NFILE, fnm);
     opt.fnPullf    = opt2fn("-if", NFILE, fnm);
     opt.fnPullx    = opt2fn("-ix", NFILE, fnm);
@@ -3756,46 +3209,29 @@ int gmx_wham(int argc, char* argv[])
     }
 
     /* Reading gmx4/gmx5 pull output and tpr files */
-    if (opt.bTpr || opt.bPullf || opt.bPullx)
+    read_wham_in(opt.fnTpr, &fninTpr, &nfiles, &opt);
+
+    fnPull = opt.bPullf ? opt.fnPullf : opt.fnPullx;
+    read_wham_in(fnPull, &fninPull, &nfiles2, &opt);
+    printf("Found %d tpr and %d pull %s files in %s and %s, respectively\n",
+           nfiles,
+           nfiles2,
+           opt.bPullf ? "force" : "position",
+           opt.fnTpr,
+           fnPull);
+    if (nfiles != nfiles2)
     {
-        read_wham_in(opt.fnTpr, &fninTpr, &nfiles, &opt);
-
-        fnPull = opt.bPullf ? opt.fnPullf : opt.fnPullx;
-        read_wham_in(fnPull, &fninPull, &nfiles2, &opt);
-        printf("Found %d tpr and %d pull %s files in %s and %s, respectively\n",
-               nfiles,
-               nfiles2,
-               opt.bPullf ? "force" : "position",
-               opt.fnTpr,
-               fnPull);
-        if (nfiles != nfiles2)
-        {
-            gmx_fatal(FARGS, "Found %d file names in %s, but %d in %s\n", nfiles, opt.fnTpr, nfiles2, fnPull);
-        }
-
-        /* Read file that selects the pull group to be used */
-        if (opt.fnCoordSel != nullptr)
-        {
-            readPullCoordSelection(&opt, fninTpr, nfiles);
-        }
-
-        window = initUmbrellaWindows(nfiles);
-        read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt);
+        gmx_fatal(FARGS, "Found %d file names in %s, but %d in %s\n", nfiles, opt.fnTpr, nfiles2, fnPull);
     }
-    else
-    { /* reading pdo files */
-        if (opt.fnCoordSel != nullptr)
-        {
-            gmx_fatal(FARGS,
-                      "Reading a -is file is not supported with PDO input files.\n"
-                      "Use awk or a similar tool to pick the required pull groups from your PDO "
-                      "files\n");
-        }
-        read_wham_in(opt.fnPdo, &fninPdo, &nfiles, &opt);
-        printf("Found %d pdo files in %s\n", nfiles, opt.fnPdo);
-        window = initUmbrellaWindows(nfiles);
-        read_pdo_files(fninPdo, nfiles, &header, window, &opt);
+
+    /* Read file that selects the pull group to be used */
+    if (opt.fnCoordSel != nullptr)
+    {
+        readPullCoordSelection(&opt, fninTpr, nfiles);
     }
+
+    window = initUmbrellaWindows(nfiles);
+    read_tpr_pullxf_files(fninTpr, fninPull, nfiles, &header, window, &opt);
 
     /* It is currently assumed that all pull coordinates have the same geometry, so they also have the same coordinate units.
        We can therefore get the units for the xlabel from the first coordinate. */
