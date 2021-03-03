@@ -84,6 +84,26 @@ Naming branches
 Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU. 
 Bad names: branch1234, mybranch, test, etc
 
+Labels
+======
+
+Labels <https://docs.gitlab.com/ee/user/project/labels.html>`__ help developers by allowing additional filtering of issues and merge requests.
+
+The GROMACS project `defines many labels <https://gitlab.com/gromacs/gromacs/-/labels>`__.
+
+.. Note: labeling guidelines TBD. See https://gitlab.com/gromacs/gromacs/-/issues/3949 and open new issues as appropriate.
+
+In general:
+
+* Ongoing categorizations to help specify the GROMACS component or development area use the ``#7F8C8D`` color.
+* Specific features or subproject areas targeting an upcoming release use the ``#8E44AD`` background color.
+
+When creating a new label, please provide a short description
+so that people can understand what the label is intended to convey,
+and when they should apply it to their own issues or merge requests.
+
+.. Best practices and labeling policies can be proposed as changes to this document. See https://gitlab.com/gromacs/gromacs/-/issues/3949
+
 Code Review
 ===========
 
@@ -92,7 +112,7 @@ Reviewing someone else's uploaded code
 
 The reviewing workflow is the following:
 
-#. https://gitlab.com/gromacs/gromacs/-/issues shows all open changes
+#. https://gitlab.com/gromacs/gromacs/-/merge_requests shows all open changes
 #. A change needs two approvals to go in, of which one approval has to come from
    a member of either GMX Core or GMX Developers.
 #. Usually a patch goes through several cycles of voting, commenting and

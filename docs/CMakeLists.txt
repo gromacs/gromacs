@@ -338,7 +338,7 @@ if (SPHINX_FOUND)
         dev-manual/doxygen.rst
         dev-manual/error-handling.rst
         dev-manual/formatting.rst
-        dev-manual/gitlab.rst
+        dev-manual/gitlab-ci.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
         dev-manual/index.rst

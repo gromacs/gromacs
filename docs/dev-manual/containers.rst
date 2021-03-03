@@ -31,7 +31,7 @@ Steps:
 Refer to :file:`buildall.sh` in the ``master`` branch for the set of images
 currently built.
 
-Within :doc:`pipeline jobs <gitlab>`, jobs specify a Docker image with the *image* property.
+Within :doc:`pipeline jobs <gitlab-ci>`, jobs specify a Docker image with the *image* property.
 For image naming convention, see :py:func:`utility.image_name`.
 Images from the GitLab registry
 are easily accessible with the same identifier as above.
