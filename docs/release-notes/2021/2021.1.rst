@@ -44,6 +44,21 @@ properly. This has been disabled in grompp.
 
 :issue:`3946`
 
+Remove velocity from partially frozen atoms in md-vv
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+md-vv would add some velocity to the frozen dimensions of partially
+frozen atoms during constraining. This did not lead to wrong
+trajectories, as the frozen dimensions of the positions are kept fixed
+during propagation. The non-zero velocities were, however, reported in
+trajectories and final configurations. They might also have lead to
+slightly wrong kinetic energies, since the reported kinetic energy is
+calculated after the velocities are constrained. All effects are
+expected to be relatively small, since they did not accumulate, as the
+velocities were regularly reset to zero once per step.
+
+:issue:`3849`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

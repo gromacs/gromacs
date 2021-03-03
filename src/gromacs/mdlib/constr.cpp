@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -697,10 +697,19 @@ bool Constraints::Impl::apply(bool                      bLog,
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
-    if (!v.empty() && cFREEZE_)
+    const bool haveVelocities = (!v.empty() || econq == ConstraintVariable::Velocities);
+    if (haveVelocities && cFREEZE_)
     {
         /* Set the velocities of frozen dimensions to zero */
-        ArrayRef<RVec> vRef = v.unpaddedArrayRef();
+        ArrayRef<RVec> vRef;
+        if (econq == ConstraintVariable::Velocities)
+        {
+            vRef = xprime.unpaddedArrayRef();
+        }
+        else
+        {
+            vRef = v.unpaddedArrayRef();
+        }
 
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 
