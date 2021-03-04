@@ -55,6 +55,7 @@
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -65,17 +66,37 @@
 namespace gmx
 {
 
-const char* eawhtarget_names[eawhtargetNR + 1] = { "constant",
-                                                   "cutoff",
-                                                   "boltzmann",
-                                                   "local-boltzmann",
-                                                   nullptr };
+const char* enumValueToString(AwhTargetType enumValue)
+{
+    constexpr gmx::EnumerationArray<AwhTargetType, const char*> awhTargetTypeNames = {
+        "constant", "cutoff", "boltzmann", "local-boltzmann"
+    };
+    return awhTargetTypeNames[enumValue];
+}
 
-const char* eawhgrowth_names[eawhgrowthNR + 1] = { "exp-linear", "linear", nullptr };
+const char* enumValueToString(AwhHistogramGrowthType enumValue)
+{
+    constexpr gmx::EnumerationArray<AwhHistogramGrowthType, const char*> awhHistogramGrowthTypeNames = {
+        "exp-linear", "linear"
+    };
+    return awhHistogramGrowthTypeNames[enumValue];
+}
 
-const char* eawhpotential_names[eawhpotentialNR + 1] = { "convolved", "umbrella", nullptr };
+const char* enumValueToString(AwhPotentialType enumValue)
+{
+    constexpr gmx::EnumerationArray<AwhPotentialType, const char*> awhPotentialTypeNames = {
+        "convolved", "umbrella"
+    };
+    return awhPotentialTypeNames[enumValue];
+}
 
-const char* eawhcoordprovider_names[eawhcoordproviderNR + 1] = { "pull", "fep-lambda", nullptr };
+const char* enumValueToString(AwhCoordinateProviderType enumValue)
+{
+    constexpr gmx::EnumerationArray<AwhCoordinateProviderType, const char*> awhCoordinateProviderTypeNames = {
+        "pull", "fep-lambda"
+    };
+    return awhCoordinateProviderTypeNames[enumValue];
+}
 
 namespace
 {
@@ -104,8 +125,8 @@ void checkMtsConsistency(const t_inputrec& inputrec, warninp_t wi)
         {
             switch (biasParams.dimParams[d].eCoordProvider)
             {
-                case eawhcoordproviderPULL: usesPull = true; break;
-                case eawhcoordproviderFREE_ENERGY_LAMBDA: usesFep = true; break;
+                case AwhCoordinateProviderType::Pull: usesPull = true; break;
+                case AwhCoordinateProviderType::FreeEnergyLambda: usesFep = true; break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported coord provider");
             }
         }
@@ -371,7 +392,7 @@ void readDimParams(std::vector<t_inpfile>* inp,
                 "currently only 'pull' and 'fep-lambda' (free energy lambda state) is supported");
     }
     opt                       = prefix + "-coord-provider";
-    dimParams->eCoordProvider = get_eeenum(inp, opt, eawhcoordprovider_names, wi);
+    dimParams->eCoordProvider = getEnum<AwhCoordinateProviderType>(inp, opt.c_str(), wi);
 
     if (bComment)
     {
@@ -429,7 +450,7 @@ void readDimParams(std::vector<t_inpfile>* inp,
  */
 void checkDimParams(const std::string& prefix, AwhDimParams* dimParams, const t_inputrec* ir, warninp_t wi)
 {
-    if (dimParams->eCoordProvider == eawhcoordproviderPULL)
+    if (dimParams->eCoordProvider == AwhCoordinateProviderType::Pull)
     {
         if (!ir->bPull)
         {
@@ -439,7 +460,7 @@ void checkDimParams(const std::string& prefix, AwhDimParams* dimParams, const t_
         }
         checkPullDimParams(prefix, dimParams, *ir->pull, wi);
     }
-    else if (dimParams->eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+    else if (dimParams->eCoordProvider == AwhCoordinateProviderType::FreeEnergyLambda)
     {
         if (ir->efep == FreeEnergyPerturbationType::No)
         {
@@ -507,7 +528,7 @@ void readBiasParams(std::vector<t_inpfile>* inp,
                              "size: exp-linear or linear");
     }
     opt                    = prefix + "-growth";
-    awhBiasParams->eGrowth = get_eeenum(inp, opt, eawhgrowth_names, wi);
+    awhBiasParams->eGrowth = getEnum<AwhHistogramGrowthType>(inp, opt.c_str(), wi);
 
     if (bComment)
     {
@@ -524,7 +545,7 @@ void readBiasParams(std::vector<t_inpfile>* inp,
                 inp, "Target distribution type: constant, cutoff, boltzmann or local-boltzmann");
     }
     opt                    = prefix + "-target";
-    awhBiasParams->eTarget = get_eeenum(inp, opt, eawhtarget_names, wi);
+    awhBiasParams->eTarget = getEnum<AwhTargetType>(inp, opt.c_str(), wi);
 
     if (bComment)
     {
@@ -594,40 +615,40 @@ void checkBiasParams(const AwhBiasParams* awhBiasParams, const std::string& pref
     }
 
     opt = prefix + "-equilibrate-histogram";
-    if (awhBiasParams->equilibrateHistogram && awhBiasParams->eGrowth != eawhgrowthEXP_LINEAR)
+    if (awhBiasParams->equilibrateHistogram && awhBiasParams->eGrowth != AwhHistogramGrowthType::ExponentialLinear)
     {
         auto message =
                 formatString("Option %s will only have an effect for histogram growth type '%s'.",
                              opt.c_str(),
-                             EAWHGROWTH(eawhgrowthEXP_LINEAR));
+                             enumValueToString(AwhHistogramGrowthType::ExponentialLinear));
         warning(wi, message);
     }
 
-    if ((awhBiasParams->eTarget == eawhtargetLOCALBOLTZMANN)
-        && (awhBiasParams->eGrowth == eawhgrowthEXP_LINEAR))
+    if ((awhBiasParams->eTarget == AwhTargetType::LocalBoltzmann)
+        && (awhBiasParams->eGrowth == AwhHistogramGrowthType::ExponentialLinear))
     {
         auto message = formatString(
                 "Target type '%s' combined with histogram growth type '%s' is not "
                 "expected to give stable bias updates. You probably want to use growth type "
                 "'%s' instead.",
-                EAWHTARGET(eawhtargetLOCALBOLTZMANN),
-                EAWHGROWTH(eawhgrowthEXP_LINEAR),
-                EAWHGROWTH(eawhgrowthLINEAR));
+                enumValueToString(AwhTargetType::LocalBoltzmann),
+                enumValueToString(AwhHistogramGrowthType::ExponentialLinear),
+                enumValueToString(AwhHistogramGrowthType::Linear));
         warning(wi, message);
     }
 
     opt = prefix + "-target-beta-scaling";
     switch (awhBiasParams->eTarget)
     {
-        case eawhtargetBOLTZMANN:
-        case eawhtargetLOCALBOLTZMANN:
+        case AwhTargetType::Boltzmann:
+        case AwhTargetType::LocalBoltzmann:
             if (awhBiasParams->targetBetaScaling < 0 || awhBiasParams->targetBetaScaling > 1)
             {
                 gmx_fatal(FARGS,
                           "%s = %g is not useful for target type %s.",
                           opt.c_str(),
                           awhBiasParams->targetBetaScaling,
-                          EAWHTARGET(awhBiasParams->eTarget));
+                          enumValueToString(awhBiasParams->eTarget));
             }
             break;
         default:
@@ -638,7 +659,7 @@ void checkBiasParams(const AwhBiasParams* awhBiasParams, const std::string& pref
                         "Value for %s (%g) set explicitly but will not be used for target type %s.",
                         opt.c_str(),
                         awhBiasParams->targetBetaScaling,
-                        EAWHTARGET(awhBiasParams->eTarget));
+                        enumValueToString(awhBiasParams->eTarget));
             }
             break;
     }
@@ -646,14 +667,14 @@ void checkBiasParams(const AwhBiasParams* awhBiasParams, const std::string& pref
     opt = prefix + "-target-cutoff";
     switch (awhBiasParams->eTarget)
     {
-        case eawhtargetCUTOFF:
+        case AwhTargetType::Cutoff:
             if (awhBiasParams->targetCutoff <= 0)
             {
                 gmx_fatal(FARGS,
                           "%s = %g is not useful for target type %s.",
                           opt.c_str(),
                           awhBiasParams->targetCutoff,
-                          EAWHTARGET(awhBiasParams->eTarget));
+                          enumValueToString(awhBiasParams->eTarget));
             }
             break;
         default:
@@ -664,7 +685,7 @@ void checkBiasParams(const AwhBiasParams* awhBiasParams, const std::string& pref
                         "Value for %s (%g) set explicitly but will not be used for target type %s.",
                         opt.c_str(),
                         awhBiasParams->targetCutoff,
-                        EAWHTARGET(awhBiasParams->eTarget));
+                        enumValueToString(awhBiasParams->eTarget));
             }
             break;
     }
@@ -723,7 +744,7 @@ void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
         {
             for (int d1 = 0; d1 < awhBiasParams1.ndim; d1++)
             {
-                if (awhBiasParams1.dimParams[d1].eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+                if (awhBiasParams1.dimParams[d1].eCoordProvider == AwhCoordinateProviderType::FreeEnergyLambda)
                 {
                     continue;
                 }
@@ -732,7 +753,7 @@ void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
                 /* d1 is the reference dimension of the reference AWH. d2 is the dim index of the AWH to compare with. */
                 for (int d2 = 0; d2 < awhBiasParams2.ndim; d2++)
                 {
-                    if (awhBiasParams2.dimParams[d2].eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+                    if (awhBiasParams2.dimParams[d2].eCoordProvider == AwhCoordinateProviderType::FreeEnergyLambda)
                     {
                         continue;
                     }
@@ -785,7 +806,7 @@ AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
 
     printStringNoNewline(inp, "The way to apply the biasing potential: convolved or umbrella");
     opt                   = "awh-potential";
-    awhParams->ePotential = get_eeenum(inp, opt, eawhpotential_names, wi);
+    awhParams->ePotential = getEnum<AwhPotentialType>(inp, opt.c_str(), wi);
 
     printStringNoNewline(inp,
                          "The random seed used for sampling the umbrella center in the case of "
@@ -1168,7 +1189,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
         for (int d = 0; d < awhBiasParams->ndim; d++)
         {
             AwhDimParams* dimParams = &awhBiasParams->dimParams[d];
-            if (dimParams->eCoordProvider == eawhcoordproviderPULL)
+            if (dimParams->eCoordProvider == AwhCoordinateProviderType::Pull)
             {
                 setStateDependentAwhPullDimParams(
                         dimParams, k, d, &pull_params, pull_work, pbc, compressibility, wi);

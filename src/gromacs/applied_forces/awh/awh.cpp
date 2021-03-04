@@ -117,7 +117,7 @@ static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
         const AwhDimParams& awhDimParams = awhBiasParams.dimParams[d];
-        if (awhDimParams.eCoordProvider == eawhcoordproviderPULL)
+        if (awhDimParams.eCoordProvider == AwhCoordinateProviderType::Pull)
         {
             return true;
         }
@@ -225,14 +225,14 @@ Awh::Awh(FILE*                 fplog,
         for (int d = 0; d < awhBiasParams.ndim; d++)
         {
             const AwhDimParams& awhDimParams = awhBiasParams.dimParams[d];
-            if (awhDimParams.eCoordProvider != eawhcoordproviderPULL
-                && awhDimParams.eCoordProvider != eawhcoordproviderFREE_ENERGY_LAMBDA)
+            if (awhDimParams.eCoordProvider != AwhCoordinateProviderType::Pull
+                && awhDimParams.eCoordProvider != AwhCoordinateProviderType::FreeEnergyLambda)
             {
                 GMX_THROW(
                         InvalidInputError("Currently only the pull code and lambda are supported "
                                           "as coordinate providers"));
             }
-            if (awhDimParams.eCoordProvider == eawhcoordproviderPULL)
+            if (awhDimParams.eCoordProvider == AwhCoordinateProviderType::Pull)
             {
                 const t_pull_coord& pullCoord = inputRecord.pull->coord[awhDimParams.coordIndex];
                 if (pullCoord.eGeom == PullGroupGeometry::DirectionPBC)
@@ -487,7 +487,7 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 
         for (int d = 0; d < biasParams.ndim; d++)
         {
-            if (biasParams.dimParams[d].eCoordProvider == eawhcoordproviderPULL)
+            if (biasParams.dimParams[d].eCoordProvider == AwhCoordinateProviderType::Pull)
             {
                 register_external_pull_potential(
                         pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());

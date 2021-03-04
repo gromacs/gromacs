@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -820,7 +820,7 @@ BiasGrid::BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* 
     {
         double origin = dimParams[d].scaleUserInputToInternal(awhDimParams[d].origin);
         double end    = dimParams[d].scaleUserInputToInternal(awhDimParams[d].end);
-        if (awhDimParams[d].eCoordProvider == eawhcoordproviderPULL)
+        if (awhDimParams[d].eCoordProvider == AwhCoordinateProviderType::Pull)
         {
             period[d] = dimParams[d].scaleUserInputToInternal(awhDimParams[d].period);
             static_assert(

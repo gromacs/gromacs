@@ -622,7 +622,7 @@ static void pr_awh_bias_dim(FILE* fp, int indent, gmx::AwhDimParams* awhDimParam
     pr_indent(fp, indent);
     indent++;
     fprintf(fp, "%s:\n", prefix);
-    PS("coord-provider", EAWHCOORDPROVIDER(awhDimParams->eCoordProvider));
+    PS("coord-provider", enumValueToString(awhDimParams->eCoordProvider));
     PI("coord-index", awhDimParams->coordIndex + 1);
     PR("start", awhDimParams->origin);
     PR("end", awhDimParams->end);
@@ -639,9 +639,9 @@ static void pr_awh_bias(FILE* fp, int indent, gmx::AwhBiasParams* awhBiasParams,
     sprintf(opt, "%s-error-init", prefix);
     PR(opt, awhBiasParams->errorInitial);
     sprintf(opt, "%s-growth", prefix);
-    PS(opt, EAWHGROWTH(awhBiasParams->eGrowth));
+    PS(opt, enumValueToString(awhBiasParams->eGrowth));
     sprintf(opt, "%s-target", prefix);
-    PS(opt, EAWHTARGET(awhBiasParams->eTarget));
+    PS(opt, enumValueToString(awhBiasParams->eTarget));
     sprintf(opt, "%s-target-beta-scalng", prefix);
     PR(opt, awhBiasParams->targetBetaScaling);
     sprintf(opt, "%s-target-cutoff", prefix);
@@ -665,7 +665,7 @@ static void pr_awh_bias(FILE* fp, int indent, gmx::AwhBiasParams* awhBiasParams,
 
 static void pr_awh(FILE* fp, int indent, gmx::AwhParams* awhParams)
 {
-    PS("awh-potential", EAWHPOTENTIAL(awhParams->ePotential));
+    PS("awh-potential", enumValueToString(awhParams->ePotential));
     PI("awh-seed", awhParams->seed);
     PI("awh-nstout", awhParams->nstOut);
     PI("awh-nstsample", awhParams->nstSampleCoord);
@@ -1141,7 +1141,7 @@ static void cmp_awhBiasParams(FILE*                     fp,
                               real                      abstol)
 {
     cmp_int(fp, "inputrec->awhParams->ndim", biasIndex, bias1->ndim, bias2->ndim);
-    cmp_int(fp, "inputrec->awhParams->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
+    cmpEnum<gmx::AwhTargetType>(fp, "inputrec->awhParams->biaseTarget", bias1->eTarget, bias2->eTarget);
     cmp_double(fp,
                "inputrec->awhParams->biastargetBetaScaling",
                biasIndex,
@@ -1156,7 +1156,8 @@ static void cmp_awhBiasParams(FILE*                     fp,
                bias2->targetCutoff,
                ftol,
                abstol);
-    cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
+    cmpEnum<gmx::AwhHistogramGrowthType>(
+            fp, "inputrec->awhParams->biaseGrowth", bias1->eGrowth, bias2->eGrowth);
     cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData, bias2->bUserData);
     cmp_double(fp,
                "inputrec->awhParams->biaserror_initial",
@@ -1184,7 +1185,7 @@ static void cmp_awhParams(FILE* fp, const gmx::AwhParams* awh1, const gmx::AwhPa
             -1,
             awh1->numSamplesUpdateFreeEnergy,
             awh2->numSamplesUpdateFreeEnergy);
-    cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
+    cmpEnum<gmx::AwhPotentialType>(fp, "inputrec->awhParams->ePotential", awh1->ePotential, awh2->ePotential);
     cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
 
     if (awh1->numBias == awh2->numBias)

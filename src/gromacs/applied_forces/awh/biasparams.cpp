@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,9 +83,9 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
      */
     switch (awhBiasParams.eTarget)
     {
-        case eawhtargetCONSTANT: numStepsUpdateTarget = 0; break;
-        case eawhtargetCUTOFF:
-        case eawhtargetBOLTZMANN:
+        case AwhTargetType::Constant: numStepsUpdateTarget = 0; break;
+        case AwhTargetType::Cutoff:
+        case AwhTargetType::Boltzmann:
             /* Updating the target generally requires updating the whole grid so to keep the cost
                down we generally update the target less often than the free energy (unless the free
                energy update step is set to > 100 samples). */
@@ -93,7 +93,7 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
                                             awhParams.numSamplesUpdateFreeEnergy)
                                    * awhParams.nstSampleCoord;
             break;
-        case eawhtargetLOCALBOLTZMANN:
+        case AwhTargetType::LocalBoltzmann:
             /* The target distribution is set equal to the reference histogram which is updated every free energy update.
                So the target has to be updated at the same time. This leads to a global update each time because it is
                assumed that a target distribution update can take any form. This is a bit unfortunate for a "local"
@@ -238,14 +238,14 @@ BiasParams::BiasParams(const AwhParams&              awhParams,
     eTarget(awhBiasParams.eTarget),
     freeEnergyCutoffInKT(beta * awhBiasParams.targetCutoff),
     temperatureScaleFactor(awhBiasParams.targetBetaScaling),
-    idealWeighthistUpdate(eTarget != eawhtargetLOCALBOLTZMANN),
+    idealWeighthistUpdate(eTarget != AwhTargetType::LocalBoltzmann),
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_ * numSharedUpdate),
-    localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
+    localWeightScaling(eTarget == AwhTargetType::LocalBoltzmann ? temperatureScaleFactor : 1),
     initialErrorInKT(beta * awhBiasParams.errorInitial),
     initialHistogramSize(
             getInitialHistogramSizeEstimate(awhBiasParams, gridAxis, beta, numStepsSampleCoord_ * mdTimeStep)),
-    convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
+    convolveForce(awhParams.ePotential == AwhPotentialType::Convolved),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@ struct AwhBiasParams;
 struct AwhParams;
 struct DimParams;
 class GridAxis;
+enum class AwhTargetType : int;
 
 /*! \internal \brief Constant parameters for the bias.
  */
@@ -208,10 +209,10 @@ private:
     const int64_t numStepsUpdateTarget_; /**< Number of steps per updating the target distribution. */
     const int64_t numStepsCheckCovering_; /**< Number of steps per checking for covering. */
 public:
-    const int    eTarget;              /**< Type of target distribution. */
-    const double freeEnergyCutoffInKT; /**< Free energy cut-off in kT for cut-off target distribution. */
-    const double temperatureScaleFactor; /**< Temperature scaling factor for temperature scaled targed distributions. */
-    const bool   idealWeighthistUpdate; /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
+    const AwhTargetType eTarget;              /**< Type of target distribution. */
+    const double        freeEnergyCutoffInKT; /**< Free energy cut-off in kT for cut-off target distribution. */
+    const double        temperatureScaleFactor; /**< Temperature scaling factor for temperature scaled targed distributions. */
+    const bool          idealWeighthistUpdate; /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
     const int    numSharedUpdate; /**< The number of (multi-)simulations sharing the bias update */
     const double updateWeight;    /**< The probability weight accumulated for each update. */
     const double localWeightScaling; /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,7 @@ static AwhTestParameters getAwhTestParameters()
     awhDimParams0.end            = 1.5;
     awhDimParams0.coordValueInit = awhDimParams0.origin;
     awhDimParams0.coverDiameter  = 0;
-    awhDimParams0.eCoordProvider = eawhcoordproviderPULL;
+    awhDimParams0.eCoordProvider = AwhCoordinateProviderType::Pull;
 
     AwhDimParams& awhDimParams1 = awhBiasParams.dimParams[1];
 
@@ -102,13 +102,13 @@ static AwhTestParameters getAwhTestParameters()
     awhDimParams1.end            = 1.3;
     awhDimParams1.coordValueInit = awhDimParams1.origin;
     awhDimParams1.coverDiameter  = 0;
-    awhDimParams1.eCoordProvider = eawhcoordproviderPULL;
+    awhDimParams1.eCoordProvider = AwhCoordinateProviderType::Pull;
 
     awhBiasParams.ndim                 = 2;
-    awhBiasParams.eTarget              = eawhtargetCONSTANT;
+    awhBiasParams.eTarget              = AwhTargetType::Constant;
     awhBiasParams.targetBetaScaling    = 0;
     awhBiasParams.targetCutoff         = 0;
-    awhBiasParams.eGrowth              = eawhgrowthLINEAR;
+    awhBiasParams.eGrowth              = AwhHistogramGrowthType::Linear;
     awhBiasParams.bUserData            = TRUE;
     awhBiasParams.errorInitial         = 0.5;
     awhBiasParams.shareGroup           = 0;
@@ -119,7 +119,7 @@ static AwhTestParameters getAwhTestParameters()
     awhParams.nstOut                     = 0;
     awhParams.nstSampleCoord             = 1;
     awhParams.numSamplesUpdateFreeEnergy = 10;
-    awhParams.ePotential                 = eawhpotentialCONVOLVED;
+    awhParams.ePotential                 = AwhPotentialType::Convolved;
     awhParams.shareBiasMultisim          = FALSE;
 
     return params;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -417,17 +417,18 @@ public:
     {
         switch (params.eTarget)
         {
-            case eawhtargetCONSTANT: target_ = 1; break;
-            case eawhtargetCUTOFF:
+            case AwhTargetType::Constant: target_ = 1; break;
+            case AwhTargetType::Cutoff:
             {
                 double df = freeEnergy_ - freeEnergyCutoff;
                 target_   = 1 / (1 + std::exp(df));
                 break;
             }
-            case eawhtargetBOLTZMANN:
+            case AwhTargetType::Boltzmann:
                 target_ = std::exp(-params.temperatureScaleFactor * freeEnergy_);
                 break;
-            case eawhtargetLOCALBOLTZMANN: target_ = weightSumRef_; break;
+            case AwhTargetType::LocalBoltzmann: target_ = weightSumRef_; break;
+            default: GMX_RELEASE_ASSERT(false, "Unhandled enum");
         }
 
         /* All target types can be modulated by a constant factor. */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,8 @@ struct AwhFepLambdaStateTestParameters
 };
 
 //! Helper function to set up the C-style AWH parameters for the test
-static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgrowth, int eawhpotential)
+static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(AwhHistogramGrowthType eawhgrowth,
+                                                                     AwhPotentialType eawhpotential)
 {
     AwhFepLambdaStateTestParameters params;
 
@@ -103,13 +104,13 @@ static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgro
     awhDimParams.end            = numLambdaStates - 1;
     awhDimParams.coordValueInit = awhDimParams.origin;
     awhDimParams.coverDiameter  = 0;
-    awhDimParams.eCoordProvider = eawhcoordproviderFREE_ENERGY_LAMBDA;
+    awhDimParams.eCoordProvider = AwhCoordinateProviderType::FreeEnergyLambda;
 
     AwhBiasParams& awhBiasParams = params.awhBiasParams;
 
     awhBiasParams.ndim                 = 1;
     awhBiasParams.dimParams            = &awhDimParams;
-    awhBiasParams.eTarget              = eawhtargetCONSTANT;
+    awhBiasParams.eTarget              = AwhTargetType::Constant;
     awhBiasParams.targetBetaScaling    = 0;
     awhBiasParams.targetCutoff         = 0;
     awhBiasParams.eGrowth              = eawhgrowth;
@@ -137,7 +138,7 @@ static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgro
 }
 
 //! Convenience typedef: growth type enum, potential type enum, disable update skips
-typedef std::tuple<int, int, BiasParams::DisableUpdateSkips> BiasTestParameters;
+typedef std::tuple<AwhHistogramGrowthType, AwhPotentialType, BiasParams::DisableUpdateSkips> BiasTestParameters;
 
 /*! \brief Test fixture for testing Bias updates
  */
@@ -168,8 +169,8 @@ public:
          *       and disableUpdateSkips do not affect the point state.
          *       But the reference data will also ensure this.
          */
-        int                            eawhgrowth;
-        int                            eawhpotential;
+        AwhHistogramGrowthType         eawhgrowth;
+        AwhPotentialType               eawhpotential;
         BiasParams::DisableUpdateSkips disableUpdateSkips;
         std::tie(eawhgrowth, eawhpotential, disableUpdateSkips) = GetParam();
 
@@ -283,16 +284,18 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
  */
 INSTANTIATE_TEST_CASE_P(WithParameters,
                         BiasFepLambdaStateTest,
-                        ::testing::Combine(::testing::Values(eawhgrowthLINEAR, eawhgrowthEXP_LINEAR),
-                                           ::testing::Values(eawhpotentialUMBRELLA, eawhpotentialCONVOLVED),
+                        ::testing::Combine(::testing::Values(AwhHistogramGrowthType::Linear,
+                                                             AwhHistogramGrowthType::ExponentialLinear),
+                                           ::testing::Values(AwhPotentialType::Umbrella,
+                                                             AwhPotentialType::Convolved),
                                            ::testing::Values(BiasParams::DisableUpdateSkips::yes,
                                                              BiasParams::DisableUpdateSkips::no)));
 
 // Test that we detect coverings and exit the initial stage at the correct step
 TEST(BiasFepLambdaStateTest, DetectsCovering)
 {
-    const AwhFepLambdaStateTestParameters params =
-            getAwhFepLambdaTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
+    const AwhFepLambdaStateTestParameters params = getAwhFepLambdaTestParameters(
+            AwhHistogramGrowthType::ExponentialLinear, AwhPotentialType::Convolved);
 
     const double mdTimeStep = 0.1;
 

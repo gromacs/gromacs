@@ -351,7 +351,7 @@ namespace
 void updateTargetDistribution(gmx::ArrayRef<PointState> pointState, const BiasParams& params)
 {
     double freeEnergyCutoff = 0;
-    if (params.eTarget == eawhtargetCUTOFF)
+    if (params.eTarget == AwhTargetType::Cutoff)
     {
         freeEnergyCutoff = freeEnergyMinimumValue(pointState) + params.freeEnergyCutoffInKT;
     }
@@ -996,7 +996,7 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
     /* Set the free energy cutoff */
     double maxFreeEnergy = GMX_FLOAT_MAX;
 
-    if (params.eTarget == eawhtargetCUTOFF)
+    if (params.eTarget == AwhTargetType::Cutoff)
     {
         maxFreeEnergy = freeEnergyMinimumValue(points_) + params.freeEnergyCutoffInKT;
     }
@@ -1158,7 +1158,7 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
 
     /* Update target distribution? */
     bool needToUpdateTargetDistribution =
-            (params.eTarget != eawhtargetCONSTANT && params.isUpdateTargetStep(step));
+            (params.eTarget != AwhTargetType::Constant && params.isUpdateTargetStep(step));
 
     /* In the initial stage, the histogram grows dynamically as a function of the number of coverings. */
     bool detectedCovering = false;
@@ -1838,7 +1838,7 @@ void BiasState::initGridPointState(const AwhBiasParams&          awhBiasParams,
     }
 
     /* The local Boltzmann distribution is special because the target distribution is updated as a function of the reference weighthistogram. */
-    GMX_RELEASE_ASSERT(params.eTarget != eawhtargetLOCALBOLTZMANN || points_[0].weightSumRef() != 0,
+    GMX_RELEASE_ASSERT(params.eTarget != AwhTargetType::LocalBoltzmann || points_[0].weightSumRef() != 0,
                        "AWH reference weight histogram not initialized properly with local "
                        "Boltzmann target distribution.");
 

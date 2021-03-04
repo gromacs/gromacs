@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ struct AwhTestParameters
 };
 
 //! Helper function to set up the C-style AWH parameters for the test
-static AwhTestParameters getAwhTestParameters(int eawhgrowth, int eawhpotential)
+static AwhTestParameters getAwhTestParameters(AwhHistogramGrowthType eawhgrowth, AwhPotentialType eawhpotential)
 {
     AwhTestParameters params;
 
@@ -101,13 +101,13 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth, int eawhpotential)
     awhDimParams.end            = 1.5;
     awhDimParams.coordValueInit = awhDimParams.origin;
     awhDimParams.coverDiameter  = 0;
-    awhDimParams.eCoordProvider = eawhcoordproviderPULL;
+    awhDimParams.eCoordProvider = AwhCoordinateProviderType::Pull;
 
     AwhBiasParams& awhBiasParams = params.awhBiasParams;
 
     awhBiasParams.ndim                 = 1;
     awhBiasParams.dimParams            = &awhDimParams;
-    awhBiasParams.eTarget              = eawhtargetCONSTANT;
+    awhBiasParams.eTarget              = AwhTargetType::Constant;
     awhBiasParams.targetBetaScaling    = 0;
     awhBiasParams.targetCutoff         = 0;
     awhBiasParams.eGrowth              = eawhgrowth;
@@ -141,7 +141,7 @@ const double g_coords[] = { 0.62, 0.70, 0.68, 0.80, 0.93, 0.87, 1.16, 1.14, 0.95
                             0.86, 0.88, 0.79, 0.75, 0.82, 0.74, 0.70, 0.68, 0.71, 0.73 };
 
 //! Convenience typedef: growth type enum, potential type enum, disable update skips
-typedef std::tuple<int, int, BiasParams::DisableUpdateSkips> BiasTestParameters;
+typedef std::tuple<AwhHistogramGrowthType, AwhPotentialType, BiasParams::DisableUpdateSkips> BiasTestParameters;
 
 /*! \brief Test fixture for testing Bias updates
  */
@@ -173,8 +173,8 @@ public:
          *       and disableUpdateSkips do not affect the point state.
          *       But the reference data will also ensure this.
          */
-        int                            eawhgrowth;
-        int                            eawhpotential;
+        AwhHistogramGrowthType         eawhgrowth;
+        AwhPotentialType               eawhpotential;
         BiasParams::DisableUpdateSkips disableUpdateSkips;
         std::tie(eawhgrowth, eawhpotential, disableUpdateSkips) = GetParam();
 
@@ -287,15 +287,18 @@ TEST_P(BiasTest, ForcesBiasPmf)
  */
 INSTANTIATE_TEST_CASE_P(WithParameters,
                         BiasTest,
-                        ::testing::Combine(::testing::Values(eawhgrowthLINEAR, eawhgrowthEXP_LINEAR),
-                                           ::testing::Values(eawhpotentialUMBRELLA, eawhpotentialCONVOLVED),
+                        ::testing::Combine(::testing::Values(AwhHistogramGrowthType::Linear,
+                                                             AwhHistogramGrowthType::ExponentialLinear),
+                                           ::testing::Values(AwhPotentialType::Umbrella,
+                                                             AwhPotentialType::Convolved),
                                            ::testing::Values(BiasParams::DisableUpdateSkips::yes,
                                                              BiasParams::DisableUpdateSkips::no)));
 
 // Test that we detect coverings and exit the initial stage at the correct step
 TEST(BiasTest, DetectsCovering)
 {
-    const AwhTestParameters params = getAwhTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
+    const AwhTestParameters params = getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,
+                                                          AwhPotentialType::Convolved);
     const AwhDimParams&     awhDimParams = params.awhParams.awhBiasParams[0].dimParams[0];
 
     const double mdTimeStep = 0.1;

@@ -657,10 +657,10 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
 
 static void do_awhBias(gmx::ISerializer* serializer, gmx::AwhBiasParams* awhBiasParams, int gmx_unused file_version)
 {
-    serializer->doInt(&awhBiasParams->eTarget);
+    serializer->doEnumAsInt(&awhBiasParams->eTarget);
     serializer->doDouble(&awhBiasParams->targetBetaScaling);
     serializer->doDouble(&awhBiasParams->targetCutoff);
-    serializer->doInt(&awhBiasParams->eGrowth);
+    serializer->doEnumAsInt(&awhBiasParams->eGrowth);
     if (serializer->reading())
     {
         int temp = 0;
@@ -686,7 +686,7 @@ static void do_awhBias(gmx::ISerializer* serializer, gmx::AwhBiasParams* awhBias
     {
         gmx::AwhDimParams* dimParams = &awhBiasParams->dimParams[d];
 
-        serializer->doInt(&dimParams->eCoordProvider);
+        serializer->doEnumAsInt(&dimParams->eCoordProvider);
         serializer->doInt(&dimParams->coordIndex);
         serializer->doDouble(&dimParams->origin);
         serializer->doDouble(&dimParams->end);
@@ -705,7 +705,7 @@ static void do_awh(gmx::ISerializer* serializer, gmx::AwhParams* awhParams, int 
     serializer->doInt64(&awhParams->seed);
     serializer->doInt(&awhParams->nstSampleCoord);
     serializer->doInt(&awhParams->numSamplesUpdateFreeEnergy);
-    serializer->doInt(&awhParams->ePotential);
+    serializer->doEnumAsInt(&awhParams->ePotential);
     serializer->doBool(&awhParams->shareBiasMultisim);
 
     if (awhParams->numBias > 0)
