@@ -126,11 +126,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #else
                 const __global int* restrict atom_types, /* IN  */
 #endif
-                const __global float* restrict shift_vec,       /* IN stores float3 values */
-                __constant const float* gmx_unused nbfp,        /* IN  */
-                __constant const float* gmx_unused nbfp_comb,   /* IN  */
-                __constant const float* gmx_unused coulomb_tab, /* IN  */
-                const __global nbnxn_sci_t* pl_sci,             /* IN  */
+                const __global float* restrict shift_vec,          /* IN stores float3 values */
+                __constant const float2* restrict gmx_unused nbfp, /* IN  */
+                __constant const float2* restrict gmx_unused nbfp_comb,  /* IN  */
+                __constant const float* restrict gmx_unused coulomb_tab, /* IN  */
+                const __global nbnxn_sci_t* pl_sci,                      /* IN  */
 #ifndef PRUNE_NBL
                 const
 #endif
@@ -286,8 +286,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
             E_el += qi * qi;
 #        endif
 #        if defined LJ_EWALD
-            E_lj += nbfp[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * CL_SIZE + tidxi]
-                         * (ntypes + 1) * 2];
+            E_lj += nbfp[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * CL_SIZE + tidxi] * (ntypes + 1)]
+                            .x;
 #        endif /* LJ_EWALD */
         }
 
@@ -411,8 +411,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif                          /* IATYPE_SHMEM */
                                 /* LJ 6*C6 and 12*C12 */
 #ifndef LJ_COMB
-                                const float c6  = nbfp[2 * (ntypes * typei + typej)];
-                                const float c12 = nbfp[2 * (ntypes * typei + typej) + 1];
+                                const float2 c6c12 = nbfp[ntypes * typei + typej];
+
+                                const float c6  = c6c12.x;
+                                const float c12 = c6c12.y;
 #else /* LJ_COMB */
 #    ifdef LJ_COMB_GEOM
                                 const float c6     = ljcp_i.x * ljcp_j.x;

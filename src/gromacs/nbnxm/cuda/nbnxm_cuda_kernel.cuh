@@ -336,15 +336,9 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #            endif
 
 #            ifdef LJ_EWALD
-#                if DISABLE_CUDA_TEXTURES
-            E_lj += LDG(&nbparam.nbfp[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * c_clSize + tidxi]
-                                      * (ntypes + 1) * 2]);
-#                else
-            E_lj += tex1Dfetch<float>(
-                    nbparam.nbfp_texobj,
-                    atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * c_clSize + tidxi]
-                            * (ntypes + 1) * 2);
-#                endif
+            // load only the first 4 bytes of the parameter pair (equivalent with nbfp[idx].x)
+            E_lj += LDG((float*)&nbparam.nbfp[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * c_clSize + tidxi]
+                                              * (ntypes + 1)]);
 #            endif
         }
 

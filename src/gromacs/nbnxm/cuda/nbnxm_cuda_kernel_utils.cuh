@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,11 +204,13 @@ static __forceinline__ __device__ void
 static __forceinline__ __device__ float calculate_lj_ewald_c6grid(const NBParamGpu nbparam, int typei, int typej)
 {
 #    if DISABLE_CUDA_TEXTURES
-    return LDG(&nbparam.nbfp_comb[2 * typei]) * LDG(&nbparam.nbfp_comb[2 * typej]);
+    float c6_i = LDG(&nbparam.nbfp_comb[typei]).x;
+    float c6_j = LDG(&nbparam.nbfp_comb[typej]).x;
 #    else
-    return tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typei)
-           * tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * typej);
+    float c6_i = tex1Dfetch<float2>(nbparam.nbfp_comb_texobj, typei).x;
+    float c6_j = tex1Dfetch<float2>(nbparam.nbfp_comb_texobj, typej).x;
 #    endif /* DISABLE_CUDA_TEXTURES */
+    return c6_i * c6_j;
 }
 
 
@@ -278,19 +280,11 @@ static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F_E(const NB
  */
 static __forceinline__ __device__ float2 fetch_nbfp_comb_c6_c12(const NBParamGpu nbparam, int type)
 {
-    float2 c6c12;
 #    if DISABLE_CUDA_TEXTURES
-    /* Force an 8-byte fetch to save a memory instruction. */
-    float2* nbfp_comb = (float2*)nbparam.nbfp_comb;
-    c6c12             = LDG(&nbfp_comb[type]);
+    return LDG(&nbparam.nbfp_comb[type]);
 #    else
-    /* NOTE: as we always do 8-byte aligned loads, we could
-       fetch float2 here too just as above. */
-    c6c12.x = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * type);
-    c6c12.y = tex1Dfetch<float>(nbparam.nbfp_comb_texobj, 2 * type + 1);
+    return tex1Dfetch<float2>(nbparam.nbfp_comb_texobj, type);
 #    endif /* DISABLE_CUDA_TEXTURES */
-
-    return c6c12;
 }
 
 
@@ -357,8 +351,8 @@ static __forceinline__ __device__ float2 fetch_coulomb_force_r(const NBParamGpu 
     d.x = LDG(&nbparam.coulomb_tab[index]);
     d.y = LDG(&nbparam.coulomb_tab[index + 1]);
 #    else
-    d.x     = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
-    d.y     = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
+    d.x   = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
+    d.y   = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
 #    endif // DISABLE_CUDA_TEXTURES
 
     return d;
@@ -397,19 +391,14 @@ static __forceinline__ __device__ float interpolate_coulomb_force_r(const NBPara
  */
 static __forceinline__ __device__ void fetch_nbfp_c6_c12(float& c6, float& c12, const NBParamGpu nbparam, int baseIndex)
 {
+    float2 c6c12;
 #    if DISABLE_CUDA_TEXTURES
-    /* Force an 8-byte fetch to save a memory instruction. */
-    float2* nbfp = (float2*)nbparam.nbfp;
-    float2  c6c12;
-    c6c12 = LDG(&nbfp[baseIndex]);
-    c6    = c6c12.x;
-    c12   = c6c12.y;
+    c6c12 = LDG(&nbparam.nbfp[baseIndex]);
 #    else
-    /* NOTE: as we always do 8-byte aligned loads, we could
-       fetch float2 here too just as above. */
-    c6  = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * baseIndex);
-    c12 = tex1Dfetch<float>(nbparam.nbfp_texobj, 2 * baseIndex + 1);
+    c6c12 = tex1Dfetch<float2>(nbparam.nbfp_texobj, baseIndex);
 #    endif // DISABLE_CUDA_TEXTURES
+    c6  = c6c12.x;
+    c12 = c6c12.y;
 }
 
 

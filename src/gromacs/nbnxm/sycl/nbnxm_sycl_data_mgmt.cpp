@@ -124,15 +124,26 @@ static void initNbparam(NBParamGpu*                     nbp,
     /* set up LJ parameter lookup table */
     if (!useLjCombRule(nbp->vdwType))
     {
-        initParamLookupTable(
-                &nbp->nbfp, &nbp->nbfp_texobj, nbatParams.nbfp.data(), 2 * numTypes * numTypes, deviceContext);
+        static_assert(sizeof(decltype(nbp->nbfp)) == 2 * sizeof(decltype(*nbatParams.nbfp.data())),
+                      "Mismatch in the size of host / device data types");
+        initParamLookupTable(&nbp->nbfp,
+                             &nbp->nbfp_texobj,
+                             reinterpret_cast<const Float2*>(nbatParams.nbfp.data()),
+                             numTypes * numTypes,
+                             deviceContext);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic.vdwtype == VanDerWaalsType::Pme)
     {
-        initParamLookupTable(
-                &nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbatParams.nbfp_comb.data(), 2 * numTypes, deviceContext);
+        static_assert(sizeof(decltype(nbp->nbfp_comb))
+                              == 2 * sizeof(decltype(*nbatParams.nbfp_comb.data())),
+                      "Mismatch in the size of host / device data types");
+        initParamLookupTable(&nbp->nbfp_comb,
+                             &nbp->nbfp_comb_texobj,
+                             reinterpret_cast<const Float2*>(nbatParams.nbfp_comb.data()),
+                             numTypes,
+                             deviceContext);
     }
 }
 

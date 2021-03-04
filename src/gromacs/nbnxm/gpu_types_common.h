@@ -175,12 +175,12 @@ struct NBParamGpu
     switch_consts_t vdw_switch;
 
     /* LJ non-bonded parameters - accessed through texture memory */
-    //! nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements
-    DeviceBuffer<float> nbfp;
+    //! nonbonded parameter table with 6*C6/12*C12 pairs per atom type-pair, ntype^2 elements
+    DeviceBuffer<Float2> nbfp;
     //! texture object bound to nbfp
     DeviceTexture nbfp_texobj;
-    //! nonbonded parameter table per atom type, 2*ntype elements
-    DeviceBuffer<float> nbfp_comb;
+    //! nonbonded parameter table per atom type, ntype elements
+    DeviceBuffer<Float2> nbfp_comb;
     //! texture object bound to nbfp_comb
     DeviceTexture nbfp_comb_texobj;
 

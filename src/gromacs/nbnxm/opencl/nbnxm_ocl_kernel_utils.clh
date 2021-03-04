@@ -456,19 +456,28 @@ gmx_opencl_inline void calculate_potential_switch_F_E(const cl_nbparam_params_t*
     *E_lj *= sw;
 }
 
+/*! \brief Fetch C6 grid contribution coefficients and return the product of these.
+ */
+gmx_opencl_inline float calculate_lj_ewald_c6grid(__constant const float2* nbfp_comb, int typei, int typej)
+{
+    const float c6_i = nbfp_comb[typei].x;
+    const float c6_j = nbfp_comb[typej].x;
+    return c6_i * c6_j;
+}
+
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
-gmx_opencl_inline void calculate_lj_ewald_comb_geom_F(__constant const float* nbfp_comb,
-                                                      int                     typei,
-                                                      int                     typej,
-                                                      float                   r2,
-                                                      float                   inv_r2,
-                                                      float                   lje_coeff2,
-                                                      float                   lje_coeff6_6,
-                                                      float*                  F_invr)
+gmx_opencl_inline void calculate_lj_ewald_comb_geom_F(__constant const float2* nbfp_comb,
+                                                      int                      typei,
+                                                      int                      typej,
+                                                      float                    r2,
+                                                      float                    inv_r2,
+                                                      float                    lje_coeff2,
+                                                      float                    lje_coeff6_6,
+                                                      float*                   F_invr)
 {
-    const float c6grid = nbfp_comb[2 * typei] * nbfp_comb[2 * typej];
+    const float c6grid = calculate_lj_ewald_c6grid(nbfp_comb, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     const float inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
@@ -483,7 +492,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_geom_F(__constant const float* nb
 /*! Calculate LJ-PME grid force + energy contribution with
  *  geometric combination rule.
  */
-gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float*    nbfp_comb,
+gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float2*   nbfp_comb,
                                                         const cl_nbparam_params_t* nbparam,
                                                         int                        typei,
                                                         int                        typej,
@@ -495,7 +504,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float* 
                                                         float*                     F_invr,
                                                         float*                     E_lj)
 {
-    const float c6grid = nbfp_comb[2 * typei] * nbfp_comb[2 * typej];
+    const float c6grid = calculate_lj_ewald_c6grid(nbfp_comb, typei, typej);
 
     /* Recalculate inv_r6 without exclusion mask */
     const float inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
@@ -516,7 +525,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float* 
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
-gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float*    nbfp_comb,
+gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float2*   nbfp_comb,
                                                       const cl_nbparam_params_t* nbparam,
                                                       int                        typei,
                                                       int                        typej,
@@ -530,9 +539,10 @@ gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float*   
                                                       float*                     E_lj)
 {
     /* sigma and epsilon are scaled to give 6*C6 */
-    const float sigma = nbfp_comb[2 * typei] + nbfp_comb[2 * typej];
-
-    const float epsilon = nbfp_comb[2 * typei + 1] * nbfp_comb[2 * typej + 1];
+    const float2 c6c12_i = nbfp_comb[typei];
+    const float2 c6c12_j = nbfp_comb[typej];
+    const float  sigma   = c6c12_i.x + c6c12_j.x;
+    const float  epsilon = c6c12_i.y + c6c12_j.y;
 
     const float sigma2 = sigma * sigma;
     const float c6grid = epsilon * sigma2 * sigma2 * sigma2;
