@@ -1677,9 +1677,10 @@ void do_force(FILE*                               fplog,
 
     // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
     // this wait ensures that the D2H transfer is complete.
-    if ((simulationWork.useGpuUpdate)
+    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial))
     {
+        GMX_ASSERT(haveCopiedXFromGpu, "a wait should only be triggered if copy has been scheduled");
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
     }
 
