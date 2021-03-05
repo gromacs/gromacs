@@ -43,6 +43,7 @@ Major release
    2022/major/highlights
    2022/major/features
    2022/major/performance
+   2022/major/api
    2022/major/tools
    2022/major/bugs-fixed
    2022/major/deprecated-functionality

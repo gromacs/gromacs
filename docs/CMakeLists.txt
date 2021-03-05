@@ -373,6 +373,7 @@ if (SPHINX_FOUND)
         release-notes/2022/major/deprecated-functionality.rst
         release-notes/2022/major/portability.rst
         release-notes/2022/major/miscellaneous.rst
+        release-notes/2022/major/api.rst
         release-notes/2021/2021.1.rst
         release-notes/2021/major/highlights.rst
         release-notes/2021/major/features.rst
