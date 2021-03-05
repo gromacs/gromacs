@@ -47,7 +47,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
-class DeviceStream;
+class GpuEventSynchronizer;
 
 /*! \libinternal
  * \brief Contains information about the PP ranks that partner this PME rank. */
@@ -72,11 +72,11 @@ class PmeForceSenderGpu
 
 public:
     /*! \brief Creates PME GPU Force sender object
-     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] pmeForcesReady  Event synchronizer marked when PME forces are ready on the GPU
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeForceSenderGpu(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeForceSenderGpu(GpuEventSynchronizer* pmeForcesReady, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeForceSenderGpu();
 
     /*! \brief
@@ -86,7 +86,7 @@ public:
     void sendForceBufferAddressToPpRanks(rvec* d_f);
 
     /*! \brief
-     * Send PP data to PP rank
+     * Send force synchronizer to PP rank
      * \param[in] ppRank           PP rank to receive data
      */
     void sendFToPpCudaDirect(int ppRank);

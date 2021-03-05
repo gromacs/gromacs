@@ -648,9 +648,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
                     pme_pp->mpi_comm_mysim,
                     pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
-                    pme_pp->mpi_comm_mysim,
-                    pme_pp->ppRanks);
+                    pme_gpu_get_f_ready_synchronizer(pme), pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.

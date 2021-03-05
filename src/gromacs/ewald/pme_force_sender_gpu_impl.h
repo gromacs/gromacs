@@ -57,11 +57,11 @@ class PmeForceSenderGpu::Impl
 
 public:
     /*! \brief Creates PME GPU Force sender object
-     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] pmeForcesReady  Event synchronizer marked when PME forces are ready on the GPU
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    Impl(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    Impl(GpuEventSynchronizer* pmeForcesReady, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~Impl();
 
     /*! \brief
@@ -71,16 +71,14 @@ public:
     void sendForceBufferAddressToPpRanks(rvec* d_f);
 
     /*! \brief
-     * Send PP data to PP rank
+     * Send force synchronizer to PP rank
      * \param[in] ppRank           PP rank to receive data
      */
     void sendFToPpCudaDirect(int ppRank);
 
 private:
-    //! CUDA stream for PME operations
-    const DeviceStream& pmeStream_;
-    //! Event triggered when to allow remote PP stream to syn with pme stream
-    GpuEventSynchronizer pmeSync_;
+    //! Event indicating when PME forces are ready on the GPU in order for PP stream to sync with the PME stream
+    GpuEventSynchronizer* pmeForcesReady_;
     //! communicator for simulation
     MPI_Comm comm_;
     //! list of PP ranks

@@ -55,8 +55,10 @@ namespace gmx
 {
 
 /*! \brief Create PME-PP GPU communication object */
-PmeForceSenderGpu::Impl::Impl(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeStream_(pmeStream),
+PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
+                              MPI_Comm               comm,
+                              gmx::ArrayRef<PpRanks> ppRanks) :
+    pmeForcesReady_(pmeForcesReady),
     comm_(comm),
     ppRanks_(ppRanks)
 {
@@ -88,28 +90,24 @@ void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(rvec* d_f)
     }
 }
 
-/*! \brief Send PME data directly using CUDA memory copy */
+/*! \brief Send PME synchronizer directly using CUDA memory copy */
 void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank)
 {
     // Data will be pulled directly from PP task
-
-    // Record and send event to ensure PME force calcs are completed before PP task pulls data
-    pmeSync_.markEvent(pmeStream_);
-    GpuEventSynchronizer* pmeSyncPtr = &pmeSync_;
 #if GMX_MPI
     // TODO Using MPI_Isend would be more efficient, particularly when
     // sending to multiple PP ranks
-    MPI_Send(&pmeSyncPtr, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
+    MPI_Send(&pmeForcesReady_, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
 #else
     GMX_UNUSED_VALUE(pmeSyncPtr);
     GMX_UNUSED_VALUE(ppRank);
 #endif
 }
 
-PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream&    pmeStream,
+PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer*  pmeForcesReady,
                                      MPI_Comm               comm,
                                      gmx::ArrayRef<PpRanks> ppRanks) :
-    impl_(new Impl(pmeStream, comm, ppRanks))
+    impl_(new Impl(pmeForcesReady, comm, ppRanks))
 {
 }
 

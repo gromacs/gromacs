@@ -62,7 +62,7 @@ class PmeForceSenderGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream& /*pmeStream */,
+PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer* /*pmeForcesReady */,
                                      MPI_Comm /* comm     */,
                                      gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
