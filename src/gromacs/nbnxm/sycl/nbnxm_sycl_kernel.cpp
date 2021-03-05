@@ -298,6 +298,11 @@ static inline float interpolateCoulombForceR(const DeviceAccessor<float, mode::r
     return lerp(left, right, fraction); // TODO: cl::sycl::mix
 }
 
+/*! \brief Reduce c_clSize j-force components and atomically accumulate into a_f.
+ *
+ * c_clSize consecutive threads hold the force components of a j-atom which we
+ * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
+ */
 static inline void reduceForceJShuffle(Float3                             f,
                                        const cl::sycl::nd_item<1>         itemIdx,
                                        const int                          tidxi,
@@ -336,6 +341,10 @@ static inline void reduceForceJShuffle(Float3                             f,
 
 /*! \brief Final i-force reduction.
  *
+ * Reduce c_nbnxnGpuNumClusterPerSupercluster i-force componets stored in \p fCiBuf[]
+ * accumulating atomically into \p a_f.
+ * If \p calcFShift is true, further reduce shift forces and atomically accumulate into \p a_fShift.
+ *
  * This implementation works only with power of two array sizes.
  */
 static inline void reduceForceIAndFShift(cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_buf,
@@ -349,6 +358,9 @@ static inline void reduceForceIAndFShift(cl::sycl::accessor<float, 1, mode::read
                                          DeviceAccessor<float, mode_atomic> a_f,
                                          DeviceAccessor<float, mode_atomic> a_fShift)
 {
+    // must have power of two elements in fCiBuf
+    static_assert(gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster));
+
     static constexpr int bufStride  = c_clSize * c_clSize;
     static constexpr int clSizeLog2 = gmx::StaticLog2<c_clSize>::value;
     const int            tidx       = tidxi + tidxj * c_clSize;
@@ -408,7 +420,6 @@ static inline void reduceForceIAndFShift(cl::sycl::accessor<float, 1, mode::read
         }
     }
 }
-
 
 /*! \brief Main kernel for NBNXM.
  *
@@ -518,7 +529,16 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
     constexpr bool doExclusionForces =
             (props.elecEwald || props.elecRF || props.vdwEwald || (props.elecCutoff && doCalcEnergies));
 
-    constexpr int subGroupSize = c_clSize * c_clSize / 2;
+    // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask data is stored.
+    // Currently this is ideally suited for 32-wide subgroup size but slightly less so for others,
+    // e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
+    // Hence, the two are decoupled.
+    constexpr int prunedClusterPairSize = c_clSize * c_splitClSize;
+#if defined(HIPSYCL_PLATFORM_ROCM) // SYCL-TODO AMD RDNA/RDNA2 has 32-wide exec; how can we check for that?
+    constexpr int subGroupSize = c_clSize * c_clSize;
+#else
+    constexpr int subGroupSize = prunedClusterPairSize;
+#endif
 
     return [=](cl::sycl::nd_item<1> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
@@ -533,8 +553,9 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
         const unsigned bidx = itemIdx.get_group(0);
 
         const sycl_2020::sub_group sg = itemIdx.get_sub_group();
-        // Better use sg.get_group_range, but too much of the logic relies on it anyway
-        const unsigned widx = tidx / subGroupSize;
+        // Could use sg.get_group_range to compute the imask & exclusion Idx, but too much of the logic relies on it anyway
+        // and in cases where prunedClusterPairSize != subGroupSize we can't use it anyway
+        const unsigned imeiIdx = tidx / prunedClusterPairSize;
 
         Float3 fCiBuf[c_nbnxnGpuNumClusterPerSupercluster]; // i force buffer
         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -636,12 +657,12 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int j4 = cij4Start + tidxz; j4 < cij4End; j4 += 1)
         {
-            unsigned imask = a_plistCJ4[j4].imei[widx].imask;
+            unsigned imask = a_plistCJ4[j4].imei[imeiIdx].imask;
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
-            const int wexclIdx = a_plistCJ4[j4].imei[widx].excl_ind;
+            const int wexclIdx = a_plistCJ4[j4].imei[imeiIdx].excl_ind;
             const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (subGroupSize - 1)]; // sg.get_local_linear_id()
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
@@ -889,7 +910,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
             {
                 /* Update the imask with the new one which does not contain the
                  * out of range clusters anymore. */
-                a_plistCJ4[j4].imei[widx].imask = imask;
+                a_plistCJ4[j4].imei[imeiIdx].imask = imask;
             }
         } // for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
 
