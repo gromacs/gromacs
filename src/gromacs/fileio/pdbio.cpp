@@ -873,13 +873,14 @@ int read_pdbfile(FILE*      in,
     title[0] = '\0';
     natom    = 0;
     chainnum = 0;
-    static const gmx::StringToEnumValueConverter<PdbRecordType, enumValueToString, gmx::StringCompareType::Exact, gmx::StripStrings::Yes> pdbRecordTypeIdentifier;
+    static const gmx::StringToEnumValueConverter<PdbRecordType, enumValueToString, gmx::StringCompareType::Exact, gmx::StripStrings::Yes>
+            sc_pdbRecordTypeIdentifier;
     while (!bStop && (fgets2(line, STRLEN, in) != nullptr))
     {
         // Convert line to a null-terminated string, then take a substring of at most 6 chars
         std::string                  lineAsString(line);
         std::optional<PdbRecordType> line_type =
-                pdbRecordTypeIdentifier.valueFrom(lineAsString.substr(0, 6));
+                sc_pdbRecordTypeIdentifier.valueFrom(lineAsString.substr(0, 6));
         if (!line_type)
         {
             // Skip this line because it does not start with a
