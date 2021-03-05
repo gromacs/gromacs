@@ -63,6 +63,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringtoenumvalueconverter.h"
 
 typedef struct
 {
@@ -461,25 +462,6 @@ void write_pdbfile(FILE*          out,
     write_pdbfile_indexed(
             out, title, atoms, x, pbcType, box, chainid, model_nr, atoms->nr, index, conect, false);
     sfree(index);
-}
-
-static PdbRecordType line2type(const char* line)
-{
-    int  k;
-    char type[8];
-
-    for (k = 0; (k < 6); k++)
-    {
-        type[k] = line[k];
-    }
-    type[k] = '\0';
-
-    using PdbRecordArray = gmx::EnumerationArray<PdbRecordType, bool>;
-    auto entry           = std::find_if(
-            PdbRecordArray::keys().begin(), PdbRecordArray::keys().end(), [type](const auto& key) {
-                return std::strncmp(type, enumValueToString(key), strlen(enumValueToString(key))) == 0;
-            });
-    return (entry != PdbRecordArray::keys().end()) ? *entry : PdbRecordType::Count;
 }
 
 static void read_anisou(char line[], int natom, t_atoms* atoms)
@@ -891,15 +873,25 @@ int read_pdbfile(FILE*      in,
     title[0] = '\0';
     natom    = 0;
     chainnum = 0;
+    static const gmx::StringToEnumValueConverter<PdbRecordType, enumValueToString, gmx::StringCompareType::Exact, gmx::StripStrings::Yes> pdbRecordTypeIdentifier;
     while (!bStop && (fgets2(line, STRLEN, in) != nullptr))
     {
-        PdbRecordType line_type = line2type(line);
+        // Convert line to a null-terminated string, then take a substring of at most 6 chars
+        std::string                  lineAsString(line);
+        std::optional<PdbRecordType> line_type =
+                pdbRecordTypeIdentifier.valueFrom(lineAsString.substr(0, 6));
+        if (!line_type)
+        {
+            // Skip this line because it does not start with a
+            // recognized leading string describing a PDB record type.
+            continue;
+        }
 
-        switch (line_type)
+        switch (line_type.value())
         {
             case PdbRecordType::Atom:
             case PdbRecordType::Hetatm:
-                natom = read_atom(symtab, line, line_type, natom, atoms, x, chainnum);
+                natom = read_atom(symtab, line, line_type.value(), natom, atoms, x, chainnum);
                 break;
 
             case PdbRecordType::Anisou:

@@ -52,6 +52,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         physicalnodecommunicator.cpp
         range.cpp
         strconvert.cpp
+        stringtoenumvalueconverter.cpp
         stringutil.cpp
         template_mp.cpp
         textreader.cpp

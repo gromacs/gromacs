@@ -106,6 +106,7 @@ C++ code
   typically including a verb for boolean variables, like ``foundAtom``.
 * Prefer class enums over regular ones, so that unexpected conversions to
   int do not happen.
+* Name functions to convert class enum values to strings as ``enumValueToString``.
 * When using a non-class enum, prefer to include the name of the enumeration type
   as a base in the name of enum values, e.g., ``HelpOutputFormat_Console``,
   in particular for settings exposed to other modules.

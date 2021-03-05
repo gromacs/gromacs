@@ -62,9 +62,11 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringtoenumvalueconverter.h"
 #include "gromacs/utility/stringutil.h"
 
 void generate_nbparams(CombinationRule         comb,
@@ -272,6 +274,15 @@ static void copy_B_from_A(int ftype, double* c)
     }
 }
 
+//! Local definition that supersedes the central one, as we only want the leading letter
+static const char* enumValueToLetterAsString(ParticleType enumValue)
+{
+    static constexpr gmx::EnumerationArray<ParticleType, const char*> particleTypeLetters = {
+        "A", "N", "S", "B", "V"
+    };
+    return particleTypeLetters[enumValue];
+}
+
 void push_at(t_symtab*                  symtab,
              PreprocessingAtomTypes*    at,
              PreprocessingBondAtomType* bondAtomType,
@@ -281,18 +292,6 @@ void push_at(t_symtab*                  symtab,
              t_nbparam***               pair,
              warninp*                   wi)
 {
-    struct t_xlate
-    {
-        const char*  entry;
-        ParticleType ptype;
-    };
-    gmx::EnumerationArray<ParticleType, t_xlate> xl;
-    xl[ParticleType::Atom]    = { "A", ParticleType::Atom };
-    xl[ParticleType::Nucleus] = { "N", ParticleType::Nucleus };
-    xl[ParticleType::Shell]   = { "S", ParticleType::Shell };
-    xl[ParticleType::Bond]    = { "B", ParticleType::Bond };
-    xl[ParticleType::VSite]   = { "V", ParticleType::VSite };
-
     int     nfields, nfp0 = -1;
     int     nread;
     char    type[STRLEN], btype[STRLEN], ptype[STRLEN];
@@ -531,19 +530,18 @@ void push_at(t_symtab*                  symtab,
     {
         sprintf(ptype, "V");
     }
-    auto entry = std::find_if(xl.begin(), xl.end(), [ptype](const t_xlate& type) {
-        return gmx_strcasecmp(ptype, type.entry) == 0;
-    });
-    if (entry == xl.end())
+    static const gmx::StringToEnumValueConverter<ParticleType, enumValueToLetterAsString, gmx::StringCompareType::CaseInsensitive, gmx::StripStrings::No>
+                                s_stringToParticleType;
+    std::optional<ParticleType> pt = s_stringToParticleType.valueFrom(ptype);
+    if (!pt)
     {
         auto message = gmx::formatString("Invalid particle type %s", ptype);
         warning_error_and_exit(wi, message, FARGS);
     }
-    ParticleType pt = entry->ptype;
 
     atom->q     = q;
     atom->m     = m;
-    atom->ptype = pt;
+    atom->ptype = pt.value();
     for (int i = 0; i < MAXFORCEPARAM; i++)
     {
         forceParam[i] = c[i];
