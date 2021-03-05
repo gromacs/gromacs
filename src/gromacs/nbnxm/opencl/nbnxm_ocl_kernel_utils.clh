@@ -542,7 +542,7 @@ gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float2*  
     const float2 c6c12_i = nbfp_comb[typei];
     const float2 c6c12_j = nbfp_comb[typej];
     const float  sigma   = c6c12_i.x + c6c12_j.x;
-    const float  epsilon = c6c12_i.y + c6c12_j.y;
+    const float  epsilon = c6c12_i.y * c6c12_j.y;
 
     const float sigma2 = sigma * sigma;
     const float c6grid = epsilon * sigma2 * sigma2 * sigma2;
