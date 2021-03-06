@@ -223,13 +223,13 @@ bool Constraints::havePerturbedConstraints() const
 }
 
 //! Clears constraint quantities for atoms in nonlocal region.
-static void clear_constraint_quantity_nonlocal(gmx_domdec_t& dd, ArrayRef<RVec> q)
+static void clear_constraint_quantity_nonlocal(const gmx_domdec_t& dd, ArrayRef<RVec> q)
 {
-    int nonlocal_at_start, nonlocal_at_end, at;
+    int nonlocal_at_start, nonlocal_at_end;
 
     dd_get_constraint_range(dd, &nonlocal_at_start, &nonlocal_at_end);
 
-    for (at = nonlocal_at_start; at < nonlocal_at_end; at++)
+    for (int at = nonlocal_at_start; at < nonlocal_at_end; at++)
     {
         clear_rvec(q[at]);
     }
