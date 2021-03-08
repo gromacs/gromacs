@@ -87,6 +87,8 @@ public:
     size_t size() const { return types.size(); }
     //! The actual atom type data.
     std::vector<AtomTypeData> types;
+    //! Map from \c types[i].name to \c i for quick look-up in \ref atomTypeFromName. Ref #3974.
+    std::unordered_map<std::string, int> nameToAtomType;
 };
 
 bool PreprocessingAtomTypes::isSet(int nt) const
@@ -97,16 +99,16 @@ bool PreprocessingAtomTypes::isSet(int nt) const
 std::optional<int> PreprocessingAtomTypes::atomTypeFromName(const std::string& str) const
 {
     /* Atom types are always case sensitive */
-    auto found = std::find_if(impl_->types.begin(), impl_->types.end(), [&str](const auto& type) {
-        return str == std::string(*type.name_);
-    });
-    if (found == impl_->types.end())
+    const auto found = impl_->nameToAtomType.find(str);
+    if (found == impl_->nameToAtomType.end())
     {
         return std::nullopt;
     }
     else
     {
-        return std::make_optional(std::distance(impl_->types.begin(), found));
+        GMX_ASSERT(str == *impl_->types[found->second].name_,
+                   "Invalid data in atomTypeFromName lookup table");
+        return std::make_optional(found->second);
     }
 }
 
@@ -185,15 +187,9 @@ int PreprocessingAtomTypes::addType(t_symtab*                tab,
     if (!position.has_value())
     {
         impl_->types.emplace_back(a, put_symtab(tab, name.c_str()), nb, bondAtomType, atomNumber);
-        if (auto atomType = atomTypeFromName(name); atomType.has_value())
-        {
-            return *atomType;
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(false, "Unhandled error in adding atom type.");
-            return 0;
-        }
+        const int newType           = impl_->types.size() - 1;
+        impl_->nameToAtomType[name] = newType;
+        return newType;
     }
     else
     {
@@ -373,6 +369,9 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
     /* Renumber nlist */
     std::vector<InteractionOfType> nbsnew;
 
+    // Reset the map used for fast lookups, and refill it below
+    impl_->nameToAtomType.clear();
+
     for (int i = 0; (i < nat); i++)
     {
         int mi = typelist[i];
@@ -385,6 +384,7 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
                                 interactionType.interactionTypeName());
         }
         new_types.push_back(impl_->types[mi]);
+        impl_->nameToAtomType[std::string(*impl_->types[mi].name_)] = new_types.size() - 1;
     }
 
     mtop->ffparams.atnr = nat;
