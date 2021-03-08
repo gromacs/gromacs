@@ -42,9 +42,6 @@
 
 #include <cmath>
 
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
 #endif
@@ -139,7 +136,7 @@ bool gmx_numzero(double a);
  *
  * \return False iff overflow occurred
  */
-gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result);
+bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result);
 
 /*! \brief Enable floating-point exceptions if supported on OS
  *

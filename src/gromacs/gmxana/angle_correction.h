@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
 #define GMX_GMXANA_ANGLE_CORRECTION_H
 
 #include "gromacs/math/units.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief
  * Return the angle in radians after correcting to be within range of -PI < \p angle < PI.

@@ -38,14 +38,13 @@
 #include "gmxpre.h"
 
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/real.h"
 
 #include "config.h"
 
-#include <cassert>
-#include <climits>
+#include <cstdint>
 #include <cmath>
 
-#include <algorithm>
 #include <cfenv>
 
 //! Floating point exception set that we use and care about
@@ -63,13 +62,13 @@ bool gmx_numzero(double a)
 }
 
 
-gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
+bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 {
     int64_t sign = 1;
     if ((0 == a) || (0 == b))
     {
         *result = 0;
-        return TRUE;
+        return true;
     }
     if (a < 0)
     {
@@ -84,10 +83,10 @@ gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
     if (INT64_MAX / b < a)
     {
         *result = (sign > 0) ? INT64_MAX : INT64_MIN;
-        return FALSE;
+        return false;
     }
     *result = sign * a * b;
-    return TRUE;
+    return true;
 }
 
 int gmx_feenableexcept()
