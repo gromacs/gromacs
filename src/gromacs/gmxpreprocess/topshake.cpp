@@ -48,7 +48,7 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"

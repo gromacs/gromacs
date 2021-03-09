@@ -54,8 +54,6 @@ constexpr double c_kilo           = 1e3;
 constexpr double c_nano           = 1e-9;
 constexpr double c_pico           = 1e-12;
 constexpr double c_nm2A           = c_nano / c_angstrom;
-constexpr double c_rad2Deg        = 180.0 / M_PI;
-constexpr double c_deg2Rad        = M_PI / 180.0;
 constexpr double c_cal2Joule      = 4.184;           /* Exact definition of the calorie */
 constexpr double c_electronCharge = 1.602176634e-19; /* Exact definition, Coulomb NIST 2018 CODATA */
 

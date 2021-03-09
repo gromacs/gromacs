@@ -48,7 +48,7 @@
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"

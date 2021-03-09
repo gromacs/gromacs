@@ -50,6 +50,7 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/idef.h"

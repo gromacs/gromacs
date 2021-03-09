@@ -78,6 +78,12 @@
 #    define M_2_SQRTPI 1.128379167095513
 #endif
 
+namespace gmx
+{
+constexpr double c_rad2Deg = 180.0 / M_PI;
+constexpr double c_deg2Rad = M_PI / 180.0;
+} // namespace gmx
+
 /*! \brief Enum to select safe or highly unsafe (faster) math functions.
  *
  *  Normally all the Gromacs math functions should apply reasonable care with

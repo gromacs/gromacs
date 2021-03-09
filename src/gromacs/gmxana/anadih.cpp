@@ -50,7 +50,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/pbcutil/pbc.h"

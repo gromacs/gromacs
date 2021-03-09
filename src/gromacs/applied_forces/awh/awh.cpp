@@ -58,6 +58,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"

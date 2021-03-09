@@ -51,7 +51,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
