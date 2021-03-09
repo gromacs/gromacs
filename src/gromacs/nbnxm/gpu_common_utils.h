@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,10 @@
 
 #include "config.h"
 
-#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/range.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
 
 #if GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"
@@ -68,6 +71,88 @@ static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality 
 {
     assert(nb.plist[iloc]);
     return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->nsci == 0);
+}
+
+/*! \brief Check that atom locality values are valid for the GPU module.
+ *
+ *  In the GPU module atom locality "all" is not supported, the local and
+ *  non-local ranges are treated separately.
+ *
+ *  \param[in] atomLocality atom locality specifier
+ */
+static inline void validateGpuAtomLocality(const AtomLocality atomLocality)
+{
+    std::string str = gmx::formatString(
+            "Invalid atom locality passed (%d); valid here is only "
+            "local (%d) or nonlocal (%d)",
+            static_cast<int>(atomLocality),
+            static_cast<int>(AtomLocality::Local),
+            static_cast<int>(AtomLocality::NonLocal));
+
+    GMX_ASSERT(atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal, str.c_str());
+}
+
+/*! \brief Convert atom locality to interaction locality.
+ *
+ *  In the current implementation the this is straightforward conversion:
+ *  local to local, non-local to non-local.
+ *
+ *  \param[in] atomLocality Atom locality specifier
+ *  \returns                Interaction locality corresponding to the atom locality passed.
+ */
+static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocality atomLocality)
+{
+    validateGpuAtomLocality(atomLocality);
+
+    /* determine interaction locality from atom locality */
+    if (atomLocality == AtomLocality::Local)
+    {
+        return InteractionLocality::Local;
+    }
+    else if (atomLocality == AtomLocality::NonLocal)
+    {
+        return InteractionLocality::NonLocal;
+    }
+    else
+    {
+        gmx_incons("Wrong locality");
+    }
+}
+
+/*! \brief Returns true if there is GPU short-range work for the given interaction locality.
+ *
+ * Note that as, unlike nonbonded tasks, bonded tasks are not split into local/nonlocal,
+ * and therefore if there are GPU offloaded bonded interactions, this function will return
+ * true for all interaction localities.
+ *
+ * \param[inout]  nb        Pointer to the nonbonded GPU data structure
+ * \param[in]     iLocality Interaction locality identifier
+ */
+static inline bool haveGpuShortRangeWork(const NbnxmGpu& nb, const gmx::InteractionLocality iLocality)
+{
+    return nb.haveWork[iLocality];
+}
+
+/*! \brief Calculate atom range and return start index and length.
+ *
+ * \param[in] atomData Atom descriptor data structure
+ * \param[in] atomLocality Atom locality specifier
+ * \returns Range of indexes for selected locality.
+ */
+static inline gmx::Range<int> getGpuAtomRange(const NBAtomData* atomData, const AtomLocality atomLocality)
+{
+    assert(atomData);
+    validateGpuAtomLocality(atomLocality);
+
+    /* calculate the atom data index range based on locality */
+    if (atomLocality == AtomLocality::Local)
+    {
+        return gmx::Range<int>(0, atomData->numAtomsLocal);
+    }
+    else
+    {
+        return gmx::Range<int>(atomData->numAtomsLocal, atomData->numAtoms);
+    }
 }
 
 } // namespace Nbnxm

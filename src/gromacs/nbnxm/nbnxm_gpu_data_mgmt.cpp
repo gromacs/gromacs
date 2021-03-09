@@ -64,6 +64,7 @@
 
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
@@ -408,6 +409,93 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, LJCombinat
                 "The requested VdW type %s is not implemented in the GPU accelerated kernels!",
                 enumValueToString(ic->vdwtype))));
     }
+}
+
+void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    // There is short-range work if the pair list for the provided
+    // interaction locality contains entries or if there is any
+    // bonded work (as this is not split into local/nonlocal).
+    nb->haveWork[iLocality] = ((nb->plist[iLocality]->nsci != 0)
+                               || (gpuBonded != nullptr && gpuBonded->haveInteractions()));
+}
+
+bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
+}
+
+/*! \brief Launch asynchronously the xq buffer host to device copy. */
+void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+
+    NBAtomData*         adat         = nb->atdat;
+    gpu_plist*          plist        = nb->plist[iloc];
+    Nbnxm::GpuTimers*   timers       = nb->timers;
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+
+    const bool bDoTime = nb->bDoTime;
+
+    /* Don't launch the non-local H2D copy if there is no dependent
+       work to do: neither non-local nor other (e.g. bonded) work
+       to do that has as input the nbnxn coordaintes.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends on the non-local kernel.
+       So to avoid complicating the code and to reduce the risk of bugs,
+       we always call the local local x+q copy (and the rest of the local
+       work in nbnxn_gpu_launch_kernel().
+     */
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
+    {
+        plist->haveFreshList = false;
+
+        // The event is marked for Local interactions unconditionally,
+        // so it has to be released here because of the early return
+        // for NonLocal interactions.
+        nb->misc_ops_and_local_H2D_done.reset();
+
+        return;
+    }
+
+    /* local/nonlocal offset and length used for xq and f */
+    const auto atomsRange = getGpuAtomRange(adat, atomLocality);
+
+    /* beginning of timed HtoD section */
+    if (bDoTime)
+    {
+        timers->xf[atomLocality].nb_h2d.openTimingRegion(deviceStream);
+    }
+
+    /* HtoD x, q */
+    GMX_ASSERT(nbatom->XFormat == nbatXYZQ,
+               "The coordinates should be in xyzq format to copy to the Float4 device buffer.");
+    copyToDeviceBuffer(&adat->xq,
+                       reinterpret_cast<const Float4*>(nbatom->x().data()) + atomsRange.begin(),
+                       atomsRange.begin(),
+                       atomsRange.size(),
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       nullptr);
+
+    if (bDoTime)
+    {
+        timers->xf[atomLocality].nb_h2d.closeTimingRegion(deviceStream);
+    }
+
+    /* When we get here all misc operations issued in the local stream as well as
+       the local xq H2D are done,
+       so we record that in the local stream and wait for it in the nonlocal one.
+       This wait needs to precede any PP tasks, bonded or nonbonded, that may
+       compute on interactions between local and nonlocal atoms.
+     */
+    nbnxnInsertNonlocalGpuDependency(nb, iloc);
 }
 
 } // namespace Nbnxm
