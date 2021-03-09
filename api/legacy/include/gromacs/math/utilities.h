@@ -39,6 +39,7 @@
 #define GMX_MATH_UTILITIES_H
 
 #include <limits.h>
+#include <stdint.h>
 
 #include <cmath>
 
