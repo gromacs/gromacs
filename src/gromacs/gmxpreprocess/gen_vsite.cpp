@@ -754,7 +754,7 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType> plist,
     }         /* for i */
 }
 
-#define ANGLE_6RING (DEG2RAD * 120)
+#define ANGLE_6RING (gmx::c_deg2Rad * 120)
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
@@ -1019,21 +1019,21 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
     b_CE3_HE3 = get_ddb_bond(vsitetop, "TRP", "CE3", "HE3");
     b_CZ3_HZ3 = get_ddb_bond(vsitetop, "TRP", "CZ3", "HZ3");
 
-    a_NE1_CE2_CD2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "NE1", "CE2", "CD2");
-    a_CE2_CD2_CG  = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CG");
-    a_CB_CG_CD2   = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CB", "CG", "CD2");
-    a_CD2_CG_CD1  = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CD2", "CG", "CD1");
+    a_NE1_CE2_CD2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "NE1", "CE2", "CD2");
+    a_CE2_CD2_CG  = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CG");
+    a_CB_CG_CD2   = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CB", "CG", "CD2");
+    a_CD2_CG_CD1  = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CD2", "CG", "CD1");
 
-    a_CE2_CD2_CE3 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CE3");
-    a_CD2_CE2_CZ2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CD2", "CE2", "CZ2");
-    a_CD2_CE3_CZ3 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "CZ3");
-    a_CE3_CZ3_HZ3 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CE3", "CZ3", "HZ3");
-    a_CZ2_CH2_HH2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CZ2", "CH2", "HH2");
-    a_CE2_CZ2_HZ2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "HZ2");
-    a_CE2_CZ2_CH2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "CH2");
-    a_CG_CD1_HD1  = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CG", "CD1", "HD1");
-    a_HE1_NE1_CE2 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "HE1", "NE1", "CE2");
-    a_CD2_CE3_HE3 = DEG2RAD * get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "HE3");
+    a_CE2_CD2_CE3 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CE2", "CD2", "CE3");
+    a_CD2_CE2_CZ2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CD2", "CE2", "CZ2");
+    a_CD2_CE3_CZ3 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "CZ3");
+    a_CE3_CZ3_HZ3 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CE3", "CZ3", "HZ3");
+    a_CZ2_CH2_HH2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CZ2", "CH2", "HH2");
+    a_CE2_CZ2_HZ2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "HZ2");
+    a_CE2_CZ2_CH2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CE2", "CZ2", "CH2");
+    a_CG_CD1_HD1  = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CG", "CD1", "HD1");
+    a_HE1_NE1_CE2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "HE1", "NE1", "CE2");
+    a_CD2_CE3_HE3 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TRP", "CD2", "CE3", "HE3");
 
     /* Calculate local coordinates.
      * y-axis (x=0) is the bond CD2-CE2.
@@ -1291,7 +1291,7 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     bond_ch   = get_ddb_bond(vsitetop, "TYR", "CD1", "HD1");
     bond_co   = get_ddb_bond(vsitetop, "TYR", "CZ", "OH");
     bond_oh   = get_ddb_bond(vsitetop, "TYR", "OH", "HH");
-    angle_coh = DEG2RAD * get_ddb_angle(vsitetop, "TYR", "CZ", "OH", "HH");
+    angle_coh = gmx::c_deg2Rad * get_ddb_angle(vsitetop, "TYR", "CZ", "OH", "HH");
 
     xi[atCG]  = -bond_cc + bond_cc * std::cos(ANGLE_6RING);
     xi[atCD1] = -bond_cc;
@@ -1471,30 +1471,30 @@ static int gen_vsites_his(t_atoms*                                 at,
     b_CE1_NE2     = get_ddb_bond(vsitetop, resname, "CE1", "NE2");
     b_CG_CD2      = get_ddb_bond(vsitetop, resname, "CG", "CD2");
     b_CD2_NE2     = get_ddb_bond(vsitetop, resname, "CD2", "NE2");
-    a_CG_ND1_CE1  = DEG2RAD * get_ddb_angle(vsitetop, resname, "CG", "ND1", "CE1");
-    a_CG_CD2_NE2  = DEG2RAD * get_ddb_angle(vsitetop, resname, "CG", "CD2", "NE2");
-    a_ND1_CE1_NE2 = DEG2RAD * get_ddb_angle(vsitetop, resname, "ND1", "CE1", "NE2");
-    a_CE1_NE2_CD2 = DEG2RAD * get_ddb_angle(vsitetop, resname, "CE1", "NE2", "CD2");
+    a_CG_ND1_CE1  = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "CG", "ND1", "CE1");
+    a_CG_CD2_NE2  = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "CG", "CD2", "NE2");
+    a_ND1_CE1_NE2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "ND1", "CE1", "NE2");
+    a_CE1_NE2_CD2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "CE1", "NE2", "CD2");
 
     if (ats[atHD1] != NOTSET)
     {
         b_ND1_HD1     = get_ddb_bond(vsitetop, resname, "ND1", "HD1");
-        a_CE1_ND1_HD1 = DEG2RAD * get_ddb_angle(vsitetop, resname, "CE1", "ND1", "HD1");
+        a_CE1_ND1_HD1 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "CE1", "ND1", "HD1");
     }
     if (ats[atHE2] != NOTSET)
     {
         b_NE2_HE2     = get_ddb_bond(vsitetop, resname, "NE2", "HE2");
-        a_CE1_NE2_HE2 = DEG2RAD * get_ddb_angle(vsitetop, resname, "CE1", "NE2", "HE2");
+        a_CE1_NE2_HE2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "CE1", "NE2", "HE2");
     }
     if (ats[atHD2] != NOTSET)
     {
         b_CD2_HD2     = get_ddb_bond(vsitetop, resname, "CD2", "HD2");
-        a_NE2_CD2_HD2 = DEG2RAD * get_ddb_angle(vsitetop, resname, "NE2", "CD2", "HD2");
+        a_NE2_CD2_HD2 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "NE2", "CD2", "HD2");
     }
     if (ats[atHE1] != NOTSET)
     {
         b_CE1_HE1     = get_ddb_bond(vsitetop, resname, "CE1", "HE1");
-        a_NE2_CE1_HE1 = DEG2RAD * get_ddb_angle(vsitetop, resname, "NE2", "CE1", "HE1");
+        a_NE2_CE1_HE1 = gmx::c_deg2Rad * get_ddb_angle(vsitetop, resname, "NE2", "CE1", "HE1");
     }
 
     /* constraints between CG, CE1 and NE1 */

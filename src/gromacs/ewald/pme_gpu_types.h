@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ static_assert(sizeof(DeviceBuffer<int>) == 8,
  */
 struct PmeGpuConstParams
 {
-    /*! \brief Electrostatics coefficient = ONE_4PI_EPS0 / pme->epsilon_r */
+    /*! \brief Electrostatics coefficient = c_one4PiEps0 / pme->epsilon_r */
     float elFactor;
     /*! \brief Virial and energy GPU array. Size is c_virialAndEnergyCount (7) floats.
      * The element order is virxx, viryy, virzz, virxy, virxz, viryz, energy. */

@@ -908,7 +908,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             nboxs = boxs_nm.size();
         }
         vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-        dens = (tmass * AMU) / (vol * NANO * NANO * NANO);
+        dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
         add_ebin(ebin_, ib_, nboxs, bs, bSum);
         add_ebin(ebin_, ivol_, 1, &vol, bSum);
         add_ebin(ebin_, idens_, 1, &dens, bSum);
@@ -917,7 +917,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         {
             /* This is pV (in kJ/mol).  The pressure is the reference pressure,
                not the instantaneous pressure */
-            pv = vol * ref_p_ / PRESFAC;
+            pv = vol * ref_p_ / gmx::c_presfac;
 
             add_ebin(ebin_, ipv_, 1, &pv, bSum);
             enthalpy = pv + enerd->term[F_ETOT];
@@ -953,12 +953,12 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
     if (ekind && ekind->cosacc.cos_accel != 0)
     {
         vol  = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
-        dens = (tmass * AMU) / (vol * NANO * NANO * NANO);
+        dens = (tmass * gmx::c_amu) / (vol * gmx::c_nano * gmx::c_nano * gmx::c_nano);
         add_ebin(ebin_, ivcos_, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1
-              / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * PICO) * dens
-                 * gmx::square(box[ZZ][ZZ] * NANO / (2 * M_PI)));
+              / (ekind->cosacc.cos_accel / (ekind->cosacc.vcos * gmx::c_pico) * dens
+                 * gmx::square(box[ZZ][ZZ] * gmx::c_nano / (2 * M_PI)));
         add_ebin(ebin_, ivisc_, 1, &tmp, bSum);
     }
     if (nE_ > 1)

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,8 +228,9 @@ static void density_in_time(const char*             fn,
             (*Densdevel)[*tblock] = Densslice;
         }
 
-        dscale = (*xslices) * (*yslices) * (*zslices) * AMU
-                 / (box[ax1][ax1] * box[ax2][ax2] * box[axis][axis] * nsttblock * (NANO * NANO * NANO));
+        dscale = (*xslices) * (*yslices) * (*zslices) * gmx::c_amu
+                 / (box[ax1][ax1] * box[ax2][ax2] * box[axis][axis] * nsttblock
+                    * (gmx::c_nano * gmx::c_nano * gmx::c_nano));
 
         if (bCenter)
         {

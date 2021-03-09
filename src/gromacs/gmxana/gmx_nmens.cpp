@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -232,7 +232,7 @@ int gmx_nmens(int argc, char* argv[])
             /* (r-0.5) n times:  var_n = n * var_1 = n/12
                n=4:  var_n = 1/3, so multiply with 3 */
 
-            rfac  = std::sqrt(3.0 * BOLTZ * temp / eigval[iout[j]]);
+            rfac  = std::sqrt(3.0 * gmx::c_boltz * temp / eigval[iout[j]]);
             rhalf = 2.0 * rfac;
             rfac  = rfac / im;
 

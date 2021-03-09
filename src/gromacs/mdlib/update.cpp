@@ -891,7 +891,7 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec& inputRecord)
                 && (reft > 0)) /* tau_t or ref_t = 0 means that no randomization is done */
             {
                 randomize_group[gt] = true;
-                boltzfac[gt]        = BOLTZ * opts->ref_t[gt];
+                boltzfac[gt]        = gmx::c_boltz * opts->ref_t[gt];
             }
             else
             {
@@ -909,7 +909,7 @@ void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
         {
             for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
             {
-                sd_.bd_rf[gt] = std::sqrt(2.0 * BOLTZ * inputRecord.opts.ref_t[gt]
+                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * inputRecord.opts.ref_t[gt]
                                           / (inputRecord.bd_fric * inputRecord.delta_t));
             }
         }
@@ -917,7 +917,7 @@ void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
         {
             for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
             {
-                sd_.bd_rf[gt] = std::sqrt(2.0 * BOLTZ * inputRecord.opts.ref_t[gt]);
+                sd_.bd_rf[gt] = std::sqrt(2.0 * gmx::c_boltz * inputRecord.opts.ref_t[gt]);
             }
         }
     }
@@ -925,7 +925,7 @@ void Update::Impl::update_temperature_constants(const t_inputrec& inputRecord)
     {
         for (int gt = 0; gt < inputRecord.opts.ngtc; gt++)
         {
-            real kT = BOLTZ * inputRecord.opts.ref_t[gt];
+            real kT = gmx::c_boltz * inputRecord.opts.ref_t[gt];
             /* The mass is accounted for later, since this differs per atom */
             sd_.sdsig[gt].V = std::sqrt(kT * (1 - sd_.sdc[gt].em * sd_.sdc[gt].em));
         }

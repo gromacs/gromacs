@@ -312,7 +312,7 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
 
         for (int m = 0; (m < DIM); m++)
         {
-            const real fieldStrength = FIELDFAC * field(m, t);
+            const real fieldStrength = gmx::c_fieldfac * field(m, t);
 
             if (fieldStrength != 0)
             {

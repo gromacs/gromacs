@@ -809,7 +809,7 @@ void Angle::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
                     break;
                 default: GMX_THROW(InternalError("invalid -g1 value"));
             }
-            dh.setPoint(n, angle * RAD2DEG, bPresent);
+            dh.setPoint(n, angle * gmx::c_rad2Deg, bPresent);
         }
     }
     dh.finishFrame();

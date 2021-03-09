@@ -98,7 +98,7 @@ void ewald_LRcorrection(const int         numAtomsLocal,
     EwaldBoxZScaler boxScaler(ir);
     boxScaler.scaleBox(box, scaledBox);
 
-    one_4pi_eps = ONE_4PI_EPS0 / fr.ic->epsilon_r;
+    one_4pi_eps = gmx::c_one4PiEps0 / fr.ic->epsilon_r;
     Vexcl_q     = 0;
     dvdl_excl_q = 0;
     Vdipole[0]  = 0;
@@ -109,8 +109,8 @@ void ewald_LRcorrection(const int         numAtomsLocal,
      */
     for (i = 0; (i < DIM); i++)
     {
-        mutot[0][i] = mu_tot[0][i] * DEBYE2ENM;
-        mutot[1][i] = mu_tot[1][i] * DEBYE2ENM;
+        mutot[0][i] = mu_tot[0][i] * gmx::c_debye2Enm;
+        mutot[1][i] = mu_tot[1][i] * gmx::c_debye2Enm;
         dipcorrA[i] = 0;
         dipcorrB[i] = 0;
     }
@@ -122,7 +122,7 @@ void ewald_LRcorrection(const int         numAtomsLocal,
         case EwaldGeometry::ThreeD:
             if (ir.epsilon_surface != 0)
             {
-                dipole_coeff = 2 * M_PI * ONE_4PI_EPS0
+                dipole_coeff = 2 * M_PI * gmx::c_one4PiEps0
                                / ((2 * ir.epsilon_surface + fr.ic->epsilon_r) * boxVolume);
                 for (i = 0; (i < DIM); i++)
                 {

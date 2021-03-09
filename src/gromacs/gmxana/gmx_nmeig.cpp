@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,31 +71,31 @@
 
 static double cv_corr(double nu, double T)
 {
-    double x  = PLANCK * nu / (BOLTZ * T);
+    double x  = gmx::c_planck * nu / (gmx::c_boltz * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ * KILO;
+        return gmx::c_boltz * gmx::c_kilo;
     }
     else
     {
-        return BOLTZ * KILO * (ex * gmx::square(x) / gmx::square(ex - 1) - 1);
+        return gmx::c_boltz * gmx::c_kilo * (ex * gmx::square(x) / gmx::square(ex - 1) - 1);
     }
 }
 
 static double u_corr(double nu, double T)
 {
-    double x  = PLANCK * nu / (BOLTZ * T);
+    double x  = gmx::c_planck * nu / (gmx::c_boltz * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ * T;
+        return gmx::c_boltz * T;
     }
     else
     {
-        return BOLTZ * T * (0.5 * x - 1 + x / (ex - 1));
+        return gmx::c_boltz * T * (0.5 * x - 1 + x / (ex - 1));
     }
 }
 
@@ -287,14 +287,14 @@ static real* allocateEigenvectors(int nrow, int first, int last, bool ignoreBegi
  */
 static double calcTranslationalHeatCapacity()
 {
-    return RGAS * 1.5;
+    return gmx::c_universalGasConstant * 1.5;
 }
 
 /*! \brief Compute internal energy due to translational motion
  */
 static double calcTranslationalInternalEnergy(double T)
 {
-    return BOLTZ * T * 1.5;
+    return gmx::c_boltz * T * 1.5;
 }
 
 /*! \brief Compute heat capacity due to rotational motion
@@ -307,11 +307,11 @@ static double calcRotationalInternalEnergy(gmx_bool linear, double T)
 {
     if (linear)
     {
-        return BOLTZ * T;
+        return gmx::c_boltz * T;
     }
     else
     {
-        return BOLTZ * T * 1.5;
+        return gmx::c_boltz * T * 1.5;
     }
 }
 
@@ -324,11 +324,11 @@ static double calcRotationalHeatCapacity(gmx_bool linear)
 {
     if (linear)
     {
-        return RGAS;
+        return gmx::c_universalGasConstant;
     }
     else
     {
-        return RGAS * 1.5;
+        return gmx::c_universalGasConstant * 1.5;
     }
 }
 
@@ -361,9 +361,9 @@ static void analyzeThermochemistry(FILE*                    fp,
     principal_comp(index.size(), index.data(), top.atoms.atom, as_rvec_array(x_com.data()), trans, inertia);
     bool linear = (inertia[XX] / inertia[YY] < linear_toler && inertia[XX] / inertia[ZZ] < linear_toler);
     // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
-    // KILO kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
-    // KILO^2 10^18 / 10^24 K = 1/K
-    double rot_const = gmx::square(PLANCK) / (8 * gmx::square(M_PI) * BOLTZ);
+    // c_kilo kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
+    // c_kilo^2 10^18 / 10^24 K = 1/K
+    double rot_const = gmx::square(gmx::c_planck) / (8 * gmx::square(M_PI) * gmx::c_boltz);
     // Rotational temperature (1/K)
     rvec theta = { 0, 0, 0 };
     if (linear)
@@ -729,8 +729,8 @@ int gmx_nmeig(int argc, char* argv[])
      * light. Do this by first converting to omega^2 (units 1/s), take the square
      * root, and finally divide by the speed of light (nm/ps in gromacs).
      */
-    factor_gmx_to_omega2       = 1.0E21 / (AVOGADRO * AMU);
-    factor_omega_to_wavenumber = 1.0E-5 / (2.0 * M_PI * SPEED_OF_LIGHT);
+    factor_gmx_to_omega2       = 1.0E21 / (gmx::c_avogadro * gmx::c_amu);
+    factor_omega_to_wavenumber = 1.0E-5 / (2.0 * M_PI * gmx::c_speedOfLight);
 
     value = 0;
     for (i = begin; (i <= end); i++)
@@ -758,8 +758,8 @@ int gmx_nmeig(int argc, char* argv[])
             qu  = u_corr(nu, T);
             if (i > end - nharm)
             {
-                qcv += BOLTZ * KILO;
-                qu += BOLTZ * T;
+                qcv += gmx::c_boltz * gmx::c_kilo;
+                qu += gmx::c_boltz * T;
             }
             fprintf(qc, "%6d %15g %15g\n", i, qcv, qu);
             qcvtot += qcv;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -549,7 +549,7 @@ void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t* 
 #if GMX_USE_TNG
     gmx_tng_add_mtop(gmx_tng, mtop);
     set_writing_intervals(gmx_tng, FALSE, ir);
-    tng_time_per_frame_set(gmx_tng->tng, ir->delta_t * PICO);
+    tng_time_per_frame_set(gmx_tng->tng, ir->delta_t * gmx::c_pico);
     gmx_tng->timePerFrameIsSet = true;
 #else
     GMX_UNUSED_VALUE(gmx_tng);
@@ -765,7 +765,7 @@ void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t gmx_tng, const gmx_mt
     gmx_tng_add_mtop(gmx_tng, mtop);
     add_selection_groups(gmx_tng, mtop);
     set_writing_intervals(gmx_tng, TRUE, ir);
-    tng_time_per_frame_set(gmx_tng->tng, ir->delta_t * PICO);
+    tng_time_per_frame_set(gmx_tng->tng, ir->delta_t * gmx::c_pico);
     gmx_tng->timePerFrameIsSet = true;
     gmx_tng_set_compression_precision(gmx_tng, ir->x_compression_precision);
 #else
@@ -801,7 +801,7 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t gmx_tng,
 #    else
     static write_data_func_pointer    write_data           = tng_util_generic_with_time_write;
 #    endif
-    double  elapsedSeconds = elapsedPicoSeconds * PICO;
+    double  elapsedSeconds = elapsedPicoSeconds * gmx::c_pico;
     int64_t nParticles;
     char    compression;
 
@@ -1004,7 +1004,7 @@ float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t gmx_tng)
     tng_num_frames_get(tng, &nFrames);
     tng_util_time_of_frame_get(tng, nFrames - 1, &time);
 
-    fTime = time / PICO;
+    fTime = time / gmx::c_pico;
     return fTime;
 #else
     GMX_UNUSED_VALUE(gmx_tng);
@@ -1271,8 +1271,8 @@ real getDistanceScaleFactor(gmx_tng_trajectory_t in)
     // GROMACS expects distances in nm
     switch (exp)
     {
-        case 9: distanceScaleFactor = NANO / NANO; break;
-        case 10: distanceScaleFactor = NANO / ANGSTROM; break;
+        case 9: distanceScaleFactor = gmx::c_nano / gmx::c_nano; break;
+        case 10: distanceScaleFactor = gmx::c_nano / gmx::c_angstrom; break;
         default: distanceScaleFactor = pow(10.0, exp + 9.0);
     }
 
@@ -1545,7 +1545,7 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
     fr->bStep = TRUE;
 
     // Convert the time to ps
-    fr->time  = frameTime / PICO;
+    fr->time  = frameTime / gmx::c_pico;
     fr->bTime = (frameTime > 0);
 
     // TODO This does not leak, but is not exception safe.

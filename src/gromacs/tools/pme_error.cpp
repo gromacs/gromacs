@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -182,7 +182,7 @@ static real estimate_direct(t_inputinfo* info)
     e_dir = 2.0 * info->q2all * gmx::invsqrt(info->q2allnr * r_coulomb * info->volume);
     e_dir *= std::exp(-beta * beta * r_coulomb * r_coulomb);
 
-    return ONE_4PI_EPS0 * e_dir;
+    return gmx::c_one4PiEps0 * e_dir;
 }
 
 #define SUMORDER 6
@@ -776,7 +776,7 @@ static real estimate_reciprocal(t_inputinfo* info,
     e_rec = std::sqrt(e_rec1 + e_rec2 + e_rec3);
 
 
-    return ONE_4PI_EPS0 * e_rec;
+    return gmx::c_one4PiEps0 * e_rec;
 }
 
 

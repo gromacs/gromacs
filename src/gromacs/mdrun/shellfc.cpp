@@ -54,6 +54,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/constr.h"
@@ -454,7 +455,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                               aS + 1,
                                               mb + 1);
                                 }
-                                shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0
+                                shell[nsi].k += gmx::square(qS) * gmx::c_one4PiEps0
                                                 / ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_WATER_POL:
@@ -472,7 +473,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                          + ffparams->iparams[type].wpol.al_y
                                          + ffparams->iparams[type].wpol.al_z)
                                         / 3.0;
-                                shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0 / alpha;
+                                shell[nsi].k += gmx::square(qS) * gmx::c_one4PiEps0 / alpha;
                                 break;
                             default: gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                         }

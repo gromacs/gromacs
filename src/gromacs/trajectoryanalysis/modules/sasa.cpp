@@ -1076,7 +1076,7 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
         {
             totmass += surfaceSel.position(i).mass();
         }
-        const real density = totmass * AMU / (totvolume * NANO * NANO * NANO);
+        const real density = totmass * gmx::c_amu / (totvolume * gmx::c_nano * gmx::c_nano * gmx::c_nano);
         vh.startFrame(frnr, fr.time);
         vh.setPoint(0, totvolume);
         vh.setPoint(1, density);

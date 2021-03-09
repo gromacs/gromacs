@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -241,7 +241,8 @@ static void process_tcaf(int                     nframes,
         fitparms[0] = 1;
         fitparms[1] = 1;
         do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
-        eta = 1000 * fitparms[1] * rho / (4 * fitparms[0] * PICO * norm2(kfac[k]) / (NANO * NANO));
+        eta = 1000 * fitparms[1] * rho
+              / (4 * fitparms[0] * gmx::c_pico * norm2(kfac[k]) / (gmx::c_nano * gmx::c_nano));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n", norm(kfac[k]), fitparms[0], eta);
         fprintf(fp_vk, "%6.3f %g\n", norm(kfac[k]), eta);
         for (i = 0; i < ncorr; i++)
@@ -264,7 +265,7 @@ static void process_tcaf(int                     nframes,
             fitparms[1] = 1;
             do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
             eta = 1000 * fitparms[1] * rho
-                  / (4 * fitparms[0] * PICO * norm2(kfac[kset_c[k]]) / (NANO * NANO));
+                  / (4 * fitparms[0] * gmx::c_pico * norm2(kfac[kset_c[k]]) / (gmx::c_nano * gmx::c_nano));
             fprintf(stdout,
                     "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
                     norm(kfac[kset_c[k]]),
@@ -508,7 +509,7 @@ int gmx_tcaf(int argc, char* argv[])
 
     dt = (t1 - t0) / (nframes - 1);
 
-    rho *= sysmass / nframes * AMU / (NANO * NANO * NANO);
+    rho *= sysmass / nframes * gmx::c_amu / (gmx::c_nano * gmx::c_nano * gmx::c_nano);
     fprintf(stdout, "Density = %g (kg/m^3)\n", rho);
     process_tcaf(nframes,
                  dt,

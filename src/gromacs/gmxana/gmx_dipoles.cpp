@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,9 +74,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#define e2d(x) ENM2DEBYE*(x)
-#define EANG2CM (E_CHARGE * 1.0e-10)    /* e Angstrom to Coulomb meter */
-#define CM2D (SPEED_OF_LIGHT * 1.0e+24) /* Coulomb meter to Debye */
+#define e2d(x) gmx::c_enm2Debye*(x)
+constexpr double EANG2CM = gmx::c_electronCharge * 1.0e-10; /* e Angstrom to Coulomb meter */
+constexpr double CM2D    = gmx::c_speedOfLight * 1.0e+24;   /* Coulomb meter to Debye */
 
 typedef struct
 {
@@ -440,7 +440,7 @@ static void print_gkrbin(const char* fn, t_gkrbin* gb, int ngrp, int nframes, re
         {
             cosav = 0;
         }
-        ener = -0.5 * cosav * ONE_4PI_EPS0 / (x1 * x1 * x1);
+        ener = -0.5 * cosav * gmx::c_one4PiEps0 / (x1 * x1 * x1);
 
         fprintf(fp, "%10.5e %12.5e %12.5e %12.5e %12.5e  %12.5e\n", x1, Gkr, cosav, hOO, gOO, ener);
 
@@ -673,7 +673,8 @@ static real calc_eps(double M_diff, double volume, double epsRF, double temp)
     double eps_0 = 8.854187817e-12; /* epsilon_0 in C^2 J^-1 m^-1 */
     double fac   = 1.112650021e-59; /* converts Debye^2 to C^2 m^2 */
 
-    A = M_diff * fac / (3 * eps_0 * volume * NANO * NANO * NANO * BOLTZMANN * temp);
+    A = M_diff * fac
+        / (3 * eps_0 * volume * gmx::c_nano * gmx::c_nano * gmx::c_nano * gmx::c_boltzmann * temp);
 
     if (epsRF == 0.0)
     {

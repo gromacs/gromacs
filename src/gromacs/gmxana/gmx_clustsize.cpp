@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -354,7 +354,7 @@ static void clust_size(const char*             ndx,
                             ekin += 0.5 * m * iprod(v[ai], v[ai]);
                         }
                     }
-                    temp = (ekin * 2.0) / (3.0 * tfac * max_clust_size * BOLTZ);
+                    temp = (ekin * 2.0) / (3.0 * tfac * max_clust_size * gmx::c_boltz);
                     fprintf(tp, "%10.3f  %10.3f\n", frameTime, temp);
                 }
             }

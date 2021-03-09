@@ -376,7 +376,7 @@ static real get_angle(gmx::ArrayRef<const VsiteBondedInteraction> angles, t_iato
         if (((ai == ang.ai()) && (aj == ang.aj()) && (ak == ang.ak()))
             || ((ai == ang.ak()) && (aj == ang.aj()) && (ak == ang.ai())))
         {
-            angle = DEG2RAD * ang.parameterValue();
+            angle = gmx::c_deg2Rad * ang.parameterValue();
             break;
         }
     }
@@ -535,7 +535,7 @@ static bool calc_vsite3fad_param(InteractionOfType*                          vsi
     bError = (bij == NOTSET) || (aijk == NOTSET);
 
     vsite->setForceParameter(1, bij);
-    vsite->setForceParameter(0, RAD2DEG * aijk);
+    vsite->setForceParameter(0, gmx::c_rad2Deg * aijk);
 
     if (bSwapParity)
     {
@@ -601,8 +601,8 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes*                     aty
         dH = bCN - bNH * std::cos(aCNH);
         rH = bNH * std::sin(aCNH);
         /* we assume the H's are symmetrically distributed */
-        rHx = rH * std::cos(DEG2RAD * 30);
-        rHy = rH * std::sin(DEG2RAD * 30);
+        rHx = rH * std::cos(gmx::c_deg2Rad * 30);
+        rHy = rH * std::sin(gmx::c_deg2Rad * 30);
         rM  = 0.5 * bMM;
         dM  = std::sqrt(gmx::square(bCM) - gmx::square(rM));
         a   = 0.5 * ((dH / dM) - (rHy / rM));
@@ -682,9 +682,9 @@ static bool calc_vsite4fd_param(InteractionOfType*                          vsit
                     .appendTextFormatted(
                             "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f",
                             vsite->ai() + 1,
-                            RAD2DEG * aijk,
-                            RAD2DEG * aijl,
-                            RAD2DEG * aijm);
+                            gmx::c_rad2Deg * aijk,
+                            gmx::c_rad2Deg * aijl,
+                            gmx::c_rad2Deg * aijm);
             gmx_fatal(FARGS,
                       "invalid construction in calc_vsite4fd for atom %d: "
                       "cosakl=%f, cosakm=%f\n",
@@ -752,9 +752,9 @@ static bool calc_vsite4fdn_param(InteractionOfType*                          vsi
                     .appendTextFormatted(
                             "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f",
                             vsite->ai() + 1,
-                            RAD2DEG * aijk,
-                            RAD2DEG * aijl,
-                            RAD2DEG * aijm);
+                            gmx::c_rad2Deg * aijk,
+                            gmx::c_rad2Deg * aijl,
+                            gmx::c_rad2Deg * aijm);
             gmx_fatal(FARGS,
                       "invalid construction in calc_vsite4fdn for atom %d: "
                       "pl=%f, pm=%f\n",

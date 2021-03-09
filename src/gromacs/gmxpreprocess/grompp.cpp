@@ -1384,7 +1384,7 @@ static real calc_temp(const gmx_mtop_t* mtop, const t_inputrec* ir, rvec* v)
         nrdf += ir->opts.nrdf[g];
     }
 
-    return sum_mv2 / (nrdf * BOLTZ);
+    return sum_mv2 / (nrdf * gmx::c_boltz);
 }
 
 static real get_max_reference_temp(const t_inputrec* ir, warninp* wi)
@@ -2264,7 +2264,7 @@ int gmx_grompp(int argc, char* argv[])
                      * to be on the safe side with constraints.
                      */
                     const real totalEnergyDriftPerAtomPerPicosecond =
-                            2 * BOLTZ * buffer_temp / (ir->nsteps * ir->delta_t);
+                            2 * gmx::c_boltz * buffer_temp / (ir->nsteps * ir->delta_t);
 
                     if (ir->verletbuf_tol > 1.1 * driftTolerance * totalEnergyDriftPerAtomPerPicosecond)
                     {

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -528,7 +529,7 @@ static void do_sham(const char* fn,
         bfac[i] = ibox[i] / (max_eig[i] - min_eig[i]);
     }
     /* Do the binning */
-    bref = 1 / (BOLTZ * Tref);
+    bref = 1 / (gmx::c_boltz * Tref);
     snew(bE, n);
     if (bGE || nenerT == 2)
     {
@@ -542,7 +543,7 @@ static void do_sham(const char* fn,
             }
             else
             {
-                bE[j] = (bref - 1 / (BOLTZ * enerT[1][j])) * enerT[0][j];
+                bE[j] = (bref - 1 / (gmx::c_boltz * enerT[1][j])) * enerT[0][j];
             }
             Emin = std::min(Emin, static_cast<double>(bE[j]));
         }
@@ -605,7 +606,7 @@ static void do_sham(const char* fn,
                 }
                 else if (idim[i] == -1)
                 {
-                    efac /= std::sin(DEG2RAD * eig[i][j]);
+                    efac /= std::sin(gmx::c_deg2Rad * eig[i][j]);
                 }
             }
             /* Update the probability */
@@ -635,7 +636,7 @@ static void do_sham(const char* fn,
         if (P[i] != 0)
         {
             Pmax = std::max(P[i], Pmax);
-            W[i] = -BOLTZ * Tref * std::log(P[i]);
+            W[i] = -gmx::c_boltz * Tref * std::log(P[i]);
             if (W[i] < Wmin)
             {
                 Wmin = W[i];

@@ -792,7 +792,7 @@ static real displacementVariance(const t_inputrec& ir, real temperature, real ti
          * should be negligible (unless nstlist is extremely large, which
          * you wouldn't do anyhow).
          */
-        kT_fac = 2 * BOLTZ * temperature * timePeriod;
+        kT_fac = 2 * gmx::c_boltz * temperature * timePeriod;
         if (ir.bd_fric > 0)
         {
             /* This is directly sigma^2 of the displacement */
@@ -813,7 +813,7 @@ static real displacementVariance(const t_inputrec& ir, real temperature, real ti
     }
     else
     {
-        kT_fac = BOLTZ * temperature * gmx::square(timePeriod);
+        kT_fac = gmx::c_boltz * temperature * gmx::square(timePeriod);
     }
 
     return kT_fac;
@@ -981,7 +981,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
                   "interactions");
     }
 
-    elfac = ONE_4PI_EPS0 / ir.epsilon_r;
+    elfac = gmx::c_one4PiEps0 / ir.epsilon_r;
 
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };

@@ -59,6 +59,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -153,7 +154,7 @@ double pull_conversion_factor_userinput2internal(const t_pull_coord* pcrd)
 {
     if (pull_coordinate_is_angletype(pcrd))
     {
-        return DEG2RAD;
+        return gmx::c_deg2Rad;
     }
     else
     {
@@ -165,7 +166,7 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd)
 {
     if (pull_coordinate_is_angletype(pcrd))
     {
-        return RAD2DEG;
+        return gmx::c_rad2Deg;
     }
     else
     {

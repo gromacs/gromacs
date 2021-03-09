@@ -485,7 +485,7 @@ static real averageKineticEnergyEstimate(const t_grpopts& groupOptions)
         if (groupOptions.tau_t[g] >= 0)
         {
             nrdfCoupled += groupOptions.nrdf[g];
-            kineticEnergy += groupOptions.nrdf[g] * 0.5 * groupOptions.ref_t[g] * BOLTZ;
+            kineticEnergy += groupOptions.nrdf[g] * 0.5 * groupOptions.ref_t[g] * gmx::c_boltz;
         }
         else
         {

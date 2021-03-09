@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused cor
 
 static int calc_Nbin(real phi, int multiplicity, real core_frac)
 {
-    static const real r360 = 360 * DEG2RAD;
+    static const real r360 = 360 * gmx::c_deg2Rad;
     real              rot_width, core_width, core_offset, low, hi;
     int               bin;
     /* with multiplicity 3 and core_frac 0.5
@@ -127,8 +127,8 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
     {
         low = ((bin - 1) * rot_width) + core_offset;
         hi  = ((bin - 1) * rot_width) + core_offset + core_width;
-        low *= DEG2RAD;
-        hi *= DEG2RAD;
+        low *= gmx::c_deg2Rad;
+        hi *= gmx::c_deg2Rad;
         if ((phi > low) && (phi < hi))
         {
             return bin;
@@ -716,7 +716,7 @@ static real calc_fraction(const real angles[], int nangles)
 
     for (i = 0; i < nangles; i++)
     {
-        angle = angles[i] * RAD2DEG;
+        angle = angles[i] * gmx::c_rad2Deg;
 
         if (angle > 135 && angle < 225)
         {

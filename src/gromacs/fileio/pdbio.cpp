@@ -104,7 +104,7 @@ void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
 
     if (norm2(box[YY]) * norm2(box[ZZ]) != 0)
     {
-        alpha = RAD2DEG * gmx_angle(box[YY], box[ZZ]);
+        alpha = gmx::c_rad2Deg * gmx_angle(box[YY], box[ZZ]);
     }
     else
     {
@@ -112,7 +112,7 @@ void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
     }
     if (norm2(box[XX]) * norm2(box[ZZ]) != 0)
     {
-        beta = RAD2DEG * gmx_angle(box[XX], box[ZZ]);
+        beta = gmx::c_rad2Deg * gmx_angle(box[XX], box[ZZ]);
     }
     else
     {
@@ -120,7 +120,7 @@ void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
     }
     if (norm2(box[XX]) * norm2(box[YY]) != 0)
     {
-        gamma = RAD2DEG * gmx_angle(box[XX], box[YY]);
+        gamma = gmx::c_rad2Deg * gmx_angle(box[XX], box[YY]);
     }
     else
     {
@@ -206,7 +206,7 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
         {
             if (alpha != 90.0)
             {
-                cosa = std::cos(alpha * DEG2RAD);
+                cosa = std::cos(alpha * gmx::c_deg2Rad);
             }
             else
             {
@@ -214,7 +214,7 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
             }
             if (beta != 90.0)
             {
-                cosb = std::cos(beta * DEG2RAD);
+                cosb = std::cos(beta * gmx::c_deg2Rad);
             }
             else
             {
@@ -222,8 +222,8 @@ static void read_cryst1(char* line, PbcType* pbcType, matrix box)
             }
             if (gamma != 90.0)
             {
-                cosg = std::cos(gamma * DEG2RAD);
-                sing = std::sin(gamma * DEG2RAD);
+                cosg = std::cos(gamma * gmx::c_deg2Rad);
+                sing = std::sin(gamma * gmx::c_deg2Rad);
             }
             else
             {

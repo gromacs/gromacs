@@ -1640,7 +1640,7 @@ static double calc_bar_lowlevel(sample_coll_t* ca, sample_coll_t* cb, double tem
     double DG0, DG1, DG2, dDG1;
     double n1, n2; /* numbers of samples as doubles */
 
-    kT   = BOLTZ * temp;
+    kT   = gmx::c_boltz * temp;
     beta = 1 / kT;
 
     /* count the numbers of samples */
@@ -1771,7 +1771,7 @@ static void calc_rel_entropy(sample_coll_t* ca, sample_coll_t* cb, double temp, 
     double Wfac1, Wfac2;
     double n1, n2;
 
-    kT   = BOLTZ * temp;
+    kT   = gmx::c_boltz * temp;
     beta = 1 / kT;
 
     /* count the numbers of samples */
@@ -1885,7 +1885,7 @@ static void calc_dg_stddev(sample_coll_t* ca, sample_coll_t* cb, double temp, do
     double Wfac1, Wfac2;
     double n1, n2;
 
-    kT   = BOLTZ * temp;
+    kT   = gmx::c_boltz * temp;
     beta = 1 / kT;
 
     /* count the numbers of samples */
@@ -3622,7 +3622,7 @@ int gmx_bar(int argc, char* argv[])
     }
 
     /* print results in kT */
-    kT = BOLTZ * temp;
+    kT = gmx::c_boltz * temp;
 
     printf("\nTemperature: %g K\n", temp);
 

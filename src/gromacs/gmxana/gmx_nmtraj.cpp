@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,7 +231,7 @@ int gmx_nmtraj(int argc, char* argv[])
             /* Derive amplitude from temperature and eigenvalue if we can */
 
             /* Convert eigenvalue to angular frequency, in units s^(-1) */
-            omega = std::sqrt(eigval[kmode] * 1.0E21 / (AVOGADRO * AMU));
+            omega = std::sqrt(eigval[kmode] * 1.0E21 / (gmx::c_avogadro * gmx::c_amu));
             /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
              * The velocity is thus:
              *
@@ -261,10 +261,10 @@ int gmx_nmtraj(int argc, char* argv[])
             /* Convert Ekin from amu*(nm/s)^2 to J, i.e., kg*(m/s)^2
              * This will also be proportional to A^2
              */
-            Ekin *= AMU * 1E-18;
+            Ekin *= gmx::c_amu * 1E-18;
 
             /* Set the amplitude so the energy is kT/2 */
-            amplitude[i] = std::sqrt(0.5 * BOLTZMANN * temp / Ekin);
+            amplitude[i] = std::sqrt(0.5 * gmx::c_boltzmann * temp / Ekin);
         }
         else
         {

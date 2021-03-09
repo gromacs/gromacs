@@ -388,7 +388,7 @@ void FreeVolume::writeOutput()
     printf("Total volume %.2f +/- %.2f nm^3\n", Vaver, Verror);
 
     printf("Number of molecules %d total mass %.2f Dalton\n", nmol_, mtot_);
-    double RhoAver  = mtot_ / (Vaver * 1e-24 * AVOGADRO);
+    double RhoAver  = mtot_ / (Vaver * 1e-24 * gmx::c_avogadro);
     double RhoError = gmx::square(RhoAver / Vaver) * Verror;
     printf("Average molar mass: %.2f Dalton\n", mtot_ / nmol_);
 

@@ -138,7 +138,7 @@ public:
         }
 
         const real referenceKineticEnergy =
-                0.5 * temperatureCouplingData.referenceTemperature[temperatureGroup] * BOLTZ
+                0.5 * temperatureCouplingData.referenceTemperature[temperatureGroup] * gmx::c_boltz
                 * temperatureCouplingData.numDegreesOfFreedom[temperatureGroup];
 
         const real newKineticEnergy =

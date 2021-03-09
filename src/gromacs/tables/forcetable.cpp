@@ -1420,10 +1420,10 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
         /* Convert the table from degrees to radians */
         for (i = 0; i < td.nx; i++)
         {
-            td.x[i] *= DEG2RAD;
-            td.f[i] *= RAD2DEG;
+            td.x[i] *= gmx::c_deg2Rad;
+            td.f[i] *= gmx::c_rad2Deg;
         }
-        td.tabscale *= RAD2DEG;
+        td.tabscale *= gmx::c_rad2Deg;
     }
     tab.n     = td.nx;
     tab.scale = td.tabscale;

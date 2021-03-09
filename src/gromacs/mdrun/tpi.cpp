@@ -277,7 +277,7 @@ void LegacySimulator::do_tpi()
         }
         fprintf(fplog, "\n  The temperature for test particle insertion is %.3f K\n\n", temp);
     }
-    beta = 1.0 / (BOLTZ * temp);
+    beta = 1.0 / (gmx::c_boltz * temp);
 
     /* Number of insertions per frame */
     nsteps = inputrec->nsteps;

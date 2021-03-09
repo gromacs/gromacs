@@ -57,6 +57,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdrun/mdmodules.h"
@@ -4371,7 +4372,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
              * of errors. The factor 0.5 is because energy distributes
              * equally over Ekin and Epot.
              */
-            max_T_error = 0.5 * tau * ir->verletbuf_tol / (nrdf_at * BOLTZ * T);
+            max_T_error = 0.5 * tau * ir->verletbuf_tol / (nrdf_at * gmx::c_boltz * T);
             if (max_T_error > T_error_warn)
             {
                 sprintf(warn_buf,

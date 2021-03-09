@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,9 +97,9 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
 #define alfaHpl (2 * M_PI / 3) /* 120 degrees */
 #define distH 0.1
 
-#define alfaCOM (DEG2RAD * 117)
-#define alfaCO (DEG2RAD * 121)
-#define alfaCOA (DEG2RAD * 115)
+#define alfaCOM (gmx::c_deg2Rad * 117)
+#define alfaCO (gmx::c_deg2Rad * 121)
+#define alfaCOA (gmx::c_deg2Rad * 115)
 
 #define distO 0.123
 #define distOA 0.125

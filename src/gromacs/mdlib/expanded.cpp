@@ -52,6 +52,7 @@
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/constr.h"
@@ -1402,15 +1403,16 @@ int ExpandedEnsembleDynamics(FILE*                 log,
             if (ir->bSimTemp)
             {
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
-                scaled_lamee[i] = enerd->foreignLambdaTerms.deltaH(i) / (simtemp->temperatures[i] * BOLTZ)
-                                  + enerd->term[F_EPOT]
-                                            * (1.0 / (simtemp->temperatures[i])
-                                               - 1.0 / (simtemp->temperatures[fep_state]))
-                                            / BOLTZ;
+                scaled_lamee[i] =
+                        enerd->foreignLambdaTerms.deltaH(i) / (simtemp->temperatures[i] * gmx::c_boltz)
+                        + enerd->term[F_EPOT]
+                                  * (1.0 / (simtemp->temperatures[i])
+                                     - 1.0 / (simtemp->temperatures[fep_state]))
+                                  / gmx::c_boltz;
             }
             else
             {
-                scaled_lamee[i] = enerd->foreignLambdaTerms.deltaH(i) / (expand->mc_temp * BOLTZ);
+                scaled_lamee[i] = enerd->foreignLambdaTerms.deltaH(i) / (expand->mc_temp * gmx::c_boltz);
                 /* mc_temp is currently set to the system reft unless otherwise defined */
             }
 
@@ -1427,7 +1429,8 @@ int ExpandedEnsembleDynamics(FILE*                 log,
             {
                 scaled_lamee[i] =
                         enerd->term[F_EPOT]
-                        * (1.0 / simtemp->temperatures[i] - 1.0 / simtemp->temperatures[fep_state]) / BOLTZ;
+                        * (1.0 / simtemp->temperatures[i] - 1.0 / simtemp->temperatures[fep_state])
+                        / gmx::c_boltz;
             }
         }
     }

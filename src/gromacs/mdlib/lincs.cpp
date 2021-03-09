@@ -1096,7 +1096,7 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
 
     real wfac;
 
-    wfac = std::cos(DEG2RAD * wangle);
+    wfac = std::cos(gmx::c_deg2Rad * wangle);
     wfac = wfac * wfac;
 
     for (int iter = 0; iter < lincsd->nIter; iter++)
@@ -2151,7 +2151,7 @@ static void lincs_warning(gmx_domdec_t*                 dd,
                           int                           maxwarn,
                           int*                          warncount)
 {
-    real wfac = std::cos(DEG2RAD * wangle);
+    real wfac = std::cos(gmx::c_deg2Rad * wangle);
 
     fprintf(stderr,
             "bonds that rotated more than %g degrees:\n"
@@ -2183,7 +2183,7 @@ static void lincs_warning(gmx_domdec_t*                 dd,
                     " %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
                     ddglatnr(dd, i),
                     ddglatnr(dd, j),
-                    RAD2DEG * std::acos(cosine),
+                    gmx::c_rad2Deg * std::acos(cosine),
                     d0,
                     d1,
                     bllen[b]);

@@ -143,7 +143,7 @@ static real rot(rvec x1, const rvec x2)
     xx   = cp * x2[XX] + sp * x2[YY];
     yy   = -sp * x2[XX] + cp * x2[YY];
 
-    dphi = RAD2DEG * std::atan2(yy, xx);
+    dphi = gmx::c_rad2Deg * std::atan2(yy, xx);
 
     return dphi;
 }
@@ -190,7 +190,7 @@ real ca_phi(int gnx, const int index[], rvec x[])
         aj  = index[i + 1];
         ak  = index[i + 2];
         al  = index[i + 3];
-        phi = RAD2DEG
+        phi = gmx::c_rad2Deg
               * dih_angle(x[ai], x[aj], x[ak], x[al], nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         phitot += phi;
     }
@@ -497,7 +497,7 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
             bb[i].d5 = norm(dx);
         }
 
-        bb[i].phi = RAD2DEG
+        bb[i].phi = gmx::c_rad2Deg
                     * dih_angle(x[bb[i].Cprev],
                                 x[bb[i].N],
                                 x[bb[i].CA],
@@ -511,7 +511,7 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
                                 &t1,
                                 &t2,
                                 &t3);
-        bb[i].psi = RAD2DEG
+        bb[i].psi = gmx::c_rad2Deg
                     * dih_angle(x[bb[i].N],
                                 x[bb[i].CA],
                                 x[bb[i].C],
@@ -527,9 +527,9 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
                                 &t3);
         bb[i].pprms2 = gmx::square(bb[i].phi - PHI_AHX) + gmx::square(bb[i].psi - PSI_AHX);
 
-        bb[i].jcaha += 1.4 * std::sin((bb[i].psi + 138.0) * DEG2RAD)
-                       - 4.1 * std::cos(2.0 * DEG2RAD * (bb[i].psi + 138.0))
-                       + 2.0 * std::cos(2.0 * DEG2RAD * (bb[i].phi + 30.0));
+        bb[i].jcaha += 1.4 * std::sin((bb[i].psi + 138.0) * gmx::c_deg2Rad)
+                       - 4.1 * std::cos(2.0 * gmx::c_deg2Rad * (bb[i].psi + 138.0))
+                       + 2.0 * std::cos(2.0 * gmx::c_deg2Rad * (bb[i].phi + 30.0));
     }
 }
 

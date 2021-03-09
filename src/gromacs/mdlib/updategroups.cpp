@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -522,9 +522,10 @@ static real constraintGroupRadius(const gmx_moltype_t&                     molty
         /* Set number of stddevs such that change of exceeding < 10^-9 */
         constexpr real c_numSigma = 6.0;
         /* Compute the maximally stretched angle */
-        const real eqAngle = angleParams.harmonic.rA * DEG2RAD;
+        const real eqAngle = angleParams.harmonic.rA * gmx::c_deg2Rad;
         const real fc      = angleParams.harmonic.krA;
-        const real maxAngle = eqAngle + c_numSigma * BOLTZ * temperature / ((numPartnerAtoms - 1) * fc);
+        const real maxAngle =
+                eqAngle + c_numSigma * gmx::c_boltz * temperature / ((numPartnerAtoms - 1) * fc);
         if (maxAngle >= M_PI)
         {
             return -1;

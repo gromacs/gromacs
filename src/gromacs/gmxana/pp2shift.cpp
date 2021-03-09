@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,13 +119,13 @@ static void dump_sd(const char* fn, t_shiftdata* sd)
     {
         snew(newdata[i], nny);
         phi      = i * 2 * M_PI / (nnx - 1);
-        x_phi[i] = phi * RAD2DEG - 180;
+        x_phi[i] = phi * gmx::c_rad2Deg - 180;
         for (j = 0; (j < nny); j++)
         {
             psi = j * 2 * M_PI / (nny - 1);
             if (i == 0)
             {
-                y_psi[j] = psi * RAD2DEG - 180;
+                y_psi[j] = psi * gmx::c_rad2Deg - 180;
             }
             /*if (((i % nfac) == 0) && ((j % nfac) == 0))
                newdata[i][j] = sd->data[i/nfac][j/nfac];

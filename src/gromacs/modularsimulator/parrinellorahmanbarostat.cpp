@@ -219,7 +219,7 @@ real ParrinelloRahmanBarostat::conservedEnergyContribution() const
     {
         for (int j = 0; j <= i; j++)
         {
-            real invMass = PRESFAC * (4 * M_PI * M_PI * inputrec_->compress[i][j])
+            real invMass = c_presfac * (4 * M_PI * M_PI * inputrec_->compress[i][j])
                            / (3 * inputrec_->tau_p * inputrec_->tau_p * maxBoxLength);
             if (invMass > 0)
             {
@@ -235,7 +235,7 @@ real ParrinelloRahmanBarostat::conservedEnergyContribution() const
      * track of unwrapped box diagonal elements. This case is
      * excluded in integratorHasConservedEnergyQuantity().
      */
-    energy += volume * trace(inputrec_->ref_p) / (DIM * PRESFAC);
+    energy += volume * trace(inputrec_->ref_p) / (DIM * c_presfac);
 
     return energy;
 }

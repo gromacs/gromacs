@@ -634,7 +634,7 @@ DispersionCorrection::Correction DispersionCorrection::calculate(const matrix bo
             corr.virial += numCorr * density * avctwelve * iParams_.virdifftwelve_ / 3.0;
         }
         /* The factor 2 is because of the Gromacs virial definition */
-        corr.pressure = -2.0 * invvol * corr.virial * PRESFAC;
+        corr.pressure = -2.0 * invvol * corr.virial * gmx::c_presfac;
     }
 
     if (eFep_ != FreeEnergyPerturbationType::No)

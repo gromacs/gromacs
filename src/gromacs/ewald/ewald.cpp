@@ -173,7 +173,8 @@ real do_ewald(const t_inputrec& ir,
     }
 
     /* 1/(Vol*e0) */
-    real scaleRecip = 4.0 * M_PI / (boxDiag[XX] * boxDiag[YY] * boxDiag[ZZ]) * ONE_4PI_EPS0 / ir.epsilon_r;
+    real scaleRecip =
+            4.0 * M_PI / (boxDiag[XX] * boxDiag[YY] * boxDiag[ZZ]) * gmx::c_one4PiEps0 / ir.epsilon_r;
 
     snew(eir, et->kmax);
     for (n = 0; n < et->kmax; n++)
@@ -328,7 +329,7 @@ real ewald_charge_correction(const t_commrec*  cr,
         /* Apply charge correction */
         vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
 
-        fac = M_PI * ONE_4PI_EPS0
+        fac = M_PI * gmx::c_one4PiEps0
               / (fr->ic->epsilon_r * 2.0 * vol * vol * gmx::square(fr->ic->ewaldcoeff_q));
 
         qs2A = fr->qsum[0] * fr->qsum[0];

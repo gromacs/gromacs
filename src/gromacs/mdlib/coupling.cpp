@@ -446,7 +446,7 @@ static void NHC_trotter(const t_grpopts*      opts,
                 Ekin = 2 * trace(tcstat->ekinh) * tcstat->ekinscaleh_nhc;
             }
         }
-        kT = BOLTZ * reft;
+        kT = gmx::c_boltz * reft;
 
         for (mi = 0; mi < mstepsi; mi++)
         {
@@ -572,7 +572,8 @@ static void boxv_trotter(const t_inputrec*     ir,
     pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres) + pcorr;
 
     vol = det(box);
-    GW  = (vol * (MassQ->Winv / PRESFAC)) * (DIM * pscal - trace(ir->ref_p)); /* W is in ps^2 * bar * nm^3 */
+    GW  = (vol * (MassQ->Winv / gmx::c_presfac))
+         * (DIM * pscal - trace(ir->ref_p)); /* W is in ps^2 * bar * nm^3 */
 
     *veta += 0.5 * dt * GW;
 }
@@ -601,7 +602,7 @@ real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, 
          * het systeem...
          */
 
-        fac = PRESFAC * 2.0 / det(box);
+        fac = gmx::c_presfac * 2.0 / det(box);
         for (n = 0; (n < DIM); n++)
         {
             for (m = 0; (m < DIM); m++)
@@ -625,7 +626,7 @@ real calc_temp(real ekin, real nrdf)
 {
     if (nrdf > 0)
     {
-        return (2.0 * ekin) / (nrdf * BOLTZ);
+        return (2.0 * ekin) / (nrdf * gmx::c_boltz);
     }
     else
     {
@@ -633,7 +634,7 @@ real calc_temp(real ekin, real nrdf)
     }
 }
 
-/*! \brief Sets 1/mass for Parrinello-Rahman in wInv; NOTE: PRESFAC is not included, so not in GROMACS units! */
+/*! \brief Sets 1/mass for Parrinello-Rahman in wInv; NOTE: c_presfac is not included, so not in GROMACS units! */
 static void calcParrinelloRahmanInvMass(const t_inputrec* ir, const matrix box, tensor wInv)
 {
     real maxBoxLength;
@@ -696,7 +697,7 @@ void parrinellorahman_pcoupl(FILE*             fplog,
 
     if (!bFirstStep)
     {
-        /* Note that PRESFAC does not occur here.
+        /* Note that c_presfac does not occur here.
          * The pressure and compressibility always occur as a product,
          * therefore the pressure unit drops out.
          */
@@ -972,7 +973,7 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const t_inputr
     }
     real gauss  = 0;
     real gauss2 = 0;
-    real kt     = ir->opts.ref_t[0] * BOLTZ;
+    real kt     = ir->opts.ref_t[0] * gmx::c_boltz;
     if (kt < 0.0)
     {
         kt = 0.0;
@@ -986,7 +987,7 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const t_inputr
             {
                 const real factor = compressibilityFactor(d, d, ir, dt);
                 mu[d][d]          = std::exp(-factor * (ir->ref_p[d][d] - scalar_pressure) / DIM
-                                    + std::sqrt(2.0 * kt * factor * PRESFAC / vol) * gauss / DIM);
+                                    + std::sqrt(2.0 * kt * factor * gmx::c_presfac / vol) * gauss / DIM);
             }
             break;
         case PressureCouplingType::SemiIsotropic:
@@ -996,13 +997,13 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const t_inputr
             {
                 const real factor = compressibilityFactor(d, d, ir, dt);
                 mu[d][d]          = std::exp(-factor * (ir->ref_p[d][d] - xy_pressure) / DIM
-                                    + std::sqrt((DIM - 1) * 2.0 * kt * factor * PRESFAC / vol / DIM)
+                                    + std::sqrt((DIM - 1) * 2.0 * kt * factor * gmx::c_presfac / vol / DIM)
                                               / (DIM - 1) * gauss);
             }
             {
                 const real factor = compressibilityFactor(ZZ, ZZ, ir, dt);
                 mu[ZZ][ZZ]        = std::exp(-factor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
-                                      + std::sqrt(2.0 * kt * factor * PRESFAC / vol / DIM) * gauss2);
+                                      + std::sqrt(2.0 * kt * factor * gmx::c_presfac / vol / DIM) * gauss2);
             }
             break;
         case PressureCouplingType::SurfaceTension:
@@ -1014,12 +1015,12 @@ void calculateScalingMatrixImplDetail<PressureCoupling::CRescale>(const t_inputr
                 /* Notice: we here use ref_p[ZZ][ZZ] as isotropic pressure and ir->ref_p[d][d] as surface tension */
                 mu[d][d] = std::exp(
                         -factor * (ir->ref_p[ZZ][ZZ] - ir->ref_p[d][d] / box[ZZ][ZZ] - xy_pressure) / DIM
-                        + std::sqrt(4.0 / 3.0 * kt * factor * PRESFAC / vol) / (DIM - 1) * gauss);
+                        + std::sqrt(4.0 / 3.0 * kt * factor * gmx::c_presfac / vol) / (DIM - 1) * gauss);
             }
             {
                 const real factor = compressibilityFactor(ZZ, ZZ, ir, dt);
                 mu[ZZ][ZZ]        = std::exp(-factor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
-                                      + std::sqrt(2.0 / 3.0 * kt * factor * PRESFAC / vol) * gauss2);
+                                      + std::sqrt(2.0 / 3.0 * kt * factor * gmx::c_presfac / vol) * gauss2);
             }
             break;
         default:
@@ -1491,16 +1492,16 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
 
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
         /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
-        MassQ->Winv = (PRESFAC * trace(ir->compress) * BOLTZ * opts->ref_t[0])
+        MassQ->Winv = (gmx::c_presfac * trace(ir->compress) * gmx::c_boltz * opts->ref_t[0])
                       / (DIM * state->vol0 * gmx::square(ir->tau_p / M_2PI));
         /* An alternate mass definition, from Tuckerman et al. */
-        /* MassQ->Winv = 1.0/(gmx::square(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
+        /* MassQ->Winv = 1.0/(gmx::square(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*c_boltz*opts->ref_t[0]); */
         for (d = 0; d < DIM; d++)
         {
             for (n = 0; n < DIM; n++)
             {
-                MassQ->Winvm[d][n] =
-                        PRESFAC * ir->compress[d][n] / (state->vol0 * gmx::square(ir->tau_p / M_2PI));
+                MassQ->Winvm[d][n] = gmx::c_presfac * ir->compress[d][n]
+                                     / (state->vol0 * gmx::square(ir->tau_p / M_2PI));
                 /* not clear this is correct yet for the anisotropic case. Will need to reevaluate
                    before using MTTK for anisotropic states.*/
             }
@@ -1518,7 +1519,7 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
             {
                 reft = std::max<real>(0, opts->ref_t[i]);
                 nd   = opts->nrdf[i];
-                kT   = BOLTZ * reft;
+                kT   = gmx::c_boltz * reft;
                 for (j = 0; j < nh; j++)
                 {
                     if (j == 0)
@@ -1695,7 +1696,7 @@ init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, gmx_bool b
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0))
     {
         reft = std::max<real>(0, opts->ref_t[0]);
-        kT   = BOLTZ * reft;
+        kT   = gmx::c_boltz * reft;
         for (i = 0; i < nnhpres; i++)
         {
             for (j = 0; j < nh; j++)
@@ -1740,7 +1741,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
 
         real nd   = ir->opts.nrdf[i];
         real reft = std::max<real>(ir->opts.ref_t[i], 0);
-        real kT   = BOLTZ * reft;
+        real kT   = gmx::c_boltz * reft;
 
         if (nd > 0.0)
         {
@@ -1768,7 +1769,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
             }
             else /* Other non Trotter temperature NH control  -- no chains yet. */
             {
-                energy += 0.5 * BOLTZ * nd * gmx::square(ivxi[0]) / iQinv[0];
+                energy += 0.5 * gmx::c_boltz * nd * gmx::square(ivxi[0]) / iQinv[0];
                 energy += nd * ixi[0] * kT;
             }
         }
@@ -1788,7 +1789,7 @@ static real energyPressureMTTK(const t_inputrec* ir, const t_state* state, const
     {
         /* note -- assumes only one degree of freedom that is thermostatted in barostat */
         real reft = std::max<real>(ir->opts.ref_t[0], 0.0); /* using 'System' temperature */
-        real kT   = BOLTZ * reft;
+        real kT   = gmx::c_boltz * reft;
 
         for (int j = 0; j < nh; j++)
         {
@@ -1849,7 +1850,8 @@ real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* Mas
                     {
                         if (invMass[d][n] > 0)
                         {
-                            energyNPT += 0.5 * gmx::square(state->boxv[d][n]) / (invMass[d][n] * PRESFAC);
+                            energyNPT += 0.5 * gmx::square(state->boxv[d][n])
+                                         / (invMass[d][n] * gmx::c_presfac);
                         }
                     }
                 }
@@ -1861,7 +1863,7 @@ real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* Mas
                  * track of unwrapped box diagonal elements. This case is
                  * excluded in integratorHasConservedEnergyQuantity().
                  */
-                energyNPT += vol * trace(ir->ref_p) / (DIM * PRESFAC);
+                energyNPT += vol * trace(ir->ref_p) / (DIM * gmx::c_presfac);
                 break;
             }
             case PressureCoupling::Mttk:
@@ -1869,7 +1871,7 @@ real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* Mas
                 energyNPT += 0.5 * gmx::square(state->veta) / MassQ->Winv;
 
                 /* contribution from the PV term */
-                energyNPT += vol * trace(ir->ref_p) / (DIM * PRESFAC);
+                energyNPT += vol * trace(ir->ref_p) / (DIM * gmx::c_presfac);
 
                 if (ir->epc == PressureCoupling::Mttk)
                 {
@@ -2010,7 +2012,7 @@ void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, 
 
         if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0)
         {
-            Ek_ref1 = 0.5 * opts->ref_t[i] * BOLTZ;
+            Ek_ref1 = 0.5 * opts->ref_t[i] * gmx::c_boltz;
             Ek_ref  = Ek_ref1 * opts->nrdf[i];
 
             Ek_new = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i], opts->tau_t[i] / dt, step, ir->ld_seed);

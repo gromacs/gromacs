@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,7 +103,7 @@ public:
      * Builder function for pull dimension parameters.
      *
      * \param[in] conversionFactor  Conversion factor from user coordinate units to bias internal
-     * units (=DEG2RAD for angles).
+     * units (=c_deg2Rad for angles).
      * \param[in] forceConstant     The harmonic force constant.
      * \param[in] beta              1/(k_B T).
      */

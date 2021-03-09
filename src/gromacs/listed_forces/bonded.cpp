@@ -734,7 +734,7 @@ real polarize(int              nbonds,
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
-        ksh  = gmx::square(md->chargeA[aj]) * ONE_4PI_EPS0 / forceparams[type].polarize.alpha;
+        ksh  = gmx::square(md->chargeA[aj]) * gmx::c_one4PiEps0 / forceparams[type].polarize.alpha;
 
         ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
         dr2 = iprod(dx, dx);                       /*   5		*/
@@ -781,7 +781,7 @@ real anharm_polarize(int              nbonds,
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
-        ksh = gmx::square(md->chargeA[aj]) * ONE_4PI_EPS0 / forceparams[type].anharm_polarize.alpha; /* 7*/
+        ksh = gmx::square(md->chargeA[aj]) * gmx::c_one4PiEps0 / forceparams[type].anharm_polarize.alpha; /* 7*/
         khyp  = forceparams[type].anharm_polarize.khyp;
         drcut = forceparams[type].anharm_polarize.drcut;
 
@@ -841,9 +841,9 @@ real water_pol(int             nbonds,
         type0  = forceatoms[0];
         aS     = forceatoms[5];
         qS     = md->chargeA[aS];
-        kk[XX] = gmx::square(qS) * ONE_4PI_EPS0 / forceparams[type0].wpol.al_x;
-        kk[YY] = gmx::square(qS) * ONE_4PI_EPS0 / forceparams[type0].wpol.al_y;
-        kk[ZZ] = gmx::square(qS) * ONE_4PI_EPS0 / forceparams[type0].wpol.al_z;
+        kk[XX] = gmx::square(qS) * gmx::c_one4PiEps0 / forceparams[type0].wpol.al_x;
+        kk[YY] = gmx::square(qS) * gmx::c_one4PiEps0 / forceparams[type0].wpol.al_y;
+        kk[ZZ] = gmx::square(qS) * gmx::c_one4PiEps0 / forceparams[type0].wpol.al_z;
         r_HH   = 1.0 / forceparams[type0].wpol.rHH;
         for (i = 0; (i < nbonds); i += 6)
         {
@@ -935,7 +935,7 @@ do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj, const t_pbc* pbc, rea
     r12sq  = iprod(r12, r12);                                                     /*  5 */
     r12_1  = gmx::invsqrt(r12sq);                                                 /*  5 */
     r12bar = afac / r12_1;                                                        /*  5 */
-    v0     = qq * ONE_4PI_EPS0 * r12_1;                                           /*  2 */
+    v0     = qq * gmx::c_one4PiEps0 * r12_1;                                      /*  2 */
     ebar   = std::exp(-r12bar);                                                   /*  5 */
     v1     = (1 - (1 + 0.5 * r12bar) * ebar);                                     /*  4 */
     fscal  = ((v0 * r12_1) * v1 - v0 * 0.5 * afac * ebar * (r12bar + 1)) * r12_1; /* 9 */
@@ -1041,8 +1041,8 @@ angles(int             nbonds,
 
         *dvdlambda += harmonic(forceparams[type].harmonic.krA,
                                forceparams[type].harmonic.krB,
-                               forceparams[type].harmonic.rA * DEG2RAD,
-                               forceparams[type].harmonic.rB * DEG2RAD,
+                               forceparams[type].harmonic.rA * gmx::c_deg2Rad,
+                               forceparams[type].harmonic.rB * gmx::c_deg2Rad,
                                theta,
                                lambda,
                                &va,
@@ -1126,7 +1126,7 @@ angles(int             nbonds,
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t aj[GMX_SIMD_REAL_WIDTH];
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t ak[GMX_SIMD_REAL_WIDTH];
     alignas(GMX_SIMD_ALIGNMENT) real         coeff[2 * GMX_SIMD_REAL_WIDTH];
-    SimdReal                                 deg2rad_S(DEG2RAD);
+    SimdReal                                 deg2rad_S(gmx::c_deg2Rad);
     SimdReal                                 xi_S, yi_S, zi_S;
     SimdReal                                 xj_S, yj_S, zj_S;
     SimdReal                                 xk_S, yk_S, zk_S;
@@ -1364,11 +1364,11 @@ urey_bradley(int             nbonds,
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
         ak   = forceatoms[i++];
-        th0A = forceparams[type].u_b.thetaA * DEG2RAD;
+        th0A = forceparams[type].u_b.thetaA * gmx::c_deg2Rad;
         kthA = forceparams[type].u_b.kthetaA;
         r13A = forceparams[type].u_b.r13A;
         kUBA = forceparams[type].u_b.kUBA;
-        th0B = forceparams[type].u_b.thetaB * DEG2RAD;
+        th0B = forceparams[type].u_b.thetaB * gmx::c_deg2Rad;
         kthB = forceparams[type].u_b.kthetaB;
         r13B = forceparams[type].u_b.r13B;
         kUBB = forceparams[type].u_b.kUBB;
@@ -1527,7 +1527,7 @@ urey_bradley(int             nbonds,
         SimdReal rikz_S = zi_S - zk_S;
 
         const SimdReal ktheta_S = load<SimdReal>(coeff);
-        const SimdReal theta0_S = load<SimdReal>(coeff + GMX_SIMD_REAL_WIDTH) * DEG2RAD;
+        const SimdReal theta0_S = load<SimdReal>(coeff + GMX_SIMD_REAL_WIDTH) * gmx::c_deg2Rad;
         const SimdReal kUB_S    = load<SimdReal>(coeff + 2 * GMX_SIMD_REAL_WIDTH);
         const SimdReal r13_S    = load<SimdReal>(coeff + 3 * GMX_SIMD_REAL_WIDTH);
 
@@ -1621,7 +1621,7 @@ real quartic_angles(int             nbonds,
 
         theta = bond_angle(x[ai], x[aj], x[ak], pbc, r_ij, r_kj, &cos_theta, &t1, &t2); /*  41 */
 
-        dt = theta - forceparams[type].qangle.theta * DEG2RAD; /* 2          */
+        dt = theta - forceparams[type].qangle.theta * gmx::c_deg2Rad; /* 2          */
 
         dVdt = 0;
         va   = forceparams[type].qangle.c[0];
@@ -1913,8 +1913,8 @@ template<BondedKernelFlavor flavor>
 real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult, real phi, real lambda, real* V, real* dvdlambda)
 {
     const real L1   = 1.0 - lambda;
-    const real ph0  = (L1 * phiA + lambda * phiB) * DEG2RAD;
-    const real dph0 = (phiB - phiA) * DEG2RAD;
+    const real ph0  = (L1 * phiA + lambda * phiB) * gmx::c_deg2Rad;
+    const real dph0 = (phiB - phiA) * gmx::c_deg2Rad;
     const real cp   = L1 * cpA + lambda * cpB;
 
     const real mdphi = mult * phi - ph0;
@@ -1937,8 +1937,8 @@ real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult, real phi, r
 {
     real v, dvdlambda, mdphi, v1, sdphi, ddphi;
     real L1   = 1.0 - lambda;
-    real ph0  = (L1 * phiA + lambda * phiB) * DEG2RAD;
-    real dph0 = (phiB - phiA) * DEG2RAD;
+    real ph0  = (L1 * phiA + lambda * phiB) * gmx::c_deg2Rad;
+    real dph0 = (phiB - phiA) * gmx::c_deg2Rad;
     real cp   = L1 * cpA + lambda * cpB;
 
     mdphi = mult * (phi - ph0);
@@ -2046,7 +2046,7 @@ pdihs(int             nbonds,
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t al[GMX_SIMD_REAL_WIDTH];
     alignas(GMX_SIMD_ALIGNMENT) real         buf[3 * GMX_SIMD_REAL_WIDTH];
     real *                                   cp, *phi0, *mult;
-    SimdReal                                 deg2rad_S(DEG2RAD);
+    SimdReal                                 deg2rad_S(gmx::c_deg2Rad);
     SimdReal                                 p_S, q_S;
     SimdReal                                 phi0_S, phi_S;
     SimdReal                                 mx_S, my_S, mz_S;
@@ -2313,8 +2313,8 @@ real idihs(int             nbonds,
         pB = forceparams[type].harmonic.rB;
 
         kk    = L1 * kA + lambda * kB;
-        phi0  = (L1 * pA + lambda * pB) * DEG2RAD;
-        dphi0 = (pB - pA) * DEG2RAD;
+        phi0  = (L1 * pA + lambda * pB) * gmx::c_deg2Rad;
+        dphi0 = (pB - pA) * gmx::c_deg2Rad;
 
         dp = phi - phi0;
 
@@ -2495,7 +2495,7 @@ real dihres(int             nbonds,
 
     L1 = 1.0 - lambda;
 
-    d2r = DEG2RAD;
+    d2r = gmx::c_deg2Rad;
 
     for (i = 0; (i < nbonds);)
     {
@@ -3323,8 +3323,8 @@ real cmap_dihs(int                 nbonds,
 
         /* Switch to degrees */
         dx    = 360.0 / cmap_grid->grid_spacing;
-        xphi1 = xphi1 * RAD2DEG;
-        xphi2 = xphi2 * RAD2DEG;
+        xphi1 = xphi1 * gmx::c_rad2Deg;
+        xphi2 = xphi2 * gmx::c_rad2Deg;
 
         for (i = 0; i < 4; i++) /* 16 */
         {
@@ -3361,7 +3361,7 @@ real cmap_dihs(int                 nbonds,
             df2 = tt * df2 + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1];
         }
 
-        fac = RAD2DEG / dx;
+        fac = gmx::c_rad2Deg / dx;
         df1 = df1 * fac;
         df2 = df2 * fac;
 

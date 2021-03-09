@@ -38,69 +38,70 @@
 #ifndef GMX_MATH_UNITS_H
 #define GMX_MATH_UNITS_H
 
+#include <cmath>
+
 /*
  * Physical constants to be used in Gromacs.
  * No constants (apart from 0, 1 or 2) should
  * be anywhere else in the code.
  */
 
-#include "gromacs/math/utilities.h"
+namespace gmx
+{
 
-#define ANGSTROM (1e-10)           /* Old...	*/
-#define KILO (1e3)                 /* Thousand	*/
-#define NANO (1e-9)                /* A Number	*/
-#define PICO (1e-12)               /* A Number	*/
-#define A2NM (ANGSTROM / NANO)     /* NANO	        */
-#define NM2A (NANO / ANGSTROM)     /* 10.0		*/
-#define RAD2DEG (180.0 / M_PI)     /* Conversion	*/
-#define DEG2RAD (M_PI / 180.0)     /* id		*/
-#define CAL2JOULE (4.184)          /* Exact definition of the calorie */
-#define E_CHARGE (1.602176634e-19) /* Exact definition, Coulomb NIST 2018 CODATA */
+constexpr double c_angstrom       = 1e-10;
+constexpr double c_kilo           = 1e3;
+constexpr double c_nano           = 1e-9;
+constexpr double c_pico           = 1e-12;
+constexpr double c_nm2A           = c_nano / c_angstrom;
+constexpr double c_rad2Deg        = 180.0 / M_PI;
+constexpr double c_deg2Rad        = M_PI / 180.0;
+constexpr double c_cal2Joule      = 4.184;           /* Exact definition of the calorie */
+constexpr double c_electronCharge = 1.602176634e-19; /* Exact definition, Coulomb NIST 2018 CODATA */
 
-#define AMU (1.66053906660e-27)                     /* kg, NIST 2018 CODATA  */
-#define BOLTZMANN (1.380649e-23)                    /* (J/K, Exact definition, NIST 2018 CODATA */
-#define AVOGADRO (6.02214076e23)                    /* 1/mol, Exact definition, NIST 2018 CODATA */
-#define RGAS (BOLTZMANN * AVOGADRO)                 /* (J/(mol K))  */
-#define BOLTZ (RGAS / KILO)                         /* (kJ/(mol K)) */
-#define FARADAY (E_CHARGE * AVOGADRO)               /* (C/mol)      */
-#define ELECTRONVOLT (E_CHARGE * AVOGADRO / KILO)   /* (kJ/mol)   */
-#define PLANCK1 (6.62607015e-34)                    /* J/Hz, Exact definition, NIST 2018 CODATA */
-#define PLANCK (PLANCK1 * AVOGADRO / (PICO * KILO)) /* (kJ/mol) ps */
+constexpr double c_amu       = 1.66053906660e-27; /* kg, NIST 2018 CODATA  */
+constexpr double c_boltzmann = 1.380649e-23;      /* (J/K, Exact definition, NIST 2018 CODATA */
+constexpr double c_avogadro  = 6.02214076e23;     /* 1/mol, Exact definition, NIST 2018 CODATA */
+constexpr double c_universalGasConstant = c_boltzmann * c_avogadro;        /* (J/(mol K))  */
+constexpr double c_boltz                = c_universalGasConstant / c_kilo; /* (kJ/(mol K)) */
+constexpr double c_faraday              = c_electronCharge * c_avogadro;   /* (C/mol)      */
+constexpr double c_planck1 = 6.62607015e-34; /* J/Hz, Exact definition, NIST 2018 CODATA */
+constexpr double c_planck  = (c_planck1 * c_avogadro / (c_pico * c_kilo)); /* (kJ/mol) ps */
 
-#define EPSILON0_SI (8.8541878128e-12) /* F/m,  NIST 2018 CODATA */
+constexpr double c_epsilon0Si = 8.8541878128e-12; /* F/m,  NIST 2018 CODATA */
 /* Epsilon in our MD units: (e^2 / Na (kJ nm)) == (e^2 mol/(kJ nm)) */
-#define EPSILON0 ((EPSILON0_SI * NANO * KILO) / (E_CHARGE * E_CHARGE * AVOGADRO))
+constexpr double c_epsilon0 =
+        ((c_epsilon0Si * c_nano * c_kilo) / (c_electronCharge * c_electronCharge * c_avogadro));
 
-#define SPEED_OF_LIGHT (2.99792458e05)  /* units of nm/ps, Exact definition, NIST 2018 CODATA */
-#define ATOMICMASS_keV (931494.10242)   /* Atomic mass in keV, NIST 2018 CODATA   */
-#define ELECTRONMASS_keV (510.99895000) /* Electron mas in keV, NIST 2018 CODATA  */
+constexpr double c_speedOfLight =
+        2.99792458e05; /* units of nm/ps, Exact definition, NIST 2018 CODATA */
 
-#define RYDBERG (1.0973731568160e-02) /* nm^-1, NIST 2018 CODATA */
+constexpr double c_rydberg = 1.0973731568160e-02; /* nm^-1, NIST 2018 CODATA */
 
-#define ONE_4PI_EPS0 (1.0 / (4.0 * M_PI * EPSILON0))
-#define FACEL (10.0 * ONE_4PI_EPS0)
+constexpr double c_one4PiEps0 = (1.0 / (4.0 * M_PI * c_epsilon0));
 
 /* Pressure in MD units is:
- * 1 bar = 1e5 Pa = 1e5 kg m^-1 s^-2 = 1e-28 kg nm^-1 ps^-2 = 1e-28 / AMU amu nm^1 ps ^2
+ * 1 bar = 1e5 Pa = 1e5 kg m^-1 s^-2 = 1e-28 kg nm^-1 ps^-2 = 1e-28 / amu amu nm^1 ps ^2
  */
-#define BAR_MDUNITS (1e5 * NANO * PICO * PICO / AMU)
-#define PRESFAC (1.0 / BAR_MDUNITS)
+constexpr double c_barMdunits = (1e5 * c_nano * c_pico * c_pico / c_amu);
+constexpr double c_presfac    = 1.0 / c_barMdunits;
 
-/* DEBYE2ENM should be (1e-21*PICO)/(SPEED_OF_LIGHT*E_CHARGE*NANO*NANO),
+/* c_debye2Enm should be (1e-21*c_pico)/(c_speedOfLight*c_electronCharge*c_nano*c_nano),
  * but we need to factor out some of the exponents to avoid single-precision overflows.
  */
-#define DEBYE2ENM (1e-15 / (SPEED_OF_LIGHT * E_CHARGE))
-#define ENM2DEBYE (1.0 / DEBYE2ENM)
+constexpr double c_debye2Enm = (1e-15 / (c_speedOfLight * c_electronCharge));
+constexpr double c_enm2Debye = 1.0 / c_debye2Enm;
 
 /* to convert from a acceleration in (e V)/(amu nm) */
-/* FIELDFAC is also Faraday's constant and E_CHARGE/(1e6 AMU) */
-#define FIELDFAC (FARADAY / KILO)
+/* c_fieldfac is also Faraday's constant and c_electronCharge/(1e6 amu) */
+constexpr double c_fieldfac = c_faraday / c_kilo;
 
 /* to convert AU to MD units: */
-#define HARTREE2KJ ((2.0 * RYDBERG * PLANCK * SPEED_OF_LIGHT) / AVOGADRO)
-#define BOHR2NM (0.0529177210903) /* nm^-1, NIST 2018 CODATA */
-#define HARTREE_BOHR2MD (HARTREE2KJ * AVOGADRO / BOHR2NM)
+constexpr double c_hartree2Kj     = ((2.0 * c_rydberg * c_planck * c_speedOfLight) / c_avogadro);
+constexpr double c_bohr2Nm        = 0.0529177210903; /* nm^-1, NIST 2018 CODATA */
+constexpr double c_hartreeBohr2Md = (c_hartree2Kj * c_avogadro / c_bohr2Nm);
 
+} // namespace gmx
 
 /* The four basic units */
 #define unit_length "nm"
@@ -108,16 +109,16 @@
 #define unit_mass "u"
 #define unit_energy "kJ/mol"
 
-/* Temperature unit, T in this unit times BOLTZ give energy in unit_energy */
+/* Temperature unit, T in this unit times c_boltz give energy in unit_energy */
 #define unit_temp_K "K"
 
-/* Charge unit, electron charge, involves ONE_4PI_EPS0 */
+/* Charge unit, electron charge, involves c_one4PiEps0 */
 #define unit_charge_e "e"
 
-/* Pressure unit, pressure in basic units times PRESFAC gives this unit */
+/* Pressure unit, pressure in basic units times c_presfac gives this unit */
 #define unit_pres_bar "bar"
 
-/* Dipole unit, debye, conversion from the unit_charge_e involves ENM2DEBYE */
+/* Dipole unit, debye, conversion from the unit_charge_e involves c_enm2Debye */
 #define unit_dipole_D "D"
 
 /* Derived units from basic units only */
@@ -128,7 +129,7 @@
 /* Other derived units */
 #define unit_surft_bar unit_pres_bar " " unit_length
 
-/* SI units, conversion from basic units involves NANO, PICO and AMU */
+/* SI units, conversion from basic units involves c_nano, c_pico and amu */
 #define unit_length_SI "m"
 #define unit_time_SI "s"
 #define unit_mass_SI "kg"

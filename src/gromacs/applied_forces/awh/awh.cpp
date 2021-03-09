@@ -215,7 +215,7 @@ Awh::Awh(FILE*                 fplog,
     }
 
     /* Initialize all the biases */
-    const double beta = 1 / (BOLTZ * inputRecord.opts.ref_t[0]);
+    const double beta = 1 / (gmx::c_boltz * inputRecord.opts.ref_t[0]);
     for (int k = 0; k < awhParams.numBias; k++)
     {
         const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams[k];
@@ -240,7 +240,7 @@ Awh::Awh(FILE*                 fplog,
                     GMX_THROW(InvalidInputError(
                             "Pull geometry 'direction-periodic' is not supported by AWH"));
                 }
-                double conversionFactor = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
+                double conversionFactor = pull_coordinate_is_angletype(&pullCoord) ? gmx::c_deg2Rad : 1;
                 pullCoordIndex.push_back(awhDimParams.coordIndex);
                 dimParams.push_back(DimParams::pullDimParams(
                         conversionFactor, awhDimParams.forceConstant, beta));

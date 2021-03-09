@@ -893,7 +893,7 @@ static interaction_const_t init_interaction_const(FILE*             fp,
     /* Set the Coulomb energy conversion factor */
     if (interactionConst.epsilon_r != 0)
     {
-        interactionConst.epsfac = ONE_4PI_EPS0 / interactionConst.epsilon_r;
+        interactionConst.epsfac = gmx::c_one4PiEps0 / interactionConst.epsilon_r;
     }
     else
     {

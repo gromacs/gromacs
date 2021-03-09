@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,7 +141,7 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx
                 bonds.push_back(offset + at1 + 1);
                 bonds.push_back(offset + at2 + 1);
                 bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
-                                      / BOHR2NM);
+                                      / gmx::c_bohr2Nm);
             }
 
             for (int ncon = 0; ncon < nsettle; ++ncon)
@@ -165,11 +165,11 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx
                 bonds.push_back(offset + h1 + 1);
                 bonds.push_back(offset + h2 + 1);
                 bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
-                                      / BOHR2NM);
+                                      / gmx::c_bohr2Nm);
                 bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
-                                      / BOHR2NM);
+                                      / gmx::c_bohr2Nm);
                 bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dB)
-                                      / BOHR2NM);
+                                      / gmx::c_bohr2Nm);
             }
 
             nAtomsMol.push_back(type->atoms.nr);
@@ -234,9 +234,9 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx
     std::vector<double> convertedCoords;
     for (auto& coord : coords)
     {
-        convertedCoords.push_back(static_cast<double>(coord[0]) / BOHR2NM);
-        convertedCoords.push_back(static_cast<double>(coord[1]) / BOHR2NM);
-        convertedCoords.push_back(static_cast<double>(coord[2]) / BOHR2NM);
+        convertedCoords.push_back(static_cast<double>(coord[0]) / gmx::c_bohr2Nm);
+        convertedCoords.push_back(static_cast<double>(coord[1]) / gmx::c_bohr2Nm);
+        convertedCoords.push_back(static_cast<double>(coord[2]) / gmx::c_bohr2Nm);
     }
 
     // sending array of coordinates
@@ -256,15 +256,15 @@ void gmx::MimicCommunicator::getCoords(PaddedHostVector<RVec>* x, const int nato
     MCL_receive(&*coords.begin(), 3 * natoms, TYPE_DOUBLE, 0);
     for (int j = 0; j < natoms; ++j)
     {
-        (*x)[j][0] = static_cast<real>(coords[j * 3] * BOHR2NM);
-        (*x)[j][1] = static_cast<real>(coords[j * 3 + 1] * BOHR2NM);
-        (*x)[j][2] = static_cast<real>(coords[j * 3 + 2] * BOHR2NM);
+        (*x)[j][0] = static_cast<real>(coords[j * 3] * gmx::c_bohr2Nm);
+        (*x)[j][1] = static_cast<real>(coords[j * 3 + 1] * gmx::c_bohr2Nm);
+        (*x)[j][2] = static_cast<real>(coords[j * 3 + 2] * gmx::c_bohr2Nm);
     }
 }
 
 void gmx::MimicCommunicator::sendEnergies(real energy)
 {
-    double convertedEnergy = energy / (HARTREE2KJ * AVOGADRO);
+    double convertedEnergy = energy / (gmx::c_hartree2Kj * gmx::c_avogadro);
     MCL_send(&convertedEnergy, 1, TYPE_DOUBLE, 0);
 }
 
@@ -273,9 +273,9 @@ void gmx::MimicCommunicator::sendForces(gmx::ArrayRef<gmx::RVec> forces, int nat
     std::vector<double> convertedForce;
     for (int j = 0; j < natoms; ++j)
     {
-        convertedForce.push_back(static_cast<real>(forces[j][0]) / HARTREE_BOHR2MD);
-        convertedForce.push_back(static_cast<real>(forces[j][1]) / HARTREE_BOHR2MD);
-        convertedForce.push_back(static_cast<real>(forces[j][2]) / HARTREE_BOHR2MD);
+        convertedForce.push_back(static_cast<real>(forces[j][0]) / gmx::c_hartreeBohr2Md);
+        convertedForce.push_back(static_cast<real>(forces[j][1]) / gmx::c_hartreeBohr2Md);
+        convertedForce.push_back(static_cast<real>(forces[j][2]) / gmx::c_hartreeBohr2Md);
     }
     MCL_send(&*convertedForce.begin(), convertedForce.size(), TYPE_DOUBLE, 0);
 }

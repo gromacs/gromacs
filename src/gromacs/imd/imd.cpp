@@ -570,9 +570,9 @@ static int imd_send_rvecs(IMDSocket* socket, int nat, rvec* x, char* buffer)
     fill_header(reinterpret_cast<IMDHeader*>(buffer), IMD_FCOORDS, static_cast<int32_t>(nat));
     for (i = 0; i < nat; i++)
     {
-        sendx[0] = static_cast<float>(x[i][0]) * NM2A;
-        sendx[1] = static_cast<float>(x[i][1]) * NM2A;
-        sendx[2] = static_cast<float>(x[i][2]) * NM2A;
+        sendx[0] = static_cast<float>(x[i][0]) * gmx::c_nm2A;
+        sendx[1] = static_cast<float>(x[i][1]) * gmx::c_nm2A;
+        sendx[2] = static_cast<float>(x[i][2]) * gmx::c_nm2A;
         memcpy(buffer + c_headerSize + i * tuplesize, sendx, tuplesize);
     }
 
@@ -734,7 +734,7 @@ void ImdSession::Impl::prepareMDForces()
 void ImdSession::Impl::copyToMDForces()
 {
     int  i;
-    real conversion = CAL2JOULE * NM2A;
+    real conversion = gmx::c_cal2Joule * gmx::c_nm2A;
 
 
     for (i = 0; i < nforces; i++)

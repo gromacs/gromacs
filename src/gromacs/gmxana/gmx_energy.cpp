@@ -359,7 +359,8 @@ static void einstein_visco(const char*             fn,
             }
         }
         /* Convert to SI for the viscosity */
-        fac = (V * NANO * NANO * NANO * PICO * 1e10) / (2 * BOLTZMANN * T) / (nint - i);
+        fac = (V * gmx::c_nano * gmx::c_nano * gmx::c_nano * gmx::c_pico * 1e10)
+              / (2 * gmx::c_boltzmann * T) / (nint - i);
         fprintf(fp0, "%10g", i * dt);
         for (m = 0; (m <= nsets); m++)
         {
@@ -737,7 +738,7 @@ static void calc_fluctuation_props(FILE*       fp,
     const char* my_ener[] = { "Volume", "Enthalpy", "Temperature", "Total Energy" };
     int         ii[eNR];
 
-    NANO3 = NANO * NANO * NANO;
+    NANO3 = gmx::c_nano * gmx::c_nano * gmx::c_nano;
     if (!bDriftCorr)
     {
         fprintf(fp,
@@ -770,15 +771,15 @@ if ((ii[eVol] < nset) && (ii[eTemp] < nset))
 {
     vv    = edat->s[ii[eVol]].av * NANO3;
     varv  = gmx::square(edat->s[ii[eVol]].rmsd * NANO3);
-    kappa = (varv / vv) / (BOLTZMANN * tt);
+    kappa = (varv / vv) / (gmx::c_boltzmann * tt);
 }
 /* Enthalpy */
 hh = varh = NOTSET;
 if ((ii[eEnth] < nset) && (ii[eTemp] < nset))
 {
-    hh   = KILO * edat->s[ii[eEnth]].av / AVOGADRO;
-    varh = gmx::square(KILO * edat->s[ii[eEnth]].rmsd / AVOGADRO);
-    cp   = AVOGADRO * ((varh / nmol) / (BOLTZMANN * tt * tt));
+    hh   = gmx::c_kilo * edat->s[ii[eEnth]].av / gmx::c_avogadro;
+    varh = gmx::square(gmx::c_kilo * edat->s[ii[eEnth]].rmsd / gmx::c_avogadro);
+    cp   = gmx::c_avogadro * ((varh / nmol) / (gmx::c_boltzmann * tt * tt));
 }
 /* Total energy */
 if ((ii[eEtot] < nset) && (hh == NOTSET) && (tt != NOTSET))
@@ -787,7 +788,7 @@ if ((ii[eEtot] < nset) && (hh == NOTSET) && (tt != NOTSET))
        by checking whether the enthalpy was computed.
      */
     varet = gmx::square(edat->s[ii[eEtot]].rmsd);
-    cv    = KILO * ((varet / nmol) / (BOLTZ * tt * tt));
+    cv    = gmx::c_kilo * ((varet / nmol) / (gmx::c_boltz * tt * tt));
 }
 /* Alpha, dcp */
 if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
@@ -797,7 +798,7 @@ if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     for (j = 0; (j < edat->nframes); j++)
     {
         v = edat->s[ii[eVol]].ener[j] * NANO3;
-        h = KILO * edat->s[ii[eEnth]].ener[j] / AVOGADRO;
+        h = gmx::c_kilo * edat->s[ii[eEnth]].ener[j] / gmx::c_avogadro;
         v_sum += v;
         h_sum += h;
         vh_sum += (v * h);
@@ -805,8 +806,8 @@ if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     vh_aver = vh_sum / edat->nframes;
     v_aver  = v_sum / edat->nframes;
     h_aver  = h_sum / edat->nframes;
-    alpha   = (vh_aver - v_aver * h_aver) / (v_aver * BOLTZMANN * tt * tt);
-    dcp     = (v_aver * AVOGADRO / nmol) * tt * gmx::square(alpha) / (kappa);
+    alpha   = (vh_aver - v_aver * h_aver) / (v_aver * gmx::c_boltzmann * tt * tt);
+    dcp     = (v_aver * gmx::c_avogadro / nmol) * tt * gmx::square(alpha) / (kappa);
 }
 
 if (tt != NOTSET)
@@ -827,16 +828,18 @@ if (tt != NOTSET)
     {
         if (varv != NOTSET)
         {
-            fprintf(fp, "varv  =  %10g (m^6)\n", varv * AVOGADRO / nmol);
+            fprintf(fp, "varv  =  %10g (m^6)\n", varv * gmx::c_avogadro / nmol);
         }
     }
     if (vv != NOTSET)
     {
-        fprintf(fp, "Volume                                   = %10g m^3/mol\n", vv * AVOGADRO / nmol);
+        fprintf(fp, "Volume                                   = %10g m^3/mol\n", vv * gmx::c_avogadro / nmol);
     }
     if (varh != NOTSET)
     {
-        fprintf(fp, "Enthalpy                                 = %10g kJ/mol\n", hh * AVOGADRO / (KILO * nmol));
+        fprintf(fp,
+                "Enthalpy                                 = %10g kJ/mol\n",
+                hh * gmx::c_avogadro / (gmx::c_kilo * nmol));
     }
     if (alpha != NOTSET)
     {
@@ -1001,7 +1004,7 @@ static void analyse_ener(gmx_bool                bCorr,
         expEtot = 0;
         if (bFee)
         {
-            beta = 1.0 / (BOLTZ * reftemp);
+            beta = 1.0 / (gmx::c_boltz * reftemp);
             snew(fee, nset);
         }
         for (i = 0; (i < nset); i++)
@@ -1206,7 +1209,7 @@ static void analyse_ener(gmx_bool                bCorr,
                             0.0,
                             0);
 
-            factor = (Vaver * 1e-26 / (BOLTZMANN * Temp)) * Dt;
+            factor = (Vaver * 1e-26 / (gmx::c_boltzmann * Temp)) * Dt;
             fp     = xvgropen(visfn, buf, "Time (ps)", "\\8h\\4 (cp)", oenv);
             xvgr_legend(fp, asize(leg), leg, oenv);
 
@@ -1370,7 +1373,7 @@ static void fec(const char*             ene2fn,
     }
     fprintf(stdout, "\n%-24s %10s\n", "Energy", "dF = -kT ln < exp(-(EB-EA)/kT) >A");
     sum  = 0;
-    beta = 1.0 / (BOLTZ * reftemp);
+    beta = 1.0 / (gmx::c_boltz * reftemp);
     for (i = 0; i < nset; i++)
     {
         if (gmx_strcasecmp(leg[i], enm[set[i]].name) != 0)
@@ -1383,10 +1386,10 @@ static void fec(const char*             ene2fn,
             sum += std::exp(-dE * beta);
             if (fp)
             {
-                fprintf(fp, "%10g %10g %10g\n", time[j], dE, -BOLTZ * reftemp * std::log(sum / (j + 1)));
+                fprintf(fp, "%10g %10g %10g\n", time[j], dE, -gmx::c_boltz * reftemp * std::log(sum / (j + 1)));
             }
         }
-        aver = -BOLTZ * reftemp * std::log(sum / nenergy);
+        aver = -gmx::c_boltz * reftemp * std::log(sum / nenergy);
         fprintf(stdout, "%-24s %10g\n", leg[i], aver);
     }
     if (fp)

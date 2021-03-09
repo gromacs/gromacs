@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ void compute_factors_restangles(int             type,
     double term_theta_theta_equil;
 
     k_bending          = forceparams[type].harmonic.krA;
-    theta_equil        = forceparams[type].harmonic.rA * DEG2RAD;
+    theta_equil        = forceparams[type].harmonic.rA * gmx::c_deg2Rad;
     theta_equil        = M_PI - theta_equil;
     cosine_theta_equil = cos(theta_equil);
 
@@ -135,7 +135,7 @@ void compute_factors_restrdihs(int             type,
     real norm_phi;
 
     /* Read parameters phi0 and k_torsion */
-    phi0        = forceparams[type].pdihs.phiA * DEG2RAD;
+    phi0        = forceparams[type].pdihs.phiA * gmx::c_deg2Rad;
     cosine_phi0 = cos(phi0);
     k_torsion   = forceparams[type].pdihs.cpA;
 

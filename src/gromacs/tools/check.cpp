@@ -494,8 +494,8 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                 ekin += 0.5 * atoms->atom[i].m * v[i][j] * v[i][j];
             }
         }
-        temp1 = (2.0 * ekin) / (natom * DIM * BOLTZ);
-        temp2 = (2.0 * ekin) / (natom * (DIM - 1) * BOLTZ);
+        temp1 = (2.0 * ekin) / (natom * DIM * gmx::c_boltz);
+        temp2 = (2.0 * ekin) / (natom * (DIM - 1) * gmx::c_boltz);
         fprintf(stderr, "Kinetic energy: %g (kJ/mol)\n", ekin);
         fprintf(stderr,
                 "Assuming the number of degrees of freedom to be "

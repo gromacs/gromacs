@@ -352,7 +352,7 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
     ivec                     local_ndata, local_offset, local_size;
     real                     elfac;
 
-    elfac = ONE_4PI_EPS0 / pme->epsilon_r;
+    elfac = gmx::c_one4PiEps0 / pme->epsilon_r;
 
     nx = pme->nkx;
     ny = pme->nky;

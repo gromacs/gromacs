@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 
 static real pot(real x, real qq, real c6, real cn, int npow)
 {
-    return cn * pow(x, -npow) - c6 / gmx::power6(x) + qq * ONE_4PI_EPS0 / x;
+    return cn * pow(x, -npow) - c6 / gmx::power6(x) + qq * gmx::c_one4PiEps0 / x;
 }
 
 static real bhpot(real x, real A, real B, real C)
@@ -64,7 +64,7 @@ static real bhpot(real x, real A, real B, real C)
 static real dpot(real x, real qq, real c6, real cn, int npow)
 {
     return -(npow * cn * std::pow(x, -npow - 1) - 6 * c6 / (x * gmx::power6(x))
-             + qq * ONE_4PI_EPS0 / gmx::square(x));
+             + qq * gmx::c_one4PiEps0 / gmx::square(x));
 }
 
 int gmx_sigeps(int argc, char* argv[])

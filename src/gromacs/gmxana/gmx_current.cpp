@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2008,2009,2010,2011,2012 by the GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#define EPSI0 (EPSILON0 * E_CHARGE * E_CHARGE * AVOGADRO / (KILO * NANO)) /* EPSILON0 in SI units */
+constexpr double EPSI0 = (gmx::c_epsilon0 * gmx::c_electronCharge * gmx::c_electronCharge * gmx::c_avogadro
+                          / (gmx::c_kilo * gmx::c_nano)); /* c_epsilon0 in SI units */
 
 static void index_atom2mol(int* n, int* index, t_block* mols)
 {
@@ -640,11 +641,11 @@ static void dielectric(FILE*                   fmj,
     volume_av /= refr;
 
     prefactor = 1.0;
-    prefactor /= 3.0 * EPSILON0 * volume_av * BOLTZ * temp;
+    prefactor /= 3.0 * gmx::c_epsilon0 * volume_av * gmx::c_boltz * temp;
 
 
-    prefactorav = E_CHARGE * E_CHARGE;
-    prefactorav /= volume_av * BOLTZMANN * temp * NANO * 6.0;
+    prefactorav = gmx::c_electronCharge * gmx::c_electronCharge;
+    prefactorav /= volume_av * gmx::c_boltzmann * temp * gmx::c_nano * 6.0;
 
     fprintf(stderr, "Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactorav);
 
@@ -694,7 +695,7 @@ static void dielectric(FILE*                   fmj,
         {
 
             printf("\nCalculating current autocorrelation ... \n");
-            sgk = calc_cacf(outf, prefactorav / PICO, cacf, time, nvfr, vfr, ie, nshift);
+            sgk = calc_cacf(outf, prefactorav / gmx::c_pico, cacf, time, nvfr, vfr, ie, nshift);
 
             if (ie > ii)
             {

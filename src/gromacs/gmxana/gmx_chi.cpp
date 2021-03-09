@@ -130,7 +130,7 @@ static gmx_bool bAllowed(real phi, real psi)
 #define NPP asize(map)
     int x, y;
 
-#define INDEX(ppp) (((static_cast<int>(360 + (ppp)*RAD2DEG)) % 360) / 6)
+#define INDEX(ppp) (((static_cast<int>(360 + (ppp)*gmx::c_rad2Deg)) % 360) / 6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
@@ -932,16 +932,18 @@ static void do_rama(int                     nf,
             Psi = dlist[i].j0[edPsi];
             for (j = 0; (j < nf); j++)
             {
-                phi = RAD2DEG * dih[Phi][j];
-                psi = RAD2DEG * dih[Psi][j];
+                phi = gmx::c_rad2Deg * dih[Phi][j];
+                psi = gmx::c_rad2Deg * dih[Psi][j];
                 fprintf(fp, "%10g  %10g\n", phi, psi);
                 if (bViol)
                 {
-                    fprintf(gp, "%d\n", static_cast<int>(!bAllowed(dih[Phi][j], RAD2DEG * dih[Psi][j])));
+                    fprintf(gp,
+                            "%d\n",
+                            static_cast<int>(!bAllowed(dih[Phi][j], gmx::c_rad2Deg * dih[Psi][j])));
                 }
                 if (bOm)
                 {
-                    omega = RAD2DEG * dih[Om][j];
+                    omega = gmx::c_rad2Deg * dih[Om][j];
                     mat[static_cast<int>(((phi * NMAT) / 360) + gmx::exactDiv(NMAT, 2))]
                        [static_cast<int>(((psi * NMAT) / 360) + gmx::exactDiv(NMAT, 2))] += omega;
                 }
@@ -1023,7 +1025,7 @@ static void do_rama(int                     nf,
             Xi2 = dlist[i].j0[edChi2];
             for (j = 0; (j < nf); j++)
             {
-                fprintf(fp, "%10g  %10g\n", RAD2DEG * dih[Xi1][j], RAD2DEG * dih[Xi2][j]);
+                fprintf(fp, "%10g  %10g\n", gmx::c_rad2Deg * dih[Xi1][j], gmx::c_rad2Deg * dih[Xi2][j]);
             }
             xvgrclose(fp);
         }

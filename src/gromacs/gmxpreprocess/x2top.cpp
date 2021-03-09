@@ -270,7 +270,7 @@ static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, c
         int  ai = angle.ai();
         int  aj = angle.aj();
         int  ak = angle.ak();
-        real th = RAD2DEG
+        real th = gmx::c_rad2Deg
                   * bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr, r_ij, r_kj, &costh, &t1, &t2);
         angle.setForceParameter(0, th);
     }
@@ -281,7 +281,7 @@ static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, c
         int  ak = dihedral.ak();
         int  al = dihedral.al();
         real ph =
-                RAD2DEG
+                gmx::c_rad2Deg
                 * dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         dihedral.setForceParameter(0, ph);
     }

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,12 +190,12 @@ static double calc_Shs(double f, double y)
 {
     double fy = f * y;
 
-    return BOLTZ * (std::log(calc_compress(fy)) + fy * (3 * fy - 4) / gmx::square(1 - fy));
+    return gmx::c_boltz * (std::log(calc_compress(fy)) + fy * (3 * fy - 4) / gmx::square(1 - fy));
 }
 
 static real wCsolid(real nu, real beta)
 {
-    real bhn = beta * PLANCK * nu;
+    real bhn = beta * gmx::c_planck * nu;
     real ebn, koko;
 
     if (bhn == 0)
@@ -212,7 +212,7 @@ static real wCsolid(real nu, real beta)
 
 static real wSsolid(real nu, real beta)
 {
-    real bhn = beta * PLANCK * nu;
+    real bhn = beta * gmx::c_planck * nu;
 
     if (bhn == 0)
     {
@@ -226,7 +226,7 @@ static real wSsolid(real nu, real beta)
 
 static real wAsolid(real nu, real beta)
 {
-    real bhn = beta * PLANCK * nu;
+    real bhn = beta * gmx::c_planck * nu;
 
     if (bhn == 0)
     {
@@ -240,7 +240,7 @@ static real wAsolid(real nu, real beta)
 
 static real wEsolid(real nu, real beta)
 {
-    real bhn = beta * PLANCK * nu;
+    real bhn = beta * gmx::c_planck * nu;
 
     if (bhn == 0)
     {
@@ -341,7 +341,7 @@ int gmx_dos(int argc, char* argv[])
         return 0;
     }
 
-    beta = 1 / (Temp * BOLTZ);
+    beta = 1 / (Temp * gmx::c_boltz);
 
     fplog = gmx_fio_fopen(ftp2fn(efLOG, NFILE, fnm), "w");
     fprintf(fplog, "Doing density of states analysis based on trajectory.\n");
@@ -527,15 +527,16 @@ int gmx_dos(int argc, char* argv[])
     DoS0 = dos[DOS][0];
 
     /* Note this eqn. is incorrect in Pascal2011a! */
-    Delta = ((2 * DoS0 / (9 * Natom)) * std::sqrt(M_PI * BOLTZ * Temp * Natom / tmass)
+    Delta = ((2 * DoS0 / (9 * Natom)) * std::sqrt(M_PI * gmx::c_boltz * Temp * Natom / tmass)
              * std::pow((Natom / V), 1.0 / 3.0) * std::pow(6.0 / M_PI, 2.0 / 3.0));
     f     = calc_fluidicity(Delta, toler);
     y     = calc_y(f, Delta, toler);
     z     = calc_compress(y);
-    Sig   = BOLTZ
-          * (5.0 / 2.0 + std::log(2 * M_PI * BOLTZ * Temp / (gmx::square(PLANCK)) * V / (f * Natom)));
+    Sig   = gmx::c_boltz
+          * (5.0 / 2.0
+             + std::log(2 * M_PI * gmx::c_boltz * Temp / (gmx::square(gmx::c_planck)) * V / (f * Natom)));
     Shs   = Sig + calc_Shs(f, y);
-    rho   = (tmass * AMU) / (V * NANO * NANO * NANO);
+    rho   = (tmass * gmx::c_amu) / (V * gmx::c_nano * gmx::c_nano * gmx::c_nano);
     sigHS = std::cbrt(6 * y * V / (M_PI * Natom));
 
     fprintf(fplog, "System = \"%s\"\n", *top.name);
@@ -567,7 +568,7 @@ int gmx_dos(int argc, char* argv[])
                   "\\f{4}S(\\f{12}n\\f{4})",
                   oenv);
     xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
-    recip_fac = bRecip ? (1e7 / SPEED_OF_LIGHT) : 1.0;
+    recip_fac = bRecip ? (1e7 / gmx::c_speedOfLight) : 1.0;
     for (j = 0; (j < nframes / 4); j++)
     {
         dos[DOS_DIFF][j]  = DoS0 / (1 + gmx::square(DoS0 * M_PI * nu[j] / (6 * f * Natom)));
@@ -583,7 +584,7 @@ int gmx_dos(int argc, char* argv[])
 
     /* Finally analyze the results! */
     wCdiff = 0.5;
-    wSdiff = Shs / (3 * BOLTZ); /* Is this correct? */
+    wSdiff = Shs / (3 * gmx::c_boltz); /* Is this correct? */
     wEdiff = 0.5;
     wAdiff = wEdiff - wSdiff;
     for (j = 0; (j < nframes / 4); j++)
@@ -598,7 +599,8 @@ int gmx_dos(int argc, char* argv[])
     fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n", DiffCoeff);
     fprintf(fplog, "Diffusion coefficient from DoS %g 10^-5 cm^2/s\n", 1000 * DoS0 / (12 * tmass * beta));
 
-    cP = BOLTZ * evaluate_integral(nframes / 4, nu, dos[DOS_CP], nullptr, int{ nframes / 4 }, &stddev);
+    cP = gmx::c_boltz
+         * evaluate_integral(nframes / 4, nu, dos[DOS_CP], nullptr, int{ nframes / 4 }, &stddev);
     fprintf(fplog, "Heat capacity %g J/mol K\n", 1000 * cP / Nmol);
     fprintf(fplog, "\nArrivederci!\n");
     gmx_fio_fclose(fplog);

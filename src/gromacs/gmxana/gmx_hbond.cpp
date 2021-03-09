@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1741,14 +1741,14 @@ static real calc_dg(real tau, real temp)
 {
     real kbt;
 
-    kbt = BOLTZ * temp;
+    kbt = gmx::c_boltz * temp;
     if (tau <= 0)
     {
         return -666;
     }
     else
     {
-        return kbt * std::log(kbt * tau / PLANCK);
+        return kbt * std::log(kbt * tau / gmx::c_planck);
     }
 }
 
@@ -1865,7 +1865,7 @@ void analyse_corr(int  n,
                 compute_weighted_rates(
                         n, t, ct, nt, kt, sigma_ct, sigma_nt, sigma_kt, &k, &kp, &sigma_k, &sigma_kp, fit_start);
                 Q   = 0; /* quality_of_fit(chi2, 2);*/
-                ddg = BOLTZ * temp * sigma_k / k;
+                ddg = gmx::c_boltz * temp * sigma_k / k;
                 printf("Fitting paramaters chi^2 = %10g, Quality of fit = %10g\n", chi2, Q);
                 printf("The Rate and Delta G are followed by an error estimate\n");
                 printf("----------------------------------------------------------\n"
@@ -1876,7 +1876,7 @@ void analyse_corr(int  n,
                        1 / k,
                        calc_dg(1 / k, temp),
                        ddg);
-                ddg = BOLTZ * temp * sigma_kp / kp;
+                ddg = gmx::c_boltz * temp * sigma_kp / kp;
                 printf("Backward   %10.3f %6.2f   %8.3f  %10.3f %6.2f\n",
                        kp,
                        sigma_kp,
@@ -2695,7 +2695,7 @@ int gmx_hbond(int argc, char* argv[])
 
     /* process input */
     bSelected = FALSE;
-    ccut      = std::cos(acut * DEG2RAD);
+    ccut      = std::cos(acut * gmx::c_deg2Rad);
 
     if (bContact)
     {
@@ -3180,7 +3180,7 @@ int gmx_hbond(int argc, char* argv[])
                                                                             "for an hbond: %f",
                                                                             dist);
                                                                 }
-                                                                ang *= RAD2DEG;
+                                                                ang *= gmx::c_rad2Deg;
                                                                 __ADIST[static_cast<int>(ang / abin)]++;
                                                                 __RDIST[static_cast<int>(dist / rbin)]++;
                                                                 if (!bTwo)

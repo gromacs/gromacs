@@ -35,7 +35,6 @@
 #ifndef GMX_GMXANA_ANGLE_CORRECTION_H
 #define GMX_GMXANA_ANGLE_CORRECTION_H
 
-#include "gromacs/math/units.h"
 #include "gromacs/utility/real.h"
 
 /*! \brief
