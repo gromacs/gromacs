@@ -223,13 +223,16 @@ TEST_P(ReplicaExchangeRegressionTest, WithinTolerances)
                   relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
                 { interaction_function[F_EKIN].longname,
                   relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
-                { interaction_function[F_PRES].longname,
-                  relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001) },
         } };
         if (hasConservedField)
         {
             energyTermsToCompare.emplace(interaction_function[F_ECONSERVED].longname,
                                          relativeToleranceAsPrecisionDependentUlp(50.0, 100, 80));
+        }
+        if (pcoupl != PressureCoupling::No)
+        {
+            energyTermsToCompare.emplace("Volume",
+                                         relativeToleranceAsPrecisionDependentUlp(10.0, 200, 160));
         }
 
         // Specify how trajectory frame matching must work.

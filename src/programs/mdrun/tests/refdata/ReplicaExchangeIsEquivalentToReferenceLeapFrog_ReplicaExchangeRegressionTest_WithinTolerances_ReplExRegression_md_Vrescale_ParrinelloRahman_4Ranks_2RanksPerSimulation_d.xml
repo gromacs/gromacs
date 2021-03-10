@@ -41,6 +41,25 @@ Repl  0.3333  0.6667  0
 Repl  0.6667  0.3333  1
 ]]></String>
     </ReplExOutput>
+    <Energy Name="Volume">
+      <Real Name="Time 0.000000 Step 0 in frame 0">6.4562600160298169</Real>
+      <Real Name="Time 0.001000 Step 1 in frame 1">6.4562600160298169</Real>
+      <Real Name="Time 0.002000 Step 2 in frame 2">6.4562579188546056</Real>
+      <Real Name="Time 0.003000 Step 3 in frame 3">6.4562579188546056</Real>
+      <Real Name="Time 0.004000 Step 4 in frame 4">6.4562579188546056</Real>
+      <Real Name="Time 0.005000 Step 5 in frame 5">6.4562596808132486</Real>
+      <Real Name="Time 0.006000 Step 6 in frame 6">6.4562596808132486</Real>
+      <Real Name="Time 0.007000 Step 7 in frame 7">6.4562596808132486</Real>
+      <Real Name="Time 0.008000 Step 8 in frame 8">6.4562596808132486</Real>
+      <Real Name="Time 0.009000 Step 9 in frame 9">6.4562596808132486</Real>
+      <Real Name="Time 0.010000 Step 10 in frame 10">6.4562596808132486</Real>
+      <Real Name="Time 0.011000 Step 11 in frame 11">6.4562596808132486</Real>
+      <Real Name="Time 0.012000 Step 12 in frame 12">6.4562737307718585</Real>
+      <Real Name="Time 0.013000 Step 13 in frame 13">6.4562429396654863</Real>
+      <Real Name="Time 0.014000 Step 14 in frame 14">6.4562429396654863</Real>
+      <Real Name="Time 0.015000 Step 15 in frame 15">6.4562429396654863</Real>
+      <Real Name="Time 0.016000 Step 16 in frame 16">6.4562429396654863</Real>
+    </Energy>
     <Energy Name="Conserved En.">
       <Real Name="Time 0.000000 Step 0 in frame 0">20.344745942447368</Real>
       <Real Name="Time 0.001000 Step 1 in frame 1">21.220300790042927</Real>
@@ -78,25 +97,6 @@ Repl  0.6667  0.3333  1
       <Real Name="Time 0.014000 Step 14 in frame 14">44.634387309836605</Real>
       <Real Name="Time 0.015000 Step 15 in frame 15">46.083133346875044</Real>
       <Real Name="Time 0.016000 Step 16 in frame 16">47.315086493564536</Real>
-    </Energy>
-    <Energy Name="Pressure">
-      <Real Name="Time 0.000000 Step 0 in frame 0">-6.3137732416718633</Real>
-      <Real Name="Time 0.001000 Step 1 in frame 1">-8.3762620203230309</Real>
-      <Real Name="Time 0.002000 Step 2 in frame 2">-11.597383380267701</Real>
-      <Real Name="Time 0.003000 Step 3 in frame 3">-14.162570838619601</Real>
-      <Real Name="Time 0.004000 Step 4 in frame 4">-17.168280527300649</Real>
-      <Real Name="Time 0.005000 Step 5 in frame 5">37.146585024431779</Real>
-      <Real Name="Time 0.006000 Step 6 in frame 6">35.770050296624049</Real>
-      <Real Name="Time 0.007000 Step 7 in frame 7">33.961149807005619</Real>
-      <Real Name="Time 0.008000 Step 8 in frame 8">31.745704559416648</Real>
-      <Real Name="Time 0.009000 Step 9 in frame 9">29.157492499524313</Real>
-      <Real Name="Time 0.010000 Step 10 in frame 10">51.16740048671597</Real>
-      <Real Name="Time 0.011000 Step 11 in frame 11">47.811724272383572</Real>
-      <Real Name="Time 0.012000 Step 12 in frame 12">43.932047063910261</Real>
-      <Real Name="Time 0.013000 Step 13 in frame 13">-60.089383516941304</Real>
-      <Real Name="Time 0.014000 Step 14 in frame 14">-64.394403006292862</Real>
-      <Real Name="Time 0.015000 Step 15 in frame 15">-68.088325386687259</Real>
-      <Real Name="Time 0.016000 Step 16 in frame 16">-70.928349408181035</Real>
     </Energy>
     <Energy Name="Potential">
       <Real Name="Time 0.000000 Step 0 in frame 0">-9.673364533766927</Real>
@@ -887,6 +887,25 @@ Repl  0.3333  0.6667  0
 Repl  0.6667  0.3333  1
 ]]></String>
     </ReplExOutput>
+    <Energy Name="Volume">
+      <Real Name="Time 0.000000 Step 0 in frame 0">6.4562600160298169</Real>
+      <Real Name="Time 0.001000 Step 1 in frame 1">6.4562600160298169</Real>
+      <Real Name="Time 0.002000 Step 2 in frame 2">6.4562596808132486</Real>
+      <Real Name="Time 0.003000 Step 3 in frame 3">6.4562596808132486</Real>
+      <Real Name="Time 0.004000 Step 4 in frame 4">6.4562596808132486</Real>
+      <Real Name="Time 0.005000 Step 5 in frame 5">6.4562579188546056</Real>
+      <Real Name="Time 0.006000 Step 6 in frame 6">6.4562579188546056</Real>
+      <Real Name="Time 0.007000 Step 7 in frame 7">6.4562579188546056</Real>
+      <Real Name="Time 0.008000 Step 8 in frame 8">6.4562579188546056</Real>
+      <Real Name="Time 0.009000 Step 9 in frame 9">6.4562579188546056</Real>
+      <Real Name="Time 0.010000 Step 10 in frame 10">6.4562579188546056</Real>
+      <Real Name="Time 0.011000 Step 11 in frame 11">6.4562579188546056</Real>
+      <Real Name="Time 0.012000 Step 12 in frame 12">6.4562429396654863</Real>
+      <Real Name="Time 0.013000 Step 13 in frame 13">6.4562737307718585</Real>
+      <Real Name="Time 0.014000 Step 14 in frame 14">6.4562737307718585</Real>
+      <Real Name="Time 0.015000 Step 15 in frame 15">6.4562737307718585</Real>
+      <Real Name="Time 0.016000 Step 16 in frame 16">6.4562737307718585</Real>
+    </Energy>
     <Energy Name="Conserved En.">
       <Real Name="Time 0.000000 Step 0 in frame 0">17.819866492793917</Real>
       <Real Name="Time 0.001000 Step 1 in frame 1">16.406158645393088</Real>
@@ -924,25 +943,6 @@ Repl  0.6667  0.3333  1
       <Real Name="Time 0.014000 Step 14 in frame 14">38.776114730648381</Real>
       <Real Name="Time 0.015000 Step 15 in frame 15">40.19856736302259</Real>
       <Real Name="Time 0.016000 Step 16 in frame 16">41.64922910937004</Real>
-    </Energy>
-    <Energy Name="Pressure">
-      <Real Name="Time 0.000000 Step 0 in frame 0">-0.14894764539902403</Real>
-      <Real Name="Time 0.001000 Step 1 in frame 1">1.9366239285582576</Real>
-      <Real Name="Time 0.002000 Step 2 in frame 2">38.522141053329989</Real>
-      <Real Name="Time 0.003000 Step 3 in frame 3">38.53144160179307</Real>
-      <Real Name="Time 0.004000 Step 4 in frame 4">38.071879558115768</Real>
-      <Real Name="Time 0.005000 Step 5 in frame 5">-20.646251103711098</Real>
-      <Real Name="Time 0.006000 Step 6 in frame 6">-24.575695797488994</Real>
-      <Real Name="Time 0.007000 Step 7 in frame 7">-28.928139652492209</Real>
-      <Real Name="Time 0.008000 Step 8 in frame 8">-33.654670958510501</Real>
-      <Real Name="Time 0.009000 Step 9 in frame 9">-38.681319052044849</Real>
-      <Real Name="Time 0.010000 Step 10 in frame 10">-43.905204683558473</Real>
-      <Real Name="Time 0.011000 Step 11 in frame 11">-49.233389786386034</Real>
-      <Real Name="Time 0.012000 Step 12 in frame 12">-55.139787459060905</Real>
-      <Real Name="Time 0.013000 Step 13 in frame 13">40.547530656678028</Real>
-      <Real Name="Time 0.014000 Step 14 in frame 14">36.922294104823358</Real>
-      <Real Name="Time 0.015000 Step 15 in frame 15">33.357881402312181</Real>
-      <Real Name="Time 0.016000 Step 16 in frame 16">29.884026086077842</Real>
     </Energy>
     <Energy Name="Potential">
       <Real Name="Time 0.000000 Step 0 in frame 0">-9.673364533766927</Real>
