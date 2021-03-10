@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,12 +102,12 @@ void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void* /* sendPtr */,
                "implementation.");
 }
 
-void* PmePpCommGpu::getGpuForceStagingPtr()
+DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
-    return nullptr;
+    return DeviceBuffer<gmx::RVec>{};
 }
 
 GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()

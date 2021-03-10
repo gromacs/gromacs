@@ -215,7 +215,7 @@ int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality) const
     return numAtoms;
 }
 
-void* nonbonded_verlet_t::getGpuForces() const
+DeviceBuffer<gmx::RVec> nonbonded_verlet_t::getGpuForces() const
 {
     return Nbnxm::getGpuForces(gpu_nbv);
 }

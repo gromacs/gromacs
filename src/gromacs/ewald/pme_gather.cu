@@ -351,7 +351,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const float* __restrict__ gm_coefficientsB = kernelParams.atoms.d_coefficients[1];
     const float* __restrict__ gm_gridA         = kernelParams.grid.d_realGrid[0];
     const float* __restrict__ gm_gridB         = kernelParams.grid.d_realGrid[1];
-    float* __restrict__ gm_forces              = kernelParams.atoms.d_forces;
+    float* __restrict__ gm_forces = reinterpret_cast<float*>(kernelParams.atoms.d_forces);
 
     /* Global memory pointers for readGlobal */
     const float* __restrict__ gm_theta         = kernelParams.atoms.d_theta;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -110,7 +111,7 @@ public:
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU
      */
-    void* getGpuForceStagingPtr();
+    DeviceBuffer<gmx::RVec> getGpuForceStagingPtr();
 
     /*! \brief
      * Return pointer to event recorded when forces are ready
@@ -123,15 +124,15 @@ private:
     //! Handle for CUDA stream used for the communication operations in this class
     const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
-    void* remotePmeXBuffer_ = nullptr;
+    DeviceBuffer<gmx::RVec> remotePmeXBuffer_ = nullptr;
     //! Remote location of PME force data buffer
-    void* remotePmeFBuffer_ = nullptr;
+    DeviceBuffer<gmx::RVec> remotePmeFBuffer_ = nullptr;
     //! communicator for simulation
     MPI_Comm comm_;
     //! Rank of PME task
     int pmeRank_ = -1;
     //! Buffer for staging PME force on GPU
-    rvec* d_pmeForces_ = nullptr;
+    DeviceBuffer<gmx::RVec> d_pmeForces_ = nullptr;
     //! number of atoms in PME force staging array
     int d_pmeForcesSize_ = -1;
     //! number of atoms allocated in recvbuf array

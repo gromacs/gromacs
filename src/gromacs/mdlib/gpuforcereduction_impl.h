@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ struct cellInfo
     //! cell index mapping for any nbat-format forces
     const int* cell = nullptr;
     //! device copy of cell index mapping for any nbat-format forces
-    int* d_cell = nullptr;
+    DeviceBuffer<int> d_cell;
     //! number of atoms in cell array
     int cellSize = -1;
     //! number of atoms allocated in cell array
@@ -75,7 +75,7 @@ public:
      * \param [in] deviceContext GPU device context
      * \param [in] wcycle        The wallclock counter
      */
-    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStreami, gmx_wallcycle* wcycle);
+    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream, gmx_wallcycle* wcycle);
     ~Impl();
 
     /*! \brief Register a nbnxm-format force to be reduced
@@ -98,14 +98,14 @@ public:
 
     /*! \brief Reinitialize the GPU force reduction
      *
-     * \param [in] baseForcePtr     Pointer to force to be used as a base
+     * \param [in] baseForce        Pointer to force to be used as a base
      * \param [in] numAtoms         The number of atoms
      * \param [in] cell             Pointer to the cell array
      * \param [in] atomStart        The start atom for the reduction
      * \param [in] accumulate       Whether reduction should be accumulated
      * \param [in] completionMarker Event to be marked when launch of reduction is complete
      */
-    void reinit(float3*               baseForcePtr,
+    void reinit(DeviceBuffer<RVec>    baseForce,
                 const int             numAtoms,
                 ArrayRef<const int>   cell,
                 const int             atomStart,
@@ -117,13 +117,13 @@ public:
 
 private:
     //! force to be used as a base for this reduction
-    float3* baseForce_ = nullptr;
+    DeviceBuffer<RVec> baseForce_;
     //! starting atom
     int atomStart_ = 0;
     //! number of atoms
     int numAtoms_ = 0;
     //! whether reduction is accumulated into base force buffer
-    int accumulate_ = true;
+    bool accumulate_ = true;
     //! cell information for any nbat-format forces
     struct cellInfo cellInfo_;
     //! GPU context object
@@ -133,9 +133,9 @@ private:
     //! stream to be used for this reduction
     const DeviceStream& deviceStream_;
     //! Nbnxm force to be added in this reduction
-    DeviceBuffer<RVec> nbnxmForceToAdd_ = nullptr;
+    DeviceBuffer<RVec> nbnxmForceToAdd_;
     //! Rvec-format force to be added in this reduction
-    DeviceBuffer<RVec> rvecForceToAdd_ = nullptr;
+    DeviceBuffer<RVec> rvecForceToAdd_;
     //! event to be marked when redcution launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;
     //! The wallclock counter

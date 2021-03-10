@@ -45,6 +45,7 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/gmxmpi.h"
 
 class DeviceStream;
@@ -83,7 +84,7 @@ public:
      * Initialization of GPU PME Force sender
      * \param[in] d_f   force buffer in GPU memory
      */
-    void sendForceBufferAddressToPpRanks(rvec* d_f);
+    void sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f);
 
     /*! \brief
      * Send PP data to PP rank

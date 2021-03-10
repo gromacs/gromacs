@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,9 +155,9 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void* sendPtr,
     GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
 }
-void* PmePpCommGpu::Impl::getGpuForceStagingPtr()
+DeviceBuffer<gmx::RVec> PmePpCommGpu::Impl::getGpuForceStagingPtr()
 {
-    return static_cast<void*>(d_pmeForces_);
+    return d_pmeForces_;
 }
 
 GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
@@ -194,7 +194,7 @@ void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void*                 sendPtr,
             sendPtr, sendSize, sendPmeCoordinatesFromGpu, coordinatesReadyOnDeviceEvent);
 }
 
-void* PmePpCommGpu::getGpuForceStagingPtr()
+DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
 {
     return impl_->getGpuForceStagingPtr();
 }
