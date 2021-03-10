@@ -1373,6 +1373,7 @@ int Mdrunner::mdrunner()
                                                          doEssentialDynamics,
                                                          gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
                                                          replExParams.exchangeInterval > 0,
+                                                         inputrec->opts.nFreeze != nullptr,
                                                          doRerun,
                                                          devFlags,
                                                          mdlog);

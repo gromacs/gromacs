@@ -544,6 +544,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
                                     const bool                     useEssentialDynamics,
                                     const bool                     doOrientationRestraints,
                                     const bool                     useReplicaExchange,
+                                    const bool                     haveFrozenAtoms,
                                     const bool                     doRerun,
                                     const DevelopmentFeatureFlags& devFlags,
                                     const gmx::MDLogger&           mdlog)
@@ -685,6 +686,11 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage +=
                 "The number of coupled constraints is higher than supported in the GPU LINCS "
                 "code.\n";
+    }
+    if (haveFrozenAtoms)
+    {
+        // There is a known bug with frozen atoms and GPU update, see Issue #3920.
+        errorMessage += "Frozen atoms not supported.\n";
     }
 
     if (!errorMessage.empty())
