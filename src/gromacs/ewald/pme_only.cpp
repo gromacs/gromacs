@@ -445,7 +445,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
                     pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(
                             stateGpu->getCoordinates());
-                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(pme_gpu_get_device_f(pme));
+                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(
+                            reinterpret_cast<rvec*>(pme_gpu_get_device_f(pme)));
                 }
             }
 
@@ -582,13 +583,8 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
         if (pme_pp->useGpuDirectComm)
         {
             // Data will be transferred directly from GPU.
-            DeviceBuffer<gmx::RVec> gmx_unused d_f = pme_gpu_get_device_f(&pme);
-#    if GMX_GPU_CUDA
-            // OpenCL does not allow host-side pointer arithmetic on buffers. Neither does SYCL.
-            sendbuf = reinterpret_cast<void*>(&d_f[ind_start]);
-#    else
-            GMX_RELEASE_ASSERT(false, "Can only use GPU Direct Communications with CUDA");
-#    endif
+            rvec* d_f = reinterpret_cast<rvec*>(pme_gpu_get_device_f(&pme));
+            sendbuf   = reinterpret_cast<void*>(&d_f[ind_start]);
         }
         sendFToPP(sendbuf, receiver, pme_pp, &messages);
     }

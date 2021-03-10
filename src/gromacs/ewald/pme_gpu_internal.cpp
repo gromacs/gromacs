@@ -229,7 +229,7 @@ void pme_gpu_free_bspline_values(const PmeGpu* pmeGpu)
 
 void pme_gpu_realloc_forces(PmeGpu* pmeGpu)
 {
-    const size_t newForcesSize = pmeGpu->nAtomsAlloc;
+    const size_t newForcesSize = pmeGpu->nAtomsAlloc * DIM;
     GMX_ASSERT(newForcesSize > 0, "Bad number of atoms in PME GPU");
     reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces,
                            newForcesSize,
@@ -248,10 +248,11 @@ void pme_gpu_free_forces(const PmeGpu* pmeGpu)
 void pme_gpu_copy_input_forces(PmeGpu* pmeGpu)
 {
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
+    float* h_forcesFloat = reinterpret_cast<float*>(pmeGpu->staging.h_forces.data());
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces,
-                       pmeGpu->staging.h_forces.data(),
+                       h_forcesFloat,
                        0,
-                       pmeGpu->kernelParams->atoms.nAtoms,
+                       DIM * pmeGpu->kernelParams->atoms.nAtoms,
                        pmeGpu->archSpecific->pmeStream_,
                        pmeGpu->settings.transferKind,
                        nullptr);
@@ -260,10 +261,11 @@ void pme_gpu_copy_input_forces(PmeGpu* pmeGpu)
 void pme_gpu_copy_output_forces(PmeGpu* pmeGpu)
 {
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
-    copyFromDeviceBuffer(pmeGpu->staging.h_forces.data(),
+    float* h_forcesFloat = reinterpret_cast<float*>(pmeGpu->staging.h_forces.data());
+    copyFromDeviceBuffer(h_forcesFloat,
                          &pmeGpu->kernelParams->atoms.d_forces,
                          0,
-                         pmeGpu->kernelParams->atoms.nAtoms,
+                         DIM * pmeGpu->kernelParams->atoms.nAtoms,
                          pmeGpu->archSpecific->pmeStream_,
                          pmeGpu->settings.transferKind,
                          nullptr);
@@ -1704,7 +1706,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, const float lambda)
     }
 }
 
-DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
+void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
 {
     if (pmeGpu && pmeGpu->kernelParams)
     {
@@ -1712,7 +1714,7 @@ DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
     }
     else
     {
-        return DeviceBuffer<gmx::RVec>{};
+        return nullptr;
     }
 }
 

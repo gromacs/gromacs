@@ -440,11 +440,11 @@ void pme_gpu_reinit_computation(const gmx_pme_t* pme, gmx_wallcycle* wcycle)
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
 
-DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* pme)
+void* pme_gpu_get_device_f(const gmx_pme_t* pme)
 {
     if (!pme || !pme_gpu_active(pme))
     {
-        return DeviceBuffer<gmx::RVec>{};
+        return nullptr;
     }
     return pme_gpu_get_kernelparam_forces(pme->gpu);
 }

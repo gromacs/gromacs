@@ -48,7 +48,6 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -69,7 +68,7 @@ PmeForceSenderGpu::Impl::Impl(const DeviceStream& pmeStream, MPI_Comm comm, gmx:
 PmeForceSenderGpu::Impl::~Impl() = default;
 
 /*! \brief  sends force buffer address to PP ranks */
-void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f)
+void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(rvec* d_f)
 {
     int ind_start = 0;
     int ind_end   = 0;
@@ -116,7 +115,7 @@ PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream&    pmeStream,
 
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f)
+void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* d_f)
 {
     impl_->sendForceBufferAddressToPpRanks(d_f);
 }

@@ -86,13 +86,13 @@ public:
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerNbnxmForce(DeviceBuffer<RVec> forcePtr);
+    void registerNbnxmForce(void* forcePtr);
 
     /*! \brief Register a rvec-format force to be reduced
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerRvecForce(DeviceBuffer<RVec> forcePtr);
+    void registerRvecForce(void* forcePtr);
 
     /*! \brief Add a dependency for this force reduction
      *
@@ -102,14 +102,14 @@ public:
 
     /*! \brief Reinitialize the GPU force reduction
      *
-     * \param [in] baseForce        Pointer to force to be used as a base
+     * \param [in] baseForcePtr     Pointer to force to be used as a base
      * \param [in] numAtoms         The number of atoms
      * \param [in] cell             Pointer to the cell array
      * \param [in] atomStart        The start atom for the reduction
      * \param [in] accumulate       Whether reduction should be accumulated
      * \param [in] completionMarker Event to be marked when launch of reduction is complete
      */
-    void reinit(DeviceBuffer<RVec>    baseForce,
+    void reinit(DeviceBuffer<RVec>    baseForcePtr,
                 int                   numAtoms,
                 ArrayRef<const int>   cell,
                 int                   atomStart,

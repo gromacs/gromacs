@@ -46,22 +46,14 @@
 #ifndef GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H
 #define GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gmxpre.h"
+
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.h"
+#include "gromacs/mdlib/lincs_gpu.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/pbcutil/pbc_aiuc.h"
-
-#if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/gputraits.cuh"
-#endif
-
-class GpuEventSynchronizer;
-namespace gmx
-{
-class LincsGpu;
-class SettleGpu;
-class LeapFrogGpu;
-} // namespace gmx
 
 namespace gmx
 {
@@ -201,14 +193,14 @@ private:
     int numAtoms_;
 
     //! Local copy of the pointer to the device positions buffer
-    DeviceBuffer<float3> d_x_;
+    float3* d_x_;
     //! Local copy of the pointer to the device velocities buffer
-    DeviceBuffer<float3> d_v_;
+    float3* d_v_;
     //! Local copy of the pointer to the device forces buffer
-    DeviceBuffer<float3> d_f_;
+    float3* d_f_;
 
     //! Device buffer for intermediate positions (maintained internally)
-    DeviceBuffer<float3> d_xp_;
+    float3* d_xp_;
     //! Number of elements in shifted coordinates buffer
     int numXp_ = -1;
     //! Allocation size for the shifted coordinates buffer
@@ -216,7 +208,7 @@ private:
 
 
     //! 1/mass for all atoms (GPU)
-    DeviceBuffer<real> d_inverseMasses_;
+    real* d_inverseMasses_;
     //! Number of elements in reciprocal masses buffer
     int numInverseMasses_ = -1;
     //! Allocation size for the reciprocal masses buffer

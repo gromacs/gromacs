@@ -75,7 +75,7 @@ PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream& /*pmeStream */,
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<gmx::RVec> /* d_f */)
+void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* /* d_f */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "

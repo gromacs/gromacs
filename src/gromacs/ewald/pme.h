@@ -467,12 +467,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*        GPU_FUNC_AR
  * \param[in] pme            The PME data structure.
  * \returns                  Pointer to force data
  */
-GPU_FUNC_QUALIFIER DeviceBuffer<gmx::RVec> pme_gpu_get_device_f(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+GPU_FUNC_QUALIFIER void* pme_gpu_get_device_f(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
+        GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Get pointer to the device synchronizer object that allows syncing on PME force calculation completion
  * \param[in] pme            The PME data structure.
- * \returns                  Pointer to synchronizer
+ * \returns                  Pointer to sychronizer
  */
 GPU_FUNC_QUALIFIER GpuEventSynchronizer* pme_gpu_get_f_ready_synchronizer(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);

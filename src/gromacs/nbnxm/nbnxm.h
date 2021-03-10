@@ -398,7 +398,7 @@ public:
      *
      * \returns A pointer to the force buffer in GPU memory
      */
-    DeviceBuffer<gmx::RVec> getGpuForces() const;
+    void* getGpuForces() const;
 
     //! Return the kernel setup
     const Nbnxm::KernelSetup& kernelSetup() const { return kernelSetup_; }

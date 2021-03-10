@@ -405,8 +405,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu* GPU_FU
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  Pointer to force data
  */
-GPU_FUNC_QUALIFIER DeviceBuffer<gmx::RVec> pme_gpu_get_kernelparam_forces(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+GPU_FUNC_QUALIFIER void* pme_gpu_get_kernelparam_forces(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
+        GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion
  * \param[in] pmeGpu         The PME GPU structure.

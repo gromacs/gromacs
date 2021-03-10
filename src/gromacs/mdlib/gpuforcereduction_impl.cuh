@@ -58,7 +58,7 @@ struct cellInfo
     //! cell index mapping for any nbat-format forces
     const int* cell = nullptr;
     //! device copy of cell index mapping for any nbat-format forces
-    DeviceBuffer<int> d_cell;
+    int* d_cell = nullptr;
     //! number of atoms in cell array
     int cellSize = -1;
     //! number of atoms allocated in cell array
@@ -75,7 +75,7 @@ public:
      * \param [in] deviceContext GPU device context
      * \param [in] wcycle        The wallclock counter
      */
-    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream, gmx_wallcycle* wcycle);
+    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStreami, gmx_wallcycle* wcycle);
     ~Impl();
 
     /*! \brief Register a nbnxm-format force to be reduced
@@ -98,14 +98,14 @@ public:
 
     /*! \brief Reinitialize the GPU force reduction
      *
-     * \param [in] baseForce        Pointer to force to be used as a base
+     * \param [in] baseForcePtr     Pointer to force to be used as a base
      * \param [in] numAtoms         The number of atoms
      * \param [in] cell             Pointer to the cell array
      * \param [in] atomStart        The start atom for the reduction
      * \param [in] accumulate       Whether reduction should be accumulated
      * \param [in] completionMarker Event to be marked when launch of reduction is complete
      */
-    void reinit(DeviceBuffer<RVec>    baseForce,
+    void reinit(float3*               baseForcePtr,
                 const int             numAtoms,
                 ArrayRef<const int>   cell,
                 const int             atomStart,
@@ -117,13 +117,13 @@ public:
 
 private:
     //! force to be used as a base for this reduction
-    DeviceBuffer<RVec> baseForce_;
+    float3* baseForce_ = nullptr;
     //! starting atom
     int atomStart_ = 0;
     //! number of atoms
     int numAtoms_ = 0;
     //! whether reduction is accumulated into base force buffer
-    bool accumulate_ = true;
+    int accumulate_ = true;
     //! cell information for any nbat-format forces
     struct cellInfo cellInfo_;
     //! GPU context object
@@ -133,9 +133,9 @@ private:
     //! stream to be used for this reduction
     const DeviceStream& deviceStream_;
     //! Nbnxm force to be added in this reduction
-    DeviceBuffer<RVec> nbnxmForceToAdd_;
+    DeviceBuffer<RVec> nbnxmForceToAdd_ = nullptr;
     //! Rvec-format force to be added in this reduction
-    DeviceBuffer<RVec> rvecForceToAdd_;
+    DeviceBuffer<RVec> rvecForceToAdd_ = nullptr;
     //! event to be marked when redcution launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;
     //! The wallclock counter

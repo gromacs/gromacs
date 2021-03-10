@@ -155,9 +155,9 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void* sendPtr,
     GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
 }
-DeviceBuffer<gmx::RVec> PmePpCommGpu::Impl::getGpuForceStagingPtr()
+void* PmePpCommGpu::Impl::getGpuForceStagingPtr()
 {
-    return d_pmeForces_;
+    return static_cast<void*>(d_pmeForces_);
 }
 
 GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
@@ -194,7 +194,7 @@ void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void*                 sendPtr,
             sendPtr, sendSize, sendPmeCoordinatesFromGpu, coordinatesReadyOnDeviceEvent);
 }
 
-DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
+void* PmePpCommGpu::getGpuForceStagingPtr()
 {
     return impl_->getGpuForceStagingPtr();
 }

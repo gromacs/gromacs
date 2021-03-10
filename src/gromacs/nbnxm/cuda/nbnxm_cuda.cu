@@ -907,7 +907,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
-DeviceBuffer<gmx::RVec> getGpuForces(NbnxmGpu* nb)
+void* getGpuForces(NbnxmGpu* nb)
 {
     return nb->atdat->f;
 }
