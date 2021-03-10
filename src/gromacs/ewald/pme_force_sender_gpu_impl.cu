@@ -91,7 +91,7 @@ void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(DeviceBuffer<Float
 }
 
 /*! \brief Send PME synchronizer directly using CUDA memory copy */
-void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank)
+void PmeForceSenderGpu::Impl::sendFSynchronizerToPpCudaDirect(int ppRank)
 {
     // Data will be pulled directly from PP task
 #if GMX_MPI
@@ -118,9 +118,9 @@ void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f)
     impl_->sendForceBufferAddressToPpRanks(d_f);
 }
 
-void PmeForceSenderGpu::sendFToPpCudaDirect(int ppRank)
+void PmeForceSenderGpu::sendFSynchronizerToPpCudaDirect(int ppRank)
 {
-    impl_->sendFToPpCudaDirect(ppRank);
+    impl_->sendFSynchronizerToPpCudaDirect(ppRank);
 }
 
 

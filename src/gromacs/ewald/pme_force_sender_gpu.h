@@ -90,7 +90,7 @@ public:
      * Send force synchronizer to PP rank
      * \param[in] ppRank           PP rank to receive data
      */
-    void sendFToPpCudaDirect(int ppRank);
+    void sendFSynchronizerToPpCudaDirect(int ppRank);
 
 private:
     class Impl;

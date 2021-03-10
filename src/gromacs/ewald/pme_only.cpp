@@ -555,7 +555,7 @@ static void gmx_pme_send_force_vir_ener(gmx_pme_pp*      pme_pp,
             GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
                        "The use of GPU direct communication for PME-PP is enabled, "
                        "but the PME GPU force reciever object does not exist");
-            pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(receiver.rankId);
+            pme_pp->pmeForceSenderGpu->sendFSynchronizerToPpCudaDirect(receiver.rankId);
         }
         else
         {
