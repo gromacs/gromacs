@@ -45,7 +45,7 @@
 #include "config.h"
 
 #include "gromacs/listed_forces/gpubonded.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 
@@ -73,25 +73,6 @@ static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality 
     return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->nsci == 0);
 }
 
-/*! \brief Check that atom locality values are valid for the GPU module.
- *
- *  In the GPU module atom locality "all" is not supported, the local and
- *  non-local ranges are treated separately.
- *
- *  \param[in] atomLocality atom locality specifier
- */
-static inline void validateGpuAtomLocality(const AtomLocality atomLocality)
-{
-    std::string str = gmx::formatString(
-            "Invalid atom locality passed (%d); valid here is only "
-            "local (%d) or nonlocal (%d)",
-            static_cast<int>(atomLocality),
-            static_cast<int>(AtomLocality::Local),
-            static_cast<int>(AtomLocality::NonLocal));
-
-    GMX_ASSERT(atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal, str.c_str());
-}
-
 /*! \brief Convert atom locality to interaction locality.
  *
  *  In the current implementation the this is straightforward conversion:
@@ -102,7 +83,6 @@ static inline void validateGpuAtomLocality(const AtomLocality atomLocality)
  */
 static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocality atomLocality)
 {
-    validateGpuAtomLocality(atomLocality);
 
     /* determine interaction locality from atom locality */
     if (atomLocality == AtomLocality::Local)
@@ -115,7 +95,8 @@ static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocalit
     }
     else
     {
-        gmx_incons("Wrong locality");
+        GMX_THROW(gmx::InconsistentInputError(
+                "Only Local and NonLocal atom locities can be converted to interaction locality."));
     }
 }
 
@@ -142,16 +123,20 @@ static inline bool haveGpuShortRangeWork(const NbnxmGpu& nb, const gmx::Interact
 static inline gmx::Range<int> getGpuAtomRange(const NBAtomData* atomData, const AtomLocality atomLocality)
 {
     assert(atomData);
-    validateGpuAtomLocality(atomLocality);
 
     /* calculate the atom data index range based on locality */
     if (atomLocality == AtomLocality::Local)
     {
         return gmx::Range<int>(0, atomData->numAtomsLocal);
     }
-    else
+    else if (atomLocality == AtomLocality::NonLocal)
     {
         return gmx::Range<int>(atomData->numAtomsLocal, atomData->numAtoms);
+    }
+    else
+    {
+        GMX_THROW(gmx::InconsistentInputError(
+                "Only Local and NonLocal atom locities can be used to get atom ranges in NBNXM."));
     }
 }
 
