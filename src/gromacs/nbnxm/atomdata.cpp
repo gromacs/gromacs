@@ -985,7 +985,6 @@ static void getAtomRanges(const Nbnxm::GridSet&   gridSet,
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
                                      const gmx::AtomLocality locality,
-                                     bool                    fillLocal,
                                      const rvec*             coordinates,
                                      nbnxn_atomdata_t*       nbat)
 {
@@ -993,11 +992,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
     int gridBegin = 0;
     int gridEnd   = 0;
     getAtomRanges(gridSet, locality, &gridBegin, &gridEnd);
-
-    if (fillLocal)
-    {
-        nbat->natoms_local = gridSet.grids()[0].atomIndexEnd();
-    }
 
     const int nth = gmx_omp_nthreads_get(emntPairsearch);
 #pragma omp parallel for num_threads(nth) schedule(static)
@@ -1018,16 +1012,9 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
                     const int na  = grid.numAtomsInColumn(cxy);
                     const int ash = grid.firstAtomInColumn(cxy);
 
-                    const bool mustFillPadding = (g == 0 && fillLocal);
-                    /* When false, we fill only the real particle locations.
-                     * We assume the filling entries at the end have been
-                     * properly set before during pair-list generation.
-                     */
-                    const int na_fill = mustFillPadding ? grid.paddedNumAtomsInColumn(cxy) : na;
-
                     copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
                                            na,
-                                           na_fill,
+                                           na,
                                            coordinates,
                                            nbat->XFormat,
                                            nbat->x().data(),
@@ -1042,7 +1029,6 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t on the GPU*/
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
                                     const gmx::AtomLocality locality,
-                                    bool                    fillLocal,
                                     NbnxmGpu*               gpu_nbv,
                                     DeviceBuffer<RVec>      d_x,
                                     GpuEventSynchronizer*   xReadyOnDevice)
@@ -1054,14 +1040,8 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
 
     for (int g = gridBegin; g < gridEnd; g++)
     {
-        nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g],
-                              fillLocal && g == 0,
-                              gpu_nbv,
-                              d_x,
-                              xReadyOnDevice,
-                              locality,
-                              g,
-                              gridSet.numColumnsMax());
+        nbnxn_gpu_x_to_nbat_x(
+                gridSet.grids()[g], gpu_nbv, d_x, xReadyOnDevice, locality, g, gridSet.numColumnsMax());
     }
 }
 

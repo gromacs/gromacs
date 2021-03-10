@@ -1465,8 +1465,7 @@ void do_force(FILE*                               fplog,
         if (stepWork.useGpuXBufferOps)
         {
             GMX_ASSERT(stateGpu, "stateGpu should be valid when buffer ops are offloaded");
-            nbv->convertCoordinatesGpu(
-                    AtomLocality::Local, false, stateGpu->getCoordinates(), localXReadyOnDevice);
+            nbv->convertCoordinatesGpu(AtomLocality::Local, stateGpu->getCoordinates(), localXReadyOnDevice);
         }
         else
         {
@@ -1477,7 +1476,7 @@ void do_force(FILE*                               fplog,
                            "a wait should only be triggered if copy has been scheduled");
                 stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
             }
-            nbv->convertCoordinates(AtomLocality::Local, false, x.unpaddedArrayRef());
+            nbv->convertCoordinates(AtomLocality::Local, x.unpaddedArrayRef());
         }
     }
 
@@ -1579,14 +1578,13 @@ void do_force(FILE*                               fplog,
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
                 }
                 nbv->convertCoordinatesGpu(AtomLocality::NonLocal,
-                                           false,
                                            stateGpu->getCoordinates(),
                                            stateGpu->getCoordinatesReadyOnDeviceEvent(
                                                    AtomLocality::NonLocal, simulationWork, stepWork));
             }
             else
             {
-                nbv->convertCoordinates(AtomLocality::NonLocal, false, x.unpaddedArrayRef());
+                nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
             }
         }
 

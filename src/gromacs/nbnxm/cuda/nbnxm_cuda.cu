@@ -839,7 +839,6 @@ void cuda_set_cacheconfig()
 
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
-                           bool                      setFillerCoords,
                            NbnxmGpu*                 nb,
                            DeviceBuffer<gmx::RVec>   d_x,
                            GpuEventSynchronizer*     xReadyOnDevice,
@@ -881,8 +880,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                    "Can not have empty grid, early return above avoids this");
         config.sharedMemorySize = 0;
 
-        auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
-                                        : nbnxn_gpu_x_to_nbat_x_kernel<false>;
+        auto       kernelFn      = nbnxn_gpu_x_to_nbat_x_kernel;
         float4*    d_xq          = adat->xq;
         float3*    d_xFloat3     = asFloat3(d_x);
         const int* d_atomIndices = nb->atomIndices;

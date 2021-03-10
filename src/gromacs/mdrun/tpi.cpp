@@ -749,7 +749,7 @@ void LegacySimulator::do_tpi()
             }
 
             /* Note: NonLocal refers to the inserted molecule */
-            fr->nbv->convertCoordinates(AtomLocality::NonLocal, false, x);
+            fr->nbv->convertCoordinates(AtomLocality::NonLocal, x);
 
             /* Clear some matrix variables  */
             clear_mat(force_vir);

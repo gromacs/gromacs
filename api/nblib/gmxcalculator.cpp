@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ void GmxForceCalculator::compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
                                  gmx::ArrayRef<gmx::RVec>       forceOutput)
 {
     // update the coordinates in the backend
-    nbv_->convertCoordinates(gmx::AtomLocality::Local, false, coordinateInput);
+    nbv_->convertCoordinates(gmx::AtomLocality::Local, coordinateInput);
 
     nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
                                   *interactionConst_,

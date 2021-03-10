@@ -323,22 +323,19 @@ public:
      * The API function for the transformation of the coordinates from one layout to another.
      *
      * \param[in] locality     Whether coordinates for local or non-local atoms should be
-     * transformed. \param[in] fillLocal    If the coordinates for filler particles should be
-     * zeroed. \param[in] coordinates  Coordinates in plain rvec format to be transformed.
+     * transformed. \param[in] coordinates  Coordinates in plain rvec format to be transformed.
      */
-    void convertCoordinates(gmx::AtomLocality locality, bool fillLocal, gmx::ArrayRef<const gmx::RVec> coordinates);
+    void convertCoordinates(gmx::AtomLocality locality, gmx::ArrayRef<const gmx::RVec> coordinates);
 
     /*!\brief Convert the coordinates to NBNXM format on the GPU for the given locality
      *
      * The API function for the transformation of the coordinates from one layout to another in the GPU memory.
      *
      * \param[in] locality        Whether coordinates for local or non-local atoms should be transformed.
-     * \param[in] fillLocal       If the coordinates for filler particles should be zeroed.
      * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
      * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
      */
     void convertCoordinatesGpu(gmx::AtomLocality       locality,
-                               bool                    fillLocal,
                                DeviceBuffer<gmx::RVec> d_x,
                                GpuEventSynchronizer*   xReadyOnDevice);
 

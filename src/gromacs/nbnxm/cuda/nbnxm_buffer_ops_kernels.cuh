@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@
 
  * \param[in]     numColumns          Extent of cell-level parallelism.
  * \param[out]    gm_xq               Coordinates buffer in nbnxm layout.
- * \tparam        setFillerCoords     Whether to set the coordinates of the filler particles.
  * \param[in]     gm_x                Coordinates buffer.
  * \param[in]     gm_atomIndex        Atom index mapping.
  * \param[in]     gm_numAtoms         Array of number of atoms.
@@ -61,7 +60,6 @@
  * \param[in]     cellOffset          First cell.
  * \param[in]     numAtomsPerCell     Number of atoms per cell.
  */
-template<bool setFillerCoords>
 static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
                                                     float4* __restrict__ gm_xq,
                                                     const float3* __restrict__ gm_x,
@@ -83,19 +81,6 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
 
         const int numAtoms = gm_numAtoms[cxy];
         const int offset   = (cellOffset + gm_cellIndex[cxy]) * numAtomsPerCell;
-        int       numAtomsRounded;
-        if (setFillerCoords)
-        {
-            // TODO: This can be done more efficiently
-            numAtomsRounded = (gm_cellIndex[cxy + 1] - gm_cellIndex[cxy]) * numAtomsPerCell;
-        }
-        else
-        {
-            // We fill only the real particle locations.
-            // We assume the filling entries at the end have been
-            // properly set before during pair-list generation.
-            numAtomsRounded = numAtoms;
-        }
 
         const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -104,7 +89,7 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
         float3* gm_xqDest = (float3*)&gm_xq[threadIndex + offset];
 
         // Perform layout conversion of each element.
-        if (threadIndex < numAtomsRounded)
+        if (threadIndex < numAtoms)
         {
             if (threadIndex < numAtoms)
             {
