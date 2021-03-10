@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,24 +84,24 @@ std::vector<int> parseUserGpuIdString(const std::string& gpuIdString);
  * all compatible GPUs on this physical node. Otherwise, check the
  * user specified compatible GPUs and return their IDs.
  *
- * \param[in]  deviceInfoList         Information on the GPUs on this physical node.
- * \param[in]  gpuIdsAvailableString  String like "013" or "0,1,3" typically
- *                                    supplied by the user to mdrun -gpu_id.
- *                                    Must contain only unique decimal digits, or only decimal
- *                                    digits separated by comma delimiters. A terminal
- *                                    comma is accceptable (and required to specify a
- *                                    single ID that is larger than 9).
+ * \param[in]  deviceInfoList               Information on the GPUs on this physical node.
+ * \param[in]  devicesSelectedByUserString  String like "013" or "0,1,3" typically
+ *                                          supplied by the user to mdrun -gpu_id.
+ *                                          Must contain only unique decimal digits, or only decimal
+ *                                          digits separated by comma delimiters. A terminal
+ *                                          comma is accceptable (and required to specify a
+ *                                          single ID that is larger than 9).
  *
  * \returns  A vector of unique compatible GPU IDs on this physical node.
  *
  * \throws   std::bad_alloc     If out of memory.
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
  *                              identifiers are duplicated in the specifier list.
- *           InvalidInputError  If gpuIdsAvailableString specifies GPU IDs that are
+ *           InvalidInputError  If devicesSelectedByUserString specifies IDs of the devices that are
  *                              not compatible.
  */
-std::vector<int> makeGpuIdsToUse(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                                 const std::string& gpuIdsAvailableString);
+std::vector<int> makeListOfAvailableDevices(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
+                                            const std::string& devicesSelectedByUserString);
 
 /*! \brief Parse a GPU ID specifier string into a container describing device ID to task mapping.
  *
@@ -172,9 +172,9 @@ std::string makeGpuIdString(const std::vector<int>& gpuIds, int totalNumberOfTas
  * \throws  std::bad_alloc          If out of memory
  *          InconsistentInputError  If the assigned GPUs are not valid
  */
-void checkUserGpuIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                     const std::vector<int>&                                compatibleGpus,
-                     const std::vector<int>&                                gpuIds);
+void checkUserGpuIds(ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
+                     ArrayRef<const int>                                compatibleGpus,
+                     ArrayRef<const int>                                gpuIds);
 
 } // namespace gmx
 

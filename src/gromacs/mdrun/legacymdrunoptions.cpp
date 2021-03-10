@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,17 +111,17 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
         // command-line options have been seperated.
-        hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
+        hw_opt.devicesSelectedByUser = devicesSelectedByUser;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
         const char* env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
-            if (!hw_opt.gpuIdsAvailable.empty())
+            if (!hw_opt.devicesSelectedByUser.empty())
             {
                 gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
             }
-            hw_opt.gpuIdsAvailable = env;
+            hw_opt.devicesSelectedByUser = env;
         }
 
         env = getenv("GMX_GPUTASKS");
@@ -134,7 +134,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
             hw_opt.userGpuTaskAssignment = env;
         }
 
-        if (!hw_opt.gpuIdsAvailable.empty() && !hw_opt.userGpuTaskAssignment.empty())
+        if (!hw_opt.devicesSelectedByUser.empty() && !hw_opt.userGpuTaskAssignment.empty())
         {
             gmx_fatal(FARGS, "-gpu_id and -gputasks cannot be used at the same time");
         }

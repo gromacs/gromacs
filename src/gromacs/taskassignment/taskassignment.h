@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -140,7 +141,7 @@ public:
      * the ranks of that node. It throws InconsistentInputError
      * when a/the useful GPU task assignment is not possible.
      *
-     * \param[in]  gpuIdsToUse            The compatible GPUs that the user permitted us to use.
+     * \param[in]  availableDevices       The compatible devices that the user permitted us to use.
      * \param[in]  userGpuTaskAssignment  The user-specified assignment of GPU tasks to device IDs.
      * \param[in]  hardwareInfo           The detected hardware
      * \param[in]  gromacsWorldComm       MPI communicator for all ranks in the current GROMACS run
@@ -159,8 +160,8 @@ public:
      * \throws   std::bad_alloc          If out of memory.
      *           InconsistentInputError  If user and/or detected inputs are inconsistent.
      */
-    static GpuTaskAssignments build(const std::vector<int>&         gpuIdsToUse,
-                                    const std::vector<int>&         userGpuTaskAssignment,
+    static GpuTaskAssignments build(ArrayRef<const int>             availableDevices,
+                                    ArrayRef<const int>             userGpuTaskAssignment,
                                     const gmx_hw_info_t&            hardwareInfo,
                                     MPI_Comm                        gromacsWorldComm,
                                     const PhysicalNodeCommunicator& physicalNodeComm,
@@ -210,6 +211,9 @@ private:
     //! Number of ranks on this physical node.
     size_t numRanksOnThisNode_ = 0;
 
+    //! Vector of device IDs assigned to this node
+    std::vector<int> deviceIdsAssigned_;
+
 public:
     /*! \brief Log a report on how GPUs are being used on
      * the ranks of the physical node of rank 0 of the simulation.
@@ -235,10 +239,11 @@ public:
      * learn how to let mdrun make a task assignment that runs
      * faster.
      *
-     * \param[in]  mdlog                        Logging object.
-     * \param[in]  numCompatibleGpusOnThisNode  The number of compatible GPUs on this node.
+     * \param[in]  mdlog                         Logging object.
+     * \param[in]  numAvailableDevicesOnThisNode The number of compatible devices on this node
+     *                                           that the user permitted us to use.
      * */
-    void logPerformanceHints(const MDLogger& mdlog, size_t numCompatibleGpusOnThisNode);
+    void logPerformanceHints(const MDLogger& mdlog, size_t numAvailableDevicesOnThisNode);
     /*! \brief Return handle to the initialized GPU to use in the this rank.
      *
      * \param[out] deviceId Index of the assigned device.
@@ -251,6 +256,8 @@ public:
     bool thisRankHasPmeGpuTask() const;
     //! Return whether this rank has any task running on a GPU
     bool thisRankHasAnyGpuTask() const;
+    //! Get the list of devices assigned to this node
+    std::vector<int> deviceIdsAssigned() { return deviceIdsAssigned_; }
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,41 +136,41 @@ std::vector<int> parseUserGpuIdString(const std::string& gpuIdString)
     return digits;
 }
 
-std::vector<int> makeGpuIdsToUse(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                                 const std::string& gpuIdsAvailableString)
+std::vector<int> makeListOfAvailableDevices(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
+                                            const std::string& devicesSelectedByUserString)
 {
-    std::vector<int> gpuIdsAvailable = parseUserGpuIdString(gpuIdsAvailableString);
+    std::vector<int> devicesSelectedByUser = parseUserGpuIdString(devicesSelectedByUserString);
 
-    if (gpuIdsAvailable.empty())
+    if (devicesSelectedByUser.empty())
     {
-        // The user didn't restrict the choice, so we use all compatible GPUs
+        // The user didn't restrict the choice, so we use all compatible devices.
         return getCompatibleDeviceIds(deviceInfoList);
     }
 
-    std::vector<int> gpuIdsToUse;
-    gpuIdsToUse.reserve(gpuIdsAvailable.size());
-    std::vector<int> availableGpuIdsThatAreIncompatible;
-    for (const int& availableGpuId : gpuIdsAvailable)
+    std::vector<int> availableDevices;
+    availableDevices.reserve(devicesSelectedByUser.size());
+    std::vector<int> incompatibleDevicesSelectedByUser;
+    for (const int& selectedDeviceId : devicesSelectedByUser)
     {
-        if (deviceIdIsCompatible(deviceInfoList, availableGpuId))
+        if (deviceIdIsCompatible(deviceInfoList, selectedDeviceId))
         {
-            gpuIdsToUse.push_back(availableGpuId);
+            availableDevices.push_back(selectedDeviceId);
         }
         else
         {
-            // Prepare data for an error message about all incompatible available GPU IDs.
-            availableGpuIdsThatAreIncompatible.push_back(availableGpuId);
+            // Prepare data for an error message about all incompatible devices that were selected by the user.
+            incompatibleDevicesSelectedByUser.push_back(selectedDeviceId);
         }
     }
-    if (!availableGpuIdsThatAreIncompatible.empty())
+    if (!incompatibleDevicesSelectedByUser.empty())
     {
-        auto message = "You requested mdrun to use GPUs with IDs " + gpuIdsAvailableString
-                       + ", but that includes the following incompatible GPUs: "
-                       + formatAndJoin(availableGpuIdsThatAreIncompatible, ",", StringFormatter("%d"))
-                       + ". Request only compatible GPUs.";
+        auto message = "You requested mdrun to use GPU devices with IDs " + devicesSelectedByUserString
+                       + ", but that includes the following incompatible devices: "
+                       + formatAndJoin(incompatibleDevicesSelectedByUser, ",", StringFormatter("%d"))
+                       + ". Request only compatible devices.";
         GMX_THROW(InvalidInputError(message));
     }
-    return gpuIdsToUse;
+    return availableDevices;
 }
 
 std::vector<int> parseUserTaskAssignmentString(const std::string& gpuIdString)
@@ -209,9 +209,9 @@ std::string makeGpuIdString(const std::vector<int>& gpuIds, int totalNumberOfTas
     return formatAndJoin(resultGpuIds, ",", StringFormatter("%d"));
 }
 
-void checkUserGpuIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                     const std::vector<int>&                                compatibleGpus,
-                     const std::vector<int>&                                gpuIds)
+void checkUserGpuIds(const ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
+                     const ArrayRef<const int>                                compatibleGpus,
+                     const ArrayRef<const int>                                gpuIds)
 {
     bool        foundIncompatibleGpuIds = false;
     std::string message =

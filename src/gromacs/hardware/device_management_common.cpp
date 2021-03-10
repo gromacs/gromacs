@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& devi
     return compatibleDeviceInfoList;
 }
 
-std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList)
+std::vector<int> getCompatibleDeviceIds(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList)
 {
     // Possible minor over-allocation here, but not important for anything
     std::vector<int> compatibleDeviceIds;
@@ -125,8 +125,8 @@ std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<Device
     return compatibleDeviceIds;
 }
 
-bool deviceIdIsCompatible(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                          const int                                              deviceId)
+bool deviceIdIsCompatible(gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
+                          const int                                               deviceId)
 {
     auto foundIt = std::find_if(deviceInfoList.begin(),
                                 deviceInfoList.end(),
@@ -141,7 +141,7 @@ bool deviceIdIsCompatible(const std::vector<std::unique_ptr<DeviceInformation>>&
     return (*foundIt)->status == DeviceStatus::Compatible;
 }
 
-std::string getDeviceCompatibilityDescription(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
+std::string getDeviceCompatibilityDescription(const gmx::ArrayRef<const std::unique_ptr<DeviceInformation>> deviceInfoList,
                                               int deviceId)
 {
     return (deviceId >= static_cast<int>(deviceInfoList.size())

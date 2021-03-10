@@ -103,8 +103,7 @@ class MDAtoms;
  *
  * \param[in] nonbondedTarget              The user's choice for mdrun -nb for where to assign
  *                                         short-ranged nonbonded interaction tasks.
- * \param[in] numDevicesToUse              Number of compatible GPUs that the user permitted
- *                                         us to use.
+ * \param[in] haveAvailableDevices         Whether there are available devices.
  * \param[in] userGpuTaskAssignment        The user-specified assignment of GPU tasks to device IDs.
  * \param[in] emulateGpuNonbonded          Whether we will emulate GPU calculation of nonbonded
  *                                         interactions.
@@ -118,7 +117,7 @@ class MDAtoms;
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              nonbondedTarget,
-                                                     int                     numDevicesToUse,
+                                                     bool                    haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
                                                      bool buildSupportsNonbondedOnGpu,

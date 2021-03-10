@@ -112,7 +112,7 @@ const char* g_specifyEverythingFormatString =
 } // namespace
 
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        nonbondedTarget,
-                                                     const int               numDevicesToUse,
+                                                     const bool              haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      const EmulateGpuNonbonded emulateGpuNonbonded,
                                                      const bool buildSupportsNonbondedOnGpu,
@@ -149,7 +149,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
     // all potential ranks can use, and can use that in a global
     // decision that will later be consistent.
     // If we get here, then the user permitted or required GPUs.
-    return (numDevicesToUse > 0);
+    return haveAvailableDevices;
 }
 
 bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,

@@ -792,8 +792,9 @@ int Mdrunner::mdrunner()
 
     gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo_);
 
-    std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo_->deviceInfoList, hw_opt.gpuIdsAvailable);
-    const int        numDevicesToUse = gmx::ssize(gpuIdsToUse);
+    std::vector<int> availableDevices =
+            makeListOfAvailableDevices(hwinfo_->deviceInfoList, hw_opt.devicesSelectedByUser);
+    const int numAvailableDevices = gmx::ssize(availableDevices);
 
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
@@ -837,7 +838,7 @@ int Mdrunner::mdrunner()
             auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
             useGpuForNonbonded         = decideWhetherToUseGpusForNonbondedWithThreadMpi(
                     nonbondedTarget,
-                    numDevicesToUse,
+                    numAvailableDevices > 0,
                     userGpuTaskAssignment,
                     emulateGpuNonbonded,
                     canUseGpuForNonbonded,
@@ -845,7 +846,7 @@ int Mdrunner::mdrunner()
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(useGpuForNonbonded,
                                                                      pmeTarget,
-                                                                     numDevicesToUse,
+                                                                     numAvailableDevices,
                                                                      userGpuTaskAssignment,
                                                                      *hwinfo_,
                                                                      *inputrec,
@@ -861,7 +862,7 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo_,
                                                 &hw_opt,
-                                                numDevicesToUse,
+                                                numAvailableDevices,
                                                 useGpuForNonbonded,
                                                 useGpuForPme,
                                                 inputrec.get(),
@@ -1301,7 +1302,7 @@ int Mdrunner::mdrunner()
 
     // Produce the task assignment for this rank - done after DD is constructed
     GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
-            gpuIdsToUse,
+            availableDevices,
             userGpuTaskAssignment,
             *hwinfo_,
             simulationCommunicator,
@@ -1429,7 +1430,7 @@ int Mdrunner::mdrunner()
     // where appropriate.
     if (!userGpuTaskAssignment.empty())
     {
-        gpuTaskAssignments.logPerformanceHints(mdlog, numDevicesToUse);
+        gpuTaskAssignments.logPerformanceHints(mdlog, numAvailableDevices);
     }
 
     if (PAR(cr))
@@ -1508,7 +1509,7 @@ int Mdrunner::mdrunner()
         && (runScheduleWork.simulationWork.useGpuHaloExchange
             || runScheduleWork.simulationWork.useGpuPmePpCommunication))
     {
-        setupGpuDevicePeerAccess(gpuIdsToUse, mdlog);
+        setupGpuDevicePeerAccess(gpuTaskAssignments.deviceIdsAssigned(), mdlog);
     }
 
     if (hw_opt.threadAffinity != ThreadAffinity::Off)
