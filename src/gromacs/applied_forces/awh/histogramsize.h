@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,12 +122,12 @@ public:
      * \param[in,out] fplog              Log file.
      * \returns the new histogram size.
      */
-    double newHistogramSize(const BiasParams&              params,
-                            double                         t,
-                            bool                           covered,
-                            const std::vector<PointState>& pointStates,
-                            ArrayRef<double>               weightsumCovering,
-                            FILE*                          fplog);
+    double newHistogramSize(const BiasParams&          params,
+                            double                     t,
+                            bool                       covered,
+                            ArrayRef<const PointState> pointStates,
+                            ArrayRef<double>           weightsumCovering,
+                            FILE*                      fplog);
 
     /*! \brief Restores the histogram size from history.
      *

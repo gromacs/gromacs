@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,8 @@
 #include <memory>
 #include <optional>
 #include <string>
+
+#include "gromacs/utility/arrayref.h"
 
 #include "dimparams.h" /* This is needed for awh_dvec */
 
@@ -197,7 +199,7 @@ public:
      * coordinate living on the grid (determines the grid spacing).
      * \param[in] awhDimParams  Dimension params from inputrec.
      */
-    BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams);
+    BiasGrid(ArrayRef<const DimParams> dimParams, const AwhDimParams* awhDimParams);
 
     /*! \brief Returns the number of points in the grid.
      *
@@ -221,7 +223,7 @@ public:
      *
      * \returns a constant reference to the grid axes.
      */
-    const std::vector<GridAxis>& axis() const { return axis_; }
+    ArrayRef<const GridAxis> axis() const { return axis_; }
 
     /*! \brief Returns a grid axis.
      *

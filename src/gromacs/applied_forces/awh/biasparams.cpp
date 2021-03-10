@@ -115,9 +115,9 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
  * \param[in] gridAxis          The BiasGrid axes.
  * \returns the check interval in steps.
  */
-int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
-                                  const std::vector<DimParams>& dimParams,
-                                  const std::vector<GridAxis>&  gridAxis)
+int64_t calcCheckCoveringInterval(const AwhParams&          awhParams,
+                                  ArrayRef<const DimParams> dimParams,
+                                  ArrayRef<const GridAxis>  gridAxis)
 {
     /* Each sample will have a width of sigma. To cover the axis a
        minimum number of samples of width sigma is required. */
@@ -174,10 +174,10 @@ int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
  * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
  */
-double getInitialHistogramSizeEstimate(const AwhBiasParams&         awhBiasParams,
-                                       const std::vector<GridAxis>& gridAxis,
-                                       double                       beta,
-                                       double                       samplingTimestep)
+double getInitialHistogramSizeEstimate(const AwhBiasParams&     awhBiasParams,
+                                       ArrayRef<const GridAxis> gridAxis,
+                                       double                   beta,
+                                       double                   samplingTimestep)
 {
     /* Get diffusion factor */
     double              maxCrossingTime = 0.;
@@ -221,15 +221,15 @@ int getNumSharedUpdate(const AwhBiasParams& awhBiasParams, int numSharingSimulat
 
 } // namespace
 
-BiasParams::BiasParams(const AwhParams&              awhParams,
-                       const AwhBiasParams&          awhBiasParams,
-                       const std::vector<DimParams>& dimParams,
-                       double                        beta,
-                       double                        mdTimeStep,
-                       DisableUpdateSkips            disableUpdateSkips,
-                       int                           numSharingSimulations,
-                       const std::vector<GridAxis>&  gridAxis,
-                       int                           biasIndex) :
+BiasParams::BiasParams(const AwhParams&          awhParams,
+                       const AwhBiasParams&      awhBiasParams,
+                       ArrayRef<const DimParams> dimParams,
+                       double                    beta,
+                       double                    mdTimeStep,
+                       DisableUpdateSkips        disableUpdateSkips,
+                       int                       numSharingSimulations,
+                       ArrayRef<const GridAxis>  gridAxis,
+                       int                       biasIndex) :
     invBeta(beta > 0 ? 1 / beta : 0),
     numStepsSampleCoord_(awhParams.nstSampleCoord),
     numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),

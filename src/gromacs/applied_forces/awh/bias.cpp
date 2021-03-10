@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,7 +253,7 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
  * \param[in] pointState  The state of the points in a bias.
  * \returns the total sample count.
  */
-static int64_t countSamples(const std::vector<PointState>& pointState)
+static int64_t countSamples(ArrayRef<const PointState> pointState)
 {
     double numSamples = 0;
     for (const PointState& point : pointState)
@@ -362,14 +362,14 @@ void Bias::updateHistory(AwhBiasHistory* biasHistory) const
 Bias::Bias(int                            biasIndexInCollection,
            const AwhParams&               awhParams,
            const AwhBiasParams&           awhBiasParams,
-           const std::vector<DimParams>&  dimParamsInit,
+           ArrayRef<const DimParams>      dimParamsInit,
            double                         beta,
            double                         mdTimeStep,
            int                            numSharingSimulations,
            const std::string&             biasInitFilename,
            ThisRankWillDoIO               thisRankWillDoIO,
            BiasParams::DisableUpdateSkips disableUpdateSkips) :
-    dimParams_(dimParamsInit),
+    dimParams_(dimParamsInit.begin(), dimParamsInit.end()),
     grid_(dimParamsInit, awhBiasParams.dimParams),
     params_(awhParams,
             awhBiasParams,

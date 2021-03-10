@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,10 +107,10 @@ public:
      * \param[in] dimParams             The dimension parameters.
      * \param[in] grid                  The bias grid.
      */
-    BiasState(const AwhBiasParams&          awhBiasParams,
-              double                        histogramSizeInitial,
-              const std::vector<DimParams>& dimParams,
-              const BiasGrid&               grid);
+    BiasState(const AwhBiasParams&      awhBiasParams,
+              double                    histogramSizeInitial,
+              ArrayRef<const DimParams> dimParams,
+              const BiasGrid&           grid);
 
     /*! \brief
      * Restore the bias state from history.
@@ -157,9 +157,9 @@ private:
      * \param[in] grid          The grid.
      * \param[in,out] convolvedPmf  Array returned will be of the same length as the AWH grid to store the convolved PMF in.
      */
-    void calcConvolvedPmf(const std::vector<DimParams>& dimParams,
-                          const BiasGrid&               grid,
-                          std::vector<float>*           convolvedPmf) const;
+    void calcConvolvedPmf(ArrayRef<const DimParams> dimParams,
+                          const BiasGrid&           grid,
+                          std::vector<float>*       convolvedPmf) const;
 
     /*! \brief
      * Convolves the PMF and sets the initial free energy to its convolution.
@@ -167,7 +167,7 @@ private:
      * \param[in] dimParams  The bias dimensions parameters
      * \param[in] grid       The bias grid.
      */
-    void setFreeEnergyToConvolvedPmf(const std::vector<DimParams>& dimParams, const BiasGrid& grid);
+    void setFreeEnergyToConvolvedPmf(ArrayRef<const DimParams> dimParams, const BiasGrid& grid);
 
     /*! \brief
      * Normalize the PMF histogram.
@@ -187,12 +187,12 @@ public:
      * \param[in] filename        Name of file to read PMF and target from.
      * \param[in] numBias         The number of biases.
      */
-    void initGridPointState(const AwhBiasParams&          awhBiasParams,
-                            const std::vector<DimParams>& dimParams,
-                            const BiasGrid&               grid,
-                            const BiasParams&             params,
-                            const std::string&            filename,
-                            int                           numBias);
+    void initGridPointState(const AwhBiasParams&      awhBiasParams,
+                            ArrayRef<const DimParams> dimParams,
+                            const BiasGrid&           grid,
+                            const BiasParams&         params,
+                            const std::string&        filename,
+                            int                       numBias);
 
     /*! \brief
      * Performs statistical checks on the collected histograms and warns if issues are detected.
@@ -224,11 +224,11 @@ public:
      * \param[in,out] force      Force vector to set.
      * Returns the umbrella potential.
      */
-    double calcUmbrellaForceAndPotential(const std::vector<DimParams>& dimParams,
-                                         const BiasGrid&               grid,
-                                         int                           point,
-                                         ArrayRef<const double>        neighborLambdaDhdl,
-                                         gmx::ArrayRef<double>         force) const;
+    double calcUmbrellaForceAndPotential(ArrayRef<const DimParams> dimParams,
+                                         const BiasGrid&           grid,
+                                         int                       point,
+                                         ArrayRef<const double>    neighborLambdaDhdl,
+                                         ArrayRef<double>          force) const;
 
     /*! \brief
      * Calculates and sets the convolved force acting on the coordinate.
@@ -248,12 +248,12 @@ public:
      * \param[in]     forceWorkBuffer     Force work buffer, values only used internally.
      * \param[in,out] force               Bias force vector to set.
      */
-    void calcConvolvedForce(const std::vector<DimParams>& dimParams,
-                            const BiasGrid&               grid,
-                            gmx::ArrayRef<const double>   probWeightNeighbor,
-                            ArrayRef<const double>        neighborLambdaDhdl,
-                            gmx::ArrayRef<double>         forceWorkBuffer,
-                            gmx::ArrayRef<double>         force) const;
+    void calcConvolvedForce(ArrayRef<const DimParams> dimParams,
+                            const BiasGrid&           grid,
+                            ArrayRef<const double>    probWeightNeighbor,
+                            ArrayRef<const double>    neighborLambdaDhdl,
+                            ArrayRef<double>          forceWorkBuffer,
+                            ArrayRef<double>          force) const;
 
     /*! \brief
      * Move the center point of the umbrella potential.
@@ -281,15 +281,15 @@ public:
      * force and potential.
      * \returns the new potential value.
      */
-    double moveUmbrella(const std::vector<DimParams>& dimParams,
-                        const BiasGrid&               grid,
-                        gmx::ArrayRef<const double>   probWeightNeighbor,
-                        ArrayRef<const double>        neighborLambdaDhdl,
-                        gmx::ArrayRef<double>         biasForce,
-                        int64_t                       step,
-                        int64_t                       seed,
-                        int                           indexSeed,
-                        bool                          onlySampleUmbrellaGridpoint);
+    double moveUmbrella(ArrayRef<const DimParams> dimParams,
+                        const BiasGrid&           grid,
+                        ArrayRef<const double>    probWeightNeighbor,
+                        ArrayRef<const double>    neighborLambdaDhdl,
+                        ArrayRef<double>          biasForce,
+                        int64_t                   step,
+                        int64_t                   seed,
+                        int                       indexSeed,
+                        bool                      onlySampleUmbrellaGridpoint);
 
 private:
     /*! \brief
@@ -361,11 +361,11 @@ private:
      * \param[in] multiSimComm  Struct for multi-simulation communication.
      * \returns true if covered.
      */
-    bool isSamplingRegionCovered(const BiasParams&             params,
-                                 const std::vector<DimParams>& dimParams,
-                                 const BiasGrid&               grid,
-                                 const t_commrec*              commRecord,
-                                 const gmx_multisim_t*         multiSimComm) const;
+    bool isSamplingRegionCovered(const BiasParams&         params,
+                                 ArrayRef<const DimParams> dimParams,
+                                 const BiasGrid&           grid,
+                                 const t_commrec*          commRecord,
+                                 const gmx_multisim_t*     multiSimComm) const;
 
     /*! \brief
      * Return the new reference weight histogram size for the current update.
@@ -416,15 +416,15 @@ public:
      * \param[in,out] fplog       Log file.
      * \param[in,out] updateList  Work space to store a temporary list.
      */
-    void updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams>& dimParams,
-                                                  const BiasGrid&               grid,
-                                                  const BiasParams&             params,
-                                                  const t_commrec*              commRecord,
-                                                  const gmx_multisim_t*         ms,
-                                                  double                        t,
-                                                  int64_t                       step,
-                                                  FILE*                         fplog,
-                                                  std::vector<int>*             updateList);
+    void updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParams> dimParams,
+                                                  const BiasGrid&           grid,
+                                                  const BiasParams&         params,
+                                                  const t_commrec*          commRecord,
+                                                  const gmx_multisim_t*     ms,
+                                                  double                    t,
+                                                  int64_t                   step,
+                                                  FILE*                     fplog,
+                                                  std::vector<int>*         updateList);
 
     /*! \brief
      * Update the probability weights and the convolved bias.
@@ -449,8 +449,8 @@ public:
      * \returns the convolved bias.
      */
 
-    double updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams>& dimParams,
-                                                    const BiasGrid&               grid,
+    double updateProbabilityWeightsAndConvolvedBias(ArrayRef<const DimParams> dimParams,
+                                                    const BiasGrid&           grid,
                                                     ArrayRef<const double> neighborLambdaEnergies,
                                                     std::vector<double, AlignedAllocator<double>>* weight) const;
 
@@ -464,7 +464,7 @@ public:
      * \param[in] grid                The grid.
      * \param[in] probWeightNeighbor  Probability weights of the neighbors.
      */
-    void sampleProbabilityWeights(const BiasGrid& grid, gmx::ArrayRef<const double> probWeightNeighbor);
+    void sampleProbabilityWeights(const BiasGrid& grid, ArrayRef<const double> probWeightNeighbor);
 
     /*! \brief
      * Sample the reaction coordinate and PMF for future updates or analysis.
@@ -479,7 +479,7 @@ public:
      */
     void sampleCoordAndPmf(const std::vector<DimParams>& dimParams,
                            const BiasGrid&               grid,
-                           gmx::ArrayRef<const double>   probWeightNeighbor,
+                           ArrayRef<const double>        probWeightNeighbor,
                            double                        convolvedBias);
     /*! \brief
      * Calculates the convolved bias for a given coordinate value.
@@ -496,9 +496,9 @@ public:
      * \param[in] coordValue  Coordinate value.
      * \returns the convolved bias >= -GMX_FLOAT_MAX.
      */
-    double calcConvolvedBias(const std::vector<DimParams>& dimParams,
-                             const BiasGrid&               grid,
-                             const awh_dvec&               coordValue) const;
+    double calcConvolvedBias(ArrayRef<const DimParams> dimParams,
+                             const BiasGrid&           grid,
+                             const awh_dvec&           coordValue) const;
 
     /*! \brief
      * Fills the given array with PMF values.
@@ -509,7 +509,7 @@ public:
      *
      * \param[out] pmf  Array(ref) to be filled with the PMF values, should have the same size as the bias grid.
      */
-    void getPmf(gmx::ArrayRef<float> /*pmf*/) const;
+    void getPmf(ArrayRef<float> /*pmf*/) const;
 
     /*! \brief Returns the current coordinate state.
      */

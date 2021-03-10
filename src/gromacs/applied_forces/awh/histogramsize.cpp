@@ -150,7 +150,7 @@ namespace
  * \param[in] pointStates  The state of the bias points.
  * \returns true if the histogram is equilibrated.
  */
-bool histogramIsEquilibrated(const std::vector<PointState>& pointStates)
+bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates)
 {
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
@@ -207,12 +207,12 @@ bool histogramIsEquilibrated(const std::vector<PointState>& pointStates)
 
 } // namespace
 
-double HistogramSize::newHistogramSize(const BiasParams&              params,
-                                       double                         t,
-                                       bool                           covered,
-                                       const std::vector<PointState>& pointStates,
-                                       ArrayRef<double>               weightsumCovering,
-                                       FILE*                          fplog)
+double HistogramSize::newHistogramSize(const BiasParams&          params,
+                                       double                     t,
+                                       bool                       covered,
+                                       ArrayRef<const PointState> pointStates,
+                                       ArrayRef<double>           weightsumCovering,
+                                       FILE*                      fplog)
 {
     double newHistogramSize;
     if (inInitialStage_)

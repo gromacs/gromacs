@@ -220,14 +220,14 @@ double freeEnergyMinimumValue(gmx::ArrayRef<const PointState> pointState)
  * \param[in] gridpointIndex         The index of the current grid point.
  * \returns the log of the biased probability weight.
  */
-double biasedLogWeightFromPoint(const std::vector<DimParams>&  dimParams,
-                                const std::vector<PointState>& points,
-                                const BiasGrid&                grid,
-                                int                            pointIndex,
-                                double                         pointBias,
-                                const awh_dvec                 value,
-                                gmx::ArrayRef<const double>    neighborLambdaEnergies,
-                                int                            gridpointIndex)
+double biasedLogWeightFromPoint(ArrayRef<const DimParams>  dimParams,
+                                ArrayRef<const PointState> points,
+                                const BiasGrid&            grid,
+                                int                        pointIndex,
+                                double                     pointBias,
+                                const awh_dvec             value,
+                                ArrayRef<const double>     neighborLambdaEnergies,
+                                int                        gridpointIndex)
 {
     double logWeight = detail::c_largeNegativeExponent;
 
@@ -275,9 +275,9 @@ double biasedLogWeightFromPoint(const std::vector<DimParams>&  dimParams,
  * \returns The calculated marginal distribution in a 1D array with
  * as many elements as there are points along the axis of interest.
  */
-std::vector<double> calculateFELambdaMarginalDistribution(const BiasGrid&          grid,
-                                                          gmx::ArrayRef<const int> neighbors,
-                                                          gmx::ArrayRef<const double> probWeightNeighbor)
+std::vector<double> calculateFELambdaMarginalDistribution(const BiasGrid&        grid,
+                                                          ArrayRef<const int>    neighbors,
+                                                          ArrayRef<const double> probWeightNeighbor)
 {
     const std::optional<int> lambdaAxisIndex = grid.lambdaAxisIndex();
     GMX_RELEASE_ASSERT(lambdaAxisIndex,
@@ -297,9 +297,9 @@ std::vector<double> calculateFELambdaMarginalDistribution(const BiasGrid&       
 
 } // namespace
 
-void BiasState::calcConvolvedPmf(const std::vector<DimParams>& dimParams,
-                                 const BiasGrid&               grid,
-                                 std::vector<float>*           convolvedPmf) const
+void BiasState::calcConvolvedPmf(ArrayRef<const DimParams> dimParams,
+                                 const BiasGrid&           grid,
+                                 std::vector<float>*       convolvedPmf) const
 {
     size_t numPoints = grid.numPoints();
 
@@ -348,7 +348,7 @@ namespace
  * \param[in,out] pointState  The state of all points.
  * \param[in]     params      The bias parameters.
  */
-void updateTargetDistribution(gmx::ArrayRef<PointState> pointState, const BiasParams& params)
+void updateTargetDistribution(ArrayRef<PointState> pointState, const BiasParams& params)
 {
     double freeEnergyCutoff = 0;
     if (params.eTarget == AwhTargetType::Cutoff)
@@ -475,11 +475,11 @@ int BiasState::warnForHistogramAnomalies(const BiasGrid& grid, int biasIndex, do
     return numWarnings;
 }
 
-double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams>& dimParams,
-                                                const BiasGrid&               grid,
-                                                int                           point,
-                                                ArrayRef<const double>        neighborLambdaDhdl,
-                                                gmx::ArrayRef<double>         force) const
+double BiasState::calcUmbrellaForceAndPotential(ArrayRef<const DimParams> dimParams,
+                                                const BiasGrid&           grid,
+                                                int                       point,
+                                                ArrayRef<const double>    neighborLambdaDhdl,
+                                                ArrayRef<double>          force) const
 {
     double potential = 0;
     for (size_t d = 0; d < dimParams.size(); d++)
@@ -508,12 +508,12 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams>& di
     return potential;
 }
 
-void BiasState::calcConvolvedForce(const std::vector<DimParams>& dimParams,
-                                   const BiasGrid&               grid,
-                                   gmx::ArrayRef<const double>   probWeightNeighbor,
-                                   ArrayRef<const double>        neighborLambdaDhdl,
-                                   gmx::ArrayRef<double>         forceWorkBuffer,
-                                   gmx::ArrayRef<double>         force) const
+void BiasState::calcConvolvedForce(ArrayRef<const DimParams> dimParams,
+                                   const BiasGrid&           grid,
+                                   ArrayRef<const double>    probWeightNeighbor,
+                                   ArrayRef<const double>    neighborLambdaDhdl,
+                                   ArrayRef<double>          forceWorkBuffer,
+                                   ArrayRef<double>          force) const
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -539,15 +539,15 @@ void BiasState::calcConvolvedForce(const std::vector<DimParams>& dimParams,
     }
 }
 
-double BiasState::moveUmbrella(const std::vector<DimParams>& dimParams,
-                               const BiasGrid&               grid,
-                               gmx::ArrayRef<const double>   probWeightNeighbor,
-                               ArrayRef<const double>        neighborLambdaDhdl,
-                               gmx::ArrayRef<double>         biasForce,
-                               int64_t                       step,
-                               int64_t                       seed,
-                               int                           indexSeed,
-                               bool                          onlySampleUmbrellaGridpoint)
+double BiasState::moveUmbrella(ArrayRef<const DimParams> dimParams,
+                               const BiasGrid&           grid,
+                               ArrayRef<const double>    probWeightNeighbor,
+                               ArrayRef<const double>    neighborLambdaDhdl,
+                               ArrayRef<double>          biasForce,
+                               int64_t                   step,
+                               int64_t                   seed,
+                               int                       indexSeed,
+                               bool                      onlySampleUmbrellaGridpoint)
 {
     /* Generate and set a new coordinate reference value */
     coordState_.sampleUmbrellaGridpoint(
@@ -737,11 +737,11 @@ void mergeSharedUpdateLists(std::vector<int>*     updateList,
  * last update. \param[in] endUpdatelist     The end of the rectangular that has been sampled since
  * last update. \param[in,out] updateList    Local update list to set (assumed >= npoints long).
  */
-void makeLocalUpdateList(const BiasGrid&                grid,
-                         const std::vector<PointState>& points,
-                         const awh_ivec                 originUpdatelist,
-                         const awh_ivec                 endUpdatelist,
-                         std::vector<int>*              updateList)
+void makeLocalUpdateList(const BiasGrid&            grid,
+                         ArrayRef<const PointState> points,
+                         const awh_ivec             originUpdatelist,
+                         const awh_ivec             endUpdatelist,
+                         std::vector<int>*          updateList)
 {
     awh_ivec origin;
     awh_ivec numPoints;
@@ -961,11 +961,11 @@ void labelCoveredPoints(const std::vector<bool>& visited,
 
 } // namespace
 
-bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
-                                        const std::vector<DimParams>& dimParams,
-                                        const BiasGrid&               grid,
-                                        const t_commrec*              commRecord,
-                                        const gmx_multisim_t*         multiSimComm) const
+bool BiasState::isSamplingRegionCovered(const BiasParams&         params,
+                                        ArrayRef<const DimParams> dimParams,
+                                        const BiasGrid&           grid,
+                                        const t_commrec*          commRecord,
+                                        const gmx_multisim_t*     multiSimComm) const
 {
     /* Allocate and initialize arrays: one for checking visits along each dimension,
        one for keeping track of which points to check and one for the covered points.
@@ -1106,15 +1106,15 @@ static void normalizeFreeEnergyAndPmfSum(std::vector<PointState>* pointState)
     }
 }
 
-void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimParams>& dimParams,
-                                                         const BiasGrid&               grid,
-                                                         const BiasParams&             params,
-                                                         const t_commrec*              commRecord,
-                                                         const gmx_multisim_t*         multiSimComm,
-                                                         double                        t,
-                                                         int64_t                       step,
-                                                         FILE*                         fplog,
-                                                         std::vector<int>*             updateList)
+void BiasState::updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParams> dimParams,
+                                                         const BiasGrid&           grid,
+                                                         const BiasParams&         params,
+                                                         const t_commrec*          commRecord,
+                                                         const gmx_multisim_t*     multiSimComm,
+                                                         double                    t,
+                                                         int64_t                   step,
+                                                         FILE*                     fplog,
+                                                         std::vector<int>*         updateList)
 {
     /* Note hat updateList is only used in this scope and is always
      * re-initialized. We do not use a local vector, because that would
@@ -1252,9 +1252,9 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     histogramSize_.incrementNumUpdates();
 }
 
-double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams>& dimParams,
-                                                           const BiasGrid&               grid,
-                                                           gmx::ArrayRef<const double> neighborLambdaEnergies,
+double BiasState::updateProbabilityWeightsAndConvolvedBias(ArrayRef<const DimParams> dimParams,
+                                                           const BiasGrid&           grid,
+                                                           ArrayRef<const double> neighborLambdaEnergies,
                                                            std::vector<double, AlignedAllocator<double>>* weight) const
 {
     /* Only neighbors of the current coordinate value will have a non-negligible chance of getting sampled */
@@ -1340,9 +1340,9 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
     return std::log(weightSum);
 }
 
-double BiasState::calcConvolvedBias(const std::vector<DimParams>& dimParams,
-                                    const BiasGrid&               grid,
-                                    const awh_dvec&               coordValue) const
+double BiasState::calcConvolvedBias(ArrayRef<const DimParams> dimParams,
+                                    const BiasGrid&           grid,
+                                    const awh_dvec&           coordValue) const
 {
     int              point     = grid.nearestIndex(coordValue);
     const GridPoint& gridPoint = grid.point(point);
@@ -1566,7 +1566,7 @@ void BiasState::broadcast(const t_commrec* commRecord)
     gmx_bcast(sizeof(histogramSize_), &histogramSize_, commRecord->mpi_comm_mygroup);
 }
 
-void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>& dimParams, const BiasGrid& grid)
+void BiasState::setFreeEnergyToConvolvedPmf(ArrayRef<const DimParams> dimParams, const BiasGrid& grid)
 {
     std::vector<float> convolvedPmf;
 
@@ -1626,12 +1626,12 @@ static int countTrailingZeroRows(const double* const* data, int numRows, int num
  * \param[in]     biasIndex   The index of the bias.
  * \param[in,out] pointState  The state of the points in this bias.
  */
-static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimParams,
-                                             const BiasGrid&               grid,
-                                             const std::string&            filename,
-                                             int                           numBias,
-                                             int                           biasIndex,
-                                             std::vector<PointState>*      pointState)
+static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams,
+                                             const BiasGrid&           grid,
+                                             const std::string&        filename,
+                                             int                       numBias,
+                                             int                       biasIndex,
+                                             std::vector<PointState>*  pointState)
 {
     /* Read the PMF and target distribution.
        From the PMF, the convolved PMF, or the reference value free energy, can be calculated
@@ -1821,12 +1821,12 @@ void BiasState::normalizePmf(int numSharingSims)
     }
 }
 
-void BiasState::initGridPointState(const AwhBiasParams&          awhBiasParams,
-                                   const std::vector<DimParams>& dimParams,
-                                   const BiasGrid&               grid,
-                                   const BiasParams&             params,
-                                   const std::string&            filename,
-                                   int                           numBias)
+void BiasState::initGridPointState(const AwhBiasParams&      awhBiasParams,
+                                   ArrayRef<const DimParams> dimParams,
+                                   const BiasGrid&           grid,
+                                   const BiasParams&         params,
+                                   const std::string&        filename,
+                                   int                       numBias)
 {
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
@@ -1869,10 +1869,10 @@ void BiasState::initGridPointState(const AwhBiasParams&          awhBiasParams,
     normalizePmf(params.numSharedUpdate);
 }
 
-BiasState::BiasState(const AwhBiasParams&          awhBiasParams,
-                     double                        histogramSizeInitial,
-                     const std::vector<DimParams>& dimParams,
-                     const BiasGrid&               grid) :
+BiasState::BiasState(const AwhBiasParams&      awhBiasParams,
+                     double                    histogramSizeInitial,
+                     ArrayRef<const DimParams> dimParams,
+                     const BiasGrid&           grid) :
     coordState_(awhBiasParams, dimParams, grid),
     points_(grid.numPoints()),
     weightSumCovering_(grid.numPoints()),
