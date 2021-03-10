@@ -123,7 +123,7 @@ void GpuForceReduction::Impl::reinit(DeviceBuffer<Float3>  baseForcePtr,
                                      GpuEventSynchronizer* completionMarker)
 {
     GMX_ASSERT((baseForcePtr != nullptr), "Input base force for reduction has no data");
-    baseForce_        = &(baseForcePtr[atomStart]);
+    baseForce_        = baseForcePtr;
     numAtoms_         = numAtoms;
     atomStart_        = atomStart;
     accumulate_       = accumulate;
@@ -180,6 +180,7 @@ void GpuForceReduction::Impl::execute()
         synchronizer->enqueueWaitEvent(deviceStream_);
     }
 
+    float3* d_baseForce      = &(asFloat3(baseForce_)[atomStart_]);
     float3* d_nbnxmForce     = asFloat3(nbnxmForceToAdd_);
     float3* d_rvecForceToAdd = &(asFloat3(rvecForceToAdd_)[atomStart_]);
 
@@ -198,7 +199,7 @@ void GpuForceReduction::Impl::execute()
                             : (accumulate_ ? reduceKernel<false, true> : reduceKernel<false, false>);
 
     const auto kernelArgs = prepareGpuKernelArguments(
-            kernelFn, config, &d_nbnxmForce, &d_rvecForceToAdd, &baseForce_, &cellInfo_.d_cell, &numAtoms_);
+            kernelFn, config, &d_nbnxmForce, &d_rvecForceToAdd, &d_baseForce, &cellInfo_.d_cell, &numAtoms_);
 
     launchGpuKernel(kernelFn, config, deviceStream_, nullptr, "Force Reduction", kernelArgs);
 
