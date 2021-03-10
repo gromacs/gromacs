@@ -65,7 +65,7 @@
 namespace gmx
 {
 
-struct AwhDimParams;
+class AwhDimParams;
 
 /*! \internal
  * \brief An axis, i.e. dimension, of the grid.
@@ -199,7 +199,7 @@ public:
      * coordinate living on the grid (determines the grid spacing).
      * \param[in] awhDimParams  Dimension params from inputrec.
      */
-    BiasGrid(ArrayRef<const DimParams> dimParams, const AwhDimParams* awhDimParams);
+    BiasGrid(ArrayRef<const DimParams> dimParams, ArrayRef<const AwhDimParams> awhDimParams);
 
     /*! \brief Returns the number of points in the grid.
      *

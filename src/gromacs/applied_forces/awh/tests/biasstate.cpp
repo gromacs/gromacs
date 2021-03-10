@@ -51,6 +51,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -60,87 +61,45 @@ namespace gmx
 namespace test
 {
 
-/*! \internal \brief
- * Struct that gathers all input for setting up and using a Bias
- */
-struct AwhTestParameters
-{
-    double beta; //!< 1/(kB*T)
-
-    AwhDimParams  awhDimParams[2]; //!< Dimension parameters pointed to by \p awhBiasParams
-    AwhBiasParams awhBiasParams;   //!< Bias parameters pointed to by \[ awhParams
-    AwhParams     awhParams;       //!< AWH parameters, this is the struct to actually use
-};
-
-//! Helper function to set up the C-style AWH parameters for the test
-static AwhTestParameters getAwhTestParameters()
-{
-    AwhTestParameters params;
-
-    params.beta = 1.0;
-
-    AwhParams& awhParams = params.awhParams;
-    snew(params.awhParams.awhBiasParams, 1);
-    AwhBiasParams& awhBiasParams = params.awhParams.awhBiasParams[0];
-    snew(awhBiasParams.dimParams, 2);
-
-    AwhDimParams& awhDimParams0 = awhBiasParams.dimParams[0];
-
-    awhDimParams0.period         = 0;
-    awhDimParams0.diffusion      = 0.1;
-    awhDimParams0.origin         = 0.5;
-    awhDimParams0.end            = 1.5;
-    awhDimParams0.coordValueInit = awhDimParams0.origin;
-    awhDimParams0.coverDiameter  = 0;
-    awhDimParams0.eCoordProvider = AwhCoordinateProviderType::Pull;
-
-    AwhDimParams& awhDimParams1 = awhBiasParams.dimParams[1];
-
-    awhDimParams1.period         = 0;
-    awhDimParams1.diffusion      = 0.1;
-    awhDimParams1.origin         = 0.8;
-    awhDimParams1.end            = 1.3;
-    awhDimParams1.coordValueInit = awhDimParams1.origin;
-    awhDimParams1.coverDiameter  = 0;
-    awhDimParams1.eCoordProvider = AwhCoordinateProviderType::Pull;
-
-    awhBiasParams.ndim                 = 2;
-    awhBiasParams.eTarget              = AwhTargetType::Constant;
-    awhBiasParams.targetBetaScaling    = 0;
-    awhBiasParams.targetCutoff         = 0;
-    awhBiasParams.eGrowth              = AwhHistogramGrowthType::Linear;
-    awhBiasParams.bUserData            = TRUE;
-    awhBiasParams.errorInitial         = 0.5;
-    awhBiasParams.shareGroup           = 0;
-    awhBiasParams.equilibrateHistogram = FALSE;
-
-    awhParams.numBias                    = 1;
-    awhParams.seed                       = 93471803;
-    awhParams.nstOut                     = 0;
-    awhParams.nstSampleCoord             = 1;
-    awhParams.numSamplesUpdateFreeEnergy = 10;
-    awhParams.ePotential                 = AwhPotentialType::Convolved;
-    awhParams.shareBiasMultisim          = FALSE;
-
-    return params;
-}
-
 /*! \brief Test fixture for testing Bias updates
  */
 class BiasStateTest : public ::testing::TestWithParam<const char*>
 {
+private:
+    std::unique_ptr<AwhTestParameters> params_;
+
 public:
     std::unique_ptr<BiasState> biasState_; //!< The bias state
 
     BiasStateTest()
     {
-        AwhTestParameters      params        = getAwhTestParameters();
-        const AwhParams&       awhParams     = params.awhParams;
-        const AwhBiasParams&   awhBiasParams = awhParams.awhBiasParams[0];
+        std::vector<std::vector<char>> awhDimParameters;
+        AwhCoordinateProviderType      coordinateProvider = AwhCoordinateProviderType::Pull;
+        double                         diffusion          = 0.1;
+        {
+            int    coordIndex = 0;
+            double origin     = 0.5;
+            double end        = 1.5;
+            double period     = 0;
+            awhDimParameters.emplace_back(awhDimParamSerialized(
+                    coordinateProvider, coordIndex, origin, end, period, diffusion));
+        }
+        {
+            int    coordIndex = 1;
+            double origin     = 0.8;
+            double end        = 1.3;
+            double period     = 0;
+            awhDimParameters.emplace_back(awhDimParamSerialized(
+                    coordinateProvider, coordIndex, origin, end, period, diffusion));
+        }
+        params_                          = std::make_unique<AwhTestParameters>(getAwhTestParameters(
+                AwhHistogramGrowthType::Linear, AwhPotentialType::Convolved, awhDimParameters, 1, 1.0, false, 0.5, 0));
+        const AwhParams&       awhParams = params_->awhParams;
+        const AwhBiasParams&   awhBiasParams = awhParams.awhBiasParams()[0];
         std::vector<DimParams> dimParams;
-        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
-        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
-        BiasGrid   grid(dimParams, awhBiasParams.dimParams);
+        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params_->beta));
+        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params_->beta));
+        BiasGrid   grid(dimParams, awhBiasParams.dimParams());
         BiasParams biasParams(
                 awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
         biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
@@ -148,10 +107,7 @@ public:
         // Here we initialize the grid point state using the input file
         std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
         biasState_->initGridPointState(
-                awhBiasParams, dimParams, grid, biasParams, filename, params.awhParams.numBias);
-
-        sfree(params.awhParams.awhBiasParams[0].dimParams);
-        sfree(params.awhParams.awhBiasParams);
+                awhBiasParams, dimParams, grid, biasParams, filename, params_->awhParams.numBias());
     }
 };
 

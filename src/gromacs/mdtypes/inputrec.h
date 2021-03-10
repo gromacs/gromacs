@@ -59,7 +59,7 @@ struct pull_params_t;
 namespace gmx
 {
 class Awh;
-struct AwhParams;
+class AwhParams;
 class KeyValueTreeObject;
 struct MtsLevel;
 } // namespace gmx
@@ -518,7 +518,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Whether to use AWH biasing for PMF calculations
     gmx_bool bDoAwh;
     //! AWH biasing parameters
-    gmx::AwhParams* awhParams;
+    std::unique_ptr<gmx::AwhParams> awhParams;
 
     /* Enforced rotation data */
     //! Whether to calculate enforced rotation potential(s)

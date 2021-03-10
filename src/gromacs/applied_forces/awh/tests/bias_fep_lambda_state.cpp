@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
@@ -59,83 +60,8 @@ namespace test
 {
 
 //! The number of lambda states to use in the tests.
-const int numLambdaStates = 16;
+static constexpr int c_numLambdaStates = 16;
 
-/*! \internal \brief
- * Struct that gathers all input for setting up and using a Bias
- */
-struct AwhFepLambdaStateTestParameters
-{
-    AwhFepLambdaStateTestParameters() = default;
-    //! Move constructor
-    AwhFepLambdaStateTestParameters(AwhFepLambdaStateTestParameters&& o) noexcept :
-        beta(o.beta),
-        awhDimParams(o.awhDimParams),
-        awhBiasParams(o.awhBiasParams),
-        awhParams(o.awhParams),
-        dimParams(std::move(o.dimParams))
-    {
-        awhBiasParams.dimParams = &awhDimParams;
-        awhParams.awhBiasParams = &awhBiasParams;
-    }
-    double beta; //!< 1/(kB*T)
-
-    AwhDimParams  awhDimParams;  //!< Dimension parameters pointed to by \p awhBiasParams
-    AwhBiasParams awhBiasParams; //!< Bias parameters pointed to by \[ awhParams
-    AwhParams     awhParams;     //!< AWH parameters, this is the struct to actually use
-
-    std::vector<DimParams> dimParams; //!< Dimension parameters for setting up Bias
-};
-
-//! Helper function to set up the C-style AWH parameters for the test
-static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(AwhHistogramGrowthType eawhgrowth,
-                                                                     AwhPotentialType eawhpotential)
-{
-    AwhFepLambdaStateTestParameters params;
-
-    params.beta = 0.4;
-
-    AwhDimParams& awhDimParams = params.awhDimParams;
-
-    awhDimParams.period = 0;
-    // Correction for removal of GaussianGeometryFactor/2 in histogram size
-    awhDimParams.diffusion      = 1e-4 / (0.12927243028700 * 2);
-    awhDimParams.origin         = 0;
-    awhDimParams.end            = numLambdaStates - 1;
-    awhDimParams.coordValueInit = awhDimParams.origin;
-    awhDimParams.coverDiameter  = 0;
-    awhDimParams.eCoordProvider = AwhCoordinateProviderType::FreeEnergyLambda;
-
-    AwhBiasParams& awhBiasParams = params.awhBiasParams;
-
-    awhBiasParams.ndim                 = 1;
-    awhBiasParams.dimParams            = &awhDimParams;
-    awhBiasParams.eTarget              = AwhTargetType::Constant;
-    awhBiasParams.targetBetaScaling    = 0;
-    awhBiasParams.targetCutoff         = 0;
-    awhBiasParams.eGrowth              = eawhgrowth;
-    awhBiasParams.bUserData            = FALSE;
-    awhBiasParams.errorInitial         = 1.0 / params.beta;
-    awhBiasParams.shareGroup           = 0;
-    awhBiasParams.equilibrateHistogram = FALSE;
-
-    int64_t seed = 93471803;
-
-    params.dimParams.push_back(DimParams::fepLambdaDimParams(numLambdaStates, params.beta));
-
-    AwhParams& awhParams = params.awhParams;
-
-    awhParams.numBias                    = 1;
-    awhParams.awhBiasParams              = &awhBiasParams;
-    awhParams.seed                       = seed;
-    awhParams.nstOut                     = 0;
-    awhParams.nstSampleCoord             = 1;
-    awhParams.numSamplesUpdateFreeEnergy = 10;
-    awhParams.ePotential                 = eawhpotential;
-    awhParams.shareBiasMultisim          = FALSE;
-
-    return params;
-}
 
 //! Convenience typedef: growth type enum, potential type enum, disable update skips
 typedef std::tuple<AwhHistogramGrowthType, AwhPotentialType, BiasParams::DisableUpdateSkips> BiasTestParameters;
@@ -144,6 +70,10 @@ typedef std::tuple<AwhHistogramGrowthType, AwhPotentialType, BiasParams::Disable
  */
 class BiasFepLambdaStateTest : public ::testing::TestWithParam<BiasTestParameters>
 {
+private:
+    //! Storage for test parameters.
+    std::unique_ptr<AwhTestParameters> params_;
+
 public:
     //! Random seed for AWH MC sampling
     int64_t seed_;
@@ -177,18 +107,28 @@ public:
         /* Set up a basic AWH setup with a single, 1D bias with parameters
          * such that we can measure the effects of different parameters.
          */
-        const AwhFepLambdaStateTestParameters params =
-                getAwhFepLambdaTestParameters(eawhgrowth, eawhpotential);
+        constexpr AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::FreeEnergyLambda;
+        constexpr int                       coordIndex = 0;
+        constexpr double                    origin     = 0;
+        constexpr double                    end        = c_numLambdaStates - 1;
+        constexpr double                    period     = 0;
+        // Correction for removal of GaussianGeometryFactor/2 in histogram size
+        constexpr double diffusion = 1e-4 / (0.12927243028700 * 2);
+        const auto       awhDimBuffer =
+                awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
+        const auto awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
+        params_                   = std::make_unique<AwhTestParameters>(getAwhTestParameters(
+                eawhgrowth, eawhpotential, awhDimArrayRef, false, 0.4, true, 1.0, c_numLambdaStates));
 
-        seed_ = params.awhParams.seed;
+        seed_ = params_->awhParams.seed();
 
         double mdTimeStep = 0.1;
 
         bias_ = std::make_unique<Bias>(-1,
-                                       params.awhParams,
-                                       params.awhBiasParams,
-                                       params.dimParams,
-                                       params.beta,
+                                       params_->awhParams,
+                                       params_->awhParams.awhBiasParams()[0],
+                                       params_->dimParams,
+                                       params_->beta,
                                        mdTimeStep,
                                        1,
                                        "",
@@ -221,10 +161,10 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
     int    nSteps        = 501;
 
     /* Some energies to use as base values (to which some noise is added later on). */
-    std::vector<double> neighborLambdaEnergies(numLambdaStates);
-    std::vector<double> neighborLambdaDhdl(numLambdaStates);
+    std::vector<double> neighborLambdaEnergies(c_numLambdaStates);
+    std::vector<double> neighborLambdaDhdl(c_numLambdaStates);
     const double        magnitude = 12.0;
-    for (int i = 0; i < numLambdaStates; i++)
+    for (int i = 0; i < c_numLambdaStates; i++)
     {
         neighborLambdaEnergies[i] = magnitude * std::sin(i * 0.1);
         neighborLambdaDhdl[i]     = magnitude * std::cos(i * 0.1);
@@ -294,14 +234,29 @@ INSTANTIATE_TEST_CASE_P(WithParameters,
 // Test that we detect coverings and exit the initial stage at the correct step
 TEST(BiasFepLambdaStateTest, DetectsCovering)
 {
-    const AwhFepLambdaStateTestParameters params = getAwhFepLambdaTestParameters(
-            AwhHistogramGrowthType::ExponentialLinear, AwhPotentialType::Convolved);
+    constexpr AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::FreeEnergyLambda;
+    constexpr int                       coordIndex         = 0;
+    constexpr double                    origin             = 0;
+    constexpr double                    end                = c_numLambdaStates - 1;
+    constexpr double                    period             = 0;
+    constexpr double                    diffusion          = 1e-4 / (0.12927243028700 * 2);
+    auto                                awhDimBuffer =
+            awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
+    auto                    awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
+    const AwhTestParameters params(getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,
+                                                        AwhPotentialType::Convolved,
+                                                        awhDimArrayRef,
+                                                        false,
+                                                        0.4,
+                                                        true,
+                                                        1.0,
+                                                        c_numLambdaStates));
 
     const double mdTimeStep = 0.1;
 
     Bias bias(-1,
               params.awhParams,
-              params.awhBiasParams,
+              params.awhParams.awhBiasParams()[0],
               params.dimParams,
               params.beta,
               mdTimeStep,
@@ -314,10 +269,10 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
     bool inInitialStage = bias.state().inInitialStage();
 
     /* Some energies to use as base values (to which some noise is added later on). */
-    std::vector<double> neighborLambdaEnergies(numLambdaStates);
-    std::vector<double> neighborLambdaDhdl(numLambdaStates);
+    std::vector<double> neighborLambdaEnergies(c_numLambdaStates);
+    std::vector<double> neighborLambdaDhdl(c_numLambdaStates);
     const double        magnitude = 12.0;
-    for (int i = 0; i < numLambdaStates; i++)
+    for (int i = 0; i < c_numLambdaStates; i++)
     {
         neighborLambdaEnergies[i] = magnitude * std::sin(i * 0.1);
         neighborLambdaDhdl[i]     = magnitude * std::cos(i * 0.1);
@@ -341,7 +296,7 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
                                     nullptr,
                                     step,
                                     step,
-                                    params.awhParams.seed,
+                                    params.awhParams.seed(),
                                     nullptr);
 
         inInitialStage = bias.state().inInitialStage();

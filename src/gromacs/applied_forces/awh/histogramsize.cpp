@@ -67,8 +67,8 @@ namespace gmx
 HistogramSize::HistogramSize(const AwhBiasParams& awhBiasParams, double histogramSizeInitial) :
     numUpdates_(0),
     histogramSize_(histogramSizeInitial),
-    inInitialStage_(awhBiasParams.eGrowth == AwhHistogramGrowthType::ExponentialLinear),
-    equilibrateHistogram_(awhBiasParams.equilibrateHistogram),
+    inInitialStage_(awhBiasParams.growthType() == AwhHistogramGrowthType::ExponentialLinear),
+    equilibrateHistogram_(awhBiasParams.equilibrateHistogram()),
     logScaledSampleWeight_(0),
     maxLogScaledSampleWeight_(0),
     havePrintedAboutCovering_(false)

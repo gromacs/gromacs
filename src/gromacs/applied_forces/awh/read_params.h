@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,23 +59,17 @@ enum class PbcType : int;
 
 namespace gmx
 {
-struct AwhParams;
 
-/*! \brief Allocate and initialize the AWH parameters with values from the input file.
- *
- * \param[in,out] inp          Input file entries.
- * \param[in,out] wi           Struct for bookeeping warnings.
- * \returns AWH parameters.
- */
-AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi);
+class AwhParams;
+class ISerializer;
 
 /*! \brief Check the AWH parameters.
  *
- * \param[in,out] awhParams    The AWH parameters.
+ * \param[in]     awhParams    The AWH parameters.
  * \param[in]     inputrec     Input parameter struct.
  * \param[in,out] wi           Struct for bookeeping warnings.
  */
-void checkAwhParams(const AwhParams* awhParams, const t_inputrec* inputrec, warninp_t wi);
+void checkAwhParams(const AwhParams& awhParams, const t_inputrec& inputrec, warninp_t wi);
 
 
 /*! \brief

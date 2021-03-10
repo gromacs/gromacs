@@ -81,7 +81,7 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
      * (this could be made a user-option but there is most likely no big need
      * for tweaking this for most users).
      */
-    switch (awhBiasParams.eTarget)
+    switch (awhBiasParams.targetDistribution())
     {
         case AwhTargetType::Constant: numStepsUpdateTarget = 0; break;
         case AwhTargetType::Cutoff:
@@ -89,9 +89,9 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
             /* Updating the target generally requires updating the whole grid so to keep the cost
                down we generally update the target less often than the free energy (unless the free
                energy update step is set to > 100 samples). */
-            numStepsUpdateTarget = std::max(100 % awhParams.numSamplesUpdateFreeEnergy,
-                                            awhParams.numSamplesUpdateFreeEnergy)
-                                   * awhParams.nstSampleCoord;
+            numStepsUpdateTarget = std::max(100 % awhParams.numSamplesUpdateFreeEnergy(),
+                                            awhParams.numSamplesUpdateFreeEnergy())
+                                   * awhParams.nstSampleCoord();
             break;
         case AwhTargetType::LocalBoltzmann:
             /* The target distribution is set equal to the reference histogram which is updated every free energy update.
@@ -100,7 +100,7 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
                target distribution. One could avoid the global update by making a local target update function (and
                postponing target updates for non-local points as for the free energy update). We avoid such additions
                for now and accept that this target type always does global updates. */
-            numStepsUpdateTarget = awhParams.numSamplesUpdateFreeEnergy * awhParams.nstSampleCoord;
+            numStepsUpdateTarget = awhParams.numSamplesUpdateFreeEnergy() * awhParams.nstSampleCoord();
             break;
         default: GMX_RELEASE_ASSERT(false, "Unknown AWH target type"); break;
     }
@@ -152,11 +152,11 @@ int64_t calcCheckCoveringInterval(const AwhParams&          awhParams,
     /* Convert to number of steps using the sampling frequency. The
        check interval should be a multiple of the update step
        interval. */
-    int numStepsUpdate = awhParams.numSamplesUpdateFreeEnergy * awhParams.nstSampleCoord;
-    GMX_RELEASE_ASSERT(awhParams.numSamplesUpdateFreeEnergy > 0,
+    int numStepsUpdate = awhParams.numSamplesUpdateFreeEnergy() * awhParams.nstSampleCoord();
+    GMX_RELEASE_ASSERT(awhParams.numSamplesUpdateFreeEnergy() > 0,
                        "When checking for AWH coverings, the number of samples per AWH update need "
                        "to be > 0.");
-    int numUpdatesCheck = std::max(1, minNumSamplesCover / awhParams.numSamplesUpdateFreeEnergy);
+    int numUpdatesCheck = std::max(1, minNumSamplesCover / awhParams.numSamplesUpdateFreeEnergy());
     int numStepsCheck   = numUpdatesCheck * numStepsUpdate;
 
     GMX_RELEASE_ASSERT(numStepsCheck % numStepsUpdate == 0,
@@ -182,16 +182,17 @@ double getInitialHistogramSizeEstimate(const AwhBiasParams&     awhBiasParams,
     /* Get diffusion factor */
     double              maxCrossingTime = 0.;
     std::vector<double> x;
+    const auto          awhDimParams = awhBiasParams.dimParams();
     for (size_t d = 0; d < gridAxis.size(); d++)
     {
-        GMX_RELEASE_ASSERT(awhBiasParams.dimParams[d].diffusion > 0, "We need positive diffusion");
+        GMX_RELEASE_ASSERT(awhDimParams[d].diffusion() > 0, "We need positive diffusion");
         // With diffusion it takes on average T = L^2/2D time to cross length L
         double axisLength   = gridAxis[d].isFepLambdaAxis() ? 1.0 : gridAxis[d].length();
-        double crossingTime = (axisLength * axisLength) / (2 * awhBiasParams.dimParams[d].diffusion);
+        double crossingTime = (axisLength * axisLength) / (2 * awhDimParams[d].diffusion());
         maxCrossingTime     = std::max(maxCrossingTime, crossingTime);
     }
     GMX_RELEASE_ASSERT(maxCrossingTime > 0, "We need at least one dimension with non-zero length");
-    double errorInitialInKT = beta * awhBiasParams.errorInitial;
+    double errorInitialInKT = beta * awhBiasParams.initialErrorEstimate();
     double histogramSize    = maxCrossingTime / (gmx::square(errorInitialInKT) * samplingTimestep);
 
     return histogramSize;
@@ -209,7 +210,7 @@ int getNumSharedUpdate(const AwhBiasParams& awhBiasParams, int numSharingSimulat
 
     int numShared = 1;
 
-    if (awhBiasParams.shareGroup > 0)
+    if (awhBiasParams.shareGroup() > 0)
     {
         /* We do not yet support sharing within a simulation */
         int numSharedWithinThisSimulation = 1;
@@ -231,21 +232,21 @@ BiasParams::BiasParams(const AwhParams&          awhParams,
                        ArrayRef<const GridAxis>  gridAxis,
                        int                       biasIndex) :
     invBeta(beta > 0 ? 1 / beta : 0),
-    numStepsSampleCoord_(awhParams.nstSampleCoord),
-    numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy),
+    numStepsSampleCoord_(awhParams.nstSampleCoord()),
+    numSamplesUpdateFreeEnergy_(awhParams.numSamplesUpdateFreeEnergy()),
     numStepsUpdateTarget_(calcTargetUpdateInterval(awhParams, awhBiasParams)),
     numStepsCheckCovering_(calcCheckCoveringInterval(awhParams, dimParams, gridAxis)),
-    eTarget(awhBiasParams.eTarget),
-    freeEnergyCutoffInKT(beta * awhBiasParams.targetCutoff),
-    temperatureScaleFactor(awhBiasParams.targetBetaScaling),
+    eTarget(awhBiasParams.targetDistribution()),
+    freeEnergyCutoffInKT(beta * awhBiasParams.targetCutoff()),
+    temperatureScaleFactor(awhBiasParams.targetBetaScaling()),
     idealWeighthistUpdate(eTarget != AwhTargetType::LocalBoltzmann),
     numSharedUpdate(getNumSharedUpdate(awhBiasParams, numSharingSimulations)),
     updateWeight(numSamplesUpdateFreeEnergy_ * numSharedUpdate),
     localWeightScaling(eTarget == AwhTargetType::LocalBoltzmann ? temperatureScaleFactor : 1),
-    initialErrorInKT(beta * awhBiasParams.errorInitial),
+    initialErrorInKT(beta * awhBiasParams.initialErrorEstimate()),
     initialHistogramSize(
             getInitialHistogramSizeEstimate(awhBiasParams, gridAxis, beta, numStepsSampleCoord_ * mdTimeStep)),
-    convolveForce(awhParams.ePotential == AwhPotentialType::Convolved),
+    convolveForce(awhParams.potential() == AwhPotentialType::Convolved),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)
 {
@@ -254,11 +255,12 @@ BiasParams::BiasParams(const AwhParams&          awhParams,
         GMX_THROW(InvalidInputError("To use AWH, the beta=1/(k_B T) should be > 0"));
     }
 
-    for (int d = 0; d < awhBiasParams.ndim; d++)
+    const auto& awhDimParams = awhBiasParams.dimParams();
+    for (int d = 0; d < gmx::ssize(awhDimParams); d++)
     {
         /* The spacing in FEP dimensions is 1. The calculated coverRadius will be in lambda states
          * (cf points in other dimensions). */
-        double coverRadiusInNm = 0.5 * awhBiasParams.dimParams[d].coverDiameter;
+        double coverRadiusInNm = 0.5 * awhDimParams[d].coverDiameter();
         double spacing         = gridAxis[d].spacing();
         coverRadius_[d] = spacing > 0 ? static_cast<int>(std::round(coverRadiusInNm / spacing)) : 0;
     }

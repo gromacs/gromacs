@@ -53,6 +53,7 @@
 #include <numeric>
 
 #include "gromacs/applied_forces/awh/awh.h"
+#include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/dlbtiming.h"
@@ -285,7 +286,7 @@ void gmx::LegacySimulator::do_md()
         // a user can't just do multi-sim with single-sim orientation restraints.
         bool usingEnsembleRestraints =
                 (fcdata.disres->nsystems > 1) || ((ms != nullptr) && (fcdata.orires->nr != 0));
-        bool awhUsesMultiSim = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
+        bool awhUsesMultiSim = (ir->bDoAwh && ir->awhParams->shareBiasMultisim() && (ms != nullptr));
 
         // Replica exchange, ensemble restraints and AWH need all
         // simulations to remain synchronized, so they need
@@ -599,7 +600,7 @@ void gmx::LegacySimulator::do_md()
         }
         if (ir->bDoAwh)
         {
-            nstfep = std::gcd(ir->awhParams->nstSampleCoord, nstfep);
+            nstfep = std::gcd(ir->awhParams->nstSampleCoord(), nstfep);
         }
     }
 

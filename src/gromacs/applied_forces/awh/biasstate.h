@@ -75,7 +75,6 @@ namespace gmx
 template<typename>
 class ArrayRef;
 struct AwhBiasHistory;
-struct AwhBiasParams;
 class BiasParams;
 class BiasGrid;
 class GridAxis;

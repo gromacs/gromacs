@@ -37,7 +37,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "readir.h"
 
 #include <cctype>
@@ -61,6 +60,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
@@ -2223,7 +2223,7 @@ void get_ir(const char*     mdparin,
     ir->bDoAwh = (getEnum<Boolean>(&inp, "awh", wi) != Boolean::No);
     if (ir->bDoAwh)
     {
-        ir->awhParams = gmx::readAwhParams(&inp, wi);
+        ir->awhParams = std::make_unique<gmx::AwhParams>(&inp, *ir, wi);
     }
 
     /* Enforced rotation */
@@ -2784,7 +2784,7 @@ void get_ir(const char*     mdparin,
 
     if (ir->bDoAwh)
     {
-        gmx::checkAwhParams(ir->awhParams, ir, wi);
+        gmx::checkAwhParams(*ir->awhParams, *ir, wi);
     }
 
     sfree(dumstr[0]);

@@ -58,7 +58,7 @@ namespace gmx
 
 template<typename>
 class ArrayRef;
-struct AwhParams;
+class AwhParams;
 
 /*! \brief Returns if any bias is sharing within a simulation.
  *

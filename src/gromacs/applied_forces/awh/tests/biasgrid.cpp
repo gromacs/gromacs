@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,9 @@
 
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/inmemoryserializer.h"
 
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/testasserts.h"
 
 namespace gmx
@@ -71,15 +73,29 @@ TEST(biasGridTest, neighborhood)
      */
 
     const int                 numDim = 2;
-    std::vector<AwhDimParams> awhDimParams(numDim);
-
-    awhDimParams[0].origin = -5;
-    awhDimParams[0].end    = 5;
-    awhDimParams[0].period = 10;
-
-    awhDimParams[1].origin = 0.5;
-    awhDimParams[1].end    = 2.0;
-    awhDimParams[1].period = 0;
+    std::vector<AwhDimParams> awhDimParams;
+    AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::Pull;
+    double                    diffusion          = 0.1;
+    {
+        int    coordIndex = 0;
+        double origin     = -5;
+        double end        = 5;
+        double period     = 10;
+        auto   awhDimBuffer =
+                awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
+        gmx::InMemoryDeserializer serializer(awhDimBuffer, false);
+        awhDimParams.emplace_back(AwhDimParams(&serializer));
+    }
+    {
+        int    coordIndex = 1;
+        double origin     = 0.5;
+        double end        = 2;
+        double period     = 0;
+        auto   awhDimBuffer =
+                awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
+        gmx::InMemoryDeserializer serializer(awhDimBuffer, false);
+        awhDimParams.emplace_back(AwhDimParams(&serializer));
+    }
 
     const real conversionFactor = 1;
     const real beta             = 3.0;
@@ -89,7 +105,7 @@ TEST(biasGridTest, neighborhood)
     dimParams.push_back(DimParams::pullDimParams(conversionFactor, 1 / (beta * 0.7 * 0.7), beta));
     dimParams.push_back(DimParams::pullDimParams(conversionFactor, 1 / (beta * 0.1 * 0.1), beta));
 
-    BiasGrid grid(dimParams, awhDimParams.data());
+    BiasGrid grid(dimParams, awhDimParams);
 
     const int numPoints = grid.numPoints();
 

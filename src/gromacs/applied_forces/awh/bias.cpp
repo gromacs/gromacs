@@ -370,7 +370,7 @@ Bias::Bias(int                            biasIndexInCollection,
            ThisRankWillDoIO               thisRankWillDoIO,
            BiasParams::DisableUpdateSkips disableUpdateSkips) :
     dimParams_(dimParamsInit.begin(), dimParamsInit.end()),
-    grid_(dimParamsInit, awhBiasParams.dimParams),
+    grid_(dimParamsInit, awhBiasParams.dimParams()),
     params_(awhParams,
             awhBiasParams,
             dimParams_,
@@ -390,7 +390,8 @@ Bias::Bias(int                            biasIndexInCollection,
     /* For a global update updateList covers all points, so reserve that */
     updateList_.reserve(grid_.numPoints());
 
-    state_.initGridPointState(awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias);
+    state_.initGridPointState(
+            awhBiasParams, dimParams_, grid_, params_, biasInitFilename, awhParams.numBias());
 
     if (thisRankDoesIO_)
     {
@@ -406,7 +407,7 @@ Bias::Bias(int                            biasIndexInCollection,
                                                   ndim(),
                                                   blockLength,
                                                   CorrelationGrid::BlockLengthMeasure::Time,
-                                                  awhParams.nstSampleCoord * mdTimeStep);
+                                                  awhParams.nstSampleCoord() * mdTimeStep);
 
         writer_ = std::make_unique<BiasWriter>(*this);
     }

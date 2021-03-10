@@ -52,6 +52,7 @@
 #include <memory>
 #include <string>
 
+#include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -122,7 +123,7 @@ public:
      */
     void initializeAwhOutputFile(int                  subBlockStart,
                                  int                  numSubBlocks,
-                                 const AwhBiasParams* awhBiasParams,
+                                 const AwhBiasParams& awhBiasParams,
                                  AwhGraphSelection    graphSelection,
                                  EnergyUnit           energyUnit,
                                  real                 kTValue);
@@ -137,7 +138,7 @@ public:
      */
     void initializeFrictionOutputFile(int                  subBlockStart,
                                       int                  numSubBlocks,
-                                      const AwhBiasParams* awhBiasParams,
+                                      const AwhBiasParams& awhBiasParams,
                                       EnergyUnit           energyUnit,
                                       real                 kTValue);
 
@@ -210,7 +211,7 @@ class AwhReader
 {
 public:
     //! Constructor
-    AwhReader(const AwhParams*  awhParams,
+    AwhReader(const AwhParams&  awhParams,
               int               numFileOptions,
               const t_filenm*   filenames,
               AwhGraphSelection awhGraphSelection,
@@ -246,7 +247,7 @@ enum class OutputFileType
 constexpr int maxAwhGraphs = 6;
 
 /*! \brief Constructs a legend for a standard awh output file */
-std::vector<std::string> makeLegend(const AwhBiasParams* awhBiasParams,
+std::vector<std::string> makeLegend(const AwhBiasParams& awhBiasParams,
                                     OutputFileType       outputFileType,
                                     size_t               numLegend)
 {
@@ -259,7 +260,7 @@ std::vector<std::string> makeLegend(const AwhBiasParams* awhBiasParams,
 
     std::vector<std::string> legend;
     /* Give legends to dimensions higher than the first */
-    for (int d = 1; d < awhBiasParams->ndim; d++)
+    for (int d = 1; d < awhBiasParams.ndim(); d++)
     {
         legend.push_back(gmx::formatString("dim%d", d));
     }
@@ -278,7 +279,7 @@ std::vector<std::string> makeLegend(const AwhBiasParams* awhBiasParams,
         }
         break;
         case OutputFileType::Friction:
-            for (int i0 = 0; i0 < awhBiasParams->ndim; i0++)
+            for (int i0 = 0; i0 < awhBiasParams.ndim(); i0++)
             {
                 for (int i1 = 0; i1 <= i0; i1++)
                 {
@@ -315,13 +316,13 @@ OutputFile::OutputFile(const std::string& filename, const std::string& baseTitle
 
 void OutputFile::initializeAwhOutputFile(int                  subblockStart,
                                          int                  numSubBlocks,
-                                         const AwhBiasParams* awhBiasParams,
+                                         const AwhBiasParams& awhBiasParams,
                                          AwhGraphSelection    graphSelection,
                                          EnergyUnit           energyUnit,
                                          real                 kTValue)
 {
     /* The first subblock with actual graph y-values is index 1 + ndim */
-    numDim_             = awhBiasParams->ndim;
+    numDim_             = awhBiasParams.ndim();
     firstGraphSubBlock_ = subblockStart + 1 + numDim_;
     if (graphSelection == AwhGraphSelection::All)
     {
@@ -347,19 +348,19 @@ void OutputFile::initializeAwhOutputFile(int                  subblockStart,
     if (graphSelection == AwhGraphSelection::All)
     {
         yLabel_ += gmx::formatString(
-                ", (nm\\S-%d\\N or rad\\S-%d\\N), (-)", awhBiasParams->ndim, awhBiasParams->ndim);
+                ", (nm\\S-%d\\N or rad\\S-%d\\N), (-)", awhBiasParams.ndim(), awhBiasParams.ndim());
     }
 }
 
 /*! \brief Initializes the output file setup for the fricion output (note that the filename is not set here). */
 void OutputFile::initializeFrictionOutputFile(int                  subBlockStart,
                                               int                  numSubBlocks,
-                                              const AwhBiasParams* awhBiasParams,
+                                              const AwhBiasParams& awhBiasParams,
                                               EnergyUnit           energyUnit,
                                               real                 kTValue)
 {
     /* The first subblock with actual graph y-values is index 1 + ndim */
-    numDim_               = awhBiasParams->ndim;
+    numDim_               = awhBiasParams.ndim();
     int numTensorElements = (numDim_ * (numDim_ + 1)) / 2;
 
     /* The friction tensor elements are always the last subblocks */
@@ -392,7 +393,7 @@ void OutputFile::initializeFrictionOutputFile(int                  subBlockStart
     }
 }
 
-AwhReader::AwhReader(const AwhParams*  awhParams,
+AwhReader::AwhReader(const AwhParams&  awhParams,
                      int               numFileOptions,
                      const t_filenm*   filenames,
                      AwhGraphSelection awhGraphSelection,
@@ -413,14 +414,14 @@ AwhReader::AwhReader(const AwhParams*  awhParams,
 
     /* Keep track of the first subblock of this AWH */
     int subblockStart = 0;
-    for (int k = 0; k < awhParams->numBias; k++)
+    for (int k = 0; k < awhParams.numBias(); k++)
     {
-        AwhBiasParams* awhBiasParams = &awhParams->awhBiasParams[k];
+        const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams()[k];
 
         int numSubBlocks = static_cast<int>(block->sub[subblockStart].fval[0]);
 
         std::unique_ptr<OutputFile> awhOutputFile(new OutputFile(
-                opt2fn("-o", numFileOptions, filenames), "AWH", awhParams->numBias, k));
+                opt2fn("-o", numFileOptions, filenames), "AWH", awhParams.numBias(), k));
 
         awhOutputFile->initializeAwhOutputFile(
                 subblockStart, numSubBlocks, awhBiasParams, awhGraphSelection, energyUnit, kT);
@@ -429,7 +430,7 @@ AwhReader::AwhReader(const AwhParams*  awhParams,
         if (outputFriction)
         {
             frictionOutputFile = std::make_unique<OutputFile>(
-                    opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams->numBias, k);
+                    opt2fn("-fric", numFileOptions, filenames), "Friction tensor", awhParams.numBias(), k);
 
             frictionOutputFile->initializeFrictionOutputFile(
                     subblockStart, numSubBlocks, awhBiasParams, energyUnit, kT);
@@ -630,7 +631,7 @@ int gmx_awh(int argc, char* argv[])
                 AwhGraphSelection awhGraphSelection =
                         (moreGraphs ? AwhGraphSelection::All : AwhGraphSelection::Pmf);
                 EnergyUnit energyUnit = (kTUnit ? EnergyUnit::KT : EnergyUnit::KJPerMol);
-                awhReader             = std::make_unique<AwhReader>(ir.awhParams,
+                awhReader             = std::make_unique<AwhReader>(*ir.awhParams,
                                                         nfile,
                                                         fnm,
                                                         awhGraphSelection,

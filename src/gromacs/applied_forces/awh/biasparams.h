@@ -62,8 +62,8 @@ namespace gmx
 
 template<typename>
 class ArrayRef;
-struct AwhBiasParams;
-struct AwhParams;
+class AwhBiasParams;
+class AwhParams;
 struct DimParams;
 class GridAxis;
 enum class AwhTargetType : int;

@@ -73,9 +73,9 @@ namespace gmx
 {
 
 struct AwhBiasHistory;
-struct AwhBiasParams;
+class AwhBiasParams;
 struct AwhHistory;
-struct AwhParams;
+class AwhParams;
 struct AwhPointStateHistory;
 class CorrelationGrid;
 class BiasGrid;

@@ -67,9 +67,12 @@ CoordState::CoordState(const AwhBiasParams&      awhBiasParams,
                        ArrayRef<const DimParams> dimParams,
                        const BiasGrid&           grid)
 {
-    for (size_t d = 0; d < dimParams.size(); d++)
+    GMX_RELEASE_ASSERT(awhBiasParams.ndim() == dimParams.ssize(),
+                       "Need to have identical size for dimensions");
+    const auto& awhDimParams = awhBiasParams.dimParams();
+    for (int d = 0; d < gmx::ssize(awhDimParams); d++)
     {
-        coordValue_[d] = dimParams[d].scaleUserInputToInternal(awhBiasParams.dimParams[d].coordValueInit);
+        coordValue_[d] = dimParams[d].scaleUserInputToInternal(awhDimParams[d].initialCoordinate());
     }
 
     /* The grid-point index is always the nearest point to the coordinate.

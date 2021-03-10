@@ -2412,7 +2412,7 @@ int gmx_grompp(int argc, char* argv[])
             copy_mat(ir->compress, compressibility);
         }
         setStateDependentAwhParams(
-                ir->awhParams,
+                ir->awhParams.get(),
                 *ir->pull,
                 pull,
                 state.box,

@@ -49,6 +49,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
@@ -75,6 +76,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
@@ -652,73 +654,6 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
     {
         fepvals->lambda_start_n = 0;
         fepvals->lambda_stop_n  = fepvals->n_lambda;
-    }
-}
-
-static void do_awhBias(gmx::ISerializer* serializer, gmx::AwhBiasParams* awhBiasParams, int gmx_unused file_version)
-{
-    serializer->doEnumAsInt(&awhBiasParams->eTarget);
-    serializer->doDouble(&awhBiasParams->targetBetaScaling);
-    serializer->doDouble(&awhBiasParams->targetCutoff);
-    serializer->doEnumAsInt(&awhBiasParams->eGrowth);
-    if (serializer->reading())
-    {
-        int temp = 0;
-        serializer->doInt(&temp);
-        awhBiasParams->bUserData = static_cast<bool>(temp);
-    }
-    else
-    {
-        int temp = static_cast<int>(awhBiasParams->bUserData);
-        serializer->doInt(&temp);
-    }
-    serializer->doDouble(&awhBiasParams->errorInitial);
-    serializer->doInt(&awhBiasParams->ndim);
-    serializer->doInt(&awhBiasParams->shareGroup);
-    serializer->doBool(&awhBiasParams->equilibrateHistogram);
-
-    if (serializer->reading())
-    {
-        snew(awhBiasParams->dimParams, awhBiasParams->ndim);
-    }
-
-    for (int d = 0; d < awhBiasParams->ndim; d++)
-    {
-        gmx::AwhDimParams* dimParams = &awhBiasParams->dimParams[d];
-
-        serializer->doEnumAsInt(&dimParams->eCoordProvider);
-        serializer->doInt(&dimParams->coordIndex);
-        serializer->doDouble(&dimParams->origin);
-        serializer->doDouble(&dimParams->end);
-        serializer->doDouble(&dimParams->period);
-        serializer->doDouble(&dimParams->forceConstant);
-        serializer->doDouble(&dimParams->diffusion);
-        serializer->doDouble(&dimParams->coordValueInit);
-        serializer->doDouble(&dimParams->coverDiameter);
-    }
-}
-
-static void do_awh(gmx::ISerializer* serializer, gmx::AwhParams* awhParams, int gmx_unused file_version)
-{
-    serializer->doInt(&awhParams->numBias);
-    serializer->doInt(&awhParams->nstOut);
-    serializer->doInt64(&awhParams->seed);
-    serializer->doInt(&awhParams->nstSampleCoord);
-    serializer->doInt(&awhParams->numSamplesUpdateFreeEnergy);
-    serializer->doEnumAsInt(&awhParams->ePotential);
-    serializer->doBool(&awhParams->shareBiasMultisim);
-
-    if (awhParams->numBias > 0)
-    {
-        if (serializer->reading())
-        {
-            snew(awhParams->awhBiasParams, awhParams->numBias);
-        }
-
-        for (int k = 0; k < awhParams->numBias; k++)
-        {
-            do_awhBias(serializer, &awhParams->awhBiasParams[k], file_version);
-        }
     }
 }
 
@@ -1568,9 +1503,12 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                snew(ir->awhParams, 1);
+                ir->awhParams = std::make_unique<gmx::AwhParams>(serializer);
             }
-            do_awh(serializer, ir->awhParams, file_version);
+            else
+            {
+                ir->awhParams->serialize(serializer);
+            }
         }
     }
     else

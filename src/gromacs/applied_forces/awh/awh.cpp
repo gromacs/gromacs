@@ -54,6 +54,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/gmxlib/network.h"
@@ -115,10 +116,9 @@ struct BiasCoupledToSystem
  */
 static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
 {
-    for (int d = 0; d < awhBiasParams.ndim; d++)
+    for (const auto& awhDimParam : awhBiasParams.dimParams())
     {
-        const AwhDimParams& awhDimParams = awhBiasParams.dimParams[d];
-        if (awhDimParams.eCoordProvider == AwhCoordinateProviderType::Pull)
+        if (awhDimParam.coordinateProvider() == AwhCoordinateProviderType::Pull)
         {
             return true;
         }
@@ -133,10 +133,9 @@ static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
  */
 static bool anyDimUsesPull(const AwhParams& awhParams)
 {
-    for (int k = 0; k < awhParams.numBias; k++)
+    for (const auto& awhBiasParam : awhParams.awhBiasParams())
     {
-        const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams[k];
-        if (anyDimUsesPull(awhBiasParams))
+        if (anyDimUsesPull(awhBiasParam))
         {
             return true;
         }
@@ -180,8 +179,8 @@ Awh::Awh(FILE*                 fplog,
          pull_t*               pull_work,
          int                   numFepLambdaStates,
          int                   fepLambdaState) :
-    seed_(awhParams.seed),
-    nstout_(awhParams.nstOut),
+    seed_(awhParams.seed()),
+    nstout_(awhParams.nstout()),
     commRecord_(commRecord),
     multiSimRecord_(multiSimRecord),
     pull_(pull_work),
@@ -210,41 +209,39 @@ Awh::Awh(FILE*                 fplog,
     }
 
     int numSharingSimulations = 1;
-    if (awhParams.shareBiasMultisim && isMultiSim(multiSimRecord_))
+    if (awhParams.shareBiasMultisim() && isMultiSim(multiSimRecord_))
     {
         numSharingSimulations = multiSimRecord_->numSimulations_;
     }
 
     /* Initialize all the biases */
-    const double beta = 1 / (gmx::c_boltz * inputRecord.opts.ref_t[0]);
-    for (int k = 0; k < awhParams.numBias; k++)
+    const double beta          = 1 / (gmx::c_boltz * inputRecord.opts.ref_t[0]);
+    const auto&  awhBiasParams = awhParams.awhBiasParams();
+    for (int k = 0; k < gmx::ssize(awhBiasParams); k++)
     {
-        const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams[k];
-
         std::vector<int>       pullCoordIndex;
         std::vector<DimParams> dimParams;
-        for (int d = 0; d < awhBiasParams.ndim; d++)
+        for (const auto& awhDimParam : awhBiasParams[k].dimParams())
         {
-            const AwhDimParams& awhDimParams = awhBiasParams.dimParams[d];
-            if (awhDimParams.eCoordProvider != AwhCoordinateProviderType::Pull
-                && awhDimParams.eCoordProvider != AwhCoordinateProviderType::FreeEnergyLambda)
+            if (awhDimParam.coordinateProvider() != AwhCoordinateProviderType::Pull
+                && awhDimParam.coordinateProvider() != AwhCoordinateProviderType::FreeEnergyLambda)
             {
                 GMX_THROW(
                         InvalidInputError("Currently only the pull code and lambda are supported "
                                           "as coordinate providers"));
             }
-            if (awhDimParams.eCoordProvider == AwhCoordinateProviderType::Pull)
+            if (awhDimParam.coordinateProvider() == AwhCoordinateProviderType::Pull)
             {
-                const t_pull_coord& pullCoord = inputRecord.pull->coord[awhDimParams.coordIndex];
+                const t_pull_coord& pullCoord = inputRecord.pull->coord[awhDimParam.coordinateIndex()];
                 if (pullCoord.eGeom == PullGroupGeometry::DirectionPBC)
                 {
                     GMX_THROW(InvalidInputError(
                             "Pull geometry 'direction-periodic' is not supported by AWH"));
                 }
                 double conversionFactor = pull_coordinate_is_angletype(&pullCoord) ? gmx::c_deg2Rad : 1;
-                pullCoordIndex.push_back(awhDimParams.coordIndex);
-                dimParams.push_back(DimParams::pullDimParams(
-                        conversionFactor, awhDimParams.forceConstant, beta));
+                pullCoordIndex.push_back(awhDimParam.coordinateIndex());
+                dimParams.emplace_back(DimParams::pullDimParams(
+                        conversionFactor, awhDimParam.forceConstant(), beta));
             }
             else
             {
@@ -257,7 +254,7 @@ Awh::Awh(FILE*                 fplog,
                 (MASTER(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
         biasCoupledToSystem_.emplace_back(Bias(k,
                                                awhParams,
-                                               awhParams.awhBiasParams[k],
+                                               awhBiasParams[k],
                                                dimParams,
                                                beta,
                                                inputRecord.delta_t,
@@ -482,16 +479,14 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 {
     GMX_RELEASE_ASSERT(!anyDimUsesPull(awhParams) || pull_work, "Need a valid pull object");
 
-    for (int k = 0; k < awhParams.numBias; k++)
+    for (const auto& biasParam : awhParams.awhBiasParams())
     {
-        const AwhBiasParams& biasParams = awhParams.awhBiasParams[k];
-
-        for (int d = 0; d < biasParams.ndim; d++)
+        for (const auto& dimParam : biasParam.dimParams())
         {
-            if (biasParams.dimParams[d].eCoordProvider == AwhCoordinateProviderType::Pull)
+            if (dimParam.coordinateProvider() == AwhCoordinateProviderType::Pull)
             {
                 register_external_pull_potential(
-                        pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());
+                        pull_work, dimParam.coordinateIndex(), Awh::externalPotentialString());
             }
         }
     }

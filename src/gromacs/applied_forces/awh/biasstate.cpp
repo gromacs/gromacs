@@ -1831,7 +1831,7 @@ void BiasState::initGridPointState(const AwhBiasParams&      awhBiasParams,
     /* Modify PMF, free energy and the constant target distribution factor
      * to user input values if there is data given.
      */
-    if (awhBiasParams.bUserData)
+    if (awhBiasParams.userPMFEstimate())
     {
         readUserPmfAndTargetDistribution(dimParams, grid, filename, numBias, params.biasIndex, &points_);
         setFreeEnergyToConvolvedPmf(dimParams, grid);
