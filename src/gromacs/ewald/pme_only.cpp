@@ -531,37 +531,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     return status;
 }
 
-#if GMX_MPI
-/*! \brief Send force data to PP ranks */
-static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp* pme_pp, int* messages)
-{
-
-    if (pme_pp->useGpuDirectComm)
-    {
-        GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
-                   "The use of GPU direct communication for PME-PP is enabled, "
-                   "but the PME GPU force reciever object does not exist");
-
-        pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(receiver.rankId);
-    }
-    else
-    {
-        // Send using MPI
-        MPI_Isend(sendbuf,
-                  receiver.numAtoms * sizeof(rvec),
-                  MPI_BYTE,
-                  receiver.rankId,
-                  0,
-                  pme_pp->mpi_comm_mysim,
-                  &pme_pp->req[*messages]);
-        *messages = *messages + 1;
-    }
-}
-#endif
-
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
-                                        gmx_pme_pp*      pme_pp,
+static void gmx_pme_send_force_vir_ener(gmx_pme_pp*      pme_pp,
                                         const PmeOutput& output,
                                         real             dvdlambda_q,
                                         real             dvdlambda_lj,
@@ -582,11 +553,23 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
         void* sendbuf = const_cast<void*>(static_cast<const void*>(output.forces_[ind_start]));
         if (pme_pp->useGpuDirectComm)
         {
-            // Data will be transferred directly from GPU.
-            rvec* d_f = reinterpret_cast<rvec*>(pme_gpu_get_device_f(&pme));
-            sendbuf   = reinterpret_cast<void*>(&d_f[ind_start]);
+            GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
+                       "The use of GPU direct communication for PME-PP is enabled, "
+                       "but the PME GPU force reciever object does not exist");
+            pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(receiver.rankId);
         }
-        sendFToPP(sendbuf, receiver, pme_pp, &messages);
+        else
+        {
+            // Send using MPI
+            MPI_Isend(sendbuf,
+                      receiver.numAtoms * sizeof(rvec),
+                      MPI_BYTE,
+                      receiver.rankId,
+                      0,
+                      pme_pp->mpi_comm_mysim,
+                      &pme_pp->req[messages]);
+            messages++;
+        }
     }
 
     /* send virial and energy to our last PP node */
@@ -611,7 +594,6 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
 #else
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_pme_send_force_vir_ener");
-    GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(dvdlambda_q);
@@ -801,7 +783,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         }
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
-        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, dvdlambda_q, dvdlambda_lj, cycles);
+        gmx_pme_send_force_vir_ener(pme_pp.get(), output, dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;
     } /***** end of quasi-loop, we stop with the break above */
