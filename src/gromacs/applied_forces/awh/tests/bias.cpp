@@ -115,7 +115,7 @@ public:
         auto awhDimBuffer   = awhDimParamSerialized();
         auto awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
         params_             = std::make_unique<AwhTestParameters>(getAwhTestParameters(
-                eawhgrowth, eawhpotential, awhDimArrayRef, 0, 0.4, false, 0.5, 0));
+                eawhgrowth, eawhpotential, awhDimArrayRef, false, 0.4, false, 0.5, 0));
 
         seed_ = params_->awhParams.seed();
 
@@ -234,7 +234,7 @@ TEST(BiasTest, DetectsCovering)
     const AwhTestParameters params = getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,
                                                           AwhPotentialType::Convolved,
                                                           awhDimArrayRef,
-                                                          0,
+                                                          false,
                                                           0.4,
                                                           false,
                                                           0.5,

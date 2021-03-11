@@ -93,7 +93,7 @@ public:
                     coordinateProvider, coordIndex, origin, end, period, diffusion));
         }
         params_                          = std::make_unique<AwhTestParameters>(getAwhTestParameters(
-                AwhHistogramGrowthType::Linear, AwhPotentialType::Convolved, awhDimParameters, 1, 1.0, false, 0.5, 0));
+                AwhHistogramGrowthType::Linear, AwhPotentialType::Convolved, awhDimParameters, true, 1.0, false, 0.5, 0));
         const AwhParams&       awhParams = params_->awhParams;
         const AwhBiasParams&   awhBiasParams = awhParams.awhBiasParams()[0];
         std::vector<DimParams> dimParams;
