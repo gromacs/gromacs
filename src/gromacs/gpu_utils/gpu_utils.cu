@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,17 @@ void resetGpuProfiler(void)
     }
 }
 
-/*! \brief Check status returned from peer access CUDA call, and error out or warn appropriately
+/*! \brief Check and act on status returned from peer access CUDA call
+ *
+ * If status is "cudaSuccess", we continue. If
+ * "cudaErrorPeerAccessAlreadyEnabled", then peer access has already
+ * been enabled so we ignore. If "cudaErrorInvalidDevice" then the
+ * run is trying to access an invalid GPU, so we throw an error. If
+ * "cudaErrorInvalidValue" then there is a problem with the arguments
+ * to the CUDA call, and we throw an error. These cover all expected
+ * statuses, but if any other is returned we issue a warning and
+ * continue.
+ *
  * \param[in] stat           CUDA call return status
  * \param[in] gpuA           ID for GPU initiating peer access call
  * \param[in] gpuB           ID for remote GPU
@@ -159,6 +169,14 @@ static void peerAccessCheckStat(const cudaError_t    stat,
                                 const gmx::MDLogger& mdlog,
                                 const char*          cudaCallName)
 {
+
+    if (stat == cudaErrorPeerAccessAlreadyEnabled)
+    {
+        // Since peer access has already been enabled, this error can safely be ignored.
+        // Now clear the error internally within CUDA:
+        cudaGetLastError();
+        return;
+    }
     if ((stat == cudaErrorInvalidDevice) || (stat == cudaErrorInvalidValue))
     {
         std::string errorString =
@@ -176,6 +194,8 @@ static void peerAccessCheckStat(const cudaError_t    stat,
                         gpuB,
                         cudaCallName,
                         gmx::getDeviceErrorString(stat).c_str());
+        // Clear the error internally within CUDA
+        cudaGetLastError();
     }
 }
 
