@@ -51,24 +51,6 @@
 namespace Nbnxm
 {
 
-
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
-{
-    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
-    if (nb->bUseTwoStreams)
-    {
-        if (interactionLocality == InteractionLocality::Local)
-        {
-            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
-        }
-        else
-        {
-            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
-        }
-    }
-}
-
-
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).

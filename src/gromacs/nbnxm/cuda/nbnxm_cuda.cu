@@ -424,29 +424,6 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     return shmem;
 }
 
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
-{
-    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
-
-    /* When we get here all misc operations issued in the local stream as well as
-       the local xq H2D are done,
-       so we record that in the local stream and wait for it in the nonlocal one.
-       This wait needs to precede any PP tasks, bonded or nonbonded, that may
-       compute on interactions between local and nonlocal atoms.
-     */
-    if (nb->bUseTwoStreams)
-    {
-        if (interactionLocality == InteractionLocality::Local)
-        {
-            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
-        }
-        else
-        {
-            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
-        }
-    }
-}
-
 /*! As we execute nonbonded workload in separate streams, before launching
    the kernel we need to make sure that he following operations have completed:
    - atomdata allocation and related H2D transfers (every nstlist step);

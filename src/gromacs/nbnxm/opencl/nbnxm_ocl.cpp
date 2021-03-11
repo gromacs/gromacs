@@ -489,37 +489,6 @@ static void fillin_ocl_structures(NBParamGpu* nbp, cl_nbparam_params_t* nbparams
     nbparams_params->vdw_switch        = nbp->vdw_switch;
 }
 
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
-{
-    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
-
-    /* When we get here all misc operations issued in the local stream as well as
-       the local xq H2D are done,
-       so we record that in the local stream and wait for it in the nonlocal one.
-       This wait needs to precede any PP tasks, bonded or nonbonded, that may
-       compute on interactions between local and nonlocal atoms.
-     */
-    if (nb->bUseTwoStreams)
-    {
-        if (interactionLocality == InteractionLocality::Local)
-        {
-            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
-
-            /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
-             * in the local stream in order to be able to sync with the above event
-             * from the non-local stream.
-             */
-            cl_int gmx_used_in_debug cl_error = clFlush(deviceStream.stream());
-            GMX_ASSERT(cl_error == CL_SUCCESS,
-                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
-        }
-        else
-        {
-            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
-        }
-    }
-}
-
 /*! \brief Launch GPU kernel
 
    As we execute nonbonded workload in separate queues, before launching

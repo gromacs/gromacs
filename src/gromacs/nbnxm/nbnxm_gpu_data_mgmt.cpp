@@ -68,6 +68,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "nbnxm_gpu.h"
@@ -427,6 +428,45 @@ bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
     return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
+}
+
+inline void issueClFlushInStream(const DeviceStream& gmx_unused deviceStream)
+{
+#if GMX_GPU_OPENCL
+    /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
+     * in the stream after marking an event in it in order to be able to sync with
+     * the event from another stream.
+     */
+    cl_int cl_error = clFlush(deviceStream.stream());
+    if (cl_error != CL_SUCCESS)
+    {
+        GMX_THROW(gmx::InternalError("clFlush failed: " + ocl_get_error_string(cl_error)));
+    }
+#endif
+}
+
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
+{
+    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
+
+    /* When we get here all misc operations issued in the local stream as well as
+       the local xq H2D are done,
+       so we record that in the local stream and wait for it in the nonlocal one.
+       This wait needs to precede any PP tasks, bonded or nonbonded, that may
+       compute on interactions between local and nonlocal atoms.
+     */
+    if (nb->bUseTwoStreams)
+    {
+        if (interactionLocality == InteractionLocality::Local)
+        {
+            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
+            issueClFlushInStream(deviceStream);
+        }
+        else
+        {
+            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
+        }
+    }
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
