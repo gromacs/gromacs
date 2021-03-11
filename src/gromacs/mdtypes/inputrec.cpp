@@ -1584,6 +1584,13 @@ bool inputrecPbcXY2Walls(const t_inputrec* ir)
     return (ir->pbcType == PbcType::XY && ir->nwall == 2);
 }
 
+bool inputrecFrozenAtoms(const t_inputrec* ir)
+{
+    return ((ir->opts.nFreeze != nullptr)
+            && (ir->opts.ngfrz > 1 || ir->opts.nFreeze[0][XX] != 0 || ir->opts.nFreeze[0][YY] != 0
+                || ir->opts.nFreeze[0][ZZ] != 0));
+}
+
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
 {
     if (!EI_MD(ir->eI))

@@ -643,6 +643,9 @@ gmx_bool inputrecNphTrotter(const t_inputrec* ir);
 /*! \brief Return true if the simulation is 2D periodic with two walls. */
 bool inputrecPbcXY2Walls(const t_inputrec* ir);
 
+//! \brief Return true if the simulation has frozen atoms (non-trivial freeze groups).
+bool inputrecFrozenAtoms(const t_inputrec* ir);
+
 /*! \brief Returns true for MD integator with T and/or P-coupling that supports
  * calculating a conserved energy quantity.
  *

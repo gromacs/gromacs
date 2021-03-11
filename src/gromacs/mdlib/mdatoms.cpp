@@ -288,8 +288,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
             /* We always copy cTC with domain decomposition */
         }
         srenew(md->cENER, md->nalloc);
-        if (opts->nFreeze
-            && (opts->ngfrz > 1 || opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
+        if (inputrecFrozenAtoms(ir))
         {
             srenew(md->cFREEZE, md->nalloc);
         }

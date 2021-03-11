@@ -262,9 +262,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                  "Acceleration is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(inputrec->opts.ngfrz == 1 && inputrec->opts.nFreeze[0][XX] == 0
-                                         && inputrec->opts.nFreeze[0][YY] == 0
-                                         && inputrec->opts.nFreeze[0][ZZ] == 0,
+            && conditionalAssert(!inputrecFrozenAtoms(inputrec),
                                  "Freeze groups are not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
