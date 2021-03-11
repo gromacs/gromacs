@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -257,9 +257,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                  "Acceleration is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(inputrec->opts.ngfrz == 1 && inputrec->opts.nFreeze[0][XX] == 0
-                                         && inputrec->opts.nFreeze[0][YY] == 0
-                                         && inputrec->opts.nFreeze[0][ZZ] == 0,
+            && conditionalAssert(!inputrecFrozenAtoms(inputrec),
                                  "Freeze groups are not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible

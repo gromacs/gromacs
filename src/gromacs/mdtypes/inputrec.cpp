@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1504,6 +1504,13 @@ gmx_bool inputrecNphTrotter(const t_inputrec* ir)
 bool inputrecPbcXY2Walls(const t_inputrec* ir)
 {
     return (ir->pbcType == PbcType::XY && ir->nwall == 2);
+}
+
+bool inputrecFrozenAtoms(const t_inputrec* ir)
+{
+    return ((ir->opts.nFreeze != nullptr)
+            && (ir->opts.ngfrz > 1 || ir->opts.nFreeze[0][XX] != 0 || ir->opts.nFreeze[0][YY] != 0
+                || ir->opts.nFreeze[0][ZZ] != 0));
 }
 
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)

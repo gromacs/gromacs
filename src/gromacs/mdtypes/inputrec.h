@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -643,6 +643,9 @@ gmx_bool inputrecNphTrotter(const t_inputrec* ir);
 
 /*! \brief Return true if the simulation is 2D periodic with two walls. */
 bool inputrecPbcXY2Walls(const t_inputrec* ir);
+
+//! \brief Return true if the simulation has frozen atoms (non-trivial freeze groups).
+bool inputrecFrozenAtoms(const t_inputrec* ir);
 
 /*! \brief Returns true for MD integator with T and/or P-coupling that supports
  * calculating a conserved energy quantity.
