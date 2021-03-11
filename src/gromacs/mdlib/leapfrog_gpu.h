@@ -47,20 +47,16 @@
 #include "config.h"
 
 #if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/devicebuffer.cuh"
 #    include "gromacs/gpu_utils/gputraits.cuh"
 #endif
 #if GMX_GPU_SYCL
-#    include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
-using float3 = Float3;
 #endif
 
 #include <memory>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/utility/arrayref.h"
 
 class DeviceContext;
@@ -125,10 +121,10 @@ public:
      * \param[in]     dtPressureCouple         Period between pressure coupling steps
      * \param[in]     prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
      */
-    void integrate(const DeviceBuffer<float3>        d_x,
-                   DeviceBuffer<float3>              d_xp,
-                   DeviceBuffer<float3>              d_v,
-                   const DeviceBuffer<float3>        d_f,
+    void integrate(DeviceBuffer<Float3>              d_x,
+                   DeviceBuffer<Float3>              d_xp,
+                   DeviceBuffer<Float3>              d_v,
+                   const DeviceBuffer<Float3>        d_f,
                    const real                        dt,
                    const bool                        doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
@@ -192,7 +188,7 @@ private:
     int numTempScaleGroupsAlloc_ = -1;
 
     //! Vector with diagonal elements of the Parrinello-Rahman pressure coupling velocity rescale factors
-    float3 prVelocityScalingMatrixDiagonal_;
+    Float3 prVelocityScalingMatrixDiagonal_;
 };
 
 } // namespace gmx

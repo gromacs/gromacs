@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/pbcutil/pbc.h"
@@ -71,9 +72,14 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testDat
     auto lincsGpu = std::make_unique<LincsGpu>(
             testData->ir_.nLincsIter, testData->ir_.nProjOrder, deviceContext, deviceStream);
 
-    bool    updateVelocities = true;
-    int     numAtoms         = testData->numAtoms_;
-    float3 *d_x, *d_xp, *d_v;
+    bool updateVelocities = true;
+    int  numAtoms         = testData->numAtoms_;
+
+    Float3* h_x  = gmx::asGenericFloat3Pointer(testData->x_);
+    Float3* h_xp = gmx::asGenericFloat3Pointer(testData->xPrime_);
+    Float3* h_v  = gmx::asGenericFloat3Pointer(testData->v_);
+
+    DeviceBuffer<Float3> d_x, d_xp, d_v;
 
     lincsGpu->set(*testData->idef_, testData->numAtoms_, testData->invmass_.data());
     PbcAiuc pbcAiuc;
@@ -83,24 +89,19 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testDat
     allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
     allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
 
-    copyToDeviceBuffer(
-            &d_x, (float3*)(testData->x_.data()), 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(
-            &d_xp, (float3*)(testData->xPrime_.data()), 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
     {
-        copyToDeviceBuffer(
-                &d_v, (float3*)(testData->v_.data()), 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     }
     lincsGpu->apply(
             d_x, d_xp, updateVelocities, d_v, testData->invdt_, testData->computeVirial_, testData->virialScaled_, pbcAiuc);
 
-    copyFromDeviceBuffer(
-            (float3*)(testData->xPrime_.data()), &d_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_xp, &d_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
     {
-        copyFromDeviceBuffer(
-                (float3*)(testData->v_.data()), &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     }
 
     freeDeviceBuffer(&d_x);

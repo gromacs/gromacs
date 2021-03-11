@@ -59,6 +59,7 @@
 #    include "gromacs/mdlib/leapfrog_gpu.h"
 #endif
 
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdlib/stat.h"
 
@@ -76,14 +77,12 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
 
     int numAtoms = testData->numAtoms_;
 
-    static_assert(sizeof(float3) == sizeof(*testData->x_.data()), "Incompatible types");
+    Float3* h_x  = gmx::asGenericFloat3Pointer(testData->x_);
+    Float3* h_xp = gmx::asGenericFloat3Pointer(testData->xPrime_);
+    Float3* h_v  = gmx::asGenericFloat3Pointer(testData->v_);
+    Float3* h_f  = gmx::asGenericFloat3Pointer(testData->f_);
 
-    float3* h_x  = reinterpret_cast<float3*>(testData->x_.data());
-    float3* h_xp = reinterpret_cast<float3*>(testData->xPrime_.data());
-    float3* h_v  = reinterpret_cast<float3*>(testData->v_.data());
-    float3* h_f  = reinterpret_cast<float3*>(testData->f_.data());
-
-    DeviceBuffer<float3> d_x, d_xp, d_v, d_f;
+    DeviceBuffer<Float3> d_x, d_xp, d_v, d_f;
 
     allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
     allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);

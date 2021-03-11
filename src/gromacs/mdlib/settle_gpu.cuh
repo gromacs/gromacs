@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,10 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
-#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
@@ -101,14 +102,14 @@ public:
      * \param[in,out] virialScaled      Scaled virial tensor to be updated.
      * \param[in]     pbcAiuc           PBC data.
      */
-    void apply(const float3* d_x,
-               float3*       d_xp,
-               const bool    updateVelocities,
-               float3*       d_v,
-               const real    invdt,
-               const bool    computeVirial,
-               tensor        virialScaled,
-               const PbcAiuc pbcAiuc);
+    void apply(const DeviceBuffer<Float3> d_x,
+               DeviceBuffer<Float3>       d_xp,
+               const bool                 updateVelocities,
+               DeviceBuffer<Float3>       d_v,
+               const real                 invdt,
+               const bool                 computeVirial,
+               tensor                     virialScaled,
+               const PbcAiuc              pbcAiuc);
 
     /*! \brief
      * Update data-structures (e.g. after NB search step).

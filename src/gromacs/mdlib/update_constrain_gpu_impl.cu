@@ -240,9 +240,9 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
 
 UpdateConstrainGpu::Impl::~Impl() {}
 
-void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
-                                   DeviceBuffer<RVec>            d_v,
-                                   const DeviceBuffer<RVec>      d_f,
+void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
+                                   DeviceBuffer<Float3>          d_v,
+                                   const DeviceBuffer<Float3>    d_f,
                                    const InteractionDefinitions& idef,
                                    const t_mdatoms&              md)
 {
@@ -254,9 +254,9 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
     GMX_ASSERT(d_f != nullptr, "Forces device buffer should not be null.");
 
-    d_x_ = reinterpret_cast<float3*>(d_x);
-    d_v_ = reinterpret_cast<float3*>(d_v);
-    d_f_ = reinterpret_cast<float3*>(d_f);
+    d_x_ = d_x;
+    d_v_ = d_v;
+    d_f_ = d_f;
 
     numAtoms_ = md.nr;
 
@@ -334,9 +334,9 @@ void UpdateConstrainGpu::scaleVelocities(const matrix scalingMatrix)
     impl_->scaleVelocities(scalingMatrix);
 }
 
-void UpdateConstrainGpu::set(DeviceBuffer<RVec>            d_x,
-                             DeviceBuffer<RVec>            d_v,
-                             const DeviceBuffer<RVec>      d_f,
+void UpdateConstrainGpu::set(DeviceBuffer<Float3>          d_x,
+                             DeviceBuffer<Float3>          d_v,
+                             const DeviceBuffer<Float3>    d_f,
                              const InteractionDefinitions& idef,
                              const t_mdatoms&              md)
 {

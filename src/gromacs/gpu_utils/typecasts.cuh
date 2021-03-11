@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,27 @@ static inline __host__ __device__ float3* asFloat3(gmx::RVec* in)
                   "Size of the host-side data-type is different from the size of the device-side "
                   "counterpart.");
     return reinterpret_cast<float3*>(in);
+}
+
+/*! \brief Cast pointer RVec buffer to a pointer to float3 buffer.
+ *
+ * \param[in] in The Pointer to RVec buffer to cast.
+ *
+ * \returns Buffer pointer, casted to float3*.
+ */
+static inline __host__ __device__ float3** asFloat3Pointer(gmx::RVec** in)
+{
+    static_assert(sizeof((*in)[0]) == sizeof(float3),
+                  "Size of the host-side data-type is different from the size of the device-side "
+                  "counterpart.");
+    return reinterpret_cast<float3**>(in);
+}
+static inline __host__ __device__ const float3* const* asFloat3Pointer(const gmx::RVec* const* in)
+{
+    static_assert(sizeof((*in)[0]) == sizeof(float3),
+                  "Size of the host-side data-type is different from the size of the device-side "
+                  "counterpart.");
+    return reinterpret_cast<const float3* const*>(in);
 }
 
 #endif // GMX_GPU_UTILS_TYPECASTS_CUH

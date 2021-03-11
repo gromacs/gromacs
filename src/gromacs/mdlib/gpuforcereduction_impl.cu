@@ -218,9 +218,9 @@ GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,
 {
 }
 
-void GpuForceReduction::registerNbnxmForce(void* forcePtr)
+void GpuForceReduction::registerNbnxmForce(DeviceBuffer<Float3> forcePtr)
 {
-    impl_->registerNbnxmForce(reinterpret_cast<DeviceBuffer<RVec>>(forcePtr));
+    impl_->registerNbnxmForce(forcePtr);
 }
 
 void GpuForceReduction::registerRvecForce(void* forcePtr)

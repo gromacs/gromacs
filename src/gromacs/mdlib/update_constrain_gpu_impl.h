@@ -150,9 +150,9 @@ public:
      * \param[in] idef                System topology
      * \param[in] md                  Atoms data.
      */
-    void set(DeviceBuffer<RVec>            d_x,
-             DeviceBuffer<RVec>            d_v,
-             const DeviceBuffer<RVec>      d_f,
+    void set(DeviceBuffer<Float3>          d_x,
+             DeviceBuffer<Float3>          d_v,
+             const DeviceBuffer<Float3>    d_f,
              const InteractionDefinitions& idef,
              const t_mdatoms&              md);
 
@@ -193,14 +193,14 @@ private:
     int numAtoms_;
 
     //! Local copy of the pointer to the device positions buffer
-    float3* d_x_;
+    DeviceBuffer<Float3> d_x_;
     //! Local copy of the pointer to the device velocities buffer
-    float3* d_v_;
+    DeviceBuffer<Float3> d_v_;
     //! Local copy of the pointer to the device forces buffer
-    float3* d_f_;
+    DeviceBuffer<Float3> d_f_;
 
     //! Device buffer for intermediate positions (maintained internally)
-    float3* d_xp_;
+    DeviceBuffer<Float3> d_xp_;
     //! Number of elements in shifted coordinates buffer
     int numXp_ = -1;
     //! Allocation size for the shifted coordinates buffer
@@ -208,7 +208,7 @@ private:
 
 
     //! 1/mass for all atoms (GPU)
-    real* d_inverseMasses_;
+    DeviceBuffer<real> d_inverseMasses_;
     //! Number of elements in reciprocal masses buffer
     int numInverseMasses_ = -1;
     //! Allocation size for the reciprocal masses buffer

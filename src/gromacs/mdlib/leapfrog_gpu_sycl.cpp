@@ -84,15 +84,15 @@ using cl::sycl::access::mode;
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 auto leapFrogKernel(
         cl::sycl::handler&                          cgh,
-        DeviceAccessor<float3, mode::read_write>    a_x,
-        DeviceAccessor<float3, mode::discard_write> a_xp,
-        DeviceAccessor<float3, mode::read_write>    a_v,
-        DeviceAccessor<float3, mode::read>          a_f,
+        DeviceAccessor<Float3, mode::read_write>    a_x,
+        DeviceAccessor<Float3, mode::discard_write> a_xp,
+        DeviceAccessor<Float3, mode::read_write>    a_v,
+        DeviceAccessor<Float3, mode::read>          a_f,
         DeviceAccessor<float, mode::read>           a_inverseMasses,
         float                                       dt,
         OptionalAccessor<float, mode::read, numTempScaleValues != NumTempScaleValues::None> a_lambdas,
         OptionalAccessor<unsigned short, mode::read, numTempScaleValues == NumTempScaleValues::Multiple> a_tempScaleGroups,
-        float3 prVelocityScalingMatrixDiagonal)
+        Float3 prVelocityScalingMatrixDiagonal)
 {
     cgh.require(a_x);
     cgh.require(a_xp);
@@ -109,9 +109,9 @@ auto leapFrogKernel(
     }
 
     return [=](cl::sycl::id<1> itemIdx) {
-        const float3 x    = a_x[itemIdx];
-        const float3 v    = a_v[itemIdx];
-        const float3 f    = a_f[itemIdx];
+        const Float3 x    = a_x[itemIdx];
+        const Float3 v    = a_v[itemIdx];
+        const Float3 f    = a_f[itemIdx];
         const float  im   = a_inverseMasses[itemIdx];
         const float  imdt = im * dt;
 
@@ -137,20 +137,20 @@ auto leapFrogKernel(
             }
         }();
 
-        const float3 prVelocityDelta = [=]() {
+        const Float3 prVelocityDelta = [=]() {
             if constexpr (velocityScaling == VelocityScalingType::Diagonal)
             {
-                return float3{ prVelocityScalingMatrixDiagonal[0] * v[0],
+                return Float3{ prVelocityScalingMatrixDiagonal[0] * v[0],
                                prVelocityScalingMatrixDiagonal[1] * v[1],
                                prVelocityScalingMatrixDiagonal[2] * v[2] };
             }
             else if constexpr (velocityScaling == VelocityScalingType::None)
             {
-                return float3{ 0, 0, 0 };
+                return Float3{ 0, 0, 0 };
             }
         }();
 
-        const float3 v_new = v * lambda - prVelocityDelta + f * imdt;
+        const Float3 v_new = v * lambda - prVelocityDelta + f * imdt;
         a_v[itemIdx]       = v_new;
         a_x[itemIdx]       = x + v_new * dt;
     };
@@ -216,10 +216,10 @@ static inline cl::sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScali
             prVelocityScalingType);
 }
 
-void LeapFrogGpu::integrate(DeviceBuffer<float3>              d_x,
-                            DeviceBuffer<float3>              d_xp,
-                            DeviceBuffer<float3>              d_v,
-                            DeviceBuffer<float3>              d_f,
+void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
+                            DeviceBuffer<Float3>              d_xp,
+                            DeviceBuffer<Float3>              d_v,
+                            DeviceBuffer<Float3>              d_f,
                             const real                        dt,
                             const bool                        doTemperatureScaling,
                             gmx::ArrayRef<const t_grp_tcstat> tcstat,
@@ -253,7 +253,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<float3>              d_x,
                    "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported "
                    "in GPU version of Leap-Frog integrator.");
         prVelocityScalingMatrixDiagonal_ = dtPressureCouple
-                                           * float3{ prVelocityScalingMatrix[XX][XX],
+                                           * Float3{ prVelocityScalingMatrix[XX][XX],
                                                      prVelocityScalingMatrix[YY][YY],
                                                      prVelocityScalingMatrix[ZZ][ZZ] };
     }

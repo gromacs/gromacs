@@ -86,7 +86,7 @@ public:
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerNbnxmForce(void* forcePtr);
+    void registerNbnxmForce(DeviceBuffer<RVec> forcePtr);
 
     /*! \brief Register a rvec-format force to be reduced
      *

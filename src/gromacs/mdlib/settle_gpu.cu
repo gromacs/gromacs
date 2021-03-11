@@ -59,7 +59,8 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -396,14 +397,14 @@ inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVi
     return kernelPtr;
 }
 
-void SettleGpu::apply(const float3* d_x,
-                      float3*       d_xp,
-                      const bool    updateVelocities,
-                      float3*       d_v,
-                      const real    invdt,
-                      const bool    computeVirial,
-                      tensor        virialScaled,
-                      const PbcAiuc pbcAiuc)
+void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
+                      DeviceBuffer<Float3>       d_xp,
+                      const bool                 updateVelocities,
+                      DeviceBuffer<Float3>       d_v,
+                      const real                 invdt,
+                      const bool                 computeVirial,
+                      tensor                     virialScaled,
+                      const PbcAiuc              pbcAiuc)
 {
 
     ensureNoPendingDeviceError("In CUDA version SETTLE");
@@ -440,8 +441,17 @@ void SettleGpu::apply(const float3* d_x,
         config.sharedMemorySize = 0;
     }
 
-    const auto kernelArgs = prepareGpuKernelArguments(
-            kernelPtr, config, &numSettles_, &d_atomIds_, &settleParameters_, &d_x, &d_xp, &invdt, &d_v, &d_virialScaled_, &pbcAiuc);
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
+                                                      config,
+                                                      &numSettles_,
+                                                      &d_atomIds_,
+                                                      &settleParameters_,
+                                                      asFloat3Pointer(&d_x),
+                                                      asFloat3Pointer(&d_xp),
+                                                      &invdt,
+                                                      asFloat3Pointer(&d_v),
+                                                      &d_virialScaled_,
+                                                      &pbcAiuc);
 
     launchGpuKernel(kernelPtr,
                     config,

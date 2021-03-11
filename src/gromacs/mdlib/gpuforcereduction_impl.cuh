@@ -45,6 +45,7 @@
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/vectypes.h"
 
 #include "gpuforcereduction.h"
@@ -82,13 +83,13 @@ public:
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerNbnxmForce(DeviceBuffer<RVec> forcePtr);
+    void registerNbnxmForce(DeviceBuffer<Float3> forcePtr);
 
     /*! \brief Register a rvec-format force to be reduced
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerRvecForce(DeviceBuffer<RVec> forcePtr);
+    void registerRvecForce(DeviceBuffer<Float3> forcePtr);
 
     /*! \brief Add a dependency for this force reduction
      *

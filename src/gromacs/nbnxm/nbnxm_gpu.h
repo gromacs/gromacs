@@ -313,7 +313,8 @@ void nbnxn_wait_x_on_device(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM;
  * \returns       A pointer to the force buffer in GPU memory
  */
 CUDA_FUNC_QUALIFIER
-void* getGpuForces(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+DeviceBuffer<gmx::RVec> getGpuForces(NbnxmGpu gmx_unused* nb)
+        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 } // namespace Nbnxm
 #endif
