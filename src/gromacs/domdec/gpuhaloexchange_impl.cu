@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -335,16 +335,9 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
     // activities
     if ((pulse_ == (dd_->comm->cd[dimIndex_].numPulses() - 1)) && (dimIndex_ == (dd_->ndim - 1)))
     {
-        if (!accumulateForces)
-        {
-            // Clear local portion of force array (in local stream)
-            cudaMemsetAsync(d_f, 0, numHomeAtoms_ * sizeof(rvec), localStream_.stream());
-        }
-
         // ensure non-local stream waits for local stream, due to dependence on
         // the previous H2D copy of CPU forces (if accumulateForces is true)
-        // or the above clearing.
-        // TODO remove this dependency on localStream - edmine Issue #3093
+        // or local force clearing.
         GpuEventSynchronizer eventLocal;
         eventLocal.markEvent(localStream_);
         eventLocal.enqueueWaitEvent(nonLocalStream_);

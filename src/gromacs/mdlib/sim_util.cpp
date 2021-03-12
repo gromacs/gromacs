@@ -2039,7 +2039,15 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.useGpuFHalo)
             {
-                communicateGpuHaloForces(*cr, domainWork.haveCpuLocalForceWork);
+                // If there exist CPU forces, data from halo exchange should accumulate into these
+                bool accumulateForces = domainWork.haveCpuLocalForceWork;
+                if (!accumulateForces)
+                {
+                    // Force halo exchange will set a subset of local atoms with remote non-local data
+                    // First clear local portion of force array, so that untouched atoms are zero
+                    stateGpu->clearForcesOnGpu(AtomLocality::Local);
+                }
+                communicateGpuHaloForces(*cr, accumulateForces);
             }
             else
             {

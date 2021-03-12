@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,6 +278,31 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
     }
 }
 
+void StatePropagatorDataGpu::Impl::clearOnDevice(DeviceBuffer<RVec>  d_data,
+                                                 int                 dataSize,
+                                                 AtomLocality        atomLocality,
+                                                 const DeviceStream& deviceStream)
+{
+    GMX_UNUSED_VALUE(dataSize);
+
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+
+    GMX_ASSERT(dataSize >= 0, "Trying to clear to device buffer before it was allocated.");
+
+    GMX_ASSERT(deviceStream.isValid(), "No stream is valid for clearing with given atom locality.");
+
+    int atomsStartAt, numAtomsToClear;
+    std::tie(atomsStartAt, numAtomsToClear) = getAtomRangesFromAtomLocality(atomLocality);
+
+    if (numAtomsToClear != 0)
+    {
+        GMX_ASSERT(atomsStartAt + numAtomsToClear <= dataSize,
+                   "The device allocation is smaller than requested clear range.");
+
+        clearDeviceBufferAsync(&d_data, atomsStartAt, numAtomsToClear, deviceStream);
+    }
+}
+
 DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getCoordinates()
 {
     return d_x_;
@@ -452,6 +477,22 @@ void StatePropagatorDataGpu::Impl::copyForcesToGpu(const gmx::ArrayRef<const gmx
     wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
+void StatePropagatorDataGpu::Impl::clearForcesOnGpu(AtomLocality atomLocality)
+{
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    const DeviceStream* deviceStream = fCopyStreams_[atomLocality];
+    GMX_ASSERT(deviceStream != nullptr,
+               "No stream is valid for clearing forces with given atom locality.");
+
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
+
+    clearOnDevice(d_f_, d_fSize_, atomLocality, *deviceStream);
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+}
+
 GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getForcesReadyOnDeviceEvent(AtomLocality atomLocality,
                                                                                 bool useGpuFBufferOps)
 {
@@ -620,6 +661,11 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::getForces()
 void StatePropagatorDataGpu::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec> h_f, AtomLocality atomLocality)
 {
     return impl_->copyForcesToGpu(h_f, atomLocality);
+}
+
+void StatePropagatorDataGpu::clearForcesOnGpu(AtomLocality atomLocality)
+{
+    return impl_->clearForcesOnGpu(atomLocality);
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::getForcesReadyOnDeviceEvent(AtomLocality atomLocality,

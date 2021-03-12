@@ -265,6 +265,12 @@ public:
      */
     void copyForcesToGpu(gmx::ArrayRef<const gmx::RVec> h_f, AtomLocality atomLocality);
 
+    /*! \brief Clear forces in the GPU memory.
+     *
+     *  \param[in] atomLocality  Locality of the particles to clear.
+     */
+    void clearForcesOnGpu(AtomLocality atomLocality);
+
     /*! \brief Get the event synchronizer for the forces ready on device.
      *
      *  Returns either of the event synchronizers, depending on the offload scenario
@@ -424,6 +430,20 @@ private:
                         int                      dataSize,
                         AtomLocality             atomLocality,
                         const DeviceStream&      deviceStream);
+
+    /*! \brief Performs the clearing of data in device buffer.
+     *
+     * \todo Template on locality.
+     *
+     *  \param[out] d_data         Device-side buffer.
+     *  \param[in]  dataSize       Device-side data allocation size.
+     *  \param[in]  atomLocality   If all, local or non-local ranges should be cleared.
+     *  \param[in]  deviceStream   GPU stream to execute copy in.
+     */
+    void clearOnDevice(DeviceBuffer<RVec>  d_data,
+                       int                 dataSize,
+                       AtomLocality        atomLocality,
+                       const DeviceStream& deviceStream);
 };
 
 } // namespace gmx

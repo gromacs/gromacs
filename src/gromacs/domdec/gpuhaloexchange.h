@@ -74,8 +74,7 @@ public:
      * after the local coordinates buffer operations (where the
      * coordinates are copied to the device and hence the \c
      * coordinatesReadyOnDeviceEvent is recorded). Force Halo exchange
-     * will be performed in \c streamNonLocal (also potentally
-     * with buffer clearing in \c streamLocal)and the \c
+     * will be performed in \c streamNonLocal and the \c
      * communicateHaloForces method must be called after the
      * non-local buffer operations, after the local force buffer
      * has been copied to the GPU (if CPU forces are present), and
