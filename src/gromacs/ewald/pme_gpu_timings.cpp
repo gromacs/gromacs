@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,23 +55,21 @@ bool pme_gpu_timings_enabled(const PmeGpu* pmeGpu)
     return pmeGpu->archSpecific->useTiming;
 }
 
-void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
+void pme_gpu_start_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
-        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
-                   "Wrong PME GPU timing event index");
-        pmeGpu->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream_);
+        GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
+        pmeGpu->archSpecific->timingEvents[pmeStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream_);
     }
 }
 
-void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
+void pme_gpu_stop_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
-        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
-                   "Wrong PME GPU timing event index");
-        pmeGpu->archSpecific->timingEvents[PMEStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream_);
+        GMX_ASSERT(pmeStageId < PmeStage::Count, "Wrong PME GPU timing event index");
+        pmeGpu->archSpecific->timingEvents[pmeStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream_);
     }
 }
 
@@ -80,10 +78,10 @@ void pme_gpu_get_timings(const PmeGpu* pmeGpu, gmx_wallclock_gpu_pme_t* timings)
     if (pme_gpu_timings_enabled(pmeGpu))
     {
         GMX_RELEASE_ASSERT(timings, "Null GPU timing pointer");
-        for (size_t i = 0; i < pmeGpu->archSpecific->timingEvents.size(); i++)
+        for (auto key : keysOf(timings->timing))
         {
-            timings->timing[i].t = pmeGpu->archSpecific->timingEvents[i].getTotalTime();
-            timings->timing[i].c = pmeGpu->archSpecific->timingEvents[i].getCallCount();
+            timings->timing[key].t = pmeGpu->archSpecific->timingEvents[key].getTotalTime();
+            timings->timing[key].c = pmeGpu->archSpecific->timingEvents[key].getCallCount();
         }
     }
 }
@@ -92,7 +90,7 @@ void pme_gpu_update_timings(const PmeGpu* pmeGpu)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
-        for (const size_t& activeTimer : pmeGpu->archSpecific->activeTimers)
+        for (const auto& activeTimer : pmeGpu->archSpecific->activeTimers)
         {
             pmeGpu->archSpecific->timingEvents[activeTimer].getLastRangeTime();
         }
@@ -104,21 +102,21 @@ void pme_gpu_reinit_timings(const PmeGpu* pmeGpu)
     if (pme_gpu_timings_enabled(pmeGpu))
     {
         pmeGpu->archSpecific->activeTimers.clear();
-        pmeGpu->archSpecific->activeTimers.insert(gtPME_SPLINEANDSPREAD);
+        pmeGpu->archSpecific->activeTimers.insert(PmeStage::SplineAndSpread);
         const auto& settings = pme_gpu_settings(pmeGpu);
         // TODO: no separate gtPME_SPLINE and gtPME_SPREAD as they are not used currently
         if (settings.performGPUFFT)
         {
-            pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_C2R);
-            pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_R2C);
+            pmeGpu->archSpecific->activeTimers.insert(PmeStage::FftTransformC2R);
+            pmeGpu->archSpecific->activeTimers.insert(PmeStage::FftTransformR2C);
         }
         if (settings.performGPUSolve)
         {
-            pmeGpu->archSpecific->activeTimers.insert(gtPME_SOLVE);
+            pmeGpu->archSpecific->activeTimers.insert(PmeStage::Solve);
         }
         if (settings.performGPUGather)
         {
-            pmeGpu->archSpecific->activeTimers.insert(gtPME_GATHER);
+            pmeGpu->archSpecific->activeTimers.insert(PmeStage::Gather);
         }
     }
 }
@@ -127,9 +125,9 @@ void pme_gpu_reset_timings(const PmeGpu* pmeGpu)
 {
     if (pme_gpu_timings_enabled(pmeGpu))
     {
-        for (size_t i = 0; i < pmeGpu->archSpecific->timingEvents.size(); i++)
+        for (auto key : keysOf(pmeGpu->archSpecific->timingEvents))
         {
-            pmeGpu->archSpecific->timingEvents[i].reset();
+            pmeGpu->archSpecific->timingEvents[key].reset();
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,21 +48,23 @@
 struct gmx_wallclock_gpu_pme_t;
 struct PmeGpu;
 
+enum class PmeStage : int;
+
 /*! \libinternal \brief
  * Starts timing the certain PME GPU stage during a single computation (if timings are enabled).
  *
  * \param[in] pmeGpu         The PME GPU data structure.
- * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ * \param[in] pmeStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
+void pme_gpu_start_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId);
 
 /*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single computation (if timings are enabled).
  *
  * \param[in] pmeGpu         The PME GPU data structure.
- * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ * \param[in] pmeStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
+void pme_gpu_stop_timing(const PmeGpu* pmeGpu, PmeStage pmeStageId);
 
 /*! \brief
  * Tells if CUDA-based performance tracking is enabled for PME.

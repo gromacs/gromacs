@@ -195,9 +195,13 @@ static const char* wcsn[ewcsNR] = {
 };
 
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
-static const char* PMEStageNames[] = {
-    "PME spline", "PME spread",     "PME spline + spread", "PME 3D-FFT r2c",
-    "PME solve",  "PME 3D-FFT c2r", "PME gather",
+static const char* enumValuetoString(PmeStage enumValue)
+{
+    constexpr gmx::EnumerationArray<PmeStage, const char*> pmeStageNames = {
+        "PME spline", "PME spread",     "PME spline + spread", "PME 3D-FFT r2c",
+        "PME solve",  "PME 3D-FFT c2r", "PME gather"
+    };
+    return pmeStageNames[enumValue];
 };
 
 gmx_bool wallcycle_have_counter()
@@ -994,9 +998,9 @@ void wallcycle_print(FILE*                            fplog,
     double tot_gpu = 0.0;
     if (gpu_pme_t)
     {
-        for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+        for (auto key : keysOf(gpu_pme_t->timing))
         {
-            tot_gpu += gpu_pme_t->timing[k].t;
+            tot_gpu += gpu_pme_t->timing[key].t;
         }
     }
     if (gpu_nbnxn_t)
@@ -1046,12 +1050,15 @@ void wallcycle_print(FILE*                            fplog,
         }
         if (gpu_pme_t)
         {
-            for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+            for (auto key : keysOf(gpu_pme_t->timing))
             {
-                if (gpu_pme_t->timing[k].c)
+                if (gpu_pme_t->timing[key].c)
                 {
-                    print_gputimes(
-                            fplog, PMEStageNames[k], gpu_pme_t->timing[k].c, gpu_pme_t->timing[k].t, tot_gpu);
+                    print_gputimes(fplog,
+                                   enumValuetoString(key),
+                                   gpu_pme_t->timing[key].c,
+                                   gpu_pme_t->timing[key].t,
+                                   tot_gpu);
                 }
             }
         }

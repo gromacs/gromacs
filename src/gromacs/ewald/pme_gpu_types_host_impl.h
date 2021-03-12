@@ -45,6 +45,7 @@
 #define PMEGPUTYPESHOSTIMPL_H
 
 #include "config.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #include <array>
 #include <set>
@@ -119,10 +120,10 @@ struct PmeGpuSpecific
     std::vector<std::unique_ptr<GpuParallel3dFft>> fftSetup;
 
     //! All the timers one might use
-    std::array<GpuRegionTimer, gtPME_EVENT_COUNT> timingEvents;
+    gmx::EnumerationArray<PmeStage, GpuRegionTimer> timingEvents;
 
     //! Indices of timingEvents actually used
-    std::set<size_t> activeTimers;
+    std::set<PmeStage> activeTimers;
 
     /* GPU arrays element counts (not the arrays sizes in bytes!).
      * They might be larger than the actual meaningful data sizes.
