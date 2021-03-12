@@ -150,6 +150,18 @@ public:
         gmx::internal::PlaceholderAccessor<T, mode>(getSyclBuffer(buffer))
     {
     }
+    //! Construct read-only Accessor from a const DeviceBuffer (must be initialized)
+    DeviceAccessor(const DeviceBuffer<T>& buffer) :
+        gmx::internal::PlaceholderAccessor<T, mode>(getSyclBuffer(const_cast<DeviceBuffer<T>&>(buffer)))
+    {
+        /* There were some discussions about making it possible to create read-only sycl::accessor
+         * from a const sycl::buffer (https://github.com/KhronosGroup/SYCL-Docs/issues/10), but
+         * it did not make it into the SYCL2020 standard. So, we have to use const_cast above */
+        /* Using static_assert to ensure that only mode::read accessors can be created from a
+         * const DeviceBuffer. static_assert provides better error messages than std::enable_if. */
+        static_assert(mode == cl::sycl::access::mode::read,
+                      "Can not create non-read-only accessor from a const DeviceBuffer");
+    }
 
 private:
     //! Helper function to get sycl:buffer object from DeviceBuffer wrapper, with a sanity check.
