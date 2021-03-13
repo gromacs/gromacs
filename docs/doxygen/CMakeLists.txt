@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -168,13 +168,11 @@ if (DOXYGEN_FOUND)
             COMMAND ${Python3_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
                 -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
-                --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
                 -o ${DEPGRAPH_DIR}
             DEPENDS doxygen-xml ${INSTALLED_HEADER_FILE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/doxygenxml.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
-                ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
             COMMENT "Generating include dependency graphs for dot"
             USES_TERMINAL)
 
@@ -215,8 +213,7 @@ if (DOXYGEN_FOUND)
             ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             -l ${CMAKE_CURRENT_BINARY_DIR}/check-source.log
-            --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
-            --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
+            --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt)
         add_custom_target(check-source      COMMAND ${check_source_command}
             COMMENT "Checking source code for various issues" VERBATIM USES_TERMINAL)
         add_custom_target(check-source-fast COMMAND ${check_source_command}

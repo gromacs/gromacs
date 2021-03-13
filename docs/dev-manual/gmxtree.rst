@@ -153,18 +153,6 @@ issue does not have a file name (or a pseudo-file) associated, a leading ``:``
 must be added.  To cover many similar issues, parts of the line can then be
 replaced with wildcards.
 
-A separate suppression mechanism is in place for cyclic dependencies: to
-suppress a cycle between moduleA and moduleB, add a line with format ::
-
-    moduleA -> moduleB
-
-into ``doxygen/cycle-suppressions.txt``.  This suppresses all cycles that contain
-the mentioned edge.  Since a cycle contains multiple edges, the suppression
-should be made for the edge that is determined to be an incorrect dependency.
-This also affects the layout of the include dependency graphs (see below): the
-suppressed edge is not considered when determining the dependency order, and is
-shown as invalid in the graph.
-
 .. _dev-include-sorter:
 
 Include order sorting
