@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,10 +73,10 @@ public:
     void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x);
 
     /*! \brief
-     * launch receive of coordinate data from PP rank
-     * \param[in] ppRank  PP rank to send data
+     * Receive coordinate synchronizer pointer from the PP ranks.
+     * \param[in] ppRank  PP rank to receive the synchronizer from.
      */
-    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+    void receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank);
 
     /*! \brief
      * enqueue wait for coordinate data from PP ranks

@@ -467,7 +467,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 {
                     if (pme_pp->useGpuDirectComm)
                     {
-                        pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpCudaDirect(
+                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpCudaDirect(
                                 sender.rankId);
                     }
                     else

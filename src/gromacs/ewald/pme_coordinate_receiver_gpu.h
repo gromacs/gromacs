@@ -77,10 +77,10 @@ public:
 
 
     /*! \brief
-     * launch receive of coordinate data from PP rank
-     * \param[in] ppRank  PP rank to send data
+     * Receive coordinate synchronizer pointer from the PP ranks.
+     * \param[in] ppRank  PP rank to receive the synchronizer from.
      */
-    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+    void receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank);
 
     /*! \brief
      * enqueue wait for coordinate data from PP ranks
