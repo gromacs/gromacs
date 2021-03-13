@@ -77,6 +77,23 @@
 namespace Nbnxm
 {
 
+inline void issueClFlushInStream(const DeviceStream& deviceStream)
+{
+#if GMX_GPU_OPENCL
+    /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
+     * in the stream after marking an event in it in order to be able to sync with
+     * the event from another stream.
+     */
+    cl_int cl_error = clFlush(deviceStream.stream());
+    if (cl_error != CL_SUCCESS)
+    {
+        GMX_THROW(gmx::InternalError("clFlush failed: " + ocl_get_error_string(cl_error)));
+    }
+#else
+    GMX_UNUSED_VALUE(deviceStream);
+#endif
+}
+
 void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                     NBParamGpu*                  nbp,
                                     const DeviceContext&         deviceContext)
@@ -316,6 +333,100 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     d_plist->haveFreshList = true;
 }
 
+void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
+{
+    bool                 bDoTime       = nb->bDoTime;
+    Nbnxm::GpuTimers*    timers        = bDoTime ? nb->timers : nullptr;
+    NBAtomData*          atdat         = nb->atdat;
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+    const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
+
+    int  numAtoms  = nbat->numAtoms();
+    bool realloced = false;
+
+    if (bDoTime)
+    {
+        /* time async copy */
+        timers->atdat.openTimingRegion(localStream);
+    }
+
+    /* need to reallocate if we have to copy more atoms than the amount of space
+       available and only allocate if we haven't initialized yet, i.e atdat->natoms == -1 */
+    if (numAtoms > atdat->numAtomsAlloc)
+    {
+        int numAlloc = over_alloc_small(numAtoms);
+
+        /* free up first if the arrays have already been initialized */
+        if (atdat->numAtomsAlloc != -1)
+        {
+            freeDeviceBuffer(&atdat->f);
+            freeDeviceBuffer(&atdat->xq);
+            freeDeviceBuffer(&atdat->ljComb);
+            freeDeviceBuffer(&atdat->atomTypes);
+        }
+
+
+        allocateDeviceBuffer(&atdat->f, numAlloc, deviceContext);
+        allocateDeviceBuffer(&atdat->xq, numAlloc, deviceContext);
+
+        if (useLjCombRule(nb->nbparam->vdwType))
+        {
+            // Two Lennard-Jones parameters per atom
+            allocateDeviceBuffer(&atdat->ljComb, numAlloc, deviceContext);
+        }
+        else
+        {
+            allocateDeviceBuffer(&atdat->atomTypes, numAlloc, deviceContext);
+        }
+
+        atdat->numAtomsAlloc = numAlloc;
+        realloced            = true;
+    }
+
+    atdat->numAtoms      = numAtoms;
+    atdat->numAtomsLocal = nbat->natoms_local;
+
+    /* need to clear GPU f output if realloc happened */
+    if (realloced)
+    {
+        clearDeviceBufferAsync(&atdat->f, 0, atdat->numAtomsAlloc, localStream);
+    }
+
+    if (useLjCombRule(nb->nbparam->vdwType))
+    {
+        static_assert(
+                sizeof(Float2) == 2 * sizeof(*nbat->params().lj_comb.data()),
+                "Size of a pair of LJ parameters elements should be equal to the size of Float2.");
+        copyToDeviceBuffer(&atdat->ljComb,
+                           reinterpret_cast<const Float2*>(nbat->params().lj_comb.data()),
+                           0,
+                           numAtoms,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+    }
+    else
+    {
+        static_assert(sizeof(int) == sizeof(*nbat->params().type.data()),
+                      "Sizes of host- and device-side atom types should be the same.");
+        copyToDeviceBuffer(&atdat->atomTypes,
+                           nbat->params().type.data(),
+                           0,
+                           numAtoms,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+    }
+
+    if (bDoTime)
+    {
+        timers->atdat.closeTimingRegion(localStream);
+    }
+
+    /* kick off the tasks enqueued above to ensure concurrency with the search */
+    issueClFlushInStream(localStream);
+}
+
 //! This function is documented in the header file
 gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
 {
@@ -428,21 +539,6 @@ bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
     return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
-}
-
-inline void issueClFlushInStream(const DeviceStream& gmx_unused deviceStream)
-{
-#if GMX_GPU_OPENCL
-    /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
-     * in the stream after marking an event in it in order to be able to sync with
-     * the event from another stream.
-     */
-    cl_int cl_error = clFlush(deviceStream.stream());
-    if (cl_error != CL_SUCCESS)
-    {
-        GMX_THROW(gmx::InternalError("clFlush failed: " + ocl_get_error_string(cl_error)));
-    }
-#endif
 }
 
 void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
