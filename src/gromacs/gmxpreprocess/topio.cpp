@@ -304,12 +304,15 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
     }
 }
 
-static char** cpp_opts(const char* define, const char* include, warninp* wi)
+/*! \brief Parses define and include flags.
+ *
+ * Returns a vector of parsed include/define flags, with an extra nullptr entry at the back
+ * for consumers that expect null-terminated char** structures.
+ */
+static std::vector<char *> cpp_opts(const char* define, const char* include, warninp* wi)
 {
     int         n, len;
-    int         ncppopts = 0;
     const char* cppadds[2];
-    char**      cppopts   = nullptr;
     const char* option[2] = { "-D", "-I" };
     const char* nopt[2]   = { "define", "include" };
     const char* ptr;
@@ -319,6 +322,7 @@ static char** cpp_opts(const char* define, const char* include, warninp* wi)
 
     cppadds[0] = define;
     cppadds[1] = include;
+    std::vector<char *> cppOptions;
     for (n = 0; (n < 2); n++)
     {
         if (cppadds[n])
@@ -348,8 +352,7 @@ static char** cpp_opts(const char* define, const char* include, warninp* wi)
                     }
                     else
                     {
-                        srenew(cppopts, ++ncppopts);
-                        cppopts[ncppopts - 1] = gmx_strdup(buf);
+                        cppOptions.emplace_back(gmx_strdup(buf));
                     }
                     sfree(buf);
                     ptr = rptr;
@@ -357,10 +360,9 @@ static char** cpp_opts(const char* define, const char* include, warninp* wi)
             }
         }
     }
-    srenew(cppopts, ++ncppopts);
-    cppopts[ncppopts - 1] = nullptr;
-
-    return cppopts;
+    // Users of cppOptions expect a null last element.
+    cppOptions.emplace_back(nullptr);
+    return cppOptions;
 }
 
 
@@ -449,7 +451,7 @@ static char** read_topol(const char*                           infile,
 
     /* open input file */
     auto cpp_opts_return = cpp_opts(define, include, wi);
-    status               = cpp_open_file(infile, &handle, cpp_opts_return);
+    status               = cpp_open_file(infile, &handle, cpp_opts_return.data());
     if (status != 0)
     {
         gmx_fatal(FARGS, "%s", cpp_error(&handle, status));
@@ -949,7 +951,10 @@ static char** read_topol(const char*                           infile,
         warning(wi, unusedDefineWarning);
     }
 
-    sfree(cpp_opts_return);
+    for (char* element : cpp_opts_return)
+    {
+        sfree(element);
+    }
 
     if (out)
     {
