@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,12 +70,6 @@ struct gmx_device_runtime_data_t
     //! OpenCL program
     cl_program program;
 };
-
-/*! \brief Allocate host memory in malloc style */
-void pmalloc(void** h_ptr, size_t nbytes);
-
-/*! \brief Free host memory in malloc style */
-void pfree(void* h_ptr);
 
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error);

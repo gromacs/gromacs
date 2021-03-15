@@ -60,6 +60,10 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/pmalloc.h"
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/syclutils.h"
+#endif
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -69,18 +73,11 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/ewald/pme.h"
 
 #if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/pmalloc_cuda.h"
-
 #    include "pme.cuh"
-#elif GMX_GPU_OPENCL
-#    include "gromacs/gpu_utils/gmxopencl.h"
-#elif GMX_GPU_SYCL
-#    include "gromacs/gpu_utils/syclutils.h"
 #endif
-
-#include "gromacs/ewald/pme.h"
 
 #include "pme_gpu_3dfft.h"
 #include "pme_gpu_calculate_splines.h"

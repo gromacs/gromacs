@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,45 +50,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
-/*! \brief \brief Allocates nbytes of host memory. Use ocl_free to free memory allocated with this function.
- *
- *  \todo
- *  This function should allocate page-locked memory to help reduce D2H and H2D
- *  transfer times, similar with pmalloc from pmalloc_cuda.cu.
- *
- * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
- * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
- */
-void pmalloc(void** h_ptr, size_t nbytes)
-{
-    /* Need a temporary type whose size is 1 byte, so that the
-     * implementation of snew_aligned can cope without issuing
-     * warnings. */
-    char** temporary = reinterpret_cast<char**>(h_ptr);
-
-    /* 16-byte alignment is required by the neighbour-searching code,
-     * because it uses four-wide SIMD for bounding-box calculation.
-     * However, when we organize using page-locked memory for
-     * device-host transfers, it will probably need to be aligned to a
-     * 4kb page, like CUDA does. */
-    snew_aligned(*temporary, nbytes, 16);
-}
-
-/*! \brief Frees memory allocated with pmalloc.
- *
- * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
- */
-void pfree(void* h_ptr)
-{
-
-    if (h_ptr)
-    {
-        sfree_aligned(h_ptr);
-    }
-}
 
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error)

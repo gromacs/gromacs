@@ -67,12 +67,6 @@ struct gmx_device_runtime_data_t
 
 #ifndef DOXYGEN
 
-/*! \brief Allocate host memory in malloc style */
-void pmalloc(void** h_ptr, size_t nbytes);
-
-/*! \brief Free host memory in malloc style */
-void pfree(void* h_ptr);
-
 /* To properly mark function as [[noreturn]], we must do it everywhere it is declared, which
  * will pollute common headers.*/
 #    pragma clang diagnostic push

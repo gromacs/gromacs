@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,46 +33,58 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Define utility routines for SYCL
+ *  \brief Define functions for host-side memory handling when using CUDA devices.
  *
- *  \author Andrey Alekseenko <al42and@gmail.com>
+ *  \author Szilard Pall <pall.szilard@gmail.com>
  */
+
 #include "gmxpre.h"
 
-#include "syclutils.h"
+#include "pmalloc.h"
 
-#include "gromacs/utility/smalloc.h"
+#include <stdlib.h>
 
-/*! \brief Allocates \p nbytes of host memory. Use \c pfree to free memory allocated with this function.
- *
- *  \todo
- *  This function was copied from OpenCL implementation, not tuned for SYCL at all.
- *  Once SYCL2020 is out, might be worthwhile to look into USM and sycl::malloc_host / sycl::aligned_alloc_host.
- *  Overall, it is better to directly use sycl::buffer instead of pinned arrays. But this function
- *  is needed to compile some PME code with SYCL enabled, even if it is never used.
- *
- * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
- * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
+#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/utility/cstringutil.h"
+
+/*! Allocates nbytes of page-locked memory.
+ *  This memory should always be freed using pfree (or with the page-locked
+ *  free functions provied by the CUDA library).
  */
 void pmalloc(void** h_ptr, size_t nbytes)
 {
-    /* Need a temporary type whose size is 1 byte, so that the
-     * implementation of snew_aligned can cope without issuing
-     * warnings. */
-    auto** temporary = reinterpret_cast<std::byte**>(h_ptr);
+    cudaError_t stat;
+    char        strbuf[STRLEN];
+    int         flag = cudaHostAllocDefault;
 
-    /* 16-byte alignment inherited from OpenCL and does not sound unreasonable */
-    snew_aligned(*temporary, nbytes, 16);
+    if (nbytes == 0)
+    {
+        *h_ptr = nullptr;
+        return;
+    }
+
+    gmx::ensureNoPendingDeviceError("Could not allocate page-locked memory.");
+
+    stat = cudaMallocHost(h_ptr, nbytes, flag);
+    sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
+    CU_RET_ERR(stat, strbuf);
 }
 
-/*! \brief Frees memory allocated with pmalloc.
- *
- * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
+/*! Frees page locked memory allocated with pmalloc.
+ *  This function can safely be called also with a pointer to a page-locked
+ *  memory allocated directly with CUDA API calls.
  */
 void pfree(void* h_ptr)
 {
-    if (h_ptr)
+    cudaError_t stat;
+
+    if (h_ptr == nullptr)
     {
-        sfree_aligned(h_ptr);
+        return;
     }
+
+    gmx::ensureNoPendingDeviceError("Could not free page-locked memory.");
+
+    stat = cudaFreeHost(h_ptr);
+    CU_RET_ERR(stat, "cudaFreeHost failed");
 }

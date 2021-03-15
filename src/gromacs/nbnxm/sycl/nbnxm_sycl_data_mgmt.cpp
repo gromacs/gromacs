@@ -42,6 +42,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/atomdata.h"
