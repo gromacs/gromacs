@@ -14,6 +14,7 @@
 #   SIMD: AVX2_256
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
+#   Subcyclecounting: Active
 
 gromacs:clang-9-mpi:configure:
   extends:
@@ -26,6 +27,7 @@ gromacs:clang-9-mpi:configure:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 9
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
+    CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON
 
 gromacs:clang-9-mpi:build:
   # Test using configuration: gromacs:clang-9-mpi:configure
