@@ -107,10 +107,10 @@ static void init_atomdata_first(NBAtomData* ad, int ntypes, const DeviceContext&
 {
     ad->numTypes = ntypes;
 
-    allocateDeviceBuffer(&ad->shiftVec, SHIFTS * DIM, deviceContext);
+    allocateDeviceBuffer(&ad->shiftVec, SHIFTS, deviceContext);
     ad->shiftVecUploaded = false;
 
-    allocateDeviceBuffer(&ad->fShift, SHIFTS * DIM, deviceContext);
+    allocateDeviceBuffer(&ad->fShift, SHIFTS, deviceContext);
     allocateDeviceBuffer(&ad->eLJ, 1, deviceContext);
     allocateDeviceBuffer(&ad->eElec, 1, deviceContext);
 
