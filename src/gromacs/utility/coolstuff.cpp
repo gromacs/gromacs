@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1579,7 +1579,8 @@ std::string getCoolQuote()
           "attempted.",
           "Anonymous" },
         { "If my PhD doesn't allow me to be right on the internet, what is it even good for?",
-          "Martin Vögele" }
+          "Martin Vögele" },
+        { "A little less conversation, a little more action, please.", "Elvis Presley" }
     };
 
     if (beCool())
