@@ -309,7 +309,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
  * Returns a vector of parsed include/define flags, with an extra nullptr entry at the back
  * for consumers that expect null-terminated char** structures.
  */
-static std::vector<char *> cpp_opts(const char* define, const char* include, warninp* wi)
+static std::vector<char*> cpp_opts(const char* define, const char* include, warninp* wi)
 {
     int         n, len;
     const char* cppadds[2];
@@ -322,7 +322,7 @@ static std::vector<char *> cpp_opts(const char* define, const char* include, war
 
     cppadds[0] = define;
     cppadds[1] = include;
-    std::vector<char *> cppOptions;
+    std::vector<char*> cppOptions;
     for (n = 0; (n < 2); n++)
     {
         if (cppadds[n])
