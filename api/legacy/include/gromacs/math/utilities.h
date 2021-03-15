@@ -43,47 +43,6 @@
 
 #include <cmath>
 
-#ifndef M_PI
-#    define M_PI 3.14159265358979323846
-#endif
-
-#ifndef M_PI_2
-#    define M_PI_2 1.57079632679489661923
-#endif
-
-#ifndef M_2PI
-#    define M_2PI 6.28318530717958647692
-#endif
-
-#ifndef M_SQRT2
-#    define M_SQRT2 sqrt(2.0)
-#endif
-
-#ifndef M_1_PI
-#    define M_1_PI 0.31830988618379067154
-#endif
-
-#ifndef M_FLOAT_1_SQRTPI /* used in GPU kernels */
-/* 1.0 / sqrt(M_PI) */
-#    define M_FLOAT_1_SQRTPI 0.564189583547756f
-#endif
-
-#ifndef M_1_SQRTPI
-/* 1.0 / sqrt(M_PI) */
-#    define M_1_SQRTPI 0.564189583547756
-#endif
-
-#ifndef M_2_SQRTPI
-/* 2.0 / sqrt(M_PI) */
-#    define M_2_SQRTPI 1.128379167095513
-#endif
-
-namespace gmx
-{
-constexpr double c_rad2Deg = 180.0 / M_PI;
-constexpr double c_deg2Rad = M_PI / 180.0;
-} // namespace gmx
-
 /*! \brief Enum to select safe or highly unsafe (faster) math functions.
  *
  *  Normally all the Gromacs math functions should apply reasonable care with

@@ -45,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"

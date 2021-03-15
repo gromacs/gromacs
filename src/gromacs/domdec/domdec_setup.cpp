@@ -60,6 +60,7 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"

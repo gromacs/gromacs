@@ -48,6 +48,7 @@
 #include <optional>
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/units.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"

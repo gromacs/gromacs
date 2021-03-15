@@ -43,6 +43,7 @@
 
 #include "gromacs/fileio/matio.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

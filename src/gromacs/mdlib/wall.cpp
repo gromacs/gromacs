@@ -46,6 +46,7 @@
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forceoutput.h"
