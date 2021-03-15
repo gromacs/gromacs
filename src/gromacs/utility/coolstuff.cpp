@@ -1580,7 +1580,8 @@ std::string getCoolQuote()
           "Anonymous" },
         { "If my PhD doesn't allow me to be right on the internet, what is it even good for?",
           "Martin Vögele" },
-        { "A little less conversation, a little more action, please.", "Elvis Presley" }
+        { "A little less conversation, a little more action, please.", "Elvis Presley" },
+        { "Friends don't let friends use Berendsen!", "John Chodera (on Twitter)" }
     };
 
     if (beCool())
