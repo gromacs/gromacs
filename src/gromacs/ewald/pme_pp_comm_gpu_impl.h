@@ -44,7 +44,9 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -110,7 +112,7 @@ public:
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU
      */
-    void* getGpuForceStagingPtr();
+    DeviceBuffer<Float3> getGpuForceStagingPtr();
 
     /*! \brief
      * Return pointer to event recorded when forces are ready
@@ -131,7 +133,7 @@ private:
     //! Rank of PME task
     int pmeRank_ = -1;
     //! Buffer for staging PME force on GPU
-    rvec* d_pmeForces_ = nullptr;
+    DeviceBuffer<gmx::RVec> d_pmeForces_;
     //! number of atoms in PME force staging array
     int d_pmeForcesSize_ = -1;
     //! number of atoms allocated in recvbuf array

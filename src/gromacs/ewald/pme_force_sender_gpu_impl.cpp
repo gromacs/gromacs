@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -75,7 +76,7 @@ PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer* /*pmeForcesReady */,
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* /* d_f */)
+void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> /* d_f */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "

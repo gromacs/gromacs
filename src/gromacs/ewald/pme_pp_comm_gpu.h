@@ -44,6 +44,7 @@
 
 #include <memory>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/gmxmpi.h"
 
 class DeviceContext;
@@ -99,7 +100,7 @@ public:
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU
      */
-    void* getGpuForceStagingPtr();
+    DeviceBuffer<gmx::RVec> getGpuForceStagingPtr();
 
     /*! \brief
      * Return pointer to event recorded when forces are ready

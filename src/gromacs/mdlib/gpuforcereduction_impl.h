@@ -59,7 +59,7 @@ struct cellInfo
     //! cell index mapping for any nbat-format forces
     const int* cell = nullptr;
     //! device copy of cell index mapping for any nbat-format forces
-    int* d_cell = nullptr;
+    DeviceBuffer<int> d_cell;
     //! number of atoms in cell array
     int cellSize = -1;
     //! number of atoms allocated in cell array
@@ -76,7 +76,7 @@ public:
      * \param [in] deviceContext GPU device context
      * \param [in] wcycle        The wallclock counter
      */
-    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStreami, gmx_wallcycle* wcycle);
+    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream, gmx_wallcycle* wcycle);
     ~Impl();
 
     /*! \brief Register a nbnxm-format force to be reduced
@@ -106,7 +106,7 @@ public:
      * \param [in] accumulate       Whether reduction should be accumulated
      * \param [in] completionMarker Event to be marked when launch of reduction is complete
      */
-    void reinit(float3*               baseForcePtr,
+    void reinit(DeviceBuffer<Float3>  baseForcePtr,
                 const int             numAtoms,
                 ArrayRef<const int>   cell,
                 const int             atomStart,
@@ -118,7 +118,7 @@ public:
 
 private:
     //! force to be used as a base for this reduction
-    float3* baseForce_ = nullptr;
+    DeviceBuffer<Float3> baseForce_;
     //! starting atom
     int atomStart_ = 0;
     //! number of atoms
@@ -134,9 +134,9 @@ private:
     //! stream to be used for this reduction
     const DeviceStream& deviceStream_;
     //! Nbnxm force to be added in this reduction
-    DeviceBuffer<RVec> nbnxmForceToAdd_ = nullptr;
+    DeviceBuffer<RVec> nbnxmForceToAdd_;
     //! Rvec-format force to be added in this reduction
-    DeviceBuffer<RVec> rvecForceToAdd_ = nullptr;
+    DeviceBuffer<RVec> rvecForceToAdd_;
     //! event to be marked when redcution launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;
     //! The wallclock counter

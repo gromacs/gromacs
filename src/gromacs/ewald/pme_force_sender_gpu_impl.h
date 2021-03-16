@@ -44,8 +44,11 @@
 #define GMX_PMEFORCESENDERGPU_IMPL_H
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/arrayref.h"
+
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -68,7 +71,7 @@ public:
      * sends force buffer address to PP rank
      * \param[in] d_f   force buffer in GPU memory
      */
-    void sendForceBufferAddressToPpRanks(rvec* d_f);
+    void sendForceBufferAddressToPpRanks(DeviceBuffer<Float3> d_f);
 
     /*! \brief
      * Send force synchronizer to PP rank

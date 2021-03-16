@@ -102,12 +102,12 @@ void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void* /* sendPtr */,
                "implementation.");
 }
 
-void* PmePpCommGpu::getGpuForceStagingPtr()
+DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
-    return nullptr;
+    return DeviceBuffer<gmx::RVec>{};
 }
 
 GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()

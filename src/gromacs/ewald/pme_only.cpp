@@ -445,8 +445,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
                     pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(
                             stateGpu->getCoordinates());
-                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(
-                            reinterpret_cast<rvec*>(pme_gpu_get_device_f(pme)));
+                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(pme_gpu_get_device_f(pme));
                 }
             }
 

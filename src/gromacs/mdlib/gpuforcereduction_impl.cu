@@ -43,7 +43,7 @@
 
 #include "gmxpre.h"
 
-#include "gpuforcereduction_impl.cuh"
+#include "gpuforcereduction_impl.h"
 
 #include <stdio.h>
 
@@ -108,11 +108,14 @@ static __global__ void reduceKernel(const float3* __restrict__ gm_nbnxmForce,
 GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext,
                               const DeviceStream&  deviceStream,
                               gmx_wallcycle*       wcycle) :
+    baseForce_(nullptr),
     deviceContext_(deviceContext),
     deviceStream_(deviceStream),
+    nbnxmForceToAdd_(nullptr),
+    rvecForceToAdd_(nullptr),
     wcycle_(wcycle){};
 
-void GpuForceReduction::Impl::reinit(float3*               baseForcePtr,
+void GpuForceReduction::Impl::reinit(DeviceBuffer<Float3>  baseForcePtr,
                                      const int             numAtoms,
                                      ArrayRef<const int>   cell,
                                      const int             atomStart,
@@ -223,9 +226,9 @@ void GpuForceReduction::registerNbnxmForce(DeviceBuffer<Float3> forcePtr)
     impl_->registerNbnxmForce(forcePtr);
 }
 
-void GpuForceReduction::registerRvecForce(void* forcePtr)
+void GpuForceReduction::registerRvecForce(DeviceBuffer<gmx::RVec> forcePtr)
 {
-    impl_->registerRvecForce(reinterpret_cast<DeviceBuffer<RVec>>(forcePtr));
+    impl_->registerRvecForce(forcePtr);
 }
 
 void GpuForceReduction::addDependency(GpuEventSynchronizer* const dependency)
@@ -240,7 +243,7 @@ void GpuForceReduction::reinit(DeviceBuffer<RVec>    baseForcePtr,
                                const bool            accumulate,
                                GpuEventSynchronizer* completionMarker)
 {
-    impl_->reinit(asFloat3(baseForcePtr), numAtoms, cell, atomStart, accumulate, completionMarker);
+    impl_->reinit(baseForcePtr, numAtoms, cell, atomStart, accumulate, completionMarker);
 }
 void GpuForceReduction::execute()
 {

@@ -1123,9 +1123,10 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
     if (runScheduleWork->simulationWork.useGpuPme
         && (thisRankHasDuty(cr, DUTY_PME) || runScheduleWork->simulationWork.useGpuPmePpCommunication))
     {
-        void* forcePtr = thisRankHasDuty(cr, DUTY_PME) ? pme_gpu_get_device_f(fr->pmedata)
-                                                       : // PME force buffer on same GPU
-                                 fr->pmePpCommGpu->getGpuForceStagingPtr(); // buffer received from other GPU
+        DeviceBuffer<gmx::RVec> forcePtr =
+                thisRankHasDuty(cr, DUTY_PME) ? pme_gpu_get_device_f(fr->pmedata)
+                                              :                    // PME force buffer on same GPU
+                        fr->pmePpCommGpu->getGpuForceStagingPtr(); // buffer received from other GPU
         fr->gpuForceReduction[gmx::AtomLocality::Local]->registerRvecForce(forcePtr);
 
         GpuEventSynchronizer* const pmeSynchronizer =

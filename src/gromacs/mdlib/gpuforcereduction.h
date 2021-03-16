@@ -92,7 +92,7 @@ public:
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerRvecForce(void* forcePtr);
+    void registerRvecForce(DeviceBuffer<gmx::RVec> forcePtr);
 
     /*! \brief Add a dependency for this force reduction
      *
