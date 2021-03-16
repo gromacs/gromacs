@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
- * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "modules/distance.h"
 #include "modules/extract_cluster.h"
 #include "modules/freevolume.h"
+#include "modules/msd.h"
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
 #include "modules/sasa.h"
@@ -96,6 +97,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager* manager)
     registerModule<DistanceInfo>(manager, group);
     registerModule<ExtractClusterInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
+    registerModule<MsdInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);
     registerModule<SasaInfo>(manager, group);

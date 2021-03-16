@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">-trestart 10 -sel 3</String>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="Legend">
+        <String>title "Mean Squared Displacement"</String>
+        <String>xaxis  label "tau (ps)"</String>
+        <String>yaxis  label "MSD (nm\\S2\\N)"</String>
+        <String>TYPE xy</String>
+        <String>s0 legend "D[some_water_subset] = 3.9792 (+/- 0.4600) (1e-5 cm^2/s)"</String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.000</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>2.000</Real>
+          <Real>0.0708522</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>4.000</Real>
+          <Real>0.0947372</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>6.000</Real>
+          <Real>0.173871</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>8.000</Real>
+          <Real>0.224929</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>10.000</Real>
+          <Real>0.274871</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">2</Int>
+          <Real>12.000</Real>
+          <Real>0.311595</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">2</Int>
+          <Real>14.000</Real>
+          <Real>0.356893</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">2</Int>
+          <Real>16.000</Real>
+          <Real>0.459085</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">2</Int>
+          <Real>18.000</Real>
+          <Real>0.46479</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">2</Int>
+          <Real>20.000</Real>
+          <Real>0.545767</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">2</Int>
+          <Real>22.000</Real>
+          <Real>0.505186</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">2</Int>
+          <Real>24.000</Real>
+          <Real>0.574966</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">2</Int>
+          <Real>26.000</Real>
+          <Real>0.66103</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">2</Int>
+          <Real>28.000</Real>
+          <Real>0.64775</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">2</Int>
+          <Real>30.000</Real>
+          <Real>0.749603</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">2</Int>
+          <Real>32.000</Real>
+          <Real>0.804233</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">2</Int>
+          <Real>34.000</Real>
+          <Real>0.828547</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">2</Int>
+          <Real>36.000</Real>
+          <Real>0.909855</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">2</Int>
+          <Real>38.000</Real>
+          <Real>0.721128</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">2</Int>
+          <Real>40.000</Real>
+          <Real>0.899906</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-mol">
+      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="Legend">
+        <String>title "Mean Squared Displacement / Molecule"</String>
+        <String>xaxis  label "Molecule"</String>
+        <String>yaxis  label "D(1e-5 cm^2/s)"</String>
+        <String>TYPE xy</String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.000</Real>
+          <Real>4</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>1.000</Real>
+          <Real>2</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>2.000</Real>
+          <Real>3</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>3.000</Real>
+          <Real>3</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>4.000</Real>
+          <Real>1e+01</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">2</Int>
+          <Real>5.000</Real>
+          <Real>1</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>
