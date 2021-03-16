@@ -583,35 +583,35 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< Cut-off for multi-body interactions, also 2-body bonded when \p cutoff_mody > \p cutoff */
     real cutoff_mbody = 0;
     /**< The minimum guaranteed cell-size, Cartesian indexing */
-    rvec cellsize_min = {};
+    gmx::RVec cellsize_min = { 0, 0, 0 };
     /**< The minimum guaranteed cell-size with dlb=auto */
-    rvec cellsize_min_dlb = {};
+    gmx::RVec cellsize_min_dlb = { 0, 0, 0 };
     /**< The lower limit for the DD cell size with DLB */
     real cellsize_limit = 0;
     /**< Effectively no NB cut-off limit with DLB for systems without PBC? */
-    gmx_bool bVacDLBNoLimit = false;
+    bool bVacDLBNoLimit = false;
 
     /** With PME load balancing we set limits on DLB */
-    gmx_bool bPMELoadBalDLBLimits = false;
+    bool bPMELoadBalDLBLimits = false;
     /** DLB needs to take into account that we want to allow this maximum
      *  cut-off (for PME load balancing), this could limit cell boundaries.
      */
     real PMELoadBal_max_cutoff = 0;
 
     /**< box lower corner, required with dim's without pbc and -gcom */
-    rvec box0 = {};
+    gmx::RVec box0 = { 0, 0, 0 };
     /**< box size, required with dim's without pbc and -gcom */
-    rvec box_size = {};
+    gmx::RVec box_size = { 0, 0, 0 };
 
     /**< The DD cell lower corner, in triclinic space */
-    rvec cell_x0 = {};
+    gmx::RVec cell_x0 = { 0, 0, 0 };
     /**< The DD cell upper corner, in triclinic space */
-    rvec cell_x1 = {};
+    gmx::RVec cell_x1 = { 0, 0, 0 };
 
     /**< The old \p cell_x0, to check cg displacements */
-    rvec old_cell_x0 = {};
+    gmx::RVec old_cell_x0 = { 0, 0, 0 };
     /**< The old \p cell_x1, to check cg displacements */
-    rvec old_cell_x1 = {};
+    gmx::RVec old_cell_x1 = { 0, 0, 0 };
 
     /** The communication setup and charge group boundaries for the zones */
     gmx_domdec_zones_t zones;
@@ -621,12 +621,12 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      * dynamic load balancing.
      */
     /**< Zone limits for dim 1 with staggered grids */
-    gmx_ddzone_t zone_d1[2];
+    std::array<gmx_ddzone_t, 2> zone_d1;
     /**< Zone limits for dim 2 with staggered grids */
     gmx_ddzone_t zone_d2[2][2];
 
     /** The coordinate/force communication setup and indices */
-    gmx_domdec_comm_dim_t cd[DIM];
+    std::array<gmx_domdec_comm_dim_t, DIM> cd;
     /** Restricts the maximum number of cells to communicate with in one dimension
      *
      * Dynamic load balancing is not permitted to change sizes if it
@@ -639,7 +639,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     int64_t master_cg_ddp_count = 0;
 
     /** The number of cg's received from the direct neighbors */
-    int zone_ncg1[DD_MAXZONE] = { 0 };
+    std::array<int, DD_MAXZONE> zone_ncg1 = { 0 };
 
     /** The atom ranges in the local state */
     DDAtomRanges atomRanges;
@@ -687,11 +687,11 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* Cycle counters over nstlist steps */
     /**< Total cycles counted */
-    float cycl[ddCyclNr] = {};
+    std::array<float, ddCyclNr> cycl = { 0 };
     /**< The number of cycle recordings */
-    int cycl_n[ddCyclNr] = {};
+    std::array<int, ddCyclNr> cycl_n = { 0 };
     /**< The maximum cycle count */
-    float cycl_max[ddCyclNr] = {};
+    std::array<float, ddCyclNr> cycl_max = { 0 };
     /**< Total flops counted */
     double flop = 0.0;
     /**< The number of flop recordings */
@@ -727,7 +727,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< Max \p load_sum over the ranks */
     double load_max = 0.0;
     /**< Was load balancing limited, per DD dim */
-    ivec load_lim = {};
+    gmx::IVec load_lim = { 0, 0, 0 };
     /**< Total time on PP done during PME overlap time */
     double load_mdf = 0.0;
     /**< Total time on our PME-only rank */

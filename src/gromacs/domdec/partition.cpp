@@ -491,8 +491,8 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1, t
 static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
 {
     const int                numZones               = dd->comm->zones.n;
-    const int*               zone2cg                = dd->comm->zones.cg_range.data();
-    const int*               zone_ncg1              = dd->comm->zone_ncg1;
+    gmx::ArrayRef<const int> zone2cg                = dd->comm->zones.cg_range;
+    gmx::ArrayRef<const int> zone_ncg1              = dd->comm->zone_ncg1;
     gmx::ArrayRef<const int> globalAtomGroupIndices = dd->globalAtomGroupIndices;
 
     std::vector<int>& globalAtomIndices = dd->globalAtomIndices;
