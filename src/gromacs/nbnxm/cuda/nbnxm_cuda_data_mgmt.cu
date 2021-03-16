@@ -92,20 +92,24 @@ namespace Nbnxm
  */
 static unsigned int gpu_min_ci_balanced_factor = 44;
 
-/* Fw. decl. */
-static void nbnxn_cuda_clear_e_fshift(NbnxmGpu* nb);
-
 /*! Initializes the atomdata structure first time, it only gets filled at
     pair-search. */
-static void init_atomdata_first(NBAtomData* ad, int ntypes, const DeviceContext& deviceContext)
+static void init_atomdata_first(NBAtomData*          ad,
+                                int                  nTypes,
+                                const DeviceContext& deviceContext,
+                                const DeviceStream&  localStream)
 {
-    ad->numTypes = ntypes;
+    ad->numTypes = nTypes;
     allocateDeviceBuffer(&ad->shiftVec, SHIFTS, deviceContext);
     ad->shiftVecUploaded = false;
 
     allocateDeviceBuffer(&ad->fShift, SHIFTS, deviceContext);
     allocateDeviceBuffer(&ad->eLJ, 1, deviceContext);
     allocateDeviceBuffer(&ad->eElec, 1, deviceContext);
+
+    clearDeviceBufferAsync(&ad->fShift, 0, SHIFTS, localStream);
+    clearDeviceBufferAsync(&ad->eElec, 0, 1, localStream);
+    clearDeviceBufferAsync(&ad->eLJ, 0, 1, localStream);
 
     /* initialize to nullptr poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
@@ -174,19 +178,6 @@ static void init_nbparam(NBParamGpu*                     nbp,
     }
 }
 
-/*! Initializes simulation constant data. */
-static void cuda_init_const(NbnxmGpu*                       nb,
-                            const interaction_const_t*      ic,
-                            const PairlistParams&           listParams,
-                            const nbnxn_atomdata_t::Params& nbatParams)
-{
-    init_atomdata_first(nb->atdat, nbatParams.numTypes, *nb->deviceContext_);
-    init_nbparam(nb->nbparam, ic, listParams, nbatParams, *nb->deviceContext_);
-
-    /* clear energy and shift force outputs */
-    nbnxn_cuda_clear_e_fshift(nb);
-}
-
 NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
                    const interaction_const_t*      ic,
                    const PairlistParams&           listParams,
@@ -218,8 +209,8 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     /* local/non-local GPU streams */
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be initialized to use GPU for non-bonded.");
-    nb->deviceStreams[InteractionLocality::Local] =
-            &deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal);
+    const DeviceStream& localStream = deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal);
+    nb->deviceStreams[InteractionLocality::Local] = &localStream;
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[InteractionLocality::NonLocal]);
@@ -251,7 +242,10 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     /* pick L1 cache configuration */
     cuda_set_cacheconfig();
 
-    cuda_init_const(nb, ic, listParams, nbat->params());
+    const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
+    const DeviceContext&            deviceContext = *nb->deviceContext_;
+    init_atomdata_first(nb->atdat, nbatParams.numTypes, deviceContext, localStream);
+    init_nbparam(nb->nbparam, ic, listParams, nbatParams, deviceContext);
 
     nb->atomIndicesSize       = 0;
     nb->atomIndicesSize_alloc = 0;
@@ -286,36 +280,6 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
                            GpuApiCallBehavior::Async,
                            nullptr);
         adat->shiftVecUploaded = true;
-    }
-}
-
-/*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */
-static void nbnxn_cuda_clear_f(NbnxmGpu* nb, int natoms_clear)
-{
-    NBAtomData*         adat        = nb->atdat;
-    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
-    clearDeviceBufferAsync(&adat->f, 0, natoms_clear, localStream);
-}
-
-/*! Clears nonbonded shift force output array and energy outputs on the GPU. */
-static void nbnxn_cuda_clear_e_fshift(NbnxmGpu* nb)
-{
-    NBAtomData*         adat        = nb->atdat;
-    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
-
-    clearDeviceBufferAsync(&adat->fShift, 0, SHIFTS, localStream);
-    clearDeviceBufferAsync(&adat->eLJ, 0, 1, localStream);
-    clearDeviceBufferAsync(&adat->eElec, 0, 1, localStream);
-}
-
-void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
-{
-    nbnxn_cuda_clear_f(nb, nb->atdat->numAtoms);
-    /* clear shift force array and energies if the outputs were
-       used in the current step */
-    if (computeVirial)
-    {
-        nbnxn_cuda_clear_e_fshift(nb);
     }
 }
 

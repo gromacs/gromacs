@@ -156,10 +156,9 @@ struct NbnxmGpu
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
-    cl_kernel kernel_memset_f      = nullptr;
-    cl_kernel kernel_memset_f2     = nullptr;
-    cl_kernel kernel_memset_f3     = nullptr;
-    cl_kernel kernel_zero_e_fshift = nullptr;
+    cl_kernel kernel_memset_f  = nullptr;
+    cl_kernel kernel_memset_f2 = nullptr;
+    cl_kernel kernel_memset_f3 = nullptr;
     ///@}
 
     //! true if doing both local/non-local NB work on GPU

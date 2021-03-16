@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,23 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* Auxiliary kernels */
-
-/* Very few data */
-__kernel void zero_e_fshift(__global float* fshift, __global float* e_lj, __global float* e_el, const unsigned int Nbuf)
-{
-    unsigned int tidx = get_global_id(0);
-    if (tidx < Nbuf)
-    {
-        fshift[tidx] = 0.0F;
-    }
-    if (tidx == 0)
-    {
-        *e_lj = 0.0F;
-        *e_el = 0.0F;
-    }
-}
-
 /* Generate pruning kernels. */
 #define HAVE_FRESH_LIST 1
 #include "nbnxm_ocl_kernel_pruneonly.clh"

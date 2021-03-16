@@ -69,6 +69,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -426,6 +427,22 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     }
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
+    issueClFlushInStream(localStream);
+}
+
+void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
+{
+    NBAtomData*         adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
+    // Clear forces
+    clearDeviceBufferAsync(&adat->f, 0, nb->atdat->numAtoms, localStream);
+    // Clear shift force array and energies if the outputs were used in the current step
+    if (computeVirial)
+    {
+        clearDeviceBufferAsync(&adat->fShift, 0, SHIFTS, localStream);
+        clearDeviceBufferAsync(&adat->eLJ, 0, 1, localStream);
+        clearDeviceBufferAsync(&adat->eElec, 0, 1, localStream);
+    }
     issueClFlushInStream(localStream);
 }
 

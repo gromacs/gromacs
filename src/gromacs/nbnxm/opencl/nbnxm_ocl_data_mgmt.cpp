@@ -103,7 +103,10 @@ static unsigned int gpu_min_ci_balanced_factor = 50;
 /*! \brief Initializes the atomdata structure first time, it only gets filled at
     pair-search.
  */
-static void init_atomdata_first(NBAtomData* ad, int ntypes, const DeviceContext& deviceContext)
+static void init_atomdata_first(NBAtomData*          ad,
+                                int                  ntypes,
+                                const DeviceContext& deviceContext,
+                                const DeviceStream&  localStream)
 {
     ad->numTypes = ntypes;
 
@@ -113,6 +116,10 @@ static void init_atomdata_first(NBAtomData* ad, int ntypes, const DeviceContext&
     allocateDeviceBuffer(&ad->fShift, SHIFTS, deviceContext);
     allocateDeviceBuffer(&ad->eLJ, 1, deviceContext);
     allocateDeviceBuffer(&ad->eElec, 1, deviceContext);
+
+    clearDeviceBufferAsync(&ad->fShift, 0, SHIFTS, localStream);
+    clearDeviceBufferAsync(&ad->eElec, 0, 1, localStream);
+    clearDeviceBufferAsync(&ad->eLJ, 0, 1, localStream);
 
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_atomdata */
@@ -209,40 +216,6 @@ static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
     return kernel;
 }
 
-/*! \brief Clears nonbonded shift force output array and energy outputs on the GPU.
- */
-static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
-{
-
-    cl_int           cl_error;
-    NBAtomData*      adat = nb->atdat;
-    cl_command_queue ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
-
-    size_t local_work_size[3]  = { 1, 1, 1 };
-    size_t global_work_size[3] = { 1, 1, 1 };
-
-    cl_int shifts = SHIFTS * 3;
-
-    cl_int arg_no;
-
-    cl_kernel zero_e_fshift = nb->kernel_zero_e_fshift;
-
-    local_work_size[0] = 64;
-    // Round the total number of threads up from the array size
-    global_work_size[0] = ((shifts + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
-
-    arg_no   = 0;
-    cl_error = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fShift));
-    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->eLJ));
-    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->eElec));
-    cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
-
-    cl_error = clEnqueueNDRangeKernel(
-            ls, zero_e_fshift, 3, nullptr, global_work_size, local_work_size, 0, nullptr, nullptr);
-    GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
-}
-
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
 static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
 {
@@ -263,27 +236,7 @@ static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
     nb->kernel_pruneonly[epruneFirst] = nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_opencl");
     nb->kernel_pruneonly[epruneRolling] =
             nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
-
-    /* Init auxiliary kernels */
-    nb->kernel_zero_e_fshift = nbnxn_gpu_create_kernel(nb, "zero_e_fshift");
 }
-
-/*! \brief Initializes simulation constant data.
- *
- *  Initializes members of the atomdata and nbparam structs and
- *  clears e/fshift output buffers.
- */
-static void nbnxn_ocl_init_const(NBAtomData*                     atomData,
-                                 NBParamGpu*                     nbParams,
-                                 const interaction_const_t*      ic,
-                                 const PairlistParams&           listParams,
-                                 const nbnxn_atomdata_t::Params& nbatParams,
-                                 const DeviceContext&            deviceContext)
-{
-    init_atomdata_first(atomData, nbatParams.numTypes, deviceContext);
-    init_nbparam(nbParams, ic, listParams, nbatParams, deviceContext);
-}
-
 
 //! This function is documented in the header file
 NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
@@ -325,8 +278,8 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     /* local/non-local GPU streams */
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be initialized to use GPU for non-bonded.");
-    nb->deviceStreams[InteractionLocality::Local] =
-            &deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal);
+    const DeviceStream& localStream = deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal);
+    nb->deviceStreams[InteractionLocality::Local] = &localStream;
 
     if (nb->bUseTwoStreams)
     {
@@ -344,7 +297,10 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
         init_timings(nb->timings);
     }
 
-    nbnxn_ocl_init_const(nb->atdat, nb->nbparam, ic, listParams, nbat->params(), *nb->deviceContext_);
+    const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
+    const DeviceContext&            deviceContext = *nb->deviceContext_;
+    init_atomdata_first(nb->atdat, nbatParams.numTypes, deviceContext, localStream);
+    init_nbparam(nb->nbparam, ic, listParams, nbatParams, deviceContext);
 
     /* Enable LJ param manual prefetch for AMD or Intel or if we request through env. var.
      * TODO: decide about NVIDIA
@@ -361,47 +317,12 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     nbnxn_gpu_compile_kernels(nb);
     nbnxn_gpu_init_kernels(nb);
 
-    /* clear energy and shift force outputs */
-    nbnxn_ocl_clear_e_fshift(nb);
-
     if (debug)
     {
         fprintf(debug, "Initialized OpenCL data structures.\n");
     }
 
     return nb;
-}
-
-/*! \brief Clears the first natoms_clear elements of the GPU nonbonded force output array.
- */
-static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
-{
-    if (natoms_clear == 0)
-    {
-        return;
-    }
-
-    NBAtomData*         atomData    = nb->atdat;
-    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
-
-    clearDeviceBufferAsync(&atomData->f, 0, natoms_clear, localStream);
-}
-
-//! This function is documented in the header file
-void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
-{
-    nbnxn_ocl_clear_f(nb, nb->atdat->numAtoms);
-    /* clear shift force array and energies if the outputs were
-       used in the current step */
-    if (computeVirial)
-    {
-        nbnxn_ocl_clear_e_fshift(nb);
-    }
-
-    /* kick off buffer clearing kernel to ensure concurrency with constraints/update */
-    cl_int gmx_unused cl_error;
-    cl_error = clFlush(nb->deviceStreams[InteractionLocality::Local]->stream());
-    GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
 
 //! This function is documented in the header file
@@ -496,8 +417,6 @@ void gpu_free(NbnxmGpu* nb)
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
     free_kernels(nb->kernel_noener_prune_ptr[0], kernel_count);
-
-    free_kernel(&(nb->kernel_zero_e_fshift));
 
     /* Free atdat */
     freeDeviceBuffer(&(nb->atdat->xq));
