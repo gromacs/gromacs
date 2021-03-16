@@ -50,7 +50,7 @@ if(GMX_GPU_CUDA)
        )
 endif()
 
-if(GMX_GPU_SYCL AND NOT GMX_SYCL_HIPSYCL)
+if(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         leapfrog_gpu_sycl.cpp
     )
