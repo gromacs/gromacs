@@ -64,8 +64,10 @@
 
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -539,6 +541,134 @@ bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
     return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
+}
+
+/*! \brief
+ * Launch asynchronously the download of nonbonded forces from the GPU
+ * (and energies/shift forces if required).
+ */
+void gpu_launch_cpyback(NbnxmGpu*                nb,
+                        struct nbnxn_atomdata_t* nbatom,
+                        const gmx::StepWorkload& stepWork,
+                        const AtomLocality       atomLocality)
+{
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
+    /* determine interaction locality from atom locality */
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+    GMX_ASSERT(iloc == InteractionLocality::Local
+                       || (iloc == InteractionLocality::NonLocal && nb->bNonLocalStreamDoneMarked == false),
+               "Non-local stream is indicating that the copy back event is enqueued at the "
+               "beginning of the copy back function.");
+
+    /* extract the data */
+    NBAtomData*         adat         = nb->atdat;
+    Nbnxm::GpuTimers*   timers       = nb->timers;
+    bool                bDoTime      = nb->bDoTime;
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+
+    /* don't launch non-local copy-back if there was no non-local work to do */
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
+    {
+        /* TODO An alternative way to signal that non-local work is
+           complete is to use a clEnqueueMarker+clEnqueueBarrier
+           pair. However, the use of bNonLocalStreamDoneMarked has the
+           advantage of being local to the host, so probably minimizes
+           overhead. Curiously, for NVIDIA OpenCL with an empty-domain
+           test case, overall simulation performance was higher with
+           the API calls, but this has not been tested on AMD OpenCL,
+           so could be worth considering in future. */
+        nb->bNonLocalStreamDoneMarked = false;
+        return;
+    }
+
+    /* local/nonlocal offset and length used for xq and f */
+    auto atomsRange = getGpuAtomRange(adat, atomLocality);
+
+    /* beginning of timed D2H section */
+    if (bDoTime)
+    {
+        timers->xf[atomLocality].nb_d2h.openTimingRegion(deviceStream);
+    }
+
+    /* With DD the local D2H transfer can only start after the non-local
+       has been launched. */
+    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamDoneMarked)
+    {
+        nb->nonlocal_done.enqueueWaitEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = false;
+    }
+
+    /* DtoH f */
+    static_assert(sizeof(*nbatom->out[0].f.data()) == sizeof(float),
+                  "The host force buffer should be in single precision to match device data size.");
+    copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + atomsRange.begin(),
+                         &adat->f,
+                         atomsRange.begin(),
+                         atomsRange.size(),
+                         deviceStream,
+                         GpuApiCallBehavior::Async,
+                         bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+
+    issueClFlushInStream(deviceStream);
+
+    /* After the non-local D2H is launched the nonlocal_done event can be
+       recorded which signals that the local D2H can proceed. This event is not
+       placed after the non-local kernel because we first need the non-local
+       data back first. */
+    if (iloc == InteractionLocality::NonLocal)
+    {
+        nb->nonlocal_done.markEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = true;
+    }
+
+    /* only transfer energies in the local stream */
+    if (iloc == InteractionLocality::Local)
+    {
+        /* DtoH fshift when virial is needed */
+        if (stepWork.computeVirial)
+        {
+            static_assert(
+                    sizeof(*nb->nbst.fShift) == sizeof(Float3),
+                    "Sizes of host- and device-side shift vector elements should be the same.");
+            copyFromDeviceBuffer(nb->nbst.fShift,
+                                 &adat->fShift,
+                                 0,
+                                 SHIFTS,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+        }
+
+        /* DtoH energies */
+        if (stepWork.computeEnergy)
+        {
+            static_assert(sizeof(*nb->nbst.eLJ) == sizeof(float),
+                          "Sizes of host- and device-side LJ energy terms should be the same.");
+            copyFromDeviceBuffer(nb->nbst.eLJ,
+                                 &adat->eLJ,
+                                 0,
+                                 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+            static_assert(sizeof(*nb->nbst.eElec) == sizeof(float),
+                          "Sizes of host- and device-side electrostatic energy terms should be the "
+                          "same.");
+            copyFromDeviceBuffer(nb->nbst.eElec,
+                                 &adat->eElec,
+                                 0,
+                                 1,
+                                 deviceStream,
+                                 GpuApiCallBehavior::Async,
+                                 bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+        }
+    }
+
+    if (bDoTime)
+    {
+        timers->xf[atomLocality].nb_d2h.closeTimingRegion(deviceStream);
+    }
 }
 
 void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
