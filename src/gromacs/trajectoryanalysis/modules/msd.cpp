@@ -45,6 +45,7 @@
 #include "msd.h"
 
 #include <numeric>
+#include <optional>
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
@@ -104,12 +105,12 @@ public:
     class MsdColumnProxy
     {
     public:
-        MsdColumnProxy(std::vector<double>& column) : column_(column) {}
+        MsdColumnProxy(std::vector<double>* column) : column_(column) {}
 
-        void push_back(double value) { column_.push_back(value); }
+        void push_back(double value) { column_->push_back(value); }
 
     private:
-        std::vector<double>& column_;
+        std::vector<double>* column_;
     };
     //! Returns a proxy to the column for the given tau index. Guarantees that the column is initialized.
     MsdColumnProxy operator[](size_t index)
@@ -118,7 +119,7 @@ public:
         {
             msds_.resize(index + 1);
         }
-        return MsdColumnProxy(msds_[index]);
+        return MsdColumnProxy(&msds_[index]);
     }
     /*! \brief Compute per-tau MSDs averaged over all added points.
      *
@@ -159,30 +160,30 @@ std::vector<real> MsdData::averageMsds() const
  * \tparam x If true, calculate x dimension of displacement
  * \tparam y If true, calculate y dimension of displacement
  * \tparam z If true, calculate z dimension of displacement
- * \param c1 First point
- * \param c2 Second point
+ * \param[in] c1 First point
+ * \param[in] c2 Second point
  * \return Euclidian distance for the given dimension.
  */
 template<bool x, bool y, bool z>
-inline double calcSingleSquaredDistance(RVec c1, const RVec c2)
+inline double calcSingleSquaredDistance(const RVec c1, const RVec c2)
 {
     static_assert(x || y || z, "zero-dimensional MSD selected");
     const DVec firstCoords  = c1.toDVec();
     const DVec secondCoords = c2.toDVec();
     double     result       = 0;
-    if constexpr (x)
+    if constexpr (x) // NOLINT // NOLINTNEXTLINE
     {
         result += (firstCoords[XX] - secondCoords[XX]) * (firstCoords[XX] - secondCoords[XX]);
     }
-    if constexpr (y) // NOLINT(readability-misleading-indentation): clang-tidy-9 can't handle if constexpr (https://bugs.llvm.org/show_bug.cgi?id=32203)
+    if constexpr (y) // NOLINT // NOLINTNEXTLINE
     {
         result += (firstCoords[YY] - secondCoords[YY]) * (firstCoords[YY] - secondCoords[YY]);
     }
-    if constexpr (z) // NOLINT(readability-misleading-indentation)
+    if constexpr (z) // NOLINT // NOLINTNEXTLINE
     {
         result += (firstCoords[ZZ] - secondCoords[ZZ]) * (firstCoords[ZZ] - secondCoords[ZZ]);
     }
-    return result; // NOLINT(readability-misleading-indentation)
+    return result; // NOLINT
 }
 
 /*! \brief Calculate average displacement between sets of points
@@ -193,9 +194,8 @@ inline double calcSingleSquaredDistance(RVec c1, const RVec c2)
  * \tparam x If true, calculate x dimension of displacement
  * \tparam y If true, calculate y dimension of displacement
  * \tparam z If true, calculate z dimension of displacement
- * \param c1 First vector
- * \param c2 Second vector
- * \param numberOfValues
+ * \param[in] c1 First vector
+ * \param[in] c2 Second vector
  * \return Per-particle averaged distance
  */
 template<bool x, bool y, bool z>
@@ -294,10 +294,9 @@ public:
      * boundaries based on the previous frame coordinates, except for the first frame built with
      * builtCoordinates(), which has no previous frame as a reference.
      *
-     * @param sel                   The selection object which holds coordinates
-     * @param molecules             Per-molecule description of atom counts and masses
-     * @param moleculeIndexMapping  Mapping of atom index to molecule index.
-     * @return                      The current frames coordinates in proper format.
+     * \param[in] sel                   The selection object which holds coordinates
+     * \param[in] pbc                   Information about periodicity.
+     * \returns                         The current frames coordinates in proper format.
      */
     ArrayRef<const RVec> buildCoordinates(const Selection& sel, t_pbc* pbc);
 
@@ -532,8 +531,9 @@ void Msd::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* se
                                .description("Time between restarting points in trajectory (ps)")
                                .defaultValue(10.0)
                                .store(&trestart_));
-    options->addOption(RealOption("beginfit").description("").store(&beginFit_));
-    options->addOption(RealOption("endfit").description("").store(&endFit_));
+    options->addOption(
+            RealOption("beginfit").description("Time point at which to start fitting.").store(&beginFit_));
+    options->addOption(RealOption("endfit").description("End time for fitting.").store(&endFit_));
 
     // Output options
     options->addOption(FileNameOption("o")

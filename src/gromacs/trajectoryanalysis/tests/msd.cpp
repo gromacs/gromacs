@@ -146,11 +146,13 @@ public:
     {
         std::string tpr = fileManager().getTemporaryFilePath(".tpr");
         std::string mdp = fileManager().getTemporaryFilePath(".mdp");
-        FILE*       fp  = fopen(mdp.c_str(), "w");
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        FILE* fp = fopen(mdp.c_str(), "w");
         fprintf(fp, "cutoff-scheme = verlet\n");
         fprintf(fp, "rcoulomb      = 0.85\n");
         fprintf(fp, "rvdw          = 0.85\n");
         fprintf(fp, "rlist         = 0.85\n");
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
         fclose(fp);
 
         // Prepare a .tpr file
