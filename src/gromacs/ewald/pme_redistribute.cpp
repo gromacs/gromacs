@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -286,7 +286,7 @@ static void pme_dd_sendrecv(PmeAtomComm gmx_unused* atc,
 static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
                                     const gmx_bool                 bX,
                                     gmx::ArrayRef<const gmx::RVec> x,
-                                    const real*                    data,
+                                    gmx::ArrayRef<const real>      data,
                                     PmeAtomComm*                   atc)
 {
     int nnodes_comm, i, local_pos, buf_pos, node;
@@ -474,12 +474,12 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
                           const t_commrec*               cr,
                           gmx_bool                       bFirst,
                           gmx::ArrayRef<const gmx::RVec> x,
-                          const real*                    data)
+                          gmx::ArrayRef<const real>      data)
 {
     for (int d = pme->ndecompdim - 1; d >= 0; d--)
     {
         gmx::ArrayRef<const gmx::RVec> xRef;
-        const real*                    param_d;
+        gmx::ArrayRef<const real>      param_d;
         if (d == pme->ndecompdim - 1)
         {
             /* Start out with the local coordinates and charges */
@@ -491,7 +491,7 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
             /* Redistribute the data collected along the previous dimension */
             const PmeAtomComm& atc = pme->atc[d + 1];
             xRef                   = atc.x;
-            param_d                = atc.coefficient.data();
+            param_d                = atc.coefficient;
         }
         PmeAtomComm& atc = pme->atc[d];
         atc.pd.resize(xRef.size());

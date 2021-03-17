@@ -1032,7 +1032,9 @@ void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
-static void calc_initial_lb_coeffs(gmx::ArrayRef<real> coefficient, const real* local_c6, const real* local_sigma)
+static void calc_initial_lb_coeffs(gmx::ArrayRef<real>       coefficient,
+                                   gmx::ArrayRef<const real> local_c6,
+                                   gmx::ArrayRef<const real> local_sigma)
 {
     for (gmx::index i = 0; i < coefficient.ssize(); ++i)
     {
@@ -1044,7 +1046,7 @@ static void calc_initial_lb_coeffs(gmx::ArrayRef<real> coefficient, const real* 
 }
 
 /*! \brief Calculate next Lorentz-Berthelot coefficients for LJ-PME */
-static void calc_next_lb_coeffs(gmx::ArrayRef<real> coefficient, const real* local_sigma)
+static void calc_next_lb_coeffs(gmx::ArrayRef<real> coefficient, gmx::ArrayRef<const real> local_sigma)
 {
     for (gmx::index i = 0; i < coefficient.ssize(); ++i)
     {
@@ -1055,12 +1057,12 @@ static void calc_next_lb_coeffs(gmx::ArrayRef<real> coefficient, const real* loc
 int gmx_pme_do(struct gmx_pme_t*              pme,
                gmx::ArrayRef<const gmx::RVec> coordinates,
                gmx::ArrayRef<gmx::RVec>       forces,
-               real                           chargeA[],
-               real                           chargeB[],
-               real                           c6A[],
-               real                           c6B[],
-               real                           sigmaA[],
-               real                           sigmaB[],
+               gmx::ArrayRef<const real>      chargeA,
+               gmx::ArrayRef<const real>      chargeB,
+               gmx::ArrayRef<const real>      c6A,
+               gmx::ArrayRef<const real>      c6B,
+               gmx::ArrayRef<const real>      sigmaA,
+               gmx::ArrayRef<const real>      sigmaB,
                const matrix                   box,
                const t_commrec*               cr,
                int                            maxshift_x,
@@ -1080,21 +1082,21 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     GMX_ASSERT(pme->runMode == PmeRunMode::CPU,
                "gmx_pme_do should not be called on the GPU PME run.");
 
-    int                  d, npme, grid_index, max_grid_index;
-    PmeAtomComm&         atc         = pme->atc[0];
-    pmegrids_t*          pmegrid     = nullptr;
-    real*                grid        = nullptr;
-    real*                coefficient = nullptr;
-    PmeOutput            output[2]; // The second is used for the B state with FEP
-    real                 scale, lambda;
-    gmx_bool             bClearF;
-    gmx_parallel_3dfft_t pfft_setup;
-    real*                fftgrid;
-    t_complex*           cfftgrid;
-    int                  thread;
-    gmx_bool             bFirst, bDoSplines;
-    int                  fep_state;
-    int                  fep_states_lj = pme->bFEP_lj ? 2 : 1;
+    int                       d, npme, grid_index, max_grid_index;
+    PmeAtomComm&              atc     = pme->atc[0];
+    pmegrids_t*               pmegrid = nullptr;
+    real*                     grid    = nullptr;
+    gmx::ArrayRef<const real> coefficient;
+    PmeOutput                 output[2]; // The second is used for the B state with FEP
+    real                      scale, lambda;
+    gmx_bool                  bClearF;
+    gmx_parallel_3dfft_t      pfft_setup;
+    real*                     fftgrid;
+    t_complex*                cfftgrid;
+    int                       thread;
+    gmx_bool                  bFirst, bDoSplines;
+    int                       fep_state;
+    int                       fep_states_lj = pme->bFEP_lj ? 2 : 1;
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = (stepWork.computeEnergy || stepWork.computeVirial);
 
@@ -1196,7 +1198,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
         if (pme->nnodes == 1)
         {
-            atc.coefficient = gmx::arrayRefFromArray(coefficient, coordinates.size());
+            atc.coefficient = coefficient;
         }
         else
         {
@@ -1392,8 +1394,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         /* Loop over A- and B-state if we are doing FEP */
         for (fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
-            real *local_c6 = nullptr, *local_sigma = nullptr, *RedistC6 = nullptr, *RedistSigma = nullptr;
-            gmx::ArrayRef<real> coefficientBuffer;
+            std::vector<real>         local_c6;
+            std::vector<real>         local_sigma;
+            gmx::ArrayRef<const real> RedistC6;
+            gmx::ArrayRef<const real> RedistSigma;
+            gmx::ArrayRef<real>       coefficientBuffer;
             if (pme->nnodes == 1)
             {
                 pme->lb_buf1.resize(atc.numAtoms());
@@ -1401,12 +1406,12 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 switch (fep_state)
                 {
                     case 0:
-                        local_c6    = c6A;
-                        local_sigma = sigmaA;
+                        local_c6.assign(c6A.begin(), c6A.end());
+                        local_sigma.assign(sigmaA.begin(), sigmaA.end());
                         break;
                     case 1:
-                        local_c6    = c6B;
-                        local_sigma = sigmaB;
+                        local_c6.assign(c6B.begin(), c6B.end());
+                        local_sigma.assign(sigmaB.begin(), sigmaB.end());
                         break;
                     default: gmx_incons("Trying to access wrong FEP-state in LJ-PME routine");
                 }
@@ -1431,14 +1436,14 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 do_redist_pos_coeffs(pme, cr, bFirst, coordinates, RedistC6);
                 pme->lb_buf1.resize(atc.numAtoms());
                 pme->lb_buf2.resize(atc.numAtoms());
-                local_c6 = pme->lb_buf1.data();
+                local_c6.assign(pme->lb_buf1.begin(), pme->lb_buf1.end());
                 for (int i = 0; i < atc.numAtoms(); ++i)
                 {
                     local_c6[i] = atc.coefficient[i];
                 }
 
                 do_redist_pos_coeffs(pme, cr, FALSE, coordinates, RedistSigma);
-                local_sigma = pme->lb_buf2.data();
+                local_sigma.assign(pme->lb_buf2.begin(), pme->lb_buf2.end());
                 for (int i = 0; i < atc.numAtoms(); ++i)
                 {
                     local_sigma[i] = atc.coefficient[i];
