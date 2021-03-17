@@ -236,6 +236,9 @@
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
+/* Use CUDA-aware MPI.  */
+#cmakedefine01 HAVE_CUDA_AWARE_MPI
+
 /* Cluster size used by nonbonded OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
 #define GMX_OPENCL_NB_CLUSTER_SIZE @GMX_OPENCL_NB_CLUSTER_SIZE@
 

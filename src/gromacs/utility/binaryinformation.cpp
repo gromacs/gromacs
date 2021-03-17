@@ -292,7 +292,11 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #if GMX_THREAD_MPI
     writer->writeLine("MPI library:        thread_mpi");
 #elif GMX_MPI
+#    if HAVE_CUDA_AWARE_MPI
+    writer->writeLine("MPI library:        MPI (CUDA-aware)");
+#    else
     writer->writeLine("MPI library:        MPI");
+#    endif
 #else
     writer->writeLine("MPI library:        none");
 #endif

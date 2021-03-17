@@ -559,6 +559,14 @@ if(GMX_GPU)
 
 endif()
 
+# For build with CUDA and Lib-MPI, check if underlying MPI implementation is CUDA-aware
+# CUDA-aware MPI allows direct GPU communication without staging data through host
+if(GMX_GPU_CUDA AND GMX_LIB_MPI)
+    include(gmxManageCudaAwareMPI)
+else()
+    set(HAVE_CUDA_AWARE_MPI 0)
+endif()
+
 if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
