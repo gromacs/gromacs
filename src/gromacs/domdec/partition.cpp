@@ -3287,15 +3287,15 @@ void dd_partition_system(FILE*                     fplog,
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr,
-                                fr->ic.get(),
+                                *fr->ic,
                                 mdatoms->nChargePerturbed != 0,
                                 mdatoms->nTypePerturbed != 0,
-                                mdatoms->chargeA,
-                                mdatoms->chargeB,
-                                mdatoms->sqrt_c6A,
-                                mdatoms->sqrt_c6B,
-                                mdatoms->sigmaA,
-                                mdatoms->sigmaB,
+                                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
+                                gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
+                                gmx::arrayRefFromArray(mdatoms->sqrt_c6A, mdatoms->nr),
+                                gmx::arrayRefFromArray(mdatoms->sqrt_c6B, mdatoms->nr),
+                                gmx::arrayRefFromArray(mdatoms->sigmaA, mdatoms->nr),
+                                gmx::arrayRefFromArray(mdatoms->sigmaB, mdatoms->nr),
                                 dd_pme_maxshift_x(*dd),
                                 dd_pme_maxshift_y(*dd));
     }

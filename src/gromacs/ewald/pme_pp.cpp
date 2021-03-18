@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,16 +94,16 @@ static void gmx_pme_send_coeffs_coords_wait(gmx_domdec_t* dd)
 }
 
 /*! \brief Send data to PME ranks */
-static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
-                                       const t_commrec* cr,
-                                       unsigned int     flags,
-                                       real gmx_unused* chargeA,
-                                       real gmx_unused* chargeB,
-                                       real gmx_unused* c6A,
-                                       real gmx_unused* c6B,
-                                       real gmx_unused* sigmaA,
-                                       real gmx_unused* sigmaB,
-                                       const matrix     box,
+static void gmx_pme_send_coeffs_coords(t_forcerec*         fr,
+                                       const t_commrec*    cr,
+                                       unsigned int        flags,
+                                       gmx::ArrayRef<real> chargeA,
+                                       gmx::ArrayRef<real> chargeB,
+                                       gmx::ArrayRef<real> c6A,
+                                       gmx::ArrayRef<real> c6B,
+                                       gmx::ArrayRef<real> sigmaA,
+                                       gmx::ArrayRef<real> sigmaB,
+                                       const matrix        box,
                                        const rvec gmx_unused* x,
                                        real                   lambda_q,
                                        real                   lambda_lj,
@@ -195,7 +195,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
     {
         if (flags & PP_PME_CHARGE)
         {
-            MPI_Isend(chargeA,
+            MPI_Isend(chargeA.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -205,7 +205,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
         }
         if (flags & PP_PME_CHARGEB)
         {
-            MPI_Isend(chargeB,
+            MPI_Isend(chargeB.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -215,7 +215,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
         }
         if (flags & PP_PME_SQRTC6)
         {
-            MPI_Isend(c6A,
+            MPI_Isend(c6A.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -225,7 +225,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
         }
         if (flags & PP_PME_SQRTC6B)
         {
-            MPI_Isend(c6B,
+            MPI_Isend(c6B.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -235,7 +235,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
         }
         if (flags & PP_PME_SIGMA)
         {
-            MPI_Isend(sigmaA,
+            MPI_Isend(sigmaA.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -245,7 +245,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
         }
         if (flags & PP_PME_SIGMAB)
         {
-            MPI_Isend(sigmaB,
+            MPI_Isend(sigmaB.data(),
                       n * sizeof(real),
                       MPI_BYTE,
                       dd->pme_nodeid,
@@ -300,25 +300,25 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
 }
 
 void gmx_pme_send_parameters(const t_commrec*           cr,
-                             const interaction_const_t* ic,
-                             gmx_bool                   bFreeEnergy_q,
-                             gmx_bool                   bFreeEnergy_lj,
-                             real*                      chargeA,
-                             real*                      chargeB,
-                             real*                      sqrt_c6A,
-                             real*                      sqrt_c6B,
-                             real*                      sigmaA,
-                             real*                      sigmaB,
+                             const interaction_const_t& interactionConst,
+                             bool                       bFreeEnergy_q,
+                             bool                       bFreeEnergy_lj,
+                             gmx::ArrayRef<real>        chargeA,
+                             gmx::ArrayRef<real>        chargeB,
+                             gmx::ArrayRef<real>        sqrt_c6A,
+                             gmx::ArrayRef<real>        sqrt_c6B,
+                             gmx::ArrayRef<real>        sigmaA,
+                             gmx::ArrayRef<real>        sigmaB,
                              int                        maxshift_x,
                              int                        maxshift_y)
 {
     unsigned int flags = 0;
 
-    if (EEL_PME(ic->eeltype))
+    if (EEL_PME(interactionConst.eeltype))
     {
         flags |= PP_PME_CHARGE;
     }
-    if (EVDW_PME(ic->vdwtype))
+    if (EVDW_PME(interactionConst.vdwtype))
     {
         flags |= (PP_PME_SQRTC6 | PP_PME_SIGMA);
     }
@@ -375,12 +375,12 @@ void gmx_pme_send_coordinates(t_forcerec*           fr,
     gmx_pme_send_coeffs_coords(fr,
                                cr,
                                flags,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
                                box,
                                x,
                                lambda_q,
@@ -400,26 +400,8 @@ void gmx_pme_send_finish(const t_commrec* cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(nullptr,
-                               cr,
-                               flags,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               nullptr,
-                               0,
-                               0,
-                               0,
-                               0,
-                               -1,
-                               false,
-                               false,
-                               false,
-                               nullptr);
+    gmx_pme_send_coeffs_coords(
+            nullptr, cr, flags, {}, {}, {}, {}, {}, {}, nullptr, nullptr, 0, 0, 0, 0, -1, false, false, false, nullptr);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec* cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj)

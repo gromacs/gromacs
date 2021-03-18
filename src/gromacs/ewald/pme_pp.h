@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,19 +59,21 @@ namespace gmx
 {
 class ForceWithVirial;
 class PmePpCommGpu;
+template<typename>
+class ArrayRef;
 } // namespace gmx
 
 /*! \brief Send the charges and maxshift to out PME-only node. */
 void gmx_pme_send_parameters(const t_commrec*           cr,
-                             const interaction_const_t* ic,
+                             const interaction_const_t& interactionConst,
                              gmx_bool                   bFreeEnergy_q,
                              gmx_bool                   bFreeEnergy_lj,
-                             real*                      chargeA,
-                             real*                      chargeB,
-                             real*                      sqrt_c6A,
-                             real*                      sqrt_c6B,
-                             real*                      sigmaA,
-                             real*                      sigmaB,
+                             gmx::ArrayRef<real>        chargeA,
+                             gmx::ArrayRef<real>        chargeB,
+                             gmx::ArrayRef<real>        sqrt_c6A,
+                             gmx::ArrayRef<real>        sqrt_c6B,
+                             gmx::ArrayRef<real>        sigmaA,
+                             gmx::ArrayRef<real>        sigmaB,
                              int                        maxshift_x,
                              int                        maxshift_y);
 
