@@ -58,7 +58,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
+static constexpr bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 
 #ifndef DEBUG_WCYCLE
 /*! \brief Enables consistency checking for the counters.
@@ -230,7 +230,7 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
 
 
 #if GMX_MPI
-    if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
+    if (cr != nullptr && PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
         if (fplog)
         {
@@ -456,6 +456,15 @@ void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c)
 {
     *n = wc->wcc[ewc].n;
     *c = static_cast<double>(wc->wcc[ewc].c);
+}
+
+void wallcycle_sub_get(gmx_wallcycle_t wc, int ewcs, int* n, double* c)
+{
+    if (useCycleSubcounters && wc != nullptr)
+    {
+        *n = wc->wcsc[ewcs].n;
+        *c = static_cast<double>(wc->wcsc[ewcs].c);
+    }
 }
 
 void wallcycle_reset_all(gmx_wallcycle_t wc)
