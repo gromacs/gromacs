@@ -208,8 +208,8 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
 
 } // namespace gmx
 
-void atoms2md(const gmx_mtop_t*  mtop,
-              const t_inputrec*  ir,
+void atoms2md(const gmx_mtop_t&  mtop,
+              const t_inputrec&  inputrec,
               int                nindex,
               gmx::ArrayRef<int> index,
               int                homenr,
@@ -219,11 +219,11 @@ void atoms2md(const gmx_mtop_t*  mtop,
     const t_grpopts* opts;
     int nthreads gmx_unused;
 
-    bLJPME = EVDW_PME(ir->vdwtype);
+    bLJPME = EVDW_PME(inputrec.vdwtype);
 
-    opts = &ir->opts;
+    opts = &inputrec.opts;
 
-    const SimulationGroups& groups = mtop->groups;
+    const SimulationGroups& groups = mtop.groups;
 
     auto md = mdAtoms->mdatoms();
     /* nindex>=0 indicates DD where we use an index */
@@ -233,7 +233,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
     }
     else
     {
-        md->nr = mtop->natoms;
+        md->nr = mtop.natoms;
     }
 
     if (md->nr > md->nalloc)
@@ -288,7 +288,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
             /* We always copy cTC with domain decomposition */
         }
         srenew(md->cENER, md->nalloc);
-        if (inputrecFrozenAtoms(ir))
+        if (inputrecFrozenAtoms(&inputrec))
         {
             srenew(md->cFREEZE, md->nalloc);
         }
@@ -310,11 +310,11 @@ void atoms2md(const gmx_mtop_t*  mtop,
          * Therefore, when adding code, the user should use something like:
          * gprnrU1 = (md->cU1==NULL ? 0 : md->cU1[localatindex])
          */
-        if (!mtop->groups.groupNumbers[SimulationAtomGroupType::User1].empty())
+        if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User1].empty())
         {
             srenew(md->cU1, md->nalloc);
         }
-        if (!mtop->groups.groupNumbers[SimulationAtomGroupType::User2].empty())
+        if (!mtop.groups.groupNumbers[SimulationAtomGroupType::User2].empty())
         {
             srenew(md->cU2, md->nalloc);
         }
@@ -340,19 +340,19 @@ void atoms2md(const gmx_mtop_t*  mtop,
             {
                 ag = index[i];
             }
-            const t_atom& atom = mtopGetAtomParameters(mtop, ag, &molb);
+            const t_atom& atom = mtopGetAtomParameters(&mtop, ag, &molb);
 
             if (md->cFREEZE)
             {
                 md->cFREEZE[i] = getGroupType(groups, SimulationAtomGroupType::Freeze, ag);
             }
-            if (EI_ENERGY_MINIMIZATION(ir->eI))
+            if (EI_ENERGY_MINIMIZATION(inputrec.eI))
             {
                 /* Displacement is proportional to F, masses used for constraints */
                 mA = 1.0;
                 mB = 1.0;
             }
-            else if (ir->eI == IntegrationAlgorithm::BD)
+            else if (inputrec.eI == IntegrationAlgorithm::BD)
             {
                 /* With BD the physical masses are irrelevant.
                  * To keep the code simple we use most of the normal MD code path
@@ -364,15 +364,15 @@ void atoms2md(const gmx_mtop_t*  mtop,
                  * Thus with BD v*dt will give the displacement and the reported
                  * temperature can signal bad integration (too large time step).
                  */
-                if (ir->bd_fric > 0)
+                if (inputrec.bd_fric > 0)
                 {
-                    mA = 0.5 * ir->bd_fric * ir->delta_t;
-                    mB = 0.5 * ir->bd_fric * ir->delta_t;
+                    mA = 0.5 * inputrec.bd_fric * inputrec.delta_t;
+                    mB = 0.5 * inputrec.bd_fric * inputrec.delta_t;
                 }
                 else
                 {
                     /* The friction coefficient is mass/tau_t */
-                    fac = ir->delta_t
+                    fac = inputrec.delta_t
                           / opts->tau_t[md->cTC ? groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag] : 0];
                     mA = 0.5 * atom.m * fac;
                     mB = 0.5 * atom.mB * fac;
@@ -434,8 +434,8 @@ void atoms2md(const gmx_mtop_t*  mtop,
             md->typeA[i]   = atom.type;
             if (bLJPME)
             {
-                c6  = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c6;
-                c12 = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c12;
+                c6  = mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c6;
+                c12 = mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c12;
                 md->sqrt_c6A[i] = std::sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
@@ -454,8 +454,8 @@ void atoms2md(const gmx_mtop_t*  mtop,
                 md->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {
-                    c6  = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c6;
-                    c12 = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c12;
+                    c6  = mtop.ffparams.iparams[atom.typeB * (mtop.ffparams.atnr + 1)].lj.c6;
+                    c12 = mtop.ffparams.iparams[atom.typeB * (mtop.ffparams.atnr + 1)].lj.c12;
                     md->sqrt_c6B[i] = std::sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {

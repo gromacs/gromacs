@@ -98,8 +98,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         force->resize(numTotalAtoms);
     }
 
-    atoms2md(&top_global,
-             &inputrec,
+    atoms2md(top_global,
+             inputrec,
              numAtomIndex,
              usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(),
              numHomeAtoms,

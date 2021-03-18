@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2010,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,19 +110,27 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
 
 } // namespace gmx
 
-void atoms2md(const gmx_mtop_t*  mtop,
-              const t_inputrec*  ir,
-              int                nindex,
-              gmx::ArrayRef<int> index,
-              int                homenr,
-              gmx::MDAtoms*      mdAtoms);
-/* This routine copies the atoms->atom struct into md.
+/*! \brief This routine copies the atoms->atom struct into md.
+ *
+ * \param[in]    mtop     The molecular topology.
+ * \param[in]    inputrec The input record.
+ * \param[in]    nindex   If nindex>=0 we are doing DD.
+ * \param[in]    index    Lookup table for global atom index.
+ * \param[in]    homenr   Number of atoms on this processor.
+ * \param[inout] mdAtoms  Data set up by this routine.
+ *
  * If index!=NULL only the indexed atoms are copied.
  * For the masses the A-state (lambda=0) mass is used.
  * Sets md->lambda = 0.
  * In free-energy runs, update_mdatoms() should be called after atoms2md()
  * to set the masses corresponding to the value of lambda at each step.
  */
+void atoms2md(const gmx_mtop_t&  mtop,
+              const t_inputrec&  inputrec,
+              int                nindex,
+              gmx::ArrayRef<int> index,
+              int                homenr,
+              gmx::MDAtoms*      mdAtoms);
 
 void update_mdatoms(t_mdatoms* md, real lambda);
 /* When necessary, sets all the mass parameters to values corresponding
