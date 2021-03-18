@@ -726,7 +726,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     const int                  numColumns      = grid.numColumns();
     const int                  cellOffset      = grid.cellOffset();
     const int                  numAtomsPerCell = grid.numAtomsPerCell();
-    Nbnxm::InteractionLocality interactionLoc  = gpuAtomToInteractionLocality(locality);
+    Nbnxm::InteractionLocality interactionLoc  = atomToInteractionLocality(locality);
 
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
 

@@ -73,47 +73,6 @@ static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality 
     return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->nsci == 0);
 }
 
-/*! \brief Convert atom locality to interaction locality.
- *
- *  In the current implementation the this is straightforward conversion:
- *  local to local, non-local to non-local.
- *
- *  \param[in] atomLocality Atom locality specifier
- *  \returns                Interaction locality corresponding to the atom locality passed.
- */
-static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocality atomLocality)
-{
-
-    /* determine interaction locality from atom locality */
-    if (atomLocality == AtomLocality::Local)
-    {
-        return InteractionLocality::Local;
-    }
-    else if (atomLocality == AtomLocality::NonLocal)
-    {
-        return InteractionLocality::NonLocal;
-    }
-    else
-    {
-        GMX_THROW(gmx::InconsistentInputError(
-                "Only Local and NonLocal atom locities can be converted to interaction locality."));
-    }
-}
-
-/*! \brief Returns true if there is GPU short-range work for the given interaction locality.
- *
- * Note that as, unlike nonbonded tasks, bonded tasks are not split into local/nonlocal,
- * and therefore if there are GPU offloaded bonded interactions, this function will return
- * true for all interaction localities.
- *
- * \param[inout]  nb        Pointer to the nonbonded GPU data structure
- * \param[in]     iLocality Interaction locality identifier
- */
-static inline bool haveGpuShortRangeWork(const NbnxmGpu& nb, const gmx::InteractionLocality iLocality)
-{
-    return nb.haveWork[iLocality];
-}
-
 /*! \brief Calculate atom range and return start index and length.
  *
  * \param[in] atomData Atom descriptor data structure

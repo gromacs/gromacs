@@ -746,11 +746,11 @@ void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const
                                || (gpuBonded != nullptr && gpuBonded->haveInteractions()));
 }
 
-bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality)
+bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::InteractionLocality interactionLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    return haveGpuShortRangeWork(*nb, gpuAtomToInteractionLocality(aLocality));
+    return nb->haveWork[interactionLocality];
 }
 
 /*! \brief
@@ -765,7 +765,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
     /* determine interaction locality from atom locality */
-    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+    const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
     GMX_ASSERT(iloc == InteractionLocality::Local
                        || (iloc == InteractionLocality::NonLocal && nb->bNonLocalStreamDoneMarked == false),
                "Non-local stream is indicating that the copy back event is enqueued at the "
@@ -778,7 +778,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
@@ -910,7 +910,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+    const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
 
     NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
@@ -928,7 +928,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
        we always call the local local x+q copy (and the rest of the local
        work in nbnxn_gpu_launch_kernel().
      */
-    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(nb, iloc))
     {
         plist->haveFreshList = false;
 

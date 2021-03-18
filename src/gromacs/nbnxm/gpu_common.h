@@ -196,7 +196,7 @@ static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
     }
 
     /* determine interaction locality from atom locality */
-    const InteractionLocality iLocality        = gpuAtomToInteractionLocality(atomLocality);
+    const InteractionLocality iLocality        = atomToInteractionLocality(atomLocality);
     const bool                didEnergyKernels = stepWork.computeEnergy;
 
     /* only increase counter once (at local F wait) */
@@ -261,7 +261,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
     /* determine interaction locality from atom locality */
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(aloc);
+    const InteractionLocality iLocality = atomToInteractionLocality(aloc);
 
 
     // Transfers are launched and therefore need to be waited on if:
@@ -277,7 +277,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
     //  We skip when during the non-local phase there was actually no work to do.
     //  This is consistent with nbnxn_gpu_launch_kernel but it also considers possible
     //  bonded GPU work.
-    if ((iLocality == InteractionLocality::Local) || haveGpuShortRangeWork(*nb, iLocality))
+    if ((iLocality == InteractionLocality::Local) || haveGpuShortRangeWork(nb, iLocality))
     {
         // Query the state of the GPU stream and return early if we're not done
         if (completionKind == GpuTaskCompletion::Check)
@@ -360,7 +360,7 @@ float gpu_wait_finish_task(NbnxmGpu*                nb,
                            gmx::ArrayRef<gmx::RVec> shiftForces,
                            gmx_wallcycle*           wcycle)
 {
-    auto cycleCounter = (gpuAtomToInteractionLocality(aloc) == InteractionLocality::Local)
+    auto cycleCounter = (atomToInteractionLocality(aloc) == InteractionLocality::Local)
                                 ? ewcWAIT_GPU_NB_L
                                 : ewcWAIT_GPU_NB_NL;
 

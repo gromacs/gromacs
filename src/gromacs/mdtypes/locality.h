@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_MDTYPES_LOCALITY_H
 
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
@@ -82,6 +83,33 @@ enum class InteractionLocality : int
 static const EnumerationArray<InteractionLocality, const char*> c_interactionLocalityNames = {
     { "local", "non-local" }
 };
+
+/*! \brief Convert atom locality to interaction locality.
+ *
+ *  In the current implementation the this is straightforward conversion:
+ *  local to local, non-local to non-local.
+ *
+ *  \param[in] atomLocality Atom locality specifier
+ *  \returns                Interaction locality corresponding to the atom locality passed.
+ */
+static inline InteractionLocality atomToInteractionLocality(const AtomLocality atomLocality)
+{
+
+    /* determine interaction locality from atom locality */
+    if (atomLocality == AtomLocality::Local)
+    {
+        return InteractionLocality::Local;
+    }
+    else if (atomLocality == AtomLocality::NonLocal)
+    {
+        return InteractionLocality::NonLocal;
+    }
+    else
+    {
+        GMX_THROW(gmx::InconsistentInputError(
+                "Only Local and NonLocal atom locities can be converted to interaction locality."));
+    }
+}
 
 } // namespace gmx
 

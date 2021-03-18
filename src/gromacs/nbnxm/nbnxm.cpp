@@ -181,7 +181,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
 
     /* Skip the reduction if there was no short-range GPU work to do
      * (either NB or both NB and bonded work). */
-    if (!pairlistIsSimple() && !Nbnxm::haveGpuShortRangeWork(gpu_nbv, locality))
+    if (!pairlistIsSimple() && !Nbnxm::haveGpuShortRangeWork(gpu_nbv, atomToInteractionLocality(locality)))
     {
         return;
     }

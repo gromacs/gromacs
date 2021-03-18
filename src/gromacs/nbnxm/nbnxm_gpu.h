@@ -288,17 +288,19 @@ void setupGpuShortRangeWork(NbnxmGpu gmx_unused* nb,
                             const gmx::GpuBonded gmx_unused* gpuBonded,
                             gmx::InteractionLocality gmx_unused iLocality) GPU_FUNC_TERM;
 
-/*! \brief Returns true if there is GPU short-range work for the given atom locality.
+/*! \brief Returns true if there is GPU short-range work for the given interaction locality.
  *
  * Note that as, unlike nonbonded tasks, bonded tasks are not split into local/nonlocal,
  * and therefore if there are GPU offloaded bonded interactions, this function will return
  * true for both local and nonlocal atom range.
  *
- * \param[inout]  nb        Pointer to the nonbonded GPU data structure
- * \param[in]     aLocality Atom locality identifier
+ * \param[inout]  nb                   Pointer to the nonbonded GPU data structure
+ * \param[in]     interactionLocality  Interaction locality identifier
+ *
+ * \return Whether there is short range work for a given locality.
  */
 GPU_FUNC_QUALIFIER
-bool haveGpuShortRangeWork(const NbnxmGpu gmx_unused* nb, gmx::AtomLocality gmx_unused aLocality)
+bool haveGpuShortRangeWork(const NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused interactionLocality)
         GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief sync CPU thread on coordinate copy to device
