@@ -377,7 +377,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
-    GMX_ASSERT(!(GMX_GPU_SYCL && !nb->bDoTime), "GPU timing is not supported in SYCL");
     nb->timers = new Nbnxm::GpuTimers();
     snew(nb->timings, 1);
 
