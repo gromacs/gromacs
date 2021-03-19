@@ -50,14 +50,14 @@ struct t_commrec;
 struct t_lambda;
 
 // The non-bonded energy terms accumulated for energy group pairs
-enum
+enum class NonBondedEnergyTerms : int
 {
-    egCOULSR,
-    egLJSR,
-    egBHAMSR,
-    egCOUL14,
-    egLJ14,
-    egNR
+    CoulombSR,
+    LJSR,
+    BuckinghamSR,
+    Coulomb14,
+    LJ14,
+    Count
 };
 
 // Struct for accumulating non-bonded energies between energy group pairs
@@ -65,14 +65,14 @@ struct gmx_grppairener_t
 {
     gmx_grppairener_t(int numEnergyGroups) : nener(numEnergyGroups * numEnergyGroups)
     {
-        for (auto& elem : ener)
+        for (auto& term : energyGroupPairTerms)
         {
-            elem.resize(nener);
+            term.resize(nener);
         }
     }
 
-    int                                 nener; /* The number of energy group pairs */
-    std::array<std::vector<real>, egNR> ener;  /* Energy terms for each pair of groups */
+    int nener; /* The number of energy group pairs */
+    gmx::EnumerationArray<NonBondedEnergyTerms, std::vector<real>> energyGroupPairTerms; /* Energy terms for each pair of groups */
 };
 
 //! Accumulates free-energy foreign lambda energies and dH/dlamba

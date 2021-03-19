@@ -376,12 +376,12 @@ static real do_pairs_general(int                 ftype,
     {
         case F_LJ14:
         case F_LJC14_Q:
-            energygrp_elec = grppener->ener[egCOUL14].data();
-            energygrp_vdw  = grppener->ener[egLJ14].data();
+            energygrp_elec = grppener->energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14].data();
+            energygrp_vdw  = grppener->energyGroupPairTerms[NonBondedEnergyTerms::LJ14].data();
             break;
         case F_LJC_PAIRS_NB:
-            energygrp_elec = grppener->ener[egCOULSR].data();
-            energygrp_vdw  = grppener->ener[egLJSR].data();
+            energygrp_elec = grppener->energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
+            energygrp_vdw  = grppener->energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
             break;
         default:
             energygrp_elec = nullptr; /* Keep compiler happy */

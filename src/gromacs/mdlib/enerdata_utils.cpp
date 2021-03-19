@@ -106,15 +106,15 @@ void sum_epot(const gmx_grppairener_t& grpp, real* epot)
     int i;
 
     /* Accumulate energies */
-    epot[F_COUL_SR] = sum_v(grpp.nener, grpp.ener[egCOULSR]);
-    epot[F_LJ]      = sum_v(grpp.nener, grpp.ener[egLJSR]);
-    epot[F_LJ14]    = sum_v(grpp.nener, grpp.ener[egLJ14]);
-    epot[F_COUL14]  = sum_v(grpp.nener, grpp.ener[egCOUL14]);
+    epot[F_COUL_SR] = sum_v(grpp.nener, grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR]);
+    epot[F_LJ]      = sum_v(grpp.nener, grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR]);
+    epot[F_LJ14]    = sum_v(grpp.nener, grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJ14]);
+    epot[F_COUL14]  = sum_v(grpp.nener, grpp.energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14]);
 
     /* lattice part of LR doesnt belong to any group
      * and has been added earlier
      */
-    epot[F_BHAM] = sum_v(grpp.nener, grpp.ener[egBHAMSR]);
+    epot[F_BHAM] = sum_v(grpp.nener, grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
@@ -315,11 +315,11 @@ void reset_foreign_enerdata(gmx_enerdata_t* enerd)
 
     /* First reset all foreign energy components.  Foreign energies always called on
        neighbor search steps */
-    for (i = 0; (i < egNR); i++)
+    for (i = 0; (i < static_cast<int>(NonBondedEnergyTerms::Count)); i++)
     {
         for (j = 0; (j < enerd->grpp.nener); j++)
         {
-            enerd->foreign_grpp.ener[i][j] = 0.0;
+            enerd->foreign_grpp.energyGroupPairTerms[i][j] = 0.0;
         }
     }
 
@@ -344,11 +344,11 @@ void reset_enerdata(gmx_enerdata_t* enerd)
     int i, j;
 
     /* First reset all energy components. */
-    for (i = 0; (i < egNR); i++)
+    for (i = 0; (i < static_cast<int>(NonBondedEnergyTerms::Count)); i++)
     {
         for (j = 0; (j < enerd->grpp.nener); j++)
         {
-            enerd->grpp.ener[i][j] = 0.0_real;
+            enerd->grpp.energyGroupPairTerms[i][j] = 0.0_real;
         }
     }
 

@@ -221,11 +221,11 @@ void zero_thread_output(f_thread_t* f_t)
     {
         f_t->ener[i] = 0;
     }
-    for (int i = 0; i < egNR; i++)
+    for (int i = 0; i < static_cast<int>(NonBondedEnergyTerms::Count); i++)
     {
         for (int j = 0; j < f_t->grpp.nener; j++)
         {
-            f_t->grpp.ener[i][j] = 0;
+            f_t->grpp.energyGroupPairTerms[i][j] = 0;
         }
     }
     for (auto i : keysOf(f_t->dvdl))
@@ -338,13 +338,13 @@ void reduce_thread_output(gmx::ForceWithShiftForces* forceWithShiftForces,
                     ener[i] += f_t[t]->ener[i];
                 }
             }
-            for (int i = 0; i < egNR; i++)
+            for (int i = 0; i < static_cast<int>(NonBondedEnergyTerms::Count); i++)
             {
                 for (int j = 0; j < f_t[1]->grpp.nener; j++)
                 {
                     for (int t = 1; t < bt->nthreads; t++)
                     {
-                        grpp->ener[i][j] += f_t[t]->grpp.ener[i][j];
+                        grpp->energyGroupPairTerms[i][j] += f_t[t]->grpp.energyGroupPairTerms[i][j];
                     }
                 }
             }

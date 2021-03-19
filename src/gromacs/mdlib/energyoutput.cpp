@@ -108,7 +108,14 @@ static const char* enthalpy_nm[] = { "Enthalpy" };
 static std::array<const char*, 6> boxvel_nm = { "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
                                                 "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY" };
 
-const char* egrp_nm[egNR + 1] = { "Coul-SR", "LJ-SR", "Buck-SR", "Coul-14", "LJ-14", nullptr };
+const char* enumValueToString(NonBondedEnergyTerms enumValue)
+{
+    static constexpr gmx::EnumerationArray<NonBondedEnergyTerms, const char*> nonBondedEnergyTermTypeNames = {
+        "Coul-SR", "LJ-SR", "Buck-SR", "Coul-14", "LJ-14"
+    };
+    return nonBondedEnergyTermTypeNames[enumValue];
+}
+
 //! \}
 
 namespace gmx
@@ -154,7 +161,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     char**                  gnm;
     char                    buf[256];
     const char*             bufi;
-    int                     i, j, ni, nj, n, k, kk, ncon, nset;
+    int                     i, j, ni, nj, n, ncon, nset;
     bool                    bBHAM, b14;
 
     if (EI_DYNAMICS(inputrec.eI))
@@ -190,9 +197,9 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
 
     /* Energy monitoring */
-    for (i = 0; i < egNR; i++)
+    for (auto& term : bEInd_)
     {
-        bEInd_[i] = false;
+        term = false;
     }
 
     // Setting true only to those energy terms, that have active interactions and
@@ -333,27 +340,27 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
 
     /* Energy monitoring */
-    for (i = 0; i < egNR; i++)
+    for (auto& term : bEInd_)
     {
-        bEInd_[i] = false;
+        term = false;
     }
-    bEInd_[egCOULSR] = true;
-    bEInd_[egLJSR]   = true;
+    bEInd_[NonBondedEnergyTerms::CoulombSR] = true;
+    bEInd_[NonBondedEnergyTerms::LJSR]      = true;
 
     if (bBHAM)
     {
-        bEInd_[egLJSR]   = false;
-        bEInd_[egBHAMSR] = true;
+        bEInd_[NonBondedEnergyTerms::LJSR]         = false;
+        bEInd_[NonBondedEnergyTerms::BuckinghamSR] = true;
     }
     if (b14)
     {
-        bEInd_[egLJ14]   = true;
-        bEInd_[egCOUL14] = true;
+        bEInd_[NonBondedEnergyTerms::LJ14]      = true;
+        bEInd_[NonBondedEnergyTerms::Coulomb14] = true;
     }
     nEc_ = 0;
-    for (i = 0; (i < egNR); i++)
+    for (auto term : bEInd_)
     {
-        if (bEInd_[i])
+        if (term)
         {
             nEc_++;
         }
@@ -367,7 +374,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     {
         n = 0;
         snew(gnm, nEc_);
-        for (k = 0; (k < nEc_); k++)
+        for (int k = 0; (k < nEc_); k++)
         {
             snew(gnm[k], STRLEN);
         }
@@ -376,24 +383,25 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
             ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
             for (j = i; (j < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); j++)
             {
-                nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                for (k = kk = 0; (k < egNR); k++)
+                nj    = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                int k = 0;
+                for (auto key : keysOf(bEInd_))
                 {
-                    if (bEInd_[k])
+                    if (bEInd_[key])
                     {
-                        sprintf(gnm[kk],
+                        sprintf(gnm[k],
                                 "%s:%s-%s",
-                                egrp_nm[k],
+                                enumValueToString(key),
                                 *(groups->groupNames[ni]),
                                 *(groups->groupNames[nj]));
-                        kk++;
+                        k++;
                     }
                 }
                 igrp_[n] = get_ebin_space(ebin_, nEc_, gnm, unit_energy);
                 n++;
             }
         }
-        for (k = 0; (k < nEc_); k++)
+        for (int k = 0; (k < nEc_); k++)
         {
             sfree(gnm[k]);
         }
@@ -871,7 +879,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
     int  j, k, kk, n, gid;
     real crmsd[2], tmp6[6];
     real bs[tricl_boxs_nm.size()], vol, dens, enthalpy;
-    real eee[egNR];
+    real eee[static_cast<int>(NonBondedEnergyTerms::Count)];
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double> store_dhdl;
     real                                                              store_energy = 0;
     real                                                              tmp;
@@ -969,11 +977,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             for (j = i; (j < nEg_); j++)
             {
                 gid = GID(i, j, nEg_);
-                for (k = kk = 0; (k < egNR); k++)
+                for (k = kk = 0; (k < static_cast<int>(NonBondedEnergyTerms::Count)); k++)
                 {
                     if (bEInd_[k])
                     {
-                        eee[kk++] = enerd->grpp.ener[k][gid];
+                        eee[kk++] = enerd->grpp.energyGroupPairTerms[k][gid];
                     }
                 }
                 add_ebin(ebin_, igrp_[n], nEc_, eee, bSum);
@@ -1386,11 +1394,11 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
         {
             int padding = 8 - strlen(unit_energy);
             fprintf(log, "%*sEpot (%s)   ", padding, "", unit_energy);
-            for (int i = 0; (i < egNR); i++)
+            for (auto key : keysOf(bEInd_))
             {
-                if (bEInd_[i])
+                if (bEInd_[key])
                 {
-                    fprintf(log, "%12s   ", egrp_nm[i]);
+                    fprintf(log, "%12s   ", enumValueToString(key));
                 }
             }
             fprintf(log, "\n");

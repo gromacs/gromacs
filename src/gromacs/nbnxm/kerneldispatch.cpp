@@ -454,16 +454,18 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
         case Nbnxm::KernelType::Cpu4x4_PlainC:
         case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-            nbnxn_kernel_cpu(pairlistSet,
-                             kernelSetup(),
-                             nbat.get(),
-                             ic,
-                             fr.shift_vec,
-                             stepWork,
-                             clearF,
-                             enerd->grpp.ener[egCOULSR].data(),
-                             fr.bBHAM ? enerd->grpp.ener[egBHAMSR].data() : enerd->grpp.ener[egLJSR].data(),
-                             wcycle_);
+            nbnxn_kernel_cpu(
+                    pairlistSet,
+                    kernelSetup(),
+                    nbat.get(),
+                    ic,
+                    fr.shift_vec,
+                    stepWork,
+                    clearF,
+                    enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
+                    fr.bBHAM ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
+                             : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
+                    wcycle_);
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
@@ -480,8 +482,9 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
                     clearF,
                     nbat->out[0].f,
                     nbat->out[0].fshift.data(),
-                    enerd->grpp.ener[egCOULSR].data(),
-                    fr.bBHAM ? enerd->grpp.ener[egBHAMSR].data() : enerd->grpp.ener[egLJSR].data());
+                    enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
+                    fr.bBHAM ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
+                             : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data());
             break;
 
         default: GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
@@ -532,8 +535,8 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     kernel_data.lambda                                                      = lambda;
     kernel_data.dvdl                                                        = dvdl_nb;
 
-    kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR].data();
-    kernel_data.energygrp_vdw  = enerd->grpp.ener[egLJSR].data();
+    kernel_data.energygrp_elec = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
+    kernel_data.energygrp_vdw = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
 
     GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(),
                "Number of lists should be same as number of NB threads");
@@ -573,10 +576,12 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lam_i;
         kernel_data.flags = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE))
                             | GMX_NONBONDED_DO_FOREIGNLAMBDA;
-        kernel_data.lambda         = lam_i;
-        kernel_data.dvdl           = dvdl_nb;
-        kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR].data();
-        kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR].data();
+        kernel_data.lambda = lam_i;
+        kernel_data.dvdl   = dvdl_nb;
+        kernel_data.energygrp_elec =
+                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
+        kernel_data.energygrp_vdw =
+                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
 
         for (gmx::index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
         {

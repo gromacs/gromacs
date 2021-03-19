@@ -78,7 +78,7 @@ enum class StartingBehavior;
 } // namespace gmx
 
 //! \brief Printed names for intergroup energies
-extern const char* egrp_nm[egNR + 1];
+const char* enumValueToString(NonBondedEnergyTerms enumValue);
 
 /* \brief delta_h block type enum: the kinds of energies written out. */
 enum
@@ -375,8 +375,8 @@ private:
     //! Index for viscocity
     int ivisc_ = 0;
 
-    //! Which energy terms from egNR list should be printed in group-to-group block
-    bool bEInd_[egNR] = { false };
+    //! Which energy terms from NonBondedEnergyTerms list should be printed in group-to-group block
+    gmx::EnumerationArray<NonBondedEnergyTerms, bool> bEInd_;
     //! Number of energy terms to be printed (these, for which bEInd[] == true)
     int nEc_ = 0;
     //! Number of energy output groups

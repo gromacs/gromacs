@@ -420,9 +420,9 @@ public:
         // Group pairs
         for (int i = 0; i < enerdata_->grpp.nener; i++)
         {
-            for (int k = 0; k < egNR; k++)
+            for (int k = 0; k < static_cast<int>(NonBondedEnergyTerms::Count); k++)
             {
-                enerdata_->grpp.ener[k][i] = (*testValue += 0.1);
+                enerdata_->grpp.energyGroupPairTerms[k][i] = (*testValue += 0.1);
             }
         }
 

@@ -83,6 +83,20 @@ static int search_str2(int nstr, char** str, char* key)
     return -1;
 }
 
+// The non-bonded energy terms accumulated for energy group pairs. These were superseded elsewhere
+// by NonBondedEnergyTerms but not updated here due to the need for refactoring here first.
+enum
+{
+    egCOULSR,
+    egLJSR,
+    egBHAMSR,
+    egCOUL14,
+    egLJ14,
+    egNR
+};
+static const char* egrp_nm[egNR + 1] = { "Coul-SR", "LJ-SR", "Buck-SR", "Coul-14", "LJ-14", nullptr };
+
+
 int gmx_enemat(int argc, char* argv[])
 {
     const char* desc[] = {

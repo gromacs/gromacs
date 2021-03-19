@@ -866,14 +866,18 @@ void LegacySimulator::do_tpi()
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] += enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] * embU;
+                        sum_UgembU[e++] +=
+                                enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR][GID(i, gid_tp, ngid)]
+                                * embU;
                     }
                 }
                 else
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] += enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] * embU;
+                        sum_UgembU[e++] +=
+                                enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR][GID(i, gid_tp, ngid)]
+                                * embU;
                     }
                 }
                 if (bDispCorr)
@@ -884,7 +888,9 @@ void LegacySimulator::do_tpi()
                 {
                     for (i = 0; i < ngid; i++)
                     {
-                        sum_UgembU[e++] += enerd->grpp.ener[egCOULSR][GID(i, gid_tp, ngid)] * embU;
+                        sum_UgembU[e++] +=
+                                enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR][GID(i, gid_tp, ngid)]
+                                * embU;
                     }
                     if (bRFExcl)
                     {

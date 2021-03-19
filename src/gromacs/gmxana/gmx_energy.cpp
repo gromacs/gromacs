@@ -1248,7 +1248,7 @@ static void analyse_ener(gmx_bool                bCorr,
 #if 0
             do_autocorr(corrfn, oenv, buf, edat->nframes,
                         bSum ? 1                 : nset,
-                        bSum ? &edat->s[nset-1].ener : eneset,
+                        bSum ? &edat->s[nset-1].energyGroupPairTerms : eneset,
                         (delta_t/edat->nframes), eacNormal, FALSE);
 #endif
         }

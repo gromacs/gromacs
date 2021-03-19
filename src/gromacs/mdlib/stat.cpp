@@ -157,7 +157,7 @@ void global_stat(const gmx_global_stat* gs,
     int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
     int      isig = -1;
     int      icj = -1, ici = -1, icx = -1;
-    int      inn[egNR];
+    int      inn[static_cast<int>(NonBondedEnergyTerms::Count)];
     real     copyenerd[F_NRE];
     int      nener, j;
     double   nb;
@@ -243,9 +243,9 @@ void global_stat(const gmx_global_stat* gs,
             irmsd = add_binr(rb, 2, constraintsRmsdData.data());
         }
 
-        for (j = 0; (j < egNR); j++)
+        for (j = 0; (j < static_cast<int>(NonBondedEnergyTerms::Count)); j++)
         {
-            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j].data());
+            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[j].data());
         }
         if (inputrec->efep != FreeEnergyPerturbationType::No)
         {
@@ -340,9 +340,9 @@ void global_stat(const gmx_global_stat* gs,
             extract_binr(rb, irmsd, constraintsRmsdData);
         }
 
-        for (j = 0; (j < egNR); j++)
+        for (j = 0; (j < static_cast<int>(NonBondedEnergyTerms::Count)); j++)
         {
-            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j].data());
+            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[j].data());
         }
         if (inputrec->efep != FreeEnergyPerturbationType::No)
         {
