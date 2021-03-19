@@ -52,7 +52,6 @@
 
 #include <cmath>
 
-#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
@@ -99,104 +98,6 @@ namespace Nbnxm
  */
 static unsigned int gpu_min_ci_balanced_factor = 50;
 
-
-/*! \brief Initializes the atomdata structure first time, it only gets filled at
-    pair-search.
- */
-static void init_atomdata_first(NBAtomData*          ad,
-                                int                  ntypes,
-                                const DeviceContext& deviceContext,
-                                const DeviceStream&  localStream)
-{
-    ad->numTypes = ntypes;
-
-    allocateDeviceBuffer(&ad->shiftVec, SHIFTS, deviceContext);
-    ad->shiftVecUploaded = false;
-
-    allocateDeviceBuffer(&ad->fShift, SHIFTS, deviceContext);
-    allocateDeviceBuffer(&ad->eLJ, 1, deviceContext);
-    allocateDeviceBuffer(&ad->eElec, 1, deviceContext);
-
-    clearDeviceBufferAsync(&ad->fShift, 0, SHIFTS, localStream);
-    clearDeviceBufferAsync(&ad->eElec, 0, 1, localStream);
-    clearDeviceBufferAsync(&ad->eLJ, 0, 1, localStream);
-
-    /* initialize to nullptr pointers to data that is not allocated here and will
-       need reallocation in nbnxn_gpu_init_atomdata */
-    ad->xq = nullptr;
-    ad->f  = nullptr;
-
-    /* size -1 indicates that the respective array hasn't been initialized yet */
-    ad->numAtoms      = -1;
-    ad->numAtomsAlloc = -1;
-}
-
-
-/*! \brief Initializes the nonbonded parameter data structure.
- */
-static void init_nbparam(NBParamGpu*                     nbp,
-                         const interaction_const_t*      ic,
-                         const PairlistParams&           listParams,
-                         const nbnxn_atomdata_t::Params& nbatParams,
-                         const DeviceContext&            deviceContext)
-{
-    set_cutoff_parameters(nbp, ic, listParams);
-
-    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.ljCombinationRule);
-    nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic, deviceContext.deviceInfo());
-
-    if (ic->vdwtype == VanDerWaalsType::Pme)
-    {
-        if (ic->ljpme_comb_rule == LongRangeVdW::Geom)
-        {
-            GMX_ASSERT(nbatParams.ljCombinationRule == LJCombinationRule::Geometric,
-                       "Combination rule mismatch!");
-        }
-        else
-        {
-            GMX_ASSERT(nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot,
-                       "Combination rule mismatch!");
-        }
-    }
-    /* generate table for PME */
-    nbp->coulomb_tab = nullptr;
-    if (nbp->elecType == ElecType::EwaldTab || nbp->elecType == ElecType::EwaldTabTwin)
-    {
-        GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-        init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, deviceContext);
-    }
-    else
-    {
-        allocateDeviceBuffer(&nbp->coulomb_tab, 1, deviceContext);
-    }
-
-    {
-        /* set up LJ parameter lookup table */
-        static_assert(sizeof(Float2) == 2 * sizeof(decltype(*nbatParams.nbfp.data())),
-                      "Mismatch in the size of host / device data types");
-        DeviceBuffer<Float2> nbfp;
-        initParamLookupTable(&nbfp,
-                             nullptr,
-                             reinterpret_cast<const Float2*>(nbatParams.nbfp.data()),
-                             nbatParams.numTypes * nbatParams.numTypes,
-                             deviceContext);
-        nbp->nbfp = nbfp;
-
-        if (ic->vdwtype == VanDerWaalsType::Pme)
-        {
-            static_assert(sizeof(Float2) == 2 * sizeof(decltype(*nbatParams.nbfp_comb.data())),
-                          "Mismatch in the size of host / device data types");
-            DeviceBuffer<Float2> nbfp_comb;
-            initParamLookupTable(&nbfp_comb,
-                                 nullptr,
-                                 reinterpret_cast<const Float2*>(nbatParams.nbfp_comb.data()),
-                                 nbatParams.numTypes,
-                                 deviceContext);
-            nbp->nbfp_comb = nbfp_comb;
-        }
-    }
-}
-
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
 static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
 {
@@ -238,69 +139,10 @@ static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
             nbnxn_gpu_create_kernel(nb, "nbnxn_kernel_prune_rolling_opencl");
 }
 
-//! This function is documented in the header file
-NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
-                   const interaction_const_t*      ic,
-                   const PairlistParams&           listParams,
-                   const nbnxn_atomdata_t*         nbat,
-                   const bool                      bLocalAndNonlocal)
+void gpu_init_platform_specific(NbnxmGpu* nb)
 {
-    GMX_ASSERT(ic, "Need a valid interaction constants object");
-
-    auto nb            = new NbnxmGpu();
-    nb->deviceContext_ = &deviceStreamManager.context();
-    snew(nb->atdat, 1);
-    snew(nb->nbparam, 1);
-    snew(nb->plist[InteractionLocality::Local], 1);
-    if (bLocalAndNonlocal)
-    {
-        snew(nb->plist[InteractionLocality::NonLocal], 1);
-    }
-
-    nb->bUseTwoStreams = bLocalAndNonlocal;
-
-    nb->timers = new Nbnxm::GpuTimers();
-    snew(nb->timings, 1);
-
     /* set device info, just point it to the right GPU among the detected ones */
     nb->dev_rundata = new gmx_device_runtime_data_t();
-
-    /* init nbst */
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.eLJ), sizeof(*nb->nbst.eLJ));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.eElec), sizeof(*nb->nbst.eElec));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.fShift), SHIFTS * sizeof(*nb->nbst.fShift));
-
-    init_plist(nb->plist[InteractionLocality::Local]);
-
-    /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
-    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
-
-    /* local/non-local GPU streams */
-    GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
-                       "Local non-bonded stream should be initialized to use GPU for non-bonded.");
-    const DeviceStream& localStream = deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal);
-    nb->deviceStreams[InteractionLocality::Local] = &localStream;
-
-    if (nb->bUseTwoStreams)
-    {
-        init_plist(nb->plist[InteractionLocality::NonLocal]);
-
-        GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
-                           "Non-local non-bonded stream should be initialized to use GPU for "
-                           "non-bonded with domain decomposition.");
-        nb->deviceStreams[InteractionLocality::NonLocal] =
-                &deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedNonLocal);
-    }
-
-    if (nb->bDoTime)
-    {
-        init_timings(nb->timings);
-    }
-
-    const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
-    const DeviceContext&            deviceContext = *nb->deviceContext_;
-    init_atomdata_first(nb->atdat, nbatParams.numTypes, deviceContext, localStream);
-    init_nbparam(nb->nbparam, ic, listParams, nbatParams, deviceContext);
 
     /* Enable LJ param manual prefetch for AMD or Intel or if we request through env. var.
      * TODO: decide about NVIDIA
@@ -316,13 +158,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
      */
     nbnxn_gpu_compile_kernels(nb);
     nbnxn_gpu_init_kernels(nb);
-
-    if (debug)
-    {
-        fprintf(debug, "Initialized OpenCL data structures.\n");
-    }
-
-    return nb;
 }
 
 //! This function is documented in the header file
@@ -401,6 +236,12 @@ void gpu_free(NbnxmGpu* nb)
         return;
     }
 
+    delete nb->timers;
+    sfree(nb->timings);
+
+    NBAtomData* atdat   = nb->atdat;
+    NBParamGpu* nbparam = nb->nbparam;
+
     /* Free kernels */
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     int kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
@@ -424,16 +265,31 @@ void gpu_free(NbnxmGpu* nb)
     freeDeviceBuffer(&(nb->atdat->eLJ));
     freeDeviceBuffer(&(nb->atdat->eElec));
     freeDeviceBuffer(&(nb->atdat->fShift));
-    freeDeviceBuffer(&(nb->atdat->ljComb));
-    freeDeviceBuffer(&(nb->atdat->atomTypes));
     freeDeviceBuffer(&(nb->atdat->shiftVec));
-    sfree(nb->atdat);
+    if (useLjCombRule(nb->nbparam->vdwType))
+    {
+        freeDeviceBuffer(&atdat->ljComb);
+    }
+    else
+    {
+        freeDeviceBuffer(&atdat->atomTypes);
+    }
 
     /* Free nbparam */
-    freeDeviceBuffer(&(nb->nbparam->nbfp));
-    freeDeviceBuffer(&(nb->nbparam->nbfp_comb));
-    freeDeviceBuffer(&(nb->nbparam->coulomb_tab));
-    sfree(nb->nbparam);
+    if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
+    {
+        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
+    }
+
+    if (!useLjCombRule(nb->nbparam->vdwType))
+    {
+        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
+    }
+
+    if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
+    {
+        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
+    }
 
     /* Free plist */
     auto* plist = nb->plist[InteractionLocality::Local];
@@ -441,7 +297,7 @@ void gpu_free(NbnxmGpu* nb)
     freeDeviceBuffer(&plist->cj4);
     freeDeviceBuffer(&plist->imask);
     freeDeviceBuffer(&plist->excl);
-    sfree(plist);
+    delete plist;
     if (nb->bUseTwoStreams)
     {
         auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
@@ -449,7 +305,7 @@ void gpu_free(NbnxmGpu* nb)
         freeDeviceBuffer(&plist_nl->cj4);
         freeDeviceBuffer(&plist_nl->imask);
         freeDeviceBuffer(&plist_nl->excl);
-        sfree(plist_nl);
+        delete plist_nl;
     }
 
     /* Free nbst */
@@ -465,9 +321,8 @@ void gpu_free(NbnxmGpu* nb)
     freeGpuProgram(nb->dev_rundata->program);
     delete nb->dev_rundata;
 
-    /* Free timers and timings */
-    delete nb->timers;
-    sfree(nb->timings);
+    delete atdat;
+    delete nbparam;
     delete nb;
 
     if (debug)

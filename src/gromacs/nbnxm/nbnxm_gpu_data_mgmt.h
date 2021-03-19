@@ -44,6 +44,7 @@
 #ifndef GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
 #define GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
 
+class DeviceContext;
 struct interaction_const_t;
 struct NBParamGpu;
 struct PairlistParams;
@@ -73,7 +74,7 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unu
 
 /*! \brief Copies all parameters related to the cut-off from ic to nbp
  */
-void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const PairlistParams& listParams);
+void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t& ic, const PairlistParams& listParams);
 
 /*! \brief Initializes the pair list data structure.
  */
@@ -81,6 +82,8 @@ void init_plist(gpu_plist* pl);
 
 /*! \brief Initializes the timings data structure. */
 void init_timings(gmx_wallclock_gpu_nbnxn_t* t);
+
+void gpu_init_platform_specific(NbnxmGpu* nb);
 
 } // namespace Nbnxm
 

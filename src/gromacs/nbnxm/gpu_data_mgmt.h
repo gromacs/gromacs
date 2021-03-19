@@ -95,7 +95,7 @@ void gpu_init_atomdata(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unuse
  */
 GPU_FUNC_QUALIFIER
 void gpu_pme_loadbal_update_param(const struct nonbonded_verlet_t gmx_unused* nbv,
-                                  const interaction_const_t gmx_unused* ic) GPU_FUNC_TERM;
+                                  const interaction_const_t gmx_unused& ic) GPU_FUNC_TERM;
 
 /** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 GPU_FUNC_QUALIFIER
@@ -129,13 +129,13 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM
 
 /** Return the enum value of electrostatics kernel type for given interaction parameters \p ic. */
 GPU_FUNC_QUALIFIER
-enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t gmx_unused* ic,
+enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t gmx_unused& ic,
                                                    const DeviceInformation gmx_unused& deviceInfo)
         GPU_FUNC_TERM_WITH_RETURN(ElecType::Count);
 
 /** Return the enum value of VdW kernel type for given \p ic and \p combRule. */
 GPU_FUNC_QUALIFIER
-enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused* ic,
+enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused& ic,
                                        LJCombinationRule gmx_unused ljCombinationRule)
         GPU_FUNC_TERM_WITH_RETURN(VdwType::Count);
 
