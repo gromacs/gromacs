@@ -292,7 +292,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
     }
 
     // Checking the buffer types against the kernel argument types
-    static_assert(sizeof(*d_inverseMasses_) == sizeof(float));
+    static_assert(sizeof(*d_inverseMasses_) == sizeof(float), "Incompatible types");
     const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
                                                       kernelLaunchConfig_,
                                                       &numAtoms_,
