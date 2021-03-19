@@ -1475,9 +1475,6 @@ void gmx::LegacySimulator::do_md()
         {
             if (useGpuForUpdate)
             {
-
-                wallcycle_stop(wcycle, ewcUPDATE);
-
                 if (bNS && (bFirstStep || DOMAINDECOMP(cr)))
                 {
                     integrator->set(stateGpu->getCoordinates(),
