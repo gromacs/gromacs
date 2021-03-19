@@ -70,7 +70,7 @@
 #include "gromacs/utility/smalloc.h"
 
 void init_disres(FILE*                 fplog,
-                 const gmx_mtop_t*     mtop,
+                 const gmx_mtop_t&     mtop,
                  t_inputrec*           ir,
                  DisResRunMode         disResRunMode,
                  DDRole                ddRole,
@@ -157,7 +157,7 @@ void init_disres(FILE*                 fplog,
             type = (*il)[F_DISRES].iatoms[fa];
 
             np++;
-            npair = mtop->ffparams.iparams[type].disres.npair;
+            npair = mtop.ffparams.iparams[type].disres.npair;
             if (np == npair)
             {
                 dd->nres += (ir->eDisre == DistanceRestraintRefinement::Ensemble ? 1 : nmol);

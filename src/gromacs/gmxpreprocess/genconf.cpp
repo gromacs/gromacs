@@ -180,7 +180,7 @@ int gmx_genconf(int argc, char* argv[])
     gmx_mtop_t mtop;
     bool       haveTop = false;
     readConfAndTopology(opt2fn("-f", NFILE, fnm), &haveTop, &mtop, &pbcType, &x, &v, box);
-    t_atoms atoms = gmx_mtop_global_atoms(&mtop);
+    t_atoms atoms = gmx_mtop_global_atoms(mtop);
     natoms        = atoms.nr;
     nres          = atoms.nres; /* nr of residues in one element? */
     /* make space for all the atoms */

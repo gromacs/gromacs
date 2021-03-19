@@ -3437,16 +3437,16 @@ static inline void copy_correct_pbc_image(const rvec xcurr, /* copy vector xcurr
 }
 
 
-static void init_rot_group(FILE*            fplog,
-                           const t_commrec* cr,
-                           gmx_enfrotgrp*   erg,
-                           rvec*            x,
-                           gmx_mtop_t*      mtop,
-                           gmx_bool         bVerbose,
-                           FILE*            out_slabs,
-                           const matrix     box,
-                           t_inputrec*      ir,
-                           gmx_bool         bOutputCenters)
+static void init_rot_group(FILE*             fplog,
+                           const t_commrec*  cr,
+                           gmx_enfrotgrp*    erg,
+                           rvec*             x,
+                           const gmx_mtop_t& mtop,
+                           gmx_bool          bVerbose,
+                           FILE*             out_slabs,
+                           const matrix      box,
+                           t_inputrec*       ir,
+                           gmx_bool          bOutputCenters)
 {
     rvec            coord, xref, *xdum;
     gmx_bool        bFlex, bColl;
@@ -3688,7 +3688,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
                                                 const t_commrec*            cr,
                                                 gmx::LocalAtomSetManager*   atomSets,
                                                 const t_state*              globalState,
-                                                gmx_mtop_t*                 mtop,
+                                                const gmx_mtop_t&           mtop,
                                                 const gmx_output_env_t*     oenv,
                                                 const gmx::MdrunOptions&    mdrunOptions,
                                                 const gmx::StartingBehavior startingBehavior)
@@ -3741,9 +3741,9 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     {
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
-        snew(x_pbc, mtop->natoms);
-        copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
-        do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, mtop, x_pbc);
+        snew(x_pbc, mtop.natoms);
+        copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop.natoms);
+        do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, &mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule
          * (e.g. two strands of DNA), each one of them can end up in a different

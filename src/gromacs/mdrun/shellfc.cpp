@@ -153,19 +153,16 @@ static void pr_shell(FILE* fplog, ArrayRef<const t_shell> shells)
  * started, but even when called, the prediction was always
  * over-written by a subsequent call in the MD loop, so has been
  * removed. */
-static void predict_shells(FILE*                   fplog,
-                           ArrayRef<RVec>          x,
-                           ArrayRef<RVec>          v,
-                           real                    dt,
-                           ArrayRef<const t_shell> shells,
-                           const real              mass[],
-                           gmx_mtop_t*             mtop,
-                           gmx_bool                bInit)
+static void predict_shells(FILE*                     fplog,
+                           ArrayRef<RVec>            x,
+                           ArrayRef<RVec>            v,
+                           real                      dt,
+                           ArrayRef<const t_shell>   shells,
+                           gmx::ArrayRef<const real> mass,
+                           gmx_bool                  bInit)
 {
     int  m, n1, n2, n3;
     real dt_1, fudge, tm, m1, m2, m3;
-
-    GMX_RELEASE_ASSERT(mass || mtop, "Must have masses or a way to look them up");
 
     /* We introduce a fudge factor for performance reasons: with this choice
      * the initial force on the shells is about a factor of two lower than
@@ -189,7 +186,6 @@ static void predict_shells(FILE*                   fplog,
         dt_1 = fudge * dt;
     }
 
-    int molb = 0;
     for (const t_shell& shell : shells)
     {
         const int s1 = shell.shellIndex;
@@ -209,17 +205,8 @@ static void predict_shells(FILE*                   fplog,
             case 2:
                 n1 = shell.nucl1;
                 n2 = shell.nucl2;
-                if (mass)
-                {
-                    m1 = mass[n1];
-                    m2 = mass[n2];
-                }
-                else
-                {
-                    /* Not the correct masses with FE, but it is just a prediction... */
-                    m1 = mtopGetAtomMass(mtop, n1, &molb);
-                    m2 = mtopGetAtomMass(mtop, n2, &molb);
-                }
+                m1 = mass[n1];
+                m2 = mass[n2];
                 tm = dt_1 / (m1 + m2);
                 for (m = 0; (m < DIM); m++)
                 {
@@ -230,19 +217,9 @@ static void predict_shells(FILE*                   fplog,
                 n1 = shell.nucl1;
                 n2 = shell.nucl2;
                 n3 = shell.nucl3;
-                if (mass)
-                {
-                    m1 = mass[n1];
-                    m2 = mass[n2];
-                    m3 = mass[n3];
-                }
-                else
-                {
-                    /* Not the correct masses with FE, but it is just a prediction... */
-                    m1 = mtopGetAtomMass(mtop, n1, &molb);
-                    m2 = mtopGetAtomMass(mtop, n2, &molb);
-                    m3 = mtopGetAtomMass(mtop, n3, &molb);
-                }
+                m1 = mass[n1];
+                m2 = mass[n2];
+                m3 = mass[n3];
                 tm = dt_1 / (m1 + m2 + m3);
                 for (m = 0; (m < DIM); m++)
                 {
@@ -255,7 +232,7 @@ static void predict_shells(FILE*                   fplog,
 }
 
 gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
-                                  const gmx_mtop_t* mtop,
+                                  const gmx_mtop_t& mtop,
                                   int               nflexcon,
                                   int               nstcalcenergy,
                                   bool              usingDomainDecomposition,
@@ -271,7 +248,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
 #define NBT asize(bondtypes)
     const gmx_ffparams_t* ffparams;
 
-    const gmx::EnumerationArray<ParticleType, int> numParticles = gmx_mtop_particletype_count(*mtop);
+    const gmx::EnumerationArray<ParticleType, int> numParticles = gmx_mtop_particletype_count(mtop);
     if (fplog)
     {
         /* Print the number of each particle type */
@@ -321,10 +298,10 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     /* We have shells: fill the shell data structure */
 
     /* Global system sized array, this should be avoided */
-    std::vector<int> shell_index(mtop->natoms);
+    std::vector<int> shell_index(mtop.natoms);
 
     nshell = 0;
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(mtop))
     {
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
@@ -336,25 +313,25 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
 
     std::vector<t_shell> shell(nshell);
 
-    ffparams = &mtop->ffparams;
+    ffparams = &mtop.ffparams;
 
     /* Now fill the structures */
     /* TODO: See if we can use update groups that cover shell constructions */
     shfc->bInterCG = FALSE;
     ns             = 0;
     a_offset       = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_molblock_t* molb = &mtop->molblock[mb];
-        const gmx_moltype_t*  molt = &mtop->moltype[molb->type];
+        const gmx_molblock_t& molb = mtop.molblock[mb];
+        const gmx_moltype_t&  molt = mtop.moltype[molb.type];
 
-        const t_atom* atom = molt->atoms.atom;
-        for (mol = 0; mol < molb->nmol; mol++)
+        const t_atom* atom = molt.atoms.atom;
+        for (mol = 0; mol < molb.nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
             {
-                const int* ia = molt->ilist[bondtypes[j]].iatoms.data();
-                for (i = 0; (i < molt->ilist[bondtypes[j]].size());)
+                const int* ia = molt.ilist[bondtypes[j]].iatoms.data();
+                for (i = 0; (i < molt.ilist[bondtypes[j]].size());)
                 {
                     type  = ia[0];
                     ftype = ffparams->functype[type];
@@ -483,7 +460,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                     i += nra + 1;
                 }
             }
-            a_offset += molt->atoms.nr;
+            a_offset += molt.atoms.nr;
         }
         /* Done with this molecule type */
     }
@@ -1070,7 +1047,8 @@ void relax_shell_flexcon(FILE*                         fplog,
      */
     if (shfc->predictShells && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
-        predict_shells(fplog, x, v, inputrec->delta_t, shells, md->massT, nullptr, bInit);
+        predict_shells(
+                fplog, x, v, inputrec->delta_t, shells, gmx::arrayRefFromArray(md->massT, md->homenr), bInit);
     }
 
     /* Calculate the forces first time around */

@@ -3479,7 +3479,7 @@ void do_index(const char*                   mdparin,
         snew(defaultIndexGroups, 1);
         snew(defaultIndexGroups->index, 1);
         snew(gnames, 1);
-        atoms_all = gmx_mtop_global_atoms(mtop);
+        atoms_all = gmx_mtop_global_atoms(*mtop);
         analyse(&atoms_all, defaultIndexGroups, &gnames, FALSE, TRUE);
         done_atom(&atoms_all);
     }
@@ -4078,11 +4078,11 @@ void do_index(const char*                   mdparin,
 }
 
 
-static void check_disre(const gmx_mtop_t* mtop)
+static void check_disre(const gmx_mtop_t& mtop)
 {
     if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
     {
-        const gmx_ffparams_t& ffparams  = mtop->ffparams;
+        const gmx_ffparams_t& ffparams  = mtop.ffparams;
         int                   ndouble   = 0;
         int                   old_label = -1;
         for (int i = 0; i < ffparams.numTypes(); i++)
@@ -4110,7 +4110,7 @@ static void check_disre(const gmx_mtop_t* mtop)
     }
 }
 
-static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t* sys, const bool posres_only, ivec AbsRef)
+static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t& sys, const bool posres_only, ivec AbsRef)
 {
     int                  d, g, i;
     gmx_mtop_ilistloop_t iloop;
@@ -4147,7 +4147,7 @@ static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t* sys, cons
         {
             for (i = 0; i < (*ilist)[F_POSRES].size(); i += 2)
             {
-                pr = &sys->ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
+                pr = &sys.ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
                 for (d = 0; d < DIM; d++)
                 {
                     if (pr->posres.fcA[d] != 0)
@@ -4159,7 +4159,7 @@ static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t* sys, cons
             for (i = 0; i < (*ilist)[F_FBPOSRES].size(); i += 2)
             {
                 /* Check for flat-bottom posres */
-                pr = &sys->ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
+                pr = &sys.ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
                 if (pr->fbposres.k != 0)
                 {
                     switch (pr->fbposres.geom)
@@ -4191,7 +4191,7 @@ static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t* sys, cons
     return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
-static void check_combination_rule_differences(const gmx_mtop_t* mtop,
+static void check_combination_rule_differences(const gmx_mtop_t& mtop,
                                                int               state,
                                                bool* bC6ParametersWorkWithGeometricRules,
                                                bool* bC6ParametersWorkWithLBRules,
@@ -4227,19 +4227,19 @@ static void check_combination_rule_differences(const gmx_mtop_t* mtop,
     *bC6ParametersWorkWithLBRules        = TRUE;
     *bC6ParametersWorkWithGeometricRules = TRUE;
     bCanDoLBRules                        = TRUE;
-    ntypes                               = mtop->ffparams.atnr;
+    ntypes                               = mtop.ffparams.atnr;
     snew(typecount, ntypes);
     gmx_mtop_count_atomtypes(mtop, state, typecount);
     *bLBRulesPossible = TRUE;
     for (tpi = 0; tpi < ntypes; ++tpi)
     {
-        c6i  = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c6;
-        c12i = mtop->ffparams.iparams[(ntypes + 1) * tpi].lj.c12;
+        c6i  = mtop.ffparams.iparams[(ntypes + 1) * tpi].lj.c6;
+        c12i = mtop.ffparams.iparams[(ntypes + 1) * tpi].lj.c12;
         for (tpj = tpi; tpj < ntypes; ++tpj)
         {
-            c6j          = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
-            c12j         = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
-            c6           = mtop->ffparams.iparams[ntypes * tpi + tpj].lj.c6;
+            c6j          = mtop.ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
+            c12j         = mtop.ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
+            c6           = mtop.ffparams.iparams[ntypes * tpi + tpj].lj.c6;
             c6_geometric = std::sqrt(c6i * c6j);
             if (!gmx_numzero(c6_geometric))
             {
@@ -4275,7 +4275,7 @@ static void check_combination_rule_differences(const gmx_mtop_t* mtop,
     sfree(typecount);
 }
 
-static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t* mtop, warninp_t wi)
+static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t& mtop, warninp_t wi)
 {
     bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
@@ -4335,7 +4335,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
 
     set_warning_line(wi, mdparin, -1);
 
-    if (absolute_reference(ir, sys, false, AbsRef))
+    if (absolute_reference(ir, *sys, false, AbsRef))
     {
         warning_note(wi,
                      "Removing center of mass motion in the presence of position restraints might "
@@ -4432,7 +4432,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != IntegrationAlgorithm::BD
         && ir->comm_mode == ComRemovalAlgorithm::No
-        && !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10) && !ETC_ANDERSEN(ir->etc))
+        && !(absolute_reference(ir, *sys, FALSE, AbsRef) || ir->nsteps <= 10) && !ETC_ANDERSEN(ir->etc))
     {
         warning(wi,
                 "You are not using center of mass motion removal (mdp option comm-mode), numerical "
@@ -4464,7 +4464,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     /* Check for pressure coupling with absolute position restraints */
     if (ir->epc != PressureCoupling::No && ir->refcoord_scaling == RefCoordScaling::No)
     {
-        absolute_reference(ir, sys, TRUE, AbsRef);
+        absolute_reference(ir, *sys, TRUE, AbsRef);
         {
             for (m = 0; m < DIM; m++)
             {
@@ -4480,7 +4480,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     bCharge = FALSE;
-    aloopb  = gmx_mtop_atomloop_block_init(sys);
+    aloopb  = gmx_mtop_atomloop_block_init(*sys);
     const t_atom* atom;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
@@ -4518,7 +4518,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     /* Check if combination rules used in LJ-PME are the same as in the force field */
     if (EVDW_PME(ir->vdwtype))
     {
-        check_combination_rules(ir, sys, wi);
+        check_combination_rules(ir, *sys, wi);
     }
 
     /* Generalized reaction field */
@@ -4545,7 +4545,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         {
             if (ir->pull->coord[i].group[0] == 0 || ir->pull->coord[i].group[1] == 0)
             {
-                absolute_reference(ir, sys, FALSE, AbsRef);
+                absolute_reference(ir, *sys, FALSE, AbsRef);
                 for (m = 0; m < DIM; m++)
                 {
                     if (ir->pull->coord[i].dim[m] && !AbsRef[m])
@@ -4584,7 +4584,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         }
     }
 
-    check_disre(sys);
+    check_disre(*sys);
 }
 
 void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool bHasAnyConstraints, warninp_t wi)

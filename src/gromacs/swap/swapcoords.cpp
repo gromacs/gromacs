@@ -1047,7 +1047,7 @@ static void check_swap_groups(t_swap* s, int nat, gmx_bool bVerbose)
  *
  * Also ensure that all the molecules in this group have this number of atoms.
  */
-static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, gmx_mtop_t* mtop)
+static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, const gmx_mtop_t& mtop)
 {
     t_swapgrp* g   = &s->group[igroup];
     const int* ind = s->group[igroup].atomset.globalIndex().data();
@@ -1057,7 +1057,7 @@ static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, gmx_mto
      * first solvent atom: */
     int molb = 0;
     mtopGetMolblockIndex(mtop, ind[0], &molb, nullptr, nullptr);
-    int apm = mtop->moleculeBlockIndices[molb].numAtomsPerMolecule;
+    int apm = mtop.moleculeBlockIndices[molb].numAtomsPerMolecule;
 
     if (bVerbose)
     {
@@ -1073,7 +1073,7 @@ static int get_group_apm_check(int igroup, t_swap* s, gmx_bool bVerbose, gmx_mto
     for (int i = 1; i < nat; i++)
     {
         mtopGetMolblockIndex(mtop, ind[i], &molb, nullptr, nullptr);
-        if (apm != mtop->moleculeBlockIndices[molb].numAtomsPerMolecule)
+        if (apm != mtop.moleculeBlockIndices[molb].numAtomsPerMolecule)
         {
             gmx_fatal(FARGS, "Not all molecules of swap group %d consist of %d atoms.", igroup, apm);
         }
@@ -1276,7 +1276,7 @@ static void detect_flux_per_channel_init(t_swap* s, swaphistory_t* swapstate, co
  * If this is not correct, the ion counts per channel will be very likely
  * wrong.
  */
-static void outputStartStructureIfWanted(gmx_mtop_t* mtop, rvec* x, PbcType pbcType, const matrix box)
+static void outputStartStructureIfWanted(const gmx_mtop_t& mtop, rvec* x, PbcType pbcType, const matrix box)
 {
     char* env = getenv("GMX_COMPELDUMP");
 
@@ -1291,7 +1291,7 @@ static void outputStartStructureIfWanted(gmx_mtop_t* mtop, rvec* x, PbcType pbcT
                 SwSEmpty);
 
         write_sto_conf_mtop(
-                "CompELAssumedWholeConfiguration.pdb", *mtop->name, mtop, x, nullptr, pbcType, box);
+                "CompELAssumedWholeConfiguration.pdb", *mtop.name, mtop, x, nullptr, pbcType, box);
     }
 }
 
@@ -1309,7 +1309,7 @@ static void outputStartStructureIfWanted(gmx_mtop_t* mtop, rvec* x, PbcType pbcT
 static void init_swapstate(swaphistory_t*    swapstate,
                            t_swapcoords*     sc,
                            t_swap*           s,
-                           gmx_mtop_t*       mtop,
+                           const gmx_mtop_t& mtop,
                            const rvec*       x, /* the initial positions */
                            const matrix      box,
                            const t_inputrec* ir)
@@ -1353,11 +1353,11 @@ static void init_swapstate(swaphistory_t*    swapstate,
         /* Extract the initial split group positions. */
 
         /* Remove pbc, make molecule whole. */
-        snew(x_pbc, mtop->natoms);
-        copy_rvecn(x, x_pbc, 0, mtop->natoms);
+        snew(x_pbc, mtop.natoms);
+        copy_rvecn(x, x_pbc, 0, mtop.natoms);
 
         /* This can only make individual molecules whole, not multimers */
-        do_pbc_mtop(ir->pbcType, box, mtop, x_pbc);
+        do_pbc_mtop(ir->pbcType, box, &mtop, x_pbc);
 
         /* Output the starting structure? */
         outputStartStructureIfWanted(mtop, x_pbc, ir->pbcType, box);
@@ -1471,7 +1471,7 @@ static void copyIndicesToGroup(const int* indIons, int nIons, t_swapGroup* g, t_
  * #4 cations        - empty before conversion
  *
  */
-static void convertOldToNewGroupFormat(t_swapcoords* sc, gmx_mtop_t* mtop, gmx_bool bVerbose, t_commrec* cr)
+static void convertOldToNewGroupFormat(t_swapcoords* sc, const gmx_mtop_t& mtop, gmx_bool bVerbose, t_commrec* cr)
 {
     t_swapGroup* g = &sc->grp[3];
 
@@ -1536,7 +1536,7 @@ static gmx_bool bConvertFromOldTpr(t_swapcoords* sc)
 t_swap* init_swapcoords(FILE*                       fplog,
                         const t_inputrec*           ir,
                         const char*                 fn,
-                        gmx_mtop_t*                 mtop,
+                        const gmx_mtop_t&           mtop,
                         const t_state*              globalState,
                         ObservablesHistory*         oh,
                         t_commrec*                  cr,
@@ -1605,7 +1605,7 @@ t_swap* init_swapcoords(FILE*                       fplog,
     }
 
     /* Check for overlapping atoms */
-    check_swap_groups(s, mtop->natoms, bVerbose && MASTER(cr));
+    check_swap_groups(s, mtop.natoms, bVerbose && MASTER(cr));
 
     /* Allocate space for the collective arrays for all groups */
     /* For the collective position array */

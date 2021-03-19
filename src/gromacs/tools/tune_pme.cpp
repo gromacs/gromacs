@@ -887,7 +887,7 @@ static void modify_PMEsettings(int64_t     simsteps,    /* Set this value as num
     sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, "%" PRId64);
     fprintf(stdout, buf, ir->nsteps);
     fflush(stdout);
-    write_tpx_state(fn_sim_tpr, ir, &state, &mtop);
+    write_tpx_state(fn_sim_tpr, ir, &state, mtop);
 }
 
 static gmx_bool can_scale_rvdw(VanDerWaalsType vdwtype)
@@ -1155,7 +1155,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
             fprintf(stdout, ", unmodified settings\n");
         }
 
-        write_tpx_state(fn_bench_tprs[j], ir, &state, &mtop);
+        write_tpx_state(fn_bench_tprs[j], ir, &state, mtop);
 
         /* Write information about modified tpr settings to log file */
         fprintf(fp, "%4d%10f%10f", j, fac, ir->rcoulomb);

@@ -147,7 +147,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
     double totalMassB = 0.0;
 
     md->haveVsites                  = FALSE;
-    gmx_mtop_atomloop_block_t aloop = gmx_mtop_atomloop_block_init(&mtop);
+    gmx_mtop_atomloop_block_t aloop = gmx_mtop_atomloop_block_init(mtop);
     const t_atom*             atom;
     int                       nmol;
     while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
@@ -201,7 +201,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
         }
     }
 
-    md->bOrires = (gmx_mtop_ftype_count(&mtop, F_ORIRES) != 0);
+    md->bOrires = (gmx_mtop_ftype_count(mtop, F_ORIRES) != 0);
 
     return mdAtoms;
 }
@@ -340,7 +340,7 @@ void atoms2md(const gmx_mtop_t&  mtop,
             {
                 ag = index[i];
             }
-            const t_atom& atom = mtopGetAtomParameters(&mtop, ag, &molb);
+            const t_atom& atom = mtopGetAtomParameters(mtop, ag, &molb);
 
             if (md->cFREEZE)
             {

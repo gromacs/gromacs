@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -165,7 +165,7 @@ void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t** g, gmx_mtop_t* top, const char
     {
         block = new_blocka();
         // TODO: Propagate mtop further.
-        t_atoms atoms = gmx_mtop_global_atoms(top);
+        t_atoms atoms = gmx_mtop_global_atoms(*top);
         analyse(&atoms, block, &names, FALSE, FALSE);
         done_atom(&atoms);
     }
@@ -770,14 +770,14 @@ static bool next_group_index(int atomIndex, const gmx_mtop_t* top, e_index_t typ
         case INDEX_RES:
         {
             int resind, molb = 0;
-            mtopGetAtomAndResidueName(top, atomIndex, &molb, nullptr, nullptr, nullptr, &resind);
+            mtopGetAtomAndResidueName(*top, atomIndex, &molb, nullptr, nullptr, nullptr, &resind);
             *id = resind;
             break;
         }
         case INDEX_MOL:
         {
             int molb = 0;
-            *id      = mtopGetMoleculeIndex(top, atomIndex, &molb);
+            *id      = mtopGetMoleculeIndex(*top, atomIndex, &molb);
             break;
         }
         case INDEX_UNKNOWN:
@@ -888,7 +888,7 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                     case INDEX_RES:
                     {
                         int molnr, atnr_mol;
-                        mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
+                        mtopGetMolblockIndex(*top, ai, &molb, &molnr, &atnr_mol);
                         const t_atoms& mol_atoms    = top->moltype[top->molblock[molb].type].atoms;
                         int            last_atom    = atnr_mol + 1;
                         const int      currentResid = mol_atoms.atom[atnr_mol].resind;
@@ -915,7 +915,7 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
                     case INDEX_MOL:
                     {
                         int molnr, atnr_mol;
-                        mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
+                        mtopGetMolblockIndex(*top, ai, &molb, &molnr, &atnr_mol);
                         const MoleculeBlockIndices& blockIndices = top->moleculeBlockIndices[molb];
                         const int                   atomStart    = blockIndices.globalAtomStart
                                               + (id - blockIndices.moleculeIndexStart)
@@ -1038,9 +1038,9 @@ bool gmx_ana_index_has_full_ablocks(gmx_ana_index_t* g, t_blocka* b)
  * \param[in,out] molb  The molecule block of atom a
  * \returns       true if atoms \p a and \p a + 1 are in different residues, false otherwise.
  */
-static bool is_at_residue_boundary(const gmx_mtop_t* top, int a, int* molb)
+static bool is_at_residue_boundary(const gmx_mtop_t& top, int a, int* molb)
 {
-    if (a == -1 || a + 1 == top->natoms)
+    if (a == -1 || a + 1 == top.natoms)
     {
         return true;
     }
@@ -1089,11 +1089,11 @@ bool gmx_ana_index_has_complete_elems(gmx_ana_index_t* g, e_index_t type, const 
                 // Check if a is consecutive or on a residue boundary
                 if (a != aPrev + 1)
                 {
-                    if (!is_at_residue_boundary(top, aPrev, &molb))
+                    if (!is_at_residue_boundary(*top, aPrev, &molb))
                     {
                         return false;
                     }
-                    if (!is_at_residue_boundary(top, a - 1, &molb))
+                    if (!is_at_residue_boundary(*top, a - 1, &molb))
                     {
                         return false;
                     }
@@ -1102,7 +1102,7 @@ bool gmx_ana_index_has_complete_elems(gmx_ana_index_t* g, e_index_t type, const 
             }
             GMX_ASSERT(g->isize > 0, "We return above when isize=0");
             const int a = g->index[g->isize - 1];
-            if (!is_at_residue_boundary(top, a, &molb))
+            if (!is_at_residue_boundary(*top, a, &molb))
             {
                 return false;
             }

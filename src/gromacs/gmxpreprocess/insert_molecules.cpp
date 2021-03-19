@@ -575,7 +575,7 @@ int InsertMolecules::run()
                 insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &pbcType_dummy, &temporaryX, nullptr, box_dummy);
         xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
         sfree(temporaryX);
-        atomsInserted = gmx_mtop_global_atoms(&topInserted);
+        atomsInserted = gmx_mtop_global_atoms(topInserted);
         if (atomsInserted.nr == 0)
         {
             gmx_fatal(FARGS, "No molecule in %s, please check your input", insertConfFile_.c_str());
@@ -590,7 +590,7 @@ int InsertMolecules::run()
         }
     }
 
-    t_atoms atoms = gmx_mtop_global_atoms(&top_);
+    t_atoms atoms = gmx_mtop_global_atoms(top_);
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */

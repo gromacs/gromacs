@@ -76,7 +76,7 @@ void writeSystemInformation(TextWriter* writer, const gmx_mtop_t& top, bool writ
     const t_atom*             atom;
 
     writeHeader(writer, "Simulation system", "subsection", writeFormattedText);
-    aloop = gmx_mtop_atomloop_block_init(&top);
+    aloop = gmx_mtop_atomloop_block_init(top);
     while (gmx_mtop_atomloop_block_next(aloop, &atom, &nmol))
     {
         if (atom->ptype == ParticleType::VSite)

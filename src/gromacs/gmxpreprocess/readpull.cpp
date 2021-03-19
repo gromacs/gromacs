@@ -549,7 +549,7 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups, gmx::ArrayRef
     }
 }
 
-pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix box, real lambda, warninp_t wi)
+pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix box, real lambda, warninp_t wi)
 {
     pull_t* pull_work;
     t_pbc   pbc;
@@ -559,9 +559,9 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
     pull_params_t*           pull = ir->pull.get();
     gmx::LocalAtomSetManager atomSets;
     pull_work    = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda);
-    auto mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
+    auto mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false);
     auto md      = mdAtoms->mdatoms();
-    atoms2md(*mtop, *ir, -1, {}, mtop->natoms, mdAtoms.get());
+    atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get());
     if (ir->efep != FreeEnergyPerturbationType::No)
     {
         update_mdatoms(md, lambda);
@@ -581,7 +581,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
     {
         bool groupObeysPbc = pullCheckPbcWithinGroup(
                 *pull_work,
-                gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop->natoms),
+                gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop.natoms),
                 pbc,
                 g,
                 c_pullGroupSmallGroupThreshold);
@@ -618,7 +618,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
         {
             groupObeysPbc = pullCheckPbcWithinGroup(
                     *pull_work,
-                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop->natoms),
+                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop.natoms),
                     pbc,
                     g,
                     c_pullGroupPbcMargin);

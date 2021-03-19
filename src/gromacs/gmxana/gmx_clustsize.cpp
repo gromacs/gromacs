@@ -96,7 +96,7 @@ static void clust_size(const char*             ndx,
     /* Topology stuff */
     t_trxframe    fr;
     TpxFileHeader tpxh;
-    gmx_mtop_t*   mtop    = nullptr;
+    gmx_mtop_t    mtop;
     PbcType       pbcType = PbcType::Unset;
     int           ii, jj;
     real          temp, tfac;
@@ -127,13 +127,12 @@ static void clust_size(const char*             ndx,
 
     if (tpr)
     {
-        mtop = new gmx_mtop_t;
         tpxh = readTpxHeader(tpr, true);
         if (tpxh.natoms != natoms)
         {
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!", tpxh.natoms, natoms);
         }
-        pbcType = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, mtop);
+        pbcType = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, &mtop);
     }
     if (ndf <= -1)
     {
@@ -151,8 +150,8 @@ static void clust_size(const char*             ndx,
         {
             printf("Using molecules rather than atoms. Not reading index file %s\n", ndx);
         }
-        GMX_RELEASE_ASSERT(mtop != nullptr, "Trying to access mtop->mols from NULL mtop pointer");
-        mols = gmx_mtop_molecules(*mtop);
+        GMX_RELEASE_ASSERT(tpr, "Cannot access topology without having read it from TPR");
+        mols = gmx_mtop_molecules(mtop);
 
         /* Make dummy index */
         nindex = mols.numBlocks();
@@ -486,7 +485,6 @@ static void clust_size(const char*             ndx,
                rhi,
                &nlevels);
     gmx_ffclose(fp);
-    delete mtop;
     sfree(t_x);
     sfree(t_y);
     for (i = 0; (i < n_x); i++)

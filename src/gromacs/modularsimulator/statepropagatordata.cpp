@@ -83,7 +83,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
                                          const std::string& finalConfigurationFilename,
                                          const t_inputrec*  inputrec,
                                          const t_mdatoms*   mdatoms,
-                                         const gmx_mtop_t*  globalTop) :
+                                         const gmx_mtop_t&  globalTop) :
     totalNumAtoms_(numAtoms),
     localNAtoms_(0),
     box_{ { 0 } },
@@ -657,11 +657,11 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
             // Make molecules whole only for confout writing
             do_pbc_mtop(pbcType_,
                         localStateBackup_->box,
-                        top_global_,
+                        &top_global_,
                         statePropagatorData_->globalState_->x.rvec_array());
         }
         write_sto_conf_mtop(finalConfigurationFilename_.c_str(),
-                            *top_global_->name,
+                            *top_global_.name,
                             top_global_,
                             statePropagatorData_->globalState_->x.rvec_array(),
                             statePropagatorData_->globalState_->v.rvec_array(),
@@ -690,7 +690,7 @@ StatePropagatorData::Element::Element(StatePropagatorData* statePropagatorData,
                                       bool                 writeFinalConfiguration,
                                       std::string          finalConfigurationFilename,
                                       const t_inputrec*    inputrec,
-                                      const gmx_mtop_t*    globalTop) :
+                                      const gmx_mtop_t&    globalTop) :
     statePropagatorData_(statePropagatorData),
     nstxout_(nstxout),
     nstvout_(nstvout),

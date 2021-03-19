@@ -411,7 +411,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     }
 
     statePropagatorData_ = std::make_unique<StatePropagatorData>(
-            legacySimulatorData->top_global->natoms,
+            legacySimulatorData->top_global.natoms,
             legacySimulatorData->fplog,
             legacySimulatorData->cr,
             legacySimulatorData->state_global,
@@ -468,7 +468,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         }
     }
 
-    ModularSimulatorAlgorithm algorithm(*(legacySimulatorData_->top_global->name),
+    ModularSimulatorAlgorithm algorithm(*(legacySimulatorData_->top_global.name),
                                         legacySimulatorData_->fplog,
                                         legacySimulatorData_->cr,
                                         legacySimulatorData_->mdlog,
@@ -518,7 +518,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             legacySimulatorData_->walltime_accounting);
 
     // Build topology holder
-    algorithm.topologyHolder_ = topologyHolderBuilder_.build(*legacySimulatorData_->top_global,
+    algorithm.topologyHolder_ = topologyHolderBuilder_.build(legacySimulatorData_->top_global,
                                                              legacySimulatorData_->cr,
                                                              legacySimulatorData_->inputrec,
                                                              legacySimulatorData_->fr,

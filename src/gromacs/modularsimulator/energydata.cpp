@@ -80,7 +80,7 @@ class Awh;
 
 EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                       const gmx_mtop_t*           globalTopology,
+                       const gmx_mtop_t&           globalTopology,
                        const t_inputrec*           inputrec,
                        const MDAtoms*              mdAtoms,
                        gmx_enerdata_t*             enerd,
@@ -115,7 +115,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     fplog_(fplog),
     fcd_(fcd),
     mdModulesNotifier_(mdModulesNotifier),
-    groups_(&globalTopology->groups),
+    groups_(&globalTopology.groups),
     observablesHistory_(observablesHistory),
     simulationsShareState_(simulationsShareState)
 {
@@ -168,7 +168,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
 {
     pull_t* pull_work = nullptr;
     energyOutput_     = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf),
-                                                   *top_global_,
+                                                   top_global_,
                                                    *inputrec_,
                                                    pull_work,
                                                    mdoutf_get_fp_dhdl(outf),
@@ -187,7 +187,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
     // TODO: This probably doesn't really belong here...
     //       but we have all we need in this element,
     //       so we'll leave it here for now!
-    double io = compute_io(inputrec_, top_global_->natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
+    double io = compute_io(inputrec_, top_global_.natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
     if ((io > 2000) && isMasterRank_)
     {
         fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);

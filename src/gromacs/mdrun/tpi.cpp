@@ -165,7 +165,7 @@ void LegacySimulator::do_tpi()
 {
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) == 1, "TPI does not support OpenMP");
 
-    gmx_localtop_t    top(top_global->ffparams);
+    gmx_localtop_t    top(top_global.ffparams);
     gmx::ForceBuffers f;
     real              lambda, t, temp, beta, drmax, epot;
     double            embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -221,9 +221,9 @@ void LegacySimulator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != FreeEnergyPerturbationType::No);
+    gmx_mtop_generate_local_top(top_global, &top, inputrec->efep != FreeEnergyPerturbationType::No);
 
-    const SimulationGroups* groups = &top_global->groups;
+    const SimulationGroups* groups = &top_global.groups;
 
     bCavity = (inputrec->eI == IntegrationAlgorithm::TPIC);
     if (bCavity)
@@ -298,10 +298,10 @@ void LegacySimulator::do_tpi()
         sscanf(dump_pdb, "%20lf", &dump_ener);
     }
 
-    atoms2md(*top_global, *inputrec, -1, {}, top_global->natoms, mdAtoms);
+    atoms2md(top_global, *inputrec, -1, {}, top_global.natoms, mdAtoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
-    f.resize(top_global->natoms);
+    f.resize(top_global.natoms);
 
     /* Print to log file  */
     walltime_accounting_start_time(walltime_accounting);
@@ -309,9 +309,9 @@ void LegacySimulator::do_tpi()
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
-    const t_atoms& atomsToInsert = top_global->moltype[top_global->molblock.back().type].atoms;
-    a_tp0                        = top_global->natoms - atomsToInsert.nr;
-    a_tp1                        = top_global->natoms;
+    const t_atoms& atomsToInsert = top_global.moltype[top_global.molblock.back().type].atoms;
+    a_tp0                        = top_global.natoms - atomsToInsert.nr;
+    a_tp1                        = top_global.natoms;
     if (debug)
     {
         fprintf(debug, "TPI atoms %d-%d\n", a_tp0, a_tp1);

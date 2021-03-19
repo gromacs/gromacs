@@ -150,7 +150,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
 
             /* Count the types so we avoid natoms^2 operations */
             std::vector<int> typecount(ntp);
-            gmx_mtop_count_atomtypes(&mtop, q, typecount.data());
+            gmx_mtop_count_atomtypes(mtop, q, typecount.data());
 
             for (int tpi = 0; tpi < ntp; tpi++)
             {

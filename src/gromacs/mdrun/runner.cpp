@@ -413,7 +413,7 @@ static void prepare_verlet_scheme(FILE*               fplog,
                                   t_commrec*          cr,
                                   t_inputrec*         ir,
                                   int                 nstlist_cmdline,
-                                  const gmx_mtop_t*   mtop,
+                                  const gmx_mtop_t&   mtop,
                                   const matrix        box,
                                   bool                makeGpuPairList,
                                   const gmx::CpuInfo& cpuinfo)
@@ -445,7 +445,7 @@ static void prepare_verlet_scheme(FILE*               fplog,
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
         const real rlist_new =
-                calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+                calcVerletBufferSize(mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {
@@ -472,7 +472,7 @@ static void prepare_verlet_scheme(FILE*               fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increaseNstlist(fplog, cr, ir, nstlist_cmdline, mtop, box, makeGpuPairList, cpuinfo);
+        increaseNstlist(fplog, cr, ir, nstlist_cmdline, &mtop, box, makeGpuPairList, cpuinfo);
     }
 }
 
@@ -866,7 +866,7 @@ int Mdrunner::mdrunner()
                                                 useGpuForNonbonded,
                                                 useGpuForPme,
                                                 inputrec.get(),
-                                                &mtop,
+                                                mtop,
                                                 mdlog,
                                                 membedHolder.doMembed());
 
@@ -1132,7 +1132,7 @@ int Mdrunner::mdrunner()
     t_disresdata* disresdata;
     snew(disresdata, 1);
     init_disres(fplog,
-                &mtop,
+                mtop,
                 inputrec.get(),
                 DisResRunMode::MDRun,
                 MASTER(cr) ? DDRole::Master : DDRole::Agent,
@@ -1145,7 +1145,7 @@ int Mdrunner::mdrunner()
 
     t_oriresdata* oriresdata;
     snew(oriresdata, 1);
-    init_orires(fplog, &mtop, inputrec.get(), cr, ms, globalState.get(), oriresdata);
+    init_orires(fplog, mtop, inputrec.get(), cr, ms, globalState.get(), oriresdata);
 
     auto deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
                                         MASTER(cr) ? DDRole::Master : DDRole::Agent,
@@ -1263,7 +1263,7 @@ int Mdrunner::mdrunner()
                           cr,
                           inputrec.get(),
                           nstlist_cmdline,
-                          &mtop,
+                          mtop,
                           box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo_->cpuInfo);
@@ -1806,7 +1806,7 @@ int Mdrunner::mdrunner()
             pull_work = init_pull(fplog,
                                   inputrec->pull.get(),
                                   inputrec.get(),
-                                  &mtop,
+                                  mtop,
                                   cr,
                                   &atomSets,
                                   inputrec->fepvals->init_lambda);
@@ -1831,7 +1831,7 @@ int Mdrunner::mdrunner()
                                         cr,
                                         &atomSets,
                                         globalState.get(),
-                                        &mtop,
+                                        mtop,
                                         oenv,
                                         mdrunOptions,
                                         startingBehavior);
@@ -1844,7 +1844,7 @@ int Mdrunner::mdrunner()
             swap = init_swapcoords(fplog,
                                    inputrec.get(),
                                    opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
-                                   &mtop,
+                                   mtop,
                                    globalState.get(),
                                    &observablesHistory,
                                    cr,
@@ -1877,7 +1877,7 @@ int Mdrunner::mdrunner()
                                          wcycle,
                                          &enerd,
                                          ms,
-                                         &mtop,
+                                         mtop,
                                          mdlog,
                                          MASTER(cr) ? globalState->x.rvec_array() : nullptr,
                                          filenames.size(),
@@ -1952,7 +1952,7 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(CenterOfMassPulling(pull_work));
         // Todo move to an MDModule
         simulatorBuilder.add(IonSwapping(swap));
-        simulatorBuilder.add(TopologyData(&mtop, mdAtoms.get()));
+        simulatorBuilder.add(TopologyData(mtop, mdAtoms.get()));
         simulatorBuilder.add(BoxDeformationHandle(deform.get()));
         simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
 

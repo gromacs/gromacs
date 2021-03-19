@@ -370,7 +370,7 @@ static void init_em(FILE*                fplog,
                     gmx::ImdSession*     imdSession,
                     pull_t*              pull_work,
                     t_state*             state_global,
-                    const gmx_mtop_t*    top_global,
+                    const gmx_mtop_t&    top_global,
                     em_state_t*          ems,
                     gmx_localtop_t*      top,
                     t_nrnb*              nrnb,
@@ -434,7 +434,7 @@ static void init_em(FILE*                fplog,
                             TRUE,
                             1,
                             state_global,
-                            *top_global,
+                            top_global,
                             *ir,
                             imdSession,
                             pull_work,
@@ -458,7 +458,7 @@ static void init_em(FILE*                fplog,
         state_change_natoms(&ems->s, ems->s.natoms);
 
         mdAlgorithmsSetupAtomData(
-                cr, *ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
+                cr, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -545,7 +545,7 @@ static void write_em_traj(FILE*               fplog,
                           gmx_bool            bX,
                           gmx_bool            bF,
                           const char*         confout,
-                          const gmx_mtop_t*   top_global,
+                          const gmx_mtop_t&   top_global,
                           const t_inputrec*   ir,
                           int64_t             step,
                           em_state_t*         state,
@@ -574,7 +574,7 @@ static void write_em_traj(FILE*               fplog,
                                      cr,
                                      outf,
                                      mdof_flags,
-                                     top_global->natoms,
+                                     top_global.natoms,
                                      step,
                                      static_cast<double>(step),
                                      &state->s,
@@ -606,11 +606,11 @@ static void write_em_traj(FILE*               fplog,
             if (ir->pbcType != PbcType::No && !ir->bPeriodicMols && DOMAINDECOMP(cr))
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(ir->pbcType, state->s.box, top_global, state_global->x.rvec_array());
+                do_pbc_mtop(ir->pbcType, state->s.box, &top_global, state_global->x.rvec_array());
             }
 
             write_sto_conf_mtop(confout,
-                                *top_global->name,
+                                *top_global.name,
                                 top_global,
                                 state_global->x.rvec_array(),
                                 nullptr,
@@ -781,7 +781,7 @@ static void em_dd_partition_system(FILE*                fplog,
                                    const gmx::MDLogger& mdlog,
                                    int                  step,
                                    const t_commrec*     cr,
-                                   const gmx_mtop_t*    top_global,
+                                   const gmx_mtop_t&    top_global,
                                    const t_inputrec*    ir,
                                    gmx::ImdSession*     imdSession,
                                    pull_t*              pull_work,
@@ -802,7 +802,7 @@ static void em_dd_partition_system(FILE*                fplog,
                         FALSE,
                         1,
                         nullptr,
-                        *top_global,
+                        top_global,
                         *ir,
                         imdSession,
                         pull_work,
@@ -855,7 +855,7 @@ public:
     //! Coordinates multi-simulations.
     const gmx_multisim_t* ms;
     //! Holds the simulation topology.
-    const gmx_mtop_t* top_global;
+    const gmx_mtop_t& top_global;
     //! Holds the domain topology.
     gmx_localtop_t* top;
     //! User input options.
@@ -1050,7 +1050,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 //! Parallel utility summing energies and forces
 static double reorder_partsum(const t_commrec*  cr,
                               const t_grpopts*  opts,
-                              const gmx_mtop_t* top_global,
+                              const gmx_mtop_t& top_global,
                               const em_state_t* s_min,
                               const em_state_t* s_b)
 {
@@ -1066,7 +1066,7 @@ static double reorder_partsum(const t_commrec*  cr,
      * This conflicts with the spirit of domain decomposition,
      * but to fully optimize this a much more complicated algorithm is required.
      */
-    const int natoms = top_global->natoms;
+    const int natoms = top_global.natoms;
     rvec*     fmg;
     snew(fmg, natoms);
 
@@ -1077,7 +1077,7 @@ static double reorder_partsum(const t_commrec*  cr,
         copy_rvec(fm[i], fmg[a]);
         i++;
     }
-    gmx_sum(top_global->natoms * 3, fmg[0], cr);
+    gmx_sum(top_global.natoms * 3, fmg[0], cr);
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
     gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
@@ -1086,7 +1086,7 @@ static double reorder_partsum(const t_commrec*  cr,
     i                                     = 0;
     int                                gf = 0;
     gmx::ArrayRef<const unsigned char> grpnrFREEZE =
-            top_global->groups.groupNumbers[SimulationAtomGroupType::Freeze];
+            top_global.groups.groupNumbers[SimulationAtomGroupType::Freeze];
     for (int a : indicesB)
     {
         if (!grpnrFREEZE.empty())
@@ -1112,7 +1112,7 @@ static double reorder_partsum(const t_commrec*  cr,
 static real pr_beta(const t_commrec*  cr,
                     const t_grpopts*  opts,
                     t_mdatoms*        mdatoms,
-                    const gmx_mtop_t* top_global,
+                    const gmx_mtop_t& top_global,
                     const em_state_t* s_min,
                     const em_state_t* s_b)
 {
@@ -1168,7 +1168,7 @@ void LegacySimulator::do_cg()
 {
     const char* CG = "Polak-Ribiere Conjugate Gradients";
 
-    gmx_localtop_t    top(top_global->ffparams);
+    gmx_localtop_t    top(top_global.ffparams);
     gmx_global_stat_t gstat;
     double            tmp, minstep;
     real              stepsize;
@@ -1250,7 +1250,7 @@ void LegacySimulator::do_cg()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   *top_global,
+                                   top_global,
                                    *inputrec,
                                    pull_work,
                                    nullptr,
@@ -1415,7 +1415,7 @@ void LegacySimulator::do_cg()
             gmx_sumd(1, &minstep, cr);
         }
 
-        minstep = GMX_REAL_EPS / sqrt(minstep / (3 * top_global->natoms));
+        minstep = GMX_REAL_EPS / sqrt(minstep / (3 * top_global.natoms));
 
         if (stepsize < minstep)
         {
@@ -1870,7 +1870,7 @@ void LegacySimulator::do_lbfgs()
 {
     static const char* LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
-    gmx_localtop_t     top(top_global->ffparams);
+    gmx_localtop_t     top(top_global.ffparams);
     gmx_global_stat_t  gstat;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
     double             stepsize, step_taken, gpa, gpb, gpc, tmp, minstep;
@@ -1967,7 +1967,7 @@ void LegacySimulator::do_lbfgs()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   *top_global,
+                                   top_global,
                                    *inputrec,
                                    pull_work,
                                    nullptr,
@@ -2142,7 +2142,7 @@ void LegacySimulator::do_lbfgs()
                                          cr,
                                          outf,
                                          mdof_flags,
-                                         top_global->natoms,
+                                         top_global.natoms,
                                          step,
                                          static_cast<real>(step),
                                          &ems.s,
@@ -2675,7 +2675,7 @@ void LegacySimulator::do_lbfgs()
 void LegacySimulator::do_steep()
 {
     const char*       SD = "Steepest Descents";
-    gmx_localtop_t    top(top_global->ffparams);
+    gmx_localtop_t    top(top_global.ffparams);
     gmx_global_stat_t gstat;
     real              stepsize;
     real              ustep;
@@ -2735,7 +2735,7 @@ void LegacySimulator::do_steep()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   *top_global,
+                                   top_global,
                                    *inputrec,
                                    pull_work,
                                    nullptr,
@@ -2992,7 +2992,7 @@ void LegacySimulator::do_nm()
 {
     const char*         NM = "Normal Mode Analysis";
     int                 nnodes;
-    gmx_localtop_t      top(top_global->ffparams);
+    gmx_localtop_t      top(top_global.ffparams);
     gmx_global_stat_t   gstat;
     tensor              vir, pres;
     rvec                mu_tot = { 0 };
@@ -3132,7 +3132,7 @@ void LegacySimulator::do_nm()
     {
         fprintf(stderr,
                 "starting normal mode calculation '%s'\n%" PRId64 " steps.\n\n",
-                *(top_global->name),
+                *(top_global.name),
                 inputrec->nsteps);
     }
 

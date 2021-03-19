@@ -119,7 +119,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
                                                 const t_commrec*          cr,
                                                 gmx::LocalAtomSetManager* atomSets,
                                                 const t_state*            globalState,
-                                                gmx_mtop_t*               mtop,
+                                                const gmx_mtop_t&         mtop,
                                                 const gmx_output_env_t*   oenv,
                                                 const gmx::MdrunOptions&  mdrunOptions,
                                                 gmx::StartingBehavior     startingBehavior);

@@ -76,7 +76,7 @@ class ArrayRef;
  * restraints can not run in parallel).
  */
 void init_orires(FILE*                 fplog,
-                 const gmx_mtop_t*     mtop,
+                 const gmx_mtop_t&     mtop,
                  const t_inputrec*     ir,
                  const t_commrec*      cr,
                  const gmx_multisim_t* ms,

@@ -238,7 +238,7 @@ void gmx::LegacySimulator::do_md()
     int nstglobalcomm = computeGlobalCommunicationPeriod(mdlog, ir, cr);
     bGStatEveryStep   = (nstglobalcomm == 1);
 
-    const SimulationGroups* groups = &top_global->groups;
+    const SimulationGroups* groups = &top_global.groups;
 
     std::unique_ptr<EssentialDynamics> ed = nullptr;
     if (opt2bSet("-ei", nfile, fnm))
@@ -247,7 +247,7 @@ void gmx::LegacySimulator::do_md()
         ed = init_edsam(mdlog,
                         opt2fn_null("-ei", nfile, fnm),
                         opt2fn("-eo", nfile, fnm),
-                        *top_global,
+                        top_global,
                         *ir,
                         cr,
                         constr,
@@ -325,7 +325,7 @@ void gmx::LegacySimulator::do_md()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   *top_global,
+                                   top_global,
                                    *ir,
                                    pull_work,
                                    mdoutf_get_fp_dhdl(outf),
@@ -351,7 +351,7 @@ void gmx::LegacySimulator::do_md()
                                  useGpuForPme);
 
     {
-        double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global.natoms, *groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
@@ -362,7 +362,7 @@ void gmx::LegacySimulator::do_md()
     std::unique_ptr<t_state> stateInstance;
     t_state*                 state;
 
-    gmx_localtop_t top(top_global->ffparams);
+    gmx_localtop_t top(top_global.ffparams);
 
     auto mdatoms = mdAtoms->mdatoms();
 
@@ -384,7 +384,7 @@ void gmx::LegacySimulator::do_md()
                             TRUE,
                             1,
                             state_global,
-                            *top_global,
+                            top_global,
                             *ir,
                             imdSession,
                             pull_work,
@@ -408,7 +408,7 @@ void gmx::LegacySimulator::do_md()
         state = state_global;
 
         /* Generate and initialize new topology */
-        mdAlgorithmsSetupAtomData(cr, *ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, *ir, top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
 
         upd.setNumAtoms(state->natoms);
     }
@@ -450,7 +450,7 @@ void gmx::LegacySimulator::do_md()
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->efep == FreeEnergyPerturbationType::No
-                        || (!haveFepPerturbedMasses(*top_global) && !havePerturbedConstraints(*top_global)),
+                        || (!haveFepPerturbedMasses(top_global) && !havePerturbedConstraints(top_global)),
                 "Free energy perturbation of masses and constraints are not supported with the GPU "
                 "update.");
 
@@ -473,7 +473,7 @@ void gmx::LegacySimulator::do_md()
                 "update-constraints.");
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir,
-                *top_global,
+                top_global,
                 ekind->ngtc,
                 fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
@@ -531,7 +531,7 @@ void gmx::LegacySimulator::do_md()
 
     if (useReplicaExchange && MASTER(cr))
     {
-        repl_ex = init_replica_exchange(fplog, ms, top_global->natoms, ir, replExParams);
+        repl_ex = init_replica_exchange(fplog, ms, top_global.natoms, ir, replExParams);
     }
     /* PME tuning is only supported in the Verlet scheme, with PME for
      * Coulomb. It is not supported with only LJ PME. */
@@ -636,7 +636,7 @@ void gmx::LegacySimulator::do_md()
 
     bSumEkinhOld = FALSE;
 
-    t_vcm vcm(top_global->groups, *ir);
+    t_vcm vcm(top_global.groups, *ir);
     reportComRemovalInfo(fplog, vcm);
 
     /* To minimize communication, compute_globals computes the COM velocity
@@ -692,7 +692,7 @@ void gmx::LegacySimulator::do_md()
     checkNumberOfBondedInteractions(mdlog,
                                     cr,
                                     totalNumberOfBondedInteractions,
-                                    *top_global,
+                                    top_global,
                                     &top,
                                     makeConstArrayRef(state->x),
                                     state->box,
@@ -768,7 +768,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         char tbuf[20];
-        fprintf(stderr, "starting mdrun '%s'\n", *(top_global->name));
+        fprintf(stderr, "starting mdrun '%s'\n", *(top_global.name));
         if (ir->nsteps >= 0)
         {
             sprintf(tbuf, "%8.1f", (ir->init_step + ir->nsteps) * ir->delta_t);
@@ -1002,7 +1002,7 @@ void gmx::LegacySimulator::do_md()
                                     bMasterState,
                                     nstglobalcomm,
                                     state_global,
-                                    *top_global,
+                                    top_global,
                                     *ir,
                                     imdSession,
                                     pull_work,
@@ -1072,7 +1072,7 @@ void gmx::LegacySimulator::do_md()
             checkNumberOfBondedInteractions(mdlog,
                                             cr,
                                             totalNumberOfBondedInteractions,
-                                            *top_global,
+                                            top_global,
                                             &top,
                                             makeConstArrayRef(state->x),
                                             state->box,
@@ -1648,7 +1648,7 @@ void gmx::LegacySimulator::do_md()
                 checkNumberOfBondedInteractions(mdlog,
                                                 cr,
                                                 totalNumberOfBondedInteractions,
-                                                *top_global,
+                                                top_global,
                                                 &top,
                                                 makeConstArrayRef(state->x),
                                                 state->box,
@@ -1891,7 +1891,7 @@ void gmx::LegacySimulator::do_md()
                                 TRUE,
                                 1,
                                 state_global,
-                                *top_global,
+                                top_global,
                                 *ir,
                                 imdSession,
                                 pull_work,

@@ -1211,7 +1211,7 @@ int gmx_pme_error(int argc, char* argv[])
         if (opt2bSet("-so", NFILE, fnm) || bTUNE)
         {
             ir.ewald_rtol = info.ewald_rtol[0];
-            write_tpx_state(opt2fn("-so", NFILE, fnm), &ir, &state, &mtop);
+            write_tpx_state(opt2fn("-so", NFILE, fnm), &ir, &state, mtop);
         }
         please_cite(fp, "Wang2010");
         fclose(fp);

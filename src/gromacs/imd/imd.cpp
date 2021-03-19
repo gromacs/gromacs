@@ -199,7 +199,7 @@ public:
      */
     void openOutputFile(const char* fn, int nat_total, const gmx_output_env_t* oenv, StartingBehavior startingBehavior);
     /*! \brief Creates the molecule start-end position array of molecules in the IMD group. */
-    void prepareMoleculesInImdGroup(const gmx_mtop_t* top_global);
+    void prepareMoleculesInImdGroup(const gmx_mtop_t& top_global);
     /*! \brief Removes shifts of molecules diffused outside of the box. */
     void removeMolecularShifts(const matrix box);
     /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
@@ -516,7 +516,7 @@ static bool imd_recv_mdcomm(IMDSocket* socket, int32_t nforces, int32_t* forcend
 void write_IMDgroup_to_file(bool              bIMD,
                             t_inputrec*       ir,
                             const t_state*    state,
-                            const gmx_mtop_t* sys,
+                            const gmx_mtop_t& sys,
                             int               nfile,
                             const t_filenm    fnm[])
 {
@@ -1080,7 +1080,7 @@ ImdSession::Impl::~Impl()
 }
 
 
-void ImdSession::Impl::prepareMoleculesInImdGroup(const gmx_mtop_t* top_global)
+void ImdSession::Impl::prepareMoleculesInImdGroup(const gmx_mtop_t& top_global)
 {
     /* check whether index is sorted */
     for (int i = 0; i < nat - 1; i++)
@@ -1091,7 +1091,7 @@ void ImdSession::Impl::prepareMoleculesInImdGroup(const gmx_mtop_t* top_global)
         }
     }
 
-    RangePartitioning gmols = gmx_mtop_molecules(*top_global);
+    RangePartitioning gmols = gmx_mtop_molecules(top_global);
     t_block           lmols;
     lmols.nr = 0;
     snew(lmols.index, gmols.numBlocks() + 1);
@@ -1302,7 +1302,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
                                            gmx_wallcycle*              wcycle,
                                            gmx_enerdata_t*             enerd,
                                            const gmx_multisim_t*       ms,
-                                           const gmx_mtop_t*           top_global,
+                                           const gmx_mtop_t&           top_global,
                                            const MDLogger&             mdlog,
                                            const rvec                  x[],
                                            int                         nfile,
@@ -1404,7 +1404,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
      *****************************************************
      */
 
-    int nat_total = top_global->natoms;
+    int nat_total = top_global.natoms;
 
     /* Initialize IMD session. If we read in a pre-IMD .tpr file, ir->imd->nat
      * will be zero. For those cases we transfer _all_ atomic positions */

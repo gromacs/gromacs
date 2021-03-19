@@ -144,7 +144,7 @@ struct PartialDeserializedTprFile
  */
 TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly);
 
-void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t* mtop);
+void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t& mtop);
 /* Write a file, and close it again.
  */
 

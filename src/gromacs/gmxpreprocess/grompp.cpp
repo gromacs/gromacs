@@ -680,7 +680,7 @@ static void new_status(const char*                           topfile,
      * constraints only. Do not print note with large timesteps or vsites.
      */
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
-        && gmx_mtop_ftype_count(sys, F_VSITE3FD) == 0)
+        && gmx_mtop_ftype_count(*sys, F_VSITE3FD) == 0)
     {
         set_warning_line(wi, "unknown", -1);
         warning_note(wi,
@@ -2392,7 +2392,7 @@ int gmx_grompp(int argc, char* argv[])
     if (ir->bPull)
     {
         pull = set_pull_init(ir,
-                             &sys,
+                             sys,
                              state.x.rvec_array(),
                              state.box,
                              state.lambda[FreeEnergyPerturbationCouplingType::Mass],
@@ -2522,10 +2522,10 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     done_warning(wi, FARGS);
-    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, &sys);
+    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, sys);
 
     /* Output IMD group, if bIMD is TRUE */
-    gmx::write_IMDgroup_to_file(ir->bIMD, ir, &state, &sys, NFILE, fnm);
+    gmx::write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
     sfree(opts->define);
     sfree(opts->wall_atomtype[0]);

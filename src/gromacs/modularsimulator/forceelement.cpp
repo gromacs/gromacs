@@ -88,7 +88,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            ImdSession*            imdSession,
                            pull_t*                pull_work,
                            Constraints*           constr,
-                           const gmx_mtop_t*      globalTopology,
+                           const gmx_mtop_t&      globalTopology,
                            gmx_enfrot*            enforcedRotation) :
     shellfc_(init_shell_flexcon(fplog,
                                 globalTopology,

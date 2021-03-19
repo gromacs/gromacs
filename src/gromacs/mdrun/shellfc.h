@@ -85,7 +85,7 @@ class VirtualSitesHandler;
  * \returns a pointer to an initialized \c shellfc object.
  */
 gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
-                                  const gmx_mtop_t* mtop,
+                                  const gmx_mtop_t& mtop,
                                   int               nflexcon,
                                   int               nstcalcenergy,
                                   bool              usingDomainDecomposition,

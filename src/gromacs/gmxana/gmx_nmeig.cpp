@@ -545,7 +545,7 @@ int gmx_nmeig(int argc, char* argv[])
     {
         nharm = get_nharm(&mtop);
     }
-    std::vector<int> atom_index = get_atom_index(&mtop);
+    std::vector<int> atom_index = get_atom_index(mtop);
 
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 

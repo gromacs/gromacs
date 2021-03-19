@@ -2536,7 +2536,7 @@ static void set_disres_npair(gmx_mtop_t* mtop)
 
     gmx::ArrayRef<t_iparams> ip = mtop->ffparams.iparams;
 
-    iloop = gmx_mtop_ilistloop_init(mtop);
+    iloop = gmx_mtop_ilistloop_init(*mtop);
     while (const InteractionLists* ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         const InteractionList& il = (*ilist)[F_DISRES];
@@ -3293,7 +3293,7 @@ TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly)
     return tpx;
 }
 
-void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t* mtop)
+void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t& mtop)
 {
     /* To write a state, we first need to write the state information to a buffer before
      * we append the raw bytes to the file. For this, the header information needs to be
@@ -3303,7 +3303,7 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
 
     t_fileio* fio;
 
-    TpxFileHeader tpx = populateTpxHeader(*state, ir, mtop);
+    TpxFileHeader tpx = populateTpxHeader(*state, ir, &mtop);
     // Long-term we should move to use little endian in files to avoid extra byte swapping,
     // but since we just used the default XDR format (which is big endian) for the TPR
     // header it would cause third-party libraries reading our raw data to tear their hair
@@ -3317,7 +3317,7 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
                 const_cast<t_state*>(state),
                 nullptr,
                 nullptr,
-                const_cast<gmx_mtop_t*>(mtop));
+                const_cast<gmx_mtop_t*>(&mtop));
 
     std::vector<char> tprBody = tprBodySerializer.finishAndGetBuffer();
     tpx.sizeOfTprBody         = tprBody.size();

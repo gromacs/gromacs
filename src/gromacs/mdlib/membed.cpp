@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ typedef struct
 
 /* Get the global molecule id, and the corresponding molecule type and id of the *
  * molblock from the global atom nr. */
-static int get_mol_id(int at, gmx_mtop_t* mtop, int* type, int* block)
+static int get_mol_id(int at, const gmx_mtop_t& mtop, int* type, int* block)
 {
     int mol_id = 0;
     int i;
@@ -119,9 +119,9 @@ static int get_mol_id(int at, gmx_mtop_t* mtop, int* type, int* block)
     mtopGetMolblockIndex(mtop, at, block, &mol_id, &atnr_mol);
     for (i = 0; i < *block; i++)
     {
-        mol_id += mtop->molblock[i].nmol;
+        mol_id += mtop.molblock[i].nmol;
     }
-    *type = mtop->molblock[*block].type;
+    *type = mtop.molblock[*block].type;
 
     return mol_id;
 }
@@ -148,7 +148,7 @@ static int get_molblock(int mol_id, const std::vector<gmx_molblock_t>& mblock)
  * level, if the same molecule type is found in another part of the system, these *
  * would also be affected. Therefore we have to check if the embedded and rest group *
  * share common molecule types. If so, membed will stop with an error. */
-static int get_mtype_list(t_block* at, gmx_mtop_t* mtop, t_block* tlist)
+static int get_mtype_list(t_block* at, const gmx_mtop_t& mtop, t_block* tlist)
 {
     int      i, j, nr;
     int      type = 0, block = 0;
@@ -179,7 +179,7 @@ static int get_mtype_list(t_block* at, gmx_mtop_t* mtop, t_block* tlist)
 }
 
 /* Do the actual check of the molecule types between embedded and rest group */
-static void check_types(t_block* ins_at, t_block* rest_at, gmx_mtop_t* mtop)
+static void check_types(t_block* ins_at, t_block* rest_at, const gmx_mtop_t& mtop)
 {
     t_block *ins_mtype, *rest_mtype;
     int      i, j;
@@ -209,9 +209,9 @@ static void check_types(t_block* ins_at, t_block* rest_at, gmx_mtop_t* mtop)
                         "moleculetype of the molecules %s in the inserted group. Do not forget to "
                         "provide\n"
                         "an appropriate *.itp file",
-                        *(mtop->moltype[rest_mtype->index[j]].name),
-                        *(mtop->moltype[rest_mtype->index[j]].name),
-                        *(mtop->moltype[rest_mtype->index[j]].name));
+                        *(mtop.moltype[rest_mtype->index[j]].name),
+                        *(mtop.moltype[rest_mtype->index[j]].name),
+                        *(mtop.moltype[rest_mtype->index[j]].name));
             }
         }
     }
@@ -381,7 +381,7 @@ static real est_prot_area(pos_ins_t* pos_ins, rvec* r, t_block* ins_at, mem_t* m
     return area;
 }
 
-static int init_mem_at(mem_t* mem_p, gmx_mtop_t* mtop, rvec* r, matrix box, pos_ins_t* pos_ins)
+static int init_mem_at(mem_t* mem_p, const gmx_mtop_t& mtop, rvec* r, matrix box, pos_ins_t* pos_ins)
 {
     int      i, j, at, mol, nmol, nmolbox, count;
     t_block* mem_a;
@@ -454,7 +454,7 @@ static int init_mem_at(mem_t* mem_p, gmx_mtop_t* mtop, rvec* r, matrix box, pos_
     mem_p->zmed = (zmax - zmin) / 2 + zmin;
 
     /*number of membrane molecules in protein box*/
-    nmolbox = count / mtop->moltype[mtop->molblock[block].type].atoms.nr;
+    nmolbox = count / mtop.moltype[mtop.molblock[block].type].atoms.nr;
     /*membrane area within the box defined by the min and max coordinates of the embedded molecule*/
     mem_area = (pos_ins->xmax[XX] - pos_ins->xmin[XX]) * (pos_ins->xmax[YY] - pos_ins->xmin[YY]);
     /*rough estimate of area per lipid, assuming there is only one type of lipid in the membrane*/
@@ -546,17 +546,17 @@ static void resize(rvec* r_ins, rvec* r, pos_ins_t* pos_ins, const rvec fac)
 
 /* generate the list of membrane molecules that overlap with the molecule to be embedded. *
  * The molecule to be embedded is already reduced in size. */
-static int gen_rm_list(rm_t*       rm_p,
-                       t_block*    ins_at,
-                       t_block*    rest_at,
-                       t_pbc*      pbc,
-                       gmx_mtop_t* mtop,
-                       rvec*       r,
-                       mem_t*      mem_p,
-                       pos_ins_t*  pos_ins,
-                       real        probe_rad,
-                       int         low_up_rm,
-                       gmx_bool    bALLOW_ASYMMETRY)
+static int gen_rm_list(rm_t*             rm_p,
+                       t_block*          ins_at,
+                       t_block*          rest_at,
+                       t_pbc*            pbc,
+                       const gmx_mtop_t& mtop,
+                       rvec*             r,
+                       mem_t*            mem_p,
+                       pos_ins_t*        pos_ins,
+                       real              probe_rad,
+                       int               low_up_rm,
+                       gmx_bool          bALLOW_ASYMMETRY)
 {
     int      i, j, k, l, at, at2, mol_id;
     int      type = 0, block = 0;
@@ -568,7 +568,7 @@ static int gen_rm_list(rm_t*       rm_p,
     int*     order;
 
     r_min_rad                        = probe_rad * probe_rad;
-    gmx::RangePartitioning molecules = gmx_mtop_molecules(*mtop);
+    gmx::RangePartitioning molecules = gmx_mtop_molecules(mtop);
     snew(rm_p->block, molecules.numBlocks());
     snew(rm_p->mol, molecules.numBlocks());
     nrm = nupper = 0;
@@ -660,7 +660,7 @@ static int gen_rm_list(rm_t*       rm_p,
         while (nupper != nlower)
         {
             mol_id = mem_p->mol_id[order[i]];
-            block  = get_molblock(mol_id, mtop->molblock);
+            block  = get_molblock(mol_id, mtop.molblock);
             bRM    = TRUE;
             for (l = 0; l < nrm; l++)
             {
@@ -1110,7 +1110,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gnames.emplace_back(*groupName);
         }
 
-        atoms = gmx_mtop_global_atoms(mtop);
+        atoms = gmx_mtop_global_atoms(*mtop);
         snew(mem_p, 1);
         fprintf(stderr, "\nSelect a group to embed in the membrane:\n");
         get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), &ins);
@@ -1276,9 +1276,9 @@ gmx_membed_t* init_membed(FILE*          fplog,
         snew(rest_at, 1);
         init_ins_at(ins_at, rest_at, state, pos_ins, groups, ins_grp_id, xy_max);
         /* Check that moleculetypes in insertion group are not part of the rest of the system */
-        check_types(ins_at, rest_at, mtop);
+        check_types(ins_at, rest_at, *mtop);
 
-        init_mem_at(mem_p, mtop, state->x.rvec_array(), state->box, pos_ins);
+        init_mem_at(mem_p, *mtop, state->x.rvec_array(), state->box, pos_ins);
 
         prot_area = est_prot_area(pos_ins, state->x.rvec_array(), ins_at, mem_p);
         if ((prot_area > prot_vs_box)
@@ -1341,7 +1341,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
 
         snew(rm_p, 1);
         lip_rm = gen_rm_list(
-                rm_p, ins_at, rest_at, pbc, mtop, state->x.rvec_array(), mem_p, pos_ins, probe_rad, low_up_rm, bALLOW_ASYMMETRY);
+                rm_p, ins_at, rest_at, pbc, *mtop, state->x.rvec_array(), mem_p, pos_ins, probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 
         if (fplog)

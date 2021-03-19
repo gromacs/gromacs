@@ -218,7 +218,7 @@ void gmx::LegacySimulator::do_mimic()
     if (MASTER(cr))
     {
         MimicCommunicator::init();
-        auto nonConstGlobalTopology = const_cast<gmx_mtop_t*>(top_global);
+        auto nonConstGlobalTopology = const_cast<gmx_mtop_t*>(&top_global);
         MimicCommunicator::sendInitData(nonConstGlobalTopology, state_global->x);
         // TODO: Avoid changing inputrec (#3854)
         auto* nonConstInputrec   = const_cast<t_inputrec*>(inputrec);
@@ -231,10 +231,10 @@ void gmx::LegacySimulator::do_mimic()
         gmx_bcast(sizeof(ir->nsteps), &nonConstInputrec->nsteps, cr->mpi_comm_mygroup);
     }
 
-    const SimulationGroups* groups = &top_global->groups;
+    const SimulationGroups* groups = &top_global.groups;
     {
-        auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
-        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
+        auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(&top_global);
+        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(top_global);
     }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda);
@@ -255,7 +255,7 @@ void gmx::LegacySimulator::do_mimic()
                                    simulationsShareState,
                                    ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
-                                   *top_global,
+                                   top_global,
                                    *ir,
                                    pull_work,
                                    mdoutf_get_fp_dhdl(outf),
@@ -275,7 +275,7 @@ void gmx::LegacySimulator::do_mimic()
                                  runScheduleWork->simulationWork.useGpuPme);
 
     {
-        double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
+        double io = compute_io(ir, top_global.natoms, *groups, energyOutput.numEnergyTerms(), 1);
         if ((io > 2000) && MASTER(cr))
         {
             fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
@@ -286,7 +286,7 @@ void gmx::LegacySimulator::do_mimic()
     std::unique_ptr<t_state> stateInstance;
     t_state*                 state;
 
-    gmx_localtop_t top(top_global->ffparams);
+    gmx_localtop_t top(top_global.ffparams);
 
     if (DOMAINDECOMP(cr))
     {
@@ -302,7 +302,7 @@ void gmx::LegacySimulator::do_mimic()
                             TRUE,
                             1,
                             state_global,
-                            *top_global,
+                            top_global,
                             *ir,
                             imdSession,
                             pull_work,
@@ -324,7 +324,7 @@ void gmx::LegacySimulator::do_mimic()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, *ir, *top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, *ir, top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
     }
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -374,7 +374,7 @@ void gmx::LegacySimulator::do_mimic()
     checkNumberOfBondedInteractions(mdlog,
                                     cr,
                                     totalNumberOfBondedInteractions,
-                                    *top_global,
+                                    top_global,
                                     &top,
                                     makeConstArrayRef(state->x),
                                     state->box,
@@ -382,7 +382,7 @@ void gmx::LegacySimulator::do_mimic()
 
     if (MASTER(cr))
     {
-        fprintf(stderr, "starting MiMiC MD run '%s'\n\n", *(top_global->name));
+        fprintf(stderr, "starting MiMiC MD run '%s'\n\n", *(top_global.name));
         if (mdrunOptions.verbose)
         {
             fprintf(stderr,
@@ -488,7 +488,7 @@ void gmx::LegacySimulator::do_mimic()
                                 bMasterState,
                                 nstglobalcomm,
                                 state_global,
-                                *top_global,
+                                top_global,
                                 *ir,
                                 imdSession,
                                 pull_work,
@@ -662,7 +662,7 @@ void gmx::LegacySimulator::do_mimic()
             checkNumberOfBondedInteractions(mdlog,
                                             cr,
                                             totalNumberOfBondedInteractions,
-                                            *top_global,
+                                            top_global,
                                             &top,
                                             makeConstArrayRef(state->x),
                                             state->box,
@@ -670,7 +670,7 @@ void gmx::LegacySimulator::do_mimic()
         }
 
         {
-            gmx::HostVector<gmx::RVec>     fglobal(top_global->natoms);
+            gmx::HostVector<gmx::RVec>     fglobal(top_global.natoms);
             gmx::ArrayRef<gmx::RVec>       ftemp;
             gmx::ArrayRef<const gmx::RVec> flocal = f.view().force();
             if (DOMAINDECOMP(cr))

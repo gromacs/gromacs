@@ -634,7 +634,7 @@ static void add_solv(const char*        filename,
                         boxSolvent);
     t_atoms* atomsSolvent;
     snew(atomsSolvent, 1);
-    *atomsSolvent = gmx_mtop_global_atoms(&topSolvent);
+    *atomsSolvent = gmx_mtop_global_atoms(topSolvent);
     xSolvent.assign(temporaryX, temporaryX + topSolvent.natoms);
     sfree(temporaryX);
     vSolvent.assign(temporaryV, temporaryV + topSolvent.natoms);
@@ -991,7 +991,7 @@ int gmx_solvate(int argc, char* argv[])
         rvec *temporaryX = nullptr, *temporaryV = nullptr;
         readConfAndTopology(
                 conf_prot, &bTprFileWasRead, &top, &pbcType, &temporaryX, bReadV ? &temporaryV : nullptr, box);
-        *atoms = gmx_mtop_global_atoms(&top);
+        *atoms = gmx_mtop_global_atoms(top);
         x.assign(temporaryX, temporaryX + top.natoms);
         sfree(temporaryX);
         if (temporaryV)

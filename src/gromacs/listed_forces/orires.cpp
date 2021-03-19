@@ -70,7 +70,7 @@ using gmx::RVec;
 // a user can't just do multi-sim with single-sim orientation restraints.
 
 void init_orires(FILE*                 fplog,
-                 const gmx_mtop_t*     mtop,
+                 const gmx_mtop_t&     mtop,
                  const t_inputrec*     ir,
                  const t_commrec*      cr,
                  const gmx_multisim_t* ms,
@@ -141,7 +141,7 @@ void init_orires(FILE*                 fplog,
         for (int i = 0; i < numOrires; i += 3)
         {
             int type = (*il)[F_ORIRES].iatoms[i];
-            int ex   = mtop->ffparams.iparams[type].orires.ex;
+            int ex   = mtop.ffparams.iparams[type].orires.ex;
             if (ex >= od->nex)
             {
                 srenew(nr_ex, ex + 1);
@@ -220,9 +220,9 @@ void init_orires(FILE*                 fplog,
     snew(od->tmpEq, od->nex);
 
     od->nref = 0;
-    for (int i = 0; i < mtop->natoms; i++)
+    for (int i = 0; i < mtop.natoms; i++)
     {
-        if (getGroupType(mtop->groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
+        if (getGroupType(mtop.groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
         {
             od->nref++;
         }
@@ -241,12 +241,12 @@ void init_orires(FILE*                 fplog,
     rvec   com  = { 0, 0, 0 };
     double mtot = 0.0;
     int    j    = 0;
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(mtop))
     {
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (mtop->groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit].empty()
-            || mtop->groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit][i] == 0)
+        if (mtop.groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit].empty()
+            || mtop.groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit][i] == 0)
         {
             /* Not correct for free-energy with changing masses */
             od->mref[j] = local.m;

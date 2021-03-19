@@ -128,7 +128,7 @@ public:
                         ImdSession*                         imdSession,
                         pull_t*                             pull_work,
                         t_swap*                             swap,
-                        gmx_mtop_t*                         top_global,
+                        const gmx_mtop_t&                   top_global,
                         t_state*                            state_global,
                         ObservablesHistory*                 observablesHistory,
                         MDAtoms*                            mdAtoms,
@@ -219,7 +219,7 @@ public:
     //! The coordinate-swapping session.
     t_swap* swap;
     //! Full system topology.
-    const gmx_mtop_t* top_global;
+    const gmx_mtop_t& top_global;
     //! Full simulation state (only non-nullptr on master rank).
     t_state* state_global;
     //! History of simulation observables.

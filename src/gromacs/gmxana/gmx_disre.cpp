@@ -839,7 +839,7 @@ int gmx_disre(int argc, char* argv[])
     ir->dr_tau = 0.0;
     t_disresdata disresdata;
     init_disres(fplog,
-                topInfo.mtop(),
+                *topInfo.mtop(),
                 ir,
                 DisResRunMode::AnalysisTool,
                 DDRole::Master,

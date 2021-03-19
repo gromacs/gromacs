@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ void gmx_calc_com(const gmx_mtop_t* top, rvec x[], int nrefat, const int index[]
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(top, ai, &molb);
+        const real mass = mtopGetAtomMass(*top, ai, &molb);
         for (int j = 0; j < DIM; ++j)
         {
             xout[j] += mass * x[ai][j];
@@ -113,7 +113,7 @@ void gmx_calc_cog_f(const gmx_mtop_t* top, rvec f[], int nrefat, const int index
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(top, ai, &molb);
+        const real mass = mtopGetAtomMass(*top, ai, &molb);
         for (int j = 0; j < DIM; ++j)
         {
             fout[j] += f[ai][j] / mass;
@@ -257,7 +257,7 @@ void gmx_calc_com_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
     for (int m = 0; m < nrefat; ++m)
     {
         const int  ai   = index[m];
-        const real mass = mtopGetAtomMass(top, ai, &molb);
+        const real mass = mtopGetAtomMass(*top, ai, &molb);
         for (int j = 0; j < DIM; ++j)
         {
             xout[j] += mass * x[ai][j];
@@ -278,7 +278,7 @@ void gmx_calc_com_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
             {
                 rvec       dx, xtest;
                 const int  ai   = index[m];
-                const real mass = mtopGetAtomMass(top, ai, &molb) / mtot;
+                const real mass = mtopGetAtomMass(*top, ai, &molb) / mtot;
                 pbc_dx(pbc, x[ai], xout, dx);
                 rvec_add(xout, dx, xtest);
                 for (int j = 0; j < DIM; ++j)
@@ -363,7 +363,7 @@ void gmx_calc_com_block(const gmx_mtop_t* top, rvec x[], const t_block* block, c
         for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
-            const real mass = mtopGetAtomMass(top, ai, &molb);
+            const real mass = mtopGetAtomMass(*top, ai, &molb);
             for (int d = 0; d < DIM; ++d)
             {
                 xb[d] += mass * x[ai][d];
@@ -394,7 +394,7 @@ void gmx_calc_cog_f_block(const gmx_mtop_t* top, rvec f[], const t_block* block,
         for (int i = block->index[b]; i < block->index[b + 1]; ++i)
         {
             const int  ai   = index[i];
-            const real mass = mtopGetAtomMass(top, ai, &molb);
+            const real mass = mtopGetAtomMass(*top, ai, &molb);
             for (int d = 0; d < DIM; ++d)
             {
                 fb[d] += f[ai][d] / mass;

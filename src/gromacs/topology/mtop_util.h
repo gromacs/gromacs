@@ -63,7 +63,7 @@ struct t_symtab;
  * state A and 1 for state B types.  typecount should have at
  * least mtop->ffparams.atnr elements.
  */
-void gmx_mtop_count_atomtypes(const gmx_mtop_t* mtop, int state, int typecount[]);
+void gmx_mtop_count_atomtypes(const gmx_mtop_t& mtop, int state, int typecount[]);
 
 /*!\brief Returns the total number of molecules in mtop
  *
@@ -72,7 +72,7 @@ void gmx_mtop_count_atomtypes(const gmx_mtop_t* mtop, int state, int typecount[]
 int gmx_mtop_num_molecules(const gmx_mtop_t& mtop);
 
 /* Returns the total number of residues in mtop. */
-int gmx_mtop_nres(const gmx_mtop_t* mtop);
+int gmx_mtop_nres(const gmx_mtop_t& mtop);
 
 class AtomIterator;
 
@@ -163,7 +163,7 @@ typedef struct gmx_mtop_atomloop_block* gmx_mtop_atomloop_block_t;
 
 /* Initialize an atom loop over atoms in all molecule blocks the system.
  */
-gmx_mtop_atomloop_block_t gmx_mtop_atomloop_block_init(const gmx_mtop_t* mtop);
+gmx_mtop_atomloop_block_t gmx_mtop_atomloop_block_init(const gmx_mtop_t& mtop);
 
 /* Loop to the next atom.
  * When not at the end:
@@ -185,9 +185,6 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop, const t_a
 typedef struct gmx_mtop_ilistloop* gmx_mtop_ilistloop_t;
 
 /* Initialize an ilist loop over all molecule types in the system. */
-gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t* mtop);
-
-/* Initialize an ilist loop over all molecule types in the system. */
 gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t& mtop);
 
 /* Loop to the next molecule,
@@ -199,9 +196,6 @@ gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t& mtop);
 const InteractionLists* gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop, int* nmol);
 
 /* Returns the total number of interactions in the system of type ftype */
-int gmx_mtop_ftype_count(const gmx_mtop_t* mtop, int ftype);
-
-/* Returns the total number of interactions in the system of type ftype */
 int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype);
 
 /* Returns the total number of interactions in the system with all interaction flags that are set in \p if_flags set */
@@ -211,7 +205,7 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, int unsigned if_flags);
 gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_mtop_t& mtop);
 
 /* Returns a single t_atoms struct for the whole system */
-t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop);
+t_atoms gmx_mtop_global_atoms(const gmx_mtop_t& mtop);
 
 
 /*! \brief
@@ -264,7 +258,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t* mtop, bool freeMTop);
  * \param[in]  mtop Molecular topology
  * \returns Vector that will be filled with the atom indices
  */
-std::vector<int> get_atom_index(const gmx_mtop_t* mtop);
+std::vector<int> get_atom_index(const gmx_mtop_t& mtop);
 
 /*! \brief Converts a t_atoms struct to an mtop struct
  *

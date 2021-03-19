@@ -79,7 +79,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         t_nrnb*            nrnb,
                                                         gmx_wallcycle*     wcycle,
                                                         t_forcerec*        fr,
-                                                        const gmx_mtop_t*  global_top,
+                                                        const gmx_mtop_t&  global_top,
                                                         Constraints*       constr) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
@@ -96,7 +96,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     energyData_(energyData),
     localTopology_(nullptr),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
-    vcm_(global_top->groups, *inputrec),
+    vcm_(global_top.groups, *inputrec),
     signals_(signals),
     fplog_(fplog),
     mdlog_(mdlog),
@@ -309,7 +309,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
             energyData_->needToSumEkinhOld(),
             flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     checkNumberOfBondedInteractions(
-            mdlog_, cr_, totalNumberOfBondedInteractions_, *top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
+            mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
     if (flags & CGLO_STOPCM && !isInit)
     {
         process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);

@@ -686,8 +686,9 @@ int gmx_nmr(int argc, char* argv[])
                     snew(pairleg[i], 30);
                     j = fa[3 * i + 1];
                     k = fa[3 * i + 2];
-                    mtopGetAtomAndResidueName(topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
-                    mtopGetAtomAndResidueName(topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
+                    GMX_ASSERT(topInfo.hasTopology(), "Need to have a valid topology");
+                    mtopGetAtomAndResidueName(*topInfo.mtop(), j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
+                    mtopGetAtomAndResidueName(*topInfo.mtop(), k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i],
                             "%d %s %d %s (%d)",
                             resnr_j,

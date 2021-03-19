@@ -240,7 +240,7 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
         {
             int a_gl  = dd->globalAtomIndices[a];
             int a_mol = 0;
-            mtopGetMolblockIndex(&mtop, a_gl, &mb, nullptr, &a_mol);
+            mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
 
             const gmx_molblock_t* molb   = &mtop.molblock[mb];
             int                   settle = at2settle_mt[molb->type][a_mol];
@@ -321,7 +321,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
             int a_gl  = dd->globalAtomIndices[a];
             int molnr = 0;
             int a_mol = 0;
-            mtopGetMolblockIndex(&mtop, a_gl, &mb, &molnr, &a_mol);
+            mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
 
             const gmx_molblock_t& molb = mtop.molblock[mb];
 

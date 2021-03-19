@@ -108,7 +108,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                          gmx::IMDOutputProvider*       outputProvider,
                          const gmx::MdModulesNotifier& mdModulesNotifier,
                          const t_inputrec*             ir,
-                         const gmx_mtop_t*             top_global,
+                         const gmx_mtop_t&             top_global,
                          const gmx_output_env_t*       oenv,
                          gmx_wallcycle_t               wcycle,
                          const gmx::StartingBehavior   startingBehavior,
@@ -164,7 +164,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                     gmx_tng_open(filename, filemode[0], &of->tng_low_prec);
                     if (filemode[0] == 'w')
                     {
-                        gmx_tng_prepare_low_prec_writing(of->tng_low_prec, top_global, ir);
+                        gmx_tng_prepare_low_prec_writing(of->tng_low_prec, &top_global, ir);
                     }
                     bCiteTng = TRUE;
                     break;
@@ -193,7 +193,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                     gmx_tng_open(filename, filemode[0], &of->tng);
                     if (filemode[0] == 'w')
                     {
-                        gmx_tng_prepare_md_writing(of->tng, top_global, ir);
+                        gmx_tng_prepare_md_writing(of->tng, &top_global, ir);
                     }
                     bCiteTng = TRUE;
                     break;
@@ -226,10 +226,10 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
            trajectory-writing routines later. Also, XTC writing needs
            to know what (and how many) atoms might be in the XTC
            groups, and how to look up later which ones they are. */
-        of->natoms_global       = top_global->natoms;
-        of->groups              = &top_global->groups;
+        of->natoms_global       = top_global.natoms;
+        of->groups              = &top_global.groups;
         of->natoms_x_compressed = 0;
-        for (i = 0; (i < top_global->natoms); i++)
+        for (i = 0; (i < top_global.natoms); i++)
         {
             if (getGroupType(*of->groups, SimulationAtomGroupType::CompressedPositionOutput, i) == 0)
             {
@@ -239,7 +239,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
 
         if (ir->nstfout && DOMAINDECOMP(cr))
         {
-            snew(of->f_global, top_global->natoms);
+            snew(of->f_global, top_global.natoms);
         }
     }
 

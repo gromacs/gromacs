@@ -121,7 +121,7 @@ AtomsDataPtr makeAtoms(const TopologyInformation& top_)
     AtomsDataPtr atoms(new t_atoms);
     if (top_.hasTopology())
     {
-        *atoms = gmx_mtop_global_atoms(top_.mtop());
+        *atoms = gmx_mtop_global_atoms(*top_.mtop());
     }
     else
     {

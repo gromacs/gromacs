@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -165,7 +165,7 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups,
                      gmx::ArrayRef<const t_pull_coord> pullCoords);
 /* Process the pull coordinates after reading the pull groups */
 
-pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix box, real lambda, warninp_t wi);
+pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix box, real lambda, warninp_t wi);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
  * Returns the pull_t pull work struct. This should be passed to finish_pull()

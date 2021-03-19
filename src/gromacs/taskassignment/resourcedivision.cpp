@@ -346,7 +346,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
                      bool                 nonbondedOnGpu,
                      bool                 pmeOnGpu,
                      const t_inputrec*    inputrec,
-                     const gmx_mtop_t*    mtop,
+                     const gmx_mtop_t&    mtop,
                      const gmx::MDLogger& mdlog,
                      bool                 doMembed)
 {
@@ -459,13 +459,13 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
         }
     }
 
-    if (mtop->natoms / nrank < min_atoms_per_mpi_rank)
+    if (mtop.natoms / nrank < min_atoms_per_mpi_rank)
     {
         int nrank_new;
 
         /* the rank number was chosen automatically, but there are too few
            atoms per rank, so we need to reduce the rank count */
-        nrank_new = std::max(1, mtop->natoms / min_atoms_per_mpi_rank);
+        nrank_new = std::max(1, mtop.natoms / min_atoms_per_mpi_rank);
 
         /* Avoid partial use of Hyper-Threading */
         if (gmxSmtIsEnabled(hwTop) && nrank_new > nthreads_hw / 2 && nrank_new < nthreads_hw)

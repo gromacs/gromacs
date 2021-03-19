@@ -382,7 +382,7 @@ void ModularSimulator::checkInputForDisabledFunctionality()
     isInputCompatible(true,
                       legacySimulatorData_->inputrec,
                       legacySimulatorData_->mdrunOptions.rerun,
-                      *legacySimulatorData_->top_global,
+                      legacySimulatorData_->top_global,
                       legacySimulatorData_->ms,
                       legacySimulatorData_->replExParams,
                       legacySimulatorData_->fr->fcdata.get(),

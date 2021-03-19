@@ -109,7 +109,7 @@ public:
                  ImdSession*                 imdSession,
                  pull_t*                     pull_work,
                  Constraints*                constr,
-                 const gmx_mtop_t*           globalTopology,
+                 const gmx_mtop_t&           globalTopology,
                  gmx_enfrot*                 enforcedRotation);
 
     /*! \brief Register force calculation for step / time

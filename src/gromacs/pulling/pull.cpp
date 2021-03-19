@@ -1829,7 +1829,7 @@ static void init_pull_group_index(FILE*              fplog,
                                   pull_group_work_t* pg,
                                   gmx_bool           bConstraint,
                                   const ivec         pulldim_con,
-                                  const gmx_mtop_t*  mtop,
+                                  const gmx_mtop_t&  mtop,
                                   const t_inputrec*  ir,
                                   real               lambda)
 {
@@ -1843,7 +1843,7 @@ static void init_pull_group_index(FILE*              fplog,
     /* In parallel, store we need to extract localWeights from weights at DD time */
     std::vector<real>& weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
 
-    const SimulationGroups& groups = mtop->groups;
+    const SimulationGroups& groups = mtop.groups;
 
     /* Count frozen dimensions and (weighted) mass */
     int    nfrozen = 0;
@@ -1982,7 +1982,7 @@ static void init_pull_group_index(FILE*              fplog,
 struct pull_t* init_pull(FILE*                     fplog,
                          const pull_params_t*      pull_params,
                          const t_inputrec*         ir,
-                         const gmx_mtop_t*         mtop,
+                         const gmx_mtop_t&         mtop,
                          const t_commrec*          cr,
                          gmx::LocalAtomSetManager* atomSets,
                          real                      lambda)

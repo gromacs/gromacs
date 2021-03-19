@@ -88,7 +88,7 @@ enum class DisResRunMode
  * must differ according to whether REMD is active.
  */
 void init_disres(FILE*                 fplog,
-                 const gmx_mtop_t*     mtop,
+                 const gmx_mtop_t&     mtop,
                  t_inputrec*           ir,
                  DisResRunMode         disResRunMode,
                  DDRole                ddRole,

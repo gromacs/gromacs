@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,7 +179,7 @@ void computeMassesAndCharges(const gmx_mtop_t*    top,
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b + 1]; ++i)
         {
             const int     index = pos.m.mapb.a[i];
-            const t_atom& atom  = mtopGetAtomParameters(top, index, &molb);
+            const t_atom& atom  = mtopGetAtomParameters(*top, index, &molb);
             mass += atom.m;
             charge += atom.q;
         }

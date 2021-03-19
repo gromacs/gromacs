@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -529,14 +529,14 @@ void write_hconf_indexed_p(FILE*          out,
     fflush(out);
 }
 
-void write_hconf_mtop(FILE* out, const char* title, const gmx_mtop_t* mtop, const rvec* x, const rvec* v, const matrix box)
+void write_hconf_mtop(FILE* out, const char* title, const gmx_mtop_t& mtop, const rvec* x, const rvec* v, const matrix box)
 {
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
-    fprintf(out, "%5d\n", mtop->natoms);
+    fprintf(out, "%5d\n", mtop.natoms);
 
     const char* format = get_hconf_format(v != nullptr);
 
-    for (const AtomProxy atomP : AtomRange(*mtop))
+    for (const AtomProxy atomP : AtomRange(mtop))
     {
         int         i             = atomP.globalAtomNumber();
         int         residueNumber = atomP.residueNumber();

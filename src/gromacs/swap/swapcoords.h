@@ -107,7 +107,7 @@ std::unique_ptr<IMDModule> createSwapCoordinatesModule();
 t_swap* init_swapcoords(FILE*                     fplog,
                         const t_inputrec*         ir,
                         const char*               fn,
-                        gmx_mtop_t*               mtop,
+                        const gmx_mtop_t&         mtop,
                         const t_state*            globalState,
                         ObservablesHistory*       oh,
                         t_commrec*                cr,

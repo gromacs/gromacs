@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ public:
     //! Constructor
     EnergyData(StatePropagatorData*        statePropagatorData,
                FreeEnergyPerturbationData* freeEnergyPerturbationData,
-               const gmx_mtop_t*           globalTopology,
+               const gmx_mtop_t&           globalTopology,
                const t_inputrec*           inputrec,
                const MDAtoms*              mdAtoms,
                gmx_enerdata_t*             enerd,
@@ -297,7 +297,7 @@ private:
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
     //! Full system topology.
-    const gmx_mtop_t* top_global_;
+    const gmx_mtop_t& top_global_;
     //! Atom parameters for this domain.
     const MDAtoms* mdAtoms_;
     //! Energy data structure

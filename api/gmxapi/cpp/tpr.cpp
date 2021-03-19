@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -706,7 +706,7 @@ void writeTprFile(const std::string&     filename,
     const auto& inputRecord   = tprFile->inputRecord();
     const auto& writeState    = tprFile->state();
     const auto& writeTopology = tprFile->molecularTopology();
-    write_tpx_state(filename.c_str(), &inputRecord, &writeState, &writeTopology);
+    write_tpx_state(filename.c_str(), &inputRecord, &writeState, writeTopology);
 }
 
 TprReadHandle::TprReadHandle(TprContents&& tprFile) :
@@ -774,7 +774,7 @@ bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, doub
 
     irInstance.nsteps = lround((endTime - run_t) / irInstance.delta_t);
 
-    write_tpx_state(outFile.c_str(), &irInstance, &state, &mtop);
+    write_tpx_state(outFile.c_str(), &irInstance, &state, mtop);
 
     success = true;
     return success;

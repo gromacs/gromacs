@@ -1335,7 +1335,7 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
     {
         if (edi->fitmas)
         {
-            edi->sref.m[i] = mtopGetAtomMass(&mtop, edi->sref.anrs[i], &molb);
+            edi->sref.m[i] = mtopGetAtomMass(mtop, edi->sref.anrs[i], &molb);
         }
         else
         {
@@ -1366,7 +1366,7 @@ static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
     snew(edi->sav.m, edi->sav.nr);
     for (i = 0; i < edi->sav.nr; i++)
     {
-        edi->sav.m[i] = mtopGetAtomMass(&mtop, edi->sav.anrs[i], &molb);
+        edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
         if (edi->pcamas)
         {
             edi->sav.sqrtm[i] = sqrt(edi->sav.m[i]);

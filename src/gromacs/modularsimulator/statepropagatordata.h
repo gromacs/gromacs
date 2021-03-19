@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ public:
                         const std::string& finalConfigurationFilename,
                         const t_inputrec*  inputrec,
                         const t_mdatoms*   mdatoms,
-                        const gmx_mtop_t*  globalTop);
+                        const gmx_mtop_t&  globalTop);
 
     // Allow access to state
     //! Get write access to position vector
@@ -274,7 +274,7 @@ public:
             bool                 writeFinalConfiguration,
             std::string          finalConfigurationFilename,
             const t_inputrec*    inputrec,
-            const gmx_mtop_t*    globalTop);
+            const gmx_mtop_t&    globalTop);
 
     /*! \brief Register run function for step / time
      *
@@ -399,7 +399,7 @@ private:
     //! Handles communication.
     const t_commrec* cr_;
     //! Full system topology.
-    const gmx_mtop_t* top_global_;
+    const gmx_mtop_t& top_global_;
 };
 
 } // namespace gmx
