@@ -59,6 +59,7 @@ struct t_oriresdata;
 struct t_disresdata;
 struct t_fcdata;
 class t_state;
+struct t_mdatoms;
 
 namespace gmx
 {
@@ -110,20 +111,20 @@ void diagonalize_orires_tensors(t_oriresdata* od);
 void print_orires_log(FILE* log, t_oriresdata* od);
 
 //! Calculates the orientation restraint forces.
-real orires(int              nfa,
-            const t_iatom    forceatoms[],
-            const t_iparams  ip[],
-            const rvec       x[],
-            rvec4            f[],
-            rvec             fshift[],
-            const t_pbc*     pbc,
-            real             lambda,
-            real*            dvdlambda,
-            const t_mdatoms* md,
-            t_fcdata*        fcd,
-            t_disresdata*    disresdata,
-            t_oriresdata*    oriresdata,
-            int*             global_atom_index);
+real orires(int                       nfa,
+            const t_iatom             forceatoms[],
+            const t_iparams           ip[],
+            const rvec                x[],
+            rvec4                     f[],
+            rvec                      fshift[],
+            const t_pbc*              pbc,
+            real                      lambda,
+            real*                     dvdlambda,
+            gmx::ArrayRef<const real> charge,
+            t_fcdata*                 fcd,
+            t_disresdata*             disresdata,
+            t_oriresdata*             oriresdata,
+            int*                      global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
 void update_orires_history(const t_oriresdata& oriresdata, history_t* hist);

@@ -64,6 +64,12 @@ class t_state;
 enum class DDRole;
 enum class NumRanks;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
+
 //! Whether distance restraints are called from mdrun or from an analysis tool
 enum class DisResRunMode
 {
@@ -107,16 +113,16 @@ void calc_disres_R_6(const t_commrec*      cr,
                      const history_t*      hist);
 
 //! Calculates the distance restraint forces, return the potential.
-real ta_disres(int              nfa,
-               const t_iatom*   forceatoms,
-               const t_iparams* ip,
-               const rvec*      x,
-               rvec4*           f,
-               rvec*            fshift,
-               const t_pbc*     pbc,
-               real             lambda,
-               real*            dvdlambda,
-               const t_mdatoms* md,
+real ta_disres(int                       nfa,
+               const t_iatom*            forceatoms,
+               const t_iparams*          ip,
+               const rvec*               x,
+               rvec4*                    f,
+               rvec*                     fshift,
+               const t_pbc*              pbc,
+               real                      lambda,
+               real*                     dvdlambda,
+               gmx::ArrayRef<const real> charge,
                t_fcdata gmx_unused* fcd,
                t_disresdata*        disresdata,
                t_oriresdata gmx_unused* oriresdata,

@@ -55,12 +55,14 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -424,7 +426,7 @@ real ta_disres(int              nfa,
                const t_pbc*     pbc,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
-               const t_mdatoms gmx_unused* md,
+               gmx::ArrayRef<const real> /*charge*/,
                t_fcdata gmx_unused* fcd,
                t_disresdata*        disresdata,
                t_oriresdata gmx_unused* oriresdata,

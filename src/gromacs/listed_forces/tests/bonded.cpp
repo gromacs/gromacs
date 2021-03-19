@@ -577,9 +577,7 @@ protected:
     {
         SCOPED_TRACE(std::string("Testing PBC type: ") + c_pbcTypeNames[pbcType_]);
         std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
-        std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
-        t_mdatoms         mdatoms    = { 0 };
-        mdatoms.chargeA              = chargeA.data();
+        std::vector<real> charge     = { 1.5, -2.0, 1.5, -1.0 };
         /* Here we run both the standard, plain-C force+shift-forces+energy+free-energy
          * kernel flavor and the potentially optimized, with SIMD and less output,
          * force only kernels. Note that we also run the optimized kernel for free-energy
@@ -604,7 +602,7 @@ protected:
                                                 &pbc_,
                                                 lambda,
                                                 &output.dvdlambda,
-                                                &mdatoms,
+                                                charge,
                                                 /* struct t_fcdata * */ nullptr,
                                                 nullptr,
                                                 nullptr,

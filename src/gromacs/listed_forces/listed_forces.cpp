@@ -66,6 +66,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -470,7 +471,7 @@ real calc_one_bond(int                           thread,
                           pbc,
                           lambda[static_cast<int>(efptFTYPE)],
                           &(dvdl[static_cast<int>(efptFTYPE)]),
-                          md,
+                          gmx::arrayRefFromArray(md->chargeA, md->nr),
                           fcd,
                           nullptr,
                           nullptr,
@@ -488,7 +489,7 @@ real calc_one_bond(int                           thread,
                                     pbc,
                                     lambda[static_cast<int>(efptFTYPE)],
                                     &(dvdl[static_cast<int>(efptFTYPE)]),
-                                    md,
+                                    gmx::arrayRefFromArray(md->chargeA, md->nr),
                                     fcd,
                                     fcd->disres,
                                     fcd->orires,

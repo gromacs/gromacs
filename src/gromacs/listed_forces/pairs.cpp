@@ -54,8 +54,8 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -427,23 +427,27 @@ static real do_pairs_general(int                 ftype,
 
     const real epsfac = fr->ic->epsfac;
 
-    bFreeEnergy = FALSE;
+    bFreeEnergy     = FALSE;
+    auto cENER      = md->cENER;
+    auto bPerturbed = md->bPerturbed;
+    auto chargeA    = md->chargeA;
+    auto chargeB    = md->chargeB;
     for (i = 0; (i < nbonds);)
     {
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-        gid   = GID(md->cENER[ai], md->cENER[aj], md->nenergrp);
+        gid   = GID(cENER[ai], cENER[aj], md->nenergrp);
 
         /* Get parameters */
         switch (ftype)
         {
             case F_LJ14:
                 bFreeEnergy = (fr->efep != FreeEnergyPerturbationType::No
-                               && (((md->nPerturbed != 0) && (md->bPerturbed[ai] || md->bPerturbed[aj]))
+                               && ((md->bPerturbed && (bPerturbed[ai] || bPerturbed[aj]))
                                    || iparams[itype].lj14.c6A != iparams[itype].lj14.c6B
                                    || iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-                qq          = md->chargeA[ai] * md->chargeA[aj] * epsfac * fr->fudgeQQ;
+                qq          = chargeA[ai] * chargeA[aj] * epsfac * fr->fudgeQQ;
                 c6          = iparams[itype].lj14.c6A;
                 c12         = iparams[itype].lj14.c12A;
                 break;
@@ -499,7 +503,7 @@ static real do_pairs_general(int                 ftype,
         if (bFreeEnergy)
         {
             /* Currently free energy is only supported for F_LJ14, so no need to check for that if we got here */
-            qqB  = md->chargeB[ai] * md->chargeB[aj] * epsfac * fr->fudgeQQ;
+            qqB  = chargeB[ai] * chargeB[aj] * epsfac * fr->fudgeQQ;
             c6B  = iparams[itype].lj14.c6B * 6.0;
             c12B = iparams[itype].lj14.c12B * 12.0;
 
@@ -588,6 +592,7 @@ static void do_pairs_simple(int              nbonds,
     std::int32_t aj[pack_size];
     real         coeff[3 * pack_size];
 #endif
+    auto chargeA = md->chargeA;
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size * nfa1)
@@ -606,7 +611,7 @@ static void do_pairs_simple(int              nbonds,
             {
                 coeff[0 * pack_size + s] = iparams[itype].lj14.c6A;
                 coeff[1 * pack_size + s] = iparams[itype].lj14.c12A;
-                coeff[2 * pack_size + s] = md->chargeA[ai[s]] * md->chargeA[aj[s]];
+                coeff[2 * pack_size + s] = chargeA[ai[s]] * chargeA[aj[s]];
 
                 /* Avoid indexing the iatoms array out of bounds.
                  * We pad the coordinate indices with the last atom pair.

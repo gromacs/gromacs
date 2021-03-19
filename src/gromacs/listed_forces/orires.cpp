@@ -446,14 +446,16 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     }
 
     clear_rvec(com);
-    mtot  = 0;
-    int j = 0;
+    mtot       = 0;
+    int  j     = 0;
+    auto massT = md->massT;
+    auto cORF  = md->cORF;
     for (int i = 0; i < md->nr; i++)
     {
-        if (md->cORF[i] == 0)
+        if (cORF[i] == 0)
         {
             copy_rvec(xWholeMolecules[i], xtmp[j]);
-            mref[j] = md->massT[i];
+            mref[j] = massT[i];
             for (int d = 0; d < DIM; d++)
             {
                 com[d] += mref[j] * xtmp[j][d];
@@ -657,7 +659,7 @@ real orires(int             nfa,
             const t_pbc*    pbc,
             real gmx_unused lambda,
             real gmx_unused* dvdlambda,
-            const t_mdatoms gmx_unused* md,
+            gmx::ArrayRef<const real> /*charge*/,
             t_fcdata gmx_unused* fcd,
             t_disresdata gmx_unused* disresdata,
             t_oriresdata*            oriresdata,
