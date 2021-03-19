@@ -143,8 +143,8 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
                                   gmx::ForceWithVirial*          forceWithVirial,
                                   gmx_enerdata_t*                enerd,
                                   const matrix                   box,
-                                  const real*                    lambda,
-                                  const rvec*                    mu_tot,
+                                  gmx::ArrayRef<const real>      lambda,
+                                  gmx::ArrayRef<const gmx::RVec> mu_tot,
                                   const gmx::StepWorkload&       stepWork,
                                   const DDBalanceRegionHandler&  ddBalanceRegionHandler);
 

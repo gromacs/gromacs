@@ -100,20 +100,20 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
     }
 }
 
-void calculateLongRangeNonbondeds(t_forcerec*                   fr,
-                                  const t_inputrec&             ir,
-                                  const t_commrec*              cr,
-                                  t_nrnb*                       nrnb,
-                                  gmx_wallcycle_t               wcycle,
-                                  const t_mdatoms*              md,
-                                  gmx::ArrayRef<const RVec>     coordinates,
-                                  gmx::ForceWithVirial*         forceWithVirial,
-                                  gmx_enerdata_t*               enerd,
-                                  const matrix                  box,
-                                  const real*                   lambda,
-                                  const rvec*                   mu_tot,
-                                  const gmx::StepWorkload&      stepWork,
-                                  const DDBalanceRegionHandler& ddBalanceRegionHandler)
+void calculateLongRangeNonbondeds(t_forcerec*                    fr,
+                                  const t_inputrec&              ir,
+                                  const t_commrec*               cr,
+                                  t_nrnb*                        nrnb,
+                                  gmx_wallcycle_t                wcycle,
+                                  const t_mdatoms*               md,
+                                  gmx::ArrayRef<const RVec>      coordinates,
+                                  gmx::ForceWithVirial*          forceWithVirial,
+                                  gmx_enerdata_t*                enerd,
+                                  const matrix                   box,
+                                  gmx::ArrayRef<const real>      lambda,
+                                  gmx::ArrayRef<const gmx::RVec> mu_tot,
+                                  const gmx::StepWorkload&       stepWork,
+                                  const DDBalanceRegionHandler&  ddBalanceRegionHandler)
 {
     const bool computePmeOnCpu = (EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
                                  && thisRankHasDuty(cr, DUTY_PME)
@@ -160,7 +160,6 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                          * exclusion forces) are calculated, so we can store
                          * the forces in the normal, single forceWithVirial->force_ array.
                          */
-                        const rvec* x = as_rvec_array(coordinates.data());
                         ewald_LRcorrection(
                                 md->homenr,
                                 cr,
@@ -168,13 +167,13 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                                 t,
                                 *fr,
                                 ir,
-                                md->chargeA,
-                                md->chargeB,
+                                gmx::constArrayRefFromArray(md->chargeA, md->nr),
+                                gmx::constArrayRefFromArray(md->chargeB, md->nr),
                                 (md->nChargePerturbed != 0),
-                                x,
+                                coordinates,
                                 box,
                                 mu_tot,
-                                as_rvec_array(forceWithVirial->force_.data()),
+                                forceWithVirial->force_,
                                 &ewc_t.Vcorr_q,
                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                                 &ewc_t.dvdl[FreeEnergyPerturbationCouplingType::Coul]);

@@ -1886,8 +1886,8 @@ void do_force(FILE*                               fplog,
                                      &forceOutMtsLevel1->forceWithVirial(),
                                      enerd,
                                      box,
-                                     lambda.data(),
-                                     as_rvec_array(dipoleData.muStateAB),
+                                     lambda,
+                                     dipoleData.muStateAB,
                                      stepWork,
                                      ddBalanceRegionHandler);
     }

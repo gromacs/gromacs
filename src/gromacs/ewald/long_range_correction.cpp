@@ -64,22 +64,22 @@
  * perturbations. The parameter vectors for LJ-PME are likewise
  * undefined when LJ-PME is not active. This works because
  * bHaveChargeOrTypePerturbed handles the control flow. */
-void ewald_LRcorrection(const int         numAtomsLocal,
-                        const t_commrec*  cr,
-                        int               numThreads,
-                        int               thread,
-                        const t_forcerec& fr,
-                        const t_inputrec& ir,
-                        const real*       chargeA,
-                        const real*       chargeB,
-                        gmx_bool          bHaveChargePerturbed,
-                        const rvec        x[],
-                        const matrix      box,
-                        const rvec        mu_tot[],
-                        rvec*             f,
-                        real*             Vcorr_q,
-                        real              lambda_q,
-                        real*             dvdlambda_q)
+void ewald_LRcorrection(const int                      numAtomsLocal,
+                        const t_commrec*               cr,
+                        int                            numThreads,
+                        int                            thread,
+                        const t_forcerec&              fr,
+                        const t_inputrec&              ir,
+                        gmx::ArrayRef<const real>      chargeA,
+                        gmx::ArrayRef<const real>      chargeB,
+                        bool                           bHaveChargePerturbed,
+                        gmx::ArrayRef<const gmx::RVec> x,
+                        const matrix                   box,
+                        gmx::ArrayRef<const gmx::RVec> mu_tot,
+                        gmx::ArrayRef<gmx::RVec>       f,
+                        real*                          Vcorr_q,
+                        real                           lambda_q,
+                        real*                          dvdlambda_q)
 {
     /* We need to correct only self interactions */
     const int start = (numAtomsLocal * thread) / numThreads;
@@ -211,11 +211,11 @@ void ewald_LRcorrection(const int         numAtomsLocal,
                          * We could implement a reduction over threads,
                          * but this case is rarely used.
                          */
-                        const real* qPtr   = (q == 0 ? chargeA : chargeB);
-                        real        sumQZ2 = 0;
+                        gmx::ArrayRef<const real> charge = (q == 0 ? chargeA : chargeB);
+                        real                      sumQZ2 = 0;
                         for (int i = 0; i < numAtomsLocal; i++)
                         {
-                            sumQZ2 += qPtr[i] * x[i][ZZ] * x[i][ZZ];
+                            sumQZ2 += charge[i] * x[i][ZZ] * x[i][ZZ];
                         }
                         Vdipole[q] -= dipole_coeff * fr.qsum[q]
                                       * (sumQZ2 + fr.qsum[q] * box[ZZ][ZZ] * box[ZZ][ZZ] / 12);
