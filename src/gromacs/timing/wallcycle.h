@@ -137,54 +137,56 @@ enum
     ewcsNR
 };
 
-gmx_bool wallcycle_have_counter();
-/* Returns if cycle counting is supported */
+//! Returns whether cycle counting is supported.
+bool wallcycle_have_counter();
 
-gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, struct t_commrec* cr);
-/* Returns the wall cycle structure.
- * Returns NULL when cycle counting is not supported.
+/*! \brief
+ * Returns a wallcycle datastructure.
+ *
+ * If cycle counting is not supported, returns nullptr instead.
  */
+gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, struct t_commrec* cr);
 
-/* cleans up wallcycle structure */
+//! Cleans up wallcycle structure.
 void wallcycle_destroy(gmx_wallcycle_t wc);
 
+//! Starts the cycle counter for \c ewc (and increases the call count).
 void wallcycle_start(gmx_wallcycle_t wc, int ewc);
-/* Starts the cycle counter (and increases the call count) */
 
+//! Starts the cycle counter for \c ewc without increasing the call count.
 void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
-/* Starts the cycle counter without increasing the call count */
 
+//! Stop the cycle count for \c ewc, returns the last cycle count.
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
-/* Stop the cycle count for ewc, returns the last cycle count */
 
+//! Only increment call count for \c ewc by one.
 void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc);
-/* Only increment call count for ewc by one */
 
+//! Returns the cumulative count and cycle count for \c ewc.
 void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c);
-/* Returns the cumulative count and cycle count for ewc */
 
+//! Returns the cumulative count and sub cycle count for \c ewcs.
 void wallcycle_sub_get(gmx_wallcycle_t wc, int ewcs, int* n, double* c);
-/* Returns the cumulative count and sub cycle count for ewcs */
 
+//! Resets all cycle counters to zero.
 void wallcycle_reset_all(gmx_wallcycle_t wc);
-/* Resets all cycle counters to zero */
 
+//! Scale the cycle counts to reflect how many threads run for that number of cycles.
 void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme);
-/* Scale the cycle counts to reflect how many threads run for that number of cycles */
 
+//! Return reset_counters.
 int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
-/* Return reset_counters from wc struct */
 
+//! Set reset_counters.
 void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters);
-/* Set reset_counters */
 
+//! Set the start sub cycle count for \c ewcs.
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
-/* Set the start sub cycle count for ewcs */
 
+//! Set the start sub cycle count for \c ewcs without increasing the call count.
 void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
-/* Set the start sub cycle count for ewcs without increasing the call count */
 
+//! Stop the sub cycle count for \c ewcs.
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
-/* Stop the sub cycle count for ewcs */
 
 #endif

@@ -204,7 +204,7 @@ static const char* enumValuetoString(PmeStage enumValue)
     return pmeStageNames[enumValue];
 };
 
-gmx_bool wallcycle_have_counter()
+bool wallcycle_have_counter()
 {
     return gmx_cycles_have_counter();
 }
