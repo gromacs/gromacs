@@ -55,7 +55,6 @@
 struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
-struct t_mdatoms;
 
 namespace gmx
 {
@@ -82,28 +81,36 @@ class ForceProviderInput
 public:
     /*! \brief Constructor assembles all necessary force provider input data
      *
-     * \param[in]  x        Atomic positions
-     * \param[in]  cr       Communication record structure
-     * \param[in]  box      The simulation box
-     * \param[in]  time     The current time in the simulation
-     * \param[in]  mdatoms  The atomic data
+     * \param[in]  x        Atomic positions.
+     * \param[in]  homenr   Number of atoms on the domain.
+     * \param[in]  chargeA  Atomic charges for atoms on the domain.
+     * \param[in]  massT    Atomic masses for atoms on the domain.
+     * \param[in]  time     The current time in the simulation.
+     * \param[in]  box      The simulation box.
+     * \param[in]  cr       Communication record structure.
      */
     ForceProviderInput(ArrayRef<const RVec> x,
-                       const t_mdatoms&     mdatoms,
+                       int                  homenr,
+                       ArrayRef<const real> chargeA,
+                       ArrayRef<const real> massT,
                        double               time,
                        const matrix         box,
                        const t_commrec&     cr) :
         x_(x),
-        mdatoms_(mdatoms),
+        homenr_(homenr),
+        chargeA_(chargeA),
+        massT_(massT),
         t_(time),
         cr_(cr)
     {
         copy_mat(box, box_);
     }
 
-    ArrayRef<const RVec> x_;       //!< The atomic positions
-    const t_mdatoms&     mdatoms_; //!< Atomic data
-    double               t_;       //!< The current time in the simulation
+    ArrayRef<const RVec> x_; //!< The atomic positions
+    int                  homenr_;
+    ArrayRef<const real> chargeA_;
+    ArrayRef<const real> massT_;
+    double               t_; //!< The current time in the simulation
     matrix               box_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }; //!< The simulation box
     const t_commrec&     cr_; //!< Communication record structure
 };

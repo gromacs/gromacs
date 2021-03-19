@@ -641,7 +641,14 @@ static void computeSpecialForces(FILE*                          fplog,
      */
     if (stepWork.computeForces)
     {
-        gmx::ForceProviderInput  forceProviderInput(x, *mdatoms, t, box, *cr);
+        gmx::ForceProviderInput forceProviderInput(
+                x,
+                mdatoms->homenr,
+                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->homenr),
+                gmx::arrayRefFromArray(mdatoms->massT, mdatoms->homenr),
+                t,
+                box,
+                *cr);
         gmx::ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);
 
         /* Collect forces from modules */

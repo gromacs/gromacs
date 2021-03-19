@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,14 +55,6 @@ namespace gmx
 
 class DensityFittingAmplitudeLookupTest : public ::testing::Test
 {
-public:
-    DensityFittingAmplitudeLookupTest()
-    {
-        atoms_.nr      = numberOfAtoms_;
-        atoms_.massT   = masses_.data();
-        atoms_.chargeA = charges_.data();
-    }
-
 protected:
     int               numberOfAtoms_ = 3;
     std::vector<real> masses_        = { 2, 3, 4 };
@@ -74,7 +66,7 @@ protected:
 TEST_F(DensityFittingAmplitudeLookupTest, Unity)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Unity);
-    const auto                    lookupResult = lookup(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookup(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 1);
     EXPECT_EQ(lookupResult[1], 1);
 }
@@ -82,7 +74,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, Unity)
 TEST_F(DensityFittingAmplitudeLookupTest, Charge)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Charge);
-    const auto                    lookupResult = lookup(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookup(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 30);
     EXPECT_EQ(lookupResult[1], 40);
 }
@@ -90,7 +82,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, Charge)
 TEST_F(DensityFittingAmplitudeLookupTest, Masses)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Mass);
-    const auto                    lookupResult = lookup(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookup(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 3);
     EXPECT_EQ(lookupResult[1], 4);
 }
@@ -99,7 +91,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, CanCopyAssign)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Unity);
     DensityFittingAmplitudeLookup lookupCopied = lookup;
-    const auto                    lookupResult = lookupCopied(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookupCopied(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 1);
     EXPECT_EQ(lookupResult[1], 1);
 }
@@ -108,7 +100,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, CanCopyConstruct)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Unity);
     DensityFittingAmplitudeLookup lookupCopied(lookup);
-    const auto                    lookupResult = lookupCopied(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookupCopied(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 1);
     EXPECT_EQ(lookupResult[1], 1);
 }
@@ -117,7 +109,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, CanMoveAssign)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Unity);
     DensityFittingAmplitudeLookup lookupCopied = std::move(lookup);
-    const auto                    lookupResult = lookupCopied(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookupCopied(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 1);
     EXPECT_EQ(lookupResult[1], 1);
 }
@@ -126,7 +118,7 @@ TEST_F(DensityFittingAmplitudeLookupTest, CanMoveConstruct)
 {
     DensityFittingAmplitudeLookup lookup(DensityFittingAmplitudeMethod::Unity);
     DensityFittingAmplitudeLookup lookupCopied(std::move(lookup));
-    const auto                    lookupResult = lookupCopied(atoms_, lookupIndices_);
+    const auto                    lookupResult = lookupCopied(charges_, masses_, lookupIndices_);
     EXPECT_EQ(lookupResult[0], 1);
     EXPECT_EQ(lookupResult[1], 1);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct t_mdatoms;
-
 namespace gmx
 {
 
@@ -88,11 +86,14 @@ public:
     //! Move assignment
     DensityFittingAmplitudeLookup& operator=(DensityFittingAmplitudeLookup&& other) noexcept;
     /*! \brief Return the amplitudes for spreading atoms of a given local index.
-     * \param[in] atoms the atom information
+     * \param[in] chargeA Atom charges
+     * \param[in] massT   Atom masses.
      * \param[in] localIndex the local atom indices
      * \returns amplitudes
      */
-    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex);
+    const std::vector<real>& operator()(ArrayRef<const real> chargeA,
+                                        ArrayRef<const real> massT,
+                                        ArrayRef<const int>  localIndex);
 
 private:
     std::unique_ptr<DensityFittingAmplitudeLookupImpl> impl_;

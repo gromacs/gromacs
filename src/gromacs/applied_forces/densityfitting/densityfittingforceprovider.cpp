@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -298,8 +298,8 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     // spread atoms on grid
     gaussTransform_.setZero();
 
-    std::vector<real> amplitudes =
-            amplitudeLookup_(forceProviderInput.mdatoms_, localAtomSet_.localIndex());
+    std::vector<real> amplitudes = amplitudeLookup_(
+            forceProviderInput.chargeA_, forceProviderInput.massT_, localAtomSet_.localIndex());
 
     if (parameters_.normalizeDensities_)
     {

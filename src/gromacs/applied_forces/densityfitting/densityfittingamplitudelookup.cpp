@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
@@ -62,8 +61,10 @@ public:
     DensityFittingAmplitudeLookupImpl(const DensityFittingAmplitudeLookupImpl&) = default;
     virtual ~DensityFittingAmplitudeLookupImpl()                                = default;
 
-    virtual const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) = 0;
-    virtual std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() = 0;
+    virtual const std::vector<real>& operator()(ArrayRef<const real> /*chargeA*/,
+                                                ArrayRef<const real> /*massT*/,
+                                                ArrayRef<const int> localIndex) = 0;
+    virtual std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone()          = 0;
 };
 
 namespace
@@ -75,7 +76,9 @@ public:
     UnitAmplitudes(const UnitAmplitudes&) = default;
     ~UnitAmplitudes() override            = default;
     std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
+    const std::vector<real>&                           operator()(ArrayRef<const real> /*chargeA*/,
+                                        ArrayRef<const real> /*massT*/,
+                                        ArrayRef<const int> localIndex) override;
 
 private:
     std::vector<real> amplitude_;
@@ -86,7 +89,9 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> UnitAmplitudes::clone()
     return std::make_unique<UnitAmplitudes>(*this);
 };
 
-const std::vector<real>& UnitAmplitudes::operator()(const t_mdatoms& /*atoms*/, ArrayRef<const int> localIndex)
+const std::vector<real>& UnitAmplitudes::operator()(ArrayRef<const real> /*chargeA*/,
+                                                    ArrayRef<const real> /*massT*/,
+                                                    ArrayRef<const int> localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -103,7 +108,9 @@ public:
     ChargesAsAmplitudes(const ChargesAsAmplitudes&) = default;
     ~ChargesAsAmplitudes() override                 = default;
     std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
+    const std::vector<real>&                           operator()(ArrayRef<const real> chargeA,
+                                        ArrayRef<const real> /*massT*/,
+                                        ArrayRef<const int> localIndex) override;
 
 private:
     std::vector<real> amplitude_;
@@ -114,7 +121,9 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> ChargesAsAmplitudes::clone()
     return std::make_unique<ChargesAsAmplitudes>(*this);
 };
 
-const std::vector<real>& ChargesAsAmplitudes::operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex)
+const std::vector<real>& ChargesAsAmplitudes::operator()(ArrayRef<const real> chargeA,
+                                                         ArrayRef<const real> /*massT*/,
+                                                         ArrayRef<const int> localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -124,7 +133,7 @@ const std::vector<real>& ChargesAsAmplitudes::operator()(const t_mdatoms& atoms,
     std::transform(std::begin(localIndex),
                    std::end(localIndex),
                    std::begin(amplitude_),
-                   [&atoms](gmx::index index) { return atoms.chargeA[index]; });
+                   [&chargeA](gmx::index index) { return chargeA[index]; });
     return amplitude_;
 }
 
@@ -135,7 +144,9 @@ public:
     MassesAsAmplitudes(const MassesAsAmplitudes&) = default;
     ~MassesAsAmplitudes() override                = default;
     std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
+    const std::vector<real>&                           operator()(ArrayRef<const real> /*chargeA*/,
+                                        ArrayRef<const real> massT,
+                                        ArrayRef<const int>  localIndex) override;
 
 private:
     std::vector<real> amplitude_;
@@ -146,7 +157,9 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> MassesAsAmplitudes::clone()
     return std::make_unique<MassesAsAmplitudes>(*this);
 };
 
-const std::vector<real>& MassesAsAmplitudes::operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex)
+const std::vector<real>& MassesAsAmplitudes::operator()(ArrayRef<const real> /*chargeA*/,
+                                                        ArrayRef<const real> massT,
+                                                        ArrayRef<const int>  localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -156,7 +169,7 @@ const std::vector<real>& MassesAsAmplitudes::operator()(const t_mdatoms& atoms, 
     std::transform(std::begin(localIndex),
                    std::end(localIndex),
                    std::begin(amplitude_),
-                   [&atoms](gmx::index index) { return atoms.massT[index]; });
+                   [&massT](gmx::index index) { return massT[index]; });
     return amplitude_;
 }
 
@@ -184,10 +197,11 @@ DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittin
     }
 }
 
-const std::vector<real>& DensityFittingAmplitudeLookup::operator()(const t_mdatoms&    atoms,
-                                                                   ArrayRef<const int> localIndex)
+const std::vector<real>& DensityFittingAmplitudeLookup::operator()(ArrayRef<const real> chargeA,
+                                                                   ArrayRef<const real> massT,
+                                                                   ArrayRef<const int>  localIndex)
 {
-    return (*impl_)(atoms, localIndex);
+    return (*impl_)(chargeA, massT, localIndex);
 }
 
 DensityFittingAmplitudeLookup::~DensityFittingAmplitudeLookup() = default;

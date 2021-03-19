@@ -59,7 +59,6 @@
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
@@ -303,13 +302,13 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
 {
     if (isActive())
     {
-        const t_mdatoms& mdatoms = forceProviderInput.mdatoms_;
-        const double     t       = forceProviderInput.t_;
-        const t_commrec& cr      = forceProviderInput.cr_;
+        const double     t  = forceProviderInput.t_;
+        const t_commrec& cr = forceProviderInput.cr_;
 
         // NOTE: The non-conservative electric field does not have a virial
         ArrayRef<RVec> f = forceProviderOutput->forceWithVirial_.force_;
 
+        auto chargeA = forceProviderInput.chargeA_;
         for (int m = 0; (m < DIM); m++)
         {
             const real fieldStrength = gmx::c_fieldfac * field(m, t);
@@ -317,10 +316,10 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
             if (fieldStrength != 0)
             {
                 // TODO: Check parallellism
-                for (int i = 0; i < mdatoms.homenr; ++i)
+                for (int i = 0; i < forceProviderInput.homenr_; ++i)
                 {
                     // NOTE: Not correct with perturbed charges
-                    f[i][m] += mdatoms.chargeA[i] * fieldStrength;
+                    f[i][m] += chargeA[i] * fieldStrength;
                 }
             }
         }
