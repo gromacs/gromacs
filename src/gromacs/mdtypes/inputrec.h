@@ -109,7 +109,7 @@ struct t_simtemp
     //! The high temperature for simulated tempering
     real simtemp_high;
     //! The range of temperatures used for simulated tempering
-    real* temperatures;
+    std::vector<real> temperatures;
 };
 
 struct t_lambda

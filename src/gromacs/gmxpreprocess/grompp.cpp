@@ -2531,6 +2531,8 @@ int gmx_grompp(int argc, char* argv[])
     sfree(opts->wall_atomtype[0]);
     sfree(opts->wall_atomtype[1]);
     sfree(opts->include);
+    sfree(opts->couple_moltype);
+
     for (auto& mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so

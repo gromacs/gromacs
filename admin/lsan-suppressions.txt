@@ -13,7 +13,6 @@ leak:do_cpte_matrices
 leak:do_edsam
 leak:do_inputrec
 leak:do_single_flood
-leak:get_ir
 leak:get_zone_pulse_cgs
 leak:gmx::DomainDecompositionBuilder::Impl::build
 leak:gmx_check
@@ -37,7 +36,6 @@ leak:make_exclusions_zone
 leak:make_fep_list
 leak:make_pull_groups
 leak:make_rotation_groups
-leak:make_swap_groups
 leak:make_tables
 leak:mdoutf_write_to_trajectory_files
 # Stack trace does not report a function beyond gmx_srenew_impl, so the file is suppressed instead.

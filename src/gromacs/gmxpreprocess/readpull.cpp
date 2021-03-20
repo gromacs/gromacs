@@ -373,7 +373,7 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
         pullCoord.eType = getEnum<PullingAlgorithm>(inp, buf, wi);
         sprintf(buf, "pull-coord%d-potential-provider", coordNum);
         setStringEntry(inp, buf, provider, "");
-        pullCoord.externalPotentialProvider = gmx_strdup(provider);
+        pullCoord.externalPotentialProvider = provider;
         sprintf(buf, "pull-coord%d-geometry", coordNum);
         pullCoord.eGeom = getEnum<PullGroupGeometry>(inp, buf, wi);
         sprintf(buf, "pull-coord%d-groups", coordNum);

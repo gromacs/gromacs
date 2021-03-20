@@ -1696,8 +1696,7 @@ static void do_fep_params(t_inputrec* ir, gmx::ArrayRef<std::string> fep_lambda,
 
 static void do_simtemp_params(t_inputrec* ir)
 {
-
-    snew(ir->simtempvals->temperatures, ir->fepvals->n_lambda);
+    ir->simtempvals->temperatures.resize(ir->fepvals->n_lambda);
     getSimTemps(ir->fepvals->n_lambda,
                 ir->simtempvals.get(),
                 ir->fepvals->all_lambda[FreeEnergyPerturbationCouplingType::Temperature]);

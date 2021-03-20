@@ -447,9 +447,9 @@ static void do_simtempvals(gmx::ISerializer* serializer, t_simtemp* simtemp, int
         {
             if (serializer->reading())
             {
-                snew(simtemp->temperatures, n_lambda);
+                simtemp->temperatures.resize(n_lambda);
             }
-            serializer->doRealArray(simtemp->temperatures, n_lambda);
+            serializer->doRealArray(simtemp->temperatures.data(), n_lambda);
         }
     }
 }

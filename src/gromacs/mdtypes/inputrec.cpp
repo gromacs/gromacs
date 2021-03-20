@@ -303,6 +303,21 @@ static void done_t_rot(t_rot* rot)
     sfree(rot);
 }
 
+static void done_t_swapCoords(t_swapcoords* swapCoords)
+{
+    if (swapCoords == nullptr)
+    {
+        return;
+    }
+    for (int i = 0; i < swapCoords->ngrp; i++)
+    {
+        sfree(swapCoords->grp[i].ind);
+        sfree(swapCoords->grp[i].molname);
+    }
+    sfree(swapCoords->grp);
+    sfree(swapCoords);
+}
+
 void done_inputrec(t_inputrec* ir)
 {
     sfree(ir->opts.nrdf);
@@ -320,6 +335,7 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.nFreeze);
     sfree(ir->opts.egp_flags);
 
+    done_t_swapCoords(ir->swap);
     done_t_rot(ir->rot);
     delete ir->params;
 }
@@ -487,7 +503,7 @@ static void pr_simtempvals(FILE* fp, int indent, const t_simtemp* simtemp, int n
     PS("simulated-tempering-scaling", enumValueToString(simtemp->eSimTempScale));
     PR("sim-temp-low", simtemp->simtemp_low);
     PR("sim-temp-high", simtemp->simtemp_high);
-    pr_rvec(fp, indent, "simulated tempering temperatures", simtemp->temperatures, n_lambda, TRUE);
+    pr_rvec(fp, indent, "simulated tempering temperatures", simtemp->temperatures.data(), n_lambda, TRUE);
 }
 
 static void pr_expandedvals(FILE* fp, int indent, const t_expanded* expand, int n_lambda)
