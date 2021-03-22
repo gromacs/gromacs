@@ -78,6 +78,12 @@ struct t_forcerec;
 struct t_inputrec;
 struct t_complex;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
+
 struct gmx_ewald_tab_t
 {
     gmx_ewald_tab_t(const t_inputrec& ir, FILE* fp);
@@ -93,23 +99,20 @@ struct gmx_ewald_tab_t
     std::vector<t_complex> tab_qxyz;
 };
 
-/*! \brief Initialize the tables used in the Ewald long-ranged part */
-void init_ewald_tab(struct gmx_ewald_tab_t** et, const t_inputrec& ir, FILE* fp);
-
 /*! \brief Do the long-ranged part of an Ewald calculation */
-real do_ewald(const t_inputrec& ir,
-              const rvec        x[],
-              rvec              f[],
-              const real        chargeA[],
-              const real        chargeB[],
-              const matrix      box,
-              const t_commrec*  cr,
-              int               natoms,
-              matrix            lrvir,
-              real              ewaldcoeff,
-              real              lambda,
-              real*             dvdlambda,
-              gmx_ewald_tab_t*  et);
+real do_ewald(const t_inputrec&              ir,
+              gmx::ArrayRef<const gmx::RVec> x,
+              gmx::ArrayRef<gmx::RVec>       f,
+              gmx::ArrayRef<const real>      chargeA,
+              gmx::ArrayRef<const real>      chargeB,
+              const matrix                   box,
+              const t_commrec*               cr,
+              int                            natoms,
+              matrix                         lrvir,
+              real                           ewaldcoeff,
+              real                           lambda,
+              real*                          dvdlambda,
+              gmx_ewald_tab_t*               et);
 
 /*! \brief Calculate the correction to the Ewald sum, due to a net system
  * charge.

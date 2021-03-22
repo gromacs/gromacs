@@ -68,6 +68,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -97,7 +98,7 @@ static void calc_lll(const rvec box, rvec lll)
 }
 
 //! Make tables for the structure factor parts
-static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec** eir, const rvec lll)
+static void tabulateStructureFactors(int natom, gmx::ArrayRef<const gmx::RVec> x, int kmax, cvec** eir, const rvec lll)
 {
     int i, j, m;
 
@@ -130,28 +131,27 @@ static void tabulateStructureFactors(int natom, const rvec x[], int kmax, cvec**
     }
 }
 
-real do_ewald(const t_inputrec& ir,
-              const rvec        x[],
-              rvec              f[],
-              const real        chargeA[],
-              const real        chargeB[],
-              const matrix      box,
-              const t_commrec*  cr,
-              int               natoms,
-              matrix            lrvir,
-              real              ewaldcoeff,
-              real              lambda,
-              real*             dvdlambda,
-              gmx_ewald_tab_t*  et)
+real do_ewald(const t_inputrec&              ir,
+              gmx::ArrayRef<const gmx::RVec> x,
+              gmx::ArrayRef<gmx::RVec>       f,
+              gmx::ArrayRef<const real>      chargeA,
+              gmx::ArrayRef<const real>      chargeB,
+              const matrix                   box,
+              const t_commrec*               cr,
+              int                            natoms,
+              matrix                         lrvir,
+              real                           ewaldcoeff,
+              real                           lambda,
+              real*                          dvdlambda,
+              gmx_ewald_tab_t*               et)
 {
-    real        factor = -1.0 / (4 * ewaldcoeff * ewaldcoeff);
-    const real* charge;
-    real        energy_AB[2], energy;
-    rvec        lll;
-    int         lowiy, lowiz, ix, iy, iz, n, q;
-    real        tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
-    gmx_bool    bFreeEnergy;
-    cvec**      eir;
+    real   factor = -1.0 / (4 * ewaldcoeff * ewaldcoeff);
+    real   energy_AB[2], energy;
+    rvec   lll;
+    int    lowiy, lowiz, ix, iy, iz, n, q;
+    real   tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
+    cvec** eir;
+    bool   bFreeEnergy;
 
     if (cr != nullptr)
     {
@@ -191,6 +191,7 @@ real do_ewald(const t_inputrec& ir,
     calc_lll(boxDiag, lll);
     tabulateStructureFactors(natoms, x, et->kmax, eir, lll);
 
+    gmx::ArrayRef<const real> charge;
     for (q = 0; q < (bFreeEnergy ? 2 : 1); q++)
     {
         if (!bFreeEnergy)

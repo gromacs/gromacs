@@ -268,12 +268,11 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
 
         if (fr->ic->eeltype == CoulombInteractionType::Ewald)
         {
-            const rvec* x = as_rvec_array(coordinates.data());
-            Vlr_q         = do_ewald(ir,
-                             x,
-                             as_rvec_array(forceWithVirial->force_.data()),
-                             md->chargeA,
-                             md->chargeB,
+            Vlr_q = do_ewald(ir,
+                             coordinates,
+                             forceWithVirial->force_,
+                             gmx::arrayRefFromArray(md->chargeA, md->nr),
+                             gmx::arrayRefFromArray(md->chargeB, md->nr),
                              box,
                              cr,
                              md->homenr,
