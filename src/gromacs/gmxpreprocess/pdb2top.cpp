@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -652,7 +652,7 @@ static void print_top_water(FILE* out, const char* ffdir, const char* water)
 
 static void print_top_system(FILE* out, const char* title)
 {
-    fprintf(out, "[ %s ]\n", dir2str(Directive::d_system));
+    fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_system));
     fprintf(out, "; Name\n");
     fprintf(out, "%s\n\n", title[0] ? title : "Protein");
 }
@@ -683,7 +683,7 @@ void print_top_mols(FILE*                            out,
 
     if (!mols.empty())
     {
-        fprintf(out, "[ %s ]\n", dir2str(Directive::d_molecules));
+        fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_molecules));
         fprintf(out, "; %-15s %5s\n", "Compound", "#mols");
         for (const auto& mol : mols)
         {
@@ -707,7 +707,7 @@ void write_top(FILE*                                   out,
 {
     if (at && atype && cgnr)
     {
-        fprintf(out, "[ %s ]\n", dir2str(Directive::d_moleculetype));
+        fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 

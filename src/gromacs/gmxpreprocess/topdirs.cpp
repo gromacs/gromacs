@@ -49,53 +49,58 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringtoenumvalueconverter.h"
 
-/* Must correspond to the Directive enum in grompp_impl.h */
-static gmx::EnumerationArray<Directive, const char*> directive_names = {
-    { "defaults",
-      "atomtypes",
-      "bondtypes",
-      "constrainttypes",
-      "pairtypes",
-      "angletypes",
-      "dihedraltypes",
-      "nonbond_params",
-      "implicit_genborn_params",
-      "implicit_surface_params",
-      "cmaptypes",
-      /* All the directives above can not appear after moleculetype */
-      "moleculetype",
-      "atoms",
-      "virtual_sites1",
-      "virtual_sites2",
-      "virtual_sites3",
-      "virtual_sites4",
-      "virtual_sitesn",
-      "bonds",
-      "exclusions",
-      "pairs",
-      "pairs_nb",
-      "angles",
-      "dihedrals",
-      "constraints",
-      "settles",
-      "polarization",
-      "water_polarization",
-      "thole_polarization",
-      "system",
-      "molecules",
-      "position_restraints",
-      "angle_restraints",
-      "angle_restraints_z",
-      "distance_restraints",
-      "orientation_restraints",
-      "dihedral_restraints",
-      "cmap",
-      "intermolecular_interactions",
-      "maxdirs",
-      "invalid",
-      "none" }
-};
+const char* enumValueToString(Directive d)
+{
+    /* Must correspond to the Directive enum in topdirs.h */
+    static constexpr gmx::EnumerationArray<Directive, const char*> directiveNames = {
+        "defaults",
+        "atomtypes",
+        "bondtypes",
+        "constrainttypes",
+        "pairtypes",
+        "angletypes",
+        "dihedraltypes",
+        "nonbond_params",
+        "implicit_genborn_params",
+        "implicit_surface_params",
+        "cmaptypes",
+        /* All the directives above can not appear after moleculetype */
+        "moleculetype",
+        "atoms",
+        "virtual_sites1",
+        "virtual_sites2",
+        "virtual_sites3",
+        "virtual_sites4",
+        "virtual_sitesn",
+        "bonds",
+        "exclusions",
+        "pairs",
+        "pairs_nb",
+        "angles",
+        "dihedrals",
+        "constraints",
+        "settles",
+        "polarization",
+        "water_polarization",
+        "thole_polarization",
+        "system",
+        "molecules",
+        "position_restraints",
+        "angle_restraints",
+        "angle_restraints_z",
+        "distance_restraints",
+        "orientation_restraints",
+        "dihedral_restraints",
+        "cmap",
+        "intermolecular_interactions",
+        "maxdirs",
+        "invalid",
+        "none"
+    };
+    return directiveNames[d];
+}
 
 int ifunc_index(Directive d, int type)
 {
@@ -239,39 +244,50 @@ int ifunc_index(Directive d, int type)
         case Directive::d_orientation_restraints: return F_ORIRES;
         case Directive::d_dihedral_restraints: return F_DIHRES;
         default:
-            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)", dir2str(d), __FILE__, __LINE__);
+            gmx_fatal(FARGS, "invalid directive %s in ifunc_index (%s:%d)", enumValueToString(d), __FILE__, __LINE__);
     }
 }
 
-const char* dir2str(Directive d)
+enum class DeprecatedDirectives : int
 {
-    int index = static_cast<int>(d);
-    return directive_names[index];
+    d_dummies1,
+    d_dummies2,
+    d_dummies3,
+    d_dummies4,
+    d_dummiesn,
+    Count
+};
+
+static const char* enumValueToString(DeprecatedDirectives d)
+{
+    static constexpr gmx::EnumerationArray<DeprecatedDirectives, const char*> directiveNames = {
+        "dummies1", "dummies2", "dummies3", "dummies4", "dummiesn"
+    };
+    return directiveNames[d];
 }
 
 Directive str2dir(char* dstr)
 {
-    char buf[STRLEN], *ptr;
+    static const gmx::StringToEnumValueConverter<Directive, enumValueToString, gmx::StringCompareType::CaseAndDashInsensitive> s_converter;
 
-    /* Hack to be able to read old topologies */
-    if (gmx_strncasecmp_min(dstr, "dummies", 7) == 0)
+    if (std::optional<Directive> d = s_converter.valueFrom(dstr); d.has_value())
     {
-        sprintf(buf, "virtual_sites%s", dstr + 7);
-        ptr = buf;
+        return d.value();
     }
-    else
-    {
-        ptr = dstr;
-    }
+    // Also handle deprecated directives that have modern replacements, like
+    // "dummies*" -> "virtual_sites*"
 
-    for (auto d : gmx::EnumerationWrapper<Directive>())
-    {
-        if (gmx_strcasecmp_min(ptr, dir2str(static_cast<Directive>(d))) == 0)
-        {
-            return static_cast<Directive>(d);
-        }
-    }
+    static const gmx::StringToEnumValueConverter<DeprecatedDirectives, enumValueToString, gmx::StringCompareType::CaseAndDashInsensitive>
+            s_converterForDeprecated;
 
+    if (std::optional<DeprecatedDirectives> d = s_converterForDeprecated.valueFrom(dstr); d.has_value())
+    {
+        static constexpr gmx::EnumerationArray<DeprecatedDirectives, Directive> s_deprecatedDirectiveToDirective = {
+            Directive::d_vsites1, Directive::d_vsites2, Directive::d_vsites3,
+            Directive::d_vsites4, Directive::d_vsitesn,
+        };
+        return s_deprecatedDirectiveToDirective[d.value()];
+    }
     return Directive::d_invalid;
 }
 

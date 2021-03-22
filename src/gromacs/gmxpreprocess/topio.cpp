@@ -581,7 +581,7 @@ static char** read_topol(const char*                           infile,
                             gmx_fatal(FARGS,
                                       "%s\nInvalid order for directive %s",
                                       cpp_error(&handle, eCPP_SYNTAX),
-                                      dir2str(newd));
+                                      enumValueToString(newd));
                             /* d = Directive::d_invalid; */
                         }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ TEST(TopDirTests, NamesArrayHasCorrectSize)
         // If the enumeration is extended, but there is no matching
         // name, then at least one element will be value initialized,
         // ie. to nullptr, which this test will catch.
-        auto name = dir2str(d);
+        auto name = enumValueToString(d);
         EXPECT_NE(name, nullptr);
     }
 }

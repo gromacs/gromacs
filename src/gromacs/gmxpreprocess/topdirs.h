@@ -86,6 +86,8 @@ enum class Directive : int
     Count
 };
 
+const char* enumValueToString(Directive d);
+
 struct DirStack
 {
     Directive d;
@@ -93,8 +95,6 @@ struct DirStack
 };
 
 int ifunc_index(Directive d, int type);
-
-const char* dir2str(Directive d);
 
 Directive str2dir(char* dstr);
 

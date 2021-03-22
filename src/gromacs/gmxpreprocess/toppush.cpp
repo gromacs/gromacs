@@ -1986,10 +1986,10 @@ void push_bond(Directive                         d,
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
                     aa[i],
-                    dir2str(d),
+                    enumValueToString(d),
                     at->nr,
-                    dir2str(d),
-                    dir2str(d));
+                    enumValueToString(d),
+                    enumValueToString(d));
             warning_error_and_exit(wi, message, FARGS);
         }
         for (int j = i + 1; (j < nral); j++)
@@ -1998,7 +1998,8 @@ void push_bond(Directive                         d,
                        "Values from nral=NRAL() will satisfy this, we assert to keep gcc 4 happy");
             if (aa[i] == aa[j])
             {
-                auto message = gmx::formatString("Duplicate atom index (%d) in %s", aa[i], dir2str(d));
+                auto message = gmx::formatString(
+                        "Duplicate atom index (%d) in %s", aa[i], enumValueToString(d));
                 if (ftype == F_ANGRES)
                 {
                     /* Since the angle restraints uses 2 pairs of atoms to
@@ -2378,10 +2379,10 @@ void push_cmap(Directive                         d,
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
                     aa[i],
-                    dir2str(d),
+                    enumValueToString(d),
                     at->nr,
-                    dir2str(d),
-                    dir2str(d));
+                    enumValueToString(d),
+                    enumValueToString(d));
             warning_error_and_exit(wi, message, FARGS);
         }
 
@@ -2389,7 +2390,8 @@ void push_cmap(Directive                         d,
         {
             if (aa[i] == aa[j])
             {
-                auto message = gmx::formatString("Duplicate atom index (%d) in %s", aa[i], dir2str(d));
+                auto message = gmx::formatString(
+                        "Duplicate atom index (%d) in %s", aa[i], enumValueToString(d));
                 warning_error(wi, message);
             }
         }
@@ -2441,7 +2443,8 @@ void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* 
     ptr += n;
     if (ret == 0)
     {
-        auto message = gmx::formatString("Expected an atom index in section \"%s\"", dir2str(d));
+        auto message =
+                gmx::formatString("Expected an atom index in section \"%s\"", enumValueToString(d));
         warning_error_and_exit(wi, message, FARGS);
     }
 
@@ -2498,8 +2501,8 @@ void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* 
 
     if (nj == 0)
     {
-        auto message =
-                gmx::formatString("Expected more than one atom index in section \"%s\"", dir2str(d));
+        auto message = gmx::formatString("Expected more than one atom index in section \"%s\"",
+                                         enumValueToString(d));
         warning_error_and_exit(wi, message, FARGS);
     }
 

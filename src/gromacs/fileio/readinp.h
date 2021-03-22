@@ -192,7 +192,13 @@ EnumType getEnum(std::vector<t_inpfile>* inp, const char* name, warninp* wi)
         return defaultEnumValue;
     }
 
-    // Check if option string can be mapped to a valid enum value
+    // Check if option string can be mapped to a valid enum value.
+    //
+    // Note that this cannot be replaced with
+    // StringToEnumValueConverter until all instantiations of this
+    // function have a matching enumValueToString, and all of the
+    // latter are in the same namespace. Currently some of those
+    // function declarations are in gmx namespace and some are not.
     const auto* optionString = (*inp)[ii].value_.c_str();
     for (auto enumValue : gmx::EnumerationWrapper<EnumType>{})
     {

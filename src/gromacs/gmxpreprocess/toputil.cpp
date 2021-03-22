@@ -130,7 +130,7 @@ static void print_bt(FILE*                                   out,
     nrfp = NRFP(ftype);
 
     /* header */
-    fprintf(out, "[ %s ]\n", dir2str(d));
+    fprintf(out, "[ %s ]\n", enumValueToString(d));
     fprintf(out, "; ");
     if (!bDih)
     {
@@ -209,7 +209,7 @@ void print_excl(FILE* out, int natoms, t_excls excls[])
 
     if (have_excl)
     {
-        fprintf(out, "[ %s ]\n", dir2str(Directive::d_exclusions));
+        fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_exclusions));
         fprintf(out, "; %4s    %s\n", "i", "excluded from i");
         for (i = 0; i < natoms; i++)
         {
@@ -251,7 +251,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
     const char* as;
     double      qres, qtot;
 
-    as = dir2str(Directive::d_atoms);
+    as = enumValueToString(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
     fprintf(out,
             "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",

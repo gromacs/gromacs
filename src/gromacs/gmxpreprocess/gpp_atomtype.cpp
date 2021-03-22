@@ -221,7 +221,7 @@ std::optional<int> PreprocessingAtomTypes::setType(int                      nt,
 
 void PreprocessingAtomTypes::printTypes(FILE* out)
 {
-    fprintf(out, "[ %s ]\n", dir2str(Directive::d_atomtypes));
+    fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_atomtypes));
     fprintf(out,
             "; %6s  %8s  %8s  %8s  %12s  %12s\n",
             "type",
