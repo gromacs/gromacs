@@ -1145,7 +1145,7 @@ void gmx::LegacySimulator::do_md()
                                 &state->hist,
                                 &f.view(),
                                 force_vir,
-                                mdatoms,
+                                *mdatoms,
                                 nrnb,
                                 wcycle,
                                 shellfc,

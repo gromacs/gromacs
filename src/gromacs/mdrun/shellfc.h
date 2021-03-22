@@ -114,7 +114,7 @@ void relax_shell_flexcon(FILE*                               log,
                          const history_t*                    hist,
                          gmx::ForceBuffersView*              f,
                          tensor                              force_vir,
-                         const t_mdatoms*                    md,
+                         const t_mdatoms&                    md,
                          t_nrnb*                             nrnb,
                          gmx_wallcycle_t                     wcycle,
                          gmx_shellfc_t*                      shfc,
@@ -136,6 +136,6 @@ void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-gmx::EnumerationArray<ParticleType, int> countPtypes(FILE* fplog, const gmx_mtop_t* mtop);
+gmx::EnumerationArray<ParticleType, int> countPtypes(FILE* fplog, const gmx_mtop_t& mtop);
 
 #endif

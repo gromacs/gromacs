@@ -67,7 +67,7 @@ class VirtualSitesHandler;
  * \param[in]     md        The MD atom data
  * \param[in,out] shfc      The shell/flexible-constraint data
  */
-void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* shfc);
+void make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellfc_t* shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *

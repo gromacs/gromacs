@@ -3222,7 +3222,7 @@ void LegacySimulator::do_nm()
                                         &state_work.s.hist,
                                         &state_work.f.view(),
                                         vir,
-                                        mdatoms,
+                                        *mdatoms,
                                         nrnb,
                                         wcycle,
                                         shellfc,

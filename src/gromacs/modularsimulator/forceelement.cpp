@@ -130,7 +130,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     {
         // This was done in mdAlgorithmsSetupAtomData(), but shellfc
         // won't be available outside this element.
-        make_local_shells(cr, mdAtoms->mdatoms(), shellfc_);
+        make_local_shells(cr, *mdAtoms->mdatoms(), shellfc_);
     }
 }
 
@@ -216,7 +216,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                             hist,
                             &forces,
                             force_vir,
-                            mdAtoms_->mdatoms(),
+                            *mdAtoms_->mdatoms(),
                             nrnb_,
                             wcycle_,
                             shellfc_,

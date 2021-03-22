@@ -128,7 +128,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
      */
     if (!usingDomDec && shellfc)
     {
-        make_local_shells(cr, mdatoms, shellfc);
+        make_local_shells(cr, *mdatoms, shellfc);
     }
 
     for (auto& listedForces : fr->listedForces)
