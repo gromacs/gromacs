@@ -347,11 +347,12 @@ updateMDLeapfrogSimple(int         start,
             {
                 vNew -= dtPressureCouple * pRVScaleMatrixDiagonal[d] * v[a][d];
             }
+            // TODO: Remove NOLINTs once clang-tidy is updated to v11, it should be able to handle constexpr.
             if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::yes) // NOLINT // NOLINTNEXTLINE
             {
                 v[a][d] = vNew;
             }
-            xprime[a][d] = x[a][d] + vNew * dt;
+            xprime[a][d] = x[a][d] + vNew * dt; // NOLINT(readability-misleading-indentation)
         }
     }
 }
@@ -459,12 +460,13 @@ updateMDLeapfrogSimpleSimd(int         start,
         v1 = fma(f1 * invMass1, timestep, lambdaSystem * v1);
         v2 = fma(f2 * invMass2, timestep, lambdaSystem * v2);
 
+        // TODO: Remove NOLINTs once clang-tidy is updated to v11, it should be able to handle constexpr.
         if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::yes) // NOLINT // NOLINTNEXTLINE
         {
             simdStoreRvecs(v, a, v0, v1, v2);
         }
 
-        SimdReal x0, x1, x2;
+        SimdReal x0, x1, x2; // NOLINT(readability-misleading-indentation)
         simdLoadRvecs(x, a, &x0, &x1, &x2);
 
         SimdReal xprime0 = fma(v0, timestep, x0);
