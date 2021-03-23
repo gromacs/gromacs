@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 //! \cond INTERNAL
@@ -74,7 +73,7 @@ public:
     //! Lambda at start time
     double start_lambda;
     //! Whether the lambda value is set. Here for backward-compatibility.
-    gmx_bool start_lambda_set;
+    bool start_lambda_set;
 
     //! Read / write data from / to checkpoint object
     template<gmx::CheckpointDataOperation operation>

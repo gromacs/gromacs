@@ -44,6 +44,7 @@
  */
 #include "nblib/integrator.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arrayref.h"
 #include "nblib/molecules.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"

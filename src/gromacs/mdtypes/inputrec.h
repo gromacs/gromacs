@@ -45,7 +45,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -145,7 +144,7 @@ struct t_lambda
     //! Free energy soft-core sigma for ?????
     real sc_sigma_min;
     //! Use softcore for the coulomb portion as well (default FALSE)
-    gmx_bool bScCoul;
+    bool bScCoul;
     //! Whether to print the dvdl term associated with this term; if it is not specified as separate, it is lumped with the FEP term
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, bool> separate_dvdl;
     //! Whether to write a separate dhdl.xvg file note: NOT a gmx_bool, but an enum
@@ -181,7 +180,7 @@ struct t_expanded
     //! Random number seed for lambda mc switches
     int lmc_seed;
     //! Whether to use minumum variance weighting
-    gmx_bool minvar;
+    bool minvar;
     //! The number of samples needed before kicking into minvar routine
     int minvarmin;
     //! The offset for the variance in MinVar
@@ -189,7 +188,7 @@ struct t_expanded
     //! Range of cvalues used for BAR
     int c_range;
     //! Whether to print symmetrized matrices
-    gmx_bool bSymmetrizedTMatrix;
+    bool bSymmetrizedTMatrix;
     //! How frequently to print the transition matrices
     int nstTij;
     //! Number of repetitions in the MC lambda jumps MRS -- VERIFY THIS
@@ -205,9 +204,9 @@ struct t_expanded
     //! Starting delta for Wang-Landau
     real init_wl_delta;
     //! Use one over t convergence for Wang-Landau when the delta get sufficiently small
-    gmx_bool bWLoneovert;
+    bool bWLoneovert;
     //! Did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic
-    gmx_bool bInit_weights;
+    bool bInit_weights;
     //! To override the main temperature, or define it if it's not defined
     real mc_temp;
     //! User-specified initial weights to start with
@@ -285,7 +284,7 @@ struct t_swapcoords
     //! Period between when a swap is attempted
     int nstswap;
     //! Use mass-weighted positions in split group
-    gmx_bool massw_split[2];
+    bool massw_split[2];
     /*! \brief Split cylinders defined by radius, upper and lower
      * extension. The split cylinders define the channels and are
      * each anchored in the center of the split group */
@@ -378,13 +377,13 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Periodic molecules
     bool bPeriodicMols;
     //! Continuation run: starting state is correct (ie. constrained)
-    gmx_bool bContinuation;
+    bool bContinuation;
     //! Temperature coupling
     TemperatureCoupling etc;
     //! Interval in steps for temperature coupling
     int nsttcouple;
     //! Whether to print nose-hoover chains
-    gmx_bool bPrintNHChains;
+    bool bPrintNHChains;
     //! Pressure coupling
     PressureCoupling epc;
     //! Pressure coupling type
@@ -444,11 +443,11 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Data for the FEP state
     std::unique_ptr<t_lambda> fepvals;
     //! Whether to do simulated tempering
-    gmx_bool bSimTemp;
+    bool bSimTemp;
     //! Variables for simulated tempering
     std::unique_ptr<t_simtemp> simtempvals;
     //! Whether expanded ensembles are used
-    gmx_bool bExpanded;
+    bool bExpanded;
     //! Expanded ensemble parameters
     std::unique_ptr<t_expanded> expandedvals;
     //! Type of distance restraining
@@ -458,7 +457,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Type of weighting of pairs in one restraints
     DistanceRestraintWeighting eDisreWeighting;
     //! Use combination of time averaged and instantaneous violations
-    gmx_bool bDisreMixed;
+    bool bDisreMixed;
     //! Frequency of writing pair distances to enx
     int nstdisreout;
     //! Time constant for memory function in disres
@@ -490,7 +489,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Number of iterations in the final LINCS step
     int nLincsIter;
     //! Use successive overrelaxation for shake
-    gmx_bool bShakeSOR;
+    bool bShakeSOR;
     //! Friction coefficient for BD (amu/ps)
     real bd_fric;
     //! Random seed for SD and BD
@@ -510,19 +509,19 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* COM pulling data */
     //! Do we do COM pulling?
-    gmx_bool bPull;
+    bool bPull;
     //! The data for center of mass pulling
     std::unique_ptr<pull_params_t> pull;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
-    gmx_bool bDoAwh;
+    bool bDoAwh;
     //! AWH biasing parameters
     std::unique_ptr<gmx::AwhParams> awhParams;
 
     /* Enforced rotation data */
     //! Whether to calculate enforced rotation potential(s)
-    gmx_bool bRot;
+    bool bRot;
     //! The data for enforced rotation potentials
     t_rot* rot;
 
@@ -532,7 +531,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     t_swapcoords* swap;
 
     //! Whether the tpr makes an interactive MD session possible.
-    gmx_bool bIMD;
+    bool bIMD;
     //! Interactive molecular dynamics
     t_IMD* imd;
 
@@ -554,13 +553,13 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Group options
     t_grpopts opts;
     //! QM/MM calculation
-    gmx_bool bQMMM;
+    bool bQMMM;
 
     /* Fields for removed features go here (better caching) */
     //! Whether AdResS is enabled - always false if a valid .tpr was read
-    gmx_bool bAdress;
+    bool bAdress;
     //! Whether twin-range scheme is active - always false if a valid .tpr was read
-    gmx_bool useTwinRange;
+    bool useTwinRange;
     //! Whether we have constant acceleration - removed in GROMACS 2022
     bool useConstantAcceleration;
 
@@ -582,30 +581,30 @@ int pcouple_min_integration_steps(PressureCoupling epc);
 int ir_optimal_nstpcouple(const t_inputrec* ir);
 
 /* Returns if the Coulomb force or potential is switched to zero */
-gmx_bool ir_coulomb_switched(const t_inputrec* ir);
+bool ir_coulomb_switched(const t_inputrec* ir);
 
 /* Returns if the Coulomb interactions are zero beyond the rcoulomb.
  * Note: always returns TRUE for the Verlet cut-off scheme.
  */
-gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec* ir);
+bool ir_coulomb_is_zero_at_cutoff(const t_inputrec* ir);
 
 /* As ir_coulomb_is_zero_at_cutoff, but also returns TRUE for user tabulated
  * interactions, since these might be zero beyond rcoulomb.
  */
-gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec* ir);
+bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec* ir);
 
 /* Returns if the Van der Waals force or potential is switched to zero */
-gmx_bool ir_vdw_switched(const t_inputrec* ir);
+bool ir_vdw_switched(const t_inputrec* ir);
 
 /* Returns if the Van der Waals interactions are zero beyond the rvdw.
  * Note: always returns TRUE for the Verlet cut-off scheme.
  */
-gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec* ir);
+bool ir_vdw_is_zero_at_cutoff(const t_inputrec* ir);
 
 /* As ir_vdw_is_zero_at_cutoff, but also returns TRUE for user tabulated
  * interactions, since these might be zero beyond rvdw.
  */
-gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir);
+bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir);
 
 /*! \brief Free memory from input record.
  *
@@ -615,30 +614,30 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir);
  */
 void done_inputrec(t_inputrec* ir);
 
-void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, gmx_bool bMDPformat);
+void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, bool bMDPformat);
 
 void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol);
 
 void comp_pull_AB(FILE* fp, const pull_params_t& pull, real ftol, real abstol);
 
 
-gmx_bool inputrecDeform(const t_inputrec* ir);
+bool inputrecDeform(const t_inputrec* ir);
 
-gmx_bool inputrecDynamicBox(const t_inputrec* ir);
+bool inputrecDynamicBox(const t_inputrec* ir);
 
-gmx_bool inputrecPreserveShape(const t_inputrec* ir);
+bool inputrecPreserveShape(const t_inputrec* ir);
 
-gmx_bool inputrecNeedMutot(const t_inputrec* ir);
+bool inputrecNeedMutot(const t_inputrec* ir);
 
-gmx_bool inputrecTwinRange(const t_inputrec* ir);
+bool inputrecTwinRange(const t_inputrec* ir);
 
-gmx_bool inputrecExclForces(const t_inputrec* ir);
+bool inputrecExclForces(const t_inputrec* ir);
 
-gmx_bool inputrecNptTrotter(const t_inputrec* ir);
+bool inputrecNptTrotter(const t_inputrec* ir);
 
-gmx_bool inputrecNvtTrotter(const t_inputrec* ir);
+bool inputrecNvtTrotter(const t_inputrec* ir);
 
-gmx_bool inputrecNphTrotter(const t_inputrec* ir);
+bool inputrecNphTrotter(const t_inputrec* ir);
 
 /*! \brief Return true if the simulation is 2D periodic with two walls. */
 bool inputrecPbcXY2Walls(const t_inputrec* ir);

@@ -53,7 +53,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"

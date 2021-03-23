@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
@@ -120,7 +119,7 @@ typedef struct
          */
         const char** c;
         /** Boolean value for etBOOL. */
-        gmx_bool* b;
+        bool* b;
         /** Vector value for etRVEC. */
         rvec* rv;
     } u;
@@ -168,7 +167,7 @@ int opt2parg_int(const char* option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-gmx_bool opt2parg_bool(const char* option, int nparg, t_pargs pa[]);
+bool opt2parg_bool(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns value of an etREAL/etTIME option.
@@ -216,7 +215,7 @@ const char* opt2parg_enum(const char* option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa.
  */
-gmx_bool opt2parg_bSet(const char* option, int nparg, const t_pargs* pa);
+bool opt2parg_bSet(const char* option, int nparg, const t_pargs* pa);
 
 
 /** Add option -w to view output files (must be implemented in program). */
@@ -258,18 +257,18 @@ gmx_bool opt2parg_bSet(const char* option, int nparg, const t_pargs* pa);
  *
  * \see gmx_run_cmain().
  */
-gmx_bool parse_common_args(int*               argc,
-                           char*              argv[],
-                           unsigned long      Flags,
-                           int                nfile,
-                           t_filenm           fnm[],
-                           int                npargs,
-                           t_pargs*           pa,
-                           int                ndesc,
-                           const char**       desc,
-                           int                nbugs,
-                           const char**       bugs,
-                           gmx_output_env_t** oenv);
+bool parse_common_args(int*               argc,
+                       char*              argv[],
+                       unsigned long      Flags,
+                       int                nfile,
+                       t_filenm           fnm[],
+                       int                npargs,
+                       t_pargs*           pa,
+                       int                ndesc,
+                       const char**       desc,
+                       int                nbugs,
+                       const char**       bugs,
+                       gmx_output_env_t** oenv);
 
 /*! \} */
 

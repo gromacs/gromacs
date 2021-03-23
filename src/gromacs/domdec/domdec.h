@@ -64,8 +64,6 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct cginfo_mb_t;
@@ -94,6 +92,8 @@ class ForceWithShiftForces;
 class MDLogger;
 class RangePartitioning;
 class VirtualSitesHandler;
+template<typename>
+class ArrayRef;
 } // namespace gmx
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.

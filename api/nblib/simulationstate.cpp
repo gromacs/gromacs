@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arrayref.h"
 #include "nblib/exception.h"
 #include "nblib/simulationstate.h"
 #include "nblib/simulationstateimpl.h"

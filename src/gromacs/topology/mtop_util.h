@@ -46,7 +46,6 @@
 #include <boost/stl_interfaces/iterator_interface.hpp>
 
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 struct gmx_localtop_t;

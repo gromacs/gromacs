@@ -77,7 +77,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
 struct bonded_threading_t;

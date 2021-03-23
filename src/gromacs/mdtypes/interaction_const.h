@@ -41,7 +41,6 @@
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/alignedallocator.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_lambda;

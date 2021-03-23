@@ -53,6 +53,7 @@
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {

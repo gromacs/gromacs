@@ -63,8 +63,6 @@
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -173,7 +171,7 @@ class ekinstate_t
 public:
     ekinstate_t();
 
-    gmx_bool            bUpToDate;      //!< Test if all data is up to date
+    bool                bUpToDate;      //!< Test if all data is up to date
     int                 ekin_n;         //!< The number of tensors
     tensor*             ekinh;          //!< Half step Ekin, size \p ekin_n
     tensor*             ekinf;          //!< Full step Ekin, size \p ekin_n
@@ -208,10 +206,10 @@ typedef struct df_history_t
 {
     int nlambda; //!< total number of lambda states - for history
 
-    gmx_bool bEquil;   //!< Have we reached equilibration
-    int*     n_at_lam; //!< number of points observed at each lambda
-    real*    wl_histo; //!< histogram for WL flatness determination
-    real     wl_delta; //!< current wang-landau delta
+    bool  bEquil;   //!< Have we reached equilibration
+    int*  n_at_lam; //!< number of points observed at each lambda
+    real* wl_histo; //!< histogram for WL flatness determination
+    real  wl_delta; //!< current wang-landau delta
 
     real* sum_weights; //!< weights of the states
     real* sum_dg; //!< free energies of the states -- not actually used for weighting, but informational
@@ -318,7 +316,7 @@ void state_change_natoms(t_state* state, int natoms);
 void init_dfhist_state(t_state* state, int dfhistNumLambda);
 
 /*! \brief Compares two states, write the differences to stdout */
-void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real ftol, real abstol);
+void comp_state(const t_state* st1, const t_state* st2, bool bRMSD, real ftol, real abstol);
 
 /*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::index n);

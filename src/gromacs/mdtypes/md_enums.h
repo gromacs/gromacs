@@ -46,8 +46,6 @@
 #ifndef GMX_MDTYPES_MD_ENUMS_H
 #define GMX_MDTYPES_MD_ENUMS_H
 
-#include "gromacs/utility/basedefinitions.h"
-
 /*! \brief Return a string from a list of strings
  *
  * If index if within 0 .. max_index-1 returns the corresponding string

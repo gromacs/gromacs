@@ -71,12 +71,12 @@ typedef struct
                                        of the histogram */
     unsigned int maxbin[2]; /* highest bin number with data */
 
-    int type;         /* the block type according to dhbtDH, etc. */
-    int derivative;   /* The derivative direction (as an index in the lambda
-                         vector) if this delta_h contains derivatives */
-    double*  lambda;  /* lambda vector (or NULL if not applicable) */
-    int      nlambda; /* length of the lambda vector */
-    gmx_bool written; /* whether this data has already been written out */
+    int type;        /* the block type according to dhbtDH, etc. */
+    int derivative;  /* The derivative direction (as an index in the lambda
+                        vector) if this delta_h contains derivatives */
+    double* lambda;  /* lambda vector (or NULL if not applicable) */
+    int     nlambda; /* length of the lambda vector */
+    bool    written; /* whether this data has already been written out */
 
     int64_t subblock_meta_l[5]; /* metadata for an mdebin subblock for
                                            I/O: for histogram counts, etc.*/
@@ -105,12 +105,12 @@ struct t_mde_delta_h_coll
     t_mde_delta_h* dh_expanded; /* expanded ensemble output block (pointer
                                    into dh) */
 
-    double   start_time;     /* start time of the current dh collection */
-    double   delta_time;     /* time difference between samples */
-    gmx_bool start_time_set; /* whether the start time has been set */
-    double   start_lambda;   /* starting lambda for continuous motion of state*/
-    double   delta_lambda;   /* delta lambda, for continuous motion of state */
-    double   temperature;    /* the temperature of the samples*/
+    double start_time;     /* start time of the current dh collection */
+    double delta_time;     /* time difference between samples */
+    bool   start_time_set; /* whether the start time has been set */
+    double start_lambda;   /* starting lambda for continuous motion of state*/
+    double delta_lambda;   /* delta lambda, for continuous motion of state */
+    double temperature;    /* the temperature of the samples*/
 
     double* native_lambda_vec;     /* The lambda vector describing the current
                                       lambda state if it is set (NULL otherwise) */

@@ -54,7 +54,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
@@ -328,7 +327,7 @@ void constrain_velocities(gmx::Constraints* constr,
                           int64_t           step,
                           t_state*          state,
                           real*             dvdlambda,
-                          gmx_bool          computeVirial,
+                          bool              computeVirial,
                           tensor            constraintsVirial);
 
 /*! \brief Constraint coordinates.
@@ -342,7 +341,7 @@ void constrain_coordinates(gmx::Constraints*         constr,
                            t_state*                  state,
                            ArrayRefWithPadding<RVec> xp,
                            real*                     dvdlambda,
-                           gmx_bool                  computeVirial,
+                           bool                      computeVirial,
                            tensor                    constraintsVirial);
 
 } // namespace gmx

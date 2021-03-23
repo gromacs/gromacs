@@ -47,7 +47,6 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_grppairener_t;

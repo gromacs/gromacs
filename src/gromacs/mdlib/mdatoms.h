@@ -44,7 +44,6 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 

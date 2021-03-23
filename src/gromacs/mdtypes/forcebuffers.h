@@ -50,12 +50,14 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
+template<typename T>
+class ArrayRef;
+template<typename T>
+class ArrayRefWithPadding;
 
 enum class PinningPolicy : int;
 

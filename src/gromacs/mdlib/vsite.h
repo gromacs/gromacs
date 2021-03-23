@@ -50,8 +50,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
@@ -66,6 +64,8 @@ enum class PbcType : int;
 namespace gmx
 {
 class RangePartitioning;
+template<typename T>
+class ArrayRef;
 
 /*! \brief The start value of the vsite indices in the ftype enum
  *

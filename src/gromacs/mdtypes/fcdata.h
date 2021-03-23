@@ -42,7 +42,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 enum class DistanceRestraintWeighting : int;
@@ -53,7 +52,7 @@ typedef real rvec5[5];
 typedef struct t_disresdata
 {
     DistanceRestraintWeighting dr_weighting; /* Weighting of pairs in one restraint              */
-    gmx_bool                   dr_bMixed;    /* Use sqrt of the instantaneous times              *
+    bool                       dr_bMixed;    /* Use sqrt of the instantaneous times              *
                                               * the time averaged violation                      */
     real dr_fc;                              /* Force constant for disres,                       *
                                               * which is multiplied by a (possibly)              *

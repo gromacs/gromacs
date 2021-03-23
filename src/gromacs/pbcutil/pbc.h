@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,13 +43,18 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
 
 //! Enumeration that contains all supported periodic boundary setups.
 enum class PbcType : int
@@ -195,7 +200,7 @@ PbcType guessPbcType(const matrix box);
  * \param[in] box   The simulation cell
  * \return TRUE when the box was corrected.
  */
-gmx_bool correct_box(FILE* fplog, int step, tensor box);
+bool correct_box(FILE* fplog, int step, tensor box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *
@@ -228,7 +233,7 @@ void set_pbc(t_pbc* pbc, PbcType pbcType, const matrix box);
  * \param[in] box         The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
-t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, gmx_bool bSingleDir, const matrix box);
+t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, bool bSingleDir, const matrix box);
 
 /*! \brief Compute distance with PBC
  *
