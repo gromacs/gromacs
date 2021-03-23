@@ -32,3 +32,10 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fix bond type in GROMOS force fields
+""""""""""""""""""""""""""""""""""""
+
+The bond type for C and +N in [ACE] was incorrect.
+
+:issue:`3995`
