@@ -1663,9 +1663,9 @@ void do_force(FILE*                               fplog,
         calc_mu(start,
                 mdatoms->homenr,
                 xRef,
-                mdatoms->chargeA,
-                mdatoms->chargeB,
-                mdatoms->nChargePerturbed,
+                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
+                gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
+                mdatoms->nChargePerturbed != 0,
                 dipoleData.muStaging[0],
                 dipoleData.muStaging[1]);
 

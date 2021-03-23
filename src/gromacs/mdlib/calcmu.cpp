@@ -52,9 +52,9 @@
 void calc_mu(int                            start,
              int                            homenr,
              gmx::ArrayRef<const gmx::RVec> x,
-             const real                     q[],
-             const real                     qB[],
-             int                            nChargePerturbed,
+             gmx::ArrayRef<const real>      q,
+             gmx::ArrayRef<const real>      qB,
+             bool                           havePerturbedCharges,
              dvec                           mu,
              dvec                           mu_B)
 {
@@ -82,7 +82,7 @@ void calc_mu(int                            start,
         mu[m] *= gmx::c_enm2Debye;
     }
 
-    if (nChargePerturbed)
+    if (havePerturbedCharges)
     {
         mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
