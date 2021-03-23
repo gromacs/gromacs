@@ -49,6 +49,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -144,16 +145,14 @@ public:
     // to calling grompp. sets the -s input to the generated tpr
     void createTpr(const std::string& structure, const std::string& topology, const std::string& index)
     {
-        std::string tpr = fileManager().getTemporaryFilePath(".tpr");
-        std::string mdp = fileManager().getTemporaryFilePath(".mdp");
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        FILE* fp = fopen(mdp.c_str(), "w");
-        fprintf(fp, "cutoff-scheme = verlet\n");
-        fprintf(fp, "rcoulomb      = 0.85\n");
-        fprintf(fp, "rvdw          = 0.85\n");
-        fprintf(fp, "rlist         = 0.85\n");
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        fclose(fp);
+        std::string tpr             = fileManager().getTemporaryFilePath(".tpr");
+        std::string mdp             = fileManager().getTemporaryFilePath(".mdp");
+        std::string mdpFileContents = gmx::formatString(
+                "cutoff-scheme = verlet\n"
+                "rcoulomb      = 0.85\n"
+                "rvdw          = 0.85\n"
+                "rlist         = 0.85\n");
+        gmx::TextWriter::writeFileFromString(mdp, mdpFileContents);
 
         // Prepare a .tpr file
         CommandLine caller;
