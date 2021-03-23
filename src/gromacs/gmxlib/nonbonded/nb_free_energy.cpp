@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/arrayref.h"
@@ -205,6 +206,8 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                   const t_forcerec* gmx_restrict fr,
                                   const t_mdatoms* gmx_restrict mdatoms,
                                   nb_kernel_data_t* gmx_restrict kernel_data,
+                                  gmx::ArrayRef<real>            energygrp_elec,
+                                  gmx::ArrayRef<real>            energygrp_vdw,
                                   t_nrnb* gmx_restrict nrnb)
 {
 #define STATE_A 0
@@ -237,14 +240,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const real*               shiftvec  = fr->shift_vec[0];
     const real*               chargeA   = mdatoms->chargeA;
     const real*               chargeB   = mdatoms->chargeB;
-    real*                     Vc        = kernel_data->energygrp_elec;
     const int*                typeA     = mdatoms->typeA;
     const int*                typeB     = mdatoms->typeB;
     const int                 ntype     = fr->ntype;
     gmx::ArrayRef<const real> nbfp      = fr->nbfp;
     gmx::ArrayRef<const real> nbfp_grid = fr->ljpme_c6grid;
 
-    real*      Vv = kernel_data->energygrp_vdw;
     const real lambda_coul =
             kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
     const real lambda_vdw =
@@ -834,9 +835,9 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
             {
                 int ggid = gid[n];
 #pragma omp atomic
-                Vc[ggid] += vCTot;
+                energygrp_elec[ggid] += vCTot;
 #pragma omp atomic
-                Vv[ggid] += vVTot;
+                energygrp_vdw[ggid] += vVTot;
             }
         }
     } // end for (int n = 0; n < nri; n++)
@@ -873,6 +874,8 @@ typedef void (*KernelFunction)(const t_nblist* gmx_restrict nlist,
                                const t_forcerec* gmx_restrict fr,
                                const t_mdatoms* gmx_restrict mdatoms,
                                nb_kernel_data_t* gmx_restrict kernel_data,
+                               gmx::ArrayRef<real>            energygrp_elec,
+                               gmx::ArrayRef<real>            energygrp_vdw,
                                t_nrnb* gmx_restrict nrnb);
 
 template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
@@ -994,6 +997,8 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                const t_forcerec*          fr,
                                const t_mdatoms*           mdatoms,
                                nb_kernel_data_t*          kernel_data,
+                               gmx::ArrayRef<real>        energygrp_elec,
+                               gmx::ArrayRef<real>        energygrp_vdw,
                                t_nrnb*                    nrnb)
 {
     const interaction_const_t& ic = *fr->ic;
@@ -1029,5 +1034,5 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                 vdwModifierIsPotSwitch,
                                 useSimd,
                                 ic);
-    kernelFunc(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
+    kernelFunc(nlist, xx, ff, fr, mdatoms, kernel_data, energygrp_elec, energygrp_vdw, nrnb);
 }

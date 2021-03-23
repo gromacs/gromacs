@@ -51,6 +51,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -535,8 +536,8 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     kernel_data.lambda                                                      = lambda;
     kernel_data.dvdl                                                        = dvdl_nb;
 
-    kernel_data.energygrp_elec = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
-    kernel_data.energygrp_vdw = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
+    gmx::ArrayRef<real> energygrp_elec = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
+    gmx::ArrayRef<real> energygrp_vdw = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
 
     GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(),
                "Number of lists should be same as number of NB threads");
@@ -548,7 +549,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         try
         {
             gmx_nb_free_energy_kernel(
-                    nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, nrnb);
+                    nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, energygrp_elec, energygrp_vdw, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -578,10 +579,10 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
                             | GMX_NONBONDED_DO_FOREIGNLAMBDA;
         kernel_data.lambda = lam_i;
         kernel_data.dvdl   = dvdl_nb;
-        kernel_data.energygrp_elec =
-                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data();
-        kernel_data.energygrp_vdw =
-                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data();
+        gmx::ArrayRef<real> energygrp_elec =
+                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
+        gmx::ArrayRef<real> energygrp_vdw =
+                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
 
         for (gmx::index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
         {
@@ -596,8 +597,15 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(
-                            nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, nrnb);
+                    gmx_nb_free_energy_kernel(nbl_fep[th].get(),
+                                              x,
+                                              forceWithShiftForces,
+                                              fr,
+                                              &mdatoms,
+                                              &kernel_data,
+                                              energygrp_elec,
+                                              energygrp_vdw,
+                                              nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }

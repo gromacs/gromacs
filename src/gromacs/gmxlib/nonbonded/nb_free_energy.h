@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,13 +38,14 @@
 #ifndef _nb_free_energy_h_
 #define _nb_free_energy_h_
 
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/nblist.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct t_forcerec;
 struct t_mdatoms;
+struct t_nrnb;
+struct t_nblist;
 namespace gmx
 {
 class ForceWithShiftForces;
@@ -56,6 +57,8 @@ void gmx_nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                const t_forcerec* gmx_restrict fr,
                                const t_mdatoms* gmx_restrict mdatoms,
                                nb_kernel_data_t* gmx_restrict kernel_data,
+                               gmx::ArrayRef<real>            energygrp_elec,
+                               gmx::ArrayRef<real>            energygrp_vdw,
                                t_nrnb* gmx_restrict nrnb);
 
 #endif

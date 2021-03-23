@@ -36,44 +36,18 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
-#include <stdio.h>
-
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct t_blocka;
-struct t_mdatoms;
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.
  */
-typedef struct
+struct nb_kernel_data_t
 {
     int                       flags;
-    const struct t_blocka*    exclusions;
     gmx::ArrayRef<const real> lambda;
     gmx::ArrayRef<real>       dvdl;
-
-    /* pointers to tables */
-    t_forcetable* table_elec;
-    t_forcetable* table_vdw;
-    t_forcetable* table_elec_vdw;
-
-    /* potentials */
-    real* energygrp_elec;
-    real* energygrp_vdw;
-} nb_kernel_data_t;
-
-
-typedef void nb_kernel_t(t_nblist* gmx_restrict nlist,
-                         rvec* gmx_restrict x,
-                         rvec* gmx_restrict f,
-                         struct t_forcerec* gmx_restrict fr,
-                         t_mdatoms* gmx_restrict mdatoms,
-                         nb_kernel_data_t* gmx_restrict kernel_data,
-                         t_nrnb* gmx_restrict nrnb);
+};
 
 #endif /* _nb_kernel_h_ */
