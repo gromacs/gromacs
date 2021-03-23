@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,6 +116,24 @@ TEST(RVecTest, WorksAs_rvec_Array)
     EXPECT_EQ(2, r[1][XX]);
     EXPECT_EQ(3, r[1][YY]);
     EXPECT_EQ(4, r[1][ZZ]);
+}
+
+TEST(RVecTest, ComparesEqual)
+{
+    RVec a(1, 2, 3);
+    RVec b(1, 2, 3);
+    RVec c(1, 2, 2);
+    EXPECT_EQ(a == b, true);
+    EXPECT_EQ(a == c, false);
+}
+
+TEST(RVecTest, ComparesUnequal)
+{
+    RVec a(1, 2, 3);
+    RVec b(1, 2, 3);
+    RVec c(1, 2, 2);
+    EXPECT_EQ(a != b, false);
+    EXPECT_EQ(a != c, true);
 }
 
 /*! \brief
