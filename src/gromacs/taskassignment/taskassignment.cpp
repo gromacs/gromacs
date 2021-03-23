@@ -265,7 +265,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
 
     std::exception_ptr             exceptionPtr;
     std::vector<GpuTaskAssignment> taskAssignmentOnRanksOfThisNode;
-    std::vector<int>               deviceIdsAssigned;
+    std::vector<int>               deviceIdAssignment;
     try
     {
         // Use the GPU IDs from the user if they supplied
@@ -320,7 +320,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
                         host,
                         availableDevices.size())));
             }
-            deviceIdsAssigned = generatedGpuIds;
+            deviceIdAssignment = generatedGpuIds;
         }
         else
         {
@@ -342,10 +342,10 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
             // Did the user choose compatible GPUs?
             checkUserGpuIds(hardwareInfo.deviceInfoList, availableDevices, userGpuTaskAssignment);
 
-            deviceIdsAssigned = gmx::copyOf(userGpuTaskAssignment);
+            deviceIdAssignment = gmx::copyOf(userGpuTaskAssignment);
         }
         taskAssignmentOnRanksOfThisNode =
-                buildTaskAssignment(gpuTasksOnRanksOfThisNode, deviceIdsAssigned);
+                buildTaskAssignment(gpuTasksOnRanksOfThisNode, deviceIdAssignment);
     }
     catch (...)
     {
@@ -392,7 +392,11 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
     gpuTaskAssignments.indexOfThisRank_                 = physicalNodeComm.rank_;
     gpuTaskAssignments.numGpuTasksOnThisNode_           = numGpuTasksOnThisNode;
     gpuTaskAssignments.numRanksOnThisNode_              = numRanksOnThisNode;
-    gpuTaskAssignments.deviceIdsAssigned_               = deviceIdsAssigned;
+    gpuTaskAssignments.deviceIdsAssigned_               = deviceIdAssignment;
+    std::sort(gpuTaskAssignments.deviceIdsAssigned_.begin(), gpuTaskAssignments.deviceIdsAssigned_.end());
+    gpuTaskAssignments.deviceIdsAssigned_.erase(unique(gpuTaskAssignments.deviceIdsAssigned_.begin(),
+                                                       gpuTaskAssignments.deviceIdsAssigned_.end()),
+                                                gpuTaskAssignments.deviceIdsAssigned_.end());
     return gpuTaskAssignments;
 }
 
