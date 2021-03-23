@@ -850,8 +850,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
      * 12  flops per outer iteration
      * 150 flops per inner iteration
      */
-#pragma omp atomic
-    inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri * 12 + nlist->jindex[nri] * 150);
+    atomicNrnbIncrement(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri * 12 + nlist->jindex[nri] * 150);
 
     if (numExcludedPairsBeyondRlist > 0)
     {

@@ -639,7 +639,7 @@ static void finish_run(FILE*                     fplog,
         nrnbTotalStorage = std::make_unique<t_nrnb>();
         nrnb_tot         = nrnbTotalStorage.get();
 #if GMX_MPI
-        MPI_Allreduce(nrnb->n, nrnb_tot->n, eNRNB, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
+        MPI_Allreduce(nrnb->n.data(), nrnb_tot->n.data(), eNRNB, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
 #endif
     }
     else

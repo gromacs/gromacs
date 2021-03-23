@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,9 @@
 #ifndef GMX_GMXLIB_NRNB_H
 #define GMX_GMXLIB_NRNB_H
 
-#include <stdio.h>
-
-#include "gromacs/utility/basedefinitions.h"
-
-#define eNR_NBKERNEL_NONE (-1)
+#include <array>
+#include <cstdint>
+#include <cstdio>
 
 enum
 {
@@ -175,25 +173,33 @@ enum
 
 struct t_nrnb
 {
-    double n[eNRNB] = { 0 };
+    std::array<double, eNRNB> n = { 0 };
 };
-
-struct t_commrec;
 
 void clear_nrnb(t_nrnb* nrnb);
 
-void add_nrnb(t_nrnb* dest, t_nrnb* s1, t_nrnb* s2);
-
 void print_nrnb(FILE* out, t_nrnb* nrnb);
 
-void _inc_nrnb(t_nrnb* nrnb, int enr, int inc, char* file, int line);
+/*! \brief Increment the nonbonded kernel flop counters
+ *
+ * \param nrnb The nonbonded kernel flop counters.
+ * \param index Which counter to incrememnt.
+ * \param increment How much to increment the counter by.
+ */
+static inline void inc_nrnb(t_nrnb* nrnb, int index, int increment)
+{
+    nrnb->n[index] += increment;
+}
 
-#ifdef DEBUG_NRNB
-#    define inc_nrnb(nrnb, enr, inc) _inc_nrnb(nrnb, enr, inc, __FILE__, __LINE__)
-#else
-#    define inc_nrnb(nrnb, enr, inc) (nrnb)->n[enr] += inc
-#endif
-
+/*! \brief Atomic increment of nonbonded kernel flop counters
+ *
+ * \param nrnb The nonbonded kernel flop counters.
+ * \param index Which counter to incrememnt.
+ * \param increment How much to increment the counter by.
+ *
+ * Same as inc_nrnb but includes omp atomic pragma
+ */
+void atomicNrnbIncrement(t_nrnb* nrnb, int index, int increment);
 
 void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop);
 /* Calculates the non-bonded forces and flop count.
@@ -202,9 +208,6 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop);
 
 void print_perf(FILE* out, double nodetime, double realtime, int64_t nsteps, double delta_t, double nbfs, double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
-
-void pr_load(FILE* log, struct t_commrec* cr, t_nrnb nrnb[]);
-/* Print detailed load balancing info */
 
 int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */
