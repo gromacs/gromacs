@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix error when using VMD plugin
+"""""""""""""""""""""""""""""""
+
+Tools would crash with a C++ library assertion because the plugin loading
+code incorrectly tried to construct a string from nullptr.
+
+:issue:`3055`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

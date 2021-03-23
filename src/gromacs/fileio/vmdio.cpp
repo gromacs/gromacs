@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -300,21 +300,23 @@ static int load_vmd_library(const char* fn, gmx_vmdplugin_t* vmdplugin)
      * plugins, then an implicit run-time path, and finally for one
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
-    std::string pathenv = getenv("VMD_PLUGIN_PATH");
-    if (pathenv.empty())
+    const char* pathenv = getenv("VMD_PLUGIN_PATH");
+    std::string fallBackPathEnv;
+    if (!pathenv)
     {
         pathenv = getenv("VMDDIR");
-        if (pathenv.empty())
+        if (!pathenv)
         {
             printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
             printf("Using default location:\n%s\n", defpathenv.c_str());
-            pathenv = defpathenv;
+            pathenv = defpathenv.c_str();
         }
         else
         {
             printf("\nVMD_PLUGIN_PATH no set, but VMDDIR is set. ");
-            pathenv = gmx::Path::join(pathenv, defpath_suffix);
-            printf("Using semi-default location:\n%s\n", pathenv.c_str());
+            fallBackPathEnv = gmx::Path::join(pathenv, defpath_suffix);
+            pathenv         = fallBackPathEnv.c_str();
+            printf("Using semi-default location:\n%s\n", pathenv);
         }
     }
 #if !GMX_NATIVE_WINDOWS
