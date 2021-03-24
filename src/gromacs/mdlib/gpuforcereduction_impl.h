@@ -53,7 +53,8 @@
 namespace gmx
 {
 
-//! structure to hold cell information for any nbat-format forces
+//! \internal
+//! \brief structure to hold cell information for any nbat-format forces
 struct cellInfo
 {
     //! cell index mapping for any nbat-format forces

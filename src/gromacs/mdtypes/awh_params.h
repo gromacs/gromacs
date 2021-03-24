@@ -246,8 +246,8 @@ private:
     //! True if the simulation starts out by equilibrating the histogram.
     bool equilibrateHistogram_;
 };
-/*! \brief
- * Structure holding parameter information for AWH.
+/*! \internal
+ * \brief Structure holding parameter information for AWH.
  */
 class AwhParams
 {

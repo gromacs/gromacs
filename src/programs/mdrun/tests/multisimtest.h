@@ -65,7 +65,9 @@ namespace test
 //! Convenience typedef
 typedef std::unique_ptr<CommandLine> CommandLinePointer;
 
-//! Test flag setting the number of ranks per simulation
+/*! \internal
+ * \brief Test flag setting the number of ranks per simulation
+ */
 class NumRanksPerSimulation final
 {
 public:
