@@ -233,9 +233,9 @@ float gpu_wait_finish_task(NbnxmGpu gmx_unused*    nb,
 
 /*! \brief Initialization for X buffer operations on GPU.
  * Called on the NS step and performs (re-)allocations and memory copies. !*/
-CUDA_FUNC_QUALIFIER
+GPU_FUNC_QUALIFIER
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused& gridSet,
-                                NbnxmGpu gmx_unused* gpu_nbv) CUDA_FUNC_TERM;
+                                NbnxmGpu gmx_unused* gpu_nbv) GPU_FUNC_TERM;
 
 /*! \brief X buffer operations on GPU: performs conversion from rvec to nb format.
  *

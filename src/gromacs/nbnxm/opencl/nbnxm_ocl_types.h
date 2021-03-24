@@ -175,6 +175,26 @@ struct NbnxmGpu
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 
+    // Data for GPU-side coordinate conversion between integrator and NBNXM
+    /*! \brief array of atom indices */
+    DeviceBuffer<int> atomIndices;
+    /*! \brief size of atom indices */
+    int atomIndicesSize = 0;
+    /*! \brief size of atom indices allocated in device buffer */
+    int atomIndicesSize_alloc = 0;
+    /*! \brief x buf ops num of atoms */
+    DeviceBuffer<int> cxy_na;
+    /*! \brief number of elements in cxy_na */
+    int ncxy_na = 0;
+    /*! \brief number of elements allocated allocated in device buffer */
+    int ncxy_na_alloc = 0;
+    /*! \brief x buf ops cell index mapping */
+    DeviceBuffer<int> cxy_ind;
+    /*! \brief number of elements in cxy_ind */
+    int ncxy_ind = 0;
+    /*! \brief number of elements allocated allocated in device buffer */
+    int ncxy_ind_alloc = 0;
+
     //! local and non-local GPU queues
     gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
 

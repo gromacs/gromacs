@@ -69,6 +69,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/gridset.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -971,6 +972,114 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
        compute on interactions between local and nonlocal atoms.
      */
     nbnxnInsertNonlocalGpuDependency(nb, iloc);
+}
+
+
+/* Initialization for X buffer operations on GPU. */
+void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv)
+{
+    const DeviceStream& localStream   = *gpu_nbv->deviceStreams[InteractionLocality::Local];
+    const bool          bDoTime       = gpu_nbv->bDoTime;
+    const int           maxNumColumns = gridSet.numColumnsMax();
+
+    reallocateDeviceBuffer(&gpu_nbv->cxy_na,
+                           maxNumColumns * gridSet.grids().size(),
+                           &gpu_nbv->ncxy_na,
+                           &gpu_nbv->ncxy_na_alloc,
+                           *gpu_nbv->deviceContext_);
+    reallocateDeviceBuffer(&gpu_nbv->cxy_ind,
+                           maxNumColumns * gridSet.grids().size(),
+                           &gpu_nbv->ncxy_ind,
+                           &gpu_nbv->ncxy_ind_alloc,
+                           *gpu_nbv->deviceContext_);
+
+    for (unsigned int g = 0; g < gridSet.grids().size(); g++)
+    {
+        const Nbnxm::Grid& grid = gridSet.grids()[g];
+
+        const int  numColumns      = grid.numColumns();
+        const int* atomIndices     = gridSet.atomIndices().data();
+        const int  atomIndicesSize = gridSet.atomIndices().size();
+        const int* cxy_na          = grid.cxy_na().data();
+        const int* cxy_ind         = grid.cxy_ind().data();
+
+        auto* timerH2D = bDoTime ? &gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d : nullptr;
+
+        reallocateDeviceBuffer(&gpu_nbv->atomIndices,
+                               atomIndicesSize,
+                               &gpu_nbv->atomIndicesSize,
+                               &gpu_nbv->atomIndicesSize_alloc,
+                               *gpu_nbv->deviceContext_);
+
+        if (atomIndicesSize > 0)
+        {
+            if (bDoTime)
+            {
+                timerH2D->openTimingRegion(localStream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->atomIndices,
+                               atomIndices,
+                               0,
+                               atomIndicesSize,
+                               localStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? timerH2D->fetchNextEvent() : nullptr);
+
+            if (bDoTime)
+            {
+                timerH2D->closeTimingRegion(localStream);
+            }
+        }
+
+        if (numColumns > 0)
+        {
+            if (bDoTime)
+            {
+                timerH2D->openTimingRegion(localStream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->cxy_na,
+                               cxy_na,
+                               maxNumColumns * g,
+                               numColumns,
+                               localStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? timerH2D->fetchNextEvent() : nullptr);
+
+            if (bDoTime)
+            {
+                timerH2D->closeTimingRegion(localStream);
+            }
+
+            if (bDoTime)
+            {
+                timerH2D->openTimingRegion(localStream);
+            }
+
+            copyToDeviceBuffer(&gpu_nbv->cxy_ind,
+                               cxy_ind,
+                               maxNumColumns * g,
+                               numColumns,
+                               localStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? timerH2D->fetchNextEvent() : nullptr);
+
+            if (bDoTime)
+            {
+                timerH2D->closeTimingRegion(localStream);
+            }
+        }
+    }
+
+    // The above data is transferred on the local stream but is a
+    // dependency of the nonlocal stream (specifically the nonlocal X
+    // buf ops kernel).  We therefore set a dependency to ensure
+    // that the nonlocal stream waits on the local stream here.
+    // This call records an event in the local stream:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
+    // ...and this call instructs the nonlocal stream to wait on that event:
+    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
 }
 
 } // namespace Nbnxm
