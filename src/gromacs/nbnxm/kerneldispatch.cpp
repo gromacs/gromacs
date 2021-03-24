@@ -38,7 +38,6 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/enerdata_utils.h"
@@ -530,11 +529,10 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         donb_flags |= GMX_NONBONDED_DO_POTENTIAL;
     }
 
-    nb_kernel_data_t                                                kernel_data;
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl_nb = { 0 };
-    kernel_data.flags                                                       = donb_flags;
-    kernel_data.lambda                                                      = lambda;
-    kernel_data.dvdl                                                        = dvdl_nb;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl_nb      = { 0 };
+    int                                                             kernelFlags  = donb_flags;
+    gmx::ArrayRef<const real>                                       kernelLambda = lambda;
+    gmx::ArrayRef<real>                                             kernelDvdl   = dvdl_nb;
 
     gmx::ArrayRef<real> energygrp_elec = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
     gmx::ArrayRef<real> energygrp_vdw = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
@@ -548,8 +546,17 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     {
         try
         {
-            gmx_nb_free_energy_kernel(
-                    nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, energygrp_elec, energygrp_vdw, nrnb);
+            gmx_nb_free_energy_kernel(nbl_fep[th].get(),
+                                      x,
+                                      forceWithShiftForces,
+                                      fr,
+                                      &mdatoms,
+                                      kernelFlags,
+                                      kernelLambda,
+                                      kernelDvdl,
+                                      energygrp_elec,
+                                      energygrp_vdw,
+                                      nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -575,10 +582,10 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     if (fepvals->n_lambda > 0 && stepWork.computeDhdl && fepvals->sc_alpha != 0)
     {
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lam_i;
-        kernel_data.flags = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE))
-                            | GMX_NONBONDED_DO_FOREIGNLAMBDA;
-        kernel_data.lambda = lam_i;
-        kernel_data.dvdl   = dvdl_nb;
+        kernelFlags = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE))
+                      | GMX_NONBONDED_DO_FOREIGNLAMBDA;
+        kernelLambda = lam_i;
+        kernelDvdl   = dvdl_nb;
         gmx::ArrayRef<real> energygrp_elec =
                 enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
         gmx::ArrayRef<real> energygrp_vdw =
@@ -602,7 +609,9 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
                                               forceWithShiftForces,
                                               fr,
                                               &mdatoms,
-                                              &kernel_data,
+                                              kernelFlags,
+                                              kernelLambda,
+                                              kernelDvdl,
                                               energygrp_elec,
                                               energygrp_vdw,
                                               nrnb);

@@ -38,7 +38,6 @@
 #ifndef _nb_free_energy_h_
 #define _nb_free_energy_h_
 
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -49,16 +48,20 @@ struct t_nblist;
 namespace gmx
 {
 class ForceWithShiftForces;
-}
+template<typename>
+class ArrayRef;
+} // namespace gmx
 
 void gmx_nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                rvec* gmx_restrict         xx,
                                gmx::ForceWithShiftForces* forceWithShiftForces,
                                const t_forcerec* gmx_restrict fr,
                                const t_mdatoms* gmx_restrict mdatoms,
-                               nb_kernel_data_t* gmx_restrict kernel_data,
-                               gmx::ArrayRef<real>            energygrp_elec,
-                               gmx::ArrayRef<real>            energygrp_vdw,
+                               int                           flags,
+                               gmx::ArrayRef<const real>     lambda,
+                               gmx::ArrayRef<real>           dvdl,
+                               gmx::ArrayRef<real>           energygrp_elec,
+                               gmx::ArrayRef<real>           energygrp_vdw,
                                t_nrnb* gmx_restrict nrnb);
 
 #endif

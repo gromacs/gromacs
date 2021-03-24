@@ -46,7 +46,6 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -205,9 +204,11 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                   gmx::ForceWithShiftForces* forceWithShiftForces,
                                   const t_forcerec* gmx_restrict fr,
                                   const t_mdatoms* gmx_restrict mdatoms,
-                                  nb_kernel_data_t* gmx_restrict kernel_data,
-                                  gmx::ArrayRef<real>            energygrp_elec,
-                                  gmx::ArrayRef<real>            energygrp_vdw,
+                                  int                           flags,
+                                  gmx::ArrayRef<const real>     lambda,
+                                  gmx::ArrayRef<real>           dvdl,
+                                  gmx::ArrayRef<real>           energygrp_elec,
+                                  gmx::ArrayRef<real>           energygrp_vdw,
                                   t_nrnb* gmx_restrict nrnb)
 {
 #define STATE_A 0
@@ -246,20 +247,17 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     gmx::ArrayRef<const real> nbfp      = fr->nbfp;
     gmx::ArrayRef<const real> nbfp_grid = fr->ljpme_c6grid;
 
-    const real lambda_coul =
-            kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
-    const real lambda_vdw =
-            kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
-    gmx::ArrayRef<real> dvdl          = kernel_data->dvdl;
-    const auto&         scParams      = *ic->softCoreParameters;
-    const real          alpha_coul    = scParams.alphaCoulomb;
-    const real          alpha_vdw     = scParams.alphaVdw;
-    const real          lam_power     = scParams.lambdaPower;
-    const real          sigma6_def    = scParams.sigma6WithInvalidSigma;
-    const real          sigma6_min    = scParams.sigma6Minimum;
-    const bool          doForces      = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
-    const bool          doShiftForces = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
-    const bool          doPotential   = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
+    const real  lambda_coul   = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+    const real  lambda_vdw    = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+    const auto& scParams      = *ic->softCoreParameters;
+    const real  alpha_coul    = scParams.alphaCoulomb;
+    const real  alpha_vdw     = scParams.alphaVdw;
+    const real  lam_power     = scParams.lambdaPower;
+    const real  sigma6_def    = scParams.sigma6WithInvalidSigma;
+    const real  sigma6_min    = scParams.sigma6Minimum;
+    const bool  doForces      = ((flags & GMX_NONBONDED_DO_FORCE) != 0);
+    const bool  doShiftForces = ((flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
+    const bool  doPotential   = ((flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
     // Extract data from interaction_const_t
     const real facel           = ic->epsfac;
@@ -873,9 +871,11 @@ typedef void (*KernelFunction)(const t_nblist* gmx_restrict nlist,
                                gmx::ForceWithShiftForces* forceWithShiftForces,
                                const t_forcerec* gmx_restrict fr,
                                const t_mdatoms* gmx_restrict mdatoms,
-                               nb_kernel_data_t* gmx_restrict kernel_data,
-                               gmx::ArrayRef<real>            energygrp_elec,
-                               gmx::ArrayRef<real>            energygrp_vdw,
+                               int                           flags,
+                               gmx::ArrayRef<const real>     lambda,
+                               gmx::ArrayRef<real>           dvdl,
+                               gmx::ArrayRef<real>           energygrp_elec,
+                               gmx::ArrayRef<real>           energygrp_vdw,
                                t_nrnb* gmx_restrict nrnb);
 
 template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
@@ -996,7 +996,9 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                gmx::ForceWithShiftForces* ff,
                                const t_forcerec*          fr,
                                const t_mdatoms*           mdatoms,
-                               nb_kernel_data_t*          kernel_data,
+                               int                        flags,
+                               gmx::ArrayRef<const real>  lambda,
+                               gmx::ArrayRef<real>        dvdl,
                                gmx::ArrayRef<real>        energygrp_elec,
                                gmx::ArrayRef<real>        energygrp_vdw,
                                t_nrnb*                    nrnb)
@@ -1019,8 +1021,8 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
     }
     else
     {
-        if (kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]
-                    == kernel_data->lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)]
+        if (lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)]
+                    == lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)]
             && scParams.alphaCoulomb == scParams.alphaVdw)
         {
             scLambdasOrAlphasDiffer = false;
@@ -1034,5 +1036,5 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                 vdwModifierIsPotSwitch,
                                 useSimd,
                                 ic);
-    kernelFunc(nlist, xx, ff, fr, mdatoms, kernel_data, energygrp_elec, energygrp_vdw, nrnb);
+    kernelFunc(nlist, xx, ff, fr, mdatoms, flags, lambda, dvdl, energygrp_elec, energygrp_vdw, nrnb);
 }
