@@ -493,9 +493,9 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
     accountFlops(nrnb, pairlistSet, *this, ic, stepWork);
 }
 
-void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLocality,
-                                                  const t_forcerec*          fr,
-                                                  rvec                       x[],
+void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality       iLocality,
+                                                  const t_forcerec&              fr,
+                                                  gmx::ArrayRef<const gmx::RVec> coords,
                                                   gmx::ForceWithShiftForces* forceWithShiftForces,
                                                   const t_mdatoms&           mdatoms,
                                                   t_lambda*                  fepvals,
@@ -546,11 +546,11 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     {
         try
         {
-            gmx_nb_free_energy_kernel(nbl_fep[th].get(),
-                                      x,
+            gmx_nb_free_energy_kernel(*nbl_fep[th],
+                                      coords,
                                       forceWithShiftForces,
                                       fr,
-                                      &mdatoms,
+                                      mdatoms,
                                       kernelFlags,
                                       kernelLambda,
                                       kernelDvdl,
@@ -604,11 +604,11 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(nbl_fep[th].get(),
-                                              x,
+                    gmx_nb_free_energy_kernel(*nbl_fep[th],
+                                              coords,
                                               forceWithShiftForces,
                                               fr,
-                                              &mdatoms,
+                                              mdatoms,
                                               kernelFlags,
                                               kernelLambda,
                                               kernelDvdl,

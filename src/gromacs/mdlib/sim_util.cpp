@@ -1756,8 +1756,8 @@ void do_force(FILE*                               fplog,
          * Happens here on the CPU both with and without GPU.
          */
         nbv->dispatchFreeEnergyKernel(InteractionLocality::Local,
-                                      fr,
-                                      as_rvec_array(x.unpaddedArrayRef().data()),
+                                      *fr,
+                                      x.unpaddedArrayRef(),
                                       &forceOutNonbonded->forceWithShiftForces(),
                                       *mdatoms,
                                       inputrec.fepvals.get(),
@@ -1769,8 +1769,8 @@ void do_force(FILE*                               fplog,
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(InteractionLocality::NonLocal,
-                                          fr,
-                                          as_rvec_array(x.unpaddedArrayRef().data()),
+                                          *fr,
+                                          x.unpaddedArrayRef(),
                                           &forceOutNonbonded->forceWithShiftForces(),
                                           *mdatoms,
                                           inputrec.fepvals.get(),

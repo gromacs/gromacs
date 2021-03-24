@@ -52,16 +52,16 @@ template<typename>
 class ArrayRef;
 } // namespace gmx
 
-void gmx_nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
-                               rvec* gmx_restrict         xx,
-                               gmx::ForceWithShiftForces* forceWithShiftForces,
-                               const t_forcerec* gmx_restrict fr,
-                               const t_mdatoms* gmx_restrict mdatoms,
-                               int                           flags,
-                               gmx::ArrayRef<const real>     lambda,
-                               gmx::ArrayRef<real>           dvdl,
-                               gmx::ArrayRef<real>           energygrp_elec,
-                               gmx::ArrayRef<real>           energygrp_vdw,
+void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
+                               gmx::ArrayRef<const gmx::RVec> coords,
+                               gmx::ForceWithShiftForces*     forceWithShiftForces,
+                               const t_forcerec&              fr,
+                               const t_mdatoms&               mdatoms,
+                               int                            flags,
+                               gmx::ArrayRef<const real>      lambda,
+                               gmx::ArrayRef<real>            dvdl,
+                               gmx::ArrayRef<real>            energygrp_elec,
+                               gmx::ArrayRef<real>            energygrp_vdw,
                                t_nrnb* gmx_restrict nrnb);
 
 #endif
