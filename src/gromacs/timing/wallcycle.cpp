@@ -58,16 +58,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 
-static constexpr bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
-
-#ifndef DEBUG_WCYCLE
-/*! \brief Enables consistency checking for the counters.
- *
- * If the macro is set to 1, code checks if you stop a counter different from the last
- * one that was opened and if you do nest too deep.
- */
-#    define DEBUG_WCYCLE 0
-#endif
 //! Whether wallcycle debugging is enabled
 constexpr bool gmx_unused enableWallcycleDebug = (DEBUG_WCYCLE != 0);
 //! True if only the master rank should print debugging output
@@ -78,37 +68,6 @@ constexpr bool gmx_unused debugPrintDepth = false /* enableWallcycleDebug */;
 #if DEBUG_WCYCLE
 #    include "gromacs/utility/fatalerror.h"
 #endif
-
-typedef struct
-{
-    int          n;
-    gmx_cycles_t c;
-    gmx_cycles_t start;
-} wallcc_t;
-
-struct gmx_wallcycle
-{
-    wallcc_t* wcc;
-    /* did we detect one or more invalid cycle counts */
-    gmx_bool haveInvalidCount;
-    /* variables for testing/debugging */
-    gmx_bool  wc_barrier;
-    wallcc_t* wcc_all;
-    int       wc_depth;
-#if DEBUG_WCYCLE
-#    define DEPTH_MAX 6
-    int  counterlist[DEPTH_MAX];
-    int  count_depth;
-    bool isMasterRank;
-#endif
-    int          ewc_prev;
-    gmx_cycles_t cycle_prev;
-    int64_t      reset_counters;
-#if GMX_MPI
-    MPI_Comm mpi_comm_mygroup;
-#endif
-    wallcc_t* wcsc;
-};
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */
@@ -209,7 +168,7 @@ bool wallcycle_have_counter()
     return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused* cr)
+gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr)
 {
     gmx_wallcycle_t wc;
 
@@ -227,6 +186,7 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
     wc->wc_depth         = 0;
     wc->ewc_prev         = -1;
     wc->reset_counters   = resetstep;
+    wc->cr               = cr;
 
 
 #if GMX_MPI
@@ -236,8 +196,7 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
         {
             fprintf(fplog, "\nWill call MPI_Barrier before each cycle start/stop call\n\n");
         }
-        wc->wc_barrier       = TRUE;
-        wc->mpi_comm_mygroup = cr->mpi_comm_mygroup;
+        wc->wc_barrier = TRUE;
     }
 #endif
 
@@ -251,7 +210,7 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
         snew(wc->wcc_all, ewcNR * ewcNR);
     }
 
-    if (useCycleSubcounters)
+    if (sc_useCycleSubcounters)
     {
         snew(wc->wcsc, ewcsNR);
     }
@@ -285,19 +244,6 @@ void wallcycle_destroy(gmx_wallcycle_t wc)
     }
     sfree(wc);
 }
-
-static void wallcycle_all_start(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
-{
-    wc->ewc_prev   = ewc;
-    wc->cycle_prev = cycle;
-}
-
-static void wallcycle_all_stop(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
-{
-    wc->wcc_all[wc->ewc_prev * ewcNR + ewc].n += 1;
-    wc->wcc_all[wc->ewc_prev * ewcNR + ewc].c += cycle - wc->cycle_prev;
-}
-
 
 #if DEBUG_WCYCLE
 static void debug_start_check(gmx_wallcycle_t wc, int ewc)
@@ -340,118 +286,6 @@ static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
 }
 #endif
 
-void wallcycle_start(gmx_wallcycle_t wc, int ewc)
-{
-    gmx_cycles_t cycle;
-
-    if (wc == nullptr)
-    {
-        return;
-    }
-
-#if GMX_MPI
-    if (wc->wc_barrier)
-    {
-        MPI_Barrier(wc->mpi_comm_mygroup);
-    }
-#endif
-
-#if DEBUG_WCYCLE
-    debug_start_check(wc, ewc);
-#endif
-
-    cycle              = gmx_cycles_read();
-    wc->wcc[ewc].start = cycle;
-    if (wc->wcc_all != nullptr)
-    {
-        wc->wc_depth++;
-        if (ewc == ewcRUN)
-        {
-            wallcycle_all_start(wc, ewc, cycle);
-        }
-        else if (wc->wc_depth == 3)
-        {
-            wallcycle_all_stop(wc, ewc, cycle);
-        }
-    }
-}
-
-void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc)
-{
-    if (wc == nullptr)
-    {
-        return;
-    }
-    wc->wcc[ewc].n++;
-}
-
-void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
-{
-    if (wc == nullptr)
-    {
-        return;
-    }
-
-    wallcycle_start(wc, ewc);
-    wc->wcc[ewc].n--;
-}
-
-double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
-{
-    gmx_cycles_t cycle, last;
-
-    if (wc == nullptr)
-    {
-        return 0;
-    }
-
-#if GMX_MPI
-    if (wc->wc_barrier)
-    {
-        MPI_Barrier(wc->mpi_comm_mygroup);
-    }
-#endif
-
-#if DEBUG_WCYCLE
-    debug_stop_check(wc, ewc);
-#endif
-
-    /* When processes or threads migrate between cores, the cycle counting
-     * can get messed up if the cycle counter on different cores are not
-     * synchronized. When this happens we expect both large negative and
-     * positive cycle differences. We can detect negative cycle differences.
-     * Detecting too large positive counts if difficult, since count can be
-     * large, especially for ewcRUN. If we detect a negative count,
-     * we will not print the cycle accounting table.
-     */
-    cycle = gmx_cycles_read();
-    if (cycle >= wc->wcc[ewc].start)
-    {
-        last = cycle - wc->wcc[ewc].start;
-    }
-    else
-    {
-        last                 = 0;
-        wc->haveInvalidCount = TRUE;
-    }
-    wc->wcc[ewc].c += last;
-    wc->wcc[ewc].n++;
-    if (wc->wcc_all)
-    {
-        wc->wc_depth--;
-        if (ewc == ewcRUN)
-        {
-            wallcycle_all_stop(wc, ewc, cycle);
-        }
-        else if (wc->wc_depth == 2)
-        {
-            wallcycle_all_start(wc, ewc, cycle);
-        }
-    }
-
-    return last;
-}
-
 void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c)
 {
     *n = wc->wcc[ewc].n;
@@ -460,7 +294,7 @@ void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c)
 
 void wallcycle_sub_get(gmx_wallcycle_t wc, int ewcs, int* n, double* c)
 {
-    if (useCycleSubcounters && wc != nullptr)
+    if (sc_useCycleSubcounters && wc != nullptr)
     {
         *n = wc->wcsc[ewcs].n;
         *c = static_cast<double>(wc->wcsc[ewcs].c);
@@ -509,6 +343,16 @@ static gmx_bool is_pme_counter(int ewc)
 static gmx_bool is_pme_subcounter(int ewc)
 {
     return (ewc >= ewcPME_REDISTXF && ewc < ewcPMEWAITCOMM);
+}
+
+void wallcycleBarrier(gmx_wallcycle* wc)
+{
+#if GMX_MPI
+    if (wc->wc_barrier)
+    {
+        MPI_Barrier(wc->cr->mpi_comm_mygroup);
+    }
+#endif
 }
 
 /* Subtract counter ewc_sub timed inside a timing block for ewc_main */
@@ -562,7 +406,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
             }
         }
     }
-    if (useCycleSubcounters && wc->wcsc && !isPmeRank)
+    if (sc_useCycleSubcounters && wc->wcsc && !isPmeRank)
     {
         for (int i = 0; i < ewcsNR; i++)
         {
@@ -992,7 +836,7 @@ void wallcycle_print(FILE*                            fplog,
         }
     }
 
-    if (useCycleSubcounters && wc->wcsc)
+    if (sc_useCycleSubcounters && wc->wcsc)
     {
         fprintf(fplog, " Breakdown of PP computation\n");
         fprintf(fplog, "%s\n", hline);
@@ -1221,30 +1065,4 @@ extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters
     }
 
     wc->reset_counters = reset_counters;
-}
-
-void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
-{
-    if (useCycleSubcounters && wc != nullptr)
-    {
-        wc->wcsc[ewcs].start = gmx_cycles_read();
-    }
-}
-
-void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
-{
-    if (useCycleSubcounters && wc != nullptr)
-    {
-        wallcycle_sub_start(wc, ewcs);
-        wc->wcsc[ewcs].n--;
-    }
-}
-
-void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
-{
-    if (useCycleSubcounters && wc != nullptr)
-    {
-        wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
-        wc->wcsc[ewcs].n++;
-    }
 }

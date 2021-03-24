@@ -43,11 +43,21 @@
 
 #include <stdio.h>
 
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/basedefinitions.h"
 
 typedef struct gmx_wallcycle* gmx_wallcycle_t;
 struct t_commrec;
 static constexpr gmx_wallcycle* nullWallcycle = nullptr;
+
+#ifndef DEBUG_WCYCLE
+/*! \brief Enables consistency checking for the counters.
+ *
+ * If the macro is set to 1, code checks if you stop a counter different from the last
+ * one that was opened and if you do nest too deep.
+ */
+#    define DEBUG_WCYCLE 0
+#endif
 
 enum
 {
@@ -137,6 +147,41 @@ enum
     ewcsNR
 };
 
+static constexpr const bool sc_useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
+
+struct wallcc_t
+{
+    int          n;
+    gmx_cycles_t c;
+    gmx_cycles_t start;
+};
+
+#if DEBUG_WCYCLE
+static constexpr int c_MaxWallCycleDepth = 6;
+#endif
+
+
+struct gmx_wallcycle
+{
+    wallcc_t* wcc;
+    /* did we detect one or more invalid cycle counts */
+    bool haveInvalidCount;
+    /* variables for testing/debugging */
+    bool      wc_barrier;
+    wallcc_t* wcc_all;
+    int       wc_depth;
+#if DEBUG_WCYCLE
+    int* counterlist;
+    int  count_depth;
+    bool isMasterRank;
+#endif
+    int              ewc_prev;
+    gmx_cycles_t     cycle_prev;
+    int64_t          reset_counters;
+    const t_commrec* cr;
+    wallcc_t*        wcsc;
+};
+
 //! Returns whether cycle counting is supported.
 bool wallcycle_have_counter();
 
@@ -145,22 +190,128 @@ bool wallcycle_have_counter();
  *
  * If cycle counting is not supported, returns nullptr instead.
  */
-gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, struct t_commrec* cr);
+gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr);
 
 //! Cleans up wallcycle structure.
 void wallcycle_destroy(gmx_wallcycle_t wc);
 
+//! Adds custom barrier for wallcycle counting.
+void wallcycleBarrier(gmx_wallcycle* wc);
+
+inline void wallcycle_all_start(gmx_wallcycle* wc, int ewc, gmx_cycles_t cycle)
+{
+    wc->ewc_prev   = ewc;
+    wc->cycle_prev = cycle;
+}
+
+inline void wallcycle_all_stop(gmx_wallcycle* wc, int ewc, gmx_cycles_t cycle)
+{
+    const int prev    = wc->ewc_prev;
+    const int current = ewc;
+    wc->wcc_all[prev * ewcNR + current].n += 1;
+    wc->wcc_all[prev * ewcNR + current].c += cycle - wc->cycle_prev;
+}
+
 //! Starts the cycle counter for \c ewc (and increases the call count).
-void wallcycle_start(gmx_wallcycle_t wc, int ewc);
+inline void wallcycle_start(gmx_wallcycle_t wc, int ewc)
+{
+    if (wc == nullptr)
+    {
+        return;
+    }
+
+    wallcycleBarrier(wc);
+
+#if DEBUG_WCYCLE
+    debug_start_check(wc, ewc);
+#endif
+    gmx_cycles_t cycle = gmx_cycles_read();
+    wc->wcc[ewc].start = cycle;
+    if (wc->wcc_all)
+    {
+        wc->wc_depth++;
+        if (ewc == ewcRUN)
+        {
+            wallcycle_all_start(wc, ewc, cycle);
+        }
+        else if (wc->wc_depth == 3)
+        {
+            wallcycle_all_stop(wc, ewc, cycle);
+        }
+    }
+}
 
 //! Starts the cycle counter for \c ewc without increasing the call count.
-void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
+inline void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
+{
+    if (wc == nullptr)
+    {
+        return;
+    }
+    wc->wcc[ewc].n++;
+}
 
 //! Stop the cycle count for \c ewc, returns the last cycle count.
-double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
+inline double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
+{
+    gmx_cycles_t cycle, last;
+
+    if (wc == nullptr)
+    {
+        return 0;
+    }
+
+    wallcycleBarrier(wc);
+
+#if DEBUG_WCYCLE
+    debug_stop_check(wc, ewc);
+#endif
+
+    /* When processes or threads migrate between cores, the cycle counting
+     * can get messed up if the cycle counter on different cores are not
+     * synchronized. When this happens we expect both large negative and
+     * positive cycle differences. We can detect negative cycle differences.
+     * Detecting too large positive counts if difficult, since count can be
+     * large, especially for ewcRUN. If we detect a negative count,
+     * we will not print the cycle accounting table.
+     */
+    cycle = gmx_cycles_read();
+    if (cycle >= wc->wcc[ewc].start)
+    {
+        last = cycle - wc->wcc[ewc].start;
+    }
+    else
+    {
+        last                 = 0;
+        wc->haveInvalidCount = true;
+    }
+    wc->wcc[ewc].c += last;
+    wc->wcc[ewc].n++;
+    if (wc->wcc_all)
+    {
+        wc->wc_depth--;
+        if (ewc == ewcRUN)
+        {
+            wallcycle_all_stop(wc, ewc, cycle);
+        }
+        else if (wc->wc_depth == 2)
+        {
+            wallcycle_all_start(wc, ewc, cycle);
+        }
+    }
+
+    return last;
+}
 
 //! Only increment call count for \c ewc by one.
-void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc);
+inline void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc)
+{
+    if (wc == nullptr)
+    {
+        return;
+    }
+    wc->wcc[ewc].n++;
+}
 
 //! Returns the cumulative count and cycle count for \c ewc.
 void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c);
@@ -181,12 +332,31 @@ int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters);
 
 //! Set the start sub cycle count for \c ewcs.
-void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
+inline void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
+{
+    if (sc_useCycleSubcounters && wc != nullptr)
+    {
+        wc->wcsc[ewcs].start = gmx_cycles_read();
+    }
+}
 
 //! Set the start sub cycle count for \c ewcs without increasing the call count.
-void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
+inline void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
+{
+    if (sc_useCycleSubcounters && wc != nullptr)
+    {
+        wc->wcsc[ewcs].start = gmx_cycles_read();
+    }
+}
 
 //! Stop the sub cycle count for \c ewcs.
-void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
+inline void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
+{
+    if (sc_useCycleSubcounters && wc != nullptr)
+    {
+        wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
+        wc->wcsc[ewcs].n++;
+    }
+}
 
 #endif
