@@ -1298,6 +1298,8 @@ void do_force(FILE*                               fplog,
         /* Send particle coordinates to the pme nodes */
         if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
         {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
