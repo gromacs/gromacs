@@ -72,6 +72,8 @@ class t_state;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class ForceWithVirial;
 class LocalAtomSetManager;
 } // namespace gmx
@@ -155,12 +157,11 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
  * \param[in]     masses           Atoms masses.
  * \param[in,out] forceWithVirial  Force and virial buffers.
  */
-void apply_external_pull_coord_force(struct pull_t*        pull,
-                                     int                   coord_index,
-                                     double                coord_force,
-                                     const real*           masses,
-                                     gmx::ForceWithVirial* forceWithVirial);
-
+void apply_external_pull_coord_force(struct pull_t*            pull,
+                                     int                       coord_index,
+                                     double                    coord_force,
+                                     gmx::ArrayRef<const real> masses,
+                                     gmx::ForceWithVirial*     forceWithVirial);
 
 /*! \brief Set the all the pull forces to zero.
  *
@@ -183,15 +184,15 @@ void clear_pull_forces(struct pull_t* pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(struct pull_t*        pull,
-                    const real*           masses,
-                    struct t_pbc*         pbc,
-                    const t_commrec*      cr,
-                    double                t,
-                    real                  lambda,
-                    const rvec*           x,
-                    gmx::ForceWithVirial* force,
-                    real*                 dvdlambda);
+real pull_potential(struct pull_t*                 pull,
+                    gmx::ArrayRef<const real>      masses,
+                    struct t_pbc*                  pbc,
+                    const t_commrec*               cr,
+                    double                         t,
+                    real                           lambda,
+                    gmx::ArrayRef<const gmx::RVec> x,
+                    gmx::ForceWithVirial*          force,
+                    real*                          dvdlambda);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -208,16 +209,16 @@ real pull_potential(struct pull_t*        pull,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(struct pull_t*   pull,
-                     const real*      masses,
-                     struct t_pbc*    pbc,
-                     const t_commrec* cr,
-                     double           dt,
-                     double           t,
-                     rvec*            x,
-                     rvec*            xp,
-                     rvec*            v,
-                     tensor           vir);
+void pull_constraint(struct pull_t*            pull,
+                     gmx::ArrayRef<const real> masses,
+                     struct t_pbc*             pbc,
+                     const t_commrec*          cr,
+                     double                    dt,
+                     double                    t,
+                     gmx::ArrayRef<gmx::RVec>  x,
+                     gmx::ArrayRef<gmx::RVec>  xp,
+                     gmx::ArrayRef<gmx::RVec>  v,
+                     tensor                    vir);
 
 
 /*! \brief Make a selection of the home atoms for all pull groups.
@@ -266,13 +267,13 @@ void finish_pull(struct pull_t* pull);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(const t_commrec* cr,
-                    pull_t*          pull,
-                    const real*      masses,
-                    t_pbc*           pbc,
-                    double           t,
-                    const rvec       x[],
-                    rvec*            xp);
+void pull_calc_coms(const t_commrec*               cr,
+                    pull_t*                        pull,
+                    gmx::ArrayRef<const real>      masses,
+                    t_pbc*                         pbc,
+                    double                         t,
+                    gmx::ArrayRef<const gmx::RVec> x,
+                    gmx::ArrayRef<gmx::RVec>       xp);
 
 /*! \brief Margin for checking pull group PBC distances compared to half the box size */
 static constexpr real c_pullGroupPbcMargin = 0.9;
@@ -297,7 +298,7 @@ static constexpr real c_pullGroupSmallGroupThreshold = 0.5;
  * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
  * \returns -1 when all groups obey PBC or the first group index that fails PBC
  */
-int pullCheckPbcWithinGroups(const pull_t& pull, const rvec* x, const t_pbc& pbc, real pbcMargin);
+int pullCheckPbcWithinGroups(const pull_t& pull, gmx::ArrayRef<const gmx::RVec> x, const t_pbc& pbc, real pbcMargin);
 
 /*! \brief Checks whether a specific group that uses a reference atom is within PBC restrictions
  *
@@ -376,13 +377,13 @@ void updatePrevStepPullCom(struct pull_t* pull, t_state* state);
  * \param[in] cr                     Struct for communication info.
  * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
-void preparePrevStepPullCom(const t_inputrec* ir,
-                            pull_t*           pull_work,
-                            const real*       masses,
-                            t_state*          state,
-                            const t_state*    state_global,
-                            const t_commrec*  cr,
-                            bool              startingFromCheckpoint);
+void preparePrevStepPullCom(const t_inputrec*         ir,
+                            pull_t*                   pull_work,
+                            gmx::ArrayRef<const real> masses,
+                            t_state*                  state,
+                            const t_state*            state_global,
+                            const t_commrec*          cr,
+                            bool                      startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *
@@ -392,6 +393,10 @@ void preparePrevStepPullCom(const t_inputrec* ir,
  * \param[in] pbc      Information struct about periodicity.
  * \param[in] x        The local positions.
  */
-void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc* pbc, const rvec x[]);
+void initPullComFromPrevStep(const t_commrec*               cr,
+                             pull_t*                        pull,
+                             gmx::ArrayRef<const real>      masses,
+                             t_pbc*                         pbc,
+                             gmx::ArrayRef<const gmx::RVec> x);
 
 #endif

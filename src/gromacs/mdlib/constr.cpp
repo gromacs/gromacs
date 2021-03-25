@@ -59,6 +59,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -75,6 +76,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -109,14 +111,14 @@ public:
          int                   numConstraints,
          int                   numSettles);
     ~Impl();
-    void setConstraints(gmx_localtop_t* top,
-                        int             numAtoms,
-                        int             numHomeAtoms,
-                        real*           masses,
-                        real*           inverseMasses,
-                        bool            hasMassPerturbedAtoms,
-                        real            lambda,
-                        unsigned short* cFREEZE);
+    void setConstraints(gmx_localtop_t*                     top,
+                        int                                 numAtoms,
+                        int                                 numHomeAtoms,
+                        gmx::ArrayRef<const real>           masses,
+                        gmx::ArrayRef<const real>           inverseMasses,
+                        bool                                hasMassPerturbedAtoms,
+                        real                                lambda,
+                        gmx::ArrayRef<const unsigned short> cFREEZE);
     bool apply(bool                      bLog,
                bool                      bEner,
                int64_t                   step,
@@ -169,15 +171,15 @@ public:
     //! Number of local atoms.
     int numHomeAtoms_ = 0;
     //! Atoms masses.
-    real* masses_;
+    gmx::ArrayRef<const real> masses_;
     //! Inverse masses.
-    real* inverseMasses_;
+    gmx::ArrayRef<const real> inverseMasses_;
     //! If there are atoms with perturbed mass (for FEP).
     bool hasMassPerturbedAtoms_;
     //! FEP lambda value.
     real lambda_;
     //! Freeze groups data
-    unsigned short* cFREEZE_;
+    gmx::ArrayRef<const unsigned short> cFREEZE_;
     //! Whether we need to do pbc for handling bonds.
     bool pbcHandlingRequired_ = false;
 
@@ -768,9 +770,9 @@ bool Constraints::Impl::apply(bool                      bLog,
                             cr,
                             ir.delta_t,
                             t,
-                            as_rvec_array(x.unpaddedArrayRef().data()),
-                            as_rvec_array(xprime.unpaddedArrayRef().data()),
-                            as_rvec_array(v.unpaddedArrayRef().data()),
+                            x.unpaddedArrayRef(),
+                            xprime.unpaddedArrayRef(),
+                            v.unpaddedArrayRef(),
                             constraintsVirial);
         }
         if (ed && delta_step > 0)
@@ -788,7 +790,7 @@ bool Constraints::Impl::apply(bool                      bLog,
     wallcycle_stop(wcycle, ewcCONSTR);
 
     const bool haveVelocities = (!v.empty() || econq == ConstraintVariable::Velocities);
-    if (haveVelocities && cFREEZE_)
+    if (haveVelocities && !cFREEZE_.empty())
     {
         /* Set the velocities of frozen dimensions to zero */
         ArrayRef<RVec> vRef;
@@ -993,14 +995,14 @@ static std::vector<int> make_at2settle(int natoms, const InteractionList& ilist)
     return at2s;
 }
 
-void Constraints::Impl::setConstraints(gmx_localtop_t* top,
-                                       int             numAtoms,
-                                       int             numHomeAtoms,
-                                       real*           masses,
-                                       real*           inverseMasses,
-                                       const bool      hasMassPerturbedAtoms,
-                                       const real      lambda,
-                                       unsigned short* cFREEZE)
+void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
+                                       int                                 numAtoms,
+                                       int                                 numHomeAtoms,
+                                       gmx::ArrayRef<const real>           masses,
+                                       gmx::ArrayRef<const real>           inverseMasses,
+                                       const bool                          hasMassPerturbedAtoms,
+                                       const real                          lambda,
+                                       gmx::ArrayRef<const unsigned short> cFREEZE)
 {
     numAtoms_              = numAtoms;
     numHomeAtoms_          = numHomeAtoms;
@@ -1050,14 +1052,14 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top,
     }
 }
 
-void Constraints::setConstraints(gmx_localtop_t* top,
-                                 const int       numAtoms,
-                                 const int       numHomeAtoms,
-                                 real*           masses,
-                                 real*           inverseMasses,
-                                 const bool      hasMassPerturbedAtoms,
-                                 const real      lambda,
-                                 unsigned short* cFREEZE)
+void Constraints::setConstraints(gmx_localtop_t*                     top,
+                                 const int                           numAtoms,
+                                 const int                           numHomeAtoms,
+                                 gmx::ArrayRef<const real>           masses,
+                                 gmx::ArrayRef<const real>           inverseMasses,
+                                 const bool                          hasMassPerturbedAtoms,
+                                 const real                          lambda,
+                                 gmx::ArrayRef<const unsigned short> cFREEZE)
 {
     impl_->setConstraints(
             top, numAtoms, numHomeAtoms, masses, inverseMasses, hasMassPerturbedAtoms, lambda, cFREEZE);

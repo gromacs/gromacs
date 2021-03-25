@@ -2391,12 +2391,8 @@ int gmx_grompp(int argc, char* argv[])
 
     if (ir->bPull)
     {
-        pull = set_pull_init(ir,
-                             sys,
-                             state.x.rvec_array(),
-                             state.box,
-                             state.lambda[FreeEnergyPerturbationCouplingType::Mass],
-                             wi);
+        pull = set_pull_init(
+                ir, sys, state.x, state.box, state.lambda[FreeEnergyPerturbationCouplingType::Mass], wi);
     }
 
     /* Modules that supply external potential for pull coordinates

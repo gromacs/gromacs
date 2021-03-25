@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,6 @@
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_simd.h"
@@ -66,6 +65,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -196,10 +196,10 @@ SettleData::SettleData(const gmx_mtop_t& mtop) :
     parametersAllMasses1_ = settleParameters(1.0, 1.0, 1.0, 1.0, dOH, dHH);
 }
 
-void SettleData::setConstraints(const InteractionList& il_settle,
-                                const int              numHomeAtoms,
-                                const real*            masses,
-                                const real*            inverseMasses)
+void SettleData::setConstraints(const InteractionList&    il_settle,
+                                const int                 numHomeAtoms,
+                                gmx::ArrayRef<const real> masses,
+                                gmx::ArrayRef<const real> inverseMasses)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;

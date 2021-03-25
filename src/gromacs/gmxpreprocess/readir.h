@@ -165,7 +165,12 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups,
                      gmx::ArrayRef<const t_pull_coord> pullCoords);
 /* Process the pull coordinates after reading the pull groups */
 
-pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix box, real lambda, warninp_t wi);
+pull_t* set_pull_init(t_inputrec*                    ir,
+                      const gmx_mtop_t&              mtop,
+                      gmx::ArrayRef<const gmx::RVec> x,
+                      matrix                         box,
+                      real                           lambda,
+                      warninp_t                      wi);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
  * Returns the pull_t pull work struct. This should be passed to finish_pull()

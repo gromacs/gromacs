@@ -52,6 +52,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -105,7 +106,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
              numHomeAtoms,
              mdAtoms);
 
-    auto mdatoms = mdAtoms->mdatoms();
+    t_mdatoms* mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
         dd_sort_local_top(*cr->dd, mdatoms, top);
@@ -150,11 +151,12 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         constr->setConstraints(top,
                                mdatoms->nr,
                                mdatoms->homenr,
-                               mdatoms->massT,
-                               mdatoms->invmass,
+                               gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
+                               gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
                                mdatoms->nMassPerturbed != 0,
                                mdatoms->lambda,
-                               mdatoms->cFREEZE);
+                               mdatoms->cFREEZE ? gmx::arrayRefFromArray(mdatoms->cFREEZE, mdatoms->nr)
+                                                : gmx::ArrayRef<const unsigned short>());
     }
 }
 

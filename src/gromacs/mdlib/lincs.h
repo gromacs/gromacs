@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,10 @@ struct t_pbc;
 
 namespace gmx
 {
-
 template<typename>
 class ArrayRefWithPadding;
+template<typename>
+class ArrayRef;
 enum class ConstraintVariable : int;
 class Lincs;
 template<typename>
@@ -91,7 +92,7 @@ void done_lincs(Lincs* li);
 /*! \brief Initialize lincs stuff */
 void set_lincs(const InteractionDefinitions& idef,
                int                           numAtoms,
-               const real*                   invmass,
+               ArrayRef<const real>          invmass,
                real                          lambda,
                bool                          bDynamics,
                const t_commrec*              cr,
@@ -104,7 +105,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      const t_inputrec&               ir,
                      int64_t                         step,
                      Lincs*                          lincsd,
-                     const real*                     invmass,
+                     ArrayRef<const real>            invmass,
                      const t_commrec*                cr,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> x,

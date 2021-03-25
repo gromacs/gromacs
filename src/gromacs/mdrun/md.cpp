@@ -515,8 +515,13 @@ void gmx::LegacySimulator::do_md()
         EnergyData::initializeEnergyHistory(startingBehavior, observablesHistory, &energyOutput);
     }
 
-    preparePrevStepPullCom(
-            ir, pull_work, mdatoms->massT, state, state_global, cr, startingBehavior != StartingBehavior::NewSimulation);
+    preparePrevStepPullCom(ir,
+                           pull_work,
+                           gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
+                           state,
+                           state_global,
+                           cr,
+                           startingBehavior != StartingBehavior::NewSimulation);
 
     // TODO: Remove this by converting AWH into a ForceProvider
     auto awh = prepareAwhModule(fplog,

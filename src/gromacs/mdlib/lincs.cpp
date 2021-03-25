@@ -349,10 +349,10 @@ static void lincs_update_atoms_noind(int                            ncons,
                                      real                           preFactor,
                                      gmx::ArrayRef<const real>      fac,
                                      gmx::ArrayRef<const gmx::RVec> r,
-                                     const real*                    invmass,
+                                     gmx::ArrayRef<const real>      invmass,
                                      rvec*                          x)
 {
-    if (invmass != nullptr)
+    if (!invmass.empty())
     {
         for (int b = 0; b < ncons; b++)
         {
@@ -398,10 +398,10 @@ static void lincs_update_atoms_ind(gmx::ArrayRef<const int>       ind,
                                    real                           preFactor,
                                    gmx::ArrayRef<const real>      fac,
                                    gmx::ArrayRef<const gmx::RVec> r,
-                                   const real*                    invmass,
+                                   gmx::ArrayRef<const real>      invmass,
                                    rvec*                          x)
 {
-    if (invmass != nullptr)
+    if (!invmass.empty())
     {
         for (int b : ind)
         {
@@ -447,7 +447,7 @@ static void lincs_update_atoms(Lincs*                         li,
                                real                           preFactor,
                                gmx::ArrayRef<const real>      fac,
                                gmx::ArrayRef<const gmx::RVec> r,
-                               const real*                    invmass,
+                               gmx::ArrayRef<const real>      invmass,
                                rvec*                          x)
 {
     if (li->ntask == 1)
@@ -574,7 +574,7 @@ static void do_lincsp(ArrayRefWithPadding<const RVec> xPadded,
                       t_pbc*                          pbc,
                       Lincs*                          lincsd,
                       int                             th,
-                      const real*                     invmass,
+                      ArrayRef<const real>            invmass,
                       ConstraintVariable              econq,
                       bool                            bCalcDHDL,
                       bool                            bCalcVir,
@@ -713,7 +713,7 @@ static void do_lincsp(ArrayRefWithPadding<const RVec> xPadded,
                        1.0,
                        sol,
                        r,
-                       (econq != ConstraintVariable::Force) ? invmass : nullptr,
+                       (econq != ConstraintVariable::Force) ? invmass : gmx::ArrayRef<real>(),
                        as_rvec_array(fp.data()));
 
     if (bCalcDHDL)
@@ -958,7 +958,7 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                      t_pbc*                          pbc,
                      Lincs*                          lincsd,
                      int                             th,
-                     const real*                     invmass,
+                     ArrayRef<const real>            invmass,
                      const t_commrec*                cr,
                      bool                            bCalcDHDL,
                      real                            wangle,
@@ -1217,7 +1217,11 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
 }
 
 /*! \brief Sets the elements in the LINCS matrix for task task. */
-static void set_lincs_matrix_task(Lincs* li, Task* li_task, const real* invmass, int* ncc_triangle, int* nCrossTaskTriangles)
+static void set_lincs_matrix_task(Lincs*               li,
+                                  Task*                li_task,
+                                  ArrayRef<const real> invmass,
+                                  int*                 ncc_triangle,
+                                  int*                 nCrossTaskTriangles)
 {
     /* Construct the coupling coefficient matrix blmf */
     li_task->ntriangle   = 0;
@@ -1305,7 +1309,7 @@ static void set_lincs_matrix_task(Lincs* li, Task* li_task, const real* invmass,
 }
 
 /*! \brief Sets the elements in the LINCS matrix. */
-static void set_lincs_matrix(Lincs* li, const real* invmass, real lambda)
+static void set_lincs_matrix(Lincs* li, ArrayRef<const real> invmass, real lambda)
 {
     const real invsqrt2 = 0.7071067811865475244;
 
@@ -1854,7 +1858,7 @@ static void set_matrix_indices(Lincs* li, const Task& li_task, const ListOfLists
 
 void set_lincs(const InteractionDefinitions& idef,
                const int                     numAtoms,
-               const real*                   invmass,
+               ArrayRef<const real>          invmass,
                const real                    lambda,
                bool                          bDynamics,
                const t_commrec*              cr,
@@ -2268,7 +2272,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      const t_inputrec&               ir,
                      int64_t                         step,
                      Lincs*                          lincsd,
-                     const real*                     invmass,
+                     ArrayRef<const real>            invmass,
                      const t_commrec*                cr,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> xPadded,

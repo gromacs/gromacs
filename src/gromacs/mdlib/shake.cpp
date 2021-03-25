@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/invblock.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -282,7 +283,7 @@ void cshake(const int            iatom[],
             ArrayRef<const RVec> initial_displacements,
             ArrayRef<const real> half_of_reduced_mass,
             real                 omega,
-            const real           invmass[],
+            ArrayRef<const real> invmass,
             ArrayRef<const real> distance_squared_tolerance,
             ArrayRef<real>       scaled_lagrange_multiplier,
             int*                 nerror)
@@ -371,7 +372,7 @@ static void crattle(const int            iatom[],
                     ArrayRef<const RVec> rij,
                     ArrayRef<const real> m2,
                     real                 omega,
-                    const real           invmass[],
+                    ArrayRef<const real> invmass,
                     ArrayRef<const real> distance_squared_tolerance,
                     ArrayRef<real>       scaled_lagrange_multiplier,
                     int*                 nerror,
@@ -440,7 +441,7 @@ static void crattle(const int            iatom[],
 //! Applies SHAKE
 static int vec_shakef(FILE*                     fplog,
                       shakedata*                shaked,
-                      const real                invmass[],
+                      ArrayRef<const real>      invmass,
                       int                       ncon,
                       ArrayRef<const t_iparams> ip,
                       const int*                iatom,
@@ -636,7 +637,7 @@ static void check_cons(FILE*                     log,
                        const t_pbc*              pbc,
                        ArrayRef<const t_iparams> ip,
                        const int*                iatom,
-                       const real                invmass[],
+                       ArrayRef<const real>      invmass,
                        ConstraintVariable        econq)
 {
     int  ai, aj;
@@ -699,7 +700,7 @@ static void check_cons(FILE*                     log,
 //! Applies SHAKE.
 static bool bshakef(FILE*                         log,
                     shakedata*                    shaked,
-                    const real                    invmass[],
+                    ArrayRef<const real>          invmass,
                     const InteractionDefinitions& idef,
                     const t_inputrec&             ir,
                     ArrayRef<const RVec>          x_s,
@@ -821,7 +822,7 @@ static bool bshakef(FILE*                         log,
 
 bool constrain_shake(FILE*                         log,
                      shakedata*                    shaked,
-                     const real                    invmass[],
+                     ArrayRef<const real>          invmass,
                      const InteractionDefinitions& idef,
                      const t_inputrec&             ir,
                      ArrayRef<const RVec>          x_s,

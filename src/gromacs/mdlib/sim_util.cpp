@@ -205,12 +205,12 @@ static void pull_potential_wrapper(const t_commrec*               cr,
     dvdl = 0;
     enerd->term[F_COM_PULL] +=
             pull_potential(pull_work,
-                           mdatoms->massT,
+                           gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
                            &pbc,
                            cr,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
-                           as_rvec_array(x.data()),
+                           x,
                            force,
                            &dvdl);
     enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Restraint] += dvdl;
@@ -680,16 +680,17 @@ static void computeSpecialForces(FILE*                          fplog,
             }
 
             auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(inputrec.pbcType,
-                                                                         mdatoms->massT,
-                                                                         foreignLambdaDeltaH,
-                                                                         foreignLambdaDhDl,
-                                                                         box,
-                                                                         forceWithVirial,
-                                                                         t,
-                                                                         step,
-                                                                         wcycle,
-                                                                         fplog);
+            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
+                    inputrec.pbcType,
+                    gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
+                    foreignLambdaDeltaH,
+                    foreignLambdaDhDl,
+                    box,
+                    forceWithVirial,
+                    t,
+                    step,
+                    wcycle,
+                    fplog);
         }
     }
 

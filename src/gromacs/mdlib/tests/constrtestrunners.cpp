@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ void ShakeConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
     make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->numAtoms_);
     bool success = constrain_shake(nullptr,
                                    &shaked,
-                                   testData->invmass_.data(),
+                                   testData->invmass_,
                                    *testData->idef_,
                                    testData->ir_,
                                    testData->x_,
@@ -141,7 +141,7 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
                         testData->ir_.nProjOrder);
     set_lincs(*testData->idef_,
               testData->numAtoms_,
-              testData->invmass_.data(),
+              testData->invmass_,
               testData->lambda_,
               EI_DYNAMICS(testData->ir_.eI),
               &cr,
@@ -152,7 +152,7 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
                                    testData->ir_,
                                    0,
                                    lincsd,
-                                   testData->invmass_.data(),
+                                   testData->invmass_,
                                    &cr,
                                    &ms,
                                    testData->x_.arrayRefWithPadding(),

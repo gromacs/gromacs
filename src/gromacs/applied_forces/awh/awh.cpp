@@ -289,7 +289,7 @@ bool Awh::isOutputStep(int64_t step) const
 }
 
 real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
-                                       const real*            masses,
+                                       ArrayRef<const real>   masses,
                                        ArrayRef<const double> neighborLambdaEnergies,
                                        ArrayRef<const double> neighborLambdaDhdl,
                                        const matrix           box,

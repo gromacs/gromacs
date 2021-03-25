@@ -549,7 +549,12 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups, gmx::ArrayRef
     }
 }
 
-pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix box, real lambda, warninp_t wi)
+pull_t* set_pull_init(t_inputrec*                    ir,
+                      const gmx_mtop_t&              mtop,
+                      gmx::ArrayRef<const gmx::RVec> x,
+                      matrix                         box,
+                      real                           lambda,
+                      warninp_t                      wi)
 {
     pull_t* pull_work;
     t_pbc   pbc;
@@ -573,18 +578,14 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix bo
 
     if (pull->bSetPbcRefToPrevStepCOM)
     {
-        initPullComFromPrevStep(nullptr, pull_work, md->massT, &pbc, x);
+        initPullComFromPrevStep(nullptr, pull_work, gmx::arrayRefFromArray(md->massT, md->nr), &pbc, x);
     }
-    pull_calc_coms(nullptr, pull_work, md->massT, &pbc, t_start, x, nullptr);
+    pull_calc_coms(nullptr, pull_work, gmx::arrayRefFromArray(md->massT, md->nr), &pbc, t_start, x, {});
 
     for (int g = 0; g < pull->ngroup; g++)
     {
-        bool groupObeysPbc = pullCheckPbcWithinGroup(
-                *pull_work,
-                gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop.natoms),
-                pbc,
-                g,
-                c_pullGroupSmallGroupThreshold);
+        bool groupObeysPbc =
+                pullCheckPbcWithinGroup(*pull_work, x, pbc, g, c_pullGroupSmallGroupThreshold);
         if (!groupObeysPbc)
         {
             char buf[STRLEN];
@@ -616,12 +617,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t& mtop, rvec* x, matrix bo
         }
         if (groupObeysPbc)
         {
-            groupObeysPbc = pullCheckPbcWithinGroup(
-                    *pull_work,
-                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(x), mtop.natoms),
-                    pbc,
-                    g,
-                    c_pullGroupPbcMargin);
+            groupObeysPbc = pullCheckPbcWithinGroup(*pull_work, x, pbc, g, c_pullGroupPbcMargin);
             if (!groupObeysPbc)
             {
                 char buf[STRLEN];

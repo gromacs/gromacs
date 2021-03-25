@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,10 +121,10 @@ public:
     SettleData(const gmx_mtop_t& mtop);
 
     //! Sets the constraints from the interaction list and the masses
-    void setConstraints(const InteractionList& il_settle,
-                        int                    numHomeAtoms,
-                        const real*            masses,
-                        const real*            inverseMasses);
+    void setConstraints(const InteractionList&    il_settle,
+                        int                       numHomeAtoms,
+                        gmx::ArrayRef<const real> masses,
+                        gmx::ArrayRef<const real> inverseMasses);
 
     //! Returns settle parameters for constraining coordinates and forces
     const SettleParameters& parametersMassWeighted() const { return parametersMassWeighted_; }

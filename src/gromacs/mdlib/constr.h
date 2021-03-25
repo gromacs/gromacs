@@ -132,14 +132,14 @@ public:
      *
      * \todo Make this a callback that is called automatically
      * once a new domain has been made. */
-    void setConstraints(gmx_localtop_t* top,
-                        int             numAtoms,
-                        int             numHomeAtoms,
-                        real*           masses,
-                        real*           inverseMasses,
-                        bool            hasMassPerturbedAtoms,
-                        real            lambda,
-                        unsigned short* cFREEZE);
+    void setConstraints(gmx_localtop_t*                     top,
+                        int                                 numAtoms,
+                        int                                 numHomeAtoms,
+                        gmx::ArrayRef<const real>           masses,
+                        gmx::ArrayRef<const real>           inverseMasses,
+                        bool                                hasMassPerturbedAtoms,
+                        real                                lambda,
+                        gmx::ArrayRef<const unsigned short> cFREEZE);
 
     /*! \brief Applies constraints to coordinates.
      *
