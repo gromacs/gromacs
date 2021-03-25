@@ -1872,19 +1872,6 @@ void LegacySimulator::do_lbfgs()
     em_state_t         ems;
     gmx_localtop_t     top(top_global.ffparams);
     gmx_global_stat_t  gstat;
-    int                ncorr, nmaxcorr, point, cp, neval, nminstep;
-    double             stepsize, step_taken, gpa, gpb, gpc, tmp, minstep;
-    real *             rho, *alpha, *p, *s, **dx, **dg;
-    real               a, b, c, maxdelta, delta;
-    real               diag, Epot0;
-    real               dgdx, dgdg, sq, yr, beta;
-    gmx_bool           converged;
-    rvec               mu_tot = { 0 };
-    gmx_bool           do_log, do_ene, do_x, do_f, foundlower, *frozen;
-    tensor             vir, pres;
-    int                start, end, number_steps;
-    int                i, k, m, n, gf, step;
-    int                mdof_flags;
     auto               mdatoms = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
@@ -1908,29 +1895,27 @@ void LegacySimulator::do_lbfgs()
                 "do not use constraints, or use another minimizer (e.g. steepest descent).");
     }
 
-    n        = 3 * state_global->natoms;
-    nmaxcorr = inputrec->nbfgscorr;
+    const int n        = 3 * state_global->natoms;
+    const int nmaxcorr = inputrec->nbfgscorr;
 
-    snew(frozen, n);
+    std::vector<real> p(n);
+    std::vector<real> rho(nmaxcorr);
+    std::vector<real> alpha(nmaxcorr);
 
-    snew(p, n);
-    snew(rho, nmaxcorr);
-    snew(alpha, nmaxcorr);
-
-    snew(dx, nmaxcorr);
-    for (i = 0; i < nmaxcorr; i++)
+    std::vector<std::vector<real>> dx(nmaxcorr);
+    for (auto& dxCorr : dx)
     {
-        snew(dx[i], n);
+        dxCorr.resize(n);
     }
 
-    snew(dg, nmaxcorr);
-    for (i = 0; i < nmaxcorr; i++)
+    std::vector<std::vector<real>> dg(nmaxcorr);
+    for (auto& dgCorr : dg)
     {
-        snew(dg[i], n);
+        dgCorr.resize(n);
     }
 
-    step  = 0;
-    neval = 0;
+    int step  = 0;
+    int neval = 0;
 
     /* Init em */
     init_em(fplog,
@@ -1976,8 +1961,8 @@ void LegacySimulator::do_lbfgs()
                                    simulationsShareState,
                                    mdModulesNotifier);
 
-    start = 0;
-    end   = mdatoms->homenr;
+    const int start = 0;
+    const int end   = mdatoms->homenr;
 
     /* We need 4 working states */
     em_state_t  s0{}, s1{}, s2{}, s3{};
@@ -1993,20 +1978,19 @@ void LegacySimulator::do_lbfgs()
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
 
-    do_log = do_ene = do_f = TRUE;
-
     /* Max number of steps */
-    number_steps = inputrec->nsteps;
+    const int number_steps = inputrec->nsteps;
 
     /* Create a 3*natoms index to tell whether each degree of freedom is frozen */
-    gf = 0;
-    for (i = start; i < end; i++)
+    std::vector<bool> frozen(n);
+    int               gf = 0;
+    for (int i = start; i < end; i++)
     {
         if (mdatoms->cFREEZE)
         {
             gf = mdatoms->cFREEZE[i];
         }
-        for (m = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             frozen[3 * i + m] = (inputrec->opts.nFreeze[gf][m] != 0);
         }
@@ -2033,6 +2017,9 @@ void LegacySimulator::do_lbfgs()
     EnergyEvaluator energyEvaluator{ fplog,    mdlog,      cr,        ms,   top_global,      &top,
                                      inputrec, imdSession, pull_work, nrnb, wcycle,          gstat,
                                      vsite,    constr,     mdAtoms,   fr,   runScheduleWork, enerd };
+    rvec            mu_tot;
+    tensor          vir;
+    tensor          pres;
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
 
     if (MASTER(cr))
@@ -2083,11 +2070,11 @@ void LegacySimulator::do_lbfgs()
     }
 
     // Point is an index to the memory of search directions, where 0 is the first one.
-    point = 0;
+    int point = 0;
 
     // Set initial search direction to the force (-gradient), or 0 for frozen particles.
     real* fInit = static_cast<real*>(ems.f.view().force().data()[0]);
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         if (!frozen[i])
         {
@@ -2103,25 +2090,28 @@ void LegacySimulator::do_lbfgs()
     // (the main efficiency in the algorithm comes from changing directions), but
     // we still need an initial value, so estimate it as the inverse of the norm
     // so we take small steps where the potential fluctuates a lot.
-    stepsize = 1.0 / ems.fnorm;
+    double stepsize = 1.0 / ems.fnorm;
 
     /* Start the loop over BFGS steps.
      * Each successful step is counted, and we continue until
      * we either converge or reach the max number of steps.
      */
 
-    ncorr = 0;
+    bool do_log = true;
+    bool do_ene = true;
+
+    int ncorr = 0;
 
     /* Set the gradient from the force */
-    converged = FALSE;
-    for (step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
+    bool converged = false;
+    for (int step = 0; (number_steps < 0 || step <= number_steps) && !converged; step++)
     {
 
         /* Write coordinates if necessary */
-        do_x = do_per_step(step, inputrec->nstxout);
-        do_f = do_per_step(step, inputrec->nstfout);
+        const bool do_x = do_per_step(step, inputrec->nstxout);
+        const bool do_f = do_per_step(step, inputrec->nstfout);
 
-        mdof_flags = 0;
+        int mdof_flags = 0;
         if (do_x)
         {
             mdof_flags |= MDOF_X;
@@ -2154,13 +2144,14 @@ void LegacySimulator::do_lbfgs()
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
         /* make s a pointer to current search direction - point=0 first time we get here */
-        s = dx[point];
+        gmx::ArrayRef<const real> s = dx[point];
 
-        real* xx = static_cast<real*>(ems.s.x.rvec_array()[0]);
-        real* ff = static_cast<real*>(ems.f.view().force().data()[0]);
+        const real* xx = static_cast<real*>(ems.s.x.rvec_array()[0]);
+        const real* ff = static_cast<real*>(ems.f.view().force().data()[0]);
 
         // calculate line gradient in position A
-        for (gpa = 0, i = 0; i < n; i++)
+        double gpa = 0;
+        for (int i = 0; i < n; i++)
         {
             gpa -= s[i] * ff[i];
         }
@@ -2168,9 +2159,10 @@ void LegacySimulator::do_lbfgs()
         /* Calculate minimum allowed stepsize along the line, before the average (norm)
          * relative change in coordinate is smaller than precision
          */
-        for (minstep = 0, i = 0; i < n; i++)
+        double minstep = 0;
+        for (int i = 0; i < n; i++)
         {
-            tmp = fabs(xx[i]);
+            double tmp = fabs(xx[i]);
             if (tmp < 1.0)
             {
                 tmp = 1.0;
@@ -2182,15 +2174,15 @@ void LegacySimulator::do_lbfgs()
 
         if (stepsize < minstep)
         {
-            converged = TRUE;
+            converged = true;
             break;
         }
 
         // Before taking any steps along the line, store the old position
-        *last       = ems;
-        real* lastx = static_cast<real*>(last->s.x.data()[0]);
-        real* lastf = static_cast<real*>(last->f.view().force().data()[0]);
-        Epot0       = ems.epot;
+        *last            = ems;
+        real*      lastx = static_cast<real*>(last->s.x.data()[0]);
+        real*      lastf = static_cast<real*>(last->f.view().force().data()[0]);
+        const real Epot0 = ems.epot;
 
         *sa = ems;
 
@@ -2221,11 +2213,13 @@ void LegacySimulator::do_lbfgs()
 
         // State "A" is the first position along the line.
         // reference position along line is initially zero
-        a = 0.0;
+        real a = 0;
 
         // Check stepsize first. We do not allow displacements
         // larger than emstep.
         //
+        real c;
+        real maxdelta;
         do
         {
             // Pick a new position C by adding stepsize to A.
@@ -2234,9 +2228,9 @@ void LegacySimulator::do_lbfgs()
             // Calculate what the largest change in any individual coordinate
             // would be (translation along line * gradient along line)
             maxdelta = 0;
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
-                delta = c * s[i];
+                real delta = c * s[i];
                 if (delta > maxdelta)
                 {
                     maxdelta = delta;
@@ -2251,7 +2245,7 @@ void LegacySimulator::do_lbfgs()
 
         // Take a trial step and move the coordinate array xc[] to position C
         real* xc = static_cast<real*>(sc->s.x.rvec_array()[0]);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             xc[i] = lastx[i] + c * s[i];
         }
@@ -2261,8 +2255,9 @@ void LegacySimulator::do_lbfgs()
         energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE);
 
         // Calc line gradient in position C
-        real* fc = static_cast<real*>(sc->f.view().force()[0]);
-        for (gpc = 0, i = 0; i < n; i++)
+        real*  fc  = static_cast<real*>(sc->f.view().force()[0]);
+        double gpc = 0;
+        for (int i = 0; i < n; i++)
         {
             gpc -= s[i] * fc[i]; /* f is negative gradient, thus the sign */
         }
@@ -2275,11 +2270,11 @@ void LegacySimulator::do_lbfgs()
         // This is the max amount of increase in energy we tolerate.
         // By allowing VERY small changes (close to numerical precision) we
         // frequently find even better (lower) final energies.
-        tmp = std::sqrt(GMX_REAL_EPS) * fabs(sa->epot);
+        double tmp = std::sqrt(GMX_REAL_EPS) * fabs(sa->epot);
 
         // Accept the step if the energy is lower in the new position C (compared to A),
         // or if it is not significantly higher and the line derivative is still negative.
-        foundlower = sc->epot < sa->epot || (gpc < 0 && sc->epot < (sa->epot + tmp));
+        bool foundlower = sc->epot < sa->epot || (gpc < 0 && sc->epot < (sa->epot + tmp));
         // If true, great, we found a better energy. We no longer try to alter the
         // stepsize, but simply accept this new better position. The we select a new
         // search direction instead, which will be much more efficient than continuing
@@ -2295,6 +2290,7 @@ void LegacySimulator::do_lbfgs()
         // than with the stepsize, so no need to modify it. For the next search direction
         // it will be reset to 1/fnorm anyway.
 
+        double step_taken;
         if (!foundlower)
         {
             // OK, if we didn't find a lower value we will have to locate one now - there must
@@ -2305,14 +2301,15 @@ void LegacySimulator::do_lbfgs()
             // I also have a safeguard for potentially really pathological functions so we never
             // take more than 20 steps before we give up.
             // If we already found a lower value we just skip this step and continue to the update.
-            real fnorm = 0;
-            nminstep   = 0;
+            real fnorm    = 0;
+            int  nminstep = 0;
             do
             {
                 // Select a new trial point B in the interval [A,C].
                 // If the derivatives at points a & c have different sign we interpolate to zero,
                 // otherwise just do a bisection since there might be multiple minima/maxima
                 // inside the interval.
+                real b;
                 if (gpa < 0 && gpc > 0)
                 {
                     b = a + gpa * (a - c) / (gpc - gpa);
@@ -2332,7 +2329,7 @@ void LegacySimulator::do_lbfgs()
 
                 // Take a trial step to point B
                 real* xb = static_cast<real*>(sb->s.x.rvec_array()[0]);
-                for (i = 0; i < n; i++)
+                for (int i = 0; i < n; i++)
                 {
                     xb[i] = lastx[i] + b * s[i];
                 }
@@ -2343,8 +2340,9 @@ void LegacySimulator::do_lbfgs()
                 fnorm = sb->fnorm;
 
                 // Calculate gradient in point B
-                real* fb = static_cast<real*>(sb->f.view().force()[0]);
-                for (gpb = 0, i = 0; i < n; i++)
+                real*  fb  = static_cast<real*>(sb->f.view().force()[0]);
+                double gpb = 0;
+                for (int i = 0; i < n; i++)
                 {
                     gpb -= s[i] * fb[i]; /* f is negative gradient, thus the sign */
                 }
@@ -2388,7 +2386,7 @@ void LegacySimulator::do_lbfgs()
                 if (ncorr == 0)
                 {
                     /* Converged */
-                    converged = TRUE;
+                    converged = true;
                     break;
                 }
                 else
@@ -2396,7 +2394,7 @@ void LegacySimulator::do_lbfgs()
                     /* Reset memory */
                     ncorr = 0;
                     /* Search in gradient direction */
-                    for (i = 0; i < n; i++)
+                    for (int i = 0; i < n; i++)
                     {
                         dx[point][i] = ff[i];
                     }
@@ -2439,21 +2437,21 @@ void LegacySimulator::do_lbfgs()
             ncorr++;
         }
 
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             dg[point][i] = lastf[i] - ff[i];
             dx[point][i] *= step_taken;
         }
 
-        dgdg = 0;
-        dgdx = 0;
-        for (i = 0; i < n; i++)
+        real dgdg = 0;
+        real dgdx = 0;
+        for (int i = 0; i < n; i++)
         {
             dgdg += dg[point][i] * dg[point][i];
             dgdx += dg[point][i] * dx[point][i];
         }
 
-        diag = dgdx / dgdg;
+        const real diag = dgdx / dgdg;
 
         rho[point] = 1.0 / dgdx;
         point++;
@@ -2464,15 +2462,15 @@ void LegacySimulator::do_lbfgs()
         }
 
         /* Update */
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             p[i] = ff[i];
         }
 
-        cp = point;
+        int cp = point;
 
         /* Recursive update. First go back over the memory points */
-        for (k = 0; k < ncorr; k++)
+        for (int k = 0; k < ncorr; k++)
         {
             cp--;
             if (cp < 0)
@@ -2480,38 +2478,38 @@ void LegacySimulator::do_lbfgs()
                 cp = ncorr - 1;
             }
 
-            sq = 0;
-            for (i = 0; i < n; i++)
+            real sq = 0;
+            for (int i = 0; i < n; i++)
             {
                 sq += dx[cp][i] * p[i];
             }
 
             alpha[cp] = rho[cp] * sq;
 
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 p[i] -= alpha[cp] * dg[cp][i];
             }
         }
 
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             p[i] *= diag;
         }
 
         /* And then go forward again */
-        for (k = 0; k < ncorr; k++)
+        for (int k = 0; k < ncorr; k++)
         {
-            yr = 0;
-            for (i = 0; i < n; i++)
+            real yr = 0;
+            for (int i = 0; i < n; i++)
             {
                 yr += p[i] * dg[cp][i];
             }
 
-            beta = rho[cp] * yr;
-            beta = alpha[cp] - beta;
+            real beta = rho[cp] * yr;
+            beta      = alpha[cp] - beta;
 
-            for (i = 0; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 p[i] += beta * dx[cp][i];
             }
@@ -2523,7 +2521,7 @@ void LegacySimulator::do_lbfgs()
             }
         }
 
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             if (!frozen[i])
             {
@@ -2652,8 +2650,8 @@ void LegacySimulator::do_lbfgs()
      * However, we should only do it if we did NOT already write this step
      * above (which we did if do_x or do_f was true).
      */
-    do_x = !do_per_step(step, inputrec->nstxout);
-    do_f = !do_per_step(step, inputrec->nstfout);
+    const bool do_x = !do_per_step(step, inputrec->nstxout);
+    const bool do_f = !do_per_step(step, inputrec->nstfout);
     write_em_traj(
             fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm), top_global, inputrec, step, &ems, state_global, observablesHistory);
 
