@@ -67,7 +67,6 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
@@ -90,6 +89,8 @@ class InteractiveMolecularDynamics;
 class MDLogger;
 struct ImdOptions;
 struct MdrunOptions;
+template<typename>
+class ArrayRef;
 
 /*! \brief
  * Creates a module for interactive molecular dynamics.
@@ -130,26 +131,26 @@ void write_IMDgroup_to_file(bool              bIMD,
  * \param ms           Handler for multi-simulations.
  * \param top_global   The topology of the whole system.
  * \param mdlog        Logger
- * \param x            The starting positions of the atoms.
+ * \param coords       The starting positions of the atoms.
  * \param nfile        Number of files.
  * \param fnm          Struct containing file names etc.
  * \param oenv         Output options.
  * \param options      Options for interactive MD.
  * \param startingBehavior  Describes whether this is a restart appending to output files
  */
-std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*       ir,
-                                           const t_commrec*        cr,
-                                           gmx_wallcycle*          wcycle,
-                                           gmx_enerdata_t*         enerd,
-                                           const gmx_multisim_t*   ms,
-                                           const gmx_mtop_t&       top_global,
-                                           const MDLogger&         mdlog,
-                                           const rvec              x[],
-                                           int                     nfile,
-                                           const t_filenm          fnm[],
-                                           const gmx_output_env_t* oenv,
-                                           const ImdOptions&       options,
-                                           StartingBehavior        startingBehavior);
+std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
+                                           const t_commrec*               cr,
+                                           gmx_wallcycle*                 wcycle,
+                                           gmx_enerdata_t*                enerd,
+                                           const gmx_multisim_t*          ms,
+                                           const gmx_mtop_t&              top_global,
+                                           const MDLogger&                mdlog,
+                                           gmx::ArrayRef<const gmx::RVec> coords,
+                                           int                            nfile,
+                                           const t_filenm                 fnm[],
+                                           const gmx_output_env_t*        oenv,
+                                           const ImdOptions&              options,
+                                           StartingBehavior               startingBehavior);
 
 class ImdSession
 {
@@ -179,18 +180,18 @@ public:
      * \param step         The time step.
      * \param bNS          Is this a neighbor searching step?
      * \param box          The simulation box.
-     * \param x            The local atomic positions on this node.
+     * \param coords       The local atomic positions on this node.
      * \param t            The time.
      *
      * \returns            Whether or not we have to do IMD communication at this step.
      */
-    bool run(int64_t step, bool bNS, const matrix box, const rvec x[], double t);
+    bool run(int64_t step, bool bNS, const matrix box, gmx::ArrayRef<const gmx::RVec> coords, double t);
 
     /*! \brief Add external forces from a running interactive molecular dynamics session.
      *
-     * \param f            The forces.
+     * \param force The forces.
      */
-    void applyForces(rvec* f);
+    void applyForces(gmx::ArrayRef<gmx::RVec> force);
 
     /*! \brief Copy energies and convert to float from enerdata to the IMD energy record.
      *
@@ -220,19 +221,19 @@ private:
 
 public:
     // Befriend the factory function.
-    friend std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*       ir,
-                                                      const t_commrec*        cr,
-                                                      gmx_wallcycle*          wcycle,
-                                                      gmx_enerdata_t*         enerd,
-                                                      const gmx_multisim_t*   ms,
-                                                      const gmx_mtop_t&       top_global,
-                                                      const MDLogger&         mdlog,
-                                                      const rvec              x[],
-                                                      int                     nfile,
-                                                      const t_filenm          fnm[],
-                                                      const gmx_output_env_t* oenv,
-                                                      const ImdOptions&       options,
-                                                      StartingBehavior        startingBehavior);
+    friend std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
+                                                      const t_commrec*               cr,
+                                                      gmx_wallcycle*                 wcycle,
+                                                      gmx_enerdata_t*                enerd,
+                                                      const gmx_multisim_t*          ms,
+                                                      const gmx_mtop_t&              top_global,
+                                                      const MDLogger&                mdlog,
+                                                      gmx::ArrayRef<const gmx::RVec> coords,
+                                                      int                            nfile,
+                                                      const t_filenm                 fnm[],
+                                                      const gmx_output_env_t*        oenv,
+                                                      const ImdOptions&              options,
+                                                      StartingBehavior startingBehavior);
 };
 
 } // namespace gmx

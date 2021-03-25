@@ -1359,7 +1359,7 @@ void gmx::LegacySimulator::do_md()
                                  mdrunOptions.writeConfout,
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
+        bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x, t);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
         if (startingBehavior != StartingBehavior::NewSimulation && bFirstStep

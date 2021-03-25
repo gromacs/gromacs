@@ -1879,7 +1879,7 @@ int Mdrunner::mdrunner()
                                          ms,
                                          mtop,
                                          mdlog,
-                                         MASTER(cr) ? globalState->x.rvec_array() : nullptr,
+                                         MASTER(cr) ? globalState->x : gmx::ArrayRef<gmx::RVec>(),
                                          filenames.size(),
                                          filenames.data(),
                                          oenv,

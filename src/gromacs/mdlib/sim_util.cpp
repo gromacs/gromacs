@@ -693,14 +693,12 @@ static void computeSpecialForces(FILE*                          fplog,
                     fplog);
         }
     }
-
-    rvec* f = as_rvec_array(forceWithVirialMtsLevel0->force_.data());
-
     /* Add the forces from enforced rotation potentials (if any) */
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, ewcROTadd);
-        enerd->term[F_COM_PULL] += add_rot_forces(enforcedRotation, f, cr, step, t);
+        enerd->term[F_COM_PULL] +=
+                add_rot_forces(enforcedRotation, forceWithVirialMtsLevel0->force_, cr, step, t);
         wallcycle_stop(wcycle, ewcROTadd);
     }
 
@@ -711,13 +709,13 @@ static void computeSpecialForces(FILE*                          fplog,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr, inputrec, as_rvec_array(x.data()), f, ed, box, step, didNeighborSearch);
+        do_flood(cr, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
     if (inputrec.bIMD && stepWork.computeForces)
     {
-        imdSession->applyForces(f);
+        imdSession->applyForces(forceWithVirialMtsLevel0->force_);
     }
 }
 
@@ -1697,7 +1695,7 @@ void do_force(FILE*                               fplog,
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, stepWork.doNeighborSearch);
+        do_rotation(cr, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
         wallcycle_stop(wcycle, ewcROT);
     }
 

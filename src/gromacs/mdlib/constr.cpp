@@ -778,13 +778,7 @@ bool Constraints::Impl::apply(bool                      bLog,
         if (ed && delta_step > 0)
         {
             /* apply the essential dynamics constraints here */
-            do_edsam(&ir,
-                     step,
-                     cr,
-                     as_rvec_array(xprime.unpaddedArrayRef().data()),
-                     as_rvec_array(v.unpaddedArrayRef().data()),
-                     box,
-                     ed);
+            do_edsam(&ir, step, cr, xprime.unpaddedArrayRef(), v.unpaddedArrayRef(), box, ed);
         }
     }
     wallcycle_stop(wcycle, ewcCONSTR);

@@ -52,7 +52,6 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 
 /*! \brief Abstract type for essential dynamics
  *
@@ -72,6 +71,9 @@ namespace gmx
 {
 enum class StartingBehavior;
 class Constraints;
+template<typename>
+class ArrayRef;
+
 class EssentialDynamics
 {
 public:
@@ -97,18 +99,18 @@ class MDLogger;
  * \param ir                MD input parameter record.
  * \param step              Number of the time step.
  * \param cr                Data needed for MPI communication.
- * \param xs                The local positions on this processor.
- * \param v                 The local velocities.
+ * \param coords            The local positions on this processor.
+ * \param velocities        The local velocities.
  * \param box               The simulation box.
  * \param ed                The essential dynamics data.
  */
-void do_edsam(const t_inputrec* ir,
-              int64_t           step,
-              const t_commrec*  cr,
-              rvec              xs[],
-              rvec              v[],
-              const matrix      box,
-              gmx_edsam*        ed);
+void do_edsam(const t_inputrec*        ir,
+              int64_t                  step,
+              const t_commrec*         cr,
+              gmx::ArrayRef<gmx::RVec> coords,
+              gmx::ArrayRef<gmx::RVec> velocities,
+              const matrix             box,
+              gmx_edsam*               ed);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.
@@ -153,20 +155,20 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, gmx_edsam* ed);
  *
  * \param cr                Data needed for MPI communication.
  * \param ir                MD input parameter record.
- * \param x                 Positions on the local processor.
+ * \param coords            Positions on the local processor.
  * \param force             Forcefield forces to which the flooding forces are added.
  * \param ed                The essential dynamics data.
  * \param box               The simulation box.
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(const t_commrec*  cr,
-              const t_inputrec& ir,
-              const rvec        x[],
-              rvec              force[],
-              gmx_edsam*        ed,
-              const matrix      box,
-              int64_t           step,
-              bool              bNS);
+void do_flood(const t_commrec*               cr,
+              const t_inputrec&              ir,
+              gmx::ArrayRef<const gmx::RVec> coords,
+              gmx::ArrayRef<gmx::RVec>       force,
+              gmx_edsam*                     ed,
+              const matrix                   box,
+              int64_t                        step,
+              bool                           bNS);
 
 #endif

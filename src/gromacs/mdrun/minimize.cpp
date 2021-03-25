@@ -1777,7 +1777,7 @@ void LegacySimulator::do_cg()
         }
 
         /* Send energies and positions to the IMD client if bIMD is TRUE. */
-        if (MASTER(cr) && imdSession->run(step, TRUE, state_global->box, state_global->x.rvec_array(), 0))
+        if (MASTER(cr) && imdSession->run(step, TRUE, state_global->box, state_global->x, 0))
         {
             imdSession->sendPositionsAndEnergies();
         }
@@ -2591,7 +2591,7 @@ void LegacySimulator::do_lbfgs()
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
-        if (imdSession->run(step, TRUE, state_global->box, state_global->x.rvec_array(), 0) && MASTER(cr))
+        if (imdSession->run(step, TRUE, state_global->box, state_global->x, 0) && MASTER(cr))
         {
             imdSession->sendPositionsAndEnergies();
         }
@@ -2940,7 +2940,7 @@ void LegacySimulator::do_steep()
         if (imdSession->run(count,
                             TRUE,
                             MASTER(cr) ? state_global->box : nullptr,
-                            MASTER(cr) ? state_global->x.rvec_array() : nullptr,
+                            MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>(),
                             0)
             && MASTER(cr))
         {

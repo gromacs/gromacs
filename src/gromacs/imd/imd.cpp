@@ -203,9 +203,9 @@ public:
     /*! \brief Removes shifts of molecules diffused outside of the box. */
     void removeMolecularShifts(const matrix box);
     /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
-    void prepareForPositionAssembly(const t_commrec* cr, const rvec x[]);
+    void prepareForPositionAssembly(const t_commrec* cr, gmx::ArrayRef<const gmx::RVec> coords);
     /*! \brief Interact with any connected VMD session */
-    bool run(int64_t step, bool bNS, const matrix box, const rvec x[], double t);
+    bool run(int64_t step, bool bNS, const matrix box, gmx::ArrayRef<const gmx::RVec> coords, double t);
 
     // TODO rename all the data members to have underscore suffixes
 
@@ -1242,7 +1242,7 @@ void ImdSession::Impl::removeMolecularShifts(const matrix box)
 }
 
 
-void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, const rvec x[])
+void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::ArrayRef<const gmx::RVec> coords)
 {
     snew(xa, nat);
     snew(xa_ind, nat);
@@ -1257,7 +1257,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, const rve
         for (int i = 0; i < nat; i++)
         {
             int ii = ind[i];
-            copy_rvec(x[ii], xa_old[i]);
+            copy_rvec(coords[ii], xa_old[i]);
         }
     }
 
@@ -1297,19 +1297,19 @@ static void imd_check_integrator_parallel(const t_inputrec* ir, const t_commrec*
     }
 }
 
-std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
-                                           const t_commrec*            cr,
-                                           gmx_wallcycle*              wcycle,
-                                           gmx_enerdata_t*             enerd,
-                                           const gmx_multisim_t*       ms,
-                                           const gmx_mtop_t&           top_global,
-                                           const MDLogger&             mdlog,
-                                           const rvec                  x[],
-                                           int                         nfile,
-                                           const t_filenm              fnm[],
-                                           const gmx_output_env_t*     oenv,
-                                           const ImdOptions&           options,
-                                           const gmx::StartingBehavior startingBehavior)
+std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
+                                           const t_commrec*               cr,
+                                           gmx_wallcycle*                 wcycle,
+                                           gmx_enerdata_t*                enerd,
+                                           const gmx_multisim_t*          ms,
+                                           const gmx_mtop_t&              top_global,
+                                           const MDLogger&                mdlog,
+                                           gmx::ArrayRef<const gmx::RVec> coords,
+                                           int                            nfile,
+                                           const t_filenm                 fnm[],
+                                           const gmx_output_env_t*        oenv,
+                                           const ImdOptions&              options,
+                                           const gmx::StartingBehavior    startingBehavior)
 {
     std::unique_ptr<ImdSession> session(new ImdSession(mdlog));
     auto                        impl = session->impl_.get();
@@ -1505,7 +1505,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
     impl->syncNodes(cr, 0);
 
     /* Initialize arrays used to assemble the positions from the other nodes */
-    impl->prepareForPositionAssembly(cr, x);
+    impl->prepareForPositionAssembly(cr, coords);
 
     /* Initialize molecule blocks to make them whole later...*/
     if (MASTER(cr))
@@ -1517,7 +1517,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
 }
 
 
-bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, const rvec x[], double t)
+bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayRef<const gmx::RVec> coords, double t)
 {
     /* IMD at all? */
     if (!sessionPossible)
@@ -1567,7 +1567,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, const rvec 
         /* Transfer the IMD positions to the master node. Every node contributes
          * its local positions x and stores them in the assembled xa array. */
         communicate_group_positions(
-                cr, xa, xa_shifts, xa_eshifts, true, x, nat, nat_loc, ind_loc, xa_ind, xa_old, box);
+                cr, xa, xa_shifts, xa_eshifts, true, as_rvec_array(coords.data()), nat, nat_loc, ind_loc, xa_ind, xa_old, box);
 
         /* If connected and master -> remove shifts */
         if ((imdstep && bConnected) && MASTER(cr))
@@ -1581,9 +1581,9 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, const rvec 
     return imdstep;
 }
 
-bool ImdSession::run(int64_t step, bool bNS, const matrix box, const rvec x[], double t)
+bool ImdSession::run(int64_t step, bool bNS, const matrix box, gmx::ArrayRef<const gmx::RVec> coords, double t)
 {
-    return impl_->run(step, bNS, box, x, t);
+    return impl_->run(step, bNS, box, coords, t);
 }
 
 void ImdSession::fillEnergyRecord(int64_t step, bool bHaveNewEnergies)
@@ -1655,7 +1655,7 @@ void ImdSession::updateEnergyRecordAndSendPositionsAndEnergies(bool bIMDstep, in
     wallcycle_stop(impl_->wcycle, ewcIMD);
 }
 
-void ImdSession::applyForces(rvec* f)
+void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
 {
     if (!impl_->sessionPossible || !impl_->bForceActivated)
     {
@@ -1677,7 +1677,7 @@ void ImdSession::applyForces(rvec* f)
             j = *locndx;
         }
 
-        rvec_inc(f[j], impl_->f[i]);
+        rvec_inc(force[j], impl_->f[i]);
     }
 
     wallcycle_stop(impl_->wcycle, ewcIMD);

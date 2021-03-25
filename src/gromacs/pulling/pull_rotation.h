@@ -54,7 +54,6 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
 struct gmx_enfrot;
@@ -71,6 +70,8 @@ namespace gmx
 enum class StartingBehavior;
 class LocalAtomSetManager;
 struct MdrunOptions;
+template<typename>
+class ArrayRef;
 
 class EnforcedRotation
 {
@@ -133,13 +134,19 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
  * \param cr      Pointer to MPI communication data.
  * \param er      Pointer to the enforced rotation working data.
  * \param box     Simulation box, needed to make group whole.
- * \param x       The positions of all the local particles.
+ * \param coords  The positions of all the local particles.
  * \param t       Time.
  * \param step    The time step.
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[], real t, int64_t step, gmx_bool bNS);
+void do_rotation(const t_commrec*               cr,
+                 gmx_enfrot*                    er,
+                 const matrix                   box,
+                 gmx::ArrayRef<const gmx::RVec> coords,
+                 real                           t,
+                 int64_t                        step,
+                 bool                           bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.
@@ -152,14 +159,14 @@ void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[]
  * the potential, the angle of the group(s), and torques).
  *
  * \param er      Pointer to the enforced rotation working data.
- * \param f       The local forces to which the rotational forces have
+ * \param force   The local forces to which the rotational forces have
  *                to be added.
  * \param cr      Pointer to MPI communication data.
  * \param step    The time step, used for output.
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-real add_rot_forces(gmx_enfrot* er, rvec f[], const t_commrec* cr, int64_t step, real t);
+real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_commrec* cr, int64_t step, real t);
 
 
 #endif

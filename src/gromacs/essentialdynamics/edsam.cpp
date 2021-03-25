@@ -904,14 +904,14 @@ static void update_adaption(t_edpar* edi)
 }
 
 
-static void do_single_flood(FILE*            edo,
-                            const rvec       x[],
-                            rvec             force[],
-                            t_edpar*         edi,
-                            int64_t          step,
-                            const matrix     box,
-                            const t_commrec* cr,
-                            gmx_bool         bNS) /* Are we in a neighbor searching step? */
+static void do_single_flood(FILE*                          edo,
+                            gmx::ArrayRef<const gmx::RVec> coords,
+                            gmx::ArrayRef<gmx::RVec>       force,
+                            t_edpar*                       edi,
+                            int64_t                        step,
+                            const matrix                   box,
+                            const t_commrec*               cr,
+                            gmx_bool bNS) /* Are we in a neighbor searching step? */
 {
     int                i;
     matrix             rotmat;   /* rotation matrix */
@@ -932,7 +932,7 @@ static void do_single_flood(FILE*            edo,
                                 buf->shifts_xcoll,
                                 buf->extra_shifts_xcoll,
                                 bNS,
-                                x,
+                                as_rvec_array(coords.data()),
                                 edi->sav.nr,
                                 edi->sav.nr_loc,
                                 edi->sav.anrs_loc,
@@ -948,7 +948,7 @@ static void do_single_flood(FILE*            edo,
                                     buf->shifts_xc_ref,
                                     buf->extra_shifts_xc_ref,
                                     bNS,
-                                    x,
+                                    as_rvec_array(coords.data()),
                                     edi->sref.nr,
                                     edi->sref.nr_loc,
                                     edi->sref.anrs_loc,
@@ -1028,14 +1028,14 @@ static void do_single_flood(FILE*            edo,
 
 
 /* Main flooding routine, called from do_force */
-void do_flood(const t_commrec*  cr,
-              const t_inputrec& ir,
-              const rvec        x[],
-              rvec              force[],
-              gmx_edsam*        ed,
-              const matrix      box,
-              int64_t           step,
-              bool              bNS)
+void do_flood(const t_commrec*               cr,
+              const t_inputrec&              ir,
+              gmx::ArrayRef<const gmx::RVec> coords,
+              gmx::ArrayRef<gmx::RVec>       force,
+              gmx_edsam*                     ed,
+              const matrix                   box,
+              int64_t                        step,
+              bool                           bNS)
 {
     /* Write time to edo, when required. Output the time anyhow since we need
      * it in the output file for ED constraints. */
@@ -1054,7 +1054,7 @@ void do_flood(const t_commrec*  cr,
         /* Call flooding for one matrix */
         if (edi.flood.vecs.neig)
         {
-            do_single_flood(ed->edo, x, force, &edi, step, box, cr, bNS);
+            do_single_flood(ed->edo, coords, force, &edi, step, box, cr, bNS);
         }
     }
 }
@@ -3142,7 +3142,13 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
 }
 
 
-void do_edsam(const t_inputrec* ir, int64_t step, const t_commrec* cr, rvec xs[], rvec v[], const matrix box, gmx_edsam* ed)
+void do_edsam(const t_inputrec*        ir,
+              int64_t                  step,
+              const t_commrec*         cr,
+              gmx::ArrayRef<gmx::RVec> coords,
+              gmx::ArrayRef<gmx::RVec> velocities,
+              const matrix             box,
+              gmx_edsam*               ed)
 {
     int    i, edinr, iupdate = 500;
     matrix rotmat;         /* rotation matrix */
@@ -3191,7 +3197,7 @@ void do_edsam(const t_inputrec* ir, int64_t step, const t_commrec* cr, rvec xs[]
                                         buf->shifts_xcoll,
                                         buf->extra_shifts_xcoll,
                                         PAR(cr) ? buf->bUpdateShifts : TRUE,
-                                        xs,
+                                        as_rvec_array(coords.data()),
                                         edi.sav.nr,
                                         edi.sav.nr_loc,
                                         edi.sav.anrs_loc,
@@ -3207,7 +3213,7 @@ void do_edsam(const t_inputrec* ir, int64_t step, const t_commrec* cr, rvec xs[]
                                             buf->shifts_xc_ref,
                                             buf->extra_shifts_xc_ref,
                                             PAR(cr) ? buf->bUpdateShifts : TRUE,
-                                            xs,
+                                            as_rvec_array(coords.data()),
                                             edi.sref.nr,
                                             edi.sref.nr_loc,
                                             edi.sref.anrs_loc,
@@ -3313,17 +3319,17 @@ void do_edsam(const t_inputrec* ir, int64_t step, const t_commrec* cr, rvec xs[]
                             box, buf->xcoll[edi.sav.c_ind[i]], buf->shifts_xcoll[edi.sav.c_ind[i]], x_unsh);
 
                     /* dx is the ED correction to the positions: */
-                    rvec_sub(x_unsh, xs[edi.sav.anrs_loc[i]], dx);
+                    rvec_sub(x_unsh, coords[edi.sav.anrs_loc[i]], dx);
 
-                    if (v != nullptr)
+                    if (!velocities.empty())
                     {
                         /* dv is the ED correction to the velocity: */
                         svmul(dt_1, dx, dv);
                         /* apply the velocity correction: */
-                        rvec_inc(v[edi.sav.anrs_loc[i]], dv);
+                        rvec_inc(velocities[edi.sav.anrs_loc[i]], dv);
                     }
                     /* Finally apply the position correction due to ED: */
-                    copy_rvec(x_unsh, xs[edi.sav.anrs_loc[i]]);
+                    copy_rvec(x_unsh, coords[edi.sav.anrs_loc[i]]);
                 }
             }
         } /* END of if ( bNeedDoEdsam(edi) ) */

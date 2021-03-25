@@ -609,7 +609,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
 
 /* Add the forces from enforced rotation potential to the local forces.
  * Should be called after the SR forces have been evaluated */
-real add_rot_forces(gmx_enfrot* er, rvec f[], const t_commrec* cr, int64_t step, real t)
+real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_commrec* cr, int64_t step, real t)
 {
     real Vrot = 0.0; /* If more than one rotation group is present, Vrot
                         assembles the local parts from all groups         */
@@ -626,7 +626,7 @@ real add_rot_forces(gmx_enfrot* er, rvec f[], const t_commrec* cr, int64_t step,
             /* Get the right index of the local force */
             int ii = localRotationGroupIndex[l];
             /* Add */
-            rvec_inc(f[ii], erg->f_rot_loc[l]);
+            rvec_inc(force[ii], erg->f_rot_loc[l]);
         }
     }
 
@@ -2010,12 +2010,12 @@ static void flex_precalc_inner_sum(const gmx_enfrotgrp* erg)
 }
 
 
-static real do_flex2_lowlevel(gmx_enfrotgrp* erg,
-                              real           sigma, /* The Gaussian width sigma */
-                              rvec           x[],
-                              gmx_bool       bOutstepRot,
-                              gmx_bool       bOutstepSlab,
-                              const matrix   box)
+static real do_flex2_lowlevel(gmx_enfrotgrp*                 erg,
+                              real                           sigma, /* The Gaussian width sigma */
+                              gmx::ArrayRef<const gmx::RVec> coords,
+                              gmx_bool                       bOutstepRot,
+                              gmx_bool                       bOutstepSlab,
+                              const matrix                   box)
 {
     int  count, ii, iigrp;
     rvec xj;          /* position in the i-sum                         */
@@ -2076,7 +2076,7 @@ static real do_flex2_lowlevel(gmx_enfrotgrp* erg,
          * Note that erg->xc_center contains the center of mass in case the flex2-t
          * potential was chosen. For the flex2 potential erg->xc_center must be
          * zero. */
-        rvec_sub(x[ii], erg->xc_center, xj);
+        rvec_sub(coords[ii], erg->xc_center, xj);
 
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -2278,11 +2278,11 @@ static real do_flex2_lowlevel(gmx_enfrotgrp* erg,
 
 
 static real do_flex_lowlevel(gmx_enfrotgrp* erg,
-                             real         sigma, /* The Gaussian width sigma                      */
-                             rvec         x[],
-                             gmx_bool     bOutstepRot,
-                             gmx_bool     bOutstepSlab,
-                             const matrix box)
+                             real sigma, /* The Gaussian width sigma                      */
+                             gmx::ArrayRef<const gmx::RVec> coords,
+                             gmx_bool                       bOutstepRot,
+                             gmx_bool                       bOutstepSlab,
+                             const matrix                   box)
 {
     int      count, iigrp;
     rvec     xj, yj0;        /* current and reference position                */
@@ -2335,7 +2335,7 @@ static real do_flex_lowlevel(gmx_enfrotgrp* erg,
          * Note that erg->xc_center contains the center of mass in case the flex-t
          * potential was chosen. For the flex potential erg->xc_center must be
          * zero. */
-        rvec_sub(x[ii], erg->xc_center, xj);
+        rvec_sub(coords[ii], erg->xc_center, xj);
 
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -2608,11 +2608,11 @@ static void get_firstlast_slab_check(gmx_enfrotgrp* erg, /* The rotation group (
 static void do_flexible(gmx_bool       bMaster,
                         gmx_enfrot*    enfrot, /* Other rotation data                        */
                         gmx_enfrotgrp* erg,
-                        rvec           x[], /* The local positions                        */
-                        const matrix   box,
-                        double         t,           /* Time in picoseconds                        */
-                        gmx_bool       bOutstepRot, /* Output to main rotation output file        */
-                        gmx_bool bOutstepSlab)      /* Output per-slab data                       */
+                        gmx::ArrayRef<const gmx::RVec> coords, /* The local positions */
+                        const matrix                   box,
+                        double   t,            /* Time in picoseconds                        */
+                        gmx_bool bOutstepRot,  /* Output to main rotation output file        */
+                        gmx_bool bOutstepSlab) /* Output per-slab data                       */
 {
     int  nslabs;
     real sigma; /* The Gaussian width sigma */
@@ -2646,12 +2646,12 @@ static void do_flexible(gmx_bool       bMaster,
     if (erg->rotg->eType == EnforcedRotationGroupType::Flex
         || erg->rotg->eType == EnforcedRotationGroupType::Flext)
     {
-        erg->V = do_flex_lowlevel(erg, sigma, x, bOutstepRot, bOutstepSlab, box);
+        erg->V = do_flex_lowlevel(erg, sigma, coords, bOutstepRot, bOutstepSlab, box);
     }
     else if (erg->rotg->eType == EnforcedRotationGroupType::Flex2
              || erg->rotg->eType == EnforcedRotationGroupType::Flex2t)
     {
-        erg->V = do_flex2_lowlevel(erg, sigma, x, bOutstepRot, bOutstepSlab, box);
+        erg->V = do_flex2_lowlevel(erg, sigma, coords, bOutstepRot, bOutstepSlab, box);
     }
     else
     {
@@ -2936,11 +2936,11 @@ static void do_radial_motion(gmx_enfrotgrp* erg,
 
 
 /* Calculate the radial motion pivot-free potential and forces */
-static void do_radial_motion_pf(gmx_enfrotgrp* erg,
-                                rvec           x[], /* The positions                              */
-                                const matrix   box, /* The simulation box                         */
-                                gmx_bool bOutstepRot,  /* Output to main rotation output file  */
-                                gmx_bool bOutstepSlab) /* Output per-slab data */
+static void do_radial_motion_pf(gmx_enfrotgrp*                 erg,
+                                gmx::ArrayRef<const gmx::RVec> coords, /* The positions */
+                                const matrix box, /* The simulation box                         */
+                                gmx_bool     bOutstepRot, /* Output to main rotation output file  */
+                                gmx_bool     bOutstepSlab)    /* Output per-slab data */
 {
     rvec     xj;      /* Current position */
     rvec     xj_xc;   /* xj  - xc  */
@@ -3005,7 +3005,7 @@ static void do_radial_motion_pf(gmx_enfrotgrp* erg,
         wj = N_M * mj;
 
         /* Current position of this atom: x[ii][XX/YY/ZZ] */
-        copy_rvec(x[ii], xj);
+        copy_rvec(coords[ii], xj);
 
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -3138,9 +3138,9 @@ static void radial_motion2_precalc_inner_sum(const gmx_enfrotgrp* erg, rvec inne
 
 
 /* Calculate the radial motion 2 potential and forces */
-static void do_radial_motion2(gmx_enfrotgrp* erg,
-                              rvec           x[],   /* The positions                              */
-                              const matrix   box,   /* The simulation box                         */
+static void do_radial_motion2(gmx_enfrotgrp*                 erg,
+                              gmx::ArrayRef<const gmx::RVec> coords, /* The positions */
+                              const matrix box,     /* The simulation box                         */
                               gmx_bool bOutstepRot, /* Output to main rotation output file        */
                               gmx_bool bOutstepSlab) /* Output per-slab data */
 {
@@ -3195,7 +3195,7 @@ static void do_radial_motion2(gmx_enfrotgrp* erg,
             mj = erg->mc[iigrp];
 
             /* Current position of this atom: x[ii] */
-            copy_rvec(x[ii], xj);
+            copy_rvec(coords[ii], xj);
 
             /* Shift this atom such that it is near its reference */
             shift_single_coord(box, xj, erg->xc_shifts[iigrp]);
@@ -3856,7 +3856,7 @@ static void rotate_local_reference(gmx_enfrotgrp* erg)
 /* Select the PBC representation for each local x position and store that
  * for later usage. We assume the right PBC image of an x is the one nearest to
  * its rotated reference */
-static void choose_pbc_image(rvec x[], gmx_enfrotgrp* erg, const matrix box, int npbcdim)
+static void choose_pbc_image(gmx::ArrayRef<const gmx::RVec> coords, gmx_enfrotgrp* erg, const matrix box, int npbcdim)
 {
     const auto& localRotationGroupIndex = erg->atomSet->localIndex();
     for (gmx::index i = 0; i < localRotationGroupIndex.ssize(); i++)
@@ -3873,12 +3873,18 @@ static void choose_pbc_image(rvec x[], gmx_enfrotgrp* erg, const matrix box, int
         copy_rvec(erg->xr_loc[i], xref);
         rvec_inc(xref, erg->xc_ref_center);
 
-        copy_correct_pbc_image(x[ii], erg->x_loc_pbc[i], xref, box, npbcdim);
+        copy_correct_pbc_image(coords[ii], erg->x_loc_pbc[i], xref, box, npbcdim);
     }
 }
 
 
-void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[], real t, int64_t step, gmx_bool bNS)
+void do_rotation(const t_commrec*               cr,
+                 gmx_enfrot*                    er,
+                 const matrix                   box,
+                 gmx::ArrayRef<const gmx::RVec> coords,
+                 real                           t,
+                 int64_t                        step,
+                 gmx_bool                       bNS)
 {
     gmx_bool    outstep_slab, outstep_rot;
     gmx_bool    bColl;
@@ -3925,7 +3931,7 @@ void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[]
                                         erg->xc_shifts,
                                         erg->xc_eshifts,
                                         bNS,
-                                        x,
+                                        as_rvec_array(coords.data()),
                                         rotg->nat,
                                         erg->atomSet->numAtomsLocal(),
                                         erg->atomSet->localIndex().data(),
@@ -3953,7 +3959,7 @@ void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[]
 
             /* Choose the nearest PBC images of the group atoms with respect
              * to the rotated reference positions */
-            choose_pbc_image(x, erg, box, 3);
+            choose_pbc_image(coords, erg, box, 3);
 
             /* Get the center of the rotation group */
             if ((rotg->eType == EnforcedRotationGroupType::Isopf)
@@ -4016,11 +4022,11 @@ void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[]
                 do_radial_motion(erg, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Rmpf:
-                do_radial_motion_pf(erg, x, box, outstep_rot, outstep_slab);
+                do_radial_motion_pf(erg, coords, box, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Rm2:
             case EnforcedRotationGroupType::Rm2pf:
-                do_radial_motion2(erg, x, box, outstep_rot, outstep_slab);
+                do_radial_motion2(erg, coords, box, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Flext:
             case EnforcedRotationGroupType::Flex2t:
@@ -4030,13 +4036,13 @@ void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[]
                 get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
                 svmul(-1.0, erg->xc_center, transvec);
                 translate_x(erg->xc, rotg->nat, transvec);
-                do_flexible(MASTER(cr), er, erg, x, box, t, outstep_rot, outstep_slab);
+                do_flexible(MASTER(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Flex:
             case EnforcedRotationGroupType::Flex2:
                 /* Do NOT subtract the center of mass in the low level routines! */
                 clear_rvec(erg->xc_center);
-                do_flexible(MASTER(cr), er, erg, x, box, t, outstep_rot, outstep_slab);
+                do_flexible(MASTER(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             default: gmx_fatal(FARGS, "No such rotation potential.");
         }
