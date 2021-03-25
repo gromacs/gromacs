@@ -352,6 +352,8 @@ void wallcycleBarrier(gmx_wallcycle* wc)
     {
         MPI_Barrier(wc->cr->mpi_comm_mygroup);
     }
+#else
+    GMX_UNUSED_VALUE(wc);
 #endif
 }
 
