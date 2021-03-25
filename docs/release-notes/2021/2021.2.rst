@@ -25,7 +25,7 @@ Fix grompp check for position restraints with absolute reference
 Fixed that grompp with position restraints would always issue a warning about
 using an absolute reference, even when an absolute reference was not used.
 
-issue:`3996`
+:issue:`3996`
 
 Fix error when using VMD plugin
 """""""""""""""""""""""""""""""
