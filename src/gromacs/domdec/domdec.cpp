@@ -3191,7 +3191,7 @@ void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
             cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
                     cr.dd,
                     d,
-                    cr.mpi_comm_mysim,
+                    cr.mpi_comm_mygroup,
                     deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedNonLocal),

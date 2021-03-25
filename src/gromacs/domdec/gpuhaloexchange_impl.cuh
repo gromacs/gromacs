@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,22 +117,43 @@ public:
 
 private:
     /*! \brief Data transfer wrapper for GPU halo exchange
-     * \param [inout] d_ptr      pointer to coordinates or force buffer in GPU memory
-     * \param [in] haloQuantity  switch on whether X or F halo exchange is being performed
-     * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
+     * \param [in] sendPtr      send buffer address
+     * \param [in] sendSize     number of elements to send
+     * \param [in] sendRank     rank of destination
+     * \param [in] recvPtr      receive buffer address
+     * \param [in] recvSize     number of elements to receive
+     * \param [in] recvRank     rank of source
      */
-    void communicateHaloData(float3*               d_ptr,
-                             HaloQuantity          haloQuantity,
-                             GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void communicateHaloData(float3* sendPtr, int sendSize, int sendRank, float3* recvPtr, int recvSize, int recvRank);
 
     /*! \brief Data transfer for GPU halo exchange using CUDA memcopies
      * \param [inout] sendPtr    address to send data from
      * \param [in] sendSize      number of atoms to be sent
      * \param [in] sendRank      rank to send data to
-     * \param [inout] remotePtr  remote address to recv data
+     * \param [in] remotePtr     remote address to recv data
      * \param [in] recvRank      rank to recv data from
      */
-    void communicateHaloDataWithCudaDirect(void* sendPtr, int sendSize, int sendRank, void* remotePtr, int recvRank);
+    void communicateHaloDataWithCudaDirect(float3* sendPtr, int sendSize, int sendRank, float3* remotePtr, int recvRank);
+
+    /*! \brief Data transfer wrapper for GPU halo exchange using MPI_send and MPI_Recv
+     * \param [in] sendPtr      send buffer address
+     * \param [in] sendSize     number of elements to send
+     * \param [in] sendRank     rank of destination
+     * \param [in] recvPtr      receive buffer address
+     * \param [in] recvSize     number of elements to receive
+     * \param [in] recvRank     rank of source
+     */
+    void communicateHaloDataWithCudaMPI(float3* sendPtr,
+                                        int     sendSize,
+                                        int     sendRank,
+                                        float3* recvPtr,
+                                        int     recvSize,
+                                        int     recvRank);
+
+    /*! \brief Exchange coordinate-ready event with neighbor ranks and enqueue wait in non-local
+     * stream \param [in] eventSync    event recorded when coordinates/forces are ready to device
+     */
+    void enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     //! Domain decomposition object
     gmx_domdec_t* dd_ = nullptr;
@@ -177,9 +198,9 @@ private:
     //! number of home atoms - offset of local halo region
     int numHomeAtoms_ = 0;
     //! remote GPU coordinates buffer pointer for pushing data
-    void* remoteXPtr_ = nullptr;
+    float3* remoteXPtr_ = nullptr;
     //! remote GPU force buffer pointer for pushing data
-    void* remoteFPtr_ = nullptr;
+    float3* remoteFPtr_ = nullptr;
     //! Periodic Boundary Conditions for this rank
     bool usePBC_ = false;
     //! force shift buffer on device

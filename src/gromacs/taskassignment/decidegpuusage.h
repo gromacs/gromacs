@@ -88,6 +88,8 @@ struct DevelopmentFeatureFlags
     bool enableGpuHaloExchange = false;
     //! True if the PME PP direct communication GPU development feature is enabled
     bool enableGpuPmePPComm = false;
+    //! True if the CUDA-aware MPI is being used for GPU direct communication feature
+    bool usingCudaAwareMpi = false;
 };
 
 

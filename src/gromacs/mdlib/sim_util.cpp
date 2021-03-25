@@ -1139,7 +1139,12 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
                 (thisRankHasDuty(cr, DUTY_PME) ? pme_gpu_get_f_ready_synchronizer(fr->pmedata)
                                                : // PME force buffer on same GPU
                          fr->pmePpCommGpu->getForcesReadySynchronizer()); // buffer received from other GPU
-        fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(pmeSynchronizer);
+
+        if (GMX_THREAD_MPI)
+        {
+            GMX_ASSERT(pmeSynchronizer != nullptr, "PME force ready cuda event should not be NULL");
+            fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(pmeSynchronizer);
+        }
     }
 
     if ((runScheduleWork->domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr))
