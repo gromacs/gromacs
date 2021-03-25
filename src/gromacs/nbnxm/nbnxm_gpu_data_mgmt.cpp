@@ -63,6 +63,7 @@
 #include "nbnxm_gpu_data_mgmt.h"
 
 #include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -438,6 +439,25 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     }
 
     return nb;
+}
+
+void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
+{
+    NBAtomData*         adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
+
+    /* only if we have a dynamic box */
+    if (nbatom->bDynamicBox || !adat->shiftVecUploaded)
+    {
+        copyToDeviceBuffer(&adat->shiftVec,
+                           gmx::asGenericFloat3Pointer(nbatom->shift_vec),
+                           0,
+                           SHIFTS,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
+        adat->shiftVecUploaded = true;
+    }
 }
 
 //! This function is documented in the header file

@@ -61,27 +61,6 @@ void gpu_init_platform_specific(NbnxmGpu* /* nb */)
     // Nothing specific in SYCL
 }
 
-void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
-{
-    NBAtomData*         adat        = nb->atdat;
-    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
-
-    /* only if we have a dynamic box */
-    if (nbatom->bDynamicBox || !adat->shiftVecUploaded)
-    {
-        GMX_ASSERT(adat->shiftVec.elementSize() == sizeof(nbatom->shift_vec[0]),
-                   "Sizes of host- and device-side shift vectors should be the same.");
-        copyToDeviceBuffer(&adat->shiftVec,
-                           reinterpret_cast<const Float3*>(nbatom->shift_vec.data()),
-                           0,
-                           SHIFTS,
-                           localStream,
-                           GpuApiCallBehavior::Async,
-                           nullptr);
-        adat->shiftVecUploaded = true;
-    }
-}
-
 void gpu_free(NbnxmGpu* nb)
 {
     if (nb == nullptr)
