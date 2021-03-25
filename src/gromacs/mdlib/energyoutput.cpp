@@ -369,7 +369,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     nEg_ = n;
     nE_  = (n * (n + 1)) / 2;
 
-    snew(igrp_, nE_);
+    igrp_.resize(nE_);
     if (nE_ > 1)
     {
         n = 0;
@@ -445,7 +445,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         mdeb_n_ = 0;
     }
 
-    snew(tmp_r_, mde_n_);
+    tmp_r_.resize(mde_n_);
     // TODO redo the group name memory management to make it more clear
     char** grpnms;
     snew(grpnms, std::max(mde_n_, mdeb_n_)); // Just in case mdeb_n_ > mde_n_
@@ -553,26 +553,16 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
             mde_delta_h_coll_init(dhc_, inputrec);
         }
         fp_dhdl_ = nullptr;
-        snew(dE_, inputrec.fepvals->n_lambda);
+        dE_.resize(inputrec.fepvals->n_lambda);
     }
     else
     {
         fp_dhdl_ = fp_dhdl;
-        snew(dE_, inputrec.fepvals->n_lambda);
+        dE_.resize(inputrec.fepvals->n_lambda);
     }
     if (inputrec.bSimTemp)
     {
-        int i;
-        snew(temperatures_, inputrec.fepvals->n_lambda);
-        numTemperatures_ = inputrec.fepvals->n_lambda;
-        for (i = 0; i < inputrec.fepvals->n_lambda; i++)
-        {
-            temperatures_[i] = inputrec.simtempvals->temperatures[i];
-        }
-    }
-    else
-    {
-        numTemperatures_ = 0;
+        temperatures_ = inputrec.simtempvals->temperatures;
     }
 
     if (EI_MD(inputrec.eI) && !simulationsShareState)
@@ -583,16 +573,8 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
 
 EnergyOutput::~EnergyOutput()
 {
-    sfree(igrp_);
-    sfree(tmp_r_);
-    sfree(tmp_v_);
     done_ebin(ebin_);
     done_mde_delta_h_coll(dhc_);
-    sfree(dE_);
-    if (numTemperatures_ > 0)
-    {
-        sfree(temperatures_);
-    }
 }
 
 } // namespace gmx
@@ -996,7 +978,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         {
             tmp_r_[i] = ekind->tcstat[i].T;
         }
-        add_ebin(ebin_, itemp_, nTC_, tmp_r_, bSum);
+        add_ebin(ebin_, itemp_, nTC_, tmp_r_.data(), bSum);
 
         if (etc_ == TemperatureCoupling::NoseHoover)
         {
@@ -1014,7 +996,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                             tmp_r_[2 * k + 1] = ptCouplingArrays.nosehoover_vxi[k];
                         }
                     }
-                    add_ebin(ebin_, itc_, mde_n_, tmp_r_, bSum);
+                    add_ebin(ebin_, itc_, mde_n_, tmp_r_.data(), bSum);
 
                     if (bMTTK_)
                     {
@@ -1027,7 +1009,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                 tmp_r_[2 * k + 1] = ptCouplingArrays.nhpres_vxi[k];
                             }
                         }
-                        add_ebin(ebin_, itcb_, mdeb_n_, tmp_r_, bSum);
+                        add_ebin(ebin_, itcb_, mdeb_n_, tmp_r_.data(), bSum);
                     }
                 }
                 else
@@ -1037,7 +1019,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                         tmp_r_[2 * i]     = ptCouplingArrays.nosehoover_xi[i];
                         tmp_r_[2 * i + 1] = ptCouplingArrays.nosehoover_vxi[i];
                     }
-                    add_ebin(ebin_, itc_, mde_n_, tmp_r_, bSum);
+                    add_ebin(ebin_, itc_, mde_n_, tmp_r_.data(), bSum);
                 }
             }
         }
@@ -1048,7 +1030,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             {
                 tmp_r_[i] = ekind->tcstat[i].lambda;
             }
-            add_ebin(ebin_, itc_, nTC_, tmp_r_, bSum);
+            add_ebin(ebin_, itc_, nTC_, tmp_r_.data(), bSum);
         }
     }
 
@@ -1062,12 +1044,12 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         {
             /* zero for simulated tempering */
             dE_[i] = foreignTerms.deltaH(i);
-            if (numTemperatures_ > 0)
+            if (!temperatures_.empty())
             {
-                GMX_RELEASE_ASSERT(numTemperatures_ > fep_state,
+                GMX_RELEASE_ASSERT(gmx::ssize(temperatures_) > fep_state,
                                    "Number of lambdas in state is bigger then in input record");
                 GMX_RELEASE_ASSERT(
-                        numTemperatures_ >= foreignTerms.numLambdas(),
+                        gmx::ssize(temperatures_) >= foreignTerms.numLambdas(),
                         "Number of lambdas in energy data is bigger then in input record");
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
@@ -1141,8 +1123,13 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             }
             store_energy = enerd->term[F_ETOT];
             /* store_dh is dE */
-            mde_delta_h_coll_add_dh(
-                    dhc_, static_cast<double>(fep_state), store_energy, pv, store_dhdl, dE_ + fep->lambda_start_n, time);
+            mde_delta_h_coll_add_dh(dhc_,
+                                    static_cast<double>(fep_state),
+                                    store_energy,
+                                    pv,
+                                    store_dhdl,
+                                    dE_.data() + fep->lambda_start_n,
+                                    time);
         }
     }
 

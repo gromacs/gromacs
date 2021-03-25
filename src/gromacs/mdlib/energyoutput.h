@@ -384,7 +384,7 @@ private:
     //! Number of intergroup energy sets to be printed for each energy term (nE = (nEg*(nEg+1))/2)
     int nE_ = 0;
     //! Indexes for integroup energy sets (each set with nEc energies)
-    int* igrp_ = nullptr;
+    std::vector<int> igrp_;
 
     //! Number of temperature coupling groups
     int nTC_ = 0;
@@ -406,20 +406,16 @@ private:
     int itcb_ = 0;
 
     //! Array to accumulate values during update
-    real* tmp_r_ = nullptr;
-    //! Array to accumulate values during update
-    rvec* tmp_v_ = nullptr;
+    std::vector<real> tmp_r_;
 
     //! The dhdl.xvg output file
     FILE* fp_dhdl_ = nullptr;
     //! Energy components for dhdl.xvg output
-    double* dE_ = nullptr;
+    std::vector<double> dE_;
     //! The delta U components (raw data + histogram)
     t_mde_delta_h_coll* dhc_ = nullptr;
     //! Temperatures for simulated tempering groups
-    real* temperatures_ = nullptr;
-    //! Number of temperatures actually saved
-    int numTemperatures_ = 0;
+    std::vector<real> temperatures_;
 
     //! For tracking the conserved or total energy
     std::unique_ptr<EnergyDriftTracker> conservedEnergyTracker_;
