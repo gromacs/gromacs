@@ -48,7 +48,6 @@
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -58,7 +57,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 /* All the possible (implemented) table functions */
 enum
@@ -104,12 +102,17 @@ static const t_tab_props tprops[etabNR] = {
     { "COULSwitch", TRUE },   { "EXPMIN", FALSE },    { "USER", FALSE },
 };
 
-typedef struct
+struct t_tabledata
 {
-    int     nx, nx0;
-    double  tabscale;
-    double *x, *v, *f;
-} t_tabledata;
+    t_tabledata() = default;
+    t_tabledata(int n, int nx0, double tabscale, bool bAlloc);
+    int                 nx;
+    int                 nx0;
+    double              tabscale;
+    std::vector<double> x;
+    std::vector<double> v;
+    std::vector<double> f;
+};
 
 double v_q_ewald_lr(double beta, double r)
 {
@@ -385,14 +388,14 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
     return sc;
 }
 
-static void copy2table(int          n,
-                       int          offset,
-                       int          stride,
-                       const double x[],
-                       const double Vtab[],
-                       const double Ftab[],
-                       real         scalefactor,
-                       real         dest[])
+static void copy2table(int                         n,
+                       int                         offset,
+                       int                         stride,
+                       gmx::ArrayRef<const double> x,
+                       gmx::ArrayRef<const double> Vtab,
+                       gmx::ArrayRef<const double> Ftab,
+                       real                        scalefactor,
+                       gmx::ArrayRef<real>         dest)
 {
     /* Use double prec. for the intermediary variables
      * and temporary x/vtab/vtab2 data to avoid unnecessary
@@ -428,16 +431,16 @@ static void copy2table(int          n,
     }
 }
 
-static void init_table(int n, int nx0, double tabscale, t_tabledata* td, gmx_bool bAlloc)
+t_tabledata::t_tabledata(int n, int nx0, double tabscale, bool bAlloc) :
+    nx(n),
+    nx0(nx0),
+    tabscale(tabscale)
 {
-    td->nx       = n;
-    td->nx0      = nx0;
-    td->tabscale = tabscale;
     if (bAlloc)
     {
-        snew(td->x, td->nx);
-        snew(td->v, td->nx);
-        snew(td->f, td->nx);
+        x.resize(nx);
+        v.resize(nx);
+        f.resize(nx);
     }
 }
 
@@ -445,7 +448,7 @@ static void spline_forces(int nx, double h, const double v[], gmx_bool bS3, gmx_
 {
     int    start, end, i;
     double v3, b_s, b_e, b;
-    double beta, *gamma;
+    double beta;
 
     /* Formulas can be found in:
      * H.J.C. Berendsen, Simulating the Physical World, Cambridge 2007
@@ -511,7 +514,7 @@ static void spline_forces(int nx, double h, const double v[], gmx_bool bS3, gmx_
         end = nx - 1;
     }
 
-    snew(gamma, nx);
+    std::vector<double> gamma(nx);
     beta = (bS3 ? 1 : 4);
 
     /* For V'' fitting */
@@ -533,7 +536,6 @@ static void spline_forces(int nx, double h, const double v[], gmx_bool bS3, gmx_
     {
         f[i] -= gamma[i + 1] * f[i + 1];
     }
-    sfree(gamma);
 
     /* Correct for the minus sign and the spacing */
     for (i = start; i < end; i++)
@@ -583,7 +585,7 @@ static void set_forces(FILE* fp, int angle, int nx, double h, double v[], double
     spline_forces(end - start, h, v + start, TRUE, end == nx, f + start);
 }
 
-static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_tabledata td[])
+static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int ntab, int angle)
 {
     char     buf[STRLEN];
     double   start, end, dx0, dx1, ssd, vm, vp, f, numf;
@@ -755,9 +757,10 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
         fprintf(fp, "\nNOTE: All elements in table %s are zero\n\n", libfn.c_str());
     }
 
+    std::vector<t_tabledata> td;
     for (k = 0; (k < ntab); k++)
     {
-        init_table(numRows, nx0, tabscale, &(td[k]), TRUE);
+        td.emplace_back(t_tabledata(numRows, nx0, tabscale, true));
         for (i = 0; (i < numRows); i++)
         {
             td[k].x[i] = yy[0][i];
@@ -765,18 +768,7 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
             td[k].f[i] = yy[2 * k + 2][i];
         }
     }
-}
-
-static void done_tabledata(t_tabledata* td)
-{
-    if (!td)
-    {
-        return;
-    }
-
-    sfree(td->x);
-    sfree(td->v);
-    sfree(td->f);
+    return td;
 }
 
 static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, gmx_bool b14only)
@@ -1267,10 +1259,9 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
 std::unique_ptr<t_forcetable>
 make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags)
 {
-    t_tabledata* td;
-    gmx_bool     b14only, useUserTable;
-    int          nx0, tabsel[etiNR];
-    real         scalefactor;
+    gmx_bool b14only, useUserTable;
+    int      nx0, tabsel[etiNR];
+    real     scalefactor;
 
     auto table = std::make_unique<t_forcetable>(GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
                                                 GMX_TABLE_FORMAT_CUBICSPLINE_YFGH);
@@ -1287,7 +1278,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
     {
         set_table_type(tabsel, ic, b14only);
     }
-    snew(td, etiNR);
+    std::vector<t_tabledata> td;
     table->r     = rtab;
     table->scale = 0;
     table->n     = 0;
@@ -1307,7 +1298,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
     }
     if (useUserTable)
     {
-        read_tables(fp, fn, etiNR, 0, td);
+        td = read_tables(fp, fn, etiNR, 0);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
             table->n = td[0].nx;
@@ -1329,6 +1320,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
     }
     else
     {
+        td.resize(etiNR);
         // No tables are read
 #if GMX_DOUBLE
         table->scale = 2000.0;
@@ -1357,7 +1349,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
             {
                 scale /= ic->buckinghamBMax;
             }
-            init_table(table->n, nx0, scale, &(td[k]), !useUserTable);
+            td[k] = t_tabledata(table->n, nx0, scale, !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], ic, b14only);
             if (fp)
@@ -1391,30 +1383,19 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
             scalefactor = 1.0;
         }
 
-        copy2table(table->n,
-                   k * table->formatsize,
-                   table->stride,
-                   td[k].x,
-                   td[k].v,
-                   td[k].f,
-                   scalefactor,
-                   table->data.data());
-
-        done_tabledata(&(td[k]));
+        copy2table(table->n, k * table->formatsize, table->stride, td[k].x, td[k].v, td[k].f, scalefactor, table->data);
     }
-    sfree(td);
 
     return table;
 }
 
 bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
 {
-    t_tabledata   td;
     int           i;
     bondedtable_t tab;
     int           stride = 4;
 
-    read_tables(fplog, fn, 1, angle, &td);
+    t_tabledata td = read_tables(fplog, fn, 1, angle)[0];
     if (angle > 0)
     {
         /* Convert the table from degrees to radians */
@@ -1428,8 +1409,7 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
     tab.n     = td.nx;
     tab.scale = td.tabscale;
     tab.data.resize(tab.n * stride);
-    copy2table(tab.n, 0, stride, td.x, td.v, td.f, 1.0, tab.data.data());
-    done_tabledata(&td);
+    copy2table(tab.n, 0, stride, td.x, td.v, td.f, 1.0, tab.data);
 
     return tab;
 }
