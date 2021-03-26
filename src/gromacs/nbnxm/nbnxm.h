@@ -135,7 +135,6 @@ class PairSearch;
 class PairlistSets;
 struct t_commrec;
 struct t_lambda;
-struct t_mdatoms;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
@@ -371,7 +370,10 @@ public:
                                   const t_forcerec&              fr,
                                   gmx::ArrayRef<const gmx::RVec> coords,
                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
-                                  const t_mdatoms&               mdatoms,
+                                  gmx::ArrayRef<const real>      chargeA,
+                                  gmx::ArrayRef<const real>      chargeB,
+                                  gmx::ArrayRef<const int>       typeA,
+                                  gmx::ArrayRef<const int>       typeB,
                                   t_lambda*                      fepvals,
                                   gmx::ArrayRef<const real>      lambda,
                                   gmx_enerdata_t*                enerd,

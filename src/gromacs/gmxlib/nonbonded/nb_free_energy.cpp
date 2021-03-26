@@ -203,7 +203,10 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
                                   gmx::ArrayRef<const gmx::RVec> coords,
                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
                                   const t_forcerec&              fr,
-                                  const t_mdatoms&               mdatoms,
+                                  gmx::ArrayRef<const real>      chargeA,
+                                  gmx::ArrayRef<const real>      chargeB,
+                                  gmx::ArrayRef<const int>       typeA,
+                                  gmx::ArrayRef<const int>       typeB,
                                   int                            flags,
                                   gmx::ArrayRef<const real>      lambda,
                                   gmx::ArrayRef<real>            dvdl,
@@ -239,10 +242,6 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     gmx::ArrayRef<const int> gid    = nlist.gid;
 
     const real*               shiftvec  = fr.shift_vec[0];
-    const real*               chargeA   = mdatoms.chargeA;
-    const real*               chargeB   = mdatoms.chargeB;
-    const int*                typeA     = mdatoms.typeA;
-    const int*                typeB     = mdatoms.typeB;
     const int                 ntype     = fr.ntype;
     gmx::ArrayRef<const real> nbfp      = fr.nbfp;
     gmx::ArrayRef<const real> nbfp_grid = fr.ljpme_c6grid;
@@ -870,7 +869,10 @@ typedef void (*KernelFunction)(const t_nblist&                nlist,
                                gmx::ArrayRef<const gmx::RVec> coords,
                                gmx::ForceWithShiftForces*     forceWithShiftForces,
                                const t_forcerec&              fr,
-                               const t_mdatoms&               mdatoms,
+                               gmx::ArrayRef<const real>      chargeA,
+                               gmx::ArrayRef<const real>      chargeB,
+                               gmx::ArrayRef<const int>       typeA,
+                               gmx::ArrayRef<const int>       typeB,
                                int                            flags,
                                gmx::ArrayRef<const real>      lambda,
                                gmx::ArrayRef<real>            dvdl,
@@ -995,7 +997,10 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                gmx::ArrayRef<const gmx::RVec> coords,
                                gmx::ForceWithShiftForces*     ff,
                                const t_forcerec&              fr,
-                               const t_mdatoms&               mdatoms,
+                               gmx::ArrayRef<const real>      chargeA,
+                               gmx::ArrayRef<const real>      chargeB,
+                               gmx::ArrayRef<const int>       typeA,
+                               gmx::ArrayRef<const int>       typeB,
                                int                            flags,
                                gmx::ArrayRef<const real>      lambda,
                                gmx::ArrayRef<real>            dvdl,
@@ -1036,5 +1041,5 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                 vdwModifierIsPotSwitch,
                                 useSimd,
                                 ic);
-    kernelFunc(nlist, coords, ff, fr, mdatoms, flags, lambda, dvdl, energygrp_elec, energygrp_vdw, nrnb);
+    kernelFunc(nlist, coords, ff, fr, chargeA, chargeB, typeA, typeB, flags, lambda, dvdl, energygrp_elec, energygrp_vdw, nrnb);
 }
