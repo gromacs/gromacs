@@ -557,6 +557,35 @@ if(GMX_GPU)
         message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading, which is currently not enabled.")
     endif()
 
+    if (GMX_OPENCL_NB_CLUSTER_SIZE)
+        message(WARNING "GMX_OPENCL_NB_CLUSTER_SIZE is deprecated, use GMX_GPU_NB_CLUSTER_SIZE instead")
+    endif()
+    if (GMX_OPENCL_NB_CLUSTER_SIZE AND GMX_GPU_NB_CLUSTER_SIZE)
+        if (NOT ${GMX_OPENCL_NB_CLUSTER_SIZE} EQUAL ${GMX_GPU_NB_CLUSTER_SIZE})
+            message(FATAL_ERROR "Mismatching values passed to GMX_OPENCL_NB_CLUSTER_SIZE and GMX_GPU_NB_CLUSTER_SIZE; the former is deprecated, use only the latter!")
+        endif()
+    endif()
+    # Only OpenCL and SYCL support changing the default cluster size
+    if (${_gmx_gpu_uppercase} STREQUAL "CUDA")
+        if (GMX_GPU_NB_CLUSTER_SIZE AND NOT "${GMX_GPU_NB_CLUSTER_SIZE}" EQUAL 8)
+            message(FATAL_ERROR "Setting GMX_GPU_NB_CLUSTER_SIZE is not supported in CUDA (the default GMX_GPU_NB_CLUSTER_SIZE=8 is used)")
+        endif()
+    else()
+        # use the legacy GMX_OPENCL_NB_CLUSTER_SIZE variable if set, otherwise set the defaults
+        if (GMX_OPENCL_NB_CLUSTER_SIZE)
+            set(_gmx_gpu_nb_cluster_size_value ${GMX_OPENCL_NB_CLUSTER_SIZE})
+        else()
+            # default cluster size is 8 with OpenCL and 4 with SYCL for now
+            if(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
+                set(_gmx_gpu_nb_cluster_size_value 8)
+            else()
+                set(_gmx_gpu_nb_cluster_size_value 4)
+            endif()
+        endif()
+        set(GMX_GPU_NB_CLUSTER_SIZE ${_gmx_gpu_nb_cluster_size_value} CACHE STRING "Cluster size used by the nonbonded kernel. Set to 4 for Intel GPUs.")
+        mark_as_advanced(GMX_GPU_NB_CLUSTER_SIZE)
+    endif()
+
 endif()
 
 # For build with CUDA and Lib-MPI, check if underlying MPI implementation is CUDA-aware

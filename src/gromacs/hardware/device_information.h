@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "incompatible",
     // clang-format off
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with correct GMX" "_OPENCL_NB_CLUSTER_SIZE of 4)",
+    "incompatible (please recompile with correct GMX" "_GPU_NB_CLUSTER_SIZE of 4)",
     // clang-format on
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
     "non-functional",

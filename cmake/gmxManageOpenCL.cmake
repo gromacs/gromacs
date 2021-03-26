@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -78,8 +78,5 @@ include_directories(SYSTEM ${OpenCL_INCLUDE_DIRS})
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "The OpenCL implementation is only supported on 64-bit platforms.")
 endif()
-
-set(GMX_OPENCL_NB_CLUSTER_SIZE 8 CACHE STRING "Cluster size used by nonbonded OpenCL kernel. Set to 4 for Intel GPUs.")
-mark_as_advanced(GMX_OPENCL_NB_CLUSTER_SIZE)
 
 set(GMX_INSTALL_OCLDIR       ${GMX_INSTALL_GMXDATADIR}/opencl)

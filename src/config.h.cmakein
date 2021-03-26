@@ -239,8 +239,8 @@
 /* Use CUDA-aware MPI.  */
 #cmakedefine01 HAVE_CUDA_AWARE_MPI
 
-/* Cluster size used by nonbonded OpenCL kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
-#define GMX_OPENCL_NB_CLUSTER_SIZE @GMX_OPENCL_NB_CLUSTER_SIZE@
+/* Cluster size used by nonbonded kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
+#define GMX_GPU_NB_CLUSTER_SIZE @GMX_GPU_NB_CLUSTER_SIZE@
 
 /* Define constants for build types (starting at 1 to make sure undefined values don't match) */
 #define CMAKE_BUILD_TYPE_DEBUG 1

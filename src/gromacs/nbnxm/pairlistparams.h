@@ -59,11 +59,9 @@ enum class KernelType;
 //! The i-cluster size for CPU kernels, always 4 atoms
 static constexpr int c_nbnxnCpuIClusterSize = 4;
 
-//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at compile time for OpenCL
-#if GMX_GPU_OPENCL
-static constexpr int c_nbnxnGpuClusterSize = GMX_OPENCL_NB_CLUSTER_SIZE;
-#elif GMX_GPU_SYCL
-static constexpr int c_nbnxnGpuClusterSize = 4;
+//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at compile time for OpenCL and SYCL
+#if GMX_GPU_OPENCL || GMX_GPU_SYCL
+static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
 #else
 static constexpr int c_nbnxnGpuClusterSize = 8;
 #endif
