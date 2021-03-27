@@ -717,7 +717,8 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                            GpuEventSynchronizer*     xReadyOnDevice,
                            const Nbnxm::AtomLocality locality,
                            int                       gridId,
-                           int                       numColumnsMax)
+                           int                       numColumnsMax,
+                           bool                      mustInsertNonLocalDependency)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -730,6 +731,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
 
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
 
+    if (xReadyOnDevice != nullptr)
+    {
+        // We only need to wait on the first iteration of the loop
+        xReadyOnDevice->enqueueWaitEvent(deviceStream);
+    }
+
     int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
     // avoid empty kernel launch, skip to inserting stream dependency
     if (numAtoms != 0)
@@ -737,9 +744,6 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         // TODO: This will only work with CUDA
         GMX_ASSERT(d_x, "Need a valid device pointer");
 
-        // ensure that coordinates are ready on the device before launching the kernel
-        GMX_ASSERT(xReadyOnDevice, "Need a valid GpuEventSynchronizer object");
-        xReadyOnDevice->enqueueWaitEvent(deviceStream);
 
         KernelLaunchConfig config;
         config.blockSize[0] = c_bufOpsThreadsPerBlock;
@@ -772,10 +776,10 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
     }
 
-    // TODO: note that this is not necessary when there are no local atoms, that is:
-    // (numAtoms == 0 && interactionLoc == InteractionLocality::Local)
-    // but for now we avoid that optimization
-    nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
+    if (mustInsertNonLocalDependency)
+    {
+        Nbnxm::nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
+    }
 }
 
 DeviceBuffer<Float3> getGpuForces(NbnxmGpu* nb)
