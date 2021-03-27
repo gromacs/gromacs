@@ -145,6 +145,8 @@ enum ExitType
  *
  * This is used to implement gmx_fatal_collective() (which cannot be declared
  * here, since it would bring with it mdrun-specific dependencies).
+ *
+ * This function is deprecated and no new calls should be made to it.
  */
 [[noreturn]] void gmx_fatal_mpi_va(int         fatal_errno,
                                    const char* file,
@@ -170,6 +172,8 @@ enum ExitType
  * use gmx_fatal_collective(), declared in network.h,
  * to avoid having as many error messages as processes.
  *
+ * This function is deprecated and no new calls should be made to it.
+ *
  * The first three parameters can be provided through ::FARGS:
  * \code
    gmx_fatal(FARGS, fmt, ...);
@@ -180,7 +184,9 @@ enum ExitType
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
-/** Implementation for gmx_error(). */
+/*! \brief Implementation for gmx_error().
+ *
+ * This function is deprecated and no new calls should be made to it. */
 [[noreturn]] void gmx_error_function(const char* key, const std::string& msg, const char* file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
@@ -188,6 +194,8 @@ enum ExitType
  * This works as gmx_fatal(), except that a generic error message is added
  * based on a string key, and printf-style formatting is not supported.
  * Should not typically be called directly, but through gmx_call() etc.
+ *
+ * This macro is deprecated and no new calls should be made to it.
  */
 #define gmx_error(key, msg) gmx_error_function(key, msg, __FILE__, __LINE__)
 
@@ -195,6 +203,8 @@ enum ExitType
  *
  * These wrap gmx_error() and provide the \p key parameter as one of the
  * recognized strings.
+ *
+ * These macros are deprecated and no new calls should be made to them.
  */
 /*! \{ */
 #define gmx_call(msg) gmx_error("call", msg)
