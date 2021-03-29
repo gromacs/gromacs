@@ -20,13 +20,11 @@ leak:gmx_make_edi
 leak:gmx_mtop_ilistloop_init
 leak:gmx_pme_init
 leak:gmx_pme_receive_f
-leak:init_buffer_flags
-leak:init_disres
 leak:init_dfhist_state
 leak:init_df_history
+leak:init_disres
 leak:init_edsam
 leak:init_ekinstate
-leak:init_interaction_const
 leak:init_orires
 leak:init_rot
 leak:init_swapcoords
