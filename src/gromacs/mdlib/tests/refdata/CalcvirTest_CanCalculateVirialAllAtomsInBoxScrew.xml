@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Vector Name="Virial x">
+    <Real Name="X">-5</Real>
+    <Real Name="Y">-8.4499999999999993</Real>
+    <Real Name="Z">-3.6499999999999999</Real>
+  </Vector>
+  <Vector Name="Virial y">
+    <Real Name="X">-6.3000000000000007</Real>
+    <Real Name="Y">-10.050000000000001</Real>
+    <Real Name="Z">-4.4000000000000004</Real>
+  </Vector>
+  <Vector Name="Virial z">
+    <Real Name="X">-7.6000000000000005</Real>
+    <Real Name="Y">-11.649999999999999</Real>
+    <Real Name="Z">-5.1500000000000004</Real>
+  </Vector>
+</ReferenceData>
