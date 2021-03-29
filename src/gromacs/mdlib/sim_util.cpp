@@ -824,16 +824,20 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
 
 /*! \brief Set up the different force buffers; also does clearing.
  *
- * \param[in] forceHelperBuffers  Helper force buffers
- * \param[in] force     force array
- * \param[in] stepWork  Step schedule flags
- * \param[out] wcycle   wallcycle recording structure
+ * \param[in] forceHelperBuffers        Helper force buffers
+ * \param[in] force                     force array
+ * \param[in] domainWork                Domain lifetime workload flags
+ * \param[in] stepWork                  Step schedule flags
+ * \param[in] havePpDomainDecomposition Whether we have a PP domain decomposition
+ * \param[out] wcycle                   wallcycle recording structure
  *
- * \returns             Cleared force output structure
+ * \returns                             Cleared force output structure
  */
 static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceHelperBuffers,
                                       gmx::ArrayRefWithPadding<gmx::RVec> force,
+                                      const DomainLifetimeWorkload&       domainWork,
                                       const StepWorkload&                 stepWork,
+                                      const bool                          havePpDomainDecomposition,
                                       gmx_wallcycle_t                     wcycle)
 {
     wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
@@ -842,7 +846,9 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
     gmx::ForceWithShiftForces forceWithShiftForces(
             force, stepWork.computeVirial, forceHelperBuffers->shiftForces());
 
-    if (stepWork.computeForces)
+    if (stepWork.computeForces
+        && (domainWork.haveCpuLocalForceWork || !stepWork.useGpuFBufferOps
+            || (havePpDomainDecomposition && !stepWork.useGpuFHalo)))
     {
         /* Clear the short- and long-range forces */
         clearRVecs(forceWithShiftForces.force(), true);
@@ -1711,15 +1717,17 @@ void do_force(FILE*                               fplog,
      * Without multiple time stepping all point to the same object.
      * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
      */
-    ForceOutputs forceOutMtsLevel0 =
-            setupForceOutputs(&fr->forceHelperBuffers[0], force, stepWork, wcycle);
+    ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
+            &fr->forceHelperBuffers[0], force, domainWork, stepWork, havePPDomainDecomposition(cr), wcycle);
 
     // Force output for MTS combined forces, only set at level1 MTS steps
     std::optional<ForceOutputs> forceOutMts =
             (fr->useMts && stepWork.computeSlowForces)
                     ? std::optional(setupForceOutputs(&fr->forceHelperBuffers[1],
                                                       forceView->forceMtsCombinedWithPadding(),
+                                                      domainWork,
                                                       stepWork,
+                                                      havePPDomainDecomposition(cr),
                                                       wcycle))
                     : std::nullopt;
 
