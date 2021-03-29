@@ -54,6 +54,7 @@ Guiding principles
 * Use assertions to validate invariants and pre-conditions. There is value in
   using a different technique for checking such violations in order to make 
   the reason for the check clear to the maintainer.
+
 Specific rules
 ^^^^^^^^^^^^^^
 
