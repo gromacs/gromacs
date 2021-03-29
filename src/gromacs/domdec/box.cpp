@@ -52,10 +52,10 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/nsgrid.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -254,14 +254,14 @@ static void low_set_ddbox(int                            numPbcDimensions,
     {
         calc_pos_av_stddev(x, av, stddev, mpiCommunicator);
 
-        /* GRID_STDDEV_FAC * stddev
+        /* c_gridStdDevFactor * stddev
          * gives a uniform load for a rectangular block of cg's.
          * For a sphere it is not a bad approximation for 4x1x1 up to 4x2x2.
          */
         for (int d = ddbox->nboundeddim; d < DIM; d++)
         {
-            const real b0 = av[d] - GRID_STDDEV_FAC * stddev[d];
-            const real b1 = av[d] + GRID_STDDEV_FAC * stddev[d];
+            const real b0 = av[d] - c_gridStdDevFactor * stddev[d];
+            const real b1 = av[d] + c_gridStdDevFactor * stddev[d];
             if (debug)
             {
                 fprintf(debug, "Setting global DD grid boundaries to %f - %f\n", b0, b1);

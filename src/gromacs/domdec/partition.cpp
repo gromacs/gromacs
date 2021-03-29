@@ -60,6 +60,7 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/domdec/mdsetup.h"
+#include "gromacs/domdec/nsgrid.h"
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -69,7 +70,6 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -3079,7 +3079,6 @@ void dd_partition_system(FILE*                     fplog,
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
 
-    // TODO: Integrate this code in the nbnxm module
     get_nsgrid_boundaries(ddbox.nboundeddim,
                           state_local->box,
                           dd,

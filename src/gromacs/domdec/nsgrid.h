@@ -37,19 +37,15 @@
 #ifndef GMX_MDLIB_NSGRID_H
 #define GMX_MDLIB_NSGRID_H
 
-#include <cstdio>
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
-struct gmx_domdec_zones_t;
 struct gmx_ddbox_t;
-struct t_forcerec;
 
 /*! \brief Used when estimating the interaction density.
  *
- * GRID_STDDEV_FAC * stddev estimates the interaction density. The
+ * c_gridStdDevFactor * stddev estimates the interaction density. The
  * value sqrt(3) == 1.73205080757 gives a uniform load for a
  * rectangular 3D block of charge groups. For a sphere, it is not a
  * bad approximation for 4x1x1 up to 4x2x2.
@@ -57,17 +53,7 @@ struct t_forcerec;
  * \todo It would be nicer to use sqrt(3) here, when all code that
  * includes this file is in C++, which will let us cope with the
  * std::sqrt<T> on Windows. */
-static const real GRID_STDDEV_FAC = 1.73205080757;
-
-/*! \brief The extent of the neighborsearch grid is a bit larger than sqrt(3)
- * to account for less dense regions at the edges of the system.
- */
-static const real NSGRID_STDDEV_FAC = 2.0;
-
-#define NSGRID_SIGNAL_MOVED_FAC 4
-/* A cell index of NSGRID_SIGNAL_MOVED_FAC*ncells signals
- * that a charge group moved to another DD domain.
- */
+constexpr real c_gridStdDevFactor = 1.73205080757;
 
 void get_nsgrid_boundaries(int                  nboundeddim,
                            matrix               box,

@@ -49,6 +49,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+/*! \brief The extent of the neighborsearch grid is a bit larger than sqrt(3)
+ * to account for less dense regions at the edges of the system.
+ */
+constexpr real c_stdDevFactor = 2.0;
+
 /***********************************
  *         Grid Routines
  ***********************************/
@@ -89,11 +94,11 @@ static void get_nsgrid_boundaries_vac(real av, real stddev, real* bound0, real* 
      * For a sphere stddev is r/sqrt(5): 99.2% falls within the width.
      * For a Gaussian distribution 98% fall within the width.
      */
-    *bound0 = av - NSGRID_STDDEV_FAC * stddev;
-    *bound1 = av + NSGRID_STDDEV_FAC * stddev;
+    *bound0 = av - c_stdDevFactor * stddev;
+    *bound1 = av + c_stdDevFactor * stddev;
 
-    *bdens0 = av - GRID_STDDEV_FAC * stddev;
-    *bdens1 = av + GRID_STDDEV_FAC * stddev;
+    *bdens0 = av - c_gridStdDevFactor * stddev;
+    *bdens1 = av + c_gridStdDevFactor * stddev;
 }
 
 static void dd_box_bounds_to_ns_bounds(real box0, real box_size, real* gr0, real* gr1)
@@ -102,10 +107,10 @@ static void dd_box_bounds_to_ns_bounds(real box0, real box_size, real* gr0, real
 
     /* Redetermine av and stddev from the DD box boundaries */
     av     = box0 + 0.5 * box_size;
-    stddev = 0.5 * box_size / GRID_STDDEV_FAC;
+    stddev = 0.5 * box_size / c_gridStdDevFactor;
 
-    *gr0 = av - NSGRID_STDDEV_FAC * stddev;
-    *gr1 = av + NSGRID_STDDEV_FAC * stddev;
+    *gr0 = av - c_stdDevFactor * stddev;
+    *gr1 = av + c_stdDevFactor * stddev;
 }
 
 void get_nsgrid_boundaries(int           nboundeddim,
