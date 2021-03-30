@@ -36,8 +36,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gmx_ana_h
-#    define _gmx_ana_h
+#ifndef GMX_GMXANA_GMX_ANA_H
+#    define GMX_GMXANA_GMX_ANA_H
 
 int gmx_analyze(int argc, char* argv[]);
 

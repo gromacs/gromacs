@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013,2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _dens_filter_h
-#define _dens_filter_h
+#ifndef GMX_GMXANA_DENS_FILTER_H
+#define GMX_GMXANA_DENS_FILTER_H
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
