@@ -44,6 +44,8 @@
  */
 #include "gmxpre.h"
 
+#include <map>
+
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/fatalerror.h"
@@ -229,6 +231,65 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
     return DeviceStatus::Compatible;
 }
 
+/* In DPCPP, the same physical device can appear as different virtual devices provided
+ * by different backends (e.g., the same GPU can be accessible via both OpenCL and L0).
+ * Thus, using devices from two backends is more likely to be a user error than the
+ * desired behavior. In this function, we choose the backend with the most compatible
+ * devices. In case of a tie, we choose OpenCL (if present), or some arbitrary backend
+ * among those with the most devices.
+ *
+ * In hipSYCL, this problem is unlikely to manifest. It has (as of 2021-03-03) another
+ * issues: D2D copy between different backends is not allowed. We don't use D2D in
+ * SYCL yet. Additionally, hipSYCL does not implement the `sycl::platform::get_backend()`
+ * function.
+ * Thus, we only do the backend filtering with DPCPP.
+ * */
+#if GMX_SYCL_DPCPP
+static std::optional<cl::sycl::backend>
+chooseBestBackend(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfos)
+{
+    // Count the number of compatible devices per backend
+    std::map<cl::sycl::backend, int> countDevicesByBackend; // Default initialized with zeros
+    for (const auto& deviceInfo : deviceInfos)
+    {
+        if (deviceInfo->status == DeviceStatus::Compatible)
+        {
+            const cl::sycl::backend backend = deviceInfo->syclDevice.get_platform().get_backend();
+            ++countDevicesByBackend[backend];
+        }
+    }
+    // If we have devices from more than one backend...
+    if (countDevicesByBackend.size() > 1)
+    {
+        // Find backend with most devices
+        const auto backendWithMostDevices = std::max_element(
+                countDevicesByBackend.cbegin(),
+                countDevicesByBackend.cend(),
+                [](const auto& kv1, const auto& kv2) { return kv1.second < kv2.second; });
+        // Count devices provided by OpenCL. Will be zero if no OpenCL devices found.
+        const int devicesInOpenCL = countDevicesByBackend[cl::sycl::backend::opencl];
+        if (devicesInOpenCL == backendWithMostDevices->second)
+        {
+            // Prefer OpenCL backend as more stable, if it has as many devices as others
+            return cl::sycl::backend::opencl;
+        }
+        else
+        {
+            // Otherwise, just return max
+            return backendWithMostDevices->first;
+        }
+    }
+    else if (countDevicesByBackend.size() == 1)
+    {
+        return countDevicesByBackend.cbegin()->first;
+    }
+    else // No devices found
+    {
+        return std::nullopt;
+    }
+}
+#endif
+
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
@@ -246,6 +307,23 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfos[i]->deviceVendor =
                 getDeviceVendor(syclDevice.get_info<cl::sycl::info::device::vendor>().c_str());
     }
+#if GMX_SYCL_DPCPP
+    // Now, filter by the backend if we did not disable compatibility check
+    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") == nullptr)
+    {
+        std::optional<cl::sycl::backend> preferredBackend = chooseBestBackend(deviceInfos);
+        if (preferredBackend.has_value())
+        {
+            for (auto& deviceInfo : deviceInfos)
+            {
+                if (deviceInfo->syclDevice.get_platform().get_backend() != *preferredBackend)
+                {
+                    deviceInfo->status = DeviceStatus::NotPreferredBackend;
+                }
+            }
+        }
+    }
+#endif
     return deviceInfos;
 }
 
