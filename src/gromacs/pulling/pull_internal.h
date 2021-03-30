@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,14 +91,25 @@ struct pull_group_work_t
      * \param[in] params                  The group parameters set by the user
      * \param[in] atomSet                 The global to local atom set manager
      * \param[in] setPbcRefToPrevStepCOM Does this pull group use the COM from the previous step as reference position?
+     * \param[in] maxNumThreads           Use either this number of threads of 1 for operations on x and f
      */
-    pull_group_work_t(const t_pull_group& params, gmx::LocalAtomSet atomSet, bool setPbcRefToPrevStepCOM);
+    pull_group_work_t(const t_pull_group& params,
+                      gmx::LocalAtomSet   atomSet,
+                      bool                setPbcRefToPrevStepCOM,
+                      int                 maxNumThreads);
+
+    //! Returns the number of threads to use for local atom operations based on the local atom count
+    int numThreads() const
+    {
+        return atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded ? 1 : maxNumThreads;
+    }
 
     /* Data only modified at initialization */
     const t_pull_group params;   /**< The pull group parameters */
     const int          epgrppbc; /**< The type of pbc for this pull group, see enum above */
-    bool               needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
-    std::vector<real>  globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
+    const int maxNumThreads; /**< The maximum number of threads to use for operations on x and f */
+    bool      needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
+    std::vector<real> globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
     /* Data modified only at init or at domain decomposition */
     gmx::LocalAtomSet                  atomSet;      /**< Global to local atom set mapper */
@@ -148,6 +159,9 @@ struct pull_coord_work_t
     }
 
     const t_pull_coord params; /* Pull coordinate parameters */
+
+    /* Dynamic pull group 0 for this coordinate with dynamic weights, only present when needed */
+    std::unique_ptr<pull_group_work_t> dynamicGroup0;
 
     double value_ref; /* The reference value, usually init+rate*t, units of nm or rad */
 
@@ -236,7 +250,6 @@ struct pull_t
 
     /* Parameters + dynamic data for groups */
     std::vector<pull_group_work_t> group; /* The pull group param and work data */
-    std::vector<pull_group_work_t> dyna;  /* Dynamic groups for geom=cylinder */
 
     /* Parameters + dynamic data for coordinates */
     std::vector<pull_coord_work_t> coord; /* The pull group param and work data */
@@ -244,8 +257,7 @@ struct pull_t
     /* Global dynamic data */
     gmx_bool bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    int                  nthreads; /* Number of threads used by the pull code */
-    std::vector<ComSums> comSums;  /* Work array for summing for COM, 1 entry per thread */
+    std::vector<ComSums> comSums; /* Work array for summing for COM, 1 entry per thread */
 
     pull_comm_t comm; /* Communication parameters, communicator and buffers */
 

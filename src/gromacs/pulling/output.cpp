@@ -95,7 +95,7 @@ static void addToPullxHistory(pull_t* pull)
         {
             for (int m = 0; m < DIM; m++)
             {
-                pcrdHistory.dynaX[m] += pull->dyna[c].x[m];
+                pcrdHistory.dynaX[m] += pcrd.dynamicGroup0->x[m];
             }
         }
     }
@@ -236,7 +236,7 @@ static void pull_print_x(FILE* out, pull_t* pull, double t)
                         }
                         else
                         {
-                            fprintf(out, "\t%g", pull->dyna[c].x[m]);
+                            fprintf(out, "\t%g", pcrd.dynamicGroup0->x[m]);
                         }
                     }
                 }

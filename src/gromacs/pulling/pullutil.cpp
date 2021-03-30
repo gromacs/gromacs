@@ -186,13 +186,11 @@ static void make_cyl_refgrps(const t_commrec*               cr,
     double inv_cyl_r2 = 1.0 / gmx::square(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
-    for (size_t c = 0; c < pull->coord.size(); c++)
+    int bufferOffset = 0;
+    for (pull_coord_work_t& pcrd : pull->coord)
     {
-        pull_coord_work_t* pcrd;
-        double             sum_a, wmass, wwmass;
-        dvec               radf_fac0, radf_fac1;
-
-        pcrd = &pull->coord[c];
+        double sum_a, wmass, wwmass;
+        dvec   radf_fac0, radf_fac1;
 
         sum_a  = 0;
         wmass  = 0;
@@ -200,14 +198,14 @@ static void make_cyl_refgrps(const t_commrec*               cr,
         clear_dvec(radf_fac0);
         clear_dvec(radf_fac1);
 
-        if (pcrd->params.eGeom == PullGroupGeometry::Cylinder)
+        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
         {
             /* pref will be the same group for all pull coordinates */
-            const pull_group_work_t& pref  = pull->group[pcrd->params.group[0]];
-            const pull_group_work_t& pgrp  = pull->group[pcrd->params.group[1]];
-            pull_group_work_t&       pdyna = pull->dyna[c];
+            const pull_group_work_t& pref  = pull->group[pcrd.params.group[0]];
+            const pull_group_work_t& pgrp  = pull->group[pcrd.params.group[1]];
+            pull_group_work_t&       pdyna = *pcrd.dynamicGroup0;
             rvec                     direction;
-            copy_dvec_to_rvec(pcrd->spatialData.vec, direction);
+            copy_dvec_to_rvec(pcrd.spatialData.vec, direction);
 
             /* Since we have not calculated the COM of the cylinder group yet,
              * we calculate distances with respect to location of the pull
@@ -215,15 +213,15 @@ static void make_cyl_refgrps(const t_commrec*               cr,
              * here we already have the COM of the pull group. This resolves
              * any PBC issues and we don't need to use a PBC-atom here.
              */
-            if (pcrd->params.rate != 0)
+            if (pcrd.params.rate != 0)
             {
                 /* With rate=0, value_ref is set initially */
-                pcrd->value_ref = pcrd->params.init + pcrd->params.rate * t;
+                pcrd.value_ref = pcrd.params.init + pcrd.params.rate * t;
             }
             rvec reference;
             for (int m = 0; m < DIM; m++)
             {
-                reference[m] = pgrp.x[m] - pcrd->spatialData.vec[m] * pcrd->value_ref;
+                reference[m] = pgrp.x[m] - pcrd.spatialData.vec[m] * pcrd.value_ref;
             }
 
             auto localAtomIndices = pref.atomSet.localIndex();
@@ -290,8 +288,9 @@ static void make_cyl_refgrps(const t_commrec*               cr,
             }
         }
 
-        auto buffer = gmx::arrayRefFromArray(
-                comm->cylinderBuffer.data() + c * c_cylinderBufferStride, c_cylinderBufferStride);
+        auto buffer = gmx::arrayRefFromArray(comm->cylinderBuffer.data() + bufferOffset,
+                                             c_cylinderBufferStride);
+        bufferOffset += c_cylinderBufferStride;
 
         buffer[0] = wmass;
         buffer[1] = wwmass;
@@ -312,28 +311,26 @@ static void make_cyl_refgrps(const t_commrec*               cr,
         pullAllReduce(cr, comm, pull->coord.size() * c_cylinderBufferStride, comm->cylinderBuffer.data());
     }
 
-    for (size_t c = 0; c < pull->coord.size(); c++)
+    bufferOffset = 0;
+    for (pull_coord_work_t& pcrd : pull->coord)
     {
-        pull_coord_work_t* pcrd;
-
-        pcrd = &pull->coord[c];
-
-        if (pcrd->params.eGeom == PullGroupGeometry::Cylinder)
+        if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
         {
-            pull_group_work_t*    pdyna       = &pull->dyna[c];
-            pull_group_work_t*    pgrp        = &pull->group[pcrd->params.group[1]];
-            PullCoordSpatialData& spatialData = pcrd->spatialData;
+            pull_group_work_t&    dynamicGroup0 = *pcrd.dynamicGroup0;
+            pull_group_work_t&    group1        = pull->group[pcrd.params.group[1]];
+            PullCoordSpatialData& spatialData   = pcrd.spatialData;
 
-            auto buffer = gmx::constArrayRefFromArray(
-                    comm->cylinderBuffer.data() + c * c_cylinderBufferStride, c_cylinderBufferStride);
-            double wmass   = buffer[0];
-            double wwmass  = buffer[1];
-            pdyna->mwscale = 1.0 / wmass;
+            auto buffer = gmx::constArrayRefFromArray(comm->cylinderBuffer.data() + bufferOffset,
+                                                      c_cylinderBufferStride);
+            bufferOffset += c_cylinderBufferStride;
+            double wmass          = buffer[0];
+            double wwmass         = buffer[1];
+            dynamicGroup0.mwscale = 1.0 / wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
              */
-            pdyna->wscale = wmass / wwmass;
-            pdyna->invtm  = wwmass / (wmass * wmass);
+            dynamicGroup0.wscale = wmass / wwmass;
+            dynamicGroup0.invtm  = wwmass / (wmass * wmass);
 
             /* We store the deviation of the COM from the reference location
              * used above, since we need it when we apply the radial forces
@@ -342,9 +339,9 @@ static void make_cyl_refgrps(const t_commrec*               cr,
             spatialData.cyl_dev = 0;
             for (int m = 0; m < DIM; m++)
             {
-                double reference = pgrp->x[m] - spatialData.vec[m] * pcrd->value_ref;
-                double dist      = -spatialData.vec[m] * buffer[2] * pdyna->mwscale;
-                pdyna->x[m]      = reference - dist;
+                double reference   = group1.x[m] - spatialData.vec[m] * pcrd.value_ref;
+                double dist        = -spatialData.vec[m] * buffer[2] * dynamicGroup0.mwscale;
+                dynamicGroup0.x[m] = reference - dist;
                 spatialData.cyl_dev += dist;
             }
             /* Now we know the exact COM of the cylinder reference group,
@@ -360,12 +357,12 @@ static void make_cyl_refgrps(const t_commrec*               cr,
             if (debug)
             {
                 fprintf(debug,
-                        "Pull cylinder group %zu:%8.3f%8.3f%8.3f m:%8.3f\n",
-                        c,
-                        pdyna->x[0],
-                        pdyna->x[1],
-                        pdyna->x[2],
-                        1.0 / pdyna->invtm);
+                        "Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
+                        pcrd.params.coordIndex,
+                        dynamicGroup0.x[0],
+                        dynamicGroup0.x[1],
+                        dynamicGroup0.x[2],
+                        1.0 / dynamicGroup0.invtm);
                 fprintf(debug,
                         "ffrad %8.3f %8.3f %8.3f\n",
                         spatialData.ffrad[XX],
@@ -638,17 +635,18 @@ void pull_calc_coms(const t_commrec*               cr,
                 }
                 else
                 {
-#pragma omp parallel for num_threads(pull->nthreads) schedule(static)
-                    for (int t = 0; t < pull->nthreads; t++)
+                    const int numThreads = pgrp->numThreads();
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+                    for (int t = 0; t < numThreads; t++)
                     {
-                        int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
-                        int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
+                        int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
+                        int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
                         sum_com_part(
                                 pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc, &pull->comSums[t]);
                     }
 
                     /* Reduce the thread contributions to sum_com[0] */
-                    for (int t = 1; t < pull->nthreads; t++)
+                    for (int t = 1; t < numThreads; t++)
                     {
                         comSumsTotal.sum_wm += pull->comSums[t].sum_wm;
                         comSumsTotal.sum_wwm += pull->comSums[t].sum_wwm;
@@ -677,18 +675,19 @@ void pull_calc_coms(const t_commrec*               cr,
                  * This uses a slab of the system, thus we always have many
                  * atoms in the pull groups. Therefore, always use threads.
                  */
-#pragma omp parallel for num_threads(pull->nthreads) schedule(static)
-                for (int t = 0; t < pull->nthreads; t++)
+                const int numThreads = pgrp->numThreads();
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+                for (int t = 0; t < numThreads; t++)
                 {
-                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
-                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
+                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
+                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
                     sum_com_part_cosweight(
                             pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp, masses, &pull->comSums[t]);
                 }
 
                 /* Reduce the thread contributions to comSums[0] */
                 ComSums& comSumsTotal = pull->comSums[0];
-                for (int t = 1; t < pull->nthreads; t++)
+                for (int t = 1; t < numThreads; t++)
                 {
                     comSumsTotal.sum_cm += pull->comSums[t].sum_cm;
                     comSumsTotal.sum_sm += pull->comSums[t].sum_sm;
@@ -919,9 +918,9 @@ int pullCheckPbcWithinGroups(const pull_t& pull, gmx::ArrayRef<const gmx::RVec> 
 
     /* Determine what dimensions are used for each group by pull coordinates */
     std::vector<BoolVec> dimUsed(pull.group.size(), { false, false, false });
-    for (size_t c = 0; c < pull.coord.size(); c++)
+    for (const pull_coord_work_t& pcrd : pull.coord)
     {
-        const t_pull_coord& coordParams = pull.coord[c].params;
+        const t_pull_coord& coordParams = pcrd.params;
         for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
         {
             for (int d = 0; d < DIM; d++)
@@ -970,9 +969,9 @@ bool pullCheckPbcWithinGroup(const pull_t&                  pull,
 
     /* Determine what dimensions are used for each group by pull coordinates */
     BoolVec dimUsed = { false, false, false };
-    for (size_t c = 0; c < pull.coord.size(); c++)
+    for (const pull_coord_work_t& pcrd : pull.coord)
     {
-        const t_pull_coord& coordParams = pull.coord[c].params;
+        const t_pull_coord& coordParams = pcrd.params;
         for (int groupIndex = 0; groupIndex < coordParams.ngroup; groupIndex++)
         {
             if (coordParams.group[groupIndex] == groupNr)
@@ -1090,16 +1089,17 @@ void initPullComFromPrevStep(const t_commrec*               cr,
             }
             else
             {
-#pragma omp parallel for num_threads(pull->nthreads) schedule(static)
-                for (int t = 0; t < pull->nthreads; t++)
+                const int numThreads = pgrp->numThreads();
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+                for (int t = 0; t < numThreads; t++)
                 {
-                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
-                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
+                    int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / numThreads;
+                    int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / numThreads;
                     sum_com_part(pgrp, ind_start, ind_end, x, {}, masses, pbc, x_pbc, &pull->comSums[t]);
                 }
 
                 /* Reduce the thread contributions to sum_com[0] */
-                for (int t = 1; t < pull->nthreads; t++)
+                for (int t = 1; t < numThreads; t++)
                 {
                     comSumsTotal.sum_wm += pull->comSums[t].sum_wm;
                     comSumsTotal.sum_wwm += pull->comSums[t].sum_wwm;
