@@ -324,8 +324,8 @@ static void apply_forces_vec_torque(const struct pull_t*      pull,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces_coord(struct pull_t*               pull,
-                               int                          coord,
+static void apply_forces_coord(pull_t*                      pull,
+                               const pull_coord_work_t&     pcrd,
                                const PullCoordVectorForces& forces,
                                gmx::ArrayRef<const real>    masses,
                                rvec*                        f)
@@ -336,11 +336,9 @@ static void apply_forces_coord(struct pull_t*               pull,
      * to data races.
      */
 
-    const pull_coord_work_t& pcrd = pull->coord[coord];
-
     if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
     {
-        apply_forces_cyl_grp(&pull->dyna[coord],
+        apply_forces_cyl_grp(&pull->dyna[pcrd.params.coordIndex],
                              pcrd.spatialData.cyl_dev,
                              masses,
                              forces.force01,
@@ -465,29 +463,33 @@ real max_pull_distance2(const pull_coord_work_t* pcrd, const t_pbc* pbc)
  * \param[in]  max_dist2    The maximum distance squared
  * \param[out] dr           The distance vector
  */
-static void low_get_pull_coord_dr(const struct pull_t*     pull,
+static void low_get_pull_coord_dr(const pull_t&            pull,
                                   const pull_coord_work_t* pcrd,
                                   const t_pbc*             pbc,
                                   const dvec               xg,
-                                  dvec                     xref,
+                                  const dvec               xref,
                                   const int                groupIndex0,
                                   const int                groupIndex1,
                                   const double             max_dist2,
                                   dvec                     dr)
 {
-    const pull_group_work_t* pgrp0 = &pull->group[pcrd->params.group[0]];
+    const pull_group_work_t& pgrp0 = pull.group[pcrd->params.group[0]];
+
+    // Group coordinate, to be updated with the reference position
+    dvec xrefr;
 
     /* Only the first group can be an absolute reference, in that case nat=0 */
-    if (pgrp0->params.ind.empty())
+    if (pgrp0.params.ind.empty())
     {
         for (int m = 0; m < DIM; m++)
         {
-            xref[m] = pcrd->params.origin[m];
+            xrefr[m] = pcrd->params.origin[m];
         }
     }
-
-    dvec xrefr;
-    copy_dvec(xref, xrefr);
+    else
+    {
+        copy_dvec(xref, xrefr);
+    }
 
     dvec dref = { 0, 0, 0 };
     if (pcrd->params.eGeom == PullGroupGeometry::DirectionPBC)
@@ -542,9 +544,10 @@ static void low_get_pull_coord_dr(const struct pull_t*     pull,
 /* This function returns the distance based on the contents of the pull struct.
  * pull->coord[coord_ind].dr, and potentially vector, are updated.
  */
-static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* pbc)
+static void get_pull_coord_dr(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc* pbc)
 {
-    pull_coord_work_t*    pcrd        = &pull->coord[coord_ind];
+    const int coord_ind = pcrd->params.coordIndex;
+
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
     double md2;
@@ -568,8 +571,8 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         dvec vec;
         int  m;
 
-        const pull_group_work_t& pgrp2 = pull->group[pcrd->params.group[2]];
-        const pull_group_work_t& pgrp3 = pull->group[pcrd->params.group[3]];
+        const pull_group_work_t& pgrp2 = pull.group[pcrd->params.group[2]];
+        const pull_group_work_t& pgrp3 = pull.group[pcrd->params.group[3]];
 
         pbc_dx_d(pbc, pgrp3.x, pgrp2.x, vec);
 
@@ -596,15 +599,15 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         }
     }
 
-    pull_group_work_t* pgrp0 = &pull->group[pcrd->params.group[0]];
-    pull_group_work_t* pgrp1 = &pull->group[pcrd->params.group[1]];
+    const pull_group_work_t& pgrp0 = pull.group[pcrd->params.group[0]];
+    const pull_group_work_t& pgrp1 = pull.group[pcrd->params.group[1]];
 
     low_get_pull_coord_dr(
             pull,
             pcrd,
             pbc,
-            pgrp1->x,
-            pcrd->params.eGeom == PullGroupGeometry::Cylinder ? pull->dyna[coord_ind].x : pgrp0->x,
+            pgrp1.x,
+            pcrd->params.eGeom == PullGroupGeometry::Cylinder ? pull.dyna[coord_ind].x : pgrp0.x,
             0,
             1,
             md2,
@@ -612,19 +615,17 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
 
     if (pcrd->params.ngroup >= 4)
     {
-        pull_group_work_t *pgrp2, *pgrp3;
-        pgrp2 = &pull->group[pcrd->params.group[2]];
-        pgrp3 = &pull->group[pcrd->params.group[3]];
+        const pull_group_work_t& pgrp2 = pull.group[pcrd->params.group[2]];
+        const pull_group_work_t& pgrp3 = pull.group[pcrd->params.group[3]];
 
-        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp3->x, pgrp2->x, 2, 3, md2, spatialData.dr23);
+        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp3.x, pgrp2.x, 2, 3, md2, spatialData.dr23);
     }
     if (pcrd->params.ngroup >= 6)
     {
-        pull_group_work_t *pgrp4, *pgrp5;
-        pgrp4 = &pull->group[pcrd->params.group[4]];
-        pgrp5 = &pull->group[pcrd->params.group[5]];
+        const pull_group_work_t& pgrp4 = pull.group[pcrd->params.group[4]];
+        const pull_group_work_t& pgrp5 = pull.group[pcrd->params.group[5]];
 
-        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp5->x, pgrp4->x, 4, 5, md2, spatialData.dr45);
+        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp5.x, pgrp4.x, 4, 5, md2, spatialData.dr45);
     }
 }
 
@@ -644,51 +645,52 @@ static void make_periodic_2pi(double* x)
     }
 }
 
-/* This function should always be used to modify pcrd->value_ref */
-static void low_set_pull_coord_reference_value(pull_coord_work_t* pcrd, int coord_ind, double value_ref)
+/* This function should always be used to get values for setting value_ref in pull_coord_work_t */
+static double sanitizePullCoordReferenceValue(const t_pull_coord& pcrdParams, double value_ref)
 {
-    GMX_ASSERT(pcrd->params.eType != PullingAlgorithm::External,
+    GMX_ASSERT(pcrdParams.eType != PullingAlgorithm::External,
                "The pull coord reference value should not be used with type external-potential");
 
-    if (pcrd->params.eGeom == PullGroupGeometry::Distance)
+    if (pcrdParams.eGeom == PullGroupGeometry::Distance)
     {
         if (value_ref < 0)
         {
             gmx_fatal(FARGS,
                       "Pull reference distance for coordinate %d (%f) needs to be non-negative",
-                      coord_ind + 1,
+                      pcrdParams.coordIndex + 1,
                       value_ref);
         }
     }
-    else if (pcrd->params.eGeom == PullGroupGeometry::Angle
-             || pcrd->params.eGeom == PullGroupGeometry::AngleAxis)
+    else if (pcrdParams.eGeom == PullGroupGeometry::Angle || pcrdParams.eGeom == PullGroupGeometry::AngleAxis)
     {
         if (value_ref < 0 || value_ref > M_PI)
         {
             gmx_fatal(FARGS,
                       "Pull reference angle for coordinate %d (%f) needs to be in the allowed "
                       "interval [0,180] deg",
-                      coord_ind + 1,
-                      value_ref * pull_conversion_factor_internal2userinput(&pcrd->params));
+                      pcrdParams.coordIndex + 1,
+                      value_ref * pull_conversion_factor_internal2userinput(&pcrdParams));
         }
     }
-    else if (pcrd->params.eGeom == PullGroupGeometry::Dihedral)
+    else if (pcrdParams.eGeom == PullGroupGeometry::Dihedral)
     {
         /* Allow pulling to be periodic for dihedral angles by remapping the reference value to the interval [-pi, pi). */
         make_periodic_2pi(&value_ref);
     }
 
-    pcrd->value_ref = value_ref;
+    return value_ref;
 }
 
-static void update_pull_coord_reference_value(pull_coord_work_t* pcrd, int coord_ind, double t)
+static void updatePullCoordReferenceValue(double* referenceValue, const t_pull_coord& pcrdParams, double t)
 {
+    GMX_ASSERT(referenceValue, "Need a valid reference value object");
+
     /* With zero rate the reference value is set initially and doesn't change */
-    if (pcrd->params.rate != 0)
+    if (pcrdParams.rate != 0)
     {
-        double value_ref = (pcrd->params.init + pcrd->params.rate * t)
-                           * pull_conversion_factor_userinput2internal(&pcrd->params);
-        low_set_pull_coord_reference_value(pcrd, coord_ind, value_ref);
+        const double inputValue = (pcrdParams.init + pcrdParams.rate * t)
+                                  * pull_conversion_factor_userinput2internal(&pcrdParams);
+        *referenceValue = sanitizePullCoordReferenceValue(pcrdParams, inputValue);
     }
 }
 
@@ -716,14 +718,9 @@ static double get_dihedral_angle_coord(PullCoordSpatialData* spatialData)
 /* Calculates pull->coord[coord_ind].value.
  * This function also updates pull->coord[coord_ind].dr.
  */
-static void get_pull_coord_distance(struct pull_t* pull, int coord_ind, const t_pbc* pbc)
+static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc* pbc)
 {
-    pull_coord_work_t* pcrd;
-    int                m;
-
-    pcrd = &pull->coord[coord_ind];
-
-    get_pull_coord_dr(pull, coord_ind, pbc);
+    get_pull_coord_dr(pull, pcrd, pbc);
 
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
@@ -739,7 +736,7 @@ static void get_pull_coord_distance(struct pull_t* pull, int coord_ind, const t_
         case PullGroupGeometry::Cylinder:
             /* Pull along vec */
             spatialData.value = 0;
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 spatialData.value += spatialData.vec[m] * spatialData.dr01[m];
             }
@@ -760,21 +757,18 @@ static void get_pull_coord_distance(struct pull_t* pull, int coord_ind, const t_
 /* Returns the deviation from the reference value.
  * Updates pull->coord[coord_ind].dr, .value and .value_ref.
  */
-static double get_pull_coord_deviation(struct pull_t* pull, int coord_ind, const t_pbc* pbc, double t)
+static double get_pull_coord_deviation(const pull_t& pull, pull_coord_work_t* pcrd, const t_pbc* pbc, double t)
 {
-    pull_coord_work_t* pcrd;
-    double             dev = 0;
-
-    pcrd = &pull->coord[coord_ind];
+    double dev = 0;
 
     /* Update the reference value before computing the distance,
      * since it is used in the distance computation with periodic pulling.
      */
-    update_pull_coord_reference_value(pcrd, coord_ind, t);
+    updatePullCoordReferenceValue(&pcrd->value_ref, pcrd->params, t);
 
-    get_pull_coord_distance(pull, coord_ind, pbc);
+    get_pull_coord_distance(pull, pcrd, pbc);
 
-    get_pull_coord_distance(pull, coord_ind, pbc);
+    get_pull_coord_distance(pull, pcrd, pbc);
 
     /* Determine the deviation */
     dev = pcrd->spatialData.value - pcrd->value_ref;
@@ -798,9 +792,9 @@ static double get_pull_coord_deviation(struct pull_t* pull, int coord_ind, const
     return dev;
 }
 
-double get_pull_coord_value(struct pull_t* pull, int coord_ind, const t_pbc* pbc)
+double get_pull_coord_value(pull_t* pull, int coord_ind, const t_pbc* pbc)
 {
-    get_pull_coord_distance(pull, coord_ind, pbc);
+    get_pull_coord_distance(*pull, &pull->coord[coord_ind], pbc);
 
     return pull->coord[coord_ind].spatialData.value;
 }
@@ -869,7 +863,7 @@ static void do_constraint(struct pull_t*           pull,
          * We don't modify dr and value anymore, so these values are also used
          * for printing.
          */
-        get_pull_coord_distance(pull, c, pbc);
+        get_pull_coord_distance(*pull, pcrd, pbc);
 
         const PullCoordSpatialData& spatialData = pcrd->spatialData;
         if (debug)
@@ -929,14 +923,14 @@ static void do_constraint(struct pull_t*           pull,
                 continue;
             }
 
-            update_pull_coord_reference_value(pcrd, c, t);
+            updatePullCoordReferenceValue(&pcrd->value_ref, pcrd->params, t);
 
             pgrp0 = &pull->group[pcrd->params.group[0]];
             pgrp1 = &pull->group[pcrd->params.group[1]];
 
             /* Get the current difference vector */
             low_get_pull_coord_dr(
-                    pull, pcrd, pbc, rnew[pcrd->params.group[1]], rnew[pcrd->params.group[0]], 0, 1, -1, unc_ij);
+                    *pull, pcrd, pbc, rnew[pcrd->params.group[1]], rnew[pcrd->params.group[0]], 0, 1, -1, unc_ij);
 
             if (debug)
             {
@@ -1019,8 +1013,8 @@ static void do_constraint(struct pull_t*           pull,
 
                 g0 = pcrd->params.group[0];
                 g1 = pcrd->params.group[1];
-                low_get_pull_coord_dr(pull, pcrd, pbc, rnew[g1], rnew[g0], 0, 1, -1, tmp);
-                low_get_pull_coord_dr(pull, pcrd, pbc, dr1, dr0, 0, 1, -1, tmp3);
+                low_get_pull_coord_dr(*pull, pcrd, pbc, rnew[g1], rnew[g0], 0, 1, -1, tmp);
+                low_get_pull_coord_dr(*pull, pcrd, pbc, dr1, dr0, 0, 1, -1, tmp3);
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         rnew[g0][0],
@@ -1064,7 +1058,7 @@ static void do_constraint(struct pull_t*           pull,
             }
 
             low_get_pull_coord_dr(
-                    pull, &coord, pbc, rnew[coord.params.group[1]], rnew[coord.params.group[0]], 0, 1, -1, unc_ij);
+                    *pull, &coord, pbc, rnew[coord.params.group[1]], rnew[coord.params.group[0]], 0, 1, -1, unc_ij);
 
             switch (coord.params.eGeom)
             {
@@ -1533,7 +1527,6 @@ static void check_external_potential_registration(const struct pull_t* pull)
     }
 }
 
-
 /* Pull takes care of adding the forces of the external potential.
  * The external potential module  has to make sure that the corresponding
  * potential energy is added either to the pull term or to a term
@@ -1576,7 +1569,7 @@ void apply_external_pull_coord_force(struct pull_t*            pull,
         }
 
         apply_forces_coord(
-                pull, coord_index, pullCoordForces, masses, as_rvec_array(forceWithVirial->force_.data()));
+                pull, *pcrd, pullCoordForces, masses, as_rvec_array(forceWithVirial->force_.data()));
     }
 
     pull->numExternalPotentialsStillToBeAppliedThisStep--;
@@ -1585,26 +1578,24 @@ void apply_external_pull_coord_force(struct pull_t*            pull,
 /* Calculate the pull potential and scalar force for a pull coordinate.
  * Returns the vector forces for the pull coordinate.
  */
-static PullCoordVectorForces do_pull_pot_coord(struct pull_t* pull,
-                                               int            coord_ind,
-                                               t_pbc*         pbc,
-                                               double         t,
-                                               real           lambda,
-                                               real*          V,
-                                               tensor         vir,
-                                               real*          dVdl)
+static PullCoordVectorForces do_pull_pot_coord(const pull_t&      pull,
+                                               pull_coord_work_t* pcrd,
+                                               t_pbc*             pbc,
+                                               double             t,
+                                               real               lambda,
+                                               real*              V,
+                                               tensor             vir,
+                                               real*              dVdl)
 {
-    pull_coord_work_t& pcrd = pull->coord[coord_ind];
+    assert(pcrd->params.eType != PullingAlgorithm::Constraint);
 
-    assert(pcrd.params.eType != PullingAlgorithm::Constraint);
+    double dev = get_pull_coord_deviation(pull, pcrd, pbc, t);
 
-    double dev = get_pull_coord_deviation(pull, coord_ind, pbc, t);
+    calc_pull_coord_scalar_force_and_potential(pcrd, dev, lambda, V, dVdl);
 
-    calc_pull_coord_scalar_force_and_potential(&pcrd, dev, lambda, V, dVdl);
+    PullCoordVectorForces pullCoordForces = calculateVectorForces(*pcrd);
 
-    PullCoordVectorForces pullCoordForces = calculateVectorForces(pcrd);
-
-    add_virial_coord(vir, pcrd, pullCoordForces);
+    add_virial_coord(vir, *pcrd, pullCoordForces);
 
     return pullCoordForces;
 }
@@ -1652,10 +1643,10 @@ real pull_potential(struct pull_t*                 pull,
             }
 
             PullCoordVectorForces pullCoordForces = do_pull_pot_coord(
-                    pull, c, pbc, t, lambda, &V, computeVirial ? virial : nullptr, &dVdl);
+                    *pull, pcrd, pbc, t, lambda, &V, computeVirial ? virial : nullptr, &dVdl);
 
             /* Distribute the force over the atoms in the pulled groups */
-            apply_forces_coord(pull, c, pullCoordForces, masses, f);
+            apply_forces_coord(pull, *pcrd, pullCoordForces, masses, f);
         }
 
         if (MASTER(cr))
@@ -2037,6 +2028,9 @@ struct pull_t* init_pull(FILE*                     fplog,
 
     for (int c = 0; c < pull->params.ncoord; c++)
     {
+        GMX_RELEASE_ASSERT(pull_params->coord[c].coordIndex == c,
+                           "The stored index should match the position in the vector");
+
         /* Construct a pull coordinate, copying all coordinate parameters */
         pull->coord.emplace_back(pull_params->coord[c]);
 
@@ -2132,8 +2126,9 @@ struct pull_t* init_pull(FILE*                     fplog,
             /* Initialize the constant reference value */
             if (pcrd->params.eType != PullingAlgorithm::External)
             {
-                low_set_pull_coord_reference_value(
-                        pcrd, c, pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
+                pcrd->value_ref = sanitizePullCoordReferenceValue(
+                        pcrd->params,
+                        pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
             }
             else
             {

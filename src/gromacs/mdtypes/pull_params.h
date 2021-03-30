@@ -69,7 +69,7 @@ struct t_pull_group
 };
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */
-static const int c_pullCoordNgroupMax = 6;
+static constexpr int c_pullCoordNgroupMax = 6;
 
 /*! \brief Struct that defines a pull coordinate */
 struct t_pull_coord
@@ -108,6 +108,8 @@ struct t_pull_coord
     real k = 0.0;
     //! Force constant for state B
     real kB = 0.0;
+    //! The index of this coordinate in the list of coordinates
+    int coordIndex = -1;
 };
 
 /*! \brief Struct containing all pull parameters */

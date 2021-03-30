@@ -763,6 +763,10 @@ static void do_pull(gmx::ISerializer* serializer, pull_params_t* pull, int file_
         for (g = 0; g < pull->ncoord; g++)
         {
             do_pull_coord(serializer, &pull->coord[g], file_version, ePullOld, eGeomOld, dimOld);
+            if (serializer->reading())
+            {
+                pull->coord[g].coordIndex = g;
+            }
         }
     }
     if (file_version >= tpxv_PullAverage)

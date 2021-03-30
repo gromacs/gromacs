@@ -439,6 +439,8 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
 
         /* Initialize the pull coordinate */
         init_pull_coord(&pullCoord, coordNum, dim_buf, origin_buf, vec_buf, wi);
+
+        pullCoord.coordIndex = coordNum - 1;
         pull->coord.emplace_back(pullCoord);
     }
 
@@ -519,7 +521,9 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups, gmx::ArrayRef
 {
     for (int c = 0; c < int(pullCoords.size()); c++)
     {
-        t_pull_coord pcrd = pullCoords[c];
+        const t_pull_coord& pcrd = pullCoords[c];
+
+        GMX_RELEASE_ASSERT(pcrd.coordIndex == c, "coordIndex should match the index in the vector");
 
         if (pcrd.group[0] < 0 || pcrd.group[0] >= int(pullGroups.size()) || pcrd.group[1] < 0
             || pcrd.group[1] >= int(pullGroups.size()))
@@ -527,14 +531,14 @@ void checkPullCoords(gmx::ArrayRef<const t_pull_group> pullGroups, gmx::ArrayRef
             gmx_fatal(FARGS,
                       "Pull group index in pull-coord%d-groups out of range, should be between %d "
                       "and %d",
-                      c + 1,
+                      pcrd.coordIndex + 1,
                       0,
                       int(pullGroups.size()) + 1);
         }
 
         if (pcrd.group[0] == pcrd.group[1])
         {
-            gmx_fatal(FARGS, "Identical pull group indices in pull-coord%d-groups", c + 1);
+            gmx_fatal(FARGS, "Identical pull group indices in pull-coord%d-groups", pcrd.coordIndex + 1);
         }
 
         if (pcrd.eGeom == PullGroupGeometry::Cylinder)

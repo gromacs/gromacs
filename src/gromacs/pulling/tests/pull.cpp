@@ -93,10 +93,11 @@ protected:
         {
             // Distance pulling in all 3 dimensions
             t_pull_coord params;
-            params.eGeom   = PullGroupGeometry::Distance;
-            params.dim[XX] = 1;
-            params.dim[YY] = 1;
-            params.dim[ZZ] = 1;
+            params.eGeom      = PullGroupGeometry::Distance;
+            params.dim[XX]    = 1;
+            params.dim[YY]    = 1;
+            params.dim[ZZ]    = 1;
+            params.coordIndex = 0;
             pull_coord_work_t pcrd(params);
             clear_dvec(pcrd.spatialData.vec);
 
@@ -112,10 +113,11 @@ protected:
         {
             // Distance pulling along Z
             t_pull_coord params;
-            params.eGeom   = PullGroupGeometry::Distance;
-            params.dim[XX] = 0;
-            params.dim[YY] = 0;
-            params.dim[ZZ] = 1;
+            params.eGeom      = PullGroupGeometry::Distance;
+            params.dim[XX]    = 0;
+            params.dim[YY]    = 0;
+            params.dim[ZZ]    = 1;
+            params.coordIndex = 0;
             pull_coord_work_t pcrd(params);
             clear_dvec(pcrd.spatialData.vec);
             EXPECT_REAL_EQ_TOL(
@@ -125,10 +127,11 @@ protected:
         {
             // Directional pulling along Z
             t_pull_coord params;
-            params.eGeom   = PullGroupGeometry::Direction;
-            params.dim[XX] = 1;
-            params.dim[YY] = 1;
-            params.dim[ZZ] = 1;
+            params.eGeom      = PullGroupGeometry::Direction;
+            params.dim[XX]    = 1;
+            params.dim[YY]    = 1;
+            params.dim[ZZ]    = 1;
+            params.coordIndex = 0;
             pull_coord_work_t pcrd(params);
             clear_dvec(pcrd.spatialData.vec);
             pcrd.spatialData.vec[ZZ] = 1;
@@ -139,10 +142,11 @@ protected:
         {
             // Directional pulling along X
             t_pull_coord params;
-            params.eGeom   = PullGroupGeometry::Direction;
-            params.dim[XX] = 1;
-            params.dim[YY] = 1;
-            params.dim[ZZ] = 1;
+            params.eGeom      = PullGroupGeometry::Direction;
+            params.dim[XX]    = 1;
+            params.dim[YY]    = 1;
+            params.dim[ZZ]    = 1;
+            params.coordIndex = 0;
             pull_coord_work_t pcrd(params);
             clear_dvec(pcrd.spatialData.vec);
             pcrd.spatialData.vec[XX] = 1;
