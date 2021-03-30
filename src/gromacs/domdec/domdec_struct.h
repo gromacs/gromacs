@@ -200,8 +200,6 @@ struct gmx_domdec_t
 
     /* Global atom number to interaction list */
     std::unique_ptr<gmx_reverse_top_t> reverse_top;
-    int                                nbonded_global = 0;
-    int                                nbonded_local  = 0;
 
     /* Whether we have non-self exclusion */
     bool haveExclusions = false;

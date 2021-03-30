@@ -301,7 +301,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::ArrayRef<real>            constraintsRmsdData,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
-                     int*                           totalNumberOfBondedInteractions,
                      gmx_bool*                      bSumEkinhOld,
                      const int                      flags)
 {
@@ -372,7 +371,6 @@ void compute_globals(gmx_global_stat*               gstat,
                             bStopCM ? vcm : nullptr,
                             signalBuffer.size(),
                             signalBuffer.data(),
-                            totalNumberOfBondedInteractions,
                             *bSumEkinhOld,
                             flags);
                 wallcycle_stop(wcycle, ewcMoveE);

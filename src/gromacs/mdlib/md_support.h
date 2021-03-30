@@ -132,7 +132,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::ArrayRef<real>            constraintsRmsdData,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
-                     int*                           totalNumberOfBondedInteractions,
                      gmx_bool*                      bSumEkinhOld,
                      int                            flags);
 

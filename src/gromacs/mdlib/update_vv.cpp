@@ -45,7 +45,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "gromacs/domdec/partition.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -70,45 +70,44 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 
-void integrateVVFirstStep(int64_t                   step,
-                          bool                      bFirstStep,
-                          bool                      bInitStep,
-                          gmx::StartingBehavior     startingBehavior,
-                          int                       nstglobalcomm,
-                          const t_inputrec*         ir,
-                          t_forcerec*               fr,
-                          t_commrec*                cr,
-                          t_state*                  state,
-                          t_mdatoms*                mdatoms,
-                          const t_fcdata&           fcdata,
-                          t_extmass*                MassQ,
-                          t_vcm*                    vcm,
-                          const gmx_mtop_t&         top_global,
-                          const gmx_localtop_t&     top,
-                          gmx_enerdata_t*           enerd,
-                          gmx_ekindata_t*           ekind,
-                          gmx_global_stat*          gstat,
-                          real*                     last_ekin,
-                          bool                      bCalcVir,
-                          tensor                    total_vir,
-                          tensor                    shake_vir,
-                          tensor                    force_vir,
-                          tensor                    pres,
-                          matrix                    M,
-                          bool                      do_log,
-                          bool                      do_ene,
-                          bool                      bCalcEner,
-                          bool                      bGStat,
-                          bool                      bStopCM,
-                          bool                      bTrotter,
-                          bool                      bExchanged,
-                          bool*                     bSumEkinhOld,
-                          bool*                     shouldCheckNumberOfBondedInteractions,
-                          real*                     saved_conserved_quantity,
-                          gmx::ForceBuffers*        f,
-                          gmx::Update*              upd,
-                          gmx::Constraints*         constr,
-                          gmx::SimulationSignaller* nullSignaller,
+void integrateVVFirstStep(int64_t                                  step,
+                          bool                                     bFirstStep,
+                          bool                                     bInitStep,
+                          gmx::StartingBehavior                    startingBehavior,
+                          int                                      nstglobalcomm,
+                          const t_inputrec*                        ir,
+                          t_forcerec*                              fr,
+                          t_commrec*                               cr,
+                          t_state*                                 state,
+                          t_mdatoms*                               mdatoms,
+                          const t_fcdata&                          fcdata,
+                          t_extmass*                               MassQ,
+                          t_vcm*                                   vcm,
+                          const gmx_mtop_t&                        top_global,
+                          const gmx_localtop_t&                    top,
+                          gmx_enerdata_t*                          enerd,
+                          gmx_ekindata_t*                          ekind,
+                          gmx_global_stat*                         gstat,
+                          real*                                    last_ekin,
+                          bool                                     bCalcVir,
+                          tensor                                   total_vir,
+                          tensor                                   shake_vir,
+                          tensor                                   force_vir,
+                          tensor                                   pres,
+                          matrix                                   M,
+                          bool                                     do_log,
+                          bool                                     do_ene,
+                          bool                                     bCalcEner,
+                          bool                                     bGStat,
+                          bool                                     bStopCM,
+                          bool                                     bTrotter,
+                          bool                                     bExchanged,
+                          bool*                                    bSumEkinhOld,
+                          real*                                    saved_conserved_quantity,
+                          gmx::ForceBuffers*                       f,
+                          gmx::Update*                             upd,
+                          gmx::Constraints*                        constr,
+                          gmx::SimulationSignaller*                nullSignaller,
                           std::array<std::vector<int>, ettTSEQMAX> trotter_seq,
                           t_nrnb*                                  nrnb,
                           const gmx::MDLogger&                     mdlog,
@@ -165,7 +164,14 @@ void integrateVVFirstStep(int64_t                   step,
         if (bGStat || do_per_step(step - 1, nstglobalcomm))
         {
             wallcycle_stop(wcycle, ewcUPDATE);
-            int totalNumberOfBondedInteractions = -1;
+            int cglo_flags =
+                    ((bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
+                     | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
+                     | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN);
+            if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+            {
+                cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+            }
             compute_globals(gstat,
                             cr,
                             ir,
@@ -186,14 +192,8 @@ void integrateVVFirstStep(int64_t                   step,
                             (bCalcEner && constr != nullptr) ? constr->rmsdData() : gmx::ArrayRef<real>{},
                             nullSignaller,
                             state->box,
-                            &totalNumberOfBondedInteractions,
                             bSumEkinhOld,
-                            (bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
-                                    | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
-                                    | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0)
-                                    | (*shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                              : 0)
-                                    | CGLO_SCALEEKIN);
+                            cglo_flags);
             /* explanation of above:
                 a) We compute Ekin at the full time step
                 if 1) we are using the AveVel Ekin, and it's not the
@@ -201,14 +201,11 @@ void integrateVVFirstStep(int64_t                   step,
                 time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                 b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                 EkinAveVel because it's needed for the pressure */
-            checkNumberOfBondedInteractions(mdlog,
-                                            cr,
-                                            totalNumberOfBondedInteractions,
-                                            top_global,
-                                            &top,
-                                            makeConstArrayRef(state->x),
-                                            state->box,
-                                            shouldCheckNumberOfBondedInteractions);
+            if (DOMAINDECOMP(cr))
+            {
+                checkNumberOfBondedInteractions(
+                        mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+            }
             if (bStopCM)
             {
                 process_and_stopcm_grp(
@@ -268,7 +265,6 @@ void integrateVVFirstStep(int64_t                   step,
                                 gmx::ArrayRef<real>{},
                                 nullSignaller,
                                 state->box,
-                                nullptr,
                                 bSumEkinhOld,
                                 CGLO_GSTAT | CGLO_TEMPERATURE);
                 wallcycle_start(wcycle, ewcUPDATE);
@@ -392,7 +388,6 @@ void integrateVVSecondStep(int64_t                                  step,
                         gmx::ArrayRef<real>{},
                         nullSignaller,
                         lastbox,
-                        nullptr,
                         bSumEkinhOld,
                         (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
         wallcycle_start(wcycle, ewcUPDATE);

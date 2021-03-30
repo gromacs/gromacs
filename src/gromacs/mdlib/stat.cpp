@@ -146,7 +146,6 @@ void global_stat(const gmx_global_stat* gs,
                  t_vcm*                 vcm,
                  int                    nsig,
                  real*                  sig,
-                 int*                   totalNumberOfBondedInteractions,
                  bool                   bSumEkinhOld,
                  int                    flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
@@ -274,7 +273,10 @@ void global_stat(const gmx_global_stat* gs,
 
     if (checkNumberOfBondedInteractions)
     {
-        nb  = cr->dd->nbonded_local;
+        GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
+                           "No need to check number of bonded interactions when not using domain "
+                           "decomposition");
+        nb  = numBondedInteractions(*cr->dd);
         inb = add_bind(rb, 1, &nb);
     }
     if (nsig > 0)
@@ -375,7 +377,10 @@ void global_stat(const gmx_global_stat* gs,
     if (checkNumberOfBondedInteractions)
     {
         extract_bind(rb, inb, 1, &nb);
-        *totalNumberOfBondedInteractions = gmx::roundToInt(nb);
+        GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
+                           "No need to check number of bonded interactions when not using domain "
+                           "decomposition");
+        setNumberOfBondedInteractionsOverAllDomains(*cr->dd, gmx::roundToInt(nb));
     }
 
     if (nsig > 0)

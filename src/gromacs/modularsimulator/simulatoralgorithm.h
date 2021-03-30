@@ -292,18 +292,11 @@ public:
     //! Get a pointer to the signals vector
     [[nodiscard]] SimulationSignals* simulationSignals();
 
-    //! Set the callback to check the number of bonded interactions
-    void setCheckBondedInteractionsCallback(CheckBondedInteractionsCallback callback);
-    //! Move the callback to check the number of bonded interactions
-    [[nodiscard]] CheckBondedInteractionsCallback moveCheckBondedInteractionsCallback();
-
 private:
     //! Compute globals communication period
     const int nstglobalcomm_;
     //! Signal vector (used by stop / reset / checkpointing signaller)
     SimulationSignals* simulationSignals_;
-    //! Callback to check the number of bonded interactions
-    std::optional<CheckBondedInteractionsCallback> checkBondedInteractionsCallback_;
 };
 
 class ModularSimulatorAlgorithmBuilder;

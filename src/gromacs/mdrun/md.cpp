@@ -200,15 +200,6 @@ void gmx::LegacySimulator::do_md()
 
     bool bInteractiveMDstep = false;
 
-    /* Domain decomposition could incorrectly miss a bonded
-       interaction, but checking for that requires a global
-       communication stage, which does not otherwise happen in DD
-       code. So we do that alongside the first global energy reduction
-       after a new DD is made. These variables handle whether the
-       check happens, and the result it returns. */
-    bool shouldCheckNumberOfBondedInteractions = false;
-    int  totalNumberOfBondedInteractions       = -1;
-
     SimulationSignals signals;
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
@@ -398,7 +389,6 @@ void gmx::LegacySimulator::do_md()
                             nrnb,
                             nullptr,
                             FALSE);
-        shouldCheckNumberOfBondedInteractions = true;
         upd.setNumAtoms(state->natoms);
     }
     else
@@ -657,6 +647,10 @@ void gmx::LegacySimulator::do_md()
             cglo_flags_iteration |= CGLO_STOPCM;
             cglo_flags_iteration &= ~CGLO_TEMPERATURE;
         }
+        if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd) && cgloIteration == 0)
+        {
+            cglo_flags_iteration |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+        }
         compute_globals(gstat,
                         cr,
                         ir,
@@ -677,11 +671,8 @@ void gmx::LegacySimulator::do_md()
                         gmx::ArrayRef<real>{},
                         &nullSignaller,
                         state->box,
-                        &totalNumberOfBondedInteractions,
                         &bSumEkinhOld,
-                        cglo_flags_iteration
-                                | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                         : 0));
+                        cglo_flags_iteration);
         if (cglo_flags_iteration & CGLO_STOPCM)
         {
             /* At initialization, do not pass x with acceleration-correction mode
@@ -694,14 +685,11 @@ void gmx::LegacySimulator::do_md()
             inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
         }
     }
-    checkNumberOfBondedInteractions(mdlog,
-                                    cr,
-                                    totalNumberOfBondedInteractions,
-                                    top_global,
-                                    &top,
-                                    makeConstArrayRef(state->x),
-                                    state->box,
-                                    &shouldCheckNumberOfBondedInteractions);
+    if (DOMAINDECOMP(cr))
+    {
+        checkNumberOfBondedInteractions(
+                mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+    }
     if (ir->eI == IntegrationAlgorithm::VVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -730,7 +718,6 @@ void gmx::LegacySimulator::do_md()
                         gmx::ArrayRef<real>{},
                         &nullSignaller,
                         state->box,
-                        nullptr,
                         &bSumEkinhOld,
                         cglo_flags & ~CGLO_PRESSURE);
     }
@@ -1021,7 +1008,6 @@ void gmx::LegacySimulator::do_md()
                                     nrnb,
                                     wcycle,
                                     do_verbose && !bPMETunePrinting);
-                shouldCheckNumberOfBondedInteractions = true;
                 upd.setNumAtoms(state->natoms);
             }
         }
@@ -1051,6 +1037,11 @@ void gmx::LegacySimulator::do_md()
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
+            int cglo_flags = CGLO_GSTAT | CGLO_TEMPERATURE;
+            if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+            {
+                cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+            }
             compute_globals(gstat,
                             cr,
                             ir,
@@ -1071,17 +1062,13 @@ void gmx::LegacySimulator::do_md()
                             gmx::ArrayRef<real>{},
                             &nullSignaller,
                             state->box,
-                            &totalNumberOfBondedInteractions,
                             &bSumEkinhOld,
-                            CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
-            checkNumberOfBondedInteractions(mdlog,
-                                            cr,
-                                            totalNumberOfBondedInteractions,
-                                            top_global,
-                                            &top,
-                                            makeConstArrayRef(state->x),
-                                            state->box,
-                                            &shouldCheckNumberOfBondedInteractions);
+                            cglo_flags);
+            if (DOMAINDECOMP(cr))
+            {
+                checkNumberOfBondedInteractions(
+                        mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+            }
         }
         clear_mat(force_vir);
 
@@ -1250,7 +1237,6 @@ void gmx::LegacySimulator::do_md()
                                  bTrotter,
                                  bExchanged,
                                  &bSumEkinhOld,
-                                 &shouldCheckNumberOfBondedInteractions,
                                  &saved_conserved_quantity,
                                  &f,
                                  &upd,
@@ -1639,22 +1625,19 @@ void gmx::LegacySimulator::do_md()
                                                                            : gmx::ArrayRef<real>{},
                         &signaller,
                         lastbox,
-                        &totalNumberOfBondedInteractions,
                         &bSumEkinhOld,
                         (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
-                                | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                         : 0));
-                checkNumberOfBondedInteractions(mdlog,
-                                                cr,
-                                                totalNumberOfBondedInteractions,
-                                                top_global,
-                                                &top,
-                                                makeConstArrayRef(state->x),
-                                                state->box,
-                                                &shouldCheckNumberOfBondedInteractions);
+                                | (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd)
+                                           ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                           : 0));
+                if (DOMAINDECOMP(cr))
+                {
+                    checkNumberOfBondedInteractions(
+                            mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+                }
                 if (!EI_VV(ir->eI) && bStopCM)
                 {
                     process_and_stopcm_grp(
@@ -1907,7 +1890,6 @@ void gmx::LegacySimulator::do_md()
                                 nrnb,
                                 wcycle,
                                 FALSE);
-            shouldCheckNumberOfBondedInteractions = true;
             upd.setNumAtoms(state->natoms);
         }
 

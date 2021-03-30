@@ -74,7 +74,6 @@ void global_stat(const gmx_global_stat* gs,
                  t_vcm*                 vcm,
                  int                    nsig,
                  real*                  sig,
-                 int*                   totalNumberOfBondedInteractions,
                  bool                   bSumEkinhOld,
                  int                    flags);
 

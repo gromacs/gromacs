@@ -56,25 +56,24 @@
 
 namespace gmx
 {
-DomDecHelper::DomDecHelper(bool                            isVerbose,
-                           int                             verbosePrintInterval,
-                           StatePropagatorData*            statePropagatorData,
-                           FreeEnergyPerturbationData*     freeEnergyPerturbationData,
-                           TopologyHolder*                 topologyHolder,
-                           CheckBondedInteractionsCallback checkBondedInteractionsCallback,
-                           int                             nstglobalcomm,
-                           FILE*                           fplog,
-                           t_commrec*                      cr,
-                           const MDLogger&                 mdlog,
-                           Constraints*                    constr,
-                           const t_inputrec*               inputrec,
-                           MDAtoms*                        mdAtoms,
-                           t_nrnb*                         nrnb,
-                           gmx_wallcycle*                  wcycle,
-                           t_forcerec*                     fr,
-                           VirtualSitesHandler*            vsite,
-                           ImdSession*                     imdSession,
-                           pull_t*                         pull_work) :
+DomDecHelper::DomDecHelper(bool                        isVerbose,
+                           int                         verbosePrintInterval,
+                           StatePropagatorData*        statePropagatorData,
+                           FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                           TopologyHolder*             topologyHolder,
+                           int                         nstglobalcomm,
+                           FILE*                       fplog,
+                           t_commrec*                  cr,
+                           const MDLogger&             mdlog,
+                           Constraints*                constr,
+                           const t_inputrec*           inputrec,
+                           MDAtoms*                    mdAtoms,
+                           t_nrnb*                     nrnb,
+                           gmx_wallcycle*              wcycle,
+                           t_forcerec*                 fr,
+                           VirtualSitesHandler*        vsite,
+                           ImdSession*                 imdSession,
+                           pull_t*                     pull_work) :
     nextNSStep_(-1),
     isVerbose_(isVerbose),
     verbosePrintInterval_(verbosePrintInterval),
@@ -82,7 +81,6 @@ DomDecHelper::DomDecHelper(bool                            isVerbose,
     statePropagatorData_(statePropagatorData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
     topologyHolder_(topologyHolder),
-    checkBondedInteractionsCallback_(std::move(checkBondedInteractionsCallback)),
     fplog_(fplog),
     cr_(cr),
     mdlog_(mdlog),
@@ -180,7 +178,6 @@ void DomDecHelper::partitionSystem(bool                     verbose,
                         wcycle,
                         verbose);
     topologyHolder_->updateLocalTopology();
-    checkBondedInteractionsCallback_();
     statePropagatorData_->setLocalState(std::move(localState));
     if (freeEnergyPerturbationData_)
     {

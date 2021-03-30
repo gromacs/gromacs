@@ -3364,24 +3364,3 @@ void dd_partition_system(FILE*                     fplog,
 
     wallcycle_stop(wcycle, ewcDOMDEC);
 }
-
-/*! \brief Check whether bonded interactions are missing, if appropriate */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
-                                     t_commrec*                     cr,
-                                     int                            totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t&              top_global,
-                                     const gmx_localtop_t*          top_local,
-                                     gmx::ArrayRef<const gmx::RVec> x,
-                                     const matrix                   box,
-                                     bool* shouldCheckNumberOfBondedInteractions)
-{
-    if (*shouldCheckNumberOfBondedInteractions)
-    {
-        if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
-        {
-            dd_print_missing_interactions(
-                    mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, x, box); // Does not return
-        }
-        *shouldCheckNumberOfBondedInteractions = false;
-    }
-}

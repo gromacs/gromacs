@@ -43,7 +43,7 @@
 
 #include "computeglobalselement.h"
 
-#include "gromacs/domdec/partition.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -90,8 +90,6 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     lastStep_(inputrec->nsteps + inputrec->init_step),
     initStep_(inputrec->init_step),
     nullSignaller_(std::make_unique<SimulationSignaller>(nullptr, nullptr, nullptr, false, false)),
-    totalNumberOfBondedInteractions_(0),
-    shouldCheckNumberOfBondedInteractions_(false),
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     localTopology_(nullptr),
@@ -283,50 +281,42 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
     auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                               : statePropagatorData_->constBox();
 
-    compute_globals(
-            gstat_,
-            cr_,
-            inputrec_,
-            fr_,
-            energyData_->ekindata(),
-            x,
-            v,
-            box,
-            mdAtoms_->mdatoms(),
-            nrnb_,
-            &vcm_,
-            step != -1 ? wcycle_ : nullptr,
-            energyData_->enerdata(),
-            energyData_->forceVirial(step),
-            energyData_->constraintVirial(step),
-            energyData_->totalVirial(step),
-            energyData_->pressure(step),
-            (((flags & CGLO_ENERGY) != 0) && constr_ != nullptr) ? constr_->rmsdData()
-                                                                 : gmx::ArrayRef<real>{},
-            signaller,
-            lastbox,
-            &totalNumberOfBondedInteractions_,
-            energyData_->needToSumEkinhOld(),
-            flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
-    checkNumberOfBondedInteractions(
-            mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
+    if (DOMAINDECOMP(cr_) && shouldCheckNumberOfBondedInteractions(*cr_->dd))
+    {
+        flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+    }
+    compute_globals(gstat_,
+                    cr_,
+                    inputrec_,
+                    fr_,
+                    energyData_->ekindata(),
+                    x,
+                    v,
+                    box,
+                    mdAtoms_->mdatoms(),
+                    nrnb_,
+                    &vcm_,
+                    step != -1 ? wcycle_ : nullptr,
+                    energyData_->enerdata(),
+                    energyData_->forceVirial(step),
+                    energyData_->constraintVirial(step),
+                    energyData_->totalVirial(step),
+                    energyData_->pressure(step),
+                    (((flags & CGLO_ENERGY) != 0) && constr_ != nullptr) ? constr_->rmsdData()
+                                                                         : gmx::ArrayRef<real>{},
+                    signaller,
+                    lastbox,
+                    energyData_->needToSumEkinhOld(),
+                    flags);
+    if (DOMAINDECOMP(cr_))
+    {
+        checkNumberOfBondedInteractions(mdlog_, cr_, top_global_, localTopology_, x, box);
+    }
     if (flags & CGLO_STOPCM && !isInit)
     {
         process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
-}
-
-template<ComputeGlobalsAlgorithm algorithm>
-CheckBondedInteractionsCallback ComputeGlobalsElement<algorithm>::getCheckNumberOfBondedInteractionsCallback()
-{
-    return [this]() { needToCheckNumberOfBondedInteractions(); };
-}
-
-template<ComputeGlobalsAlgorithm algorithm>
-void ComputeGlobalsElement<algorithm>::needToCheckNumberOfBondedInteractions()
-{
-    shouldCheckNumberOfBondedInteractions_ = true;
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
@@ -393,11 +383,6 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
                     legacySimulatorData->top_global,
                     legacySimulatorData->constr));
 
-    // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
-    auto* castedElement = static_cast<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>*>(element);
-    globalCommunicationHelper->setCheckBondedInteractionsCallback(
-            castedElement->getCheckNumberOfBondedInteractionsCallback());
-
     return element;
 }
 
@@ -439,13 +424,6 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         simulator->fr,
                         simulator->top_global,
                         simulator->constr));
-
-        // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
-        auto* castedElement =
-                static_cast<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>*>(
-                        vvComputeGlobalsElement);
-        globalCommunicationHelper->setCheckBondedInteractionsCallback(
-                castedElement->getCheckNumberOfBondedInteractionsCallback());
         builderHelper->storeValue(key, vvComputeGlobalsElement);
         return vvComputeGlobalsElement;
     }

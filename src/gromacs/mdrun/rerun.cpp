@@ -188,15 +188,6 @@ void gmx::LegacySimulator::do_rerun()
 
     double cycles;
 
-    /* Domain decomposition could incorrectly miss a bonded
-       interaction, but checking for that requires a global
-       communication stage, which does not otherwise happen in DD
-       code. So we do that alongside the first global energy reduction
-       after a new DD is made. These variables handle whether the
-       check happens, and the result it returns. */
-    bool shouldCheckNumberOfBondedInteractions = false;
-    int  totalNumberOfBondedInteractions       = -1;
-
     SimulationSignals signals;
     // Most global communnication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
@@ -360,7 +351,6 @@ void gmx::LegacySimulator::do_rerun()
                             nrnb,
                             nullptr,
                             FALSE);
-        shouldCheckNumberOfBondedInteractions = true;
     }
     else
     {
@@ -386,9 +376,11 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     {
-        int cglo_flags =
-                (CGLO_GSTAT
-                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
+        int cglo_flags = CGLO_GSTAT;
+        if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+        {
+            cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+        }
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
@@ -411,18 +403,14 @@ void gmx::LegacySimulator::do_rerun()
                         gmx::ArrayRef<real>{},
                         &nullSignaller,
                         state->box,
-                        &totalNumberOfBondedInteractions,
                         &bSumEkinhOld,
                         cglo_flags);
+        if (DOMAINDECOMP(cr))
+        {
+            checkNumberOfBondedInteractions(
+                    mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+        }
     }
-    checkNumberOfBondedInteractions(mdlog,
-                                    cr,
-                                    totalNumberOfBondedInteractions,
-                                    top_global,
-                                    &top,
-                                    makeConstArrayRef(state->x),
-                                    state->box,
-                                    &shouldCheckNumberOfBondedInteractions);
 
     if (MASTER(cr))
     {
@@ -612,7 +600,6 @@ void gmx::LegacySimulator::do_rerun()
                                 nrnb,
                                 wcycle,
                                 mdrunOptions.verbose);
-            shouldCheckNumberOfBondedInteractions = true;
         }
 
         if (MASTER(cr))
@@ -744,6 +731,11 @@ void gmx::LegacySimulator::do_rerun()
             t_vcm*              vcm              = nullptr;
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
+            int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
+            if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+            {
+                cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
+            }
             compute_globals(gstat,
                             cr,
                             ir,
@@ -764,19 +756,13 @@ void gmx::LegacySimulator::do_rerun()
                             constr != nullptr ? constr->rmsdData() : gmx::ArrayRef<real>{},
                             &signaller,
                             state->box,
-                            &totalNumberOfBondedInteractions,
                             &bSumEkinhOld,
-                            CGLO_GSTAT | CGLO_ENERGY
-                                    | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                             : 0));
-            checkNumberOfBondedInteractions(mdlog,
-                                            cr,
-                                            totalNumberOfBondedInteractions,
-                                            top_global,
-                                            &top,
-                                            makeConstArrayRef(state->x),
-                                            state->box,
-                                            &shouldCheckNumberOfBondedInteractions);
+                            cglo_flags);
+            if (DOMAINDECOMP(cr))
+            {
+                checkNumberOfBondedInteractions(
+                        mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+            }
         }
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of

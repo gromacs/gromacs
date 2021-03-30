@@ -68,9 +68,6 @@ class VirtualSitesHandler;
 //! \addtogroup module_modularsimulator
 //! \{
 
-//! The function type allowing to request a check of the number of bonded interactions
-typedef std::function<void()> CheckBondedInteractionsCallback;
-
 /*! \internal
  * \brief Infrastructure element responsible for domain decomposition
  *
@@ -88,25 +85,24 @@ class DomDecHelper final : public INeighborSearchSignallerClient
 {
 public:
     //! Constructor
-    DomDecHelper(bool                            isVerbose,
-                 int                             verbosePrintInterval,
-                 StatePropagatorData*            statePropagatorData,
-                 FreeEnergyPerturbationData*     freeEnergyPerturbationData,
-                 TopologyHolder*                 topologyHolder,
-                 CheckBondedInteractionsCallback checkBondedInteractionsCallback,
-                 int                             nstglobalcomm,
-                 FILE*                           fplog,
-                 t_commrec*                      cr,
-                 const MDLogger&                 mdlog,
-                 Constraints*                    constr,
-                 const t_inputrec*               inputrec,
-                 MDAtoms*                        mdAtoms,
-                 t_nrnb*                         nrnb,
-                 gmx_wallcycle*                  wcycle,
-                 t_forcerec*                     fr,
-                 VirtualSitesHandler*            vsite,
-                 ImdSession*                     imdSession,
-                 pull_t*                         pull_work);
+    DomDecHelper(bool                        isVerbose,
+                 int                         verbosePrintInterval,
+                 StatePropagatorData*        statePropagatorData,
+                 FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                 TopologyHolder*             topologyHolder,
+                 int                         nstglobalcomm,
+                 FILE*                       fplog,
+                 t_commrec*                  cr,
+                 const MDLogger&             mdlog,
+                 Constraints*                constr,
+                 const t_inputrec*           inputrec,
+                 MDAtoms*                    mdAtoms,
+                 t_nrnb*                     nrnb,
+                 gmx_wallcycle*              wcycle,
+                 t_forcerec*                 fr,
+                 VirtualSitesHandler*        vsite,
+                 ImdSession*                 imdSession,
+                 pull_t*                     pull_work);
 
     /*! \brief Run domain decomposition
      *
@@ -142,8 +138,6 @@ private:
     FreeEnergyPerturbationData* freeEnergyPerturbationData_;
     //! Pointer to the topology
     TopologyHolder* topologyHolder_;
-    //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
-    CheckBondedInteractionsCallback checkBondedInteractionsCallback_;
 
     //! Helper function unifying the DD partitioning calls in setup() and run()
     void partitionSystem(bool                     verbose,

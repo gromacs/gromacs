@@ -975,7 +975,6 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                     nullptr,
                     1,
                     &terminate,
-                    nullptr,
                     FALSE,
                     CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
 

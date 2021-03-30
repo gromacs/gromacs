@@ -132,24 +132,4 @@ void dd_partition_system(FILE*                     fplog,
                          gmx_wallcycle*            wcycle,
                          gmx_bool                  bVerbose);
 
-/*! \brief Check whether bonded interactions are missing, if appropriate
- *
- * \param[in]    mdlog                                  Logger
- * \param[in]    cr                                     Communication object
- * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
- * \param[in]    top_global                             Global topology for the error message
- * \param[in]    top_local                              Local topology for the error message
- * \param[in]    x                                      Position vector for the error message
- * \param[in]    box                                    Box matrix for the error message
- * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
- */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
-                                     t_commrec*                     cr,
-                                     int                            totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t&              top_global,
-                                     const gmx_localtop_t*          top_local,
-                                     gmx::ArrayRef<const gmx::RVec> x,
-                                     const matrix                   box,
-                                     bool* shouldCheckNumberOfBondedInteractions);
-
 #endif

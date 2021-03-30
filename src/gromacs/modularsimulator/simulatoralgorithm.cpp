@@ -551,7 +551,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 algorithm.statePropagatorData_.get(),
                 algorithm.freeEnergyPerturbationData_.get(),
                 algorithm.topologyHolder_.get(),
-                globalCommunicationHelper_.moveCheckBondedInteractionsCallback(),
                 globalCommunicationHelper_.nstglobalcomm(),
                 legacySimulatorData_->fplog,
                 legacySimulatorData_->cr,
@@ -736,21 +735,6 @@ int GlobalCommunicationHelper::nstglobalcomm() const
 SimulationSignals* GlobalCommunicationHelper::simulationSignals()
 {
     return simulationSignals_;
-}
-
-void GlobalCommunicationHelper::setCheckBondedInteractionsCallback(CheckBondedInteractionsCallback callback)
-{
-    checkBondedInteractionsCallback_ = std::move(callback);
-}
-
-CheckBondedInteractionsCallback GlobalCommunicationHelper::moveCheckBondedInteractionsCallback()
-{
-    if (!checkBondedInteractionsCallback_)
-    {
-        throw SimulationAlgorithmSetupError(
-                "Requested CheckBondedInteractionsCallback before it was set.");
-    }
-    return *checkBondedInteractionsCallback_;
 }
 
 ModularSimulatorAlgorithmBuilderHelper::ModularSimulatorAlgorithmBuilderHelper(
