@@ -61,6 +61,8 @@ static constexpr int c_syclPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_
 /*! \cond */
 // cluster size = number of atoms per cluster.
 static constexpr int c_clSize = c_nbnxnGpuClusterSize;
+// Square of cluster size.
+static constexpr int c_clSizeSq = c_clSize * c_clSize;
 // j-cluster size after split (4 in the current implementation).
 static constexpr int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
 // i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
