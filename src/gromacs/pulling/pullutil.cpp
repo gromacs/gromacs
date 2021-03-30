@@ -64,6 +64,9 @@
 
 #include "pull_internal.h"
 
+using gmx::ArrayRef;
+using gmx::RVec;
+
 #if GMX_MPI
 
 // Helper function to deduce MPI datatype from the type of data
@@ -120,7 +123,7 @@ static void pullAllReduce(const t_commrec* cr, pull_comm_t* comm, int n, T* data
 /* Copies the coordinates of the PBC atom of pgrp to x_pbc.
  * When those coordinates are not available on this rank, clears x_pbc.
  */
-static void setPbcAtomCoords(const pull_group_work_t& pgrp, gmx::ArrayRef<const gmx::RVec> x, rvec x_pbc)
+static void setPbcAtomCoords(const pull_group_work_t& pgrp, ArrayRef<const RVec> x, rvec x_pbc)
 {
     if (pgrp.pbcAtomSet != nullptr)
     {
@@ -141,10 +144,7 @@ static void setPbcAtomCoords(const pull_group_work_t& pgrp, gmx::ArrayRef<const 
     }
 }
 
-static void pull_set_pbcatoms(const t_commrec*               cr,
-                              struct pull_t*                 pull,
-                              gmx::ArrayRef<const gmx::RVec> x,
-                              gmx::ArrayRef<gmx::RVec>       x_pbc)
+static void pull_set_pbcatoms(const t_commrec* cr, struct pull_t* pull, ArrayRef<const RVec> x, ArrayRef<RVec> x_pbc)
 {
     int numPbcAtoms = 0;
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -171,12 +171,12 @@ static void pull_set_pbcatoms(const t_commrec*               cr,
     }
 }
 
-static void make_cyl_refgrps(const t_commrec*               cr,
-                             pull_t*                        pull,
-                             gmx::ArrayRef<const real>      masses,
-                             t_pbc*                         pbc,
-                             double                         t,
-                             gmx::ArrayRef<const gmx::RVec> x)
+static void make_cyl_refgrps(const t_commrec*     cr,
+                             pull_t*              pull,
+                             ArrayRef<const real> masses,
+                             t_pbc*               pbc,
+                             double               t,
+                             ArrayRef<const RVec> x)
 {
     pull_comm_t* comm = &pull->comm;
 
@@ -385,15 +385,15 @@ static double atan2_0_2pi(double y, double x)
     return a;
 }
 
-static void sum_com_part(const pull_group_work_t*       pgrp,
-                         int                            ind_start,
-                         int                            ind_end,
-                         gmx::ArrayRef<const gmx::RVec> x,
-                         gmx::ArrayRef<const gmx::RVec> xp,
-                         gmx::ArrayRef<const real>      mass,
-                         const t_pbc*                   pbc,
-                         const rvec                     x_pbc,
-                         ComSums*                       sum_com)
+static void sum_com_part(const pull_group_work_t* pgrp,
+                         int                      ind_start,
+                         int                      ind_end,
+                         ArrayRef<const RVec>     x,
+                         ArrayRef<const RVec>     xp,
+                         ArrayRef<const real>     mass,
+                         const t_pbc*             pbc,
+                         const rvec               x_pbc,
+                         ComSums*                 sum_com)
 {
     double sum_wm   = 0;
     double sum_wwm  = 0;
@@ -467,15 +467,15 @@ static void sum_com_part(const pull_group_work_t*       pgrp,
     }
 }
 
-static void sum_com_part_cosweight(const pull_group_work_t*       pgrp,
-                                   int                            ind_start,
-                                   int                            ind_end,
-                                   int                            cosdim,
-                                   real                           twopi_box,
-                                   gmx::ArrayRef<const gmx::RVec> x,
-                                   gmx::ArrayRef<const gmx::RVec> xp,
-                                   gmx::ArrayRef<const real>      mass,
-                                   ComSums*                       sum_com)
+static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
+                                   int                      ind_start,
+                                   int                      ind_end,
+                                   int                      cosdim,
+                                   real                     twopi_box,
+                                   ArrayRef<const RVec>     x,
+                                   ArrayRef<const RVec>     xp,
+                                   ArrayRef<const real>     mass,
+                                   ComSums*                 sum_com)
 {
     /* Cosine weighting geometry */
     double sum_cm  = 0;
@@ -520,13 +520,13 @@ static void sum_com_part_cosweight(const pull_group_work_t*       pgrp,
 }
 
 /* calculates center of mass of selection index from all coordinates x */
-void pull_calc_coms(const t_commrec*               cr,
-                    pull_t*                        pull,
-                    gmx::ArrayRef<const real>      masses,
-                    t_pbc*                         pbc,
-                    double                         t,
-                    gmx::ArrayRef<const gmx::RVec> x,
-                    gmx::ArrayRef<gmx::RVec>       xp)
+void pull_calc_coms(const t_commrec*     cr,
+                    pull_t*              pull,
+                    ArrayRef<const real> masses,
+                    t_pbc*               pbc,
+                    double               t,
+                    ArrayRef<const RVec> x,
+                    ArrayRef<RVec>       xp)
 {
     real         twopi_box = 0;
     pull_comm_t* comm;
@@ -821,12 +821,12 @@ void pull_calc_coms(const t_commrec*               cr,
 using BoolVec = gmx::BasicVector<bool>;
 
 /* Returns whether the pull group obeys the PBC restrictions */
-static bool pullGroupObeysPbcRestrictions(const pull_group_work_t&       group,
-                                          const BoolVec&                 dimUsed,
-                                          gmx::ArrayRef<const gmx::RVec> x,
-                                          const t_pbc&                   pbc,
-                                          const gmx::RVec&               x_pbc,
-                                          const real                     pbcMargin)
+static bool pullGroupObeysPbcRestrictions(const pull_group_work_t& group,
+                                          const BoolVec&           dimUsed,
+                                          ArrayRef<const RVec>     x,
+                                          const t_pbc&             pbc,
+                                          const RVec&              x_pbc,
+                                          const real               pbcMargin)
 {
     /* Determine which dimensions are relevant for PBC */
     BoolVec dimUsesPbc       = { false, false, false };
@@ -909,7 +909,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t&       group,
     return true;
 }
 
-int pullCheckPbcWithinGroups(const pull_t& pull, gmx::ArrayRef<const gmx::RVec> x, const t_pbc& pbc, real pbcMargin)
+int pullCheckPbcWithinGroups(const pull_t& pull, ArrayRef<const RVec> x, const t_pbc& pbc, real pbcMargin)
 {
     if (pbc.pbcType == PbcType::No)
     {
@@ -948,11 +948,7 @@ int pullCheckPbcWithinGroups(const pull_t& pull, gmx::ArrayRef<const gmx::RVec> 
     return -1;
 }
 
-bool pullCheckPbcWithinGroup(const pull_t&                  pull,
-                             gmx::ArrayRef<const gmx::RVec> x,
-                             const t_pbc&                   pbc,
-                             int                            groupNr,
-                             real                           pbcMargin)
+bool pullCheckPbcWithinGroup(const pull_t& pull, ArrayRef<const RVec> x, const t_pbc& pbc, int groupNr, real pbcMargin)
 {
     if (pbc.pbcType == PbcType::No)
     {
@@ -1032,11 +1028,11 @@ void allocStatePrevStepPullCom(t_state* state, const pull_t* pull)
     }
 }
 
-void initPullComFromPrevStep(const t_commrec*               cr,
-                             pull_t*                        pull,
-                             gmx::ArrayRef<const real>      masses,
-                             t_pbc*                         pbc,
-                             gmx::ArrayRef<const gmx::RVec> x)
+void initPullComFromPrevStep(const t_commrec*     cr,
+                             pull_t*              pull,
+                             ArrayRef<const real> masses,
+                             t_pbc*               pbc,
+                             ArrayRef<const RVec> x)
 {
     pull_comm_t* comm   = &pull->comm;
     size_t       ngroup = pull->group.size();
@@ -1065,7 +1061,7 @@ void initPullComFromPrevStep(const t_commrec*               cr,
                        "Groups with no atoms, or only one atom, should not "
                        "use the COM from the previous step as reference.");
 
-            gmx::RVec x_pbc = { 0, 0, 0 };
+            RVec x_pbc = { 0, 0, 0 };
             copy_rvec(comm->pbcAtomBuffer[g], x_pbc);
 
             if (debug)

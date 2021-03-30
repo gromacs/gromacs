@@ -90,6 +90,7 @@ extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const
 } // namespace gmx
 
 using gmx::ArrayRef;
+using gmx::RVec;
 
 static int groupPbcFromParams(const t_pull_group& params, bool setPbcRefToPrevStepCOM)
 {
@@ -180,13 +181,13 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd)
 }
 
 /* Apply forces in a mass weighted fashion for part of the pull group */
-static void apply_forces_grp_part(const pull_group_work_t&  pgrp,
-                                  int                       ind_start,
-                                  int                       ind_end,
-                                  gmx::ArrayRef<const real> masses,
-                                  const dvec                f_pull,
-                                  const int                 sign,
-                                  rvec*                     f)
+static void apply_forces_grp_part(const pull_group_work_t& pgrp,
+                                  int                      ind_start,
+                                  int                      ind_end,
+                                  ArrayRef<const real>     masses,
+                                  const dvec               f_pull,
+                                  const int                sign,
+                                  rvec*                    f)
 {
     const double inv_wm = pgrp.mwscale;
 
@@ -208,11 +209,11 @@ static void apply_forces_grp_part(const pull_group_work_t&  pgrp,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces_grp(const pull_group_work_t&  pgrp,
-                             gmx::ArrayRef<const real> masses,
-                             const dvec                f_pull,
-                             const int                 sign,
-                             rvec*                     f)
+static void apply_forces_grp(const pull_group_work_t& pgrp,
+                             ArrayRef<const real>     masses,
+                             const dvec               f_pull,
+                             const int                sign,
+                             rvec*                    f)
 {
     auto localAtomIndices = pgrp.atomSet.localIndex();
 
@@ -248,13 +249,13 @@ static void apply_forces_grp(const pull_group_work_t&  pgrp,
 }
 
 /* Apply forces in a mass weighted fashion to a cylinder group */
-static void apply_forces_cyl_grp(const pull_group_work_t&  pgrp,
-                                 const double              dv_corr,
-                                 gmx::ArrayRef<const real> masses,
-                                 const dvec                f_pull,
-                                 double                    f_scal,
-                                 const int                 sign,
-                                 rvec*                     f)
+static void apply_forces_cyl_grp(const pull_group_work_t& pgrp,
+                                 const double             dv_corr,
+                                 ArrayRef<const real>     masses,
+                                 const dvec               f_pull,
+                                 double                   f_scal,
+                                 const int                sign,
+                                 rvec*                    f)
 {
     const double inv_wm = pgrp.mwscale;
 
@@ -297,7 +298,7 @@ static void apply_forces_cyl_grp(const pull_group_work_t&  pgrp,
  */
 static void apply_forces_vec_torque(const pull_coord_work_t&          pcrd,
                                     ArrayRef<const pull_group_work_t> pullGroups,
-                                    gmx::ArrayRef<const real>         masses,
+                                    ArrayRef<const real>              masses,
                                     rvec*                             f)
 {
     const PullCoordSpatialData& spatialData = pcrd.spatialData;
@@ -331,7 +332,7 @@ static void apply_forces_vec_torque(const pull_coord_work_t&          pcrd,
 static void apply_forces_coord(const pull_coord_work_t&          pcrd,
                                ArrayRef<const pull_group_work_t> pullGroups,
                                const PullCoordVectorForces&      forces,
-                               gmx::ArrayRef<const real>         masses,
+                               ArrayRef<const real>              masses,
                                rvec*                             f)
 {
     /* Here it would be more efficient to use one large thread-parallel
@@ -807,14 +808,14 @@ void clear_pull_forces(pull_t* pull)
 }
 
 /* Apply constraint using SHAKE */
-static void do_constraint(struct pull_t*           pull,
-                          t_pbc*                   pbc,
-                          gmx::ArrayRef<gmx::RVec> x,
-                          gmx::ArrayRef<gmx::RVec> v,
-                          gmx_bool                 bMaster,
-                          tensor                   vir,
-                          double                   dt,
-                          double                   t)
+static void do_constraint(struct pull_t* pull,
+                          t_pbc*         pbc,
+                          ArrayRef<RVec> x,
+                          ArrayRef<RVec> v,
+                          gmx_bool       bMaster,
+                          tensor         vir,
+                          double         dt,
+                          double         t)
 {
 
     dvec*    r_ij;   /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
@@ -1527,11 +1528,11 @@ static void check_external_potential_registration(const struct pull_t* pull)
  * potential energy is added either to the pull term or to a term
  * specific to the external module.
  */
-void apply_external_pull_coord_force(struct pull_t*            pull,
-                                     int                       coord_index,
-                                     double                    coord_force,
-                                     gmx::ArrayRef<const real> masses,
-                                     gmx::ForceWithVirial*     forceWithVirial)
+void apply_external_pull_coord_force(struct pull_t*        pull,
+                                     int                   coord_index,
+                                     double                coord_force,
+                                     ArrayRef<const real>  masses,
+                                     gmx::ForceWithVirial* forceWithVirial)
 {
     pull_coord_work_t* pcrd;
 
@@ -1595,15 +1596,15 @@ static PullCoordVectorForces do_pull_pot_coord(const pull_t&      pull,
     return pullCoordForces;
 }
 
-real pull_potential(struct pull_t*                 pull,
-                    gmx::ArrayRef<const real>      masses,
-                    t_pbc*                         pbc,
-                    const t_commrec*               cr,
-                    double                         t,
-                    real                           lambda,
-                    gmx::ArrayRef<const gmx::RVec> x,
-                    gmx::ForceWithVirial*          force,
-                    real*                          dvdlambda)
+real pull_potential(struct pull_t*        pull,
+                    ArrayRef<const real>  masses,
+                    t_pbc*                pbc,
+                    const t_commrec*      cr,
+                    double                t,
+                    real                  lambda,
+                    ArrayRef<const RVec>  x,
+                    gmx::ForceWithVirial* force,
+                    real*                 dvdlambda)
 {
     real V = 0;
 
@@ -1659,16 +1660,16 @@ real pull_potential(struct pull_t*                 pull,
     return (MASTER(cr) ? V : 0.0);
 }
 
-void pull_constraint(struct pull_t*            pull,
-                     gmx::ArrayRef<const real> masses,
-                     t_pbc*                    pbc,
-                     const t_commrec*          cr,
-                     double                    dt,
-                     double                    t,
-                     gmx::ArrayRef<gmx::RVec>  x,
-                     gmx::ArrayRef<gmx::RVec>  xp,
-                     gmx::ArrayRef<gmx::RVec>  v,
-                     tensor                    vir)
+void pull_constraint(struct pull_t*       pull,
+                     ArrayRef<const real> masses,
+                     t_pbc*               pbc,
+                     const t_commrec*     cr,
+                     double               dt,
+                     double               t,
+                     ArrayRef<RVec>       x,
+                     ArrayRef<RVec>       xp,
+                     ArrayRef<RVec>       v,
+                     tensor               vir)
 {
     assert(pull != nullptr);
 
@@ -2399,13 +2400,13 @@ static void destroy_pull(struct pull_t* pull)
     delete pull;
 }
 
-void preparePrevStepPullCom(const t_inputrec*         ir,
-                            pull_t*                   pull_work,
-                            gmx::ArrayRef<const real> masses,
-                            t_state*                  state,
-                            const t_state*            state_global,
-                            const t_commrec*          cr,
-                            bool                      startingFromCheckpoint)
+void preparePrevStepPullCom(const t_inputrec*    ir,
+                            pull_t*              pull_work,
+                            ArrayRef<const real> masses,
+                            t_state*             state,
+                            const t_state*       state_global,
+                            const t_commrec*     cr,
+                            bool                 startingFromCheckpoint)
 {
     if (!ir->pull || !ir->pull->bSetPbcRefToPrevStepCOM)
     {
