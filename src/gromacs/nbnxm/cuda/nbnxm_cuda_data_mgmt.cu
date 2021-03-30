@@ -98,86 +98,9 @@ void gpu_init_platform_specific(NbnxmGpu* /* nb */)
     cuda_set_cacheconfig();
 }
 
-void gpu_free(NbnxmGpu* nb)
+void gpu_free_platform_specific(NbnxmGpu* /* nb */)
 {
-    if (nb == nullptr)
-    {
-        return;
-    }
-
-    delete nb->timers;
-    sfree(nb->timings);
-
-    NBAtomData* atdat   = nb->atdat;
-    NBParamGpu* nbparam = nb->nbparam;
-
-    if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
-    {
-        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
-    }
-
-    if (!useLjCombRule(nb->nbparam->vdwType))
-    {
-        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
-    }
-
-    if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
-    {
-        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
-    }
-
-    freeDeviceBuffer(&atdat->shiftVec);
-    freeDeviceBuffer(&atdat->fShift);
-
-    freeDeviceBuffer(&atdat->eLJ);
-    freeDeviceBuffer(&atdat->eElec);
-
-    freeDeviceBuffer(&atdat->f);
-    freeDeviceBuffer(&atdat->xq);
-    if (useLjCombRule(nb->nbparam->vdwType))
-    {
-        freeDeviceBuffer(&atdat->ljComb);
-    }
-    else
-    {
-        freeDeviceBuffer(&atdat->atomTypes);
-    }
-
-    /* Free plist */
-    auto* plist = nb->plist[InteractionLocality::Local];
-    freeDeviceBuffer(&plist->sci);
-    freeDeviceBuffer(&plist->cj4);
-    freeDeviceBuffer(&plist->imask);
-    freeDeviceBuffer(&plist->excl);
-    delete plist;
-    if (nb->bUseTwoStreams)
-    {
-        auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
-        freeDeviceBuffer(&plist_nl->sci);
-        freeDeviceBuffer(&plist_nl->cj4);
-        freeDeviceBuffer(&plist_nl->imask);
-        freeDeviceBuffer(&plist_nl->excl);
-        delete plist_nl;
-    }
-
-    /* Free nbst */
-    pfree(nb->nbst.eLJ);
-    nb->nbst.eLJ = nullptr;
-
-    pfree(nb->nbst.eElec);
-    nb->nbst.eElec = nullptr;
-
-    pfree(nb->nbst.fShift);
-    nb->nbst.fShift = nullptr;
-
-    delete atdat;
-    delete nbparam;
-    delete nb;
-
-    if (debug)
-    {
-        fprintf(debug, "Cleaned up CUDA data structures.\n");
-    }
+    // Nothing specific in CUDA
 }
 
 int gpu_min_ci_balanced(NbnxmGpu* nb)

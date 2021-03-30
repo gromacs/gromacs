@@ -83,7 +83,11 @@ void init_plist(gpu_plist* pl);
 /*! \brief Initializes the timings data structure. */
 void init_timings(gmx_wallclock_gpu_nbnxn_t* t);
 
+/*! \brief Initializes the NBNXM GPU data structures. */
 void gpu_init_platform_specific(NbnxmGpu* nb);
+
+/*! \brief Releases the NBNXM GPU data structures. */
+void gpu_free_platform_specific(NbnxmGpu* nb);
 
 } // namespace Nbnxm
 

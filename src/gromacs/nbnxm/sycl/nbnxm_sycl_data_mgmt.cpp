@@ -61,56 +61,9 @@ void gpu_init_platform_specific(NbnxmGpu* /* nb */)
     // Nothing specific in SYCL
 }
 
-void gpu_free(NbnxmGpu* nb)
+void gpu_free_platform_specific(NbnxmGpu* /* nb */)
 {
-    if (nb == nullptr)
-    {
-        return;
-    }
-
-    delete nb->timers;
-    sfree(nb->timings);
-
-    NBAtomData* atdat   = nb->atdat;
-    NBParamGpu* nbparam = nb->nbparam;
-
-    if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
-    {
-        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
-    }
-
-    if (!useLjCombRule(nb->nbparam->vdwType))
-    {
-        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
-    }
-
-    if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
-    {
-        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
-    }
-
-    /* Free plist */
-    auto* plist = nb->plist[InteractionLocality::Local];
-    delete plist;
-    if (nb->bUseTwoStreams)
-    {
-        auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
-        delete plist_nl;
-    }
-
-    /* Free nbst */
-    pfree(nb->nbst.eLJ);
-    nb->nbst.eLJ = nullptr;
-
-    pfree(nb->nbst.eElec);
-    nb->nbst.eElec = nullptr;
-
-    pfree(nb->nbst.fShift);
-    nb->nbst.fShift = nullptr;
-
-    delete atdat;
-    delete nbparam;
-    delete nb;
+    // Nothing specific in SYCL
 }
 
 int gpu_min_ci_balanced(NbnxmGpu* nb)

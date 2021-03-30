@@ -1091,4 +1091,89 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
 }
 
+//! This function is documented in the header file
+void gpu_free(NbnxmGpu* nb)
+{
+    if (nb == nullptr)
+    {
+        return;
+    }
+
+    gpu_free_platform_specific(nb);
+
+    delete nb->timers;
+    sfree(nb->timings);
+
+    NBAtomData* atdat   = nb->atdat;
+    NBParamGpu* nbparam = nb->nbparam;
+
+    /* Free atdat */
+    freeDeviceBuffer(&(nb->atdat->xq));
+    freeDeviceBuffer(&(nb->atdat->f));
+    freeDeviceBuffer(&(nb->atdat->eLJ));
+    freeDeviceBuffer(&(nb->atdat->eElec));
+    freeDeviceBuffer(&(nb->atdat->fShift));
+    freeDeviceBuffer(&(nb->atdat->shiftVec));
+    if (useLjCombRule(nb->nbparam->vdwType))
+    {
+        freeDeviceBuffer(&atdat->ljComb);
+    }
+    else
+    {
+        freeDeviceBuffer(&atdat->atomTypes);
+    }
+
+    /* Free nbparam */
+    if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
+    {
+        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
+    }
+
+    if (!useLjCombRule(nb->nbparam->vdwType))
+    {
+        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
+    }
+
+    if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
+    {
+        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
+    }
+
+    /* Free plist */
+    auto* plist = nb->plist[InteractionLocality::Local];
+    freeDeviceBuffer(&plist->sci);
+    freeDeviceBuffer(&plist->cj4);
+    freeDeviceBuffer(&plist->imask);
+    freeDeviceBuffer(&plist->excl);
+    delete plist;
+    if (nb->bUseTwoStreams)
+    {
+        auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
+        freeDeviceBuffer(&plist_nl->sci);
+        freeDeviceBuffer(&plist_nl->cj4);
+        freeDeviceBuffer(&plist_nl->imask);
+        freeDeviceBuffer(&plist_nl->excl);
+        delete plist_nl;
+    }
+
+    /* Free nbst */
+    pfree(nb->nbst.eLJ);
+    nb->nbst.eLJ = nullptr;
+
+    pfree(nb->nbst.eElec);
+    nb->nbst.eElec = nullptr;
+
+    pfree(nb->nbst.fShift);
+    nb->nbst.fShift = nullptr;
+
+    delete atdat;
+    delete nbparam;
+    delete nb;
+
+    if (debug)
+    {
+        fprintf(debug, "Cleaned up NBNXM GPU data structures.\n");
+    }
+}
+
 } // namespace Nbnxm

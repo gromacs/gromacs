@@ -163,13 +163,11 @@ void gpu_init_platform_specific(NbnxmGpu* nb)
 /*! \brief Releases an OpenCL kernel pointer */
 static void free_kernel(cl_kernel* kernel_ptr)
 {
-    cl_int gmx_unused cl_error;
-
     GMX_ASSERT(kernel_ptr, "Need a valid kernel pointer");
 
     if (*kernel_ptr)
     {
-        cl_error = clReleaseKernel(*kernel_ptr);
+        cl_int cl_error = clReleaseKernel(*kernel_ptr);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clReleaseKernel failed: " + ocl_get_error_string(cl_error)).c_str());
 
@@ -180,9 +178,7 @@ static void free_kernel(cl_kernel* kernel_ptr)
 /*! \brief Releases a list of OpenCL kernel pointers */
 static void free_kernels(cl_kernel* kernels, int count)
 {
-    int i;
-
-    for (i = 0; i < count; i++)
+    for (int i = 0; i < count; i++)
     {
         free_kernel(kernels + i);
     }
@@ -207,19 +203,8 @@ static void freeGpuProgram(cl_program program)
 }
 
 //! This function is documented in the header file
-void gpu_free(NbnxmGpu* nb)
+void gpu_free_platform_specific(NbnxmGpu* nb)
 {
-    if (nb == nullptr)
-    {
-        return;
-    }
-
-    delete nb->timers;
-    sfree(nb->timings);
-
-    NBAtomData* atdat   = nb->atdat;
-    NBParamGpu* nbparam = nb->nbparam;
-
     /* Free kernels */
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     int kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
@@ -237,76 +222,8 @@ void gpu_free(NbnxmGpu* nb)
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
     free_kernels(nb->kernel_noener_prune_ptr[0], kernel_count);
 
-    /* Free atdat */
-    freeDeviceBuffer(&(nb->atdat->xq));
-    freeDeviceBuffer(&(nb->atdat->f));
-    freeDeviceBuffer(&(nb->atdat->eLJ));
-    freeDeviceBuffer(&(nb->atdat->eElec));
-    freeDeviceBuffer(&(nb->atdat->fShift));
-    freeDeviceBuffer(&(nb->atdat->shiftVec));
-    if (useLjCombRule(nb->nbparam->vdwType))
-    {
-        freeDeviceBuffer(&atdat->ljComb);
-    }
-    else
-    {
-        freeDeviceBuffer(&atdat->atomTypes);
-    }
-
-    /* Free nbparam */
-    if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
-    {
-        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
-    }
-
-    if (!useLjCombRule(nb->nbparam->vdwType))
-    {
-        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
-    }
-
-    if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
-    {
-        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
-    }
-
-    /* Free plist */
-    auto* plist = nb->plist[InteractionLocality::Local];
-    freeDeviceBuffer(&plist->sci);
-    freeDeviceBuffer(&plist->cj4);
-    freeDeviceBuffer(&plist->imask);
-    freeDeviceBuffer(&plist->excl);
-    delete plist;
-    if (nb->bUseTwoStreams)
-    {
-        auto* plist_nl = nb->plist[InteractionLocality::NonLocal];
-        freeDeviceBuffer(&plist_nl->sci);
-        freeDeviceBuffer(&plist_nl->cj4);
-        freeDeviceBuffer(&plist_nl->imask);
-        freeDeviceBuffer(&plist_nl->excl);
-        delete plist_nl;
-    }
-
-    /* Free nbst */
-    pfree(nb->nbst.eLJ);
-    nb->nbst.eLJ = nullptr;
-
-    pfree(nb->nbst.eElec);
-    nb->nbst.eElec = nullptr;
-
-    pfree(nb->nbst.fShift);
-    nb->nbst.fShift = nullptr;
-
     freeGpuProgram(nb->dev_rundata->program);
     delete nb->dev_rundata;
-
-    delete atdat;
-    delete nbparam;
-    delete nb;
-
-    if (debug)
-    {
-        fprintf(debug, "Cleaned up OpenCL data structures.\n");
-    }
 }
 
 //! This function is documented in the header file
