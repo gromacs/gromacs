@@ -319,11 +319,6 @@ static void initNbparam(NBParamGpu*                     nbp,
         GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
         init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, deviceContext);
     }
-    else
-    {
-        // Need to initialize for OpenCL, since it is unconditionally used as a kernel argument.
-        allocateDeviceBuffer(&nbp->coulomb_tab, 1, deviceContext);
-    }
 
     /* set up LJ parameter lookup table */
     if (!useLjCombRule(nbp->vdwType))
@@ -335,11 +330,6 @@ static void initNbparam(NBParamGpu*                     nbp,
                              reinterpret_cast<const Float2*>(nbatParams.nbfp.data()),
                              numTypes * numTypes,
                              deviceContext);
-    }
-    else
-    {
-        // Need to initialize for OpenCL, since it is unconditionally used as a kernel argument.
-        allocateDeviceBuffer(&nbp->nbfp, 1, deviceContext);
     }
 
     /* set up LJ-PME parameter lookup table */
@@ -353,11 +343,6 @@ static void initNbparam(NBParamGpu*                     nbp,
                              reinterpret_cast<const Float2*>(nbatParams.nbfp_comb.data()),
                              numTypes,
                              deviceContext);
-    }
-    else
-    {
-        // Need to initialize for OpenCL, since it is unconditionally used as a kernel argument.
-        allocateDeviceBuffer(&nbp->nbfp_comb, 1, deviceContext);
     }
 }
 

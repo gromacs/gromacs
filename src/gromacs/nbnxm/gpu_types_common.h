@@ -176,11 +176,11 @@ struct NBParamGpu
 
     /* LJ non-bonded parameters - accessed through texture memory */
     //! nonbonded parameter table with 6*C6/12*C12 pairs per atom type-pair, ntype^2 elements
-    DeviceBuffer<Float2> nbfp;
+    DeviceBuffer<Float2> nbfp{};
     //! texture object bound to nbfp
     DeviceTexture nbfp_texobj;
     //! nonbonded parameter table per atom type, ntype elements
-    DeviceBuffer<Float2> nbfp_comb;
+    DeviceBuffer<Float2> nbfp_comb{};
     //! texture object bound to nbfp_comb
     DeviceTexture nbfp_comb_texobj;
 
@@ -188,7 +188,7 @@ struct NBParamGpu
     //! table scale/spacing
     float coulomb_tab_scale;
     //! pointer to the table in the device memory
-    DeviceBuffer<float> coulomb_tab;
+    DeviceBuffer<float> coulomb_tab{};
     //! texture object bound to coulomb_tab
     DeviceTexture coulomb_tab_texobj;
 };
