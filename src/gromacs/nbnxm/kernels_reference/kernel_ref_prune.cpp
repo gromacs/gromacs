@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,10 +43,10 @@
 #include "gromacs/utility/gmxassert.h"
 
 /* Prune a single NbnxnPairlistCpu entry with distance rlistInner */
-void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
-                            const nbnxn_atomdata_t* nbat,
-                            const rvec* gmx_restrict shift_vec,
-                            real                     rlistInner)
+void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*              nbl,
+                            const nbnxn_atomdata_t*        nbat,
+                            gmx::ArrayRef<const gmx::RVec> shiftvec,
+                            real                           rlistInner)
 {
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
@@ -57,8 +58,7 @@ void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
     const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
     nbnxn_cj_t* gmx_restrict cjInner       = nbl->cj.data();
 
-    const real* gmx_restrict shiftvec = shift_vec[0];
-    const real* gmx_restrict x        = nbat->x().data();
+    const real* gmx_restrict x = nbat->x().data();
 
     const real rlist2 = rlistInner * rlistInner;
 
@@ -93,8 +93,7 @@ void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
         {
             for (int d = 0; d < DIM; d++)
             {
-                xi[i * c_xiStride + d] =
-                        x[(ci * c_iUnroll + i) * c_xStride + d] + shiftvec[ish * DIM + d];
+                xi[i * c_xiStride + d] = x[(ci * c_iUnroll + i) * c_xStride + d] + shiftvec[ish][d];
             }
         }
 

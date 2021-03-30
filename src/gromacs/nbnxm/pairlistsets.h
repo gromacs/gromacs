@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,9 +84,9 @@ public:
                    t_nrnb*                      nrnb);
 
     //! Dispatches the dynamic pruning kernel for the given locality
-    void dispatchPruneKernel(gmx::InteractionLocality iLocality,
-                             const nbnxn_atomdata_t*  nbat,
-                             const rvec*              shift_vec);
+    void dispatchPruneKernel(gmx::InteractionLocality       iLocality,
+                             const nbnxn_atomdata_t*        nbat,
+                             gmx::ArrayRef<const gmx::RVec> shift_vec);
 
     //! Returns the pair list parameters
     const PairlistParams& params() const { return params_; }

@@ -946,13 +946,10 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox, rvec* shift_vec, nbnxn_atomdata_t* nbat)
+void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox, gmx::ArrayRef<gmx::RVec> shift_vec, nbnxn_atomdata_t* nbat)
 {
     nbat->bDynamicBox = bDynamicBox;
-    for (int i = 0; i < SHIFTS; i++)
-    {
-        copy_rvec(shift_vec[i], nbat->shift_vec[i]);
-    }
+    std::copy(shift_vec.begin(), shift_vec.end(), nbat->shift_vec.begin());
 }
 
 // This is slightly different from nbnxn_get_atom_range(...) at the end of the file

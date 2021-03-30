@@ -44,6 +44,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
@@ -240,7 +241,7 @@ struct t_forcerec
     /* Information about atom properties for local and non-local atoms */
     std::vector<int> cginfo;
 
-    rvec* shift_vec = nullptr;
+    std::vector<gmx::RVec> shift_vec;
 
     std::unique_ptr<gmx::WholeMoleculeTransform> wholeMoleculeTransform;
 

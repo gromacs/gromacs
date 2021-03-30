@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/refdata.h"
 
@@ -61,8 +62,8 @@ TEST(PbcTest, CalcShiftsWorks)
     // Choose box vector entries whose magnitudes will lead to unique
     // shift vector values when the largest box shift in any dimension
     // is two.
-    const matrix box = { { 0.01, 1, -100 }, { 300, -0.03, 3 }, { -6, -600, 0.06 } };
-    rvec         shiftVectors[SHIFTS];
+    const matrix           box = { { 0.01, 1, -100 }, { 300, -0.03, 3 }, { -6, -600, 0.06 } };
+    std::vector<gmx::RVec> shiftVectors(SHIFTS);
 
     calc_shifts(box, shiftVectors);
 

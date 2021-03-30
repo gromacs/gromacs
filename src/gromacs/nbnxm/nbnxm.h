@@ -351,7 +351,8 @@ public:
     bool isDynamicPruningStepGpu(int64_t step) const;
 
     //! Dispatches the dynamic pruning kernel for the given locality, for CPU lists
-    void dispatchPruneKernelCpu(gmx::InteractionLocality iLocality, const rvec* shift_vec) const;
+    void dispatchPruneKernelCpu(gmx::InteractionLocality       iLocality,
+                                gmx::ArrayRef<const gmx::RVec> shift_vec) const;
 
     //! Dispatches the dynamic pruning kernel for GPU lists
     void dispatchPruneKernelGpu(int64_t step);

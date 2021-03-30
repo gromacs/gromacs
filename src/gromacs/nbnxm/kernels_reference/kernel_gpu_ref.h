@@ -1,8 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,15 +60,15 @@ class StepWorkload;
 }
 
 //! Reference (slow) kernel for nb n vs n GPU type pair lists
-void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
-                          const nbnxn_atomdata_t*    nbat,
-                          const interaction_const_t* iconst,
-                          rvec*                      shift_vec,
-                          const gmx::StepWorkload&   stepWork,
-                          int                        clearF,
-                          gmx::ArrayRef<real>        f,
-                          real*                      fshift,
-                          real*                      Vc,
-                          real*                      Vvdw);
+void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
+                          const nbnxn_atomdata_t*        nbat,
+                          const interaction_const_t*     iconst,
+                          gmx::ArrayRef<const gmx::RVec> shiftvec,
+                          const gmx::StepWorkload&       stepWork,
+                          int                            clearF,
+                          gmx::ArrayRef<real>            f,
+                          real*                          fshift,
+                          real*                          Vc,
+                          real*                          Vvdw);
 
 #endif

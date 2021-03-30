@@ -1196,7 +1196,7 @@ void pbc_dx_d(const t_pbc* pbc, const dvec x1, const dvec x2, dvec dx)
     }
 }
 
-void calc_shifts(const matrix box, rvec shift_vec[])
+void calc_shifts(const matrix box, gmx::ArrayRef<gmx::RVec> shift_vec)
 {
     for (int n = 0, m = -D_BOX_Z; m <= D_BOX_Z; m++)
     {

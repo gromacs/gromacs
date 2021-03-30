@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,10 +49,10 @@
 #endif
 
 /* Prune a single nbnxn_pairtlist_t entry with distance rlistInner */
-void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*       nbl,
-                             const nbnxn_atomdata_t* nbat,
-                             const rvec* gmx_restrict shift_vec,
-                             real                     rlistInner)
+void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
+                             const nbnxn_atomdata_t*        nbat,
+                             gmx::ArrayRef<const gmx::RVec> shiftvec,
+                             real                           rlistInner)
 {
 #ifdef GMX_NBNXN_SIMD_2XNN
     using namespace gmx;
@@ -66,8 +67,7 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*       nbl,
     const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
     nbnxn_cj_t* gmx_restrict cjInner       = nbl->cj.data();
 
-    const real* gmx_restrict shiftvec = shift_vec[0];
-    const real* gmx_restrict x        = nbat->x().data();
+    const real* gmx_restrict x = nbat->x().data();
 
     const SimdReal rlist2_S(rlistInner * rlistInner);
 
@@ -85,13 +85,12 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*       nbl,
         ciInner[nciInner].cj_ind_start = ncjInner;
 
         /* Extract shift data */
-        int ish  = (ciEntry->shift & NBNXN_CI_SHIFT);
-        int ish3 = ish * 3;
-        int ci   = ciEntry->ci;
+        int ish = (ciEntry->shift & NBNXN_CI_SHIFT);
+        int ci  = ciEntry->ci;
 
-        SimdReal shX_S = SimdReal(shiftvec[ish3]);
-        SimdReal shY_S = SimdReal(shiftvec[ish3 + 1]);
-        SimdReal shZ_S = SimdReal(shiftvec[ish3 + 2]);
+        SimdReal shX_S = SimdReal(shiftvec[ish][XX]);
+        SimdReal shY_S = SimdReal(shiftvec[ish][YY]);
+        SimdReal shZ_S = SimdReal(shiftvec[ish][ZZ]);
 
 #    if UNROLLJ <= 4
         int scix = ci * STRIDE * DIM;
@@ -171,7 +170,7 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*       nbl,
 
     GMX_UNUSED_VALUE(nbl);
     GMX_UNUSED_VALUE(nbat);
-    GMX_UNUSED_VALUE(shift_vec);
+    GMX_UNUSED_VALUE(shiftvec);
     GMX_UNUSED_VALUE(rlistInner);
 
 #endif /* GMX_NBNXN_SIMD_2XNN */

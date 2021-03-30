@@ -298,7 +298,7 @@ void NbvSetupUtil::setupForceRec(const matrix& box)
 {
     assert((gmxForceCalculator_->forcerec_ && "Forcerec not initialized"));
     gmxForceCalculator_->forcerec_->nbfp = nonbondedParameters_;
-    snew(gmxForceCalculator_->forcerec_->shift_vec, numShiftVectors);
+    gmxForceCalculator_->forcerec_->shift_vec.resize(numShiftVectors);
     calc_shifts(box, gmxForceCalculator_->forcerec_->shift_vec);
 }
 

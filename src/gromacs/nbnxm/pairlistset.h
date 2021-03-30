@@ -98,7 +98,7 @@ public:
                             SearchCycleCounting*          searchCycleCounting);
 
     //! Dispatch the kernel for dynamic pairlist pruning
-    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* shift_vec);
+    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRef<const gmx::RVec> shift_vec);
 
     //! Returns the lists of CPU pairlists
     gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }

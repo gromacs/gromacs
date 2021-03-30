@@ -238,16 +238,16 @@ static int getVdwKernelType(const Nbnxm::KernelSetup&       kernelSetup,
  * \param[out]    vVdw          Output buffer for Van der Waals energies
  * \param[in]     wcycle        Pointer to cycle counting data structure.
  */
-static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
-                             const Nbnxm::KernelSetup&  kernelSetup,
-                             nbnxn_atomdata_t*          nbat,
-                             const interaction_const_t& ic,
-                             rvec*                      shiftVectors,
-                             const gmx::StepWorkload&   stepWork,
-                             int                        clearF,
-                             real*                      vCoulomb,
-                             real*                      vVdw,
-                             gmx_wallcycle*             wcycle)
+static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
+                             const Nbnxm::KernelSetup&      kernelSetup,
+                             nbnxn_atomdata_t*              nbat,
+                             const interaction_const_t&     ic,
+                             gmx::ArrayRef<const gmx::RVec> shiftVectors,
+                             const gmx::StepWorkload&       stepWork,
+                             int                            clearF,
+                             real*                          vCoulomb,
+                             real*                          vVdw,
+                             gmx_wallcycle*                 wcycle)
 {
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
@@ -256,6 +256,8 @@ static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
     const int vdwkt  = getVdwKernelType(kernelSetup, nbatParams, ic);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
+
+    auto shiftVecPointer = as_rvec_array(shiftVectors.data());
 
     int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
     wallcycle_sub_start(wcycle, ewcsNONBONDED_CLEAR);
@@ -288,16 +290,16 @@ static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-                    nbnxm_kernel_noener_simd_2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_noener_simd_2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    nbnxm_kernel_noener_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_noener_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
@@ -312,16 +314,16 @@ static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-                    nbnxm_kernel_ener_simd_2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_ener_simd_2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    nbnxm_kernel_ener_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_ener_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
@@ -338,18 +340,19 @@ static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
             {
                 case Nbnxm::KernelType::Cpu4x4_PlainC:
                     unrollj = c_nbnxnCpuIClusterSize;
-                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #ifdef GMX_NBNXN_SIMD_2XNN
                 case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
                     unrollj = GMX_SIMD_REAL_WIDTH / 2;
-                    nbnxm_kernel_energrp_simd_2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_energrp_simd_2xmm[coulkt][vdwkt](
+                            pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
 #ifdef GMX_NBNXN_SIMD_4XN
                 case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
                     unrollj = GMX_SIMD_REAL_WIDTH;
-                    nbnxm_kernel_energrp_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVectors, out);
+                    nbnxm_kernel_energrp_simd_4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, out);
                     break;
 #endif
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");

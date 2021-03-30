@@ -337,7 +337,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*         nbat,
                         gmx::ArrayRef<const int>  atomInfo);
 
 //! Copy the shift vectors to nbat
-void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box, rvec* shift_vec, nbnxn_atomdata_t* nbat);
+void nbnxn_atomdata_copy_shiftvec(gmx_bool                 dynamic_box,
+                                  gmx::ArrayRef<gmx::RVec> shift_vec,
+                                  nbnxn_atomdata_t*        nbat);
 
 /*! \brief Transform coordinates to xbat layout
  *

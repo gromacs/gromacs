@@ -241,7 +241,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     gmx::ArrayRef<const int> shift  = nlist.shift;
     gmx::ArrayRef<const int> gid    = nlist.gid;
 
-    const real*               shiftvec  = fr.shift_vec[0];
+    const auto                shiftvec  = fr.shift_vec;
     const int                 ntype     = fr.ntype;
     gmx::ArrayRef<const real> nbfp      = fr.nbfp;
     gmx::ArrayRef<const real> nbfp_grid = fr.ljpme_c6grid;
@@ -385,10 +385,11 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     {
         int npair_within_cutoff = 0;
 
-        const int  is3   = 3 * shift[n];
-        const real shX   = shiftvec[is3];
-        const real shY   = shiftvec[is3 + 1];
-        const real shZ   = shiftvec[is3 + 2];
+        const int  is    = shift[n];
+        const int  is3   = DIM * is;
+        const real shX   = shiftvec[is][XX];
+        const real shY   = shiftvec[is][YY];
+        const real shZ   = shiftvec[is][ZZ];
         const int  nj0   = jindex[n];
         const int  nj1   = jindex[n + 1];
         const int  ii    = iinr[n];

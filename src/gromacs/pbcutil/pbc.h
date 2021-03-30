@@ -283,7 +283,7 @@ void pbc_dx_d(const t_pbc* pbc, const dvec x1, const dvec x2, dvec dx);
  * \param[in]  box       The simulation box
  * \param[out] shift_vec The shifting vectors
  */
-void calc_shifts(const matrix box, rvec shift_vec[]);
+void calc_shifts(const matrix box, gmx::ArrayRef<gmx::RVec> shift_vec);
 
 /*! \brief Calculates the center of the box.
  *

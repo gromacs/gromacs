@@ -1218,9 +1218,9 @@ void init_forcerec(FILE*                            fplog,
         forcerec->forceHelperBuffers.emplace_back(haveDirectVirialContributions);
     }
 
-    if (forcerec->shift_vec == nullptr)
+    if (forcerec->shift_vec.empty())
     {
-        snew(forcerec->shift_vec, SHIFTS);
+        forcerec->shift_vec.resize(SHIFTS);
     }
 
     if (forcerec->nbfp.empty())
@@ -1418,6 +1418,5 @@ t_forcerec::t_forcerec() = default;
 t_forcerec::~t_forcerec()
 {
     /* Note: This code will disappear when types are converted to C++ */
-    sfree(shift_vec);
     sfree(ewc_t);
 }

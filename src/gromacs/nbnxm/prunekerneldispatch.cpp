@@ -52,12 +52,12 @@
 
 void PairlistSets::dispatchPruneKernel(const gmx::InteractionLocality iLocality,
                                        const nbnxn_atomdata_t*        nbat,
-                                       const rvec*                    shift_vec)
+                                       gmx::ArrayRef<const gmx::RVec> shift_vec)
 {
     pairlistSet(iLocality).dispatchPruneKernel(nbat, shift_vec);
 }
 
-void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* shift_vec)
+void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRef<const gmx::RVec> shift_vec)
 {
     const real rlistInner = params_.rlistInner;
 
@@ -93,7 +93,7 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* 
 }
 
 void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality iLocality,
-                                                const rvec*                    shift_vec) const
+                                                gmx::ArrayRef<const gmx::RVec> shift_vec) const
 {
     pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec);
 }
