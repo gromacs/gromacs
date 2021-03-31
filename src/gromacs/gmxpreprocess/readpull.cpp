@@ -662,8 +662,8 @@ pull_t* set_pull_init(t_inputrec*                    ir,
 
         value = get_pull_coord_value(pull_work, c, &pbc);
 
-        value *= pull_conversion_factor_internal2userinput(pcrd);
-        fprintf(stderr, " %10.3f %s", value, pull_coordinate_units(pcrd));
+        value *= pull_conversion_factor_internal2userinput(*pcrd);
+        fprintf(stderr, " %10.3f %s", value, pull_coordinate_units(*pcrd));
 
         if (pcrd->bStart)
         {
@@ -712,7 +712,7 @@ pull_t* set_pull_init(t_inputrec*                    ir,
         }
 
 
-        fprintf(stderr, "     %10.3f %s\n", pcrd->init, pull_coordinate_units(pcrd));
+        fprintf(stderr, "     %10.3f %s\n", pcrd->init, pull_coordinate_units(*pcrd));
     }
 
     return pull_work;

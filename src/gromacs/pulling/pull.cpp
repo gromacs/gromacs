@@ -72,6 +72,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -91,6 +92,11 @@ extern template LocalAtomSet LocalAtomSetManager::add<void, void>(ArrayRef<const
 
 using gmx::ArrayRef;
 using gmx::RVec;
+
+/*! \brief Tells whether the pull geometry is an angle type */
+constexpr gmx::EnumerationArray<PullGroupGeometry, bool> sc_isAngleType = {
+    { false, false, false, false, false, true, true, true }
+};
 
 static int groupPbcFromParams(const t_pull_group& params, bool setPbcRefToPrevStepCOM)
 {
@@ -138,12 +144,6 @@ pull_group_work_t::pull_group_work_t(const t_pull_group& params,
     clear_dvec(xp);
 };
 
-bool pull_coordinate_is_angletype(const t_pull_coord* pcrd)
-{
-    return (pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::Dihedral
-            || pcrd->eGeom == PullGroupGeometry::AngleAxis);
-}
-
 static bool pull_coordinate_is_directional(const t_pull_coord* pcrd)
 {
     return (pcrd->eGeom == PullGroupGeometry::Direction || pcrd->eGeom == PullGroupGeometry::DirectionPBC
@@ -151,14 +151,14 @@ static bool pull_coordinate_is_directional(const t_pull_coord* pcrd)
             || pcrd->eGeom == PullGroupGeometry::Cylinder);
 }
 
-const char* pull_coordinate_units(const t_pull_coord* pcrd)
+const char* pull_coordinate_units(const t_pull_coord& pcrd)
 {
-    return pull_coordinate_is_angletype(pcrd) ? "deg" : "nm";
+    return sc_isAngleType[pcrd.eGeom] ? "deg" : "nm";
 }
 
-double pull_conversion_factor_userinput2internal(const t_pull_coord* pcrd)
+double pull_conversion_factor_userinput2internal(const t_pull_coord& pcrd)
 {
-    if (pull_coordinate_is_angletype(pcrd))
+    if (sc_isAngleType[pcrd.eGeom])
     {
         return gmx::c_deg2Rad;
     }
@@ -168,9 +168,9 @@ double pull_conversion_factor_userinput2internal(const t_pull_coord* pcrd)
     }
 }
 
-double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd)
+double pull_conversion_factor_internal2userinput(const t_pull_coord& pcrd)
 {
-    if (pull_coordinate_is_angletype(pcrd))
+    if (sc_isAngleType[pcrd.eGeom])
     {
         return gmx::c_rad2Deg;
     }
@@ -665,7 +665,7 @@ static double sanitizePullCoordReferenceValue(const t_pull_coord& pcrdParams, do
                       "Pull reference angle for coordinate %d (%f) needs to be in the allowed "
                       "interval [0,180] deg",
                       pcrdParams.coordIndex + 1,
-                      value_ref * pull_conversion_factor_internal2userinput(&pcrdParams));
+                      value_ref * pull_conversion_factor_internal2userinput(pcrdParams));
         }
     }
     else if (pcrdParams.eGeom == PullGroupGeometry::Dihedral)
@@ -685,7 +685,7 @@ static void updatePullCoordReferenceValue(double* referenceValue, const t_pull_c
     if (pcrdParams.rate != 0)
     {
         const double inputValue = (pcrdParams.init + pcrdParams.rate * t)
-                                  * pull_conversion_factor_userinput2internal(&pcrdParams);
+                                  * pull_conversion_factor_userinput2internal(pcrdParams);
         *referenceValue = sanitizePullCoordReferenceValue(pcrdParams, inputValue);
     }
 }
@@ -2128,7 +2128,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             {
                 pcrd->value_ref = sanitizePullCoordReferenceValue(
                         pcrd->params,
-                        pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
+                        pcrd->params.init * pull_conversion_factor_userinput2internal(pcrd->params));
             }
             else
             {

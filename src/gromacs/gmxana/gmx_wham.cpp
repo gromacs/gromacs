@@ -1580,16 +1580,15 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
          * so we need to multiply with the internal units (radians for angle)
          * to user units (degrees for an angle) with the same power.
          */
-        header->pcrd[i].k =
-                ir->pull->coord[i].k
-                / gmx::square(pull_conversion_factor_internal2userinput(&ir->pull->coord[i]));
+        header->pcrd[i].k = ir->pull->coord[i].k
+                            / gmx::square(pull_conversion_factor_internal2userinput(ir->pull->coord[i]));
         header->pcrd[i].init_dist = ir->pull->coord[i].init;
 
         copy_ivec(ir->pull->coord[i].dim, header->pcrd[i].dim);
         header->pcrd[i].ndim =
                 header->pcrd[i].dim[XX] + header->pcrd[i].dim[YY] + header->pcrd[i].dim[ZZ];
 
-        std::strcpy(header->pcrd[i].coord_unit, pull_coordinate_units(&ir->pull->coord[i]));
+        std::strcpy(header->pcrd[i].coord_unit, pull_coordinate_units(ir->pull->coord[i]));
 
         if (ir->efep != FreeEnergyPerturbationType::No && ir->pull->coord[i].k != ir->pull->coord[i].kB)
         {

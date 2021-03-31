@@ -78,33 +78,26 @@ class ForceWithVirial;
 class LocalAtomSetManager;
 } // namespace gmx
 
-/*! \brief Returns if the pull coordinate is an angle
- *
- * \param[in] pcrd The pull coordinate to query the type for.
- * \returns a boolean telling if the coordinate is of angle type.
- */
-bool pull_coordinate_is_angletype(const t_pull_coord* pcrd);
-
 /*! \brief Returns the units of the pull coordinate.
  *
  * \param[in] pcrd The pull coordinate to query the units for.
  * \returns a string with the units of the coordinate.
  */
-const char* pull_coordinate_units(const t_pull_coord* pcrd);
+const char* pull_coordinate_units(const t_pull_coord& pcrd);
 
 /*! \brief Returns the conversion factor from the pull coord init/rate unit to internal value unit.
  *
  * \param[in] pcrd The pull coordinate to get the conversion factor for.
  * \returns the conversion factor.
  */
-double pull_conversion_factor_userinput2internal(const t_pull_coord* pcrd);
+double pull_conversion_factor_userinput2internal(const t_pull_coord& pcrd);
 
 /*! \brief Returns the conversion factor from the pull coord internal value unit to the init/rate unit.
  *
  * \param[in] pcrd The pull coordinate to get the conversion factor for.
  * \returns the conversion factor.
  */
-double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd);
+double pull_conversion_factor_internal2userinput(const t_pull_coord& pcrd);
 
 /*! \brief Get the value for pull coord coord_ind.
  *

@@ -174,7 +174,7 @@ static void pull_print_coord_dr(FILE*                out,
                                 double               referenceValue,
                                 const int            numValuesInSum)
 {
-    const double unit_factor = pull_conversion_factor_internal2userinput(&coordParams);
+    const double unit_factor = pull_conversion_factor_internal2userinput(coordParams);
 
     fprintf(out, "\t%g", pcrdData.value * unit_factor / numValuesInSum);
 

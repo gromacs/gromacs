@@ -1233,7 +1233,7 @@ static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
 
     /* The initial coordinate value, converted to external user units. */
     double initialCoordinate = get_pull_coord_value(pull_work, dimParams->coordinateIndex(), &pbc);
-    initialCoordinate *= pull_conversion_factor_internal2userinput(&pullCoordParams);
+    initialCoordinate *= pull_conversion_factor_internal2userinput(pullCoordParams);
     dimParams->setInitialCoordinate(initialCoordinate);
 }
 
