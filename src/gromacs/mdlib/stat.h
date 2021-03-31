@@ -63,17 +63,16 @@ gmx_global_stat_t global_stat_init(const t_inputrec* ir);
 void global_stat_destroy(gmx_global_stat_t gs);
 
 /*! \brief All-reduce energy-like quantities over cr->mpi_comm_mysim  */
-void global_stat(const gmx_global_stat* gs,
+void global_stat(const gmx_global_stat& gs,
                  const t_commrec*       cr,
                  gmx_enerdata_t*        enerd,
                  tensor                 fvir,
                  tensor                 svir,
-                 const t_inputrec*      inputrec,
+                 const t_inputrec&      inputrec,
                  gmx_ekindata_t*        ekind,
                  gmx::ArrayRef<real>    constraintsRmsdData,
                  t_vcm*                 vcm,
-                 int                    nsig,
-                 real*                  sig,
+                 gmx::ArrayRef<real>    sig,
                  bool                   bSumEkinhOld,
                  int                    flags);
 

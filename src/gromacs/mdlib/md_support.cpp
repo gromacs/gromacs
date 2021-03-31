@@ -360,17 +360,16 @@ void compute_globals(gmx_global_stat*               gstat,
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
-                global_stat(gstat,
+                global_stat(*gstat,
                             cr,
                             enerd,
                             force_vir,
                             shake_vir,
-                            ir,
+                            *ir,
                             ekind,
                             constraintsRmsdData,
                             bStopCM ? vcm : nullptr,
-                            signalBuffer.size(),
-                            signalBuffer.data(),
+                            signalBuffer,
                             *bSumEkinhOld,
                             flags);
                 wallcycle_stop(wcycle, ewcMoveE);

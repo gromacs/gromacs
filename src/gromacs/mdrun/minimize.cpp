@@ -964,17 +964,16 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     {
         wallcycle_start(wcycle, ewcMoveE);
 
-        global_stat(gstat,
+        global_stat(*gstat,
                     cr,
                     enerd,
                     force_vir,
                     shake_vir,
-                    inputrec,
+                    *inputrec,
                     nullptr,
                     gmx::ArrayRef<real>{},
                     nullptr,
-                    1,
-                    &terminate,
+                    std::vector<real>(1, terminate),
                     FALSE,
                     CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
 

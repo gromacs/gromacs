@@ -135,46 +135,38 @@ static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gm
     return to;
 }
 
-void global_stat(const gmx_global_stat* gs,
+void global_stat(const gmx_global_stat& gs,
                  const t_commrec*       cr,
                  gmx_enerdata_t*        enerd,
                  tensor                 fvir,
                  tensor                 svir,
-                 const t_inputrec*      inputrec,
+                 const t_inputrec&      inputrec,
                  gmx_ekindata_t*        ekind,
                  gmx::ArrayRef<real>    constraintsRmsdData,
                  t_vcm*                 vcm,
-                 int                    nsig,
-                 real*                  sig,
+                 gmx::ArrayRef<real>    sig,
                  bool                   bSumEkinhOld,
                  int                    flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
-    t_bin* rb;
-    int *  itc0, *itc1;
-    int    ie = 0, ifv = 0, isv = 0, irmsd = 0;
+    int ie = 0, ifv = 0, isv = 0, irmsd = 0;
     int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
-    int      isig = -1;
-    int      icj = -1, ici = -1, icx = -1;
-    int      inn[static_cast<int>(NonBondedEnergyTerms::Count)];
-    real     copyenerd[F_NRE];
-    int      nener, j;
-    double   nb;
-    gmx_bool bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    int isig = -1;
+    int icj = -1, ici = -1, icx = -1;
+
     bool checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
+    bool bVV                             = EI_VV(inputrec.eI);
+    bool bTemp                           = ((flags & CGLO_TEMPERATURE) != 0);
+    bool bEner                           = ((flags & CGLO_ENERGY) != 0);
+    bool bPres                           = ((flags & CGLO_PRESSURE) != 0);
+    bool bConstrVir                      = ((flags & CGLO_CONSTRAINT) != 0);
+    bool bEkinAveVel                     = (inputrec.eI == IntegrationAlgorithm::VV
+                        || (inputrec.eI == IntegrationAlgorithm::VVAK && bPres));
+    bool bReadEkin                       = ((flags & CGLO_READEKIN) != 0);
 
-    bVV         = EI_VV(inputrec->eI);
-    bTemp       = ((flags & CGLO_TEMPERATURE) != 0);
-    bEner       = ((flags & CGLO_ENERGY) != 0);
-    bPres       = ((flags & CGLO_PRESSURE) != 0);
-    bConstrVir  = ((flags & CGLO_CONSTRAINT) != 0);
-    bEkinAveVel = (inputrec->eI == IntegrationAlgorithm::VV
-                   || (inputrec->eI == IntegrationAlgorithm::VVAK && bPres));
-    bReadEkin   = ((flags & CGLO_READEKIN) != 0);
-
-    rb   = gs->rb;
-    itc0 = gs->itc0;
-    itc1 = gs->itc1;
+    t_bin* rb   = gs.rb;
+    int*   itc0 = gs.itc0;
+    int*   itc1 = gs.itc1;
 
 
     reset_bin(rb);
@@ -187,7 +179,8 @@ void global_stat(const gmx_global_stat* gs,
        communicated and summed when they need to be, to avoid repeating
        the sums and overcounting. */
 
-    nener = filter_enerdterm(enerd->term, TRUE, copyenerd, bTemp, bPres, bEner);
+    std::array<real, F_NRE> copyenerd;
+    int nener = filter_enerdterm(enerd->term, TRUE, copyenerd.data(), bTemp, bPres, bEner);
 
     /* First, the data that needs to be communicated with velocity verlet every time
        This is just the constraint virial.*/
@@ -201,7 +194,7 @@ void global_stat(const gmx_global_stat* gs,
     {
         if (ekind)
         {
-            for (j = 0; (j < inputrec->opts.ngtc); j++)
+            for (int j = 0; (j < inputrec.opts.ngtc); j++)
             {
                 if (bSumEkinhOld)
                 {
@@ -234,19 +227,19 @@ void global_stat(const gmx_global_stat* gs,
         ifv = add_binr(rb, DIM * DIM, fvir[0]);
     }
 
+    gmx::EnumerationArray<NonBondedEnergyTerms, int> inn;
     if (bEner)
     {
-        ie = add_binr(rb, nener, copyenerd);
+        ie = add_binr(rb, nener, copyenerd.data());
         if (!constraintsRmsdData.empty())
         {
             irmsd = add_binr(rb, 2, constraintsRmsdData.data());
         }
-
-        for (j = 0; (j < static_cast<int>(NonBondedEnergyTerms::Count)); j++)
+        for (auto key : gmx::keysOf(inn))
         {
-            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[j].data());
+            inn[key] = add_binr(rb, enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[key].data());
         }
-        if (inputrec->efep != FreeEnergyPerturbationType::No)
+        if (inputrec.efep != FreeEnergyPerturbationType::No)
         {
             idvdll  = add_bind(rb, enerd->dvdl_lin);
             idvdlnl = add_bind(rb, enerd->dvdl_nonlin);
@@ -271,6 +264,7 @@ void global_stat(const gmx_global_stat* gs,
         }
     }
 
+    double nb;
     if (checkNumberOfBondedInteractions)
     {
         GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
@@ -279,16 +273,11 @@ void global_stat(const gmx_global_stat* gs,
         nb  = numBondedInteractions(*cr->dd);
         inb = add_bind(rb, 1, &nb);
     }
-    if (nsig > 0)
+    if (!sig.empty())
     {
-        isig = add_binr(rb, nsig, sig);
+        isig = add_binr(rb, sig);
     }
 
-    /* Global sum it all */
-    if (debug)
-    {
-        fprintf(debug, "Summing %d energies\n", rb->maxreal);
-    }
     sum_bin(rb, cr);
 
     /* Extract all the data locally */
@@ -303,7 +292,7 @@ void global_stat(const gmx_global_stat* gs,
     {
         if (ekind)
         {
-            for (j = 0; (j < inputrec->opts.ngtc); j++)
+            for (int j = 0; (j < inputrec.opts.ngtc); j++)
             {
                 if (bSumEkinhOld)
                 {
@@ -336,17 +325,16 @@ void global_stat(const gmx_global_stat* gs,
 
     if (bEner)
     {
-        extract_binr(rb, ie, nener, copyenerd);
+        extract_binr(rb, ie, nener, copyenerd.data());
         if (!constraintsRmsdData.empty())
         {
             extract_binr(rb, irmsd, constraintsRmsdData);
         }
-
-        for (j = 0; (j < static_cast<int>(NonBondedEnergyTerms::Count)); j++)
+        for (auto key : gmx::keysOf(inn))
         {
-            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[j].data());
+            extract_binr(rb, inn[key], enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[key].data());
         }
-        if (inputrec->efep != FreeEnergyPerturbationType::No)
+        if (inputrec.efep != FreeEnergyPerturbationType::No)
         {
             extract_bind(rb, idvdll, enerd->dvdl_lin);
             extract_bind(rb, idvdlnl, enerd->dvdl_nonlin);
@@ -359,7 +347,7 @@ void global_stat(const gmx_global_stat* gs,
             }
         }
 
-        filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
+        filter_enerdterm(copyenerd.data(), FALSE, enerd->term, bTemp, bPres, bEner);
     }
 
     if (vcm)
@@ -383,8 +371,8 @@ void global_stat(const gmx_global_stat* gs,
         setNumberOfBondedInteractionsOverAllDomains(*cr->dd, gmx::roundToInt(nb));
     }
 
-    if (nsig > 0)
+    if (!sig.empty())
     {
-        extract_binr(rb, isig, nsig, sig);
+        extract_binr(rb, isig, sig);
     }
 }
