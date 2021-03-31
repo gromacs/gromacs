@@ -359,13 +359,9 @@ void StatePropagatorData::Element::saveState()
     localStateBackup_ = statePropagatorData_->localState();
     if (freeEnergyPerturbationData_)
     {
-        localStateBackup_->fep_state = freeEnergyPerturbationData_->currentFEPState();
-        for (unsigned long i = 0;
-             i < gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>::size();
-             ++i)
-        {
-            localStateBackup_->lambda[i] = freeEnergyPerturbationData_->constLambdaView()[i];
-        }
+        localStateBackup_->fep_state    = freeEnergyPerturbationData_->currentFEPState();
+        ArrayRef<const real> lambdaView = freeEnergyPerturbationData_->constLambdaView();
+        std::copy(lambdaView.begin(), lambdaView.end(), localStateBackup_->lambda.begin());
         localStateBackup_->flags |=
                 enumValueToBitMask(StateEntry::Lambda) | enumValueToBitMask(StateEntry::FepState);
     }

@@ -1324,14 +1324,7 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
             switch (*i)
             {
                 case StateEntry::Lambda:
-                    ret = doRealArrayRef(
-                            xd,
-                            *i,
-                            sflags,
-                            gmx::arrayRefFromArray<real>(
-                                    state->lambda.data(),
-                                    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>::size()),
-                            list);
+                    ret = doRealArrayRef(xd, *i, sflags, state->lambda, list);
                     break;
                 case StateEntry::FepState:
                     ret = do_cpte_int(xd, *i, sflags, &state->fep_state, list);

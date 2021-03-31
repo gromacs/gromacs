@@ -498,9 +498,7 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
             {
                 fepvals->all_lambda[g].resize(fepvals->n_lambda);
                 serializer->doDoubleArray(fepvals->all_lambda[g].data(), fepvals->n_lambda);
-                serializer->doBoolArray(
-                        fepvals->separate_dvdl.begin(),
-                        gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real>::size());
+                serializer->doBoolArray(fepvals->separate_dvdl.begin(), fepvals->separate_dvdl.size());
             }
             else if (fepvals->init_lambda >= 0)
             {

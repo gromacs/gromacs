@@ -217,7 +217,7 @@ struct EnumerationArray final
     //! Returns an object that provides iterators over the keys.
     static constexpr EnumerationWrapperType keys() { return EnumerationWrapperType{}; }
     //! Returns the size of the enumeration.
-    static constexpr std::size_t size() { return std::size_t(ArraySize); }
+    constexpr std::size_t size() const { return std::size_t(ArraySize); }
 
     /*!@{*/
     //! Array access with asserts:
