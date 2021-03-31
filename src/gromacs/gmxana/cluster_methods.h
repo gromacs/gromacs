@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2021, by the GROMACS development team, led by
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,60 +33,44 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_GMXANA_CMAT_H
-#define GMX_GMXANA_CMAT_H
+#ifndef GMX_GMXANA_CLUSTER_METHODS_H
+#define GMX_GMXANA_CLUSTER_METHODS_H
+
+#include <stdio.h>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
+struct t_mat;
 
-typedef struct
+struct t_clusters
 {
-    int  i, j;
-    real dist;
-} t_dist;
-
-typedef struct
-{
-    int conf, clust;
-} t_clustid;
-
-struct t_mat
-{
-    int      n1, nn;
-    int*     m_ind;
-    gmx_bool b1D;
-    real     minrms, maxrms, sumrms;
-    real*    erow;
-    real**   mat;
+    int  ncl;
+    int* cl;
 };
 
-/* The matrix is indexed using the matrix index */
-#define EROW(m, i) m->erow[i]
+struct t_nnb
+{
+    int  nr;
+    int* nb;
+};
 
-extern t_mat* init_mat(int n1, gmx_bool b1D);
 
-extern void copy_t_mat(t_mat* dst, t_mat* src);
+void mc_optimize(FILE*             log,
+                 t_mat*            m,
+                 real*             time,
+                 int               maxiter,
+                 int               nrandom,
+                 int               seed,
+                 real              kT,
+                 const char*       conv,
+                 gmx_output_env_t* oenv);
 
-extern void enlarge_mat(t_mat* m, int deltan);
+void gather(t_mat* m, real cutoff, t_clusters* clust);
 
-extern void reset_index(t_mat* m);
+void jarvis_patrick(int n1, real** mat, int M, int P, real rmsdcut, t_clusters* clust);
 
-extern void swap_rows(t_mat* m, int iswap, int jswap);
-
-extern void set_mat_entry(t_mat* m, int i, int j, real val);
-
-extern void done_mat(t_mat** m);
-
-extern real mat_energy(t_mat* mat);
-
-extern void swap_mat(t_mat* m);
-
-extern void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_output_env_t* oenv);
-
-extern void rmsd_distribution(const char* fn, t_mat* m, const gmx_output_env_t* oenv);
-
-extern t_clustid* new_clustid(int n1);
+void gromos(int n1, real** mat, real rmsdcut, t_clusters* clust);
 
 #endif
