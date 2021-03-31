@@ -815,17 +815,21 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     }
 
     /* DtoH f */
-    static_assert(sizeof(*nbatom->out[0].f.data()) == sizeof(float),
-                  "The host force buffer should be in single precision to match device data size.");
-    copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + atomsRange.begin(),
-                         &adat->f,
-                         atomsRange.begin(),
-                         atomsRange.size(),
-                         deviceStream,
-                         GpuApiCallBehavior::Async,
-                         bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
+    if (!stepWork.useGpuFBufferOps)
+    {
+        static_assert(
+                sizeof(*nbatom->out[0].f.data()) == sizeof(float),
+                "The host force buffer should be in single precision to match device data size.");
+        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + atomsRange.begin(),
+                             &adat->f,
+                             atomsRange.begin(),
+                             atomsRange.size(),
+                             deviceStream,
+                             GpuApiCallBehavior::Async,
+                             bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);
 
-    issueClFlushInStream(deviceStream);
+        issueClFlushInStream(deviceStream);
+    }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
