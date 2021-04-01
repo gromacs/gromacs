@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -429,50 +429,50 @@ void Select::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings*
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("os")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnSize_)
                                .defaultBasename("size")
                                .description("Number of positions in each selection"));
     options->addOption(FileNameOption("oc")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnFrac_)
                                .defaultBasename("cfrac")
                                .description("Covered fraction for each selection"));
     options->addOption(FileNameOption("oi")
-                               .filetype(eftGenericData)
+                               .filetype(OptionFileType::GenericData)
                                .outputFile()
                                .store(&fnIndex_)
                                .defaultBasename("index")
                                .description("Indices selected by each selection"));
     options->addOption(FileNameOption("on")
-                               .filetype(eftIndex)
+                               .filetype(OptionFileType::Index)
                                .outputFile()
                                .store(&fnNdx_)
                                .defaultBasename("index")
                                .description("Index file from the selection"));
     options->addOption(FileNameOption("om")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnMask_)
                                .defaultBasename("mask")
                                .description("Mask for selected positions"));
     options->addOption(FileNameOption("of")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnOccupancy_)
                                .defaultBasename("occupancy")
                                .description("Occupied fraction for selected positions"));
     options->addOption(
             FileNameOption("ofpdb")
-                    .filetype(eftPDB)
+                    .filetype(OptionFileType::PDB)
                     .outputFile()
                     .store(&fnPDB_)
                     .defaultBasename("occupancy")
                     .description("PDB file with occupied fraction for selected positions"));
     options->addOption(FileNameOption("olt")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnLifetime_)
                                .defaultBasename("lifetime")

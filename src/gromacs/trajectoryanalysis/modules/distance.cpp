@@ -158,31 +158,31 @@ void Distance::initOptions(IOptionsContainer* options, TrajectoryAnalysisSetting
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAverage_)
                                .defaultBasename("distave")
                                .description("Average distances as function of time"));
     options->addOption(FileNameOption("oall")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAll_)
                                .defaultBasename("dist")
                                .description("All distances as function of time"));
     options->addOption(FileNameOption("oxyz")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnXYZ_)
                                .defaultBasename("distxyz")
                                .description("Distance components as function of time"));
     options->addOption(FileNameOption("oh")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnHistogram_)
                                .defaultBasename("disthist")
                                .description("Histogram of the distances"));
     options->addOption(FileNameOption("oallstat")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAllStats_)
                                .defaultBasename("diststat")

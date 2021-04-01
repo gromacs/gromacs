@@ -458,7 +458,7 @@ void Sasa::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .required()
                                .store(&fnArea_)
@@ -466,31 +466,31 @@ void Sasa::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
                                .description("Total area as a function of time"));
     options->addOption(
             FileNameOption("odg")
-                    .filetype(eftPlot)
+                    .filetype(OptionFileType::Plot)
                     .outputFile()
                     .store(&fnDGSolv_)
                     .defaultBasename("dgsolv")
                     .description("Estimated solvation free energy as a function of time"));
     options->addOption(FileNameOption("or")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnResidueArea_)
                                .defaultBasename("resarea")
                                .description("Average area per residue"));
     options->addOption(FileNameOption("oa")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAtomArea_)
                                .defaultBasename("atomarea")
                                .description("Average area per atom"));
     options->addOption(FileNameOption("tv")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnVolume_)
                                .defaultBasename("volume")
                                .description("Total volume and density as a function of time"));
     options->addOption(FileNameOption("q")
-                               .filetype(eftPDB)
+                               .filetype(OptionFileType::PDB)
                                .outputFile()
                                .store(&fnConnolly_)
                                .defaultBasename("connolly")

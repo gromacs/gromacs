@@ -347,21 +347,21 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("s")
-                               .filetype(eftTopology)
+                               .filetype(OptionFileType::Topology)
                                .inputFile()
                                .required()
                                .store(&inputTprFileName_)
                                .defaultBasename("topol")
                                .description("Run input file to modify"));
     options->addOption(FileNameOption("n")
-                               .filetype(eftIndex)
+                               .filetype(OptionFileType::Index)
                                .inputFile()
                                .store(&inputIndexFileName_)
                                .storeIsSet(&haveReadIndexFile_)
                                .defaultBasename("index")
                                .description("File containing additional index groups"));
     options->addOption(FileNameOption("o")
-                               .filetype(eftTopology)
+                               .filetype(OptionFileType::Topology)
                                .outputFile()
                                .store(&outputTprFileName_)
                                .defaultBasename("tprout")

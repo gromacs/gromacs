@@ -537,14 +537,14 @@ void Msd::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* se
 
     // Output options
     options->addOption(FileNameOption("o")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&output_)
                                .defaultBasename("msdout")
                                .description("MSD output"));
     options->addOption(
             FileNameOption("mol")
-                    .filetype(eftPlot)
+                    .filetype(OptionFileType::Plot)
                     .outputFile()
                     .store(&moleculeOutput_)
                     .storeIsSet(&molSelected_)

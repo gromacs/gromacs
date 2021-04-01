@@ -287,14 +287,14 @@ void Rdf::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* se
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .required()
                                .store(&fnRdf_)
                                .defaultBasename("rdf")
                                .description("Computed RDFs"));
     options->addOption(FileNameOption("cn")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnCumulative_)
                                .defaultBasename("rdf_cn")

@@ -190,7 +190,7 @@ void ReportMethods::initOptions(IOptionsContainer* options, ICommandLineOptionsM
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("s")
-                               .filetype(eftTopology)
+                               .filetype(OptionFileType::Topology)
                                .inputFile()
                                .required()
                                .store(&inputTopology_)

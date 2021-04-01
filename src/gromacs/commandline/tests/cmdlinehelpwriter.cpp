@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,30 +132,32 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     std::string filename;
     options.addOption(FileNameOption("f")
                               .description("Input file description")
-                              .filetype(eftTrajectory)
+                              .filetype(OptionFileType::Trajectory)
                               .inputFile()
                               .required()
                               .defaultBasename("traj"));
     options.addOption(FileNameOption("mult")
                               .description("Multiple file description")
-                              .filetype(eftTrajectory)
+                              .filetype(OptionFileType::Trajectory)
                               .inputFile()
                               .multiValue()
                               .defaultBasename("traj"));
     options.addOption(FileNameOption("lib")
                               .description("Library file description")
-                              .filetype(eftGenericData)
+                              .filetype(OptionFileType::GenericData)
                               .inputFile()
                               .libraryFile()
                               .defaultBasename("libdata"));
     options.addOption(FileNameOption("io")
                               .store(&filename)
                               .description("Input/Output file description")
-                              .filetype(eftGenericData)
+                              .filetype(OptionFileType::GenericData)
                               .inputOutputFile()
                               .defaultBasename("inout"));
-    options.addOption(
-            FileNameOption("o").description("Output file description").filetype(eftPlot).outputFile());
+    options.addOption(FileNameOption("o")
+                              .description("Output file description")
+                              .filetype(OptionFileType::Plot)
+                              .outputFile());
 
     CommandLineHelpWriter writer(options);
     bHidden_ = true;
@@ -209,37 +211,36 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
  */
 TEST_F(CommandLineHelpWriterTest, HandlesLongFileOptions)
 {
-    using gmx::eftGenericData;
-    using gmx::eftTrajectory;
     using gmx::FileNameOption;
+    using gmx::OptionFileType;
 
     gmx::Options options;
     options.addOption(FileNameOption("f")
                               .description("File name option with a long value")
-                              .filetype(eftTrajectory)
+                              .filetype(OptionFileType::Trajectory)
                               .inputFile()
                               .required()
                               .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("f2")
                               .description("File name option with a long value")
-                              .filetype(eftTrajectory)
+                              .filetype(OptionFileType::Trajectory)
                               .inputFile()
                               .required()
                               .defaultBasename("path/to/long/trajectory"));
     options.addOption(FileNameOption("lib")
                               .description("File name option with a long value and type")
-                              .filetype(eftTrajectory)
+                              .filetype(OptionFileType::Trajectory)
                               .inputFile()
                               .libraryFile()
                               .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("longfileopt")
                               .description("File name option with a long name")
-                              .filetype(eftGenericData)
+                              .filetype(OptionFileType::GenericData)
                               .inputFile()
                               .defaultBasename("deffile"));
     options.addOption(FileNameOption("longfileopt2")
                               .description("File name option with multiple long fields")
-                              .filetype(eftGenericData)
+                              .filetype(OptionFileType::GenericData)
                               .inputFile()
                               .libraryFile()
                               .defaultBasename("path/to/long/file/name"));

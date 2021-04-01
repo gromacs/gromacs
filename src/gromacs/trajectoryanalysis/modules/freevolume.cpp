@@ -175,7 +175,7 @@ void FreeVolume::initOptions(IOptionsContainer* options, TrajectoryAnalysisSetti
 
     // Add option for optional output file
     options->addOption(FileNameOption("o")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnFreevol_)
                                .defaultBasename("freevolume")

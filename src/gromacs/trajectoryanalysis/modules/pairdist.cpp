@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -221,7 +221,7 @@ void PairDistance::initOptions(IOptionsContainer* options, TrajectoryAnalysisSet
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .required()
                                .store(&fnDist_)

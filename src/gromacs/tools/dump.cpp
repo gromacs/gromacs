@@ -667,15 +667,21 @@ void Dump::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSett
     // fix it or block that run path:
     //   Position restraint output from -sys -s is broken
 
-    options->addOption(
-            FileNameOption("s").filetype(eftRunInput).inputFile().store(&inputTprFilename_).description("Run input file to dump"));
+    options->addOption(FileNameOption("s")
+                               .filetype(OptionFileType::RunInput)
+                               .inputFile()
+                               .store(&inputTprFilename_)
+                               .description("Run input file to dump"));
     options->addOption(FileNameOption("f")
-                               .filetype(eftTrajectory)
+                               .filetype(OptionFileType::Trajectory)
                                .inputFile()
                                .store(&inputTrajectoryFilename_)
                                .description("Trajectory file to dump"));
-    options->addOption(
-            FileNameOption("e").filetype(eftEnergy).inputFile().store(&inputEnergyFilename_).description("Energy file to dump"));
+    options->addOption(FileNameOption("e")
+                               .filetype(OptionFileType::Energy)
+                               .inputFile()
+                               .store(&inputEnergyFilename_)
+                               .description("Energy file to dump"));
     options->addOption(
             FileNameOption("cp").legacyType(efCPT).inputFile().store(&inputCheckpointFilename_).description("Checkpoint file to dump"));
     options->addOption(

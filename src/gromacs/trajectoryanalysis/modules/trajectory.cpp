@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,19 +120,19 @@ void Trajectory::initOptions(IOptionsContainer* options, TrajectoryAnalysisSetti
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("ox")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnX_)
                                .defaultBasename("coord")
                                .description("Coordinates for each position as a function of time"));
     options->addOption(FileNameOption("ov")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnV_)
                                .defaultBasename("veloc")
                                .description("Velocities for each position as a function of time"));
     options->addOption(FileNameOption("of")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnF_)
                                .defaultBasename("force")

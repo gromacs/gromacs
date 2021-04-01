@@ -384,19 +384,19 @@ void Angle::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* 
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAverage_)
                                .defaultBasename("angaver")
                                .description("Average angles as a function of time"));
     options->addOption(FileNameOption("oall")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnAll_)
                                .defaultBasename("angles")
                                .description("All angles as a function of time"));
     options->addOption(FileNameOption("oh")
-                               .filetype(eftPlot)
+                               .filetype(OptionFileType::Plot)
                                .outputFile()
                                .store(&fnHistogram_)
                                .defaultBasename("anghist")

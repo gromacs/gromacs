@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2015,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,19 +51,18 @@ namespace gmx
  *
  * \ingroup module_options
  */
-enum OptionFileType
+enum class OptionFileType : int
 {
-    eftUnknown,
-    eftTopology,
-    eftRunInput,
-    eftTrajectory,
-    eftEnergy,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftGenericData,
-    eftCsv,
-    eftOptionFileType_NR
+    Topology,
+    RunInput,
+    Trajectory,
+    Energy,
+    PDB,
+    Index,
+    Plot,
+    GenericData,
+    Csv,
+    Count
 };
 
 } // namespace gmx

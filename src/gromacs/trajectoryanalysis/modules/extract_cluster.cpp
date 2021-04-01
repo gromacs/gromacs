@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,7 +140,7 @@ void ExtractCluster::initOptions(IOptionsContainer* options, TrajectoryAnalysisS
     };
 
     options->addOption(FileNameOption("clusters")
-                               .filetype(eftIndex)
+                               .filetype(OptionFileType::Index)
                                .inputFile()
                                .required()
                                .store(&indexFileName_)
@@ -152,7 +152,7 @@ void ExtractCluster::initOptions(IOptionsContainer* options, TrajectoryAnalysisS
             "Selection of atoms to write to the file"));
 
     options->addOption(FileNameOption("o")
-                               .filetype(eftTrajectory)
+                               .filetype(OptionFileType::Trajectory)
                                .outputFile()
                                .store(&outputNamePrefix_)
                                .defaultBasename("trajout")

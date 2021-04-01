@@ -453,7 +453,7 @@ void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOption
                                .defaultBasename("insert")
                                .description("Configuration to insert"));
     options->addOption(FileNameOption("ip")
-                               .filetype(eftGenericData)
+                               .filetype(OptionFileType::GenericData)
                                .inputFile()
                                .store(&positionFile_)
                                .defaultBasename("positions")
