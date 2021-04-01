@@ -495,17 +495,11 @@ void Sasa::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
                                .store(&fnConnolly_)
                                .defaultBasename("connolly")
                                .description("PDB file for Connolly surface"));
-    // options->addOption(FileNameOption("i").filetype(eftITP).outputFile()
-    //                       .store(&fnRestraints_).defaultBasename("surfat")
-    //                       .description("Topology file for position restraings on surface atoms"));
-
 
     options->addOption(
             DoubleOption("probe").store(&solsize_).description("Radius of the solvent probe (nm)"));
     options->addOption(IntegerOption("ndots").store(&ndots_).description(
             "Number of dots per sphere, more dots means more accuracy"));
-    // options->addOption(DoubleOption("minarea").store(&minarea_)
-    //                       .description("The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file (see help)"));
     options->addOption(
             BooleanOption("prot").store(&bIncludeSolute_).description("Output the protein to the Connolly [REF].pdb[ref] file too"));
     options->addOption(
@@ -548,12 +542,6 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolo
     }
 
     please_cite(stderr, "Eisenhaber95");
-    // if ((top.pbcType() != PbcType::Xyz) || (TRICLINIC(fr.box)))
-    //{
-    //    fprintf(stderr, "\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
-    //            "Analysis based on vacuum simulations (with the possibility of evaporation)\n"
-    //            "will certainly crash the analysis.\n\n");
-    //}
 
     if (bDGsol)
     {
@@ -1084,26 +1072,7 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
     }
 }
 
-void Sasa::finishAnalysis(int /*nframes*/)
-{
-    // if (bITP)
-    //{
-    //    fp3 = ftp2FILE(efITP, nfile, fnm, "w");
-    //    fprintf(fp3, "[ position_restraints ]\n"
-    //            "#define FCX 1000\n"
-    //            "#define FCY 1000\n"
-    //            "#define FCZ 1000\n"
-    //            "; Atom  Type  fx   fy   fz\n");
-    //    for (i = 0; i < nx[0]; i++)
-    //    {
-    //        if (atom_area[i] > minarea)
-    //        {
-    //            fprintf(fp3, "%5d   1     FCX  FCX  FCZ\n", ii+1);
-    //        }
-    //    }
-    //    ffclose(fp3);
-    //}
-}
+void Sasa::finishAnalysis(int /*nframes*/) {}
 
 void Sasa::writeOutput() {}
 
