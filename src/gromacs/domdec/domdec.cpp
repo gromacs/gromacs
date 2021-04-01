@@ -3139,7 +3139,7 @@ static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::Array
         /* If DLB is not active yet, we don't need to check the grid jumps.
          * Actually we shouldn't, because then the grid jump data is not set.
          */
-        if (isDlbOn(dd->comm) && check_grid_jump(0, dd, cutoffRequested, &ddbox, FALSE))
+        if (isDlbOn(dd->comm) && gmx::check_grid_jump(0, dd, cutoffRequested, &ddbox, FALSE))
         {
             LocallyLimited = 1;
         }

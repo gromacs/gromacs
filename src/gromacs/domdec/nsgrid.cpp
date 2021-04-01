@@ -122,8 +122,7 @@ void get_nsgrid_boundaries(int           nboundeddim,
                            int           ncg,
                            rvec*         cgcm,
                            rvec          grid_x0,
-                           rvec          grid_x1,
-                           real*         grid_density)
+                           rvec          grid_x1)
 {
     rvec av, stddev;
     real vol, bdens0, bdens1;
@@ -180,6 +179,4 @@ void get_nsgrid_boundaries(int           nboundeddim,
             fprintf(debug, "Set grid boundaries dim %d: %f %f\n", d, grid_x0[d], grid_x1[d]);
         }
     }
-
-    *grid_density = ncg / vol;
 }

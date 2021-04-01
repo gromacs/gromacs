@@ -64,8 +64,7 @@ void get_nsgrid_boundaries(int                  nboundeddim,
                            int                  ncg,
                            rvec*                cgcm,
                            rvec                 grid_x0,
-                           rvec                 grid_x1,
-                           real*                grid_density);
+                           rvec                 grid_x1);
 /* Return the ns grid boundaries grid_x0 and grid_x1
  * and the estimate for the grid density.
  * For non-bounded dimensions the boundaries are determined

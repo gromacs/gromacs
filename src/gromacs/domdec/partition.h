@@ -48,7 +48,6 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_ddbox_t;
@@ -73,10 +72,9 @@ class ImdSession;
 class MDAtoms;
 class MDLogger;
 class VirtualSitesHandler;
-} // namespace gmx
 
 //! Check whether the DD grid has moved too far for correctness.
-bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, gmx_bool bFatal);
+bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, bool bFatal);
 
 /*! \brief Print statistics for domain decomposition communication */
 void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* fplog);
@@ -114,7 +112,7 @@ void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
                          const t_commrec*          cr,
-                         gmx_bool                  bMasterState,
+                         bool                      bMasterState,
                          int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
@@ -130,6 +128,7 @@ void dd_partition_system(FILE*                     fplog,
                          gmx::Constraints*         constr,
                          t_nrnb*                   nrnb,
                          gmx_wallcycle*            wcycle,
-                         gmx_bool                  bVerbose);
+                         bool                      bVerbose);
 
+} // namespace gmx
 #endif

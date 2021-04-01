@@ -652,48 +652,6 @@ static void clearDDStateIndices(gmx_domdec_t* dd, const bool keepLocalAtomIndice
     }
 }
 
-bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, gmx_bool bFatal)
-{
-    gmx_domdec_comm_t* comm    = dd->comm;
-    bool               invalid = false;
-
-    for (int d = 1; d < dd->ndim; d++)
-    {
-        const DDCellsizesWithDlb& cellsizes = comm->cellsizesWithDlb[d];
-        const int                 dim       = dd->dim[d];
-        const real                limit     = grid_jump_limit(comm, cutoff, d);
-        real                      bfac      = ddbox->box_size[dim];
-        if (ddbox->tric_dir[dim])
-        {
-            bfac *= ddbox->skew_fac[dim];
-        }
-        if ((cellsizes.fracUpper - cellsizes.fracLowerMax) * bfac < limit
-            || (cellsizes.fracLower - cellsizes.fracUpperMin) * bfac > -limit)
-        {
-            invalid = true;
-
-            if (bFatal)
-            {
-                char buf[22];
-
-                /* This error should never be triggered under normal
-                 * circumstances, but you never know ...
-                 */
-                gmx_fatal(FARGS,
-                          "step %s: The domain decomposition grid has shifted too much in the "
-                          "%c-direction around cell %d %d %d. This should not have happened. "
-                          "Running with fewer ranks might avoid this issue.",
-                          gmx_step_str(step, buf),
-                          dim2char(dim),
-                          dd->ci[XX],
-                          dd->ci[YY],
-                          dd->ci[ZZ]);
-            }
-        }
-    }
-
-    return invalid;
-}
 //! Return the duration of force calculations on this rank.
 static float dd_force_load(gmx_domdec_comm_t* comm)
 {
@@ -790,7 +748,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t* dd, gmx_ddbox_t* ddbox, rvec cel
         dd_move_cellx(dd, ddbox, cell_ns_x0, cell_ns_x1);
         if (isDlbOn(dd->comm) && dd->ndim > 1)
         {
-            check_grid_jump(step, dd, dd->comm->systemInfo.cutoff, ddbox, TRUE);
+            gmx::check_grid_jump(step, dd, dd->comm->systemInfo.cutoff, ddbox, TRUE);
         }
     }
 }
@@ -2674,6 +2632,52 @@ void reset_dd_statistics_counters(gmx_domdec_t* dd)
     comm->load_pme = 0;
 }
 
+namespace gmx
+{
+
+bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, bool bFatal)
+{
+    gmx_domdec_comm_t* comm    = dd->comm;
+    bool               invalid = false;
+
+    for (int d = 1; d < dd->ndim; d++)
+    {
+        const DDCellsizesWithDlb& cellsizes = comm->cellsizesWithDlb[d];
+        const int                 dim       = dd->dim[d];
+        const real                limit     = grid_jump_limit(comm, cutoff, d);
+        real                      bfac      = ddbox->box_size[dim];
+        if (ddbox->tric_dir[dim])
+        {
+            bfac *= ddbox->skew_fac[dim];
+        }
+        if ((cellsizes.fracUpper - cellsizes.fracLowerMax) * bfac < limit
+            || (cellsizes.fracLower - cellsizes.fracUpperMin) * bfac > -limit)
+        {
+            invalid = true;
+
+            if (bFatal)
+            {
+                char buf[22];
+
+                /* This error should never be triggered under normal
+                 * circumstances, but you never know ...
+                 */
+                gmx_fatal(FARGS,
+                          "step %s: The domain decomposition grid has shifted too much in the "
+                          "%c-direction around cell %d %d %d. This should not have happened. "
+                          "Running with fewer ranks might avoid this issue.",
+                          gmx_step_str(step, buf),
+                          dim2char(dim),
+                          dd->ci[XX],
+                          dd->ci[YY],
+                          dd->ci[ZZ]);
+            }
+        }
+    }
+
+    return invalid;
+}
+
 void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* fplog)
 {
     gmx_domdec_comm_t* comm = cr->dd->comm;
@@ -2734,7 +2738,7 @@ void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
                          const t_commrec*          cr,
-                         gmx_bool                  bMasterState,
+                         bool                      bMasterState,
                          int                       nstglobalcomm,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
@@ -2750,28 +2754,20 @@ void dd_partition_system(FILE*                     fplog,
                          gmx::Constraints*         constr,
                          t_nrnb*                   nrnb,
                          gmx_wallcycle*            wcycle,
-                         gmx_bool                  bVerbose)
+                         bool                      bVerbose)
 {
-    gmx_domdec_t*      dd;
-    gmx_domdec_comm_t* comm;
-    gmx_ddbox_t        ddbox = { 0 };
-    int64_t            step_pcoupl;
-    rvec               cell_ns_x0, cell_ns_x1;
-    int                ncgindex_set, ncg_moved, nat_f_novirsum;
-    gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
-    gmx_bool           bRedist;
-    ivec               np;
-    real               grid_density;
-    char               sbuf[22];
+    gmx_ddbox_t ddbox = { 0 };
+    int         ncgindex_set;
+    char        sbuf[22];
 
     wallcycle_start(wcycle, ewcDOMDEC);
 
-    dd   = cr->dd;
-    comm = dd->comm;
+    gmx_domdec_t*      dd   = cr->dd;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
-    bBoxChanged = (bMasterState || inputrecDeform(&inputrec));
+    bool bBoxChanged = (bMasterState || inputrecDeform(&inputrec));
     if (inputrec.epc != PressureCoupling::No)
     {
         /* With nstpcouple > 1 pressure coupling happens.
@@ -2783,7 +2779,8 @@ void dd_partition_system(FILE*                     fplog,
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */
-        int n = inputrec.nstpcouple;
+        int     n = inputrec.nstpcouple;
+        int64_t step_pcoupl;
         if (n == 1)
         {
             step_pcoupl = step - 1;
@@ -2794,15 +2791,15 @@ void dd_partition_system(FILE*                     fplog,
         }
         if (step_pcoupl >= comm->partition_step)
         {
-            bBoxChanged = TRUE;
+            bBoxChanged = true;
         }
     }
 
-    bNStGlobalComm = (step % nstglobalcomm == 0);
-
+    bool bNStGlobalComm = (step % nstglobalcomm == 0);
+    bool bDoDLB;
     if (!isDlbOn(comm))
     {
-        bDoDLB = FALSE;
+        bDoDLB = false;
     }
     else
     {
@@ -2823,12 +2820,12 @@ void dd_partition_system(FILE*                     fplog,
     /* Check if we have recorded loads on the nodes */
     if (comm->ddSettings.recordLoad && dd_load_count(comm) > 0)
     {
-        bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
+        bool bCheckWhetherToTurnDlbOn = dd_dlb_get_should_check_whether_to_turn_dlb_on(dd);
 
         /* Print load every nstlog, first and last step to the log file */
-        bLogLoad = ((inputrec.nstlog > 0 && step % inputrec.nstlog == 0) || comm->n_load_collect == 0
-                    || (inputrec.nsteps >= 0
-                        && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
+        bool bLogLoad = ((inputrec.nstlog > 0 && step % inputrec.nstlog == 0) || comm->n_load_collect == 0
+                         || (inputrec.nsteps >= 0
+                             && (step + inputrec.nstlist > inputrec.init_step + inputrec.nsteps)));
 
         /* Avoid extra communication due to verbose screen output
          * when nstglobalcomm is set.
@@ -2863,7 +2860,7 @@ void dd_partition_system(FILE*                     fplog,
                 if (comm->dlbState == DlbState::onCanTurnOff
                     && dd->comm->n_load_have % c_checkTurnDlbOffInterval == c_checkTurnDlbOffInterval - 1)
                 {
-                    gmx_bool turnOffDlb;
+                    bool turnOffDlb;
                     if (DDMASTER(dd))
                     {
                         /* If the running averaged cycles with DLB are more
@@ -2878,15 +2875,15 @@ void dd_partition_system(FILE*                     fplog,
                     {
                         /* To turn off DLB, we need to redistribute the atoms */
                         dd_collect_state(dd, state_local, state_global);
-                        bMasterState = TRUE;
+                        bMasterState = true;
                         turn_off_dlb(mdlog, dd, step);
                     }
                 }
             }
             else if (bCheckWhetherToTurnDlbOn)
             {
-                gmx_bool turnOffDlbForever = FALSE;
-                gmx_bool turnOnDlb         = FALSE;
+                bool turnOffDlbForever = false;
+                bool turnOnDlb         = false;
 
                 /* Since the timings are node dependent, the master decides */
                 if (DDMASTER(dd))
@@ -2911,7 +2908,7 @@ void dd_partition_system(FILE*                     fplog,
                         if (comm->dlbSlowerPartitioningCount > 0
                             && dd->ddp_count < comm->dlbSlowerPartitioningCount + 10 * c_checkTurnDlbOnInterval)
                         {
-                            turnOffDlbForever = TRUE;
+                            turnOffDlbForever = true;
                         }
                         comm->haveTurnedOffDlb = false;
                         /* Register when we last measured DLB slowdown */
@@ -2928,7 +2925,7 @@ void dd_partition_system(FILE*                     fplog,
                          */
                         if (comm->ddRankSetup.usePmeOnlyRanks && dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
                         {
-                            turnOnDlb = FALSE;
+                            turnOnDlb = false;
                         }
                         else
                         {
@@ -2938,8 +2935,8 @@ void dd_partition_system(FILE*                     fplog,
                 }
                 struct
                 {
-                    gmx_bool turnOffDlbForever;
-                    gmx_bool turnOnDlb;
+                    bool turnOffDlbForever;
+                    bool turnOnDlb;
                 } bools{ turnOffDlbForever, turnOnDlb };
                 dd_bcast(dd, sizeof(bools), &bools);
                 if (bools.turnOffDlbForever)
@@ -2949,14 +2946,14 @@ void dd_partition_system(FILE*                     fplog,
                 else if (bools.turnOnDlb)
                 {
                     turn_on_dlb(mdlog, dd, step);
-                    bDoDLB = TRUE;
+                    bDoDLB = true;
                 }
             }
         }
         comm->n_load_have++;
     }
 
-    bRedist = FALSE;
+    bool bRedist = false;
     if (bMasterState)
     {
         /* Clear the old state */
@@ -3031,8 +3028,8 @@ void dd_partition_system(FILE*                     fplog,
         }
         set_ddbox(*dd, bMasterState, state_local->box, bNStGlobalComm, state_local->x, &ddbox);
 
-        bBoxChanged = TRUE;
-        bRedist     = TRUE;
+        bBoxChanged = true;
+        bRedist     = true;
     }
     /* Copy needed for dim's without pbc when avoiding communication */
     copy_rvec(ddbox.box0, comm->box0);
@@ -3059,7 +3056,7 @@ void dd_partition_system(FILE*                     fplog,
      * Thus we need to keep track of how many charge groups will move for
      * obtaining correct local charge group / atom counts.
      */
-    ncg_moved = 0;
+    int ncg_moved = 0;
     if (bRedist)
     {
         wallcycle_sub_start(wcycle, ewcsDD_REDIST);
@@ -3079,6 +3076,7 @@ void dd_partition_system(FILE*                     fplog,
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
 
+    RVec cell_ns_x0, cell_ns_x1;
     get_nsgrid_boundaries(ddbox.nboundeddim,
                           state_local->box,
                           dd,
@@ -3088,8 +3086,7 @@ void dd_partition_system(FILE*                     fplog,
                           dd->ncg_home,
                           as_rvec_array(state_local->x.data()),
                           cell_ns_x0,
-                          cell_ns_x1,
-                          &grid_density);
+                          cell_ns_x1);
 
     if (bBoxChanged)
     {
@@ -3188,16 +3185,17 @@ void dd_partition_system(FILE*                     fplog,
     wallcycle_sub_start(wcycle, ewcsDD_MAKETOP);
 
     /* Extract a local topology from the global topology */
+    IVec numPulses;
     for (int i = 0; i < dd->ndim; i++)
     {
-        np[dd->dim[i]] = comm->cd[i].numPulses();
+        numPulses[dd->dim[i]] = comm->cd[i].numPulses();
     }
     dd_make_local_top(dd,
                       &comm->zones,
                       dd->unitCellInfo.npbcdim,
                       state_local->box,
                       comm->cellsize_min,
-                      np,
+                      numPulses,
                       fr,
                       state_local->x.rvec_array(),
                       top_global,
@@ -3251,6 +3249,7 @@ void dd_partition_system(FILE*                     fplog,
 
     state_change_natoms(state_local, state_local->natoms);
 
+    int nat_f_novirsum;
     if (vsite && vsite->numInterUpdategroupVirtualSites())
     {
         nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
@@ -3312,7 +3311,7 @@ void dd_partition_system(FILE*                     fplog,
         dd_make_local_pull_groups(cr, pull_work);
     }
 
-    /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
+    /* Update the local atoms to be communicated via the IMD protocol if bIMD is true. */
     imdSession->dd_make_local_IMD_atoms(dd);
 
     add_dd_statistics(dd);
@@ -3364,3 +3363,5 @@ void dd_partition_system(FILE*                     fplog,
 
     wallcycle_stop(wcycle, ewcDOMDEC);
 }
+
+} // namespace gmx
