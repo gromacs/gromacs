@@ -1291,7 +1291,7 @@ void do_force(FILE*                               fplog,
     bool gmx_used_in_debug haveCopiedXFromGpu = false;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
-            || haveHostPmePpComms || haveHostHaloExchangeComms))
+            || haveHostPmePpComms || haveHostHaloExchangeComms || simulationWork.computeMuTot))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         haveCopiedXFromGpu = true;
@@ -1640,6 +1640,13 @@ void do_force(FILE*                               fplog,
     if (simulationWork.computeMuTot)
     {
         const int start = 0;
+
+        if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
+        {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
 
         /* Calculate total (local) dipole moment in a temporary common array.
          * This makes it possible to sum them over nodes faster.
