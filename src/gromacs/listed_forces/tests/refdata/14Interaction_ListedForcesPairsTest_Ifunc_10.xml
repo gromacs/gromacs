@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <FunctionType Name="LJC_NB">
+    <FEP Name="No">
+      <Real Name="Epot Coulomb14">-3.4307104627027285</Real>
+      <Real Name="Epot LJ14">-0.3979723893321509</Real>
+      <Real Name="dVdlCoul ">0</Real>
+      <Real Name="dVdlVdw ">0</Real>
+      <Sequence Name="Forces">
+        <Int Name="Length">3</Int>
+        <Vector>
+          <Real Name="X">0.043664263974573722</Real>
+          <Real Name="Y">0.087328527949147347</Real>
+          <Real Name="Z">0.56763543166945785</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">3.0406526210041607</Real>
+          <Real Name="Y">6.0813052420083142</Real>
+          <Real Name="Z">9.1219578630124758</Real>
+        </Vector>
+        <Vector>
+          <Real Name="X">-3.0843168849787346</Real>
+          <Real Name="Y">-6.1686337699574612</Real>
+          <Real Name="Z">-9.6895932946819343</Real>
+        </Vector>
+      </Sequence>
+      <Shift-Forces Name="Shift-forces">
+        <Vector Name="Central">
+          <Real Name="X">-0.043664263974573722</Real>
+          <Real Name="Y">-0.087328527949147347</Real>
+          <Real Name="Z">-0.56763543166945785</Real>
+        </Vector>
+      </Shift-Forces>
+    </FEP>
+  </FunctionType>
+</ReferenceData>
