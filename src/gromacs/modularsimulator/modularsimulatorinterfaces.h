@@ -74,13 +74,14 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
-template<class Signaller>
-class SignallerBuilder;
-class NeighborSearchSignaller;
+class EnergySignaller;
 class LastStepSignaller;
 class LoggingSignaller;
+class NeighborSearchSignaller;
+enum class ScaleVelocities;
+template<class Signaller>
+class SignallerBuilder;
 class TrajectorySignaller;
-class EnergySignaller;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -479,9 +480,11 @@ private:
 struct PropagatorThermostatConnection
 {
     //! Function variable for setting velocity scaling variables.
-    std::function<void(int)> setNumVelocityScalingVariables;
-    //! Function variable for receiving view on velocity scaling.
-    std::function<ArrayRef<real>()> getViewOnVelocityScaling;
+    std::function<void(int, ScaleVelocities)> setNumVelocityScalingVariables;
+    //! Function variable for receiving view on velocity scaling (before step).
+    std::function<ArrayRef<real>()> getViewOnStartVelocityScaling;
+    //! Function variable for receiving view on velocity scaling (after step).
+    std::function<ArrayRef<real>()> getViewOnEndVelocityScaling;
     //! Function variable for callback.
     std::function<PropagatorCallback()> getVelocityScalingCallback;
     //! The tag of the creating propagator

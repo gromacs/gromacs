@@ -67,6 +67,13 @@ class StatePropagatorData;
 //! \addtogroup module_modularsimulator
 //! \{
 
+//! Which velocities the thermostat scales
+enum class ScaleVelocities
+{
+    PreStepOnly,
+    PreStepAndPostStep
+};
+
 /*! \brief The different integration types we know about
  *
  * PositionsOnly:
@@ -142,9 +149,11 @@ public:
     void elementTeardown() override {}
 
     //! Set the number of velocity scaling variables
-    void setNumVelocityScalingVariables(int numVelocityScalingVariables);
-    //! Get view on the velocity scaling vector
-    ArrayRef<real> viewOnVelocityScaling();
+    void setNumVelocityScalingVariables(int numVelocityScalingVariables, ScaleVelocities scaleVelocities);
+    //! Get view on the scaling vector applied to start of step velocities
+    ArrayRef<real> viewOnStartVelocityScaling();
+    //! Get view on the scaling vector applied to end of step velocities
+    ArrayRef<real> viewOnEndVelocityScaling();
     //! Get velocity scaling callback
     PropagatorCallback velocityScalingCallback();
 
@@ -177,7 +186,9 @@ public:
 
 private:
     //! The actual propagation
-    template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+    template<NumVelocityScalingValues        numStartVelocityScalingValues,
+             ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+             NumVelocityScalingValues        numEndVelocityScalingValues>
     void run();
 
     //! The time step
@@ -187,12 +198,18 @@ private:
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
 
-    //! Whether we're doing single-value velocity scaling
-    bool doSingleVelocityScaling_;
-    //! Wether we're doing group-wise velocity scaling
-    bool doGroupVelocityScaling_;
+    //! Whether we're doing single-value velocity scaling (velocities at start of step)
+    bool doSingleStartVelocityScaling_;
+    //! Whether we're doing group-wise velocity scaling (velocities at start of step)
+    bool doGroupStartVelocityScaling_;
+    //! Whether we're doing single-value velocity scaling (velocities at end of step)
+    bool doSingleEndVelocityScaling_;
+    //! Wether we're doing group-wise velocity scaling (velocities at end of step)
+    bool doGroupEndVelocityScaling_;
     //! The vector of velocity scaling values
-    std::vector<real> velocityScaling_;
+    std::vector<real> startVelocityScaling_;
+    //! The vector of velocity scaling values
+    std::vector<real> endVelocityScaling_;
     //! The next velocity scaling step
     Step scalingStepVelocity_;
 

@@ -179,8 +179,8 @@ public:
     void connectWithPropagator(const PropagatorThermostatConnection& connectionData,
                                int                                   numTemperatureGroups) override
     {
-        connectionData.setNumVelocityScalingVariables(numTemperatureGroups);
-        lambdaStartVelocities_ = connectionData.getViewOnVelocityScaling();
+        connectionData.setNumVelocityScalingVariables(numTemperatureGroups, ScaleVelocities::PreStepOnly);
+        lambdaStartVelocities_ = connectionData.getViewOnStartVelocityScaling();
     }
 
     //! No data to write to checkpoint
@@ -251,8 +251,8 @@ public:
     void connectWithPropagator(const PropagatorThermostatConnection& connectionData,
                                int                                   numTemperatureGroups) override
     {
-        connectionData.setNumVelocityScalingVariables(numTemperatureGroups);
-        lambdaStartVelocities_ = connectionData.getViewOnVelocityScaling();
+        connectionData.setNumVelocityScalingVariables(numTemperatureGroups, ScaleVelocities::PreStepOnly);
+        lambdaStartVelocities_ = connectionData.getViewOnStartVelocityScaling();
     }
 
     //! No data to write to checkpoint
