@@ -81,11 +81,9 @@ void init_disres(FILE*                 fplog,
                  t_state*              state,
                  gmx_bool              bIsREMD)
 {
-    int                  fa, nmol, npair, np;
-    history_t*           hist;
-    gmx_mtop_ilistloop_t iloop;
-    char*                ptr;
-    int                  type_min, type_max;
+    history_t* hist;
+    char*      ptr;
+    int        type_min, type_max;
 
     if (gmx_mtop_ftype_count(mtop, F_DISRES) == 0)
     {
@@ -137,10 +135,10 @@ void init_disres(FILE*                 fplog,
     dd->npair = 0;
     type_min  = INT_MAX;
     type_max  = 0;
-    iloop     = gmx_mtop_ilistloop_init(mtop);
-    while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    for (const auto il : IListRange(mtop))
     {
-        if (nmol > 1 && !(*il)[F_DISRES].empty() && ir->eDisre != DistanceRestraintRefinement::Ensemble)
+        if (il.nmol() > 1 && !il.list()[F_DISRES].empty()
+            && ir->eDisre != DistanceRestraintRefinement::Ensemble)
         {
             gmx_fatal(FARGS,
                       "NMR distance restraints with multiple copies of the same molecule are "
@@ -149,19 +147,17 @@ void init_disres(FILE*                 fplog,
                       "a restraint potential (bonds type 10) instead.");
         }
 
-        np = 0;
-        for (fa = 0; fa < (*il)[F_DISRES].size(); fa += 3)
+        int np = 0;
+        for (int fa = 0; fa < il.list()[F_DISRES].size(); fa += 3)
         {
-            int type;
-
-            type = (*il)[F_DISRES].iatoms[fa];
+            int type = il.list()[F_DISRES].iatoms[fa];
 
             np++;
-            npair = mtop.ffparams.iparams[type].disres.npair;
+            int npair = mtop.ffparams.iparams[type].disres.npair;
             if (np == npair)
             {
-                dd->nres += (ir->eDisre == DistanceRestraintRefinement::Ensemble ? 1 : nmol);
-                dd->npair += nmol * npair;
+                dd->nres += (ir->eDisre == DistanceRestraintRefinement::Ensemble ? 1 : il.nmol());
+                dd->npair += il.nmol() * npair;
                 np = 0;
 
                 type_min = std::min(type_min, type);

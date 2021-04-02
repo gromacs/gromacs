@@ -121,26 +121,24 @@ void init_orires(FILE*                 fplog,
     od->eig = nullptr;
     od->v   = nullptr;
 
-    int*                 nr_ex   = nullptr;
-    int                  typeMin = INT_MAX;
-    int                  typeMax = 0;
-    gmx_mtop_ilistloop_t iloop   = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol;
-    while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    int* nr_ex   = nullptr;
+    int  typeMin = INT_MAX;
+    int  typeMax = 0;
+    for (const auto il : IListRange(mtop))
     {
-        const int numOrires = (*il)[F_ORIRES].size();
-        if (nmol > 1 && numOrires > 0)
+        const int numOrires = il.list()[F_ORIRES].size();
+        if (il.nmol() > 1 && numOrires > 0)
         {
             gmx_fatal(FARGS,
                       "Found %d copies of a molecule with orientation restrains while the current "
                       "code only supports a single copy. If you want to ensemble average, run "
                       "multiple copies of the system using the multi-sim feature of mdrun.",
-                      nmol);
+                      il.nmol());
         }
 
         for (int i = 0; i < numOrires; i += 3)
         {
-            int type = (*il)[F_ORIRES].iatoms[i];
+            int type = il.list()[F_ORIRES].iatoms[i];
             int ex   = mtop.ffparams.iparams[type].orires.ex;
             if (ex >= od->nex)
             {

@@ -238,70 +238,66 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop, const t_a
     return TRUE;
 }
 
-typedef struct gmx_mtop_ilistloop
+IListIterator::IListIterator(const gmx_mtop_t& mtop, size_t molblock) :
+    mtop_(&mtop),
+    mblock_(molblock)
 {
-    const gmx_mtop_t* mtop;
-    int               mblock;
-} t_gmx_mtop_ilist;
-
-gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t& mtop)
-{
-    struct gmx_mtop_ilistloop* iloop = nullptr;
-
-    snew(iloop, 1);
-
-    iloop->mtop   = &mtop;
-    iloop->mblock = -1;
-
-    return iloop;
 }
 
-static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
+IListIterator& IListIterator::operator++()
 {
-    sfree(iloop);
+    mblock_++;
+    return *this;
 }
 
-const InteractionLists* gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop, int* nmol)
+bool IListIterator::operator==(const IListIterator& o) const
 {
-    if (iloop == nullptr)
+    return mtop_ == o.mtop_ && mblock_ == o.mblock_;
+}
+
+const InteractionLists& IListProxy::list() const
+{
+    // one past the end means we want to take the
+    // intermolecular list instead.
+    if (it_->mblock_ == it_->mtop_->molblock.size())
     {
-        gmx_incons("gmx_mtop_ilistloop_next called without calling gmx_mtop_ilistloop_init");
+        return *it_->mtop_->intermolecular_ilist;
     }
-
-    iloop->mblock++;
-    if (iloop->mblock >= gmx::ssize(iloop->mtop->molblock))
+    else
     {
-        if (iloop->mblock == gmx::ssize(iloop->mtop->molblock) && iloop->mtop->bIntermolecularInteractions)
-        {
-            *nmol = 1;
-            return iloop->mtop->intermolecular_ilist.get();
-        }
-
-        gmx_mtop_ilistloop_destroy(iloop);
-        return nullptr;
+        return it_->mtop_->moltype[it_->mtop_->molblock[it_->mblock_].type].ilist;
     }
-
-    *nmol = iloop->mtop->molblock[iloop->mblock].nmol;
-
-    return &iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
 }
-typedef struct gmx_mtop_ilistloop_all
+
+int IListProxy::nmol() const
 {
-    const gmx_mtop_t* mtop;
-    size_t            mblock;
-    int               mol;
-    int               a_offset;
-} t_gmx_mtop_ilist_all;
+    // one past the end means we want to take the
+    // intermolecular list instead.
+    if (it_->mblock_ == it_->mtop_->molblock.size())
+    {
+        return 1;
+    }
+    else
+    {
+        return it_->mtop_->molblock[it_->mblock_].nmol;
+    }
+}
+
+IListRange::IListRange(const gmx_mtop_t& mtop) : begin_(mtop), end_(mtop, mtop.molblock.size())
+{
+    if (mtop.bIntermolecularInteractions)
+    {
+        end_ = IListIterator(mtop, mtop.molblock.size() + 1);
+    }
+}
 
 int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype)
 {
-    int nmol = 0;
-    int n    = 0;
+    int n = 0;
 
-    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
-    while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    for (const IListProxy il : IListRange(mtop))
     {
-        n += nmol * (*il)[ftype].size() / (1 + NRAL(ftype));
+        n += il.nmol() * il.list()[ftype].size() / (1 + NRAL(ftype));
     }
 
     if (mtop.bIntermolecularInteractions)
@@ -316,15 +312,13 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
 {
     int n = 0;
 
-    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol  = 0;
-    while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    for (const IListProxy il : IListRange(mtop))
     {
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
             if ((interaction_function[ftype].flags & if_flags) == if_flags)
             {
-                n += nmol * (*il)[ftype].size() / (1 + NRAL(ftype));
+                n += il.nmol() * il.list()[ftype].size() / (1 + NRAL(ftype));
             }
         }
     }

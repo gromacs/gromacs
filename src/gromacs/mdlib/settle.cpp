@@ -156,13 +156,11 @@ SettleData::SettleData(const gmx_mtop_t& mtop) :
     useSimd_(getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
 {
     /* Check that we have only one settle type */
-    int                  settle_type = -1;
-    gmx_mtop_ilistloop_t iloop       = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol;
-    const int            nral1 = 1 + NRAL(F_SETTLE);
-    while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
+    int       settle_type = -1;
+    const int nral1       = 1 + NRAL(F_SETTLE);
+    for (const auto ilists : IListRange(mtop))
     {
-        const InteractionList& ilist = (*ilists)[F_SETTLE];
+        const InteractionList& ilist = ilists.list()[F_SETTLE];
         for (int i = 0; i < ilist.size(); i += nral1)
         {
             if (settle_type == -1)

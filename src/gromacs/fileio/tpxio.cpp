@@ -2533,15 +2533,11 @@ static void do_molblock(gmx::ISerializer* serializer, gmx_molblock_t* molb, int 
 
 static void set_disres_npair(gmx_mtop_t* mtop)
 {
-    gmx_mtop_ilistloop_t iloop;
-    int                  nmol;
-
     gmx::ArrayRef<t_iparams> ip = mtop->ffparams.iparams;
 
-    iloop = gmx_mtop_ilistloop_init(*mtop);
-    while (const InteractionLists* ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
+    for (const auto ilist : IListRange(*mtop))
     {
-        const InteractionList& il = (*ilist)[F_DISRES];
+        const InteractionList& il = ilist.list()[F_DISRES];
 
         if (!il.empty())
         {

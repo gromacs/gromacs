@@ -1707,16 +1707,14 @@ static real* get_slb_frac(const gmx::MDLogger& mdlog, const char* dir, int nc, c
 
 static int multi_body_bondeds_count(const gmx_mtop_t& mtop)
 {
-    int                  n     = 0;
-    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol  = 0;
-    while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
+    int n = 0;
+    for (const auto ilists : IListRange(mtop))
     {
-        for (auto& ilist : extractILists(*ilists, IF_BOND))
+        for (auto& ilist : extractILists(ilists.list(), IF_BOND))
         {
             if (NRAL(ilist.functionType) > 2)
             {
-                n += nmol * (ilist.iatoms.size() / ilistStride(ilist));
+                n += ilists.nmol() * (ilist.iatoms.size() / ilistStride(ilist));
             }
         }
     }
@@ -1914,16 +1912,13 @@ static gmx_domdec_comm_t* init_dd_comm()
 /* Returns whether mtop contains constraints and/or vsites */
 static bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
-    auto* ilistLoop = gmx_mtop_ilistloop_init(mtop);
-    int   nmol      = 0;
-    while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(ilistLoop, &nmol))
+    for (const auto ilists : IListRange(mtop))
     {
-        if (!extractILists(*ilists, IF_CONSTRAINT | IF_VSITE).empty())
+        if (!extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty())
         {
             return true;
         }
     }
-
     return false;
 }
 

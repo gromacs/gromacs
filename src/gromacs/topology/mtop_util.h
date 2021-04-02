@@ -157,6 +157,76 @@ private:
     AtomIterator begin_, end_;
 };
 
+class IListIterator;
+
+//! Proxy object returned from IListIterator
+class IListProxy
+{
+public:
+    //! Default constructor.
+    IListProxy(const IListIterator* it) : it_(it) {}
+    //! Access current global atom number.
+    const InteractionLists& list() const;
+    //! Access current molecule.
+    int nmol() const;
+
+private:
+    const IListIterator* it_;
+};
+
+/*! \brief
+ * Object that allows looping over all atoms in an mtop.
+ */
+class IListIterator :
+    public boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>
+{
+    using Base =
+            boost::stl_interfaces::proxy_iterator_interface<IListIterator, std::forward_iterator_tag, InteractionLists, IListProxy>;
+
+public:
+    //! Construct from topology.
+    explicit IListIterator(const gmx_mtop_t& mtop, size_t mblock = 0);
+
+    //! Prefix increment.
+    IListIterator& operator++();
+    using Base::   operator++;
+
+    //! Equality comparison.
+    bool operator==(const IListIterator& o) const;
+
+    //! Dereference operator. Returns proxy.
+    IListProxy operator*() const { return { this }; }
+
+private:
+    //! Global topology.
+    const gmx_mtop_t* mtop_;
+    //! Index of molecule block corresponding to the current location.
+    size_t mblock_;
+
+    friend class IListProxy;
+};
+
+
+/*! \brief
+ * Range over all interaction lists of topology.
+ *
+ * Includes the intermolecular interactions as the final element in the
+ * range if present.
+ */
+class IListRange
+{
+public:
+    //! Default constructor.
+    explicit IListRange(const gmx_mtop_t& mtop);
+    //! Iterator to begin of range.
+    IListIterator& begin() { return begin_; }
+    //! Iterator to end of range.
+    IListIterator& end() { return end_; }
+
+private:
+    IListIterator begin_, end_;
+};
+
 /* Abstract type for atom loop over atoms in all molecule blocks */
 typedef struct gmx_mtop_atomloop_block* gmx_mtop_atomloop_block_t;
 
@@ -179,20 +249,6 @@ gmx_mtop_atomloop_block_t gmx_mtop_atomloop_block_init(const gmx_mtop_t& mtop);
  */
 gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop, const t_atom** atom, int* nmol);
 
-
-/* Abstract type for ilist loop over all ilists */
-typedef struct gmx_mtop_ilistloop* gmx_mtop_ilistloop_t;
-
-/* Initialize an ilist loop over all molecule types in the system. */
-gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t& mtop);
-
-/* Loop to the next molecule,
- * When not at the end:
- *   returns a valid pointer to the next array ilist_mol[F_NRE],
- *   writes the number of molecules for this ilist in *nmol.
- * When at the end, destroys iloop and returns nullptr.
- */
-const InteractionLists* gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop, int* nmol);
 
 /* Returns the total number of interactions in the system of type ftype */
 int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype);
