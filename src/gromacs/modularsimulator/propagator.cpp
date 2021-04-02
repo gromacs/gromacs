@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -526,27 +526,21 @@ ISimulatorElement* Propagator<algorithm>::getElementPointerImpl(
         EnergyData gmx_unused*     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        double                                timestep,
-        RegisterWithThermostat                registerWithThermostat,
-        RegisterWithBarostat                  registerWithBarostat)
+        const PropagatorTag&                  propagatorTag,
+        double                                timestep)
 {
-    auto* element = builderHelper->storeElement(std::make_unique<Propagator<algorithm>>(
+    auto* element    = builderHelper->storeElement(std::make_unique<Propagator<algorithm>>(
             timestep, statePropagatorData, legacySimulatorData->mdAtoms, legacySimulatorData->wcycle));
-    if (registerWithThermostat == RegisterWithThermostat::True)
-    {
-        auto* propagator = static_cast<Propagator<algorithm>*>(element);
-        builderHelper->registerWithThermostat(
-                { [propagator](int num) { propagator->setNumVelocityScalingVariables(num); },
-                  [propagator]() { return propagator->viewOnVelocityScaling(); },
-                  [propagator]() { return propagator->velocityScalingCallback(); } });
-    }
-    if (registerWithBarostat == RegisterWithBarostat::True)
-    {
-        auto* propagator = static_cast<Propagator<algorithm>*>(element);
-        builderHelper->registerWithBarostat(
-                { [propagator]() { return propagator->viewOnPRScalingMatrix(); },
-                  [propagator]() { return propagator->prScalingCallback(); } });
-    }
+    auto* propagator = static_cast<Propagator<algorithm>*>(element);
+    builderHelper->registerWithThermostat(
+            { [propagator](int num) { propagator->setNumVelocityScalingVariables(num); },
+              [propagator]() { return propagator->viewOnVelocityScaling(); },
+              [propagator]() { return propagator->velocityScalingCallback(); },
+              propagatorTag });
+    builderHelper->registerWithBarostat(
+            { [propagator]() { return propagator->viewOnPRScalingMatrix(); },
+              [propagator]() { return propagator->prScalingCallback(); },
+              propagatorTag });
     return element;
 }
 

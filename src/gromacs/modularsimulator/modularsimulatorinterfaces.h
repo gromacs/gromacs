@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -455,6 +455,25 @@ enum class ModularSimulatorBuilderState
 typedef std::function<void(Step)> PropagatorCallback;
 
 /*! \internal
+ * \brief Strong type used to name propagators
+ */
+struct PropagatorTag
+{
+    //! Explicit constructor
+    explicit PropagatorTag(std::string_view name) : name_(name) {}
+    //! Can be used as string
+    operator const std::string&() const { return name_; }
+    //! Equality operator
+    bool operator==(const PropagatorTag& other) const { return name_ == other.name_; }
+    //! Inequality operator
+    bool operator!=(const PropagatorTag& other) const { return name_ != other.name_; }
+
+private:
+    //! The name of the propagator
+    const std::string name_;
+};
+
+/*! \internal
  * \brief Information needed to connect a propagator to a thermostat
  */
 struct PropagatorThermostatConnection
@@ -465,6 +484,8 @@ struct PropagatorThermostatConnection
     std::function<ArrayRef<real>()> getViewOnVelocityScaling;
     //! Function variable for callback.
     std::function<PropagatorCallback()> getVelocityScalingCallback;
+    //! The tag of the creating propagator
+    PropagatorTag tag;
 };
 
 /*! \internal
@@ -476,6 +497,8 @@ struct PropagatorBarostatConnection
     std::function<ArrayRef<rvec>()> getViewOnPRScalingMatrix;
     //! Function variable for callback.
     std::function<PropagatorCallback()> getPRScalingCallback;
+    //! The tag of the creating propagator
+    PropagatorTag tag;
 };
 
 //! /}

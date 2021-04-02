@@ -202,11 +202,12 @@ the simulator algorithm.
             builder->add<StatePropagatorData::Element>();
             if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale)
             {
-                builder->add<VRescaleThermostat>(-1, VRescaleThermostatUseFullStepKE::No);
+                builder->add<VRescaleThermostat>(-1,
+                                                 VRescaleThermostatUseFullStepKE::No,
+                                                 PropagatorTag("LeapFrogPropagator"));
             }
-            builder->add<Propagator<IntegrationStep::LeapFrog>>(legacySimulatorData_->inputrec->delta_t,
-                                                                RegisterWithThermostat::True,
-                                                                RegisterWithBarostat::True);
+            builder->add<Propagator<IntegrationStep::LeapFrog>>(PropagatorTag("LeapFrogPropagator"),
+                                                                legacySimulatorData_->inputrec->delta_t);
             if (legacySimulatorData_->constr)
             {
                 builder->add<ConstraintsElement<ConstraintVariable::Positions>>();
@@ -216,7 +217,7 @@ the simulator algorithm.
             builder->add<EnergyData::Element>();
             if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
             {
-                builder->add<ParrinelloRahmanBarostat>(-1);
+                builder->add<ParrinelloRahmanBarostat>(-1, PropagatorTag("LeapFrogPropagator"));
             }
         }
     }
@@ -545,7 +546,15 @@ Currently, the (templated) implementation covers four cases:
     time step of PositionsOnly.
 
 The propagators also allow to implement temperature and pressure coupling
-schemes by offering (templated) scaling of the velocities.
+schemes by offering (templated) scaling of the velocities. In order to
+link temperature / pressure coupling objects to the propagators, the
+propagator objects have a tag (of strong type `PropagatorTag`). The
+temperature and pressure coupling objects can then connect to the
+matching propagator by comparing their target tag to the different
+propagators. Giving the propagators their tags and informing the
+temperature and pressure coupling algorithms which propagator they are
+connecting to is in the responsibility of the simulation algorithm
+builder.
 
 #### `CompositeSimulatorElement`
 The composite simulator element takes a list of elements and implements

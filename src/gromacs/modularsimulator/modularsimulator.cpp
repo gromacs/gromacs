@@ -114,12 +114,13 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale
             || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen)
         {
-            builder->add<VelocityScalingTemperatureCoupling>(
-                    -1, UseFullStepKE::No, ReportPreviousStepConservedEnergy::No);
+            builder->add<VelocityScalingTemperatureCoupling>(-1,
+                                                             UseFullStepKE::No,
+                                                             ReportPreviousStepConservedEnergy::No,
+                                                             PropagatorTag("LeapFrogPropagator"));
         }
-        builder->add<Propagator<IntegrationStep::LeapFrog>>(legacySimulatorData_->inputrec->delta_t,
-                                                            RegisterWithThermostat::True,
-                                                            RegisterWithBarostat::True);
+        builder->add<Propagator<IntegrationStep::LeapFrog>>(
+                PropagatorTag("LeapFrogPropagator"), legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {
             builder->add<ConstraintsElement<ConstraintVariable::Positions>>();
@@ -128,7 +129,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<EnergyData::Element>();
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
-            builder->add<ParrinelloRahmanBarostat>(-1);
+            builder->add<ParrinelloRahmanBarostat>(-1, PropagatorTag("LeapFrogPropagator"));
         }
     }
     else if (legacySimulatorData_->inputrec->eI == IntegrationAlgorithm::VV)
@@ -136,9 +137,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // The velocity verlet integration algorithm
         builder->add<ForceElement>();
         builder->add<Propagator<IntegrationStep::VelocitiesOnly>>(
-                0.5 * legacySimulatorData_->inputrec->delta_t,
-                RegisterWithThermostat::False,
-                RegisterWithBarostat::True);
+                PropagatorTag("VelocityHalfStep"), 0.5 * legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {
             builder->add<ConstraintsElement<ConstraintVariable::Velocities>>();
@@ -149,12 +148,13 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
             || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen)
         {
             builder->add<VelocityScalingTemperatureCoupling>(
-                    0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
+                    0,
+                    UseFullStepKE::Yes,
+                    ReportPreviousStepConservedEnergy::Yes,
+                    PropagatorTag("VelocityHalfAndPositionFullStep"));
         }
         builder->add<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
-                legacySimulatorData_->inputrec->delta_t,
-                RegisterWithThermostat::True,
-                RegisterWithBarostat::False);
+                PropagatorTag("VelocityHalfAndPositionFullStep"), legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {
             builder->add<ConstraintsElement<ConstraintVariable::Positions>>();
@@ -163,7 +163,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<EnergyData::Element>();
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
-            builder->add<ParrinelloRahmanBarostat>(-1);
+            builder->add<ParrinelloRahmanBarostat>(-1, PropagatorTag("VelocityHalfStep"));
         }
     }
     else

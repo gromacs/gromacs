@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,19 +66,6 @@ class StatePropagatorData;
 
 //! \addtogroup module_modularsimulator
 //! \{
-
-//! Whether built propagator should be registered with thermostat
-enum class RegisterWithThermostat
-{
-    True,
-    False
-};
-//! Whether built propagator should be registered with barostat
-enum class RegisterWithBarostat
-{
-    True,
-    False
-};
 
 /*! \brief The different integration types we know about
  *
@@ -174,9 +161,8 @@ public:
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param propagatorTag  The name of the propagator to simplify connection
      * \param timestep  The time step the propagator uses
-     * \param registerWithThermostat  Whether this propagator should be registered with the thermostat
-     * \param registerWithBarostat  Whether this propagator should be registered with the barostat
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
@@ -186,9 +172,8 @@ public:
                                                     EnergyData*                 energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    double                     timestep,
-                                                    RegisterWithThermostat registerWithThermostat,
-                                                    RegisterWithBarostat   registerWithBarostat);
+                                                    const PropagatorTag&       propagatorTag,
+                                                    double                     timestep);
 
 private:
     //! The actual propagation

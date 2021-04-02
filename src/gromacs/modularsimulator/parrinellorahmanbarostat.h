@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,7 +103,8 @@ public:
     [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
-    void connectWithPropagator(const PropagatorBarostatConnection& connectionData);
+    void connectWithMatchingPropagator(const PropagatorBarostatConnection& connectionData,
+                                       const PropagatorTag&                propagatorTag);
 
     //! ICheckpointHelperClient write checkpoint implementation
     void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
@@ -120,17 +121,20 @@ public:
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param propagatorTag  Tag of the propagator to connect to
      * \param offset  The step offset at which the barostat is applied
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
-    static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
-                                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
-                                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                    GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    int                        offset);
+    static ISimulatorElement*
+    getElementPointerImpl(LegacySimulatorData*                    legacySimulatorData,
+                          ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                          StatePropagatorData*                    statePropagatorData,
+                          EnergyData*                             energyData,
+                          FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
+                          GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+                          int                                   offset,
+                          const PropagatorTag&                  propagatorTag);
 
 private:
     //! The frequency at which the barostat is applied

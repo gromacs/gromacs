@@ -88,10 +88,14 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     energyData->setParrinelloRahamnBarostat(this);
 }
 
-void ParrinelloRahmanBarostat::connectWithPropagator(const PropagatorBarostatConnection& connectionData)
+void ParrinelloRahmanBarostat::connectWithMatchingPropagator(const PropagatorBarostatConnection& connectionData,
+                                                             const PropagatorTag& propagatorTag)
 {
-    scalingTensor_      = connectionData.getViewOnPRScalingMatrix();
-    propagatorCallback_ = connectionData.getPRScalingCallback();
+    if (connectionData.tag == propagatorTag)
+    {
+        scalingTensor_      = connectionData.getViewOnPRScalingMatrix();
+        propagatorCallback_ = connectionData.getPRScalingCallback();
+    }
 }
 
 void ParrinelloRahmanBarostat::scheduleTask(Step step,
@@ -161,7 +165,8 @@ void ParrinelloRahmanBarostat::elementSetup()
         throw MissingElementConnectionError(
                 "Parrinello-Rahman barostat was not connected to a propagator.\n"
                 "Connection to a propagator element is needed to scale the velocities.\n"
-                "Use connectWithPropagator(...) before building the ModularSimulatorAlgorithm "
+                "Use connectWithMatchingPropagator(...) before building the "
+                "ModularSimulatorAlgorithm "
                 "object.");
     }
 
@@ -300,7 +305,8 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        int                                   offset)
+        int                                   offset,
+        const PropagatorTag&                  propagatorTag)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
             legacySimulatorData->inputrec->nstpcouple,
@@ -313,8 +319,8 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
             legacySimulatorData->inputrec,
             legacySimulatorData->mdAtoms));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
-    builderHelper->registerBarostat([barostat](const PropagatorBarostatConnection& connection) {
-        barostat->connectWithPropagator(connection);
+    builderHelper->registerBarostat([barostat, propagatorTag](const PropagatorBarostatConnection& connection) {
+        barostat->connectWithMatchingPropagator(connection, propagatorTag);
     });
     return element;
 }

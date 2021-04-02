@@ -120,7 +120,8 @@ public:
     [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
-    void connectWithPropagator(const PropagatorThermostatConnection& connectionData);
+    void connectWithMatchingPropagator(const PropagatorThermostatConnection& connectionData,
+                                       const PropagatorTag&                  propagatorTag);
 
     //! ICheckpointHelperClient write checkpoint implementation
     void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
@@ -137,6 +138,7 @@ public:
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param propagatorTag  Tag of the propagator to connect to
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
      * \param reportPreviousStepConservedEnergy  Report the previous or the current step conserved energy
@@ -152,7 +154,8 @@ public:
                           GlobalCommunicationHelper*              globalCommunicationHelper,
                           int                                     offset,
                           UseFullStepKE                           useFullStepKE,
-                          ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy);
+                          ReportPreviousStepConservedEnergy       reportPreviousStepConservedEnergy,
+                          const PropagatorTag&                    propagatorTag);
 
 private:
     //! The frequency at which the thermostat is applied

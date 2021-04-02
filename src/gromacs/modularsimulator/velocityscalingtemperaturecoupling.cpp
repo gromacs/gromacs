@@ -316,10 +316,14 @@ VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
     }
 }
 
-void VelocityScalingTemperatureCoupling::connectWithPropagator(const PropagatorThermostatConnection& connectionData)
+void VelocityScalingTemperatureCoupling::connectWithMatchingPropagator(const PropagatorThermostatConnection& connectionData,
+                                                                       const PropagatorTag& propagatorTag)
 {
-    temperatureCouplingImpl_->connectWithPropagator(connectionData, numTemperatureGroups_);
-    propagatorCallback_ = connectionData.getVelocityScalingCallback();
+    if (connectionData.tag == propagatorTag)
+    {
+        temperatureCouplingImpl_->connectWithPropagator(connectionData, numTemperatureGroups_);
+        propagatorCallback_ = connectionData.getVelocityScalingCallback();
+    }
 }
 
 void VelocityScalingTemperatureCoupling::elementSetup()
@@ -329,7 +333,8 @@ void VelocityScalingTemperatureCoupling::elementSetup()
         throw MissingElementConnectionError(
                 "Velocity scaling temperature coupling was not connected to a propagator.\n"
                 "Connection to a propagator element is needed to scale the velocities.\n"
-                "Use connectWithPropagator(...) before building the ModularSimulatorAlgorithm "
+                "Use connectWithMatchingPropagator(...) before building the "
+                "ModularSimulatorAlgorithm "
                 "object.");
     }
 }
@@ -466,12 +471,13 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData gmx_unused*     energyData,
+        EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
         int                                   offset,
         UseFullStepKE                         useFullStepKE,
-        ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy)
+        ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy,
+        const PropagatorTag&                  propagatorTag)
 {
     // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(
@@ -489,9 +495,10 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
             legacySimulatorData->inputrec->etc));
     auto* thermostat = static_cast<VelocityScalingTemperatureCoupling*>(element);
     // Capturing pointer is safe because lifetime is handled by caller
-    builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {
-        thermostat->connectWithPropagator(connection);
-    });
+    builderHelper->registerThermostat(
+            [thermostat, propagatorTag](const PropagatorThermostatConnection& connection) {
+                thermostat->connectWithMatchingPropagator(connection, propagatorTag);
+            });
     return element;
 }
 
