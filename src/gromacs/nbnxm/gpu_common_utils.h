@@ -79,7 +79,7 @@ static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality 
  * \param[in] atomLocality Atom locality specifier
  * \returns Range of indexes for selected locality.
  */
-static inline gmx::Range<int> getGpuAtomRange(const NBAtomData* atomData, const AtomLocality atomLocality)
+static inline gmx::Range<int> getGpuAtomRange(const NBAtomDataGpu* atomData, const AtomLocality atomLocality)
 {
     assert(atomData);
 

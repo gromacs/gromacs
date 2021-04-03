@@ -80,7 +80,7 @@ struct NbnxmGpu
     bool bNonLocalStreamDoneMarked = false;
 
     /*! \brief atom data */
-    NBAtomData* atdat = nullptr;
+    NBAtomDataGpu* atdat = nullptr;
     /*! \brief array of atom indices */
     int* atomIndices = nullptr;
     /*! \brief size of atom indices */

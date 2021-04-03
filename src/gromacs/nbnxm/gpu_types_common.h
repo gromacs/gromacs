@@ -92,7 +92,7 @@ struct NBStagingData
 /** \internal
  * \brief Nonbonded atom data - both inputs and outputs.
  */
-struct NBAtomData
+struct NBAtomDataGpu
 {
     //! number of atoms
     int numAtoms;

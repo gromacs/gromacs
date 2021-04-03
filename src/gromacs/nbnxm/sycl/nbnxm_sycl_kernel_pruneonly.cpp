@@ -264,7 +264,7 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
                                 const int                 part,
                                 const int                 numSciInPart)
 {
-    NBAtomData*         adat          = nb->atdat;
+    NBAtomDataGpu*      adat          = nb->atdat;
     NBParamGpu*         nbp           = nb->nbparam;
     gpu_plist*          plist         = nb->plist[iloc];
     const bool          haveFreshList = plist->haveFreshList;

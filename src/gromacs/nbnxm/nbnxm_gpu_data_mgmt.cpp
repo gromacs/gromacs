@@ -258,7 +258,7 @@ void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 }
 
 /*! \brief Initialize \p atomdata first time; it only gets filled at pair-search. */
-static void initAtomdataFirst(NBAtomData*          atomdata,
+static void initAtomdataFirst(NBAtomDataGpu*       atomdata,
                               int                  numTypes,
                               const DeviceContext& deviceContext,
                               const DeviceStream&  localStream)
@@ -354,7 +354,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
 {
     auto* nb                              = new NbnxmGpu();
     nb->deviceContext_                    = &deviceStreamManager.context();
-    nb->atdat                             = new NBAtomData;
+    nb->atdat                             = new NBAtomDataGpu;
     nb->nbparam                           = new NBParamGpu;
     nb->plist[InteractionLocality::Local] = new Nbnxm::gpu_plist;
     if (bLocalAndNonlocal)
@@ -428,7 +428,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
 
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
-    NBAtomData*         adat        = nb->atdat;
+    NBAtomDataGpu*      adat        = nb->atdat;
     const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
@@ -532,7 +532,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
     bool                 bDoTime       = nb->bDoTime;
     Nbnxm::GpuTimers*    timers        = bDoTime ? nb->timers : nullptr;
-    NBAtomData*          atdat         = nb->atdat;
+    NBAtomDataGpu*       atdat         = nb->atdat;
     const DeviceContext& deviceContext = *nb->deviceContext_;
     const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
 
@@ -630,7 +630,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
 void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 {
-    NBAtomData*         adat        = nb->atdat;
+    NBAtomDataGpu*      adat        = nb->atdat;
     const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
     // Clear forces
     clearDeviceBufferAsync(&adat->f, 0, nb->atdat->numAtoms, localStream);
@@ -777,7 +777,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
                "beginning of the copy back function.");
 
     /* extract the data */
-    NBAtomData*         adat         = nb->atdat;
+    NBAtomDataGpu*      adat         = nb->atdat;
     Nbnxm::GpuTimers*   timers       = nb->timers;
     bool                bDoTime      = nb->bDoTime;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -921,7 +921,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
 
-    NBAtomData*         adat         = nb->atdat;
+    NBAtomDataGpu*      adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
     Nbnxm::GpuTimers*   timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -1104,8 +1104,8 @@ void gpu_free(NbnxmGpu* nb)
     delete nb->timers;
     sfree(nb->timings);
 
-    NBAtomData* atdat   = nb->atdat;
-    NBParamGpu* nbparam = nb->nbparam;
+    NBAtomDataGpu* atdat   = nb->atdat;
+    NBParamGpu*    nbparam = nb->nbparam;
 
     /* Free atdat */
     freeDeviceBuffer(&(nb->atdat->xq));

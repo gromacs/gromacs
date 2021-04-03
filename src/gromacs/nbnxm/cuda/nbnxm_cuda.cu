@@ -122,7 +122,7 @@ namespace Nbnxm
 constexpr static int c_bufOpsThreadsPerBlock = 128;
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomData, const NBParamGpu, const gpu_plist, bool);
+typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomDataGpu, const NBParamGpu, const gpu_plist, bool);
 
 /*********************************/
 
@@ -443,7 +443,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  */
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    NBAtomData*         adat         = nb->atdat;
+    NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     Nbnxm::GpuTimers*   timers       = nb->timers;
@@ -564,7 +564,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    NBAtomData*         adat         = nb->atdat;
+    NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
     Nbnxm::GpuTimers*   timers       = nb->timers;
@@ -722,7 +722,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    NBAtomData* adat = nb->atdat;
+    NBAtomDataGpu* adat = nb->atdat;
 
     const int                  numColumns      = grid.numColumns();
     const int                  cellOffset      = grid.cellOffset();

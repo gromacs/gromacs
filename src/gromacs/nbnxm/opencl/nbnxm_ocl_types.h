@@ -167,7 +167,7 @@ struct NbnxmGpu
     bool bNonLocalStreamDoneMarked = false;
 
     //! atom data
-    NBAtomData* atdat = nullptr;
+    NBAtomDataGpu* atdat = nullptr;
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)

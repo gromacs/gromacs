@@ -72,7 +72,7 @@ struct NbnxmGpu
     /*! \brief true indicates that the nonlocal_done event was marked */
     bool bNonLocalStreamDoneMarked = false;
     /*! \brief atom data */
-    NBAtomData* atdat = nullptr;
+    NBAtomDataGpu* atdat = nullptr;
 
     // Data for GPU-side coordinate conversion between integrator and NBNXM
     /*! \brief array of atom indices */
