@@ -862,7 +862,7 @@ void LegacySimulator::do_tpi()
                 /* Determine the weighted energy contributions of each energy group */
                 e = 0;
                 sum_UgembU[e++] += epot * embU;
-                if (fr->bBHAM)
+                if (fr->haveBuckingham)
                 {
                     for (i = 0; i < ngid; i++)
                     {

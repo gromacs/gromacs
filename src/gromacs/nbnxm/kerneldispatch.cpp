@@ -466,8 +466,9 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
                     stepWork,
                     clearF,
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                    fr.bBHAM ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
-                             : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
+                    fr.haveBuckingham
+                            ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
+                            : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
                     wcycle_);
             break;
 
@@ -486,8 +487,9 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
                     nbat->out[0].f,
                     nbat->out[0].fshift.data(),
                     enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                    fr.bBHAM ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
-                             : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data());
+                    fr.haveBuckingham
+                            ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
+                            : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data());
             break;
 
         default: GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");

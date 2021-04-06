@@ -213,7 +213,7 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_f
         type_VDW[ai] = FALSE;
         for (int j = 0; j < fr->ntype; j++)
         {
-            type_VDW[ai] = type_VDW[ai] || fr->bBHAM || C6(fr->nbfp, fr->ntype, ai, j) != 0
+            type_VDW[ai] = type_VDW[ai] || fr->haveBuckingham || C6(fr->nbfp, fr->ntype, ai, j) != 0
                            || C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
@@ -1040,7 +1040,7 @@ void init_forcerec(FILE*                            fplog,
         }
     }
 
-    forcerec->bBHAM = (mtop.ffparams.functype[0] == F_BHAM);
+    forcerec->haveBuckingham = (mtop.ffparams.functype[0] == F_BHAM);
 
     /* Neighbour searching stuff */
     forcerec->pbcType = inputrec.pbcType;
@@ -1151,7 +1151,7 @@ void init_forcerec(FILE*                            fplog,
     switch (interactionConst->vdwtype)
     {
         case VanDerWaalsType::Cut:
-            if (forcerec->bBHAM)
+            if (forcerec->haveBuckingham)
             {
                 forcerec->nbkernel_vdw_interaction = NbkernelVdwType::Buckingham;
             }
@@ -1189,9 +1189,6 @@ void init_forcerec(FILE*                            fplog,
                   enumValueToString(inputrec.coulombtype));
     }
 
-    forcerec->bvdwtab  = FALSE;
-    forcerec->bcoultab = FALSE;
-
     /* 1-4 interaction electrostatics */
     forcerec->fudgeQQ = mtop.ffparams.fudgeQQ;
 
@@ -1226,7 +1223,7 @@ void init_forcerec(FILE*                            fplog,
     if (forcerec->nbfp.empty())
     {
         forcerec->ntype = mtop.ffparams.atnr;
-        forcerec->nbfp  = makeNonBondedParameterLists(mtop.ffparams, forcerec->bBHAM);
+        forcerec->nbfp  = makeNonBondedParameterLists(mtop.ffparams, forcerec->haveBuckingham);
         if (EVDW_PME(interactionConst->vdwtype))
         {
             forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(mtop.ffparams, *forcerec);
@@ -1238,7 +1235,7 @@ void init_forcerec(FILE*                            fplog,
 
     /* Van der Waals stuff */
     if ((interactionConst->vdwtype != VanDerWaalsType::Cut)
-        && (interactionConst->vdwtype != VanDerWaalsType::User) && !forcerec->bBHAM)
+        && (interactionConst->vdwtype != VanDerWaalsType::User) && !forcerec->haveBuckingham)
     {
         if (interactionConst->rvdw_switch >= interactionConst->rvdw)
         {
@@ -1257,19 +1254,19 @@ void init_forcerec(FILE*                            fplog,
         }
     }
 
-    if (forcerec->bBHAM && EVDW_PME(interactionConst->vdwtype))
+    if (forcerec->haveBuckingham && EVDW_PME(interactionConst->vdwtype))
     {
         gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }
 
-    if (forcerec->bBHAM
+    if (forcerec->haveBuckingham
         && (interactionConst->vdwtype == VanDerWaalsType::Shift
             || interactionConst->vdwtype == VanDerWaalsType::Switch))
     {
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
 
-    if (forcerec->bBHAM)
+    if (forcerec->haveBuckingham)
     {
         gmx_fatal(FARGS, "The Verlet cutoff-scheme does not (yet) support Buckingham");
     }
@@ -1394,12 +1391,12 @@ void init_forcerec(FILE*                            fplog,
     forcerec->print_force = print_force;
 
     forcerec->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
-    snew(forcerec->ewc_t, forcerec->nthread_ewc);
+    forcerec->ewc_t.resize(forcerec->nthread_ewc);
 
     if (inputrec.eDispCorr != DispersionCorrectionType::No)
     {
         forcerec->dispersionCorrection = std::make_unique<DispersionCorrection>(
-                mtop, inputrec, forcerec->bBHAM, forcerec->ntype, forcerec->nbfp, *forcerec->ic, tabfn);
+                mtop, inputrec, forcerec->haveBuckingham, forcerec->ntype, forcerec->nbfp, *forcerec->ic, tabfn);
         forcerec->dispersionCorrection->print(mdlog);
     }
 
@@ -1415,8 +1412,4 @@ void init_forcerec(FILE*                            fplog,
 
 t_forcerec::t_forcerec() = default;
 
-t_forcerec::~t_forcerec()
-{
-    /* Note: This code will disappear when types are converted to C++ */
-    sfree(ewc_t);
-}
+t_forcerec::~t_forcerec() = default;

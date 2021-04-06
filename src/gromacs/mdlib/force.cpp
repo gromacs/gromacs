@@ -83,7 +83,7 @@ static void clearEwaldThreadOutput(ewald_corr_thread_t* ewc_t)
     clear_mat(ewc_t->vir_lj);
 }
 
-static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
+static void reduceEwaldThreadOuput(int nthreads, gmx::ArrayRef<ewald_corr_thread_t> ewc_t)
 {
     ewald_corr_thread_t& dest = ewc_t[0];
 
