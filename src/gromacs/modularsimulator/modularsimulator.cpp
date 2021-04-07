@@ -353,11 +353,14 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible = isInputCompatible
                         && conditionalAssert(!GMX_FAHCORE,
                                              "GMX_FAHCORE not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            isInputCompatible || !(inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
-            "Requested Parrinello-Rahman barostat with md-vv, but other options are not compatible "
-            "with the modular simulator. The Parrinello-Rahman barostat is not implemented for "
-            "md-vv in the legacy simulator. Use a different pressure control algorithm.");
+    if (!isInputCompatible && (inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN))
+    {
+        gmx_fatal(FARGS,
+                  "Requested Parrinello-Rahman barostat with md-vv. This combination is only "
+                  "available in the modular simulator. Some other selected options are, however, "
+                  "only available in the legacy simulator. Use a different pressure control "
+                  "algorithm.");
+    }
 
     return isInputCompatible;
 }
