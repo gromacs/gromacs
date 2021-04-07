@@ -357,7 +357,7 @@ enum class ApplyParrinelloRahmanVScaling
  * aligned (and padded) memory, possibly with some hints for the compilers.
  */
 template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, ApplyParrinelloRahmanVScaling applyPRVScaling, typename VelocityType>
-static std::enable_if_t<std::is_same<VelocityType, rvec*>::value || std::is_same<VelocityType, const rvec*>::value, void>
+static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
 updateMDLeapfrogSimple(int                                 start,
                        int                                 nrend,
                        real                                dt,
@@ -368,7 +368,7 @@ updateMDLeapfrogSimple(int                                 start,
                        const rvec                          pRVScaleMatrixDiagonal,
                        const rvec* gmx_restrict x,
                        rvec* gmx_restrict xprime,
-                       VelocityType gmx_restrict v,
+                       VelocityType* gmx_restrict v,
                        const rvec* gmx_restrict f)
 {
     real lambdaGroup;
@@ -479,7 +479,7 @@ static inline void simdStoreRvecs(rvec* r, int index, SimdReal r0, SimdReal r1, 
  * \param[in]    f                      Forces
  */
 template<StoreUpdatedVelocities storeUpdatedVelocities, typename VelocityType>
-static std::enable_if_t<std::is_same<VelocityType, rvec*>::value || std::is_same<VelocityType, const rvec*>::value, void>
+static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
 updateMDLeapfrogSimpleSimd(int                               start,
                            int                               nrend,
                            real                              dt,
@@ -487,7 +487,7 @@ updateMDLeapfrogSimpleSimd(int                               start,
                            gmx::ArrayRef<const t_grp_tcstat> tcstat,
                            const rvec* gmx_restrict x,
                            rvec* gmx_restrict xprime,
-                           VelocityType gmx_restrict v,
+                           VelocityType* gmx_restrict v,
                            const rvec* gmx_restrict f)
 {
     SimdReal timestep(dt);
