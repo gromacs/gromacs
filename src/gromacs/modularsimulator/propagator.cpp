@@ -148,8 +148,8 @@ void Propagator<IntegrationStep::PositionsOnly>::run()
     wallcycle_start(wcycle_, ewcUPDATE);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
+    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    auto v  = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
 
     int nth    = gmx_omp_nthreads_get(emntUpdate);
     int homenr = mdAtoms_->mdatoms()->homenr;
@@ -248,9 +248,9 @@ void Propagator<IntegrationStep::LeapFrog>::run()
     wallcycle_start(wcycle_, ewcUPDATE);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    auto v  = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto f  = as_rvec_array(statePropagatorData_->constForcesView().force().data());
     auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambda =
@@ -319,9 +319,9 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
     wallcycle_start(wcycle_, ewcUPDATE);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    auto v  = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto f  = as_rvec_array(statePropagatorData_->constForcesView().force().data());
     auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambda =
