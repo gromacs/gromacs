@@ -143,6 +143,8 @@ public:
     }
     //! Reset the event to unmarked state.
     inline void reset() { event_.reset(); }
+    //! Check if the event is marked. Needed for some workarounds for #3988
+    inline bool isMarked() const { return event_.has_value(); }
 
 private:
     std::optional<cl::sycl::event> event_ = std::nullopt;
