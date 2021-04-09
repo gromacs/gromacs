@@ -75,12 +75,12 @@ struct t_cos_acc
     real vcos = 0;
 };
 
-struct gmx_ekindata_t
+class gmx_ekindata_t
 {
+public:
+    gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numThreads);
     //! The number of T-coupling groups
-    int ngtc = 0;
-    //! For size of ekin_work
-    int nthreads = 0;
+    int ngtc;
     //! T-coupling data
     std::vector<t_grp_tcstat> tcstat;
     //! Allocated locations for *_work members
@@ -101,6 +101,10 @@ struct gmx_ekindata_t
     t_cos_acc cosacc;
 
     ~gmx_ekindata_t();
+
+private:
+    //! For size of ekin_work
+    int nthreads_ = 0;
 };
 
 #define GID(igid, jgid, gnr) \

@@ -42,7 +42,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
 struct gmx_signalling_t;

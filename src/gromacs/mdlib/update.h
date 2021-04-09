@@ -49,7 +49,7 @@
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 enum class PbcType;
 struct t_fcdata;

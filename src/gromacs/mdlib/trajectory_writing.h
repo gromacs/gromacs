@@ -44,7 +44,7 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_mtop_t;
 struct ObservablesHistory;
 struct t_commrec;

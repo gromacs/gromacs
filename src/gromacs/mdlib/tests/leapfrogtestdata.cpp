@@ -83,6 +83,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     f_(numAtoms),
     inverseMasses_(numAtoms),
     inverseMassesPerDim_(numAtoms),
+    kineticEnergyData_(numTCoupleGroups == 0 ? 1 : numTCoupleGroups, 0.0, 1),
     numTCoupleGroups_(numTCoupleGroups)
 {
     mdAtoms_.nr = numAtoms_;
@@ -128,10 +129,9 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         {
             mdAtoms_.cTC[i] = 0;
         }
-        kineticEnergyData_.ngtc = 1;
         t_grp_tcstat temperatureCouplingGroupData;
         temperatureCouplingGroupData.lambda = 1.0;
-        kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
+        kineticEnergyData_.tcstat[0]        = temperatureCouplingGroupData;
     }
     else
     {
@@ -140,13 +140,12 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         {
             mdAtoms_.cTC[i] = i % numTCoupleGroups_;
         }
-        kineticEnergyData_.ngtc = numTCoupleGroups_;
-        for (int i = 0; i < numTCoupleGroups; i++)
+        for (int i = 0; i < numTCoupleGroups_; i++)
         {
             real         tCoupleLambda = 1.0 - (i + 1.0) / 10.0;
             t_grp_tcstat temperatureCouplingGroupData;
             temperatureCouplingGroupData.lambda = tCoupleLambda;
-            kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
+            kineticEnergyData_.tcstat[i]        = temperatureCouplingGroupData;
         }
     }
 
@@ -166,13 +165,6 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     state_.box[ZZ][XX] = 0.0;
     state_.box[ZZ][YY] = 0.0;
     state_.box[ZZ][ZZ] = 10.0;
-
-    kineticEnergyData_.cosacc.cos_accel = 0.0;
-
-    kineticEnergyData_.nthreads = 1;
-    snew(kineticEnergyData_.ekin_work_alloc, kineticEnergyData_.nthreads);
-    snew(kineticEnergyData_.ekin_work, kineticEnergyData_.nthreads);
-    snew(kineticEnergyData_.dekindl_work, kineticEnergyData_.nthreads);
 
     mdAtoms_.homenr                   = numAtoms_;
     mdAtoms_.haveVsites               = false;

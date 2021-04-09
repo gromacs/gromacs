@@ -138,6 +138,9 @@ const EnergyOutputTestParameters parametersSets[] = {
  */
 class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParameters>
 {
+    int  numTempCouplingGroups_ = 3;
+    real cosAccel_              = 1.0;
+
 public:
     //! File manager
     TestFileManager fileManager_;
@@ -193,6 +196,7 @@ public:
     TestReferenceChecker checker_;
 
     EnergyOutputTest() :
+        ekindata_(numTempCouplingGroups_, cosAccel_, 1),
         logFilename_(fileManager_.getTemporaryFilePath(".log")),
         edrFilename_(fileManager_.getTemporaryFilePath(".edr")),
         log_(std::fopen(logFilename_.c_str(), "w")),
@@ -312,12 +316,12 @@ public:
             mtop_.groups.groupNames.emplace_back(&handle);
         }
 
-        mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].resize(3);
+        mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput].resize(numTempCouplingGroups_);
         mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][0] = 0;
         mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][1] = 1;
         mtop_.groups.groups[SimulationAtomGroupType::EnergyOutput][2] = 2;
 
-        mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].resize(3);
+        mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].resize(numTempCouplingGroups_);
         mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][0] = 0;
         mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][1] = 1;
         mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][2] = 2;
@@ -344,15 +348,10 @@ public:
         ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size());
 
         // This is needed so that the ebin space will be allocated
-        inputrec_.cos_accel = 1.0;
-        // This is to keep the destructor happy (otherwise sfree() segfaults)
-        ekindata_.nthreads = 0;
-        snew(ekindata_.ekin_work_alloc, 1);
-        snew(ekindata_.ekin_work, 1);
-        snew(ekindata_.dekindl_work, 1);
+        inputrec_.cos_accel = cosAccel_;
 
         // Group options for annealing output
-        inputrec_.opts.ngtc = 3;
+        inputrec_.opts.ngtc = numTempCouplingGroups_;
         snew(inputrec_.opts.ref_t, inputrec_.opts.ngtc);
         snew(inputrec_.opts.annealing, inputrec_.opts.ngtc);
         inputrec_.opts.annealing[0] = SimulatedAnnealing::No;

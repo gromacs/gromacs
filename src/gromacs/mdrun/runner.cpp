@@ -1868,8 +1868,7 @@ int Mdrunner::mdrunner()
                            "cos_acceleration is only supported by integrator=md");
 
         /* Kinetic energy data */
-        gmx_ekindata_t ekind;
-        init_ekindata(fplog, &(inputrec->opts), &ekind, inputrec->cos_accel);
+        gmx_ekindata_t ekind(inputrec->opts.ngtc, inputrec->cos_accel, gmx_omp_nthreads_get(emntUpdate));
 
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec.get(),

@@ -44,7 +44,7 @@
 #include "gromacs/mdlib/stophandler.h"
 
 class energyhistory_t;
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;

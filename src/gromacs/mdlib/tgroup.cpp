@@ -40,70 +40,11 @@
 
 #include "tgroup.h"
 
-#include <cmath>
-
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
-void init_ekindata(FILE gmx_unused* log, const t_grpopts* opts, gmx_ekindata_t* ekind, real cos_accel)
-{
-    int i;
-
-    ekind->ngtc = opts->ngtc;
-    ekind->tcstat.resize(opts->ngtc);
-    /* Set Berendsen tcoupl lambda's to 1,
-     * so runs without Berendsen coupling are not affected.
-     */
-    for (i = 0; i < opts->ngtc; i++)
-    {
-        ekind->tcstat[i].lambda         = 1.0;
-        ekind->tcstat[i].vscale_nhc     = 1.0;
-        ekind->tcstat[i].ekinscaleh_nhc = 1.0;
-        ekind->tcstat[i].ekinscalef_nhc = 1.0;
-    }
-
-    int nthread     = gmx_omp_nthreads_get(emntUpdate);
-    ekind->nthreads = nthread;
-    snew(ekind->ekin_work_alloc, nthread);
-    snew(ekind->ekin_work, nthread);
-    snew(ekind->dekindl_work, nthread);
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for (int thread = 0; thread < nthread; thread++)
-    {
-        try
-        {
-#define EKIN_WORK_BUFFER_SIZE 2
-            /* Allocate 2 extra elements on both sides, so in single
-             * precision we have
-             * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
-             * buffer on both sides to avoid cache pollution.
-             */
-            snew(ekind->ekin_work_alloc[thread], ekind->ngtc + 2 * EKIN_WORK_BUFFER_SIZE);
-            ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
-            /* Nasty hack so we can have the per-thread accumulation
-             * variable for dekindl in the same thread-local cache lines
-             * as the per-thread accumulation tensors for ekin[fh],
-             * because they are accumulated in the same loop. */
-            ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
-#undef EKIN_WORK_BUFFER_SIZE
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-
-    ekind->cosacc.cos_accel = cos_accel;
-}
 
 real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {

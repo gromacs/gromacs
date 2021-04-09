@@ -43,7 +43,7 @@
 
 #include "gromacs/math/vectypes.h"
 
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct t_vcm;
 struct t_inputrec;

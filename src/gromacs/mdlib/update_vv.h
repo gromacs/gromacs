@@ -44,7 +44,7 @@
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/md_enums.h"
 
-struct gmx_ekindata_t;
+class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
 struct gmx_localtop_t;

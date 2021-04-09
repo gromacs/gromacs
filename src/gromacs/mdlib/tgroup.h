@@ -37,23 +37,12 @@
 #ifndef GMX_MDLIB_TGROUP_H
 #define GMX_MDLIB_TGROUP_H
 
-#include <cstdio>
-
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_ekindata_t;
-struct t_commrec;
+class gmx_ekindata_t;
 struct t_grpopts;
-struct t_mdatoms;
 
-void init_ekindata(FILE* log, const t_grpopts* opts, gmx_ekindata_t* ekind, real cos_accel);
-/* Allocate memory and set the grpnr array. */
-
-void done_ekindata(gmx_ekindata_t* ekind);
-/* Free the memory */
-
-real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
+real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, bool bEkinFullStep, bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
