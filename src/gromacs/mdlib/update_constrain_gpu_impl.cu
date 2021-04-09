@@ -80,15 +80,6 @@ constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)
 constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
 
-/*! \brief Scaling matrix struct.
- *
- * \todo Should be generalized.
- */
-struct ScalingMatrix
-{
-    float xx, yy, zz, yx, zx, zy;
-};
-
 __launch_bounds__(c_maxThreadsPerBlock) __global__
         static void scaleCoordinates_kernel(const int numAtoms,
                                             float3* __restrict__ gm_x,
@@ -161,13 +152,7 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
     wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
 
-    ScalingMatrix mu;
-    mu.xx = scalingMatrix[XX][XX];
-    mu.yy = scalingMatrix[YY][YY];
-    mu.zz = scalingMatrix[ZZ][ZZ];
-    mu.yx = scalingMatrix[YY][XX];
-    mu.zx = scalingMatrix[ZZ][XX];
-    mu.zy = scalingMatrix[ZZ][YY];
+    ScalingMatrix mu(scalingMatrix);
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_x_, &mu);
@@ -190,13 +175,7 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
     wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
 
-    ScalingMatrix mu;
-    mu.xx = scalingMatrix[XX][XX];
-    mu.yy = scalingMatrix[YY][YY];
-    mu.zz = scalingMatrix[ZZ][ZZ];
-    mu.yx = scalingMatrix[YY][XX];
-    mu.zx = scalingMatrix[ZZ][XX];
-    mu.zy = scalingMatrix[ZZ][YY];
+    ScalingMatrix mu(scalingMatrix);
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_v_, &mu);
