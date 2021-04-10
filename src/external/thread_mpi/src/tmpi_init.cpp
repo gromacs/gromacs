@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009,2018, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2018,2021, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -369,6 +369,12 @@ static void tMPI_Global_destroy(struct tmpi_global *g)
     tMPI_Thread_barrier_destroy(&(g->barrier));
     tMPI_Thread_mutex_destroy(&(g->timer_mutex));
     tMPI_Thread_mutex_destroy(&(g->comm_link_lock));
+    for (int i = 0; i < g->N_usertypes; i++)
+    {
+        tMPI_Free(g->usertypes[i]->comps);
+        tMPI_Free(g->usertypes[i]);
+    }
+    tMPI_Free(g->usertypes);
 }
 
 
