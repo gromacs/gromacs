@@ -84,7 +84,7 @@
 namespace Nbnxm
 {
 
-inline void issueClFlushInStream(const DeviceStream& deviceStream)
+static inline void issueClFlushInStream(const DeviceStream& deviceStream)
 {
 #if GMX_GPU_OPENCL
     /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
@@ -101,9 +101,9 @@ inline void issueClFlushInStream(const DeviceStream& deviceStream)
 #endif
 }
 
-void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
-                                    NBParamGpu*                  nbp,
-                                    const DeviceContext&         deviceContext)
+static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
+                                                  NBParamGpu*                  nbp,
+                                                  const DeviceContext&         deviceContext)
 {
     if (nbp->coulomb_tab)
     {
@@ -115,8 +115,8 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
             &nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(), tables.tableF.size(), deviceContext);
 }
 
-enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
-                                               const DeviceInformation gmx_unused& deviceInfo)
+static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
+                                                        const DeviceInformation gmx_unused& deviceInfo)
 {
     bool bTwinCut = (ic.rcoulomb != ic.rvdw);
 
@@ -173,7 +173,9 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
     }
 }
 
-void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t& ic, const PairlistParams& listParams)
+static inline void set_cutoff_parameters(NBParamGpu*                nbp,
+                                         const interaction_const_t& ic,
+                                         const PairlistParams&      listParams)
 {
     nbp->ewald_beta        = ic.ewaldcoeff_q;
     nbp->sh_ewald          = ic.sh_ewald;
@@ -195,24 +197,7 @@ void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t& ic, const
     nbp->vdw_switch       = ic.vdw_switch;
 }
 
-void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interaction_const_t& ic)
-{
-    if (!nbv || !nbv->useGpu())
-    {
-        return;
-    }
-    NbnxmGpu*   nb  = nbv->gpu_nbv;
-    NBParamGpu* nbp = nb->nbparam;
-
-    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
-
-    nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(ic, nb->deviceContext_->deviceInfo());
-
-    GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-    init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, *nb->deviceContext_);
-}
-
-void init_plist(gpu_plist* pl)
+static inline void init_plist(gpu_plist* pl)
 {
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_pairlist */
@@ -236,7 +221,7 @@ void init_plist(gpu_plist* pl)
     pl->rollingPruningPart     = 0;
 }
 
-void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
+static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 {
     t->nb_h2d_t = 0.0;
     t->nb_d2h_t = 0.0;
@@ -258,10 +243,10 @@ void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 }
 
 /*! \brief Initialize \p atomdata first time; it only gets filled at pair-search. */
-static void initAtomdataFirst(NBAtomDataGpu*       atomdata,
-                              int                  numTypes,
-                              const DeviceContext& deviceContext,
-                              const DeviceStream&  localStream)
+static inline void initAtomdataFirst(NBAtomDataGpu*       atomdata,
+                                     int                  numTypes,
+                                     const DeviceContext& deviceContext,
+                                     const DeviceStream&  localStream)
 {
     atomdata->numTypes = numTypes;
     allocateDeviceBuffer(&atomdata->shiftVec, SHIFTS, deviceContext);
@@ -285,12 +270,91 @@ static void initAtomdataFirst(NBAtomDataGpu*       atomdata,
     atomdata->numAtomsAlloc = -1;
 }
 
+static inline VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic,
+                                                LJCombinationRule          ljCombinationRule)
+{
+    if (ic.vdwtype == VanDerWaalsType::Cut)
+    {
+        switch (ic.vdw_modifier)
+        {
+            case InteractionModifiers::None:
+            case InteractionModifiers::PotShift:
+                switch (ljCombinationRule)
+                {
+                    case LJCombinationRule::None: return VdwType::Cut;
+                    case LJCombinationRule::Geometric: return VdwType::CutCombGeom;
+                    case LJCombinationRule::LorentzBerthelot: return VdwType::CutCombLB;
+                    default:
+                        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
+                                "The requested LJ combination rule %s is not implemented in "
+                                "the GPU accelerated kernels!",
+                                enumValueToString(ljCombinationRule))));
+                }
+            case InteractionModifiers::ForceSwitch: return VdwType::FSwitch;
+            case InteractionModifiers::PotSwitch: return VdwType::PSwitch;
+            default:
+                GMX_THROW(gmx::InconsistentInputError(
+                        gmx::formatString("The requested VdW interaction modifier %s is not "
+                                          "implemented in the GPU accelerated kernels!",
+                                          enumValueToString(ic.vdw_modifier))));
+        }
+    }
+    else if (ic.vdwtype == VanDerWaalsType::Pme)
+    {
+        if (ic.ljpme_comb_rule == LongRangeVdW::Geom)
+        {
+            GMX_RELEASE_ASSERT(
+                    ljCombinationRule == LJCombinationRule::Geometric,
+                    "Combination rules for long- and short-range interactions should match.");
+            return VdwType::EwaldGeom;
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(
+                    ljCombinationRule == LJCombinationRule::LorentzBerthelot,
+                    "Combination rules for long- and short-range interactions should match.");
+            return VdwType::EwaldLB;
+        }
+    }
+    else
+    {
+        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
+                "The requested VdW type %s is not implemented in the GPU accelerated kernels!",
+                enumValueToString(ic.vdwtype))));
+    }
+}
+
+static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t& ic,
+                                                            const DeviceInformation&   deviceInfo)
+{
+    if (ic.eeltype == CoulombInteractionType::Cut)
+    {
+        return ElecType::Cut;
+    }
+    else if (EEL_RF(ic.eeltype))
+    {
+        return ElecType::RF;
+    }
+    else if ((EEL_PME(ic.eeltype) || ic.eeltype == CoulombInteractionType::Ewald))
+    {
+        return nbnxn_gpu_pick_ewald_kernel_type(ic, deviceInfo);
+    }
+    else
+    {
+        /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
+        GMX_THROW(gmx::InconsistentInputError(
+                gmx::formatString("The requested electrostatics type %s is not implemented in "
+                                  "the GPU accelerated kernels!",
+                                  enumValueToString(ic.eeltype))));
+    }
+}
+
 /*! \brief Initialize the nonbonded parameter data structure. */
-static void initNbparam(NBParamGpu*                     nbp,
-                        const interaction_const_t&      ic,
-                        const PairlistParams&           listParams,
-                        const nbnxn_atomdata_t::Params& nbatParams,
-                        const DeviceContext&            deviceContext)
+static inline void initNbparam(NBParamGpu*                     nbp,
+                               const interaction_const_t&      ic,
+                               const PairlistParams&           listParams,
+                               const nbnxn_atomdata_t::Params& nbatParams,
+                               const DeviceContext&            deviceContext)
 {
     const int numTypes = nbatParams.numTypes;
 
@@ -424,6 +488,23 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     }
 
     return nb;
+}
+
+void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interaction_const_t& ic)
+{
+    if (!nbv || !nbv->useGpu())
+    {
+        return;
+    }
+    NbnxmGpu*   nb  = nbv->gpu_nbv;
+    NBParamGpu* nbp = nb->nbparam;
+
+    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
+
+    nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(ic, nb->deviceContext_->deviceInfo());
+
+    GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+    init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, *nb->deviceContext_);
 }
 
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
@@ -663,81 +744,6 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 {
     return ((nb->nbparam->elecType == ElecType::EwaldAna)
             || (nb->nbparam->elecType == ElecType::EwaldAnaTwin));
-}
-
-enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t& ic,
-                                                   const DeviceInformation&   deviceInfo)
-{
-    if (ic.eeltype == CoulombInteractionType::Cut)
-    {
-        return ElecType::Cut;
-    }
-    else if (EEL_RF(ic.eeltype))
-    {
-        return ElecType::RF;
-    }
-    else if ((EEL_PME(ic.eeltype) || ic.eeltype == CoulombInteractionType::Ewald))
-    {
-        return nbnxn_gpu_pick_ewald_kernel_type(ic, deviceInfo);
-    }
-    else
-    {
-        /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
-        GMX_THROW(gmx::InconsistentInputError(
-                gmx::formatString("The requested electrostatics type %s is not implemented in "
-                                  "the GPU accelerated kernels!",
-                                  enumValueToString(ic.eeltype))));
-    }
-}
-
-
-enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic, LJCombinationRule ljCombinationRule)
-{
-    if (ic.vdwtype == VanDerWaalsType::Cut)
-    {
-        switch (ic.vdw_modifier)
-        {
-            case InteractionModifiers::None:
-            case InteractionModifiers::PotShift:
-                switch (ljCombinationRule)
-                {
-                    case LJCombinationRule::None: return VdwType::Cut;
-                    case LJCombinationRule::Geometric: return VdwType::CutCombGeom;
-                    case LJCombinationRule::LorentzBerthelot: return VdwType::CutCombLB;
-                    default:
-                        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
-                                "The requested LJ combination rule %s is not implemented in "
-                                "the GPU accelerated kernels!",
-                                enumValueToString(ljCombinationRule))));
-                }
-            case InteractionModifiers::ForceSwitch: return VdwType::FSwitch;
-            case InteractionModifiers::PotSwitch: return VdwType::PSwitch;
-            default:
-                GMX_THROW(gmx::InconsistentInputError(
-                        gmx::formatString("The requested VdW interaction modifier %s is not "
-                                          "implemented in the GPU accelerated kernels!",
-                                          enumValueToString(ic.vdw_modifier))));
-        }
-    }
-    else if (ic.vdwtype == VanDerWaalsType::Pme)
-    {
-        if (ic.ljpme_comb_rule == LongRangeVdW::Geom)
-        {
-            assert(ljCombinationRule == LJCombinationRule::Geometric);
-            return VdwType::EwaldGeom;
-        }
-        else
-        {
-            assert(ljCombinationRule == LJCombinationRule::LorentzBerthelot);
-            return VdwType::EwaldLB;
-        }
-    }
-    else
-    {
-        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
-                "The requested VdW type %s is not implemented in the GPU accelerated kernels!",
-                enumValueToString(ic.vdwtype))));
-    }
 }
 
 void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)

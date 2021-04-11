@@ -306,12 +306,6 @@ GPU_FUNC_QUALIFIER
 bool haveGpuShortRangeWork(const NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused interactionLocality)
         GPU_FUNC_TERM_WITH_RETURN(false);
 
-/*! \brief sync CPU thread on coordinate copy to device
- * \param[in] nb                   The nonbonded data GPU structure
- */
-CUDA_FUNC_QUALIFIER
-void nbnxn_wait_x_on_device(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM;
-
 /*! \brief Get the pointer to the GPU nonbonded force buffer
  *
  * \param[in] nb  The nonbonded data GPU structure

@@ -42,20 +42,11 @@
 #ifndef GMX_NBNXM_GPU_COMMON_UTILS_H
 #define GMX_NBNXM_GPU_COMMON_UTILS_H
 
-#include "config.h"
-
 #include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/range.h"
-#include "gromacs/nbnxm/nbnxm_gpu.h"
-
-#if GMX_GPU_CUDA
-#    include "cuda/nbnxm_cuda_types.h"
-#endif
-
-#if GMX_GPU_OPENCL
-#    include "opencl/nbnxm_ocl_types.h"
-#endif
 
 namespace Nbnxm
 {

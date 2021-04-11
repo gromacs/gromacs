@@ -127,25 +127,6 @@ int gpu_min_ci_balanced(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(-1);
 GPU_FUNC_QUALIFIER
 bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(FALSE);
 
-/** Return the enum value of electrostatics kernel type for given interaction parameters \p ic. */
-GPU_FUNC_QUALIFIER
-enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t gmx_unused& ic,
-                                                   const DeviceInformation gmx_unused& deviceInfo)
-        GPU_FUNC_TERM_WITH_RETURN(ElecType::Count);
-
-/** Return the enum value of VdW kernel type for given \p ic and \p combRule. */
-GPU_FUNC_QUALIFIER
-enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused& ic,
-                                       LJCombinationRule gmx_unused ljCombinationRule)
-        GPU_FUNC_TERM_WITH_RETURN(VdwType::Count);
-
-/** Returns an opaque pointer to the GPU command stream
- *  Note: CUDA only.
- */
-CUDA_FUNC_QUALIFIER
-const DeviceStream* gpu_get_command_stream(NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused iloc)
-        CUDA_FUNC_TERM_WITH_RETURN(nullptr);
-
 /** Returns an opaque pointer to the GPU coordinate+charge array
  *  Note: CUDA only.
  */
