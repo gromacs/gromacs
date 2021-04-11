@@ -47,6 +47,10 @@
  */
 #include "gmxpre.h"
 
+#ifdef __APPLE__
+#    include <sys/sysctl.h>
+#endif
+
 #include "config.h"
 
 #ifdef __APPLE__

@@ -43,6 +43,11 @@ Support for Intel oneAPI compiler 2021.2
 
 Fixed compiler infinity math and MKL flags.
 
+Fix Apple OpenCL build
+""""""""""""""""""""""
+
+:issue:`4008`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
