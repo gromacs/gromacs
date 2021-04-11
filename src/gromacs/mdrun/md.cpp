@@ -257,7 +257,8 @@ void gmx::LegacySimulator::do_md()
 
     int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
-    initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda);
+    initialize_lambdas(
+            fplog, *ir, gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc), MASTER(cr), fep_state, lambda);
     Update upd(*ir, deform);
     bool   doSimulatedAnnealing = false;
     {

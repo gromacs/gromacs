@@ -352,7 +352,12 @@ void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, const 
     }
 }
 
-void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* fep_state, gmx::ArrayRef<real> lambda)
+void initialize_lambdas(FILE*               fplog,
+                        const t_inputrec&   ir,
+                        gmx::ArrayRef<real> ref_t,
+                        bool                isMaster,
+                        int*                fep_state,
+                        gmx::ArrayRef<real> lambda)
 {
     /* TODO: Clean up initialization of fep_state and lambda in
        t_state.  This function works, but could probably use a logic
@@ -391,11 +396,11 @@ void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* f
     if (ir.bSimTemp)
     {
         /* need to rescale control temperatures to match current state */
-        for (int i = 0; i < ir.opts.ngtc; i++)
+        for (int i = 0; i < ref_t.ssize(); i++)
         {
-            if (ir.opts.ref_t[i] > 0)
+            if (ref_t[i] > 0)
             {
-                ir.opts.ref_t[i] = ir.simtempvals->temperatures[fep->init_fep_state];
+                ref_t[i] = ir.simtempvals->temperatures[fep->init_fep_state];
             }
         }
     }

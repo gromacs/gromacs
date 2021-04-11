@@ -407,7 +407,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     if (legacySimulatorData->inputrec->efep != FreeEnergyPerturbationType::No)
     {
         freeEnergyPerturbationData_ = std::make_unique<FreeEnergyPerturbationData>(
-                legacySimulatorData->fplog, legacySimulatorData->inputrec, legacySimulatorData->mdAtoms);
+                legacySimulatorData->fplog, *legacySimulatorData->inputrec, legacySimulatorData->mdAtoms);
     }
 
     statePropagatorData_ = std::make_unique<StatePropagatorData>(

@@ -293,17 +293,6 @@ struct t_extmass
     tensor              Winvm; /* inverse pressure mass tensor, computed       */
 };
 
-
-typedef struct
-{
-    real    veta;
-    double  rscale;
-    double  vscale;
-    double  rvscale;
-    double  alpha;
-    double* vscale_nhc;
-} t_vetavars;
-
 #endif // DOXYGEN
 
 //! Resizes the T- and P-coupling state variables
@@ -376,6 +365,11 @@ void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, bool i
  * and lambda on master rank.
  *
  * Reports the initial lambda state to the log file. */
-void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* fep_state, gmx::ArrayRef<real> lambda);
+void initialize_lambdas(FILE*               fplog,
+                        const t_inputrec&   ir,
+                        gmx::ArrayRef<real> ref_t,
+                        bool                isMaster,
+                        int*                fep_state,
+                        gmx::ArrayRef<real> lambda);
 
 #endif

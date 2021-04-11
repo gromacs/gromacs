@@ -77,7 +77,7 @@ class FreeEnergyPerturbationData final
 {
 public:
     //! Constructor
-    FreeEnergyPerturbationData(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms);
+    FreeEnergyPerturbationData(FILE* fplog, const t_inputrec& inputrec, MDAtoms* mdAtoms);
 
     //! Get a view of the current lambda vector
     ArrayRef<real> lambdaView();
@@ -100,8 +100,6 @@ public:
     static const std::string& checkpointID();
 
 private:
-    //! Default constructor - only used internally
-    FreeEnergyPerturbationData() = default;
     //! Update the lambda values
     void updateLambdas(Step step);
     //! Helper function to read from / write to CheckpointData
@@ -119,7 +117,7 @@ private:
     //! Handles logging.
     FILE* fplog_;
     //! Contains user input mdp options.
-    const t_inputrec* inputrec_;
+    const t_inputrec& inputrec_;
     //! Atom parameters for this domain.
     MDAtoms* mdAtoms_;
 };

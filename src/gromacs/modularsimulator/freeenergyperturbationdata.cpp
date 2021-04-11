@@ -60,8 +60,8 @@
 namespace gmx
 {
 
-FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms) :
-    element_(std::make_unique<Element>(this, inputrec->fepvals->delta_lambda)),
+FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inputrec& inputrec, MDAtoms* mdAtoms) :
+    element_(std::make_unique<Element>(this, inputrec.fepvals->delta_lambda)),
     lambda_(),
     currentFEPState_(0),
     fplog_(fplog),
@@ -72,7 +72,12 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
     // The legacy implementation only filled the lambda vector in state_global, which is only
     // available on master. We have the lambda vector available everywhere, so we pass a `true`
     // for isMaster on all ranks. See #3647.
-    initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_);
+    initialize_lambdas(fplog_,
+                       inputrec_,
+                       gmx::arrayRefFromArray(inputrec_.opts.ref_t, inputrec_.opts.ngtc),
+                       true,
+                       &currentFEPState_,
+                       lambda_);
 }
 
 void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
@@ -88,7 +93,7 @@ void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
 void FreeEnergyPerturbationData::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
-    lambda_ = currentLambdas(step, *(inputrec_->fepvals), currentFEPState_);
+    lambda_ = currentLambdas(step, *(inputrec_.fepvals), currentFEPState_);
     updateMDAtoms();
 }
 
@@ -202,7 +207,7 @@ void FreeEnergyPerturbationData::readCheckpointToTrxFrame(t_trxframe* trxFrame,
 {
     if (readCheckpointData)
     {
-        FreeEnergyPerturbationData freeEnergyPerturbationData;
+        FreeEnergyPerturbationData freeEnergyPerturbationData(nullptr, t_inputrec(), nullptr);
         freeEnergyPerturbationData.doCheckpointData(&readCheckpointData.value());
         trxFrame->lambda = freeEnergyPerturbationData.lambda_[FreeEnergyPerturbationCouplingType::Fep];
         trxFrame->fep_state = freeEnergyPerturbationData.currentFEPState_;
