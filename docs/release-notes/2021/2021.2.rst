@@ -38,6 +38,11 @@ code incorrectly tried to construct a string from nullptr.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Support for Intel oneAPI compiler 2021.2
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed compiler infinity math and MKL flags.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
