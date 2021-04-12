@@ -130,15 +130,15 @@ namespace gmx
  * \todo Remove GMX_CONSTRAINTVIR
  * \todo Write free-energy output also to energy file (after adding more tests)
  */
-EnergyOutput::EnergyOutput(ener_file*               fp_ene,
-                           const gmx_mtop_t&        mtop,
-                           const t_inputrec&        inputrec,
-                           const pull_t*            pull_work,
-                           FILE*                    fp_dhdl,
-                           bool                     isRerun,
-                           const StartingBehavior   startingBehavior,
-                           const bool               simulationsShareState,
-                           const MdModulesNotifier& mdModulesNotifier)
+EnergyOutput::EnergyOutput(ener_file*                fp_ene,
+                           const gmx_mtop_t&         mtop,
+                           const t_inputrec&         inputrec,
+                           const pull_t*             pull_work,
+                           FILE*                     fp_dhdl,
+                           bool                      isRerun,
+                           const StartingBehavior    startingBehavior,
+                           const bool                simulationsShareState,
+                           const MDModulesNotifiers& mdModulesNotifiers)
 {
     const char*        ener_nm[F_NRE];
     static const char* vir_nm[]   = { "Vir-XX", "Vir-XY", "Vir-XZ", "Vir-YX", "Vir-YY",
@@ -259,8 +259,8 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
 
-    MdModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
-    mdModulesNotifier.simulationSetupNotifications_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
+    MDModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
+    mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
 
     bEner_[F_DENSITYFITTING] = mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
 

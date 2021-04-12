@@ -64,7 +64,7 @@ enum class LambdaWeightCalculation : int;
 namespace gmx
 {
 
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 class KeyValueTreeObject;
 class ReadCheckpointDataHolder;
 class WriteCheckpointDataHolder;
@@ -125,20 +125,20 @@ extern template void writeKvtCheckpointValue(const real&               value,
                                              KeyValueTreeObjectBuilder kvtBuilder);
 
 /*! \libinternal
- * \brief Provides the MdModules with the checkpointed data on the master rank.
+ * \brief Provides the MDModules with the checkpointed data on the master rank.
  */
-struct MdModulesCheckpointReadingDataOnMaster
+struct MDModulesCheckpointReadingDataOnMaster
 {
-    //! The data of the MdModules that is stored in the checkpoint file
+    //! The data of the MDModules that is stored in the checkpoint file
     const KeyValueTreeObject& checkpointedData_;
     //! The version of the read ceckpoint file
     int checkpointFileVersion_;
 };
 
 /*! \libinternal
- * \brief Provides the MdModules with the communication record to broadcast.
+ * \brief Provides the MDModules with the communication record to broadcast.
  */
-struct MdModulesCheckpointReadingBroadcast
+struct MDModulesCheckpointReadingBroadcast
 {
     //! The communicator
     MPI_Comm communicator_;
@@ -148,11 +148,11 @@ struct MdModulesCheckpointReadingBroadcast
     int checkpointFileVersion_;
 };
 
-/*! \libinternal \brief Writing the MdModules data to a checkpoint file.
+/*! \libinternal \brief Writing the MDModules data to a checkpoint file.
  */
-struct MdModulesWriteCheckpointData
+struct MDModulesWriteCheckpointData
 {
-    //! Builder for the Key-Value-Tree to store the MdModule checkpoint data
+    //! Builder for the Key-Value-Tree to store the MDModule checkpoint data
     KeyValueTreeObjectBuilder builder_;
     //! The version of the read file version
     int checkpointFileVersion_;
@@ -252,7 +252,7 @@ void write_checkpoint_data(t_fileio*                         fp,
                            LambdaWeightCalculation           elamstats,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
-                           const gmx::MdModulesNotifier&     notifier,
+                           const gmx::MDModulesNotifiers&    mdModulesNotifiers,
                            std::vector<gmx_file_position_t>* outputfiles,
                            gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData);
 
@@ -271,7 +271,7 @@ void load_checkpoint(const char*                    fn,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,
                      gmx_bool                       reproducibilityRequested,
-                     const gmx::MdModulesNotifier&  mdModulesNotifier,
+                     const gmx::MDModulesNotifiers& mdModulesNotifiers,
                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                      bool                           useModularSimulator);
 

@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests MdModuleNotification
+ * Tests MDModulesNotifier
  *
  * \author Christian Blau <blau@kth.se>
  * \ingroup module_utility
@@ -95,60 +95,60 @@ private:
     bool notifiedEventA_ = false;
 };
 
-TEST(MDModuleNotificationTest, addConsumer)
+TEST(MDModulesNotifierTest, AddConsumer)
 {
-    registerMdModuleNotification<EventA>::type notifications;
-    EventACallee                               eventACallee;
+    BuildMDModulesNotifier<EventA>::type notifier;
+    EventACallee                         eventACallee;
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
 
-    notifications.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
-    notifications.notify(EventA{});
+    notifier.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
+    notifier.notify(EventA{});
 
     EXPECT_TRUE(eventACallee.notifiedEventA());
 }
 
-TEST(MDModuleNotificationTest, addConsumerWithPointerParameter)
+TEST(MDModulesNotifierTest, AddConsumerWithPointerParameter)
 {
-    registerMdModuleNotification<EventB*>::type notifications;
-    EventBCallee                                eventBCallee;
+    BuildMDModulesNotifier<EventB*>::type notifier;
+    EventBCallee                          eventBCallee;
 
     EXPECT_FALSE(eventBCallee.notifiedEventB());
 
-    notifications.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
+    notifier.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
     EventB* eventBPointer = nullptr;
-    notifications.notify(eventBPointer);
+    notifier.notify(eventBPointer);
 
     EXPECT_TRUE(eventBCallee.notifiedEventB());
 }
 
-TEST(MDModuleNotificationTest, addTwoDifferentConsumers)
+TEST(MDModulesNotifierTest, AddTwoDifferentConsumers)
 {
-    registerMdModuleNotification<EventA, EventB*>::type notifications;
-    EventBCallee                                        eventBCallee;
-    EventACallee                                        eventACallee;
+    BuildMDModulesNotifier<EventA, EventB*>::type notifier;
+    EventBCallee                                  eventBCallee;
+    EventACallee                                  eventACallee;
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
     EXPECT_FALSE(eventBCallee.notifiedEventB());
 
-    notifications.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
-    notifications.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
+    notifier.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
+    notifier.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
 
     EventB* eventBPointer = nullptr;
-    notifications.notify(eventBPointer);
+    notifier.notify(eventBPointer);
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
     EXPECT_TRUE(eventBCallee.notifiedEventB());
 
-    notifications.notify(EventA{});
+    notifier.notify(EventA{});
 
     EXPECT_TRUE(eventACallee.notifiedEventA());
     EXPECT_TRUE(eventBCallee.notifiedEventB());
 }
 
-TEST(MDModuleNotificationTest, consumerOfTwoResources)
+TEST(MDModulesNotifierTest, AddConsumerOfTwoResources)
 {
-    registerMdModuleNotification<EventA, EventB*>::type notifications;
+    BuildMDModulesNotifier<EventA, EventB*>::type notifier;
 
     EventAandBCallee callee;
 
@@ -156,17 +156,17 @@ TEST(MDModuleNotificationTest, consumerOfTwoResources)
     EXPECT_FALSE(callee.notifiedEventA());
 
     // requires a template parameter here, because call is ambiguous otherwise
-    notifications.subscribe([&callee](EventA msg) { callee.callback(msg); });
-    notifications.subscribe([&callee](EventB* msg) { callee.notify(msg); });
+    notifier.subscribe([&callee](EventA msg) { callee.callback(msg); });
+    notifier.subscribe([&callee](EventB* msg) { callee.notify(msg); });
 
     EventB* eventBp = nullptr;
 
-    notifications.notify(eventBp);
+    notifier.notify(eventBp);
 
     EXPECT_FALSE(callee.notifiedEventA());
     EXPECT_TRUE(callee.notifiedEventB());
 
-    notifications.notify(EventA{});
+    notifier.notify(EventA{});
 
     EXPECT_TRUE(callee.notifiedEventA());
     EXPECT_TRUE(callee.notifiedEventB());

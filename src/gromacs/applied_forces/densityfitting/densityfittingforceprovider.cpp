@@ -417,7 +417,7 @@ void DensityFittingForceProvider::calculateForces(const ForceProviderInput& forc
     impl_->calculateForces(forceProviderInput, forceProviderOutput);
 }
 
-void DensityFittingForceProvider::writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting,
+void DensityFittingForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
                                                       const std::string&           moduleName)
 {
     impl_->stateToCheckpoint().writeState(checkpointWriting.builder_, moduleName);

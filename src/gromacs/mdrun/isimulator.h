@@ -71,7 +71,7 @@ class BoxDeformation;
 class Constraints;
 class MdrunScheduleWorkload;
 class IMDOutputProvider;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 class ImdSession;
 class MDLogger;
 class MDAtoms;
@@ -123,7 +123,7 @@ public:
                         gmx_enfrot*                         enforcedRotation,
                         BoxDeformation*                     deform,
                         IMDOutputProvider*                  outputProvider,
-                        const MdModulesNotifier&            mdModulesNotifier,
+                        const MDModulesNotifiers&           mdModulesNotifiers,
                         t_inputrec*                         inputrec,
                         ImdSession*                         imdSession,
                         pull_t*                             pull_work,
@@ -157,7 +157,7 @@ public:
         enforcedRotation(enforcedRotation),
         deform(deform),
         outputProvider(outputProvider),
-        mdModulesNotifier(mdModulesNotifier),
+        mdModulesNotifiers(mdModulesNotifiers),
         inputrec(inputrec),
         imdSession(imdSession),
         pull_work(pull_work),
@@ -208,8 +208,8 @@ public:
     BoxDeformation* deform;
     //! Handles writing output files.
     IMDOutputProvider* outputProvider;
-    //! Handles notifications to MdModules for checkpoint writing
-    const MdModulesNotifier& mdModulesNotifier;
+    //! Handles notifications to MDModules for checkpoint writing
+    const MDModulesNotifiers& mdModulesNotifiers;
     //! Contains user input mdp options. Note: The const-ness is casted away in a few instances, see #3854.
     const t_inputrec* inputrec;
     //! The Interactive Molecular Dynamics session.

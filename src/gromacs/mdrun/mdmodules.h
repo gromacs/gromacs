@@ -58,7 +58,7 @@ class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
 class IMDModule;
 class IMDOutputProvider;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 
 /*! \libinternal \brief
  * Manages the collection of all modules used for mdrun.
@@ -144,17 +144,17 @@ public:
      */
     ForceProviders* initForceProviders();
 
-    /*! \brief Subscribe MdModules to simulation setup notifications.
+    /*! \brief Subscribe MDModules to simulation setup notifications.
      *
-     * Allows MdModules to subscribe to notifications that are called back
+     * Allows MDModules to subscribe to notifications that are called back
      * during the set up of an MD simulation, after the options were
      * assigned to the modules.
      */
     void subscribeToSimulationSetupNotifications();
 
-    /*! \brief Subscribe MdModules to notifications during pre-processing.
+    /*! \brief Subscribe MDModules to notifications during pre-processing.
      *
-     * Allows MdModules to subscribe to notifications that are called back
+     * Allows MDModules to subscribe to notifications that are called back
      * during pre processing an MD simulation, after the options were
      * assigned to the modules.
      */
@@ -184,9 +184,9 @@ public:
      */
     void add(std::shared_ptr<IMDModule> module);
 
-    /*! \brief Return a handle to the callbacks.
+    /*! \brief Return a handle to the notifiers used for callbacks between modules.
      */
-    const MdModulesNotifier& notifier();
+    const MDModulesNotifiers& notifiers();
 
 private:
     class Impl;

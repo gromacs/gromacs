@@ -142,7 +142,7 @@ public:
      * \note The provided state to checkpoint has to change if checkpointing
      *       is moved before the force provider call in the MD-loop.
      */
-    void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting, const std::string& moduleName);
+    void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, const std::string& moduleName);
 
 private:
     class Impl;

@@ -725,7 +725,7 @@ with the XDR library. The alternative would be to write an entirely new data
 structure, changing the function signature of all checkpoint-related functions,
 and write a corresponding low-level routine interacting with the XDR library.
 
-**The MdModule approach:** To allow for modules to write checkpoints, the legacy
+**The MDModule approach:** To allow for modules to write checkpoints, the legacy
 checkpoint was extended by a KVTree. When writing to checkpoint, this tree gets
 filled (via callbacks) by the single modules, and then serialized. When reading,
 the KVTree gets deserialized, and then distributed to the modules which can read
@@ -733,7 +733,7 @@ back the data previously stored.
 
 ##### Modular simulator design
 
-The MdModule checks off almost all requirements to a modularized checkpointing format.
+The MDModule checks off almost all requirements to a modularized checkpointing format.
 The proposed design is therefore an evolved form of this approach. Notably, two
 improvements include
 * Hide the implementation details of the data structure holding the data (currently,
@@ -793,13 +793,13 @@ if clients write self-consistent read and write code, this should never be neede
 Checking for key existence seems rather to be a lazy way to circumvent versioning,
 and is therefore discouraged.
 
-**Callback method:** The modular simulator and MdModules don't use the exact same
+**Callback method:** The modular simulator and MDModules don't use the exact same
 way of communicating with clients. The two methods could be unified if needed.
 The only _fundamental_ difference is that modular simulator clients need to identify
-with a unique key to receive their dedicated sub-data, while MdModules all read from
-and write to the same KV-tree. MdModules could be adapted to that by either requiring
+with a unique key to receive their dedicated sub-data, while MDModules all read from
+and write to the same KV-tree. MDModules could be adapted to that by either requiring
 a unique key from the modules, or by using the same `CheckpointData` for all modules
-and using a single unique key (something like "MdModules") to register that object
+and using a single unique key (something like "MDModules") to register that object
 with the global checkpoint.
 
 **Performance:** One of the major differences between the new approach and the legacy

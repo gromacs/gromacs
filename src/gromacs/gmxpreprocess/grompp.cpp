@@ -1926,7 +1926,7 @@ int gmx_grompp(int argc, char* argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    // Now that the MdModules have their options assigned from get_ir, subscribe
+    // Now that the MDModules have their options assigned from get_ir, subscribe
     // to eventual notifications during pre-processing their data
     mdModules.subscribeToPreProcessingNotifications();
 
@@ -1937,7 +1937,7 @@ int gmx_grompp(int argc, char* argv[])
                 .asParagraph()
                 .appendTextFormatted("checking input for internal consistency...");
     }
-    check_ir(mdparin, mdModules.notifier(), ir, opts, wi);
+    check_ir(mdparin, mdModules.notifiers(), ir, opts, wi);
 
     if (ir->ld_seed == -1)
     {
@@ -2201,7 +2201,7 @@ int gmx_grompp(int argc, char* argv[])
     {
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("initialising group options...");
     }
-    do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifier(), ir, wi);
+    do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, wi);
 
     if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0)
     {
@@ -2488,7 +2488,7 @@ int gmx_grompp(int argc, char* argv[])
 
     {
         gmx::KeyValueTreeBuilder internalParameterBuilder;
-        mdModules.notifier().preProcessingNotifications_.notify(internalParameterBuilder.rootObject());
+        mdModules.notifiers().preProcessingNotifier_.notify(internalParameterBuilder.rootObject());
         ir->internalParameters =
                 std::make_unique<gmx::KeyValueTreeObject>(internalParameterBuilder.build());
     }

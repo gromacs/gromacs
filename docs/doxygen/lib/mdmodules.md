@@ -162,17 +162,17 @@ and local atom sets by subscribing to callback functions.
 To include a notification for your module
 
 * Add the function signature for the callback function to the
-  `MdModulesNotifier` in `mdmodulenotification.h`,
+  `MDModulesNotifiers` in `mdmodulenotification.h`,
 
   ```C++
-    registerMdModulesNotification<...,
+    BuildMDModulesNotifier<...,
                       YourCallbackSignature,
                       ...,
   ```
 
   (keep alphabetical order for ease of git merge)
 
-* Hand the notifier_ member of the MdModules Implementation class to your
+* Hand the notifier_ member of the MDModules Implementation class to your
   builder createYourModule(&notifier_)
 
 * Add the function you want to subscribe with in the builder,

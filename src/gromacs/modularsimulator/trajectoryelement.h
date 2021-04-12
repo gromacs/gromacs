@@ -60,7 +60,7 @@ struct t_inputrec;
 namespace gmx
 {
 class IMDOutputProvider;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 struct MdrunOptions;
 enum class StartingBehavior;
 
@@ -135,7 +135,7 @@ private:
                       const MdrunOptions&                   mdrunOptions,
                       const t_commrec*                      cr,
                       IMDOutputProvider*                    outputProvider,
-                      const MdModulesNotifier&              mdModulesNotifier,
+                      const MDModulesNotifiers&             mdModulesNotifiers,
                       const t_inputrec*                     inputrec,
                       const gmx_mtop_t&                     top_global,
                       const gmx_output_env_t*               oenv,

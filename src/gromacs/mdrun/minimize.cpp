@@ -1240,7 +1240,7 @@ void LegacySimulator::do_cg()
                                    mdrunOptions,
                                    cr,
                                    outputProvider,
-                                   mdModulesNotifier,
+                                   mdModulesNotifiers,
                                    inputrec,
                                    top_global,
                                    nullptr,
@@ -1256,7 +1256,7 @@ void LegacySimulator::do_cg()
                                    false,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   mdModulesNotifier);
+                                   mdModulesNotifiers);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1942,7 +1942,7 @@ void LegacySimulator::do_lbfgs()
                                    mdrunOptions,
                                    cr,
                                    outputProvider,
-                                   mdModulesNotifier,
+                                   mdModulesNotifiers,
                                    inputrec,
                                    top_global,
                                    nullptr,
@@ -1958,7 +1958,7 @@ void LegacySimulator::do_lbfgs()
                                    false,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   mdModulesNotifier);
+                                   mdModulesNotifiers);
 
     const int start = 0;
     const int end   = mdatoms->homenr;
@@ -2723,7 +2723,7 @@ void LegacySimulator::do_steep()
                                    mdrunOptions,
                                    cr,
                                    outputProvider,
-                                   mdModulesNotifier,
+                                   mdModulesNotifiers,
                                    inputrec,
                                    top_global,
                                    nullptr,
@@ -2739,7 +2739,7 @@ void LegacySimulator::do_steep()
                                    false,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   mdModulesNotifier);
+                                   mdModulesNotifiers);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -3051,7 +3051,7 @@ void LegacySimulator::do_nm()
                                    mdrunOptions,
                                    cr,
                                    outputProvider,
-                                   mdModulesNotifier,
+                                   mdModulesNotifiers,
                                    inputrec,
                                    top_global,
                                    nullptr,

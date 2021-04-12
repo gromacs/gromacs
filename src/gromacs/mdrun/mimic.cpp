@@ -242,7 +242,7 @@ void gmx::LegacySimulator::do_mimic()
                                    mdrunOptions,
                                    cr,
                                    outputProvider,
-                                   mdModulesNotifier,
+                                   mdModulesNotifiers,
                                    ir,
                                    top_global,
                                    oenv,
@@ -258,7 +258,7 @@ void gmx::LegacySimulator::do_mimic()
                                    true,
                                    StartingBehavior::NewSimulation,
                                    simulationsShareState,
-                                   mdModulesNotifier);
+                                   mdModulesNotifiers);
 
     gstat = global_stat_init(ir);
 

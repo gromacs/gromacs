@@ -194,9 +194,11 @@ std::unique_ptr<RestraintMDModule> RestraintMDModule::create(std::shared_ptr<IRe
     return newModule;
 }
 
-void RestraintMDModule::subscribeToSimulationSetupNotifications(MdModulesNotifier* /*notifier*/) {}
+void RestraintMDModule::subscribeToSimulationSetupNotifications(MDModulesNotifiers* /*notifiers*/)
+{
+}
 
-void RestraintMDModule::subscribeToPreProcessingNotifications(MdModulesNotifier* /*notifier*/) {}
+void RestraintMDModule::subscribeToPreProcessingNotifications(MDModulesNotifiers* /*notifiers*/) {}
 
 // private constructor to implement static create() method.
 RestraintMDModule::RestraintMDModule(std::unique_ptr<RestraintMDModuleImpl> restraint) :

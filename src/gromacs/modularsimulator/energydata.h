@@ -69,7 +69,7 @@ class ModularSimulatorAlgorithmBuilderHelper;
 class ParrinelloRahmanBarostat;
 class StatePropagatorData;
 class VelocityScalingTemperatureCoupling;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 
 //! Function type for elements contributing energy
 using EnergyContribution = std::function<real(Step, Time)>;
@@ -106,7 +106,7 @@ public:
                const Constraints*          constr,
                FILE*                       fplog,
                t_fcdata*                   fcd,
-               const MdModulesNotifier&    mdModulesNotifier,
+               const MDModulesNotifiers&   mdModulesNotifiers,
                bool                        isMasterRank,
                ObservablesHistory*         observablesHistory,
                StartingBehavior            startingBehavior,
@@ -312,8 +312,8 @@ private:
     FILE* fplog_;
     //! Helper struct for force calculations.
     t_fcdata* fcd_;
-    //! Notification to MD modules
-    const MdModulesNotifier& mdModulesNotifier_;
+    //! Notifiers to MD modules
+    const MDModulesNotifiers& mdModulesNotifiers_;
     //! Global topology groups
     const SimulationGroups* groups_;
     //! History of simulation observables.

@@ -219,11 +219,11 @@ static void process_interaction_modifier(InteractionModifiers* eintmod)
     }
 }
 
-void check_ir(const char*                   mdparin,
-              const gmx::MdModulesNotifier& mdModulesNotifier,
-              t_inputrec*                   ir,
-              t_gromppopts*                 opts,
-              warninp_t                     wi)
+void check_ir(const char*                    mdparin,
+              const gmx::MDModulesNotifiers& mdModulesNotifiers,
+              t_inputrec*                    ir,
+              t_gromppopts*                  opts,
+              warninp_t                      wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
  * like temperature coupling group options here, but in triple_check
@@ -580,10 +580,10 @@ void check_ir(const char*                   mdparin,
             check_nst("nstcalcenergy", ir->nstcalcenergy, "nstenergy", &ir->nstenergy, wi);
         }
 
-        // Inquire all MdModules, if their parameters match with the energy
+        // Inquire all MDModules, if their parameters match with the energy
         // calculation frequency
         gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(ir->nstcalcenergy);
-        mdModulesNotifier.preProcessingNotifications_.notify(&energyCalculationFrequencyErrors);
+        mdModulesNotifiers.preProcessingNotifier_.notify(&energyCalculationFrequencyErrors);
 
         // Emit all errors from the energy calculation frequency checks
         for (const std::string& energyFrequencyErrorMessage :
@@ -3449,13 +3449,13 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
     }
 }
 
-void do_index(const char*                   mdparin,
-              const char*                   ndx,
-              gmx_mtop_t*                   mtop,
-              bool                          bVerbose,
-              const gmx::MdModulesNotifier& notifier,
-              t_inputrec*                   ir,
-              warninp_t                     wi)
+void do_index(const char*                    mdparin,
+              const char*                    ndx,
+              gmx_mtop_t*                    mtop,
+              bool                           bVerbose,
+              const gmx::MDModulesNotifiers& mdModulesNotifiers,
+              t_inputrec*                    ir,
+              warninp_t                      wi)
 {
     t_blocka* defaultIndexGroups;
     int       natoms;
@@ -3868,7 +3868,7 @@ void do_index(const char*                   mdparin,
 
     gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
-    notifier.preProcessingNotifications_.notify(defaultIndexGroupsAndNames);
+    mdModulesNotifiers.preProcessingNotifier_.notify(defaultIndexGroupsAndNames);
 
     auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
     auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);

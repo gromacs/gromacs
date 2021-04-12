@@ -171,8 +171,8 @@ public:
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
 
-    void subscribeToSimulationSetupNotifications(MdModulesNotifier* /* notifier */) override {}
-    void subscribeToPreProcessingNotifications(MdModulesNotifier* /* notifier */) override {}
+    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
+    void subscribeToPreProcessingNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
 private:
     //! Return whether or not to apply a field

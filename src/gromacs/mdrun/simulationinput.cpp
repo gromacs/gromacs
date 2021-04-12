@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ void applyLocalState(const SimulationInput&         simulationInput,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,
                      bool                           reproducibilityRequested,
-                     const MdModulesNotifier&       mdModulesNotifier,
+                     const MDModulesNotifiers&      mdModulesNotifiers,
                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                      const bool                     useModularSimulator)
 {
@@ -76,7 +76,7 @@ void applyLocalState(const SimulationInput&         simulationInput,
                     state,
                     observablesHistory,
                     reproducibilityRequested,
-                    mdModulesNotifier,
+                    mdModulesNotifiers,
                     modularSimulatorCheckpointData,
                     useModularSimulator);
 }

@@ -50,7 +50,7 @@
 namespace gmx
 {
 class MDModules;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 } // namespace gmx
 
 struct gmx_mtop_t;
@@ -112,11 +112,11 @@ void init_inputrec_strings();
 /*! \brief Clean up object that holds strings parsed from an .mdp file */
 void done_inputrec_strings();
 
-void check_ir(const char*                   mdparin,
-              const gmx::MdModulesNotifier& mdModulesNotifier,
-              t_inputrec*                   ir,
-              t_gromppopts*                 opts,
-              warninp_t                     wi);
+void check_ir(const char*                    mdparin,
+              const gmx::MDModulesNotifiers& mdModulesNotifiers,
+              t_inputrec*                    ir,
+              t_gromppopts*                  opts,
+              warninp_t                      wi);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
@@ -141,13 +141,13 @@ void get_ir(const char*     mdparin,
  * function is called. Also prints the input file back to mdparout.
  */
 
-void do_index(const char*                   mdparin,
-              const char*                   ndx,
-              gmx_mtop_t*                   mtop,
-              bool                          bVerbose,
-              const gmx::MdModulesNotifier& notifier,
-              t_inputrec*                   ir,
-              warninp_t                     wi);
+void do_index(const char*                    mdparin,
+              const char*                    ndx,
+              gmx_mtop_t*                    mtop,
+              bool                           bVerbose,
+              const gmx::MDModulesNotifiers& mdModulesNotifiers,
+              t_inputrec*                    ir,
+              warninp_t                      wi);
 /* Read the index file and assign grp numbers to atoms.
  */
 

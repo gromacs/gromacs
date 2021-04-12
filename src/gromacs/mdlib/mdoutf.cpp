@@ -75,45 +75,45 @@
 
 struct gmx_mdoutf
 {
-    t_fileio*                     fp_trn;
-    t_fileio*                     fp_xtc;
-    gmx_tng_trajectory_t          tng;
-    gmx_tng_trajectory_t          tng_low_prec;
-    int                           x_compression_precision; /* only used by XTC output */
-    ener_file_t                   fp_ene;
-    const char*                   fn_cpt;
-    gmx_bool                      bKeepAndNumCPT;
-    IntegrationAlgorithm          eIntegrator;
-    gmx_bool                      bExpanded;
-    LambdaWeightCalculation       elamstats;
-    int                           simulation_part;
-    FILE*                         fp_dhdl;
-    int                           natoms_global;
-    int                           natoms_x_compressed;
-    const SimulationGroups*       groups; /* for compressed position writing */
-    gmx_wallcycle_t               wcycle;
-    rvec*                         f_global;
-    gmx::IMDOutputProvider*       outputProvider;
-    const gmx::MdModulesNotifier* mdModulesNotifier;
-    bool                          simulationsShareState;
-    MPI_Comm                      mastersComm;
+    t_fileio*                      fp_trn;
+    t_fileio*                      fp_xtc;
+    gmx_tng_trajectory_t           tng;
+    gmx_tng_trajectory_t           tng_low_prec;
+    int                            x_compression_precision; /* only used by XTC output */
+    ener_file_t                    fp_ene;
+    const char*                    fn_cpt;
+    gmx_bool                       bKeepAndNumCPT;
+    IntegrationAlgorithm           eIntegrator;
+    gmx_bool                       bExpanded;
+    LambdaWeightCalculation        elamstats;
+    int                            simulation_part;
+    FILE*                          fp_dhdl;
+    int                            natoms_global;
+    int                            natoms_x_compressed;
+    const SimulationGroups*        groups; /* for compressed position writing */
+    gmx_wallcycle_t                wcycle;
+    rvec*                          f_global;
+    gmx::IMDOutputProvider*        outputProvider;
+    const gmx::MDModulesNotifiers* mdModulesNotifiers;
+    bool                           simulationsShareState;
+    MPI_Comm                       mastersComm;
 };
 
 
-gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
-                         int                           nfile,
-                         const t_filenm                fnm[],
-                         const gmx::MdrunOptions&      mdrunOptions,
-                         const t_commrec*              cr,
-                         gmx::IMDOutputProvider*       outputProvider,
-                         const gmx::MdModulesNotifier& mdModulesNotifier,
-                         const t_inputrec*             ir,
-                         const gmx_mtop_t&             top_global,
-                         const gmx_output_env_t*       oenv,
-                         gmx_wallcycle_t               wcycle,
-                         const gmx::StartingBehavior   startingBehavior,
-                         bool                          simulationsShareState,
-                         const gmx_multisim_t*         ms)
+gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
+                         int                            nfile,
+                         const t_filenm                 fnm[],
+                         const gmx::MdrunOptions&       mdrunOptions,
+                         const t_commrec*               cr,
+                         gmx::IMDOutputProvider*        outputProvider,
+                         const gmx::MDModulesNotifiers& mdModulesNotifiers,
+                         const t_inputrec*              ir,
+                         const gmx_mtop_t&              top_global,
+                         const gmx_output_env_t*        oenv,
+                         gmx_wallcycle_t                wcycle,
+                         const gmx::StartingBehavior    startingBehavior,
+                         bool                           simulationsShareState,
+                         const gmx_multisim_t*          ms)
 {
     gmx_mdoutf_t of;
     const char * appendMode = "a+", *writeMode = "w+", *filemode;
@@ -220,7 +220,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
         }
 
         outputProvider->initOutput(fplog, nfile, fnm, restartWithAppending, oenv);
-        of->mdModulesNotifier = &mdModulesNotifier;
+        of->mdModulesNotifiers = &mdModulesNotifiers;
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -297,7 +297,7 @@ static void write_checkpoint(const char*                     fn,
                              double                          t,
                              t_state*                        state,
                              ObservablesHistory*             observablesHistory,
-                             const gmx::MdModulesNotifier&   mdModulesNotifier,
+                             const gmx::MDModulesNotifiers&  mdModulesNotifiers,
                              gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData,
                              bool                            applyMpiBarrierBeforeRename,
                              MPI_Comm                        mpiBarrierCommunicator)
@@ -400,7 +400,7 @@ static void write_checkpoint(const char*                     fn,
                           elamstats,
                           state,
                           observablesHistory,
-                          mdModulesNotifier,
+                          mdModulesNotifiers,
                           &outputfiles,
                           modularSimulatorCheckpointData);
 
@@ -517,7 +517,7 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      t,
                      state_global,
                      observablesHistory,
-                     *(of->mdModulesNotifier),
+                     *(of->mdModulesNotifiers),
                      modularSimulatorCheckpointData,
                      of->simulationsShareState,
                      of->mastersComm);

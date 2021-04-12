@@ -83,7 +83,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        const Constraints*          constr,
                        FILE*                       fplog,
                        t_fcdata*                   fcd,
-                       const MdModulesNotifier&    mdModulesNotifier,
+                       const MDModulesNotifiers&   mdModulesNotifiers,
                        bool                        isMasterRank,
                        ObservablesHistory*         observablesHistory,
                        StartingBehavior            startingBehavior,
@@ -107,7 +107,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     constr_(constr),
     fplog_(fplog),
     fcd_(fcd),
-    mdModulesNotifier_(mdModulesNotifier),
+    mdModulesNotifiers_(mdModulesNotifiers),
     groups_(&globalTopology.groups),
     observablesHistory_(observablesHistory),
     simulationsShareState_(simulationsShareState)
@@ -168,7 +168,7 @@ void EnergyData::setup(gmx_mdoutf* outf)
                                                    false,
                                                    startingBehavior_,
                                                    simulationsShareState_,
-                                                   mdModulesNotifier_);
+                                                   mdModulesNotifiers_);
 
     if (!isMasterRank_)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019-2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
                                                       constraintsParam_->enforcedRotation,
                                                       boxDeformation_->deform,
                                                       simulatorModules_->outputProvider,
-                                                      simulatorModules_->mdModulesNotifier,
+                                                      simulatorModules_->mdModulesNotifiers,
                                                       legacyInput_->inputrec,
                                                       interactiveMD_->imdSession,
                                                       centerOfMassPulling_->pull_work,
@@ -179,7 +179,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
                                                                 constraintsParam_->enforcedRotation,
                                                                 boxDeformation_->deform,
                                                                 simulatorModules_->outputProvider,
-                                                                simulatorModules_->mdModulesNotifier,
+                                                                simulatorModules_->mdModulesNotifiers,
                                                                 legacyInput_->inputrec,
                                                                 interactiveMD_->imdSession,
                                                                 centerOfMassPulling_->pull_work,

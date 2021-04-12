@@ -988,13 +988,13 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
-    // now that the MdModules know their options, they know which callbacks to sign up to
+    // now that the MDModules know their options, they know which callbacks to sign up to
     mdModules_->subscribeToSimulationSetupNotifications();
-    const auto& mdModulesNotifier = mdModules_->notifier().simulationSetupNotifications_;
+    const auto& setupNotifier = mdModules_->notifiers().simulationSetupNotifier_;
 
     if (inputrec->internalParameters != nullptr)
     {
-        mdModulesNotifier.notify(*inputrec->internalParameters);
+        setupNotifier.notify(*inputrec->internalParameters);
     }
 
     if (fplog != nullptr)
@@ -1069,7 +1069,7 @@ int Mdrunner::mdrunner()
     SeparatePmeRanksPermitted separatePmeRanksPermitted;
 
     /* Permit MDModules to notify whether they want to use PME-only ranks */
-    mdModulesNotifier.notify(&separatePmeRanksPermitted);
+    setupNotifier.notify(&separatePmeRanksPermitted);
 
     /* If simulation is not using PME then disable PME-only ranks */
     if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
@@ -1195,7 +1195,7 @@ int Mdrunner::mdrunner()
                         globalState.get(),
                         &observablesHistory,
                         mdrunOptions.reproducible,
-                        mdModules_->notifier(),
+                        mdModules_->notifiers(),
                         modularSimulatorCheckpointData.get(),
                         useModularSimulator);
         // TODO: (#3652) Synchronize filesystem state, SimulationInput contents, and program
@@ -1573,11 +1573,11 @@ int Mdrunner::mdrunner()
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        mdModulesNotifier.notify(*cr);
-        mdModulesNotifier.notify(&atomSets);
-        mdModulesNotifier.notify(mtop);
-        mdModulesNotifier.notify(inputrec->pbcType);
-        mdModulesNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
+        setupNotifier.notify(*cr);
+        setupNotifier.notify(&atomSets);
+        setupNotifier.notify(mtop);
+        setupNotifier.notify(inputrec->pbcType);
+        setupNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders();
@@ -1947,7 +1947,7 @@ int Mdrunner::mdrunner()
                 static_cast<int>(filenames.size()), filenames.data(), inputrec.get(), fr.get()));
         simulatorBuilder.add(ReplicaExchangeParameters(replExParams));
         simulatorBuilder.add(InteractiveMD(imdSession.get()));
-        simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifier()));
+        simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifiers()));
         simulatorBuilder.add(CenterOfMassPulling(pull_work));
         // Todo move to an MDModule
         simulatorBuilder.add(IonSwapping(swap));

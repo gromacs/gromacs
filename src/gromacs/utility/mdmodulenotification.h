@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::MdModulesNotifier.
+ * Declares gmx::MDModulesNotifiers.
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
@@ -61,15 +61,15 @@ class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
 class IndexGroupsAndNames;
 class SeparatePmeRanksPermitted;
-struct MdModulesCheckpointReadingDataOnMaster;
-struct MdModulesCheckpointReadingBroadcast;
-struct MdModulesWriteCheckpointData;
+struct MDModulesCheckpointReadingDataOnMaster;
+struct MDModulesCheckpointReadingBroadcast;
+struct MDModulesWriteCheckpointData;
 
 /*! \libinternal \brief Check if module outputs energy to a specific field.
  *
  * Ensures that energy is output for this module.
  */
-struct MdModulesEnergyOutputToDensityFittingRequestChecker
+struct MDModulesEnergyOutputToDensityFittingRequestChecker
 {
     //! Trigger output to density fitting energy field
     bool energyOutputToDensityFitting_ = false;
@@ -119,53 +119,98 @@ struct SimulationTimeStep
 };
 
 /*! \libinternal
- * \brief Collection of callbacks to MDModules at differnt run-times.
+ * \brief Group of notifers to organize that MDModules
+ * can receive callbacks they subscribe to.
  *
- * MDModules use members of this struct to sign up for callback functionality.
+ * MDModules use members of this struct to subscribe to notifications
+ * of particular events. When the event occurs, the callback provided
+ * by a particular MDModule will be passed a parameter of the
+ * particular type they are interested in.
  *
- * The members of the struct represent callbacks at these run-times:
- *
- *  When pre-processing the simulation data
- *  When reading and writing check-pointing data
- *  When setting up simulation after reading in the tpr file
- *
+ * Typically, during the setup phase, modules subscribe to notifiers
+ * that interest them by passing callbacks that expect a single parameter
+ * that describes the event. These are stored for later use. See the
+ * sequence diagram that follows:
    \msc
-   wordwraparcs=true,
-   hscale="2";
+wordwraparcs=true,
+hscale="2";
 
-   runner [label="runner:\nMdrunner"],
-   CallParameter [label = "eventA:\nCallParameter"],
-   MOD [label = "mdModules_:\nMdModules"],
-   ModuleA [label="moduleA"],
-   ModuleB [label="moduleB"],
-   MdModuleNotification [label="notifier_:\nMdModuleNotification"];
+modules [label = "mdModules:\nMDModules"],
+notifiers [label="notifiers\nMDModulesNotifiers"],
+notifier [label="exampleNotifier:\nBuildMDModulesNotifier\n<EventX, EventY>::type"],
+moduleA [label="moduleA"],
+moduleB [label="moduleB"],
+moduleC [label="moduleC"];
 
-   MOD box MdModuleNotification [label = "mdModules_ owns notifier_ and moduleA/B"];
-   MOD =>> ModuleA [label="instantiates(notifier_)"];
-   ModuleA =>> MdModuleNotification [label="subscribe(otherfunc)"];
-   ModuleA =>> MOD;
-   MOD =>> ModuleB [label="instantiates(notifier_)"];
-   ModuleB =>> MdModuleNotification [label="subscribe(func)"];
-   ModuleB =>> MOD;
-   runner =>> CallParameter [label="instantiate"];
-   CallParameter =>> runner ;
-   runner =>> MOD [label="notify(eventA)"];
-   MOD =>> MdModuleNotification [label="notify(eventA)"];
-   MdModuleNotification =>> ModuleA [label="notify(eventA)"];
-   ModuleA -> ModuleA [label="func(eventA)"];
-   MdModuleNotification =>> ModuleB [label="notify(eventA)"];
-   ModuleB -> ModuleB [label="otherfunc(eventA)"];
+modules box moduleC [label = "mdModules creates and owns moduleA, moduleB, and moduleC"];
+modules =>> notifiers [label="creates"];
+notifiers =>> notifier [label="creates"];
+notifier =>> notifiers [label="returns"];
+notifiers =>> modules [label="returns"];
+
+modules =>> moduleA [label="provides notifiers"];
+moduleA =>> moduleA [label="unpacks\nnotifiers.exampleNotifier"];
+moduleA =>> notifier [label="subscribes with\ncallback(EventX&)"];
+notifier =>> notifier [label="records subscription\nto EventX"];
+moduleA =>> notifier [label="subscribes with\ncallback(EventY&)"];
+notifier =>> notifier [label="records subscription\nto EventY"];
+moduleA =>> modules [label="returns"];
+
+modules =>> moduleB [label="provides notifiers"];
+moduleB =>> moduleB [label="unpacks\nnotifiers.exampleNotifier"];
+moduleA =>> notifier [label="subscribes with\ncallback(EventY&)"];
+notifier =>> notifier [label="records subscription\nto EventY"];
+moduleB =>> modules [label="returns"];
+
+modules =>> moduleC [label="provides notifiers"];
+moduleC =>> moduleC [label="unpacks and keeps\nnotifiers.exampleNotifier"];
+moduleC =>> modules [label="returns"];
 
    \endmsc
+
+   * When the event occurs later on, the stored callbacks are used to
+   * allow the modules to react. See the following sequence diagram,
+   * which assumes that exampleNotifier was configured as in the
+   * previous sequence diagram.
+
+   \msc
+wordwraparcs=true,
+hscale="2";
+
+moduleC [label="moduleC"],
+notifier [label="exampleNotifier:\nBuildMDModulesNotifier\n<EventX, EventY>::type"],
+moduleA [label="moduleA"],
+moduleB [label="moduleB"];
+
+moduleC box moduleB [label = "Later, when ModuleC is doing work"];
+moduleC =>> moduleC [label="generates EventX"];
+moduleC =>> moduleC [label="generates EventY"];
+moduleC =>> notifier [label="calls notify(eventX)"];
+notifier =>> moduleA [label="calls callback(eventX)"];
+moduleA =>> moduleA [label="reacts to eventX"];
+moduleA =>> notifier [label="returns"];
+
+notifier =>> moduleC [label="returns"];
+moduleC =>> notifier [label="calls notify(eventY)"];
+notifier =>> moduleA [label="calls callback(eventY)"];
+moduleA =>> moduleA [label="reacts to eventY"];
+moduleA =>> notifier [label="returns"];
+notifier =>> moduleB [label="calls callback(eventY)"];
+moduleB =>> moduleB [label="reacts to eventY"];
+moduleB =>> notifier [label="returns"];
+notifier =>> moduleC [label="returns"];
+   \endmsc
  *
- * The template arguments to the members of this struct directly reflect
- * the callback function signature. Arguments passed as pointers are always
- * meant to be modified, but never meant to be stored (in line with the policy
+ * The template arguments to the members of this struct are the
+ * parameters passed to the callback functions, one type per
+ * callback. Arguments passed as pointers are always meant to be
+ * modified, but never meant to be stored (in line with the policy
  * everywhere else).
+ *
  */
-struct MdModulesNotifier
+struct MDModulesNotifiers
 {
-    /*! \brief Pre-processing callback functions.
+    /*! \brief Handles subscribing and calling pre-processing callback functions.
      *
      * EnergyCalculationFrequencyErrors* allows modules to check if they match
      *                                   their required calculation frequency
@@ -175,32 +220,31 @@ struct MdModulesNotifier
      * KeyValueTreeObjectBuilder enables writing of module internal data to
      *                           .tpr files.
      */
-    registerMdModuleNotification<EnergyCalculationFrequencyErrors*, IndexGroupsAndNames, KeyValueTreeObjectBuilder>::type preProcessingNotifications_;
+    BuildMDModulesNotifier<EnergyCalculationFrequencyErrors*, IndexGroupsAndNames, KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
 
-    /*! \brief Checkpointing callback functions.
+    /*! \brief Handles subscribing and calling checkpointing callback functions.
      *
-     * MdModulesCheckpointReadingDataOnMaster provides modules with their
+     * MDModulesCheckpointReadingDataOnMaster provides modules with their
      *                                        checkpointed data on the master
      *                                        node and checkpoint file version
-     * MdModulesCheckpointReadingBroadcast provides modules with a communicator
+     * MDModulesCheckpointReadingBroadcast provides modules with a communicator
      *                                     and the checkpoint file version to
      *                                     distribute their data
-     * MdModulesWriteCheckpointData provides the modules with a key-value-tree
+     * MDModulesWriteCheckpointData provides the modules with a key-value-tree
      *                              builder to store their checkpoint data and
      *                              the checkpoint file version
      */
-    registerMdModuleNotification<MdModulesCheckpointReadingDataOnMaster,
-                                 MdModulesCheckpointReadingBroadcast,
-                                 MdModulesWriteCheckpointData>::type checkpointingNotifications_;
+    BuildMDModulesNotifier<MDModulesCheckpointReadingDataOnMaster, MDModulesCheckpointReadingBroadcast, MDModulesWriteCheckpointData>::type
+            checkpointingNotifier_;
 
-    /*! \brief Callbacks during simulation setup.
+    /*! \brief Handles subscribing and calling callbacks during simulation setup.
      *
      * const KeyValueTreeObject& provides modules with the internal data they
      *                           wrote to .tpr files
      * LocalAtomSetManager* enables modules to add atom indices to local atom sets
      *                      to be managed
      * const gmx_mtop_t& provides the topology of the system to the modules
-     * MdModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
+     * MDModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
      *                      report if they want to write their energy output
      *                      to the density fitting field in the energy files
      * SeparatePmeRanksPermitted* enables modules to report if they want
@@ -213,14 +257,14 @@ struct MdModulesNotifier
      * const t_commrec& provides a communicator to the modules during simulation
      *                  setup
      */
-    registerMdModuleNotification<const KeyValueTreeObject&,
-                                 LocalAtomSetManager*,
-                                 const gmx_mtop_t&,
-                                 MdModulesEnergyOutputToDensityFittingRequestChecker*,
-                                 SeparatePmeRanksPermitted*,
-                                 const PbcType&,
-                                 const SimulationTimeStep&,
-                                 const t_commrec&>::type simulationSetupNotifications_;
+    BuildMDModulesNotifier<const KeyValueTreeObject&,
+                           LocalAtomSetManager*,
+                           const gmx_mtop_t&,
+                           MDModulesEnergyOutputToDensityFittingRequestChecker*,
+                           SeparatePmeRanksPermitted*,
+                           const PbcType&,
+                           const SimulationTimeStep&,
+                           const t_commrec&>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

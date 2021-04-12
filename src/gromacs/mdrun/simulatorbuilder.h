@@ -75,7 +75,7 @@ class MdrunScheduleWorkload;
 class MembedHolder;
 class MDAtoms;
 class MDLogger;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 struct MdrunOptions;
 class ReadCheckpointDataHolder;
 enum class StartingBehavior;
@@ -263,14 +263,14 @@ public:
 class SimulatorModules
 {
 public:
-    SimulatorModules(IMDOutputProvider* mdOutputProvider, const MdModulesNotifier& notifier) :
+    SimulatorModules(IMDOutputProvider* mdOutputProvider, const MDModulesNotifiers& notifiers) :
         outputProvider(mdOutputProvider),
-        mdModulesNotifier(notifier)
+        mdModulesNotifiers(notifiers)
     {
     }
 
-    IMDOutputProvider*       outputProvider;
-    const MdModulesNotifier& mdModulesNotifier;
+    IMDOutputProvider*        outputProvider;
+    const MDModulesNotifiers& mdModulesNotifiers;
 };
 
 class CenterOfMassPulling

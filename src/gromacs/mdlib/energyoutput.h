@@ -73,7 +73,7 @@ namespace gmx
 {
 class Awh;
 class Constraints;
-struct MdModulesNotifier;
+struct MDModulesNotifiers;
 enum class StartingBehavior;
 } // namespace gmx
 
@@ -140,17 +140,17 @@ public:
      * \param[in] isRerun    Is this is a rerun instead of the simulations.
      * \param[in] startingBehavior  Run starting behavior.
      * \param[in] simulationsShareState  Tells whether the physical state is shared over simulations
-     * \param[in] mdModulesNotifier Notifications to MD modules.
+     * \param[in] mdModulesNotifiers Notifications to MD modules.
      */
-    EnergyOutput(ener_file*               fp_ene,
-                 const gmx_mtop_t&        mtop,
-                 const t_inputrec&        inputrec,
-                 const pull_t*            pull_work,
-                 FILE*                    fp_dhdl,
-                 bool                     isRerun,
-                 StartingBehavior         startingBehavior,
-                 bool                     simulationsShareState,
-                 const MdModulesNotifier& mdModulesNotifier);
+    EnergyOutput(ener_file*                fp_ene,
+                 const gmx_mtop_t&         mtop,
+                 const t_inputrec&         inputrec,
+                 const pull_t*             pull_work,
+                 FILE*                     fp_dhdl,
+                 bool                      isRerun,
+                 StartingBehavior          startingBehavior,
+                 bool                      simulationsShareState,
+                 const MDModulesNotifiers& mdModulesNotifiers);
 
     ~EnergyOutput();
 

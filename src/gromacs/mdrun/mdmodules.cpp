@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ public:
      * \note The notifier must be constructed before the modules and shall
      *       not be destructed before the modules are destructed.
      */
-    MdModulesNotifier notifier_;
+    MDModulesNotifiers notifiers_;
 
     std::unique_ptr<IMDModule>      densityFitting_;
     std::unique_ptr<IMDModule>      field_;
@@ -176,12 +176,12 @@ ForceProviders* MDModules::initForceProviders()
 
 void MDModules::subscribeToPreProcessingNotifications()
 {
-    impl_->densityFitting_->subscribeToPreProcessingNotifications(&impl_->notifier_);
+    impl_->densityFitting_->subscribeToPreProcessingNotifications(&impl_->notifiers_);
 }
 
 void MDModules::subscribeToSimulationSetupNotifications()
 {
-    impl_->densityFitting_->subscribeToSimulationSetupNotifications(&impl_->notifier_);
+    impl_->densityFitting_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
 }
 
 void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
@@ -189,9 +189,9 @@ void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
     impl_->modules_.emplace_back(std::move(module));
 }
 
-const MdModulesNotifier& MDModules::notifier()
+const MDModulesNotifiers& MDModules::notifiers()
 {
-    return impl_->notifier_;
+    return impl_->notifiers_;
 }
 
 } // namespace gmx
