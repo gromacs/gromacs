@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="EVdw ">3.1048492684071043</Real>
+  <Real Name="ECoul ">76.897537343641645</Real>
+  <Real Name="dVdlCoul ">200.86758822144873</Real>
+  <Real Name="dVdlVdw ">-0.73574306288264069</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">-94.898901947422047</Real>
+      <Real Name="Y">-142.34835292113266</Real>
+      <Real Name="Z">521.91714209293491</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-83.029834549522803</Real>
+      <Real Name="Y">-124.54475182428425</Real>
+      <Real Name="Z">-166.05966909904561</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">177.92873649694485</Real>
+      <Real Name="Y">266.89310474541691</Real>
+      <Real Name="Z">-355.8574729938893</Real>
+    </Vector>
+  </Sequence>
+  <Shift-Forces Name="Shift-forces">
+    <Vector Name="Central">
+      <Real Name="X">-94.898901947422047</Real>
+      <Real Name="Y">-142.34835292113266</Real>
+      <Real Name="Z">521.91714209293491</Real>
+    </Vector>
+  </Shift-Forces>
+</ReferenceData>
