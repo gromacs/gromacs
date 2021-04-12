@@ -229,6 +229,7 @@ private:
 
     /*! \brief Save data at energy steps
      *
+     * \param step  The current step
      * \param time  The current time
      * \param isEnergyCalculationStep  Whether the current step is an energy calculation step
      * \param isFreeEnergyCalculationStep  Whether the current step is a free energy calculation step
