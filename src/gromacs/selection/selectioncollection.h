@@ -47,6 +47,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -61,7 +62,6 @@ namespace gmx
 {
 
 class IOptionsContainer;
-class SelectionCompiler;
 class SelectionEvaluator;
 class TextInputStream;
 class TextOutputStream;
@@ -80,6 +80,11 @@ struct SelectionTopologyProperties;
  * the object, either call initOptions(), or both setReferencePosType() and
  * setOutputPosType().  See these methods for more details on the
  * initialization options.
+ *
+ * SelectionCollections can be copied. Copies retain the same pointers to external indices (if set)
+ * and the topology (if set), and are compiled if the copied collection is compiled. Selection
+ * objects created from a given SelectionCollection are tied only to the original collection, so
+ * a copy of a SelectionCollection will not update pre-existing Selections on evaluate() calls.
  *
  * After setting the default values, one or more selections can be parsed with
  * one or more calls to parseInteractive(), parseFromStdin(), parseFromFile(), and/or
@@ -137,6 +142,10 @@ public:
      */
     SelectionCollection();
     ~SelectionCollection();
+
+    SelectionCollection(const SelectionCollection& rhs);
+    SelectionCollection& operator=(SelectionCollection rhs);
+    void                 swap(SelectionCollection& rhs);
 
     /*! \brief
      * Initializes options for setting global properties on the collection.
@@ -246,7 +255,7 @@ public:
      * Does not throw currently, but this is subject to change when more
      * underlying code is converted to C++.
      */
-    void setTopology(gmx_mtop_t* top, int natoms);
+    void setTopology(const gmx_mtop_t* top, int natoms);
     /*! \brief
      * Sets the external index groups to use for the selections.
      *
@@ -388,7 +397,13 @@ public:
      * Does not throw.
      */
     void evaluateFinal(int nframes);
-
+    /*! \brief
+     * Retrieves a Selection handle for the selection with the given name
+     *
+     * @param selName name of the selection to return
+     * @return The selection with the given name, or nullopt if no such selection exists.
+     */
+    [[nodiscard]] std::optional<Selection> selection(std::string_view selName) const;
     /*! \brief
      * Prints a human-readable version of the internal selection element
      * tree.
@@ -421,6 +436,8 @@ private:
     // Needed for the evaluator to freely modify the collection.
     friend class SelectionEvaluator;
 };
+
+void swap(SelectionCollection& lhs, SelectionCollection& rhs);
 
 } // namespace gmx
 

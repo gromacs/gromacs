@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,7 +138,6 @@ void SelectionCollectionTest::loadIndexGroups(const char* filename)
     sc_.setIndexGroups(grps_);
 }
 
-
 /********************************************************************
  * Test fixture for interactive SelectionCollection tests
  */
@@ -200,12 +199,13 @@ public:
     void runTest(int natoms, const gmx::ArrayRef<const char* const>& selections);
     void runTest(const char* filename, const gmx::ArrayRef<const char* const>& selections);
 
+    void checkCompiled();
+
 private:
     static void checkSelection(gmx::test::TestReferenceChecker* checker,
                                const gmx::Selection&            sel,
                                TestFlags                        flags);
 
-    void checkCompiled();
 
     gmx::test::TestReferenceData    data_;
     gmx::test::TestReferenceChecker checker_;
@@ -635,6 +635,47 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets4)
 }
 
 // TODO: Tests for more evaluation errors
+
+
+/********************************************************************
+ * Tests for retrieving selections.
+ */
+TEST_F(SelectionCollectionTest, RetrieveValidSelection)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
+    const std::optional<gmx::Selection> retrievedSel = sc_.selection(sel_[0].name());
+    ASSERT_TRUE(retrievedSel.has_value());
+    EXPECT_STREQ(sel_[0].name(), retrievedSel->name());
+}
+
+TEST_F(SelectionCollectionTest, RetrieveInvalidSelection)
+{
+    ASSERT_FALSE(sc_.selection("some invalid key").has_value());
+}
+
+/********************************************************************
+ * Tests for assignment/copying.
+ */
+TEST_F(SelectionCollectionTest, CanCopyEmptyCollection)
+{
+    EXPECT_NO_THROW_GMX(gmx::SelectionCollection sc2(sc_));
+}
+
+TEST_F(SelectionCollectionTest, CopiedSelectionListsAreHandledSeparately)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
+    EXPECT_FALSE(sc_.requiredTopologyProperties().hasAny());
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    ASSERT_EQ(2U, sel_.size());
+    gmx::SelectionCollection sc2(sc_);
+    ASSERT_NO_THROW_GMX(sel_[1].setEvaluateVelocities(true));
+    ASSERT_NO_THROW_GMX(sel_[1].setEvaluateForces(true));
+    ASSERT_NO_THROW_GMX(sc2.compile());
+    // These would only be populated if sc_.compile() was called
+    EXPECT_FALSE(sel_[1].hasVelocities());
+    EXPECT_FALSE(sel_[1].hasForces());
+}
+
 
 /********************************************************************
  * Tests for interactive selection input
@@ -1398,5 +1439,121 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups2)
     runTest("simple.gro", selections);
 }
 
+/*******************************************************************
+ * Tests for copy validation.
+ *
+ * These tests ensure that copies of a SelectionCollection behave as the original while being
+ * independently evaluated.
+ */
+TEST_F(SelectionCollectionDataTest, CopiedSelectionWorksPreCompilation)
+{
+    static const char* const selections[] = {
+        "x > 2", "2 < x", "y > resnr", "resnr < 2.5", "2.5 > resnr"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    std::vector<std::string> selNames;
+    for (const auto& sel : sel_)
+    {
+        selNames.emplace_back(sel.name());
+    }
+    // Swap copied selection with original and update selections, to reuse the testing machinery.
+    gmx::SelectionCollection sc2(sc_);
+    sc_ = sc2;
+    std::vector<gmx::Selection> sel2;
+    for (const std::string_view selName : selNames)
+    {
+        std::optional<gmx::Selection> maybeSel = sc_.selection(selName);
+        ASSERT_TRUE(maybeSel.has_value());
+        sel2.push_back(*maybeSel);
+    }
+    sel_ = std::move(sel2);
+
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    ASSERT_NO_FATAL_FAILURE(runEvaluate());
+    ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
+}
+
+TEST_F(SelectionCollectionDataTest, CopiedSelectionWorksPostCompilation)
+{
+    static const char* const selections[] = {
+        "x > 2", "2 < x", "y > resnr", "resnr < 2.5", "2.5 > resnr"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    // Note the copy is made post-compilation.
+    std::vector<std::string> selNames;
+    for (const auto& sel : sel_)
+    {
+        selNames.emplace_back(sel.name());
+    }
+    gmx::SelectionCollection sc2(sc_);
+    sc_ = sc2;
+    std::vector<gmx::Selection> sel2;
+    for (const std::string_view selName : selNames)
+    {
+        std::optional<gmx::Selection> maybeSel = sc_.selection(selName);
+        ASSERT_TRUE(maybeSel.has_value());
+        sel2.push_back(*maybeSel);
+    }
+    sel_ = std::move(sel2);
+
+    ASSERT_NO_FATAL_FAILURE(runEvaluate());
+    ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
+}
+
+TEST_F(SelectionCollectionDataTest, CopiedSelectionsAreIndependent)
+{
+    static const char* const selections[] = {
+        "x > 2", "2 < x", "y > resnr", "resnr < 2.5", "2.5 > resnr"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    // Check that copy evaluation does not conflict with original.
+    gmx::SelectionCollection sc2(sc_);
+    ASSERT_NO_THROW_GMX(sc2.evaluate(topManager_.frame(), nullptr));
+
+    ASSERT_NO_FATAL_FAILURE(runEvaluate());
+    ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
+}
+
+TEST_F(SelectionCollectionDataTest, CopiedSelectionWithIndexPostCompilation)
+{
+    static const char* const selections[] = { "group \"GrpA\"",
+                                              "GrpB",
+                                              "1",
+                                              "group \"GrpB\" and resname RB",
+                                              "group \"GrpA\" permute 5 3 2 1 4",
+                                              "group \"GrpA\" plus group \"GrpB\"",
+                                              "res_cog of group \"GrpA\"" };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    std::vector<std::string> selNames;
+    for (const auto& sel : sel_)
+    {
+        selNames.emplace_back(sel.name());
+    }
+    gmx::SelectionCollection sc2(sc_);
+    sc_ = sc2;
+    std::vector<gmx::Selection> sel2;
+    for (const std::string_view selName : selNames)
+    {
+        std::optional<gmx::Selection> maybeSel = sc_.selection(selName);
+        ASSERT_TRUE(maybeSel.has_value());
+        sel2.push_back(*maybeSel);
+    }
+    sel_ = std::move(sel2);
+    checkCompiled();
+}
 
 } // namespace

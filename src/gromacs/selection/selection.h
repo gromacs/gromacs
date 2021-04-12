@@ -124,6 +124,8 @@ public:
     bool hasFlag(SelectionFlag flag) const { return flags_.test(flag); }
     //! Sets the flags for this selection.
     void setFlags(SelectionFlags flags) { flags_ = flags; }
+    //! Returns the current flags.
+    SelectionFlags flags() const { return flags_; }
 
     //! \copydoc Selection::initCoveredFraction()
     bool initCoveredFraction(e_coverfrac_t type);
