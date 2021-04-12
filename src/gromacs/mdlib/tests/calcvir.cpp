@@ -74,8 +74,9 @@ public:
                               5,
                               6,
                       },
-                      { 7, 8, 9 } },
-        forces_{ { 0.9, 0.1, 0.3 }, { 0.4, 0.7, 0.2 }, { 0.5, 1, 0.6 } },
+                      { 7, 8, 9 },
+                      { 1, 5, 9 } },
+        forces_{ { 0.9, 0.1, 0.3 }, { 0.4, 0.7, 0.2 }, { 0.5, 1, 0.6 }, { 0.9, 0.7, 0.6 } },
         numVirialAtoms_(coordinates_.size())
     {
         checker_.setDefaultTolerance(tolerances);
