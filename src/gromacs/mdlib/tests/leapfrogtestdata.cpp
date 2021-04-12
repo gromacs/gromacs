@@ -172,7 +172,9 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     mdAtoms_.cFREEZE                  = nullptr;
 
     update_ = std::make_unique<Update>(inputRecord_, nullptr);
-    update_->setNumAtoms(numAtoms);
+    update_->updateAfterPartition(numAtoms,
+                                  gmx::ArrayRef<const unsigned short>(),
+                                  gmx::arrayRefFromArray(mdAtoms_.cTC, mdAtoms_.nr));
 
     doPressureCouple_ = (nstpcouple != 0);
 

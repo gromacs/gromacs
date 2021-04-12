@@ -93,11 +93,15 @@ public:
      * \returns handle to box deformation class
      */
     BoxDeformation* deform() const;
-    /*! \brief Resizes buffer that stores intermediate coordinates.
+    /*! \brief Sets data that changes only at domain decomposition time.
      *
      * \param[in] numAtoms  Updated number of atoms.
+     * \param[in] cFREEZE   Group index for freezing
+     * \param[in] cTC       Group index for center of mass motion removal
      */
-    void setNumAtoms(int numAtoms);
+    void updateAfterPartition(int                                 numAtoms,
+                              gmx::ArrayRef<const unsigned short> cFREEZE,
+                              gmx::ArrayRef<const unsigned short> cTC);
 
     /*! \brief Perform numerical integration step.
      *

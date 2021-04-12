@@ -125,8 +125,6 @@ public:
                        int                                              homenr,
                        bool                                             havePartiallyFrozenAtoms,
                        gmx::ArrayRef<const ParticleType>                ptype,
-                       gmx::ArrayRef<const unsigned short>              cFREEZE,
-                       gmx::ArrayRef<const unsigned short>              cTC,
                        gmx::ArrayRef<const real>                        invMass,
                        gmx::ArrayRef<rvec>                              invMassPerDim,
                        t_state*                                         state,
@@ -144,21 +142,19 @@ public:
                        gmx_wallcycle_t   wcycle,
                        bool              haveConstraints);
 
-    void update_sd_second_half(const t_inputrec&                   inputRecord,
-                               int64_t                             step,
-                               real*                               dvdlambda,
-                               int                                 homenr,
-                               gmx::ArrayRef<const ParticleType>   ptype,
-                               gmx::ArrayRef<const unsigned short> cFREEZE,
-                               gmx::ArrayRef<const unsigned short> cTC,
-                               gmx::ArrayRef<const real>           invMass,
-                               t_state*                            state,
-                               const t_commrec*                    cr,
-                               t_nrnb*                             nrnb,
-                               gmx_wallcycle_t                     wcycle,
-                               gmx::Constraints*                   constr,
-                               bool                                do_log,
-                               bool                                do_ene);
+    void update_sd_second_half(const t_inputrec&                 inputRecord,
+                               int64_t                           step,
+                               real*                             dvdlambda,
+                               int                               homenr,
+                               gmx::ArrayRef<const ParticleType> ptype,
+                               gmx::ArrayRef<const real>         invMass,
+                               t_state*                          state,
+                               const t_commrec*                  cr,
+                               t_nrnb*                           nrnb,
+                               gmx_wallcycle_t                   wcycle,
+                               gmx::Constraints*                 constr,
+                               bool                              do_log,
+                               bool                              do_ene);
 
     void update_for_constraint_virial(const t_inputrec&   inputRecord,
                                       int                 homenr,
@@ -178,6 +174,11 @@ public:
     PaddedVector<RVec>* xp() { return &xp_; }
 
     BoxDeformation* deform() const { return deform_; }
+
+    //! Group index for freezing
+    gmx::ArrayRef<const unsigned short> cFREEZE_;
+    //! Group index for temperature coupling
+    gmx::ArrayRef<const unsigned short> cTC_;
 
 private:
     //! stochastic dynamics struct
@@ -230,10 +231,6 @@ void Update::update_coords(const t_inputrec&                                inpu
                                 md->homenr,
                                 md->havePartiallyFrozenAtoms,
                                 gmx::arrayRefFromArray(md->ptype, md->nr),
-                                md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                            : gmx::ArrayRef<const unsigned short>(),
-                                md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                        : gmx::ArrayRef<const unsigned short>(),
                                 gmx::arrayRefFromArray(md->invmass, md->nr),
                                 gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
                                 state,
@@ -272,10 +269,6 @@ void Update::update_sd_second_half(const t_inputrec& inputRecord,
                                         dvdlambda,
                                         md->homenr,
                                         gmx::arrayRefFromArray(md->ptype, md->nr),
-                                        md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                                    : gmx::ArrayRef<const unsigned short>(),
-                                        md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                : gmx::ArrayRef<const unsigned short>(),
                                         gmx::arrayRefFromArray(md->invmass, md->nr),
                                         state,
                                         cr,
@@ -1026,10 +1019,14 @@ Update::Impl::Impl(const t_inputrec& inputRecord, BoxDeformation* boxDeformation
     xp_.resizeWithPadding(0);
 }
 
-void Update::setNumAtoms(int numAtoms)
+void Update::updateAfterPartition(int                                 numAtoms,
+                                  gmx::ArrayRef<const unsigned short> cFREEZE,
+                                  gmx::ArrayRef<const unsigned short> cTC)
 {
 
     impl_->xp()->resizeWithPadding(numAtoms);
+    impl_->cFREEZE_ = cFREEZE;
+    impl_->cTC_     = cTC;
 }
 
 /*! \brief Sets the SD update type */
@@ -1388,21 +1385,19 @@ void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms, int* star
     }
 }
 
-void Update::Impl::update_sd_second_half(const t_inputrec&                   inputRecord,
-                                         int64_t                             step,
-                                         real*                               dvdlambda,
-                                         int                                 homenr,
-                                         gmx::ArrayRef<const ParticleType>   ptype,
-                                         gmx::ArrayRef<const unsigned short> cFREEZE,
-                                         gmx::ArrayRef<const unsigned short> cTC,
-                                         gmx::ArrayRef<const real>           invMass,
-                                         t_state*                            state,
-                                         const t_commrec*                    cr,
-                                         t_nrnb*                             nrnb,
-                                         gmx_wallcycle_t                     wcycle,
-                                         gmx::Constraints*                   constr,
-                                         bool                                do_log,
-                                         bool                                do_ene)
+void Update::Impl::update_sd_second_half(const t_inputrec&                 inputRecord,
+                                         int64_t                           step,
+                                         real*                             dvdlambda,
+                                         int                               homenr,
+                                         gmx::ArrayRef<const ParticleType> ptype,
+                                         gmx::ArrayRef<const real>         invMass,
+                                         t_state*                          state,
+                                         const t_commrec*                  cr,
+                                         t_nrnb*                           nrnb,
+                                         gmx_wallcycle_t                   wcycle,
+                                         gmx::Constraints*                 constr,
+                                         bool                              do_log,
+                                         bool                              do_ene)
 {
     if (!constr)
     {
@@ -1440,8 +1435,8 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                   inp
                         gmx::arrayRefFromArray(inputRecord.opts.nFreeze, inputRecord.opts.ngfrz),
                         invMass,
                         ptype,
-                        cFREEZE,
-                        cTC,
+                        cFREEZE_,
+                        cTC_,
                         state->x.rvec_array(),
                         xp_.rvec_array(),
                         state->v.rvec_array(),
@@ -1529,16 +1524,14 @@ void Update::Impl::finish_update(const t_inputrec& inputRecord,
     wallcycle_stop(wcycle, ewcUPDATE);
 }
 
-void Update::Impl::update_coords(const t_inputrec&                   inputRecord,
-                                 int64_t                             step,
-                                 int                                 homenr,
-                                 bool                                havePartiallyFrozenAtoms,
-                                 gmx::ArrayRef<const ParticleType>   ptype,
-                                 gmx::ArrayRef<const unsigned short> cFREEZE,
-                                 gmx::ArrayRef<const unsigned short> cTC,
-                                 gmx::ArrayRef<const real>           invMass,
-                                 gmx::ArrayRef<rvec>                 invMassPerDim,
-                                 t_state*                            state,
+void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
+                                 int64_t                           step,
+                                 int                               homenr,
+                                 bool                              havePartiallyFrozenAtoms,
+                                 gmx::ArrayRef<const ParticleType> ptype,
+                                 gmx::ArrayRef<const real>         invMass,
+                                 gmx::ArrayRef<rvec>               invMassPerDim,
+                                 t_state*                          state,
                                  const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                  const t_fcdata&                                  fcdata,
                                  const gmx_ekindata_t*                            ekind,
@@ -1597,7 +1590,7 @@ void Update::Impl::update_coords(const t_inputrec&                   inputRecord
                                  inputRecord.epc,
                                  inputRecord.nsttcouple,
                                  inputRecord.nstpcouple,
-                                 cTC,
+                                 cTC_,
                                  invMass,
                                  invMassPerDim,
                                  ekind,
@@ -1618,8 +1611,8 @@ void Update::Impl::update_coords(const t_inputrec&                   inputRecord
                                  gmx::arrayRefFromArray(inputRecord.opts.nFreeze, inputRecord.opts.ngfrz),
                                  invMass,
                                  ptype,
-                                 cFREEZE,
-                                 cTC,
+                                 cFREEZE_,
+                                 cTC_,
                                  inputRecord.ld_seed,
                                  cr,
                                  sd_,
@@ -1637,8 +1630,8 @@ void Update::Impl::update_coords(const t_inputrec&                   inputRecord
                                  gmx::arrayRefFromArray(inputRecord.opts.nFreeze, inputRecord.opts.ngfrz),
                                  invMass,
                                  ptype,
-                                 cFREEZE,
-                                 cTC,
+                                 cFREEZE_,
+                                 cTC_,
                                  inputRecord.bd_fric,
                                  sd_.bd_rf.data(),
                                  inputRecord.ld_seed,
@@ -1664,7 +1657,7 @@ void Update::Impl::update_coords(const t_inputrec&                   inputRecord
                                                                     inputRecord.opts.ngfrz),
                                              invMass,
                                              ptype,
-                                             cFREEZE,
+                                             cFREEZE_,
                                              v_rvec,
                                              f_rvec,
                                              bExtended,
@@ -1678,7 +1671,7 @@ void Update::Impl::update_coords(const t_inputrec&                   inputRecord
                                              gmx::arrayRefFromArray(inputRecord.opts.nFreeze,
                                                                     inputRecord.opts.ngfrz),
                                              ptype,
-                                             cFREEZE,
+                                             cFREEZE_,
                                              x_rvec,
                                              xp_rvec,
                                              v_rvec,
