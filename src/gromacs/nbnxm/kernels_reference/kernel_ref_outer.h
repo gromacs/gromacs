@@ -191,7 +191,7 @@ void
         const int cjind1 = ciEntry.cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
         const int ci    = ciEntry.ci;
-        const int ci_sh = (ish == CENTRAL ? ci : -1);
+        const int ci_sh = (ish == gmx::c_centralShiftIndex ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:

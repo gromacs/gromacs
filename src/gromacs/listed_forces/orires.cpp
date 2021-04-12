@@ -663,7 +663,7 @@ real orires(int             nfa,
             t_oriresdata*            oriresdata,
             int gmx_unused* global_atom_index)
 {
-    int      ex, power, ki = CENTRAL;
+    int      ex, power, ki = gmx::c_centralShiftIndex;
     real     r2, invr, invr2, fc, smooth_fc, dev, devins, pfac;
     rvec     r, Sr, fij;
     real     vtot;
@@ -745,7 +745,7 @@ real orires(int             nfa,
                 if (fshift)
                 {
                     fshift[ki][i] += fij[i];
-                    fshift[CENTRAL][i] -= fij[i];
+                    fshift[gmx::c_centralShiftIndex][i] -= fij[i];
                 }
             }
         }

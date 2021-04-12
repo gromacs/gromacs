@@ -249,14 +249,14 @@ static inline void initAtomdataFirst(NBAtomDataGpu*       atomdata,
                                      const DeviceStream&  localStream)
 {
     atomdata->numTypes = numTypes;
-    allocateDeviceBuffer(&atomdata->shiftVec, SHIFTS, deviceContext);
+    allocateDeviceBuffer(&atomdata->shiftVec, gmx::c_numShiftVectors, deviceContext);
     atomdata->shiftVecUploaded = false;
 
-    allocateDeviceBuffer(&atomdata->fShift, SHIFTS, deviceContext);
+    allocateDeviceBuffer(&atomdata->fShift, gmx::c_numShiftVectors, deviceContext);
     allocateDeviceBuffer(&atomdata->eLJ, 1, deviceContext);
     allocateDeviceBuffer(&atomdata->eElec, 1, deviceContext);
 
-    clearDeviceBufferAsync(&atomdata->fShift, 0, SHIFTS, localStream);
+    clearDeviceBufferAsync(&atomdata->fShift, 0, gmx::c_numShiftVectors, localStream);
     clearDeviceBufferAsync(&atomdata->eElec, 0, 1, localStream);
     clearDeviceBufferAsync(&atomdata->eLJ, 0, 1, localStream);
 
@@ -452,7 +452,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     /* init nbst */
     pmalloc(reinterpret_cast<void**>(&nb->nbst.eLJ), sizeof(*nb->nbst.eLJ));
     pmalloc(reinterpret_cast<void**>(&nb->nbst.eElec), sizeof(*nb->nbst.eElec));
-    pmalloc(reinterpret_cast<void**>(&nb->nbst.fShift), SHIFTS * sizeof(*nb->nbst.fShift));
+    pmalloc(reinterpret_cast<void**>(&nb->nbst.fShift), gmx::c_numShiftVectors * sizeof(*nb->nbst.fShift));
 
     init_plist(nb->plist[InteractionLocality::Local]);
 
@@ -518,7 +518,7 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
         copyToDeviceBuffer(&adat->shiftVec,
                            gmx::asGenericFloat3Pointer(nbatom->shift_vec),
                            0,
-                           SHIFTS,
+                           gmx::c_numShiftVectors,
                            localStream,
                            GpuApiCallBehavior::Async,
                            nullptr);
@@ -718,7 +718,7 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
     // Clear shift force array and energies if the outputs were used in the current step
     if (computeVirial)
     {
-        clearDeviceBufferAsync(&adat->fShift, 0, SHIFTS, localStream);
+        clearDeviceBufferAsync(&adat->fShift, 0, gmx::c_numShiftVectors, localStream);
         clearDeviceBufferAsync(&adat->eLJ, 0, 1, localStream);
         clearDeviceBufferAsync(&adat->eElec, 0, 1, localStream);
     }
@@ -859,7 +859,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
             copyFromDeviceBuffer(nb->nbst.fShift,
                                  &adat->fShift,
                                  0,
-                                 SHIFTS,
+                                 gmx::c_numShiftVectors,
                                  deviceStream,
                                  GpuApiCallBehavior::Async,
                                  bDoTime ? timers->xf[atomLocality].nb_d2h.fetchNextEvent() : nullptr);

@@ -92,7 +92,7 @@ struct OutputQuantities
     //! Derivative with respect to lambda
     real dvdlambda = 0;
     //! Shift vectors
-    rvec fshift[N_IVEC] = { { 0 } };
+    rvec fshift[c_numShiftVectors] = { { 0 } };
     //! Forces
     alignas(GMX_REAL_MAX_SIMD_WIDTH * sizeof(real)) rvec4 f[c_numAtoms] = { { 0 } };
 };
@@ -616,7 +616,7 @@ protected:
             if (computeVirial(flavor))
             {
                 shiftForcesChecker.setDefaultTolerance(shiftForcesTolerance_);
-                shiftForcesChecker.checkVector(output.fshift[CENTRAL], "Central");
+                shiftForcesChecker.checkVector(output.fshift[c_centralShiftIndex], "Central");
             }
             else
             {

@@ -236,7 +236,7 @@ static void check_viol(FILE*                          log,
         dr[clust_id].aver_3[ndr] += drt;
         dr[clust_id].aver_6[ndr] += disresdata->Rt_6[label];
 
-        snew(fshift, SHIFTS);
+        snew(fshift, gmx::c_numShiftVectors);
         ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, lam, &dvdl, {}, nullptr, disresdata, nullptr, nullptr);
         sfree(fshift);
         viol = disresdata->sumviol;

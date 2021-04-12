@@ -123,7 +123,7 @@ struct nbnxn_atomdata_output_t
 
     //! f, size natoms*fstride
     gmx::HostVector<real> f;
-    //! Shift force array, size SHIFTS*DIM
+    //! Shift force array, size c_numShiftVectors*DIM
     gmx::HostVector<real> fshift;
     //! Temporary Van der Waals group energy storage
     gmx::HostVector<real> Vvdw;

@@ -149,7 +149,7 @@ public:
         return forceBufferForDirectVirialContributions_;
     }
 
-    //! Returns the buffer for shift forces, size SHIFTS
+    //! Returns the buffer for shift forces, size c_numShiftVectors
     gmx::ArrayRef<gmx::RVec> shiftForces() { return shiftForces_; }
 
     //! Resizes the direct virial contribution buffer, when present
@@ -160,7 +160,7 @@ private:
     bool haveDirectVirialContributions_ = false;
     //! Force buffer for force computation with direct virial contributions
     std::vector<gmx::RVec> forceBufferForDirectVirialContributions_;
-    //! Shift force array for computing the virial, size SHIFTS
+    //! Shift force array for computing the virial, size c_numShiftVectors
     std::vector<gmx::RVec> shiftForces_;
 };
 // NOLINTNEXTLINE (clang-analyzer-optin.performance.Padding)

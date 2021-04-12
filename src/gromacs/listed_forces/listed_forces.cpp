@@ -179,7 +179,7 @@ void ListedForces::setup(const InteractionDefinitions& domainIdef, const int num
     if (idef_->ilsort == ilsortFE_SORTED)
     {
         forceBufferLambda_.resize(numAtomsForce * sizeof(rvec4) / sizeof(real));
-        shiftForceBufferLambda_.resize(SHIFTS);
+        shiftForceBufferLambda_.resize(gmx::c_numShiftVectors);
     }
 }
 
@@ -214,7 +214,7 @@ void zero_thread_output(f_thread_t* f_t)
         }
     }
 
-    for (int i = 0; i < SHIFTS; i++)
+    for (int i = 0; i < gmx::c_numShiftVectors; i++)
     {
         clear_rvec(f_t->fshift[i]);
     }
@@ -322,7 +322,7 @@ void reduce_thread_output(gmx::ForceWithShiftForces* forceWithShiftForces,
 
         if (stepWork.computeVirial)
         {
-            for (int i = 0; i < SHIFTS; i++)
+            for (int i = 0; i < gmx::c_numShiftVectors; i++)
             {
                 for (int t = 1; t < bt->nthreads; t++)
                 {

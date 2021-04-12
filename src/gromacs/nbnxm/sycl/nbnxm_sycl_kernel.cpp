@@ -612,7 +612,8 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
         }
         if constexpr (doCalcEnergies && doExclusionForces)
         {
-            if (nbSci.shift == CENTRAL && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            if (nbSci.shift == gmx::c_centralShiftIndex
+                && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
             {
                 // we have the diagonal: add the charge and LJ self interaction energy term
                 for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -648,11 +649,11 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
                     energyElec /= epsFac * c_clSize;
                     energyElec *= -ewaldBeta * c_OneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
-            } // (nbSci.shift == CENTRAL && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJ4[cij4Start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         }     // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
-        const bool nonSelfInteraction = !(nbSci.shift == CENTRAL & tidxj <= tidxi);
+        const bool nonSelfInteraction = !(nbSci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int j4 = cij4Start + tidxz; j4 < cij4End; j4 += 1)
@@ -915,7 +916,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
         } // for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
 
         /* skip central shifts when summing shift forces */
-        const bool doCalcShift = (calcShift && !(nbSci.shift == CENTRAL));
+        const bool doCalcShift = (calcShift && !(nbSci.shift == gmx::c_centralShiftIndex));
 
         reduceForceIAndFShift(
                 sm_reductionBuffer, fCiBuf, doCalcShift, itemIdx, tidxi, tidxj, sci, nbSci.shift, a_f, a_fShift);

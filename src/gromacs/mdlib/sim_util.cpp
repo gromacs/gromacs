@@ -167,8 +167,8 @@ static void calc_virial(int                              start,
     /* The short-range virial from surrounding boxes */
     const rvec* fshift          = as_rvec_array(forceWithShiftForces.shiftForces().data());
     const rvec* shiftVecPointer = as_rvec_array(fr->shift_vec.data());
-    calc_vir(SHIFTS, shiftVecPointer, fshift, vir_part, pbcType == PbcType::Screw, box);
-    inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
+    calc_vir(gmx::c_numShiftVectors, shiftVecPointer, fshift, vir_part, pbcType == PbcType::Screw, box);
+    inc_nrnb(nrnb, eNR_VIRIAL, gmx::c_numShiftVectors);
 
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md

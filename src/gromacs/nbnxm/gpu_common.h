@@ -153,7 +153,7 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
 
         if (reduceFshift)
         {
-            for (int i = 0; i < SHIFTS; i++)
+            for (int i = 0; i < gmx::c_numShiftVectors; i++)
             {
                 rvec_inc(fshift[i], nbst.fShift[i]);
             }

@@ -585,7 +585,7 @@ real ta_disres(int              nfa,
             int pair = (faOffset + fa) / 3;
             int ai   = forceatoms[fa + 1];
             int aj   = forceatoms[fa + 2];
-            int ki   = CENTRAL;
+            int ki   = gmx::c_centralShiftIndex;
             if (pbc)
             {
                 ki = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
@@ -624,7 +624,7 @@ real ta_disres(int              nfa,
                 if (fshift)
                 {
                     fshift[ki][m] += fij;
-                    fshift[CENTRAL][m] -= fij;
+                    fshift[gmx::c_centralShiftIndex][m] -= fij;
                 }
             }
         }

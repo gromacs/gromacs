@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,19 @@
 #define GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 
 #include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
+
+static inline __device__ int xyzToShiftIndex(int x, int y, int z)
+{
+    return (gmx::detail::c_nBoxX * (gmx::detail::c_nBoxY * ((z) + gmx::c_dBoxZ) + (y) + gmx::c_dBoxY)
+            + (x) + gmx::c_dBoxX);
+}
+
+static inline __device__ int int3ToShiftIndex(int3 iv)
+{
+    return (xyzToShiftIndex(iv.x, iv.y, iv.z));
+}
 
 /*! \brief Computes the vector between two points taking PBC into account.
  *
@@ -102,13 +114,13 @@ static __forceinline__ __device__ int
 
     if (returnShift)
     {
-        ivec ishift;
+        int3 ishift;
 
-        ishift[XX] = -__float2int_rn(shx);
-        ishift[YY] = -__float2int_rn(shy);
-        ishift[ZZ] = -__float2int_rn(shz);
+        ishift.x = -__float2int_rn(shx);
+        ishift.y = -__float2int_rn(shy);
+        ishift.z = -__float2int_rn(shz);
 
-        return IVEC2IS(ishift);
+        return int3ToShiftIndex(ishift);
     }
     else
     {

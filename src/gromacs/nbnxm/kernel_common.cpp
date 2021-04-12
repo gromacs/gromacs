@@ -98,7 +98,7 @@ void clearForceBuffer(nbnxn_atomdata_t* nbat, int outputIndex)
 
 void clear_fshift(real* fshift)
 {
-    for (int i = 0; i < SHIFTS * DIM; i++)
+    for (int i = 0; i < gmx::c_numShiftVectors * DIM; i++)
     {
         fshift[i] = 0;
     }

@@ -483,7 +483,7 @@ static real do_pairs_general(int                 ftype,
         }
         else
         {
-            fshift_index = CENTRAL;
+            fshift_index = c_centralShiftIndex;
             rvec_sub(x[ai], x[aj], dx);
         }
         r2 = norm2(dx);
@@ -553,10 +553,10 @@ static real do_pairs_general(int                 ftype,
 
         if (computeVirial(flavor))
         {
-            if (fshift_index != CENTRAL)
+            if (fshift_index != c_centralShiftIndex)
             {
                 rvec_inc(fshift[fshift_index], dx);
-                rvec_dec(fshift[CENTRAL], dx);
+                rvec_dec(fshift[c_centralShiftIndex], dx);
             }
         }
     }

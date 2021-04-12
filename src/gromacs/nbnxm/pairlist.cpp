@@ -743,8 +743,8 @@ static void print_nblist_statistics(FILE*                   fp,
             "nbl average j cell list length %.1f\n",
             0.25 * nbl.ncjInUse / std::max(static_cast<double>(nbl.ci.size()), 1.0));
 
-    int cs[SHIFTS] = { 0 };
-    int npexcl     = 0;
+    int cs[gmx::c_numShiftVectors] = { 0 };
+    int npexcl                     = 0;
     for (const nbnxn_ci_t& ciEntry : nbl.ci)
     {
         cs[ciEntry.shift & NBNXN_CI_SHIFT] += ciEntry.cj_ind_end - ciEntry.cj_ind_start;
@@ -761,7 +761,7 @@ static void print_nblist_statistics(FILE*                   fp,
             nbl.cj.size(),
             npexcl,
             100 * npexcl / std::max(static_cast<double>(nbl.cj.size()), 1.0));
-    for (int s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < gmx::c_numShiftVectors; s++)
     {
         if (cs[s] > 0)
         {
@@ -3261,11 +3261,11 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
 
                 for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
                 {
-                    const int shift = XYZ2IS(tx, ty, tz);
+                    const int shift = xyzToShiftIndex(tx, ty, tz);
 
-                    const bool excludeSubDiagonal = (isIntraGridList && shift == CENTRAL);
+                    const bool excludeSubDiagonal = (isIntraGridList && shift == gmx::c_centralShiftIndex);
 
-                    if (c_pbcShiftBackward && isIntraGridList && shift > CENTRAL)
+                    if (c_pbcShiftBackward && isIntraGridList && shift > gmx::c_centralShiftIndex)
                     {
                         continue;
                     }
@@ -3327,10 +3327,10 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                         /* When true, leave the pairs with i > j.
                          * Skip half of y when i and j have the same x.
                          */
-                        const bool skipHalfY =
-                                (isIntraGridList && cx == 0
-                                 && (!c_pbcShiftBackward || shift == CENTRAL) && cyf < ci_y);
-                        const int cyf_x = skipHalfY ? ci_y : cyf;
+                        const bool skipHalfY = (isIntraGridList && cx == 0
+                                                && (!c_pbcShiftBackward || shift == gmx::c_centralShiftIndex)
+                                                && cyf < ci_y);
+                        const int  cyf_x     = skipHalfY ? ci_y : cyf;
 
                         for (int cy = cyf_x; cy <= cyl; cy++)
                         {
@@ -3436,7 +3436,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                     /* We want each atom/cell pair only once,
                                      * only use cj >= ci.
                                      */
-                                    if (!c_pbcShiftBackward || shift == CENTRAL)
+                                    if (!c_pbcShiftBackward || shift == gmx::c_centralShiftIndex)
                                     {
                                         firstCell = std::max(firstCell, ci);
                                     }

@@ -1066,10 +1066,10 @@ int pbc_dx_aiuc(const t_pbc* pbc, const rvec x1, const rvec x2, rvec dx)
                       "Internal error in pbc_dx_aiuc, set_pbc_dd or set_pbc has not been called");
     }
 
-    is = IVEC2IS(ishift);
+    is = gmx::ivecToShiftIndex(ishift);
     if (debug)
     {
-        range_check_mesg(is, 0, SHIFTS, "PBC shift vector index range check.");
+        range_check_mesg(is, 0, gmx::c_numShiftVectors, "PBC shift vector index range check.");
     }
 
     return is;
@@ -1198,11 +1198,11 @@ void pbc_dx_d(const t_pbc* pbc, const dvec x1, const dvec x2, dvec dx)
 
 void calc_shifts(const matrix box, gmx::ArrayRef<gmx::RVec> shift_vec)
 {
-    for (int n = 0, m = -D_BOX_Z; m <= D_BOX_Z; m++)
+    for (int n = 0, m = -gmx::c_dBoxZ; m <= gmx::c_dBoxZ; m++)
     {
-        for (int l = -D_BOX_Y; l <= D_BOX_Y; l++)
+        for (int l = -gmx::c_dBoxY; l <= gmx::c_dBoxY; l++)
         {
-            for (int k = -D_BOX_X; k <= D_BOX_X; k++, n++)
+            for (int k = -gmx::c_dBoxX; k <= gmx::c_dBoxX; k++, n++)
             {
                 for (int d = 0; d < DIM; d++)
                 {

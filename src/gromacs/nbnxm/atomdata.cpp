@@ -107,7 +107,7 @@ nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
     Vvdw({}, { pinningPolicy }),
     Vc({}, { pinningPolicy })
 {
-    fshift.resize(SHIFTS * DIM);
+    fshift.resize(gmx::c_numShiftVectors * DIM);
     Vvdw.resize(numEnergyGroups * numEnergyGroups);
     Vc.resize(numEnergyGroups * numEnergyGroups);
 
@@ -666,7 +666,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
         nbat->FFormat = nbatXYZ;
     }
 
-    nbat->shift_vec.resize(SHIFTS);
+    nbat->shift_vec.resize(gmx::c_numShiftVectors);
 
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
@@ -1276,7 +1276,7 @@ void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx:
 {
     gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat.out;
 
-    for (int s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < gmx::c_numShiftVectors; s++)
     {
         rvec sum;
         clear_rvec(sum);

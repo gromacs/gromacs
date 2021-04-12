@@ -112,7 +112,7 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rv
                 {
                     clear_ivec(vis);
                     vis[dim] = (dir == 0 ? 1 : -1);
-                    int is   = IVEC2IS(vis);
+                    int is   = gmx::ivecToShiftIndex(vis);
                     if (!bScrew)
                     {
                         /* Sum and add to shift forces */

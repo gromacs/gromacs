@@ -361,7 +361,7 @@
         const int cjind0 = ciEntry.cj_ind_start;
         const int cjind1 = ciEntry.cj_ind_end;
         const int ci     = ciEntry.ci;
-        const int ci_sh  = (ish == CENTRAL ? ci : -1);
+        const int ci_sh  = (ish == gmx::c_centralShiftIndex ? ci : -1);
 
         shX_S = SimdReal(shiftvec[ish3]);
         shY_S = SimdReal(shiftvec[ish3 + 1]);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,20 +37,42 @@
 #ifndef GMX_PBCUTIL_ISHIFT_H
 #define GMX_PBCUTIL_ISHIFT_H
 
-#define D_BOX_Z 1
-#define D_BOX_Y 1
-#define D_BOX_X 2
-#define N_BOX_Z (2 * D_BOX_Z + 1)
-#define N_BOX_Y (2 * D_BOX_Y + 1)
-#define N_BOX_X (2 * D_BOX_X + 1)
-#define N_IVEC (N_BOX_Z * N_BOX_Y * N_BOX_X)
-#define CENTRAL (N_IVEC / 2)
-#define SHIFTS N_IVEC
+namespace gmx
+{
+//! Maximum dimensions of grid expressing shifts across PBC
+//! \{
+constexpr int c_dBoxZ = 1;
+constexpr int c_dBoxY = 1;
+constexpr int c_dBoxX = 2;
+//! \}
+namespace detail
+{
+constexpr int c_nBoxZ    = 2 * gmx::c_dBoxZ + 1;
+constexpr int c_nBoxY    = 2 * gmx::c_dBoxY + 1;
+constexpr int c_nBoxX    = 2 * gmx::c_dBoxX + 1;
+constexpr int c_numIvecs = detail::c_nBoxZ * detail::c_nBoxY * detail::c_nBoxX;
+} // namespace detail
 
-#define XYZ2IS(x, y, z) (N_BOX_X * (N_BOX_Y * ((z) + D_BOX_Z) + (y) + D_BOX_Y) + (x) + D_BOX_X)
-#define IVEC2IS(iv) (XYZ2IS((iv)[XX], (iv)[YY], (iv)[ZZ]))
-#define IS2X(iv) (((iv) % N_BOX_X) - D_BOX_X)
-#define IS2Y(iv) ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
-#define IS2Z(iv) ((iv) / (N_BOX_X * N_BOX_Y) - D_BOX_Z)
+constexpr int c_centralShiftIndex = detail::c_numIvecs / 2;
+constexpr int c_numShiftVectors   = detail::c_numIvecs;
 
+//! Convert grid coordinates to shift index
+static inline int xyzToShiftIndex(int x, int y, int z)
+{
+    return (detail::c_nBoxX * (detail::c_nBoxY * ((z) + gmx::c_dBoxZ) + (y) + gmx::c_dBoxY) + (x)
+            + gmx::c_dBoxX);
+}
+
+//! Convert grid coordinates to shift index
+static inline int ivecToShiftIndex(ivec iv)
+{
+    return (xyzToShiftIndex((iv)[XX], (iv)[YY], (iv)[ZZ]));
+}
+
+//! Return the shift in the X dimension of grid space corresponding to \c iv
+static inline int shiftIndexToXDim(int iv)
+{
+    return (((iv) % detail::c_nBoxX) - gmx::c_dBoxX);
+}
+} // namespace gmx
 #endif

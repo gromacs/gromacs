@@ -119,7 +119,8 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
         real       vctot    = 0;
         real       Vvdwtot  = 0;
 
-        if (nbln.shift == CENTRAL && nbl->cj4[cj4_ind0].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+        if (nbln.shift == gmx::c_centralShiftIndex
+            && nbl->cj4[cj4_ind0].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
@@ -186,7 +187,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
                             {
                                 const int ja = cj * c_clSize + jc;
 
-                                if (nbln.shift == CENTRAL && ci == cj && ja <= ia)
+                                if (nbln.shift == gmx::c_centralShiftIndex && ci == cj && ja <= ia)
                                 {
                                     continue;
                                 }

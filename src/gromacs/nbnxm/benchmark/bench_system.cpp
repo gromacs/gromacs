@@ -200,7 +200,7 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor, const std::stri
 
     forceRec.ntype = numAtomTypes;
     forceRec.nbfp  = nonbondedParameters;
-    forceRec.shift_vec.resize(SHIFTS);
+    forceRec.shift_vec.resize(gmx::c_numShiftVectors);
     calc_shifts(box, forceRec.shift_vec);
     if (!outputFile.empty())
     {

@@ -326,7 +326,8 @@ __launch_bounds__(THREADS_PER_BLOCK)
     E_el         = 0.0f;
 
 #        ifdef EXCLUSION_FORCES /* Ewald or RF */
-    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+    if (nb_sci.shift == gmx::c_centralShiftIndex
+        && pl_cj4[cij4_start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
     {
         /* we have the diagonal: add the charge and LJ self interaction energy term */
         for (i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -364,7 +365,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    endif /* CALC_ENERGIES */
 
 #    ifdef EXCLUSION_FORCES
-    const int nonSelfInteraction = !(nb_sci.shift == CENTRAL & tidxj <= tidxi);
+    const int nonSelfInteraction = !(nb_sci.shift == gmx::c_centralShiftIndex & tidxj <= tidxi);
 #    endif
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster;
@@ -627,7 +628,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
     }
 
     /* skip central shifts when summing shift forces */
-    if (nb_sci.shift == CENTRAL)
+    if (nb_sci.shift == gmx::c_centralShiftIndex)
     {
         bCalcFshift = false;
     }

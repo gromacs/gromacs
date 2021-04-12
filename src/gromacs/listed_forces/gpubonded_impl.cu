@@ -78,9 +78,10 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
     GMX_RELEASE_ASSERT(deviceStream.isValid(),
                        "Can't run GPU version of bonded forces in stream that is not valid.");
 
-    static_assert(c_threadsPerBlock >= SHIFTS,
-                  "Threads per block in GPU bonded must be >= SHIFTS for the virial kernel "
-                  "(calcVir=true)");
+    static_assert(
+            c_threadsPerBlock >= c_numShiftVectors,
+            "Threads per block in GPU bonded must be >= c_numShiftVectors for the virial kernel "
+            "(calcVir=true)");
 
     wcycle_ = wcycle;
 
@@ -121,7 +122,7 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
     kernelLaunchConfig_.gridSize[1]  = 1;
     kernelLaunchConfig_.gridSize[2]  = 1;
     kernelLaunchConfig_.sharedMemorySize =
-            SHIFTS * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
+            c_numShiftVectors * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
 }
 
 GpuBonded::Impl::~Impl()

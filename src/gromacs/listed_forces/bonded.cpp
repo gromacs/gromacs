@@ -135,7 +135,7 @@ int pbc_rvec_sub(const t_pbc* pbc, const rvec xi, const rvec xj, rvec dx)
     else
     {
         rvec_sub(xi, xj, dx);
-        return CENTRAL;
+        return c_centralShiftIndex;
     }
 }
 
@@ -231,7 +231,7 @@ inline void spreadBondForces(const real bondForce,
         if (computeVirial(flavor))
         {
             fshift[shiftIndex][m] += fij;
-            fshift[CENTRAL][m] -= fij;
+            fshift[c_centralShiftIndex][m] -= fij;
         }
     }
 }
@@ -915,7 +915,7 @@ real water_pol(int             nbonds,
                 if (computeVirial(flavor))
                 {
                     fshift[ki][m] += fij;
-                    fshift[CENTRAL][m] -= fij;
+                    fshift[c_centralShiftIndex][m] -= fij;
                 }
             }
         }
@@ -949,7 +949,7 @@ do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj, const t_pbc* pbc, rea
         if (computeVirial(flavor))
         {
             fshift[t][m] += fff;
-            fshift[CENTRAL][m] -= fff;
+            fshift[c_centralShiftIndex][m] -= fff;
         }
     } /* 15 */
 
@@ -1084,7 +1084,7 @@ angles(int             nbonds,
             if (computeVirial(flavor))
             {
                 rvec_inc(fshift[t1], f_i);
-                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[c_centralShiftIndex], f_j);
                 rvec_inc(fshift[t2], f_k);
             }
         } /* 161 TOTAL	*/
@@ -1328,7 +1328,7 @@ real linear_angles(int             nbonds,
         if (computeVirial(flavor))
         {
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k);
         }
     } /* 57 TOTAL	*/
@@ -1414,7 +1414,7 @@ urey_bradley(int             nbonds,
             if (computeVirial(flavor))
             {
                 rvec_inc(fshift[t1], f_i);
-                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[c_centralShiftIndex], f_j);
                 rvec_inc(fshift[t2], f_k);
             }
         } /* 161 TOTAL	*/
@@ -1435,7 +1435,7 @@ urey_bradley(int             nbonds,
             if (computeVirial(flavor))
             {
                 fshift[ki][m] += fik;
-                fshift[CENTRAL][m] -= fik;
+                fshift[c_centralShiftIndex][m] -= fik;
             }
         }
     }
@@ -1669,7 +1669,7 @@ real quartic_angles(int             nbonds,
             if (computeVirial(flavor))
             {
                 rvec_inc(fshift[t1], f_i);
-                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[c_centralShiftIndex], f_j);
                 rvec_inc(fshift[t2], f_k);
             }
         } /* 153 TOTAL	*/
@@ -1858,11 +1858,11 @@ void do_dih_fup(int          i,
             }
             else
             {
-                t3 = CENTRAL;
+                t3 = c_centralShiftIndex;
             }
 
             rvec_inc(fshift[t1], f_i);
-            rvec_dec(fshift[CENTRAL], f_j);
+            rvec_dec(fshift[c_centralShiftIndex], f_j);
             rvec_dec(fshift[t2], f_k);
             rvec_inc(fshift[t3], f_l);
         }
@@ -2421,11 +2421,11 @@ real low_angres(int             nbonds,
             if (computeVirial(flavor))
             {
                 rvec_inc(fshift[t1], f_i);
-                rvec_dec(fshift[CENTRAL], f_i);
+                rvec_dec(fshift[c_centralShiftIndex], f_i);
                 if (!bZAxis)
                 {
                     rvec_inc(fshift[t2], f_k);
-                    rvec_dec(fshift[CENTRAL], f_k);
+                    rvec_dec(fshift[c_centralShiftIndex], f_k);
                 }
             }
         }
@@ -2682,7 +2682,7 @@ real restrangles(int             nbonds,
         if (computeVirial(flavor))
         {
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k);
         }
     }
@@ -2800,11 +2800,11 @@ real restrdihs(int             nbonds,
             }
             else
             {
-                t3 = CENTRAL;
+                t3 = c_centralShiftIndex;
             }
 
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k);
             rvec_inc(fshift[t3], f_l);
         }
@@ -2917,11 +2917,11 @@ real cbtdihs(int             nbonds,
             }
             else
             {
-                t3 = CENTRAL;
+                t3 = c_centralShiftIndex;
             }
 
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k);
             rvec_inc(fshift[t3], f_l);
         }
@@ -3437,17 +3437,17 @@ real cmap_dihs(int                 nbonds,
             }
             else
             {
-                t31 = CENTRAL;
-                t32 = CENTRAL;
+                t31 = c_centralShiftIndex;
+                t32 = c_centralShiftIndex;
             }
 
             rvec_inc(fshift[t11], f1_i);
-            rvec_inc(fshift[CENTRAL], f1_j);
+            rvec_inc(fshift[c_centralShiftIndex], f1_j);
             rvec_inc(fshift[t21], f1_k);
             rvec_inc(fshift[t31], f1_l);
 
             rvec_inc(fshift[t12], f2_i);
-            rvec_inc(fshift[CENTRAL], f2_j);
+            rvec_inc(fshift[c_centralShiftIndex], f2_j);
             rvec_inc(fshift[t22], f2_k);
             rvec_inc(fshift[t32], f2_l);
         }
@@ -3609,7 +3609,7 @@ real g96angles(int             nbonds,
         if (computeVirial(flavor))
         {
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
         }
         /* 163 TOTAL	*/
@@ -3683,7 +3683,7 @@ real cross_bond_bond(int             nbonds,
         if (computeVirial(flavor))
         {
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
         }
         /* 163 TOTAL	*/
@@ -3767,7 +3767,7 @@ real cross_bond_angle(int             nbonds,
         if (computeVirial(flavor))
         {
             rvec_inc(fshift[t1], f_i);
-            rvec_inc(fshift[CENTRAL], f_j);
+            rvec_inc(fshift[c_centralShiftIndex], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
         }
         /* 163 TOTAL	*/
@@ -3960,7 +3960,7 @@ real tab_angles(int             nbonds,
             if (computeVirial(flavor))
             {
                 rvec_inc(fshift[t1], f_i);
-                rvec_inc(fshift[CENTRAL], f_j);
+                rvec_inc(fshift[c_centralShiftIndex], f_j);
                 rvec_inc(fshift[t2], f_k);
             }
         } /* 169 TOTAL	*/

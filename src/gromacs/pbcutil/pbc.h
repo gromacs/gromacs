@@ -260,7 +260,7 @@ void pbc_dx(const t_pbc* pbc, const rvec x1, const rvec x2, rvec dx);
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
  * \return the ishift required to shift x1 at closest distance to x2;
- * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
+ * i.e. if 0<=ishift<c_numShiftVectors then x1 - x2 + shift_vec[ishift] = dx
  * (see calc_shifts below on how to obtain shift_vec)
  */
 int pbc_dx_aiuc(const t_pbc* pbc, const rvec x1, const rvec x2, rvec dx);

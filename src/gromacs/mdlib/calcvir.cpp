@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ static void calc_x_times_f(int nxf, const rvec x[], const rvec f[], gmx_bool bSc
 
         if (bScrewPBC)
         {
-            int isx = IS2X(i);
+            int isx = gmx::shiftIndexToXDim(i);
             /* We should correct all odd x-shifts, but the range of isx is -2 to 2 */
             if (isx == 1 || isx == -1)
             {

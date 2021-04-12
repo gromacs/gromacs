@@ -111,7 +111,7 @@ struct OutputQuantities
     //! Derivative with respect to lambda
     std::vector<real> dvdLambda;
     //! Shift vectors
-    rvec fShift[N_IVEC] = { { 0 } };
+    rvec fShift[gmx::detail::c_numIvecs] = { { 0 } };
     //! Forces
     alignas(GMX_REAL_MAX_SIMD_WIDTH * sizeof(real)) rvec4 f[c_numAtoms] = { { 0 } };
 };
@@ -393,7 +393,7 @@ protected:
 
             if (computeVirial(flavor))
             {
-                shiftForcesChecker.checkVector(output.fShift[CENTRAL], "Central");
+                shiftForcesChecker.checkVector(output.fShift[gmx::c_centralShiftIndex], "Central");
             }
             else
             {

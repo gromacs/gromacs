@@ -132,10 +132,10 @@ __device__ void bonds_gpu(const int       i,
             float3 fij = fbond * dx;
             atomicAdd(&gm_f[ai], fij);
             atomicAdd(&gm_f[aj], -fij);
-            if (calcVir && ki != CENTRAL)
+            if (calcVir && ki != gmx::c_centralShiftIndex)
             {
                 atomicAdd(&sm_fShiftLoc[ki], fij);
-                atomicAdd(&sm_fShiftLoc[CENTRAL], -fij);
+                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
             }
         }
     }
@@ -228,7 +228,7 @@ __device__ void angles_gpu(const int       i,
             if (calcVir)
             {
                 atomicAdd(&sm_fShiftLoc[t1], f_i);
-                atomicAdd(&sm_fShiftLoc[CENTRAL], f_j);
+                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
                 atomicAdd(&sm_fShiftLoc[t2], f_k);
             }
         }
@@ -310,7 +310,7 @@ __device__ void urey_bradley_gpu(const int       i,
             if (calcVir)
             {
                 atomicAdd(&sm_fShiftLoc[t1], f_i);
-                atomicAdd(&sm_fShiftLoc[CENTRAL], f_j);
+                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
                 atomicAdd(&sm_fShiftLoc[t2], f_k);
             }
         }
@@ -329,10 +329,10 @@ __device__ void urey_bradley_gpu(const int       i,
             atomicAdd(&gm_f[ai], fik);
             atomicAdd(&gm_f[ak], -fik);
 
-            if (calcVir && ki != CENTRAL)
+            if (calcVir && ki != gmx::c_centralShiftIndex)
             {
                 atomicAdd(&sm_fShiftLoc[ki], fik);
-                atomicAdd(&sm_fShiftLoc[CENTRAL], -fik);
+                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
             }
         }
     }
@@ -432,7 +432,7 @@ __device__ static void do_dih_fup_gpu(const int      i,
             int    t3 = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[l], gm_xq[j], dx_jl);
 
             atomicAdd(&sm_fShiftLoc[t1], f_i);
-            atomicAdd(&sm_fShiftLoc[CENTRAL], -f_j);
+            atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f_j);
             atomicAdd(&sm_fShiftLoc[t2], -f_k);
             atomicAdd(&sm_fShiftLoc[t3], f_l);
         }
@@ -709,10 +709,10 @@ __device__ void pairs_gpu(const int       i,
         /* Add the forces */
         atomicAdd(&gm_f[ai], f);
         atomicAdd(&gm_f[aj], -f);
-        if (calcVir && fshift_index != CENTRAL)
+        if (calcVir && fshift_index != gmx::c_centralShiftIndex)
         {
             atomicAdd(&sm_fShiftLoc[fshift_index], f);
-            atomicAdd(&sm_fShiftLoc[CENTRAL], -f);
+            atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
         }
 
         if (calcEner)
@@ -738,11 +738,11 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
     extern __shared__ char sm_dynamicShmem[];
     char*                  sm_nextSlotPtr = sm_dynamicShmem;
     float3*                sm_fShiftLoc   = (float3*)sm_nextSlotPtr;
-    sm_nextSlotPtr += SHIFTS * sizeof(float3);
+    sm_nextSlotPtr += c_numShiftVectors * sizeof(float3);
 
     if (calcVir)
     {
-        if (threadIdx.x < SHIFTS)
+        if (threadIdx.x < c_numShiftVectors)
         {
             sm_fShiftLoc[threadIdx.x] = make_float3(0.0f, 0.0f, 0.0f);
         }
@@ -893,11 +893,11 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
             atomicAdd(vtotElec, sm_vTotElec[warpId]);
         }
     }
-    /* Accumulate shift vectors from shared memory to global memory on the first SHIFTS threads of the block. */
+    /* Accumulate shift vectors from shared memory to global memory on the first c_numShiftVectors threads of the block. */
     if (calcVir)
     {
         __syncthreads();
-        if (threadIdx.x < SHIFTS)
+        if (threadIdx.x < c_numShiftVectors)
         {
             atomicAdd(kernelParams.d_fShift[threadIdx.x], sm_fShiftLoc[threadIdx.x]);
         }

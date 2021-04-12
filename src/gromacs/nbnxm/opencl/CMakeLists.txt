@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,7 @@ foreach(ELEC_DEF IN LISTS ELEC_DEFS)
                 -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=3.82e-07
                 -Dc_nbnxnGpuNumClusterPerSupercluster=8
                 -Dc_nbnxnGpuJgroupSize=4
+                -Dc_centralShiftIndex=22
                 -DIATYPE_SHMEM
                 -c -I ${CMAKE_SOURCE_DIR}/src -std=cl1.2
                 -Weverything  -Wno-conversion -Wno-missing-variable-declarations -Wno-used-but-marked-unused

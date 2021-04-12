@@ -111,7 +111,7 @@ struct f_thread_t
     //! Index to touched blocks
     std::vector<int> block_index;
 
-    //! Shift force array, size SHIFTS
+    //! Shift force array, size c_numShiftVectors
     std::vector<gmx::RVec> fshift;
     //! Energy array
     real ener[F_NRE];

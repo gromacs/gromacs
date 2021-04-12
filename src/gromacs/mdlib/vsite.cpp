@@ -165,7 +165,7 @@ struct VsiteThread
     //! The interaction lists, only vsite entries are used
     std::array<InteractionList, F_NRE> ilist;
     //! Local fshift accumulation buffer
-    std::array<RVec, SHIFTS> fshift;
+    std::array<RVec, c_numShiftVectors> fshift;
     //! Local virial dx*df accumulation buffer
     matrix dxdf;
     //! Tells if interdependent task idTask should be used (in addition to the rest of this task), this bool has the same value on all threads
@@ -313,7 +313,7 @@ static int pbc_rvec_sub(const t_pbc* pbc, const rvec xi, const rvec xj, rvec dx)
     else
     {
         rvec_sub(xi, xj, dx);
-        return CENTRAL;
+        return c_centralShiftIndex;
     }
 }
 
@@ -1119,7 +1119,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                     /* Keep the vsite in the same periodic image as before */
                     rvec dx;
                     int  ishift = pbc_dx_aiuc(pbc_null, x[avsite], xv, dx);
-                    if (ishift != CENTRAL)
+                    if (ishift != c_centralShiftIndex)
                     {
                         rvec_add(xv, dx, x[avsite]);
                     }
@@ -1306,14 +1306,14 @@ static void spread_vsite2(const t_iatom        ia[],
         }
         else
         {
-            siv = CENTRAL;
-            sij = CENTRAL;
+            siv = c_centralShiftIndex;
+            sij = c_centralShiftIndex;
         }
 
-        if (siv != CENTRAL || sij != CENTRAL)
+        if (siv != c_centralShiftIndex || sij != c_centralShiftIndex)
         {
             rvec_inc(fshift[siv], f[av]);
-            rvec_dec(fshift[CENTRAL], fi);
+            rvec_dec(fshift[c_centralShiftIndex], fi);
             rvec_dec(fshift[sij], fj);
         }
     }
@@ -1396,15 +1396,15 @@ static void spread_vsite2FD(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sji != CENTRAL)
+        if (svi != c_centralShiftIndex || sji != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
-            fshift[CENTRAL][XX] += fv[XX] - fj[XX];
-            fshift[CENTRAL][YY] += fv[YY] - fj[YY];
-            fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ];
+            fshift[c_centralShiftIndex][XX] += fv[XX] - fj[XX];
+            fshift[c_centralShiftIndex][YY] += fv[YY] - fj[YY];
+            fshift[c_centralShiftIndex][ZZ] += fv[ZZ] - fj[ZZ];
             fshift[sji][XX] += fj[XX];
             fshift[sji][YY] += fj[YY];
             fshift[sji][ZZ] += fj[ZZ];
@@ -1478,15 +1478,15 @@ static void spread_vsite3(const t_iatom        ia[],
         }
         else
         {
-            siv = CENTRAL;
-            sij = CENTRAL;
-            sik = CENTRAL;
+            siv = c_centralShiftIndex;
+            sij = c_centralShiftIndex;
+            sik = c_centralShiftIndex;
         }
 
-        if (siv != CENTRAL || sij != CENTRAL || sik != CENTRAL)
+        if (siv != c_centralShiftIndex || sij != c_centralShiftIndex || sik != c_centralShiftIndex)
         {
             rvec_inc(fshift[siv], f[av]);
-            rvec_dec(fshift[CENTRAL], fi);
+            rvec_dec(fshift[c_centralShiftIndex], fi);
             rvec_dec(fshift[sij], fj);
             rvec_dec(fshift[sik], fk);
         }
@@ -1561,15 +1561,15 @@ static void spread_vsite3FD(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL)
+        if (svi != c_centralShiftIndex || sji != c_centralShiftIndex || skj != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
-            fshift[CENTRAL][XX] += fv[XX] - (1 + a) * temp[XX];
-            fshift[CENTRAL][YY] += fv[YY] - (1 + a) * temp[YY];
-            fshift[CENTRAL][ZZ] += fv[ZZ] - (1 + a) * temp[ZZ];
+            fshift[c_centralShiftIndex][XX] += fv[XX] - (1 + a) * temp[XX];
+            fshift[c_centralShiftIndex][YY] += fv[YY] - (1 + a) * temp[YY];
+            fshift[c_centralShiftIndex][ZZ] += fv[ZZ] - (1 + a) * temp[ZZ];
             fshift[sji][XX] += temp[XX];
             fshift[sji][YY] += temp[YY];
             fshift[sji][ZZ] += temp[ZZ];
@@ -1683,15 +1683,15 @@ static void spread_vsite3FAD(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL)
+        if (svi != c_centralShiftIndex || sji != c_centralShiftIndex || skj != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
-            fshift[CENTRAL][XX] += fv[XX] - f1[XX] - (1 - c1) * f2[XX] + f3[XX];
-            fshift[CENTRAL][YY] += fv[YY] - f1[YY] - (1 - c1) * f2[YY] + f3[YY];
-            fshift[CENTRAL][ZZ] += fv[ZZ] - f1[ZZ] - (1 - c1) * f2[ZZ] + f3[ZZ];
+            fshift[c_centralShiftIndex][XX] += fv[XX] - f1[XX] - (1 - c1) * f2[XX] + f3[XX];
+            fshift[c_centralShiftIndex][YY] += fv[YY] - f1[YY] - (1 - c1) * f2[YY] + f3[YY];
+            fshift[c_centralShiftIndex][ZZ] += fv[ZZ] - f1[ZZ] - (1 - c1) * f2[ZZ] + f3[ZZ];
             fshift[sji][XX] += f1[XX] - c1 * f2[XX] - f3[XX];
             fshift[sji][YY] += f1[YY] - c1 * f2[YY] - f3[YY];
             fshift[sji][ZZ] += f1[ZZ] - c1 * f2[ZZ] - f3[ZZ];
@@ -1777,15 +1777,15 @@ static void spread_vsite3OUT(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sji != CENTRAL || ski != CENTRAL)
+        if (svi != c_centralShiftIndex || sji != c_centralShiftIndex || ski != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
-            fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX];
-            fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY];
-            fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ];
+            fshift[c_centralShiftIndex][XX] += fv[XX] - fj[XX] - fk[XX];
+            fshift[c_centralShiftIndex][YY] += fv[YY] - fj[YY] - fk[YY];
+            fshift[c_centralShiftIndex][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ];
             rvec_inc(fshift[sji], fj);
             rvec_inc(fshift[ski], fk);
         }
@@ -1879,15 +1879,16 @@ static void spread_vsite4FD(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL || slj != CENTRAL)
+        if (svi != c_centralShiftIndex || sji != c_centralShiftIndex || skj != c_centralShiftIndex
+            || slj != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
             for (m = 0; m < DIM; m++)
             {
-                fshift[CENTRAL][m] += fv[m] - (1 + a + b) * temp[m];
+                fshift[c_centralShiftIndex][m] += fv[m] - (1 + a + b) * temp[m];
                 fshift[sji][m] += temp[m];
                 fshift[skj][m] += a * temp[m];
                 fshift[slj][m] += b * temp[m];
@@ -2038,15 +2039,16 @@ static void spread_vsite4FDN(const t_iatom        ia[],
         }
         else
         {
-            svi = CENTRAL;
+            svi = c_centralShiftIndex;
         }
 
-        if (svi != CENTRAL || sij != CENTRAL || sik != CENTRAL || sil != CENTRAL)
+        if (svi != c_centralShiftIndex || sij != c_centralShiftIndex || sik != c_centralShiftIndex
+            || sil != c_centralShiftIndex)
         {
             rvec_dec(fshift[svi], fv);
-            fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
-            fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY] - fl[YY];
-            fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
+            fshift[c_centralShiftIndex][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
+            fshift[c_centralShiftIndex][YY] += fv[YY] - fj[YY] - fk[YY] - fl[YY];
+            fshift[c_centralShiftIndex][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
             rvec_inc(fshift[sij], fj);
             rvec_inc(fshift[sik], fk);
             rvec_inc(fshift[sil], fl);
@@ -2098,16 +2100,16 @@ static int spread_vsiten(const t_iatom             ia[],
         }
         else
         {
-            siv = CENTRAL;
+            siv = c_centralShiftIndex;
         }
         a = ip[ia[i]].vsiten.a;
         svmul(a, f[av], fi);
         rvec_inc(f[ai], fi);
 
-        if (virialHandling == VirialHandling::Pbc && siv != CENTRAL)
+        if (virialHandling == VirialHandling::Pbc && siv != c_centralShiftIndex)
         {
             rvec_inc(fshift[siv], fi);
-            rvec_dec(fshift[CENTRAL], fi);
+            rvec_dec(fshift[c_centralShiftIndex], fi);
         }
         /* 6 Flops */
     }
@@ -2355,7 +2357,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                     {
                         fshift_t = tData.fshift;
 
-                        for (int i = 0; i < SHIFTS; i++)
+                        for (int i = 0; i < c_numShiftVectors; i++)
                         {
                             clear_rvec(fshift_t[i]);
                         }
@@ -2434,7 +2436,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
         {
             for (int th = 1; th < numThreads; th++)
             {
-                for (int i = 0; i < SHIFTS; i++)
+                for (int i = 0; i < c_numShiftVectors; i++)
                 {
                     rvec_inc(fshift[i], threadingInfo_.threadData(th).fshift[i]);
                 }

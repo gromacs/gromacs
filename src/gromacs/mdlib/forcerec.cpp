@@ -105,7 +105,7 @@
 ForceHelperBuffers::ForceHelperBuffers(bool haveDirectVirialContributions) :
     haveDirectVirialContributions_(haveDirectVirialContributions)
 {
-    shiftForces_.resize(SHIFTS);
+    shiftForces_.resize(gmx::c_numShiftVectors);
 }
 
 void ForceHelperBuffers::resize(int numAtoms)
@@ -1217,7 +1217,7 @@ void init_forcerec(FILE*                            fplog,
 
     if (forcerec->shift_vec.empty())
     {
-        forcerec->shift_vec.resize(SHIFTS);
+        forcerec->shift_vec.resize(gmx::c_numShiftVectors);
     }
 
     if (forcerec->nbfp.empty())

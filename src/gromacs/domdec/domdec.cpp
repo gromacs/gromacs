@@ -371,7 +371,7 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
         /* Determine which shift vector we need */
         ivec vis        = { 0, 0, 0 };
         vis[dd->dim[d]] = 1;
-        const int is    = IVEC2IS(vis);
+        const int is    = gmx::ivecToShiftIndex(vis);
 
         /* Loop over the pulses */
         const gmx_domdec_comm_dim_t& cd = comm.cd[d];

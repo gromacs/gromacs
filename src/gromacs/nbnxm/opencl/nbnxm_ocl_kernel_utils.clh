@@ -47,7 +47,6 @@
 
 #include "gromacs/gpu_utils/device_utils.clh"
 #include "gromacs/gpu_utils/vectype_ops.clh"
-#include "gromacs/pbcutil/ishift.h"
 
 #include "nbnxm_ocl_consts.h"
 

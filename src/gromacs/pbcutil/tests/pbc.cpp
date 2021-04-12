@@ -63,7 +63,7 @@ TEST(PbcTest, CalcShiftsWorks)
     // shift vector values when the largest box shift in any dimension
     // is two.
     const matrix           box = { { 0.01, 1, -100 }, { 300, -0.03, 3 }, { -6, -600, 0.06 } };
-    std::vector<gmx::RVec> shiftVectors(SHIFTS);
+    std::vector<gmx::RVec> shiftVectors(c_numShiftVectors);
 
     calc_shifts(box, shiftVectors);
 

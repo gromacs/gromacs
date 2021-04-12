@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ public:
      *
      * \param[in] force          A force buffer that will be used for storing forces
      * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
-     * \param[in] shiftForces    A shift forces buffer of size SHIFTS, only used with \p computeVirial = true
+     * \param[in] shiftForces    A shift forces buffer of size c_numShiftVectors, only used with \p computeVirial = true
      */
     ForceWithShiftForces(const gmx::ArrayRefWithPadding<gmx::RVec>& force,
                          const bool                                 computeVirial,
@@ -110,7 +110,7 @@ private:
     gmx::ArrayRefWithPadding<gmx::RVec> force_;
     //! True when virial computation is requested
     bool computeVirial_;
-    //! A buffer for storing the shift forces, size SHIFTS
+    //! A buffer for storing the shift forces, size c_numShiftVectors
     gmx::ArrayRef<gmx::RVec> shiftForces_;
     //! Tells whether we have spread the vsite forces
     bool haveSpreadVsiteForces_ = false;
