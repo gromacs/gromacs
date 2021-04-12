@@ -81,11 +81,17 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     boxVelocity_{ { 0 } },
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
+    nextEnergyCalculationStep_(-1),
     fplog_(fplog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
 {
-    energyData->setParrinelloRahamnBarostat(this);
+    energyData->setParrinelloRahmanBoxVelocities([this]() { return boxVelocity_; });
+    energyData->addConservedEnergyContribution([this](Step gmx_used_in_debug step, Time /*unused*/) {
+        GMX_ASSERT(conservedEnergyContributionStep_ == step,
+                   "Parrinello-Rahman conserved energy step mismatch.");
+        return conservedEnergyContribution_;
+    });
 }
 
 void ParrinelloRahmanBarostat::connectWithMatchingPropagator(const PropagatorBarostatConnection& connectionData,
@@ -104,7 +110,16 @@ void ParrinelloRahmanBarostat::scheduleTask(Step step,
 {
     const bool scaleOnNextStep = do_per_step(step + nstpcouple_ + offset_ + 1, nstpcouple_);
     const bool scaleOnThisStep = do_per_step(step + nstpcouple_ + offset_, nstpcouple_);
+    const bool contributeEnergyThisStep = (step == nextEnergyCalculationStep_);
 
+    if (contributeEnergyThisStep)
+    {
+        // For compatibility with legacy md, we store this before integrating the box velocities
+        registerRunFunction([this, step]() {
+            conservedEnergyContribution_     = conservedEnergyContribution();
+            conservedEnergyContributionStep_ = step;
+        });
+    }
     if (scaleOnThisStep)
     {
         registerRunFunction([this]() { scaleBoxAndPositions(); });
@@ -296,6 +311,15 @@ void ParrinelloRahmanBarostat::restoreCheckpointState(std::optional<ReadCheckpoi
 const std::string& ParrinelloRahmanBarostat::clientID()
 {
     return identifier_;
+}
+
+std::optional<SignallerCallback> ParrinelloRahmanBarostat::registerEnergyCallback(EnergySignallerEvent event)
+{
+    if (event == EnergySignallerEvent::EnergyCalculationStep)
+    {
+        return [this](Step step, Time /*unused*/) { nextEnergyCalculationStep_ = step; };
+    }
+    return std::nullopt;
 }
 
 ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(

@@ -70,7 +70,7 @@ class StatePropagatorData;
  *     scaling factor, and
  *   * scales the box and the positions of the system.
  */
-class ParrinelloRahmanBarostat final : public ISimulatorElement, public ICheckpointHelperClient
+class ParrinelloRahmanBarostat final : public ISimulatorElement, public ICheckpointHelperClient, public IEnergySignallerClient
 {
 public:
     //! Constructor
@@ -99,8 +99,6 @@ public:
 
     //! Getter for the box velocities
     [[nodiscard]] const rvec* boxVelocities() const;
-    //! Contribution to the conserved energy (called by energy data)
-    [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
     void connectWithMatchingPropagator(const PropagatorBarostatConnection& connectionData,
@@ -158,6 +156,11 @@ private:
     //! Box velocity
     tensor boxVelocity_;
 
+    //! Current conserved energy contribution
+    real conservedEnergyContribution_;
+    //! Step of current conserved energy contribution
+    Step conservedEnergyContributionStep_;
+
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
@@ -174,6 +177,14 @@ private:
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
+
+    //! IEnergySignallerClient implementation
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
+    //! The next communicated energy calculation step
+    Step nextEnergyCalculationStep_;
+
+    //! Contribution to the conserved energy
+    [[nodiscard]] real conservedEnergyContribution() const;
 
     // Access to ISimulator data
     //! Handles logging.

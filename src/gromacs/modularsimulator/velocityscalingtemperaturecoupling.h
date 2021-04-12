@@ -86,7 +86,10 @@ enum class ReportPreviousStepConservedEnergy
  * implementations of the ITemperatureCouplingImpl interface, while the element
  * handles the scheduling and interfacing with other elements.
  */
-class VelocityScalingTemperatureCoupling final : public ISimulatorElement, public ICheckpointHelperClient
+class VelocityScalingTemperatureCoupling final :
+    public ISimulatorElement,
+    public ICheckpointHelperClient,
+    public IEnergySignallerClient
 {
 public:
     //! Constructor
@@ -115,9 +118,6 @@ public:
     void elementSetup() override;
     //! No element teardown needed
     void elementTeardown() override {}
-
-    //! Contribution to the conserved energy (called by energy data)
-    [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
     void connectWithMatchingPropagator(const PropagatorThermostatConnection& connectionData,
@@ -179,8 +179,11 @@ private:
     const std::vector<real> numDegreesOfFreedom_;
     //! Work exerted by thermostat per group
     std::vector<double> temperatureCouplingIntegral_;
-    //! Work exerted by thermostat per group (backup from previous step)
-    std::vector<double> temperatureCouplingIntegralPreviousStep_;
+
+    //! Current conserved energy contribution
+    real conservedEnergyContribution_;
+    //! Step of current conserved energy contribution
+    Step conservedEnergyContributionStep_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the energy data (for ekindata)
@@ -191,6 +194,8 @@ private:
 
     //! Set new lambda value (at T-coupling steps)
     void setLambda(Step step);
+    //! Contribution to the conserved energy
+    [[nodiscard]] real conservedEnergyContribution() const;
 
     //! The temperature coupling implementation
     std::unique_ptr<ITemperatureCouplingImpl> temperatureCouplingImpl_;
@@ -200,6 +205,11 @@ private:
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
+
+    //! IEnergySignallerClient implementation
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
+    //! The next communicated energy calculation step
+    Step nextEnergyCalculationStep_;
 };
 
 } // namespace gmx

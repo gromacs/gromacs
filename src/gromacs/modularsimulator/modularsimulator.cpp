@@ -126,7 +126,6 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
             builder->add<ConstraintsElement<ConstraintVariable::Positions>>();
         }
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>();
-        builder->add<EnergyData::Element>();
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(-1, PropagatorTag("LeapFrogPropagator"));
@@ -160,7 +159,6 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
             builder->add<ConstraintsElement<ConstraintVariable::Positions>>();
         }
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
-        builder->add<EnergyData::Element>();
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(-1, PropagatorTag("VelocityHalfStep"));
@@ -170,6 +168,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
     {
         gmx_fatal(FARGS, "Integrator not implemented for the modular simulator.");
     }
+    builder->add<EnergyData::Element>();
 }
 
 bool ModularSimulator::isInputCompatible(bool                             exitOnFailure,

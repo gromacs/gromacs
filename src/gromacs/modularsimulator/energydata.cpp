@@ -46,15 +46,12 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/compute_io.h"
-#include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -66,10 +63,8 @@
 
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
-#include "parrinellorahmanbarostat.h"
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
-#include "velocityscalingtemperaturecoupling.h"
 
 struct pull_t;
 class t_state;
@@ -104,8 +99,6 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     startingBehavior_(startingBehavior),
     statePropagatorData_(statePropagatorData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
-    velocityScalingTemperatureCoupling_(nullptr),
-    parrinelloRahmanBarostat_(nullptr),
     inputrec_(inputrec),
     top_global_(globalTopology),
     mdAtoms_(mdAtoms),
@@ -140,8 +133,8 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
     auto isFreeEnergyCalculationStep = freeEnergyCalculationStep_ == step;
     if (isEnergyCalculationStep || writeEnergy)
     {
-        registerRunFunction([this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-            energyData_->doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+        registerRunFunction([this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
+            energyData_->doStep(step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
         });
     }
     else
@@ -239,7 +232,7 @@ std::optional<SignallerCallback> EnergyData::Element::registerEnergyCallback(Ene
     return std::nullopt;
 }
 
-void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
+void EnergyData::doStep(Step step, Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
 {
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
     if (freeEnergyPerturbationData_)
@@ -249,12 +242,11 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
-        enerd_->term[F_ECONSERVED] =
-                enerd_->term[F_ETOT]
-                + (velocityScalingTemperatureCoupling_
-                           ? velocityScalingTemperatureCoupling_->conservedEnergyContribution()
-                           : 0)
-                + (parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->conservedEnergyContribution() : 0);
+        enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT];
+        for (const auto& energyContibution : conservedEnergyContributions_)
+        {
+            enerd_->term[F_ECONSERVED] += energyContibution(step, time);
+        }
     }
     matrix nullMatrix = {};
     energyOutput_->addDataAtEnergyStep(
@@ -266,7 +258,7 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
             inputrec_->fepvals.get(),
             inputrec_->expandedvals.get(),
             statePropagatorData_->constPreviousBox(),
-            PTCouplingArrays({ parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->boxVelocities() : nullMatrix,
+            PTCouplingArrays({ parrinelloRahmanBoxVelocities_ ? parrinelloRahmanBoxVelocities_() : nullMatrix,
                                {},
                                {},
                                {},
@@ -505,14 +497,16 @@ void EnergyData::initializeEnergyHistory(StartingBehavior    startingBehavior,
     energyOutput->fillEnergyHistory(observablesHistory->energyHistory.get());
 }
 
-void EnergyData::setVelocityScalingTemperatureCoupling(const VelocityScalingTemperatureCoupling* velocityScalingTemperatureCoupling)
+void EnergyData::addConservedEnergyContribution(EnergyContribution&& energyContribution)
 {
-    velocityScalingTemperatureCoupling_ = velocityScalingTemperatureCoupling;
+    conservedEnergyContributions_.emplace_back(std::move(energyContribution));
 }
 
-void EnergyData::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat* parrinelloRahmanBarostat)
+void EnergyData::setParrinelloRahmanBoxVelocities(std::function<const rvec*()>&& parrinelloRahmanBoxVelocities)
 {
-    parrinelloRahmanBarostat_ = parrinelloRahmanBarostat;
+    GMX_RELEASE_ASSERT(!parrinelloRahmanBoxVelocities_,
+                       "Received a second callback to the Parrinello-Rahman velocities");
+    parrinelloRahmanBoxVelocities_ = parrinelloRahmanBoxVelocities;
 }
 
 EnergyData::Element* EnergyData::element()
