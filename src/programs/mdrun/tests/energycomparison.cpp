@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,9 +71,9 @@ EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
         { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, 50) },
         // The pressure is very strongly affected by summation errors,
         // so we need a large tolerance.
-        // The value of 15000 is calibrated for running a small water box for 16 steps.
+        // The value of 17000 is calibrated for running a small water box for 16 steps.
         // For a single frame for a water box a value of 150 could work.
-        { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 15000) },
+        { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 17000) },
     };
 };
 
