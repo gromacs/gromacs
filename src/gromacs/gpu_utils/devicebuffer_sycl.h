@@ -123,7 +123,7 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
 namespace gmx::internal
 {
 //! Shorthand alias to create a placeholder SYCL accessor with chosen data type and access mode.
-template<class T, enum cl::sycl::access::mode mode>
+template<class T, cl::sycl::access::mode mode>
 using PlaceholderAccessor =
         cl::sycl::accessor<T, 1, mode, cl::sycl::access::target::global_buffer, cl::sycl::access::placeholder::true_t>;
 } // namespace gmx::internal
@@ -139,7 +139,7 @@ using PlaceholderAccessor =
  * \tparam T Type of buffer content.
  * \tparam mode Access mode.
  */
-template<class T, enum cl::sycl::access::mode mode>
+template<class T, cl::sycl::access::mode mode>
 class DeviceAccessor : public gmx::internal::PlaceholderAccessor<T, mode>
 {
 public:
@@ -212,7 +212,7 @@ struct EmptyClassThatIgnoresConstructorArguments
  * \tparam mode Access mode of the accessor
  * \tparam enabled Compile-time flag indicating whether we want to actually create an accessor.
  */
-template<class T, enum cl::sycl::access::mode mode, bool enabled>
+template<class T, cl::sycl::access::mode mode, bool enabled>
 using OptionalAccessor =
         std::conditional_t<enabled, DeviceAccessor<T, mode>, gmx::internal::EmptyClassThatIgnoresConstructorArguments>;
 
