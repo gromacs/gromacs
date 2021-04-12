@@ -36,6 +36,8 @@
 #ifndef GMX_MDTYPES_INTERACTION_CONST_H
 #define GMX_MDTYPES_INTERACTION_CONST_H
 
+#include <cstdio>
+
 #include <memory>
 #include <vector>
 
@@ -44,6 +46,8 @@
 #include "gromacs/utility/real.h"
 
 struct t_lambda;
+struct t_inputrec;
+struct gmx_mtop_t;
 
 /* Used with force switching or a constant potential shift:
  * rsw       = max(r - r_switch, 0)
@@ -172,5 +176,16 @@ struct interaction_const_t
     // Free-energy parameters, only present when free-energy calculations are requested
     std::unique_ptr<SoftCoreParameters> softCoreParameters;
 };
+
+/*! \brief Construct interaction constants
+ *
+ * This data is used (particularly) by search and force code for
+ * short-range interactions. Many of these are constant for the whole
+ * simulation; some are constant only after PME tuning completes.
+ */
+interaction_const_t init_interaction_const(FILE*             fp,
+                                           const t_inputrec& ir,
+                                           const gmx_mtop_t& mtop,
+                                           bool              systemHasNetCharge);
 
 #endif

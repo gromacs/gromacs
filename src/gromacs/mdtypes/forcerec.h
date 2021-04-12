@@ -106,6 +106,8 @@ class WholeMoleculeTransform;
  * this value should be slighlty smaller than sqrt(GMX_FLOAT_MAX).
  */
 #define GMX_CUTOFF_INF 1E+18
+//! Check the cuttoff
+real cutoff_inf(real cutoff);
 
 struct cginfo_mb_t
 {
