@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,10 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -185,8 +187,11 @@ AnalysisDataHandle TrajectoryAnalysisModuleData::dataHandle(const AnalysisData& 
 
 Selection TrajectoryAnalysisModuleData::parallelSelection(const Selection& selection)
 {
-    // TODO: Implement properly.
-    return selection;
+    std::optional<Selection> sel = impl_->selections_.selection(selection.name());
+    // Selections should never be missing in an analysis module, so this is an internal consistency check.
+    GMX_RELEASE_ASSERT(sel.has_value(),
+                       gmx::formatString("invalid selection %s", selection.name()).c_str());
+    return sel.value();
 }
 
 
