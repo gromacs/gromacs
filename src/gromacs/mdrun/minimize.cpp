@@ -823,6 +823,53 @@ static void em_dd_partition_system(FILE*                fplog,
 namespace
 {
 
+//! Copy coordinates, OpenMP parallelized, from \p refCoords to coords
+void setCoordinates(std::vector<RVec>* coords, ArrayRef<const RVec> refCoords)
+{
+    coords->resize(refCoords.size());
+
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntUpdate);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (int i = 0; i < ssize(refCoords); i++)
+    {
+        (*coords)[i] = refCoords[i];
+    }
+}
+
+//! Returns the maximum difference an atom moved between two coordinate sets, over all ranks
+real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> coords2, const MPI_Comm mpiCommMyGroup)
+{
+    GMX_RELEASE_ASSERT(coords1.size() == coords2.size(), "Coordinate counts should match");
+
+    real maxDiffSquared = 0;
+
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntUpdate);
+#pragma omp parallel for reduction(max : maxDiffSquared) num_threads(nthreads) schedule(static)
+    for (int i = 0; i < ssize(coords1); i++)
+    {
+        maxDiffSquared = std::max(maxDiffSquared, gmx::norm2(coords1[i] - coords2[i]));
+    }
+
+#if GMX_MPI
+    int numRanks = 1;
+    if (mpiCommMyGroup != MPI_COMM_NULL)
+    {
+        MPI_Comm_size(mpiCommMyGroup, &numRanks);
+    }
+    if (numRanks > 1)
+    {
+        real maxDiffSquaredReduced;
+        MPI_Allreduce(
+                &maxDiffSquared, &maxDiffSquaredReduced, 1, GMX_DOUBLE ? MPI_DOUBLE : MPI_FLOAT, MPI_MAX, mpiCommMyGroup);
+        maxDiffSquared = maxDiffSquaredReduced;
+    }
+#else
+    GMX_UNUSED_VALUE(mpiCommMyGroup);
+#endif
+
+    return std::sqrt(maxDiffSquared);
+}
+
 /*! \brief Class to handle the work of setting and doing an energy evaluation.
  *
  * This class is a mere aggregate of parameters to pass to evaluate an
@@ -883,6 +930,10 @@ public:
     MdrunScheduleWorkload* runScheduleWork;
     //! Stores the computed energies.
     gmx_enerdata_t* enerd;
+    //! The DD partitioning count at which the pair list was generated
+    int ddpCountPairSearch;
+    //! The local coordinates that were used for pair searching, stored for computing displacements
+    std::vector<RVec> pairSearchCoordinates;
 };
 
 void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst)
@@ -896,23 +947,26 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     /* Set the time to the initial time, the time does not change during EM */
     t = inputrec->init_t;
 
-    if (bFirst || (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count))
+    if (vsite)
+    {
+        vsite->construct(ems->s.x, {}, ems->s.box, gmx::VSiteOperation::Positions);
+    }
+
+    // Compute the buffer size of the pair list
+    const real bufferSize = inputrec->rlist - std::max(inputrec->rcoulomb, inputrec->rvdw);
+
+    if (bFirst || bufferSize <= 0 || (DOMAINDECOMP(cr) && ems->s.ddp_count != ddpCountPairSearch))
     {
         /* This is the first state or an old state used before the last ns */
         bNS = TRUE;
     }
     else
     {
-        bNS = FALSE;
-        if (inputrec->nstlist > 0)
-        {
-            bNS = TRUE;
-        }
-    }
-
-    if (vsite)
-    {
-        vsite->construct(ems->s.x, {}, ems->s.box, gmx::VSiteOperation::Positions);
+        // We need to generate a new pairlist when one atom moved more than half the buffer size
+        ArrayRef<const RVec> localCoordinates =
+                ArrayRef<const RVec>(ems->s.x).subArray(0, mdAtoms->mdatoms()->homenr);
+        bNS = 2 * maxCoordinateDifference(pairSearchCoordinates, localCoordinates, cr->mpi_comm_mygroup)
+              > bufferSize;
     }
 
     if (DOMAINDECOMP(cr) && bNS)
@@ -920,6 +974,15 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         /* Repartition the domain decomposition */
         em_dd_partition_system(
                 fplog, mdlog, count, cr, top_global, inputrec, imdSession, pull_work, ems, top, mdAtoms, fr, vsite, constr, nrnb, wcycle);
+        ddpCountPairSearch = cr->dd->ddp_count;
+    }
+
+    /* Store the local coordinates that will be used in the pair search, after we re-partitioned */
+    if (bufferSize > 0 && bNS)
+    {
+        ArrayRef<const RVec> localCoordinates =
+                constArrayRefFromArray(ems->s.x.data(), mdAtoms->mdatoms()->homenr);
+        setCoordinates(&pairSearchCoordinates, localCoordinates);
     }
 
     /* Calc force & energy on new trial position  */
@@ -1273,9 +1336,10 @@ void LegacySimulator::do_cg()
         sp_header(fplog, CG, inputrec->em_tol, number_steps);
     }
 
-    EnergyEvaluator energyEvaluator{ fplog,    mdlog,      cr,        ms,   top_global,      &top,
-                                     inputrec, imdSession, pull_work, nrnb, wcycle,          gstat,
-                                     vsite,    constr,     mdAtoms,   fr,   runScheduleWork, enerd };
+    EnergyEvaluator energyEvaluator{ fplog,  mdlog,           cr,         ms,        top_global,
+                                     &top,   inputrec,        imdSession, pull_work, nrnb,
+                                     wcycle, gstat,           vsite,      constr,    mdAtoms,
+                                     fr,     runScheduleWork, enerd,      -1,        {} };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c

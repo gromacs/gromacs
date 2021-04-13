@@ -492,7 +492,9 @@ Neighbor searching
       a minimum value and :ref:`gmx mdrun` might increase it, unless
       it is set to 1. With parallel simulations and/or non-bonded
       force calculation on the GPU, a value of 20 or 40 often gives
-      the best performance.
+      the best performance. With energy minimization this parameter
+      is not used as the pair list is updated when at least one atom
+      has moved by more than half the pair list buffer size.
 
    .. mdp-value:: 0
 
