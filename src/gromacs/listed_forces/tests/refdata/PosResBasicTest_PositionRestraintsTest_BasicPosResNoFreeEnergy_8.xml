@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">20</Real>
+      <Real Name="Z">200</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Virial contribution">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">1</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">50</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="Potential energy">51</Real>
+</ReferenceData>
