@@ -554,10 +554,11 @@ static void calcBondedForces(const InteractionDefinitions& idef,
         {
             f_thread_t& threadBuffers = *bt->f_t[thread];
             int         ftype;
-            real *      epot, v;
+            real        v;
             /* thread stuff */
             rvec*               fshift;
             gmx::ArrayRef<real> dvdlt;
+            gmx::ArrayRef<real> epot;
             gmx_grppairener_t*  grpp;
 
             zero_thread_output(&threadBuffers);
@@ -677,7 +678,7 @@ void calc_listed(struct gmx_wallcycle*         wcycle,
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
-        reduce_thread_output(&forceWithShiftForces, enerd->term, &enerd->grpp, dvdl, bt, stepWork);
+        reduce_thread_output(&forceWithShiftForces, enerd->term.data(), &enerd->grpp, dvdl, bt, stepWork);
 
         if (stepWork.computeDhdl)
         {
@@ -906,14 +907,14 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                    forceBufferLambda_,
                                    shiftForceBufferLambda_,
                                    &(enerd->foreign_grpp),
-                                   enerd->foreign_term,
+                                   enerd->foreign_term.data(),
                                    dvdl,
                                    nrnb,
                                    lam_i,
                                    md,
                                    fcdata,
                                    global_atom_index);
-                sum_epot(enerd->foreign_grpp, enerd->foreign_term);
+                sum_epot(enerd->foreign_grpp, enerd->foreign_term.data());
                 const double dvdlSum = std::accumulate(std::begin(dvdl), std::end(dvdl), 0.);
                 std::fill(std::begin(dvdl), std::end(dvdl), 0.0);
                 enerd->foreignLambdaTerms.accumulate(i, enerd->foreign_term[F_EPOT], dvdlSum);

@@ -234,7 +234,7 @@ void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const doub
 
 void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda* fepvals)
 {
-    sum_epot(enerd->grpp, enerd->term);
+    sum_epot(enerd->grpp, enerd->term.data());
 
     if (fepvals)
     {

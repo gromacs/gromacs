@@ -180,7 +180,7 @@ void global_stat(const gmx_global_stat& gs,
        the sums and overcounting. */
 
     std::array<real, F_NRE> copyenerd;
-    int nener = filter_enerdterm(enerd->term, TRUE, copyenerd.data(), bTemp, bPres, bEner);
+    int nener = filter_enerdterm(enerd->term.data(), TRUE, copyenerd.data(), bTemp, bPres, bEner);
 
     /* First, the data that needs to be communicated with velocity verlet every time
        This is just the constraint virial.*/
@@ -347,7 +347,7 @@ void global_stat(const gmx_global_stat& gs,
             }
         }
 
-        filter_enerdterm(copyenerd.data(), FALSE, enerd->term, bTemp, bPres, bEner);
+        filter_enerdterm(copyenerd.data(), FALSE, enerd->term.data(), bTemp, bPres, bEner);
     }
 
     if (vcm)

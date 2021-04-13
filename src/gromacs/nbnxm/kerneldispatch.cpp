@@ -632,7 +632,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality      
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
 
-            sum_epot(enerd->foreign_grpp, enerd->foreign_term);
+            sum_epot(enerd->foreign_grpp, enerd->foreign_term.data());
             enerd->foreignLambdaTerms.accumulate(
                     i,
                     enerd->foreign_term[F_EPOT],

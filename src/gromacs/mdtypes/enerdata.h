@@ -196,7 +196,7 @@ struct gmx_enerdata_t
     gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
 
     //! The energies for all different interaction types
-    real term[F_NRE] = { 0 };
+    std::array<real, F_NRE> term = { 0 };
     //! Energy group pair non-bonded energies
     struct gmx_grppairener_t grpp;
     //! Contributions to dV/dlambda with linear dependence on lambda
@@ -212,7 +212,7 @@ struct gmx_enerdata_t
     ForeignLambdaTerms foreignLambdaTerms;
 
     //! Alternate, temporary array for storing foreign lambda energies
-    real foreign_term[F_NRE] = { 0 };
+    std::array<real, F_NRE> foreign_term = { 0 };
     //! Alternate, temporary  array for storing foreign lambda group pair energies
     struct gmx_grppairener_t foreign_grpp;
 };
