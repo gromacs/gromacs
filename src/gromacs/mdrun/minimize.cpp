@@ -837,7 +837,7 @@ void setCoordinates(std::vector<RVec>* coords, ArrayRef<const RVec> refCoords)
 }
 
 //! Returns the maximum difference an atom moved between two coordinate sets, over all ranks
-real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> coords2, const MPI_Comm mpiCommMyGroup)
+real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> coords2, MPI_Comm mpiCommMyGroup)
 {
     GMX_RELEASE_ASSERT(coords1.size() == coords2.size(), "Coordinate counts should match");
 
