@@ -81,7 +81,10 @@ class GpuEventSynchronizer
 {
 public:
     //! A constructor.
-    GpuEventSynchronizer() = default;
+    GpuEventSynchronizer()
+    {
+        doNotSynchronizeBetweenStreams_ = (std::getenv("GMX_GPU_SYCL_NO_SYNCHRONIZE") != nullptr);
+    }
     //! A constructor from an existing event.
     GpuEventSynchronizer(const cl::sycl::event& event) : event_(event) {}
     //! A destructor.
@@ -132,6 +135,11 @@ public:
      */
     inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
+        if (doNotSynchronizeBetweenStreams_)
+        {
+            event_.reset();
+            return;
+        }
 #    if GMX_SYCL_HIPSYCL
         deviceStream.stream().wait_and_throw(); // SYCL-TODO: Use CUDA/HIP-specific solutions
 #    else
@@ -148,6 +156,15 @@ public:
 
 private:
     std::optional<cl::sycl::event> event_ = std::nullopt;
+    /*! \brief Dev. setting to no-op enqueueWaitEvent
+     *
+     * In SYCL, dependencies between the GPU tasks are managed by the runtime, so manual
+     * synchronization between GPU streams should be redundant, but we keep it on by default.
+     *
+     * Setting this to \c true via \c GMX_GPU_SYCL_NO_SYNCHRONIZE environment variable will
+     * immediately return from \ref enqueueWaitEvent, without placing a barrier into the stream.
+     */
+    bool doNotSynchronizeBetweenStreams_;
 };
 
 #endif // !defined DOXYGEN

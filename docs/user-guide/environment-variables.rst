@@ -170,6 +170,10 @@ Performance and Run Control
         (for coordinate and force buffers) directly on GPU memory spaces, without the staging of data through CPU
         memory, where possible. 
 
+``GMX_GPU_SYCL_NO_SYNCHRONIZE``
+        disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
+        do scheduling based on data dependencies. Experimental.
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
