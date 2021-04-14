@@ -1525,7 +1525,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
         return false;
     }
 
-    wallcycle_start(wcycle, ewcIMD);
+    wallcycle_start(wcycle, WallCycleCounter::Imd);
 
     /* read command from client and check if new incoming connection */
     if (MASTER(cr))
@@ -1576,7 +1576,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
         }
     }
 
-    wallcycle_stop(wcycle, ewcIMD);
+    wallcycle_stop(wcycle, WallCycleCounter::Imd);
 
     return imdstep;
 }
@@ -1641,7 +1641,7 @@ void ImdSession::updateEnergyRecordAndSendPositionsAndEnergies(bool bIMDstep, in
         return;
     }
 
-    wallcycle_start(impl_->wcycle, ewcIMD);
+    wallcycle_start(impl_->wcycle, WallCycleCounter::Imd);
 
     /* Update time step for IMD and prepare IMD energy record if we have new energies. */
     fillEnergyRecord(step, bHaveNewEnergies);
@@ -1652,7 +1652,7 @@ void ImdSession::updateEnergyRecordAndSendPositionsAndEnergies(bool bIMDstep, in
         sendPositionsAndEnergies();
     }
 
-    wallcycle_stop(impl_->wcycle, ewcIMD);
+    wallcycle_stop(impl_->wcycle, WallCycleCounter::Imd);
 }
 
 void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
@@ -1662,7 +1662,7 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
         return;
     }
 
-    wallcycle_start(impl_->wcycle, ewcIMD);
+    wallcycle_start(impl_->wcycle, WallCycleCounter::Imd);
 
     for (int i = 0; i < impl_->nforces; i++)
     {
@@ -1680,7 +1680,7 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
         rvec_inc(force[j], impl_->f[i]);
     }
 
-    wallcycle_stop(impl_->wcycle, ewcIMD);
+    wallcycle_stop(impl_->wcycle, WallCycleCounter::Imd);
 }
 
 ImdSession::ImdSession(const MDLogger& mdlog) : impl_(new Impl(mdlog)) {}

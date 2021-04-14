@@ -147,27 +147,27 @@ void nonbonded_verlet_t::setAtomProperties(gmx::ArrayRef<const int>  atomTypes,
 void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        locality,
                                             gmx::ArrayRef<const gmx::RVec> coordinates)
 {
-    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
+    wallcycle_start(wcycle_, WallCycleCounter::NbXFBufOps);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::NBXBufOps);
 
     nbnxn_atomdata_copy_x_to_nbat_x(
             pairSearch_->gridSet(), locality, as_rvec_array(coordinates.data()), nbat.get());
 
-    wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::NBXBufOps);
+    wallcycle_stop(wcycle_, WallCycleCounter::NbXFBufOps);
 }
 
 void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
                                                DeviceBuffer<gmx::RVec> d_x,
                                                GpuEventSynchronizer*   xReadyOnDevice)
 {
-    wallcycle_start(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_NB_X_BUF_OPS);
+    wallcycle_start(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
 
     nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, gpu_nbv, d_x, xReadyOnDevice);
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NB_X_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
 gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
@@ -186,13 +186,13 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
         return;
     }
 
-    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
+    wallcycle_start(wcycle_, WallCycleCounter::NbXFBufOps);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::NBFBufOps);
 
     reduceForces(nbat.get(), locality, pairSearch_->gridSet(), as_rvec_array(force.data()));
 
-    wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::NBFBufOps);
+    wallcycle_stop(wcycle_, WallCycleCounter::NbXFBufOps);
 }
 
 int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality) const

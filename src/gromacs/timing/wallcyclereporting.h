@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <array>
 
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct t_commrec;
@@ -54,14 +55,13 @@ namespace gmx
 class MDLogger;
 }
 
-typedef struct gmx_wallcycle* gmx_wallcycle_t;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct gmx_wallclock_gpu_pme_t;
 
-typedef std::array<double, int(ewcNR) + int(ewcsNR)> WallcycleCounts;
+using WallcycleCounts = std::array<double, sc_numWallCycleCounters + sc_numWallCycleSubCounters>;
 /* Convenience typedef */
 
-WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle_t wc);
+WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc);
 /* Return a vector of the sum of cycle counts over the nodes in
    cr->mpi_comm_mysim. */
 
@@ -72,7 +72,7 @@ void wallcycle_print(FILE*                            fplog,
                      int                              nth_pp,
                      int                              nth_pme,
                      double                           realtime,
-                     gmx_wallcycle_t                  wc,
+                     gmx_wallcycle*                   wc,
                      const WallcycleCounts&           cyc_sum,
                      const gmx_wallclock_gpu_nbnxn_t* gpu_nbnxn_t,
                      const gmx_wallclock_gpu_pme_t*   gpu_pme_t);

@@ -292,7 +292,7 @@ void compute_globals(gmx_global_stat*               gstat,
                      const t_mdatoms*               mdatoms,
                      t_nrnb*                        nrnb,
                      t_vcm*                         vcm,
-                     gmx_wallcycle_t                wcycle,
+                     gmx_wallcycle*                 wcycle,
                      gmx_enerdata_t*                enerd,
                      tensor                         force_vir,
                      tensor                         shake_vir,
@@ -359,7 +359,7 @@ void compute_globals(gmx_global_stat*               gstat,
             gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
             if (PAR(cr))
             {
-                wallcycle_start(wcycle, ewcMoveE);
+                wallcycle_start(wcycle, WallCycleCounter::MoveE);
                 global_stat(*gstat,
                             cr,
                             enerd,
@@ -372,7 +372,7 @@ void compute_globals(gmx_global_stat*               gstat,
                             signalBuffer,
                             *bSumEkinhOld,
                             flags);
-                wallcycle_stop(wcycle, ewcMoveE);
+                wallcycle_stop(wcycle, WallCycleCounter::MoveE);
             }
             signalCoordinator->finalizeSignals();
             *bSumEkinhOld = FALSE;

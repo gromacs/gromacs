@@ -848,15 +848,15 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t*      dd,
                                   gmx_bool           bUniform,
                                   gmx_bool           bDoDLB,
                                   int64_t            step,
-                                  gmx_wallcycle_t    wcycle)
+                                  gmx_wallcycle*     wcycle)
 {
     gmx_domdec_comm_t* comm = dd->comm;
 
     if (bDoDLB)
     {
-        wallcycle_start(wcycle, ewcDDCOMMBOUND);
+        wallcycle_start(wcycle, WallCycleCounter::DDCommBound);
         set_dd_cell_sizes_dlb_change(dd, ddbox, bDynamicBox, bUniform, step);
-        wallcycle_stop(wcycle, ewcDDCOMMBOUND);
+        wallcycle_stop(wcycle, WallCycleCounter::DDCommBound);
     }
     else if (bDynamicBox)
     {
@@ -885,7 +885,7 @@ void set_dd_cell_sizes(gmx_domdec_t*      dd,
                        gmx_bool           bUniform,
                        gmx_bool           bDoDLB,
                        int64_t            step,
-                       gmx_wallcycle_t    wcycle)
+                       gmx_wallcycle*     wcycle)
 {
     gmx_domdec_comm_t* comm = dd->comm;
 

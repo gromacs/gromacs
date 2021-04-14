@@ -228,7 +228,7 @@ void ModularSimulatorAlgorithm::simulatorSetup()
     }
 
     walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, ewcRUN);
+    wallcycle_start(wcycle, WallCycleCounter::Run);
     print_start(fplog, cr, walltime_accounting, "mdrun");
 
     step_ = inputrec->init_step;
@@ -275,7 +275,7 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool is
     stophandlerCurrentStep_ = step;
     stopHandler_->setSignal();
 
-    wallcycle_start(wcycle, ewcSTEP);
+    wallcycle_start(wcycle, WallCycleCounter::Step);
 }
 
 void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
@@ -301,7 +301,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
         print_time(stderr, walltime_accounting, step, inputrec, cr);
     }
 
-    double cycles = wallcycle_stop(wcycle, ewcSTEP);
+    double cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
     if (DOMAINDECOMP(cr) && wcycle)
     {
         dd_cycles_add(cr->dd, static_cast<float>(cycles), ddCyclStep);

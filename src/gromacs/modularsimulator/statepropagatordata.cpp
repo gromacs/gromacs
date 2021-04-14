@@ -393,7 +393,7 @@ StatePropagatorData::Element::registerTrajectoryWriterCallback(TrajectoryEvent e
 
 void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
 {
-    wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
+    wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
     unsigned int mdof_flags = 0;
     if (do_per_step(currentStep, nstxout_))
     {
@@ -430,7 +430,7 @@ void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Ti
 
     if (mdof_flags == 0)
     {
-        wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
+        wallcycle_stop(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
         return;
     }
     GMX_ASSERT(localStateBackup_, "Trajectory writing called, but no state saved.");
@@ -455,7 +455,7 @@ void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Ti
     {
         localStateBackup_.reset();
     }
-    wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
+    wallcycle_stop(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
 }
 
 void StatePropagatorData::Element::elementSetup()
@@ -619,7 +619,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
 
     GMX_ASSERT(localStateBackup_, "Final trajectory writing called, but no state saved.");
 
-    wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
+    wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
     if (DOMAINDECOMP(cr_))
     {
         auto globalXRef =
@@ -664,7 +664,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
                             pbcType_,
                             localStateBackup_->box);
     }
-    wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
+    wallcycle_stop(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
 }
 
 std::optional<SignallerCallback> StatePropagatorData::Element::registerLastStepCallback()

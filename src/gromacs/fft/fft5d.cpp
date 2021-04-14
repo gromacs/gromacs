@@ -1286,7 +1286,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                     time = MPI_Wtime();
                 }
 #else
-                wallcycle_start(times, ewcPME_FFTCOMM);
+                wallcycle_start(times, WallCycleCounter::PmeFftComm);
 #endif
 #ifdef FFT5D_MPI_TRANSPOSE
                 FFTW(execute)(mpip[s]);
@@ -1323,7 +1323,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                     time_mpi[s] = MPI_Wtime() - time;
                 }
 #else
-                wallcycle_stop(times, ewcPME_FFTCOMM);
+                wallcycle_stop(times, WallCycleCounter::PmeFftComm);
 #endif
             }       /*master*/
         }           /* bPrallelDim */

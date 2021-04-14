@@ -371,7 +371,7 @@ void gmx_pme_send_coordinates(t_forcerec*           fr,
                               GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
                               gmx_wallcycle*        wcycle)
 {
-    wallcycle_start(wcycle, ewcPP_PMESENDX);
+    wallcycle_start(wcycle, WallCycleCounter::PpPmeSendX);
 
     unsigned int flags = PP_PME_COORD;
     if (computeEnergyAndVirial)
@@ -399,7 +399,7 @@ void gmx_pme_send_coordinates(t_forcerec*           fr,
                                sendCoordinatesFromGpu,
                                coordinatesReadyOnDeviceEvent);
 
-    wallcycle_stop(wcycle, ewcPP_PMESENDX);
+    wallcycle_stop(wcycle, WallCycleCounter::PpPmeSendX);
 }
 
 void gmx_pme_send_finish(const t_commrec* cr)

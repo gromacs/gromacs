@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,7 @@ ResetHandler::ResetHandler(compat::not_null<SimulationSignal*> signal,
                            bool                                resetHalfway,
                            real                                maximumHoursToRun,
                            const MDLogger&                     mdlog,
-                           gmx_wallcycle_t                     wcycle,
+                           gmx_wallcycle*                      wcycle,
                            gmx_walltime_accounting_t           walltime_accounting) :
     signal_(*signal),
     rankCanSetSignal_(false),
@@ -144,7 +144,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
                                      t_nrnb*                     nrnb,
                                      const gmx_pme_t*            pme,
                                      const pme_load_balancing_t* pme_loadbal,
-                                     gmx_wallcycle_t             wcycle,
+                                     gmx_wallcycle*              wcycle,
                                      gmx_walltime_accounting_t   walltime_accounting)
 {
     /* Reset either if signal has been passed, or if reset step has been reached */
@@ -194,14 +194,14 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
             resetGpuProfiler();
         }
 
-        wallcycle_stop(wcycle, ewcRUN);
+        wallcycle_stop(wcycle, WallCycleCounter::Run);
         wallcycle_reset_all(wcycle);
         if (DOMAINDECOMP(cr))
         {
             reset_dd_statistics_counters(cr->dd);
         }
         clear_nrnb(nrnb);
-        wallcycle_start(wcycle, ewcRUN);
+        wallcycle_start(wcycle, WallCycleCounter::Run);
         walltime_accounting_reset_time(walltime_accounting, step);
         print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 

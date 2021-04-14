@@ -121,7 +121,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
 
     if (mdof_flags != 0)
     {
-        wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
+        wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
         if (bCPT)
         {
             if (MASTER(cr))
@@ -191,7 +191,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
                 sfree(x_for_confout);
             }
         }
-        wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
+        wallcycle_stop(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
     }
 #if GMX_FAHCORE
     if (MASTER(cr))

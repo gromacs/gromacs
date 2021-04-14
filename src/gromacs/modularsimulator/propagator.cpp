@@ -154,7 +154,7 @@ template<NumVelocityScalingValues        numStartVelocityScalingValues,
          NumVelocityScalingValues        numEndVelocityScalingValues>
 void Propagator<IntegrationStep::PositionsOnly>::run()
 {
-    wallcycle_start(wcycle_, ewcUPDATE);
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
@@ -178,7 +178,7 @@ void Propagator<IntegrationStep::PositionsOnly>::run()
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    wallcycle_stop(wcycle_, ewcUPDATE);
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
 //! Propagation (velocity only)
@@ -188,7 +188,7 @@ template<NumVelocityScalingValues        numStartVelocityScalingValues,
          NumVelocityScalingValues        numEndVelocityScalingValues>
 void Propagator<IntegrationStep::VelocitiesOnly>::run()
 {
-    wallcycle_start(wcycle_, ewcUPDATE);
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
 
     auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
@@ -258,7 +258,7 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    wallcycle_stop(wcycle_, ewcUPDATE);
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
 //! Propagation (leapfrog case - position and velocity)
@@ -268,7 +268,7 @@ template<NumVelocityScalingValues        numStartVelocityScalingValues,
          NumVelocityScalingValues        numEndVelocityScalingValues>
 void Propagator<IntegrationStep::LeapFrog>::run()
 {
-    wallcycle_start(wcycle_, ewcUPDATE);
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
@@ -342,7 +342,7 @@ void Propagator<IntegrationStep::LeapFrog>::run()
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    wallcycle_stop(wcycle_, ewcUPDATE);
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
 //! Propagation (velocity verlet stage 2 - velocity and position)
@@ -352,7 +352,7 @@ template<NumVelocityScalingValues        numStartVelocityScalingValues,
          NumVelocityScalingValues        numEndVelocityScalingValues>
 void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
 {
-    wallcycle_start(wcycle_, ewcUPDATE);
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
@@ -426,7 +426,7 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    wallcycle_stop(wcycle_, ewcUPDATE);
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
 template<IntegrationStep algorithm>

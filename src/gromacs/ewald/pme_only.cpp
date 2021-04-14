@@ -167,17 +167,17 @@ static std::unique_ptr<gmx_pme_pp> gmx_pme_pp_init(const t_commrec* cr)
     return pme_pp;
 }
 
-static void reset_pmeonly_counters(gmx_wallcycle_t           wcycle,
+static void reset_pmeonly_counters(gmx_wallcycle*            wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb*                   nrnb,
                                    int64_t                   step,
                                    bool                      useGpuForPme)
 {
     /* Reset all the counters related to performance over the run */
-    wallcycle_stop(wcycle, ewcRUN);
+    wallcycle_stop(wcycle, WallCycleCounter::Run);
     wallcycle_reset_all(wcycle);
     *nrnb = { 0 };
-    wallcycle_start(wcycle, ewcRUN);
+    wallcycle_start(wcycle, WallCycleCounter::Run);
     walltime_accounting_reset_time(walltime_accounting, step);
 
     if (useGpuForPme)
@@ -708,11 +708,11 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
 
         if (count == 0)
         {
-            wallcycle_start(wcycle, ewcRUN);
+            wallcycle_start(wcycle, WallCycleCounter::Run);
             walltime_accounting_start_time(walltime_accounting);
         }
 
-        wallcycle_start(wcycle, ewcPMEMESH);
+        wallcycle_start(wcycle, WallCycleCounter::PmeMesh);
 
         dvdlambda_q  = 0;
         dvdlambda_lj = 0;
@@ -779,7 +779,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             output.forces_ = pme_pp->f;
         }
 
-        cycles = wallcycle_stop(wcycle, ewcPMEMESH);
+        cycles = wallcycle_stop(wcycle, WallCycleCounter::PmeMesh);
         gmx_pme_send_force_vir_ener(pme_pp.get(), output, dvdlambda_q, dvdlambda_lj, cycles);
 
         count++;

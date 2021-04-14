@@ -140,18 +140,18 @@ typedef struct em_state
 static void print_em_start(FILE*                     fplog,
                            const t_commrec*          cr,
                            gmx_walltime_accounting_t walltime_accounting,
-                           gmx_wallcycle_t           wcycle,
+                           gmx_wallcycle*            wcycle,
                            const char*               name)
 {
     walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, ewcRUN);
+    wallcycle_start(wcycle, WallCycleCounter::Run);
     print_start(fplog, cr, walltime_accounting, name);
 }
 
 //! Stop counting time for EM
-static void em_time_end(gmx_walltime_accounting_t walltime_accounting, gmx_wallcycle_t wcycle)
+static void em_time_end(gmx_walltime_accounting_t walltime_accounting, gmx_wallcycle* wcycle)
 {
-    wallcycle_stop(wcycle, ewcRUN);
+    wallcycle_stop(wcycle, WallCycleCounter::Run);
 
     walltime_accounting_end_time(walltime_accounting);
 }
@@ -516,7 +516,7 @@ static void init_em(FILE*                fplog,
 static void finish_em(const t_commrec*          cr,
                       gmx_mdoutf_t              outf,
                       gmx_walltime_accounting_t walltime_accounting,
-                      gmx_wallcycle_t           wcycle)
+                      gmx_wallcycle*            wcycle)
 {
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
@@ -793,7 +793,7 @@ static void em_dd_partition_system(FILE*                fplog,
                                    VirtualSitesHandler* vsite,
                                    gmx::Constraints*    constr,
                                    t_nrnb*              nrnb,
-                                   gmx_wallcycle_t      wcycle)
+                                   gmx_wallcycle*       wcycle)
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog,
@@ -915,7 +915,7 @@ public:
     //! Manages flop accounting.
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.
-    gmx_wallcycle_t wcycle;
+    gmx_wallcycle* wcycle;
     //! Coordinates global reduction.
     gmx_global_stat_t gstat;
     //! Handles virtual sites.
@@ -1026,7 +1026,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     /* Communicate stuff when parallel */
     if (PAR(cr) && inputrec->eI != IntegrationAlgorithm::NM)
     {
-        wallcycle_start(wcycle, ewcMoveE);
+        wallcycle_start(wcycle, WallCycleCounter::MoveE);
 
         global_stat(*gstat,
                     cr,
@@ -1041,7 +1041,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                     FALSE,
                     CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
 
-        wallcycle_stop(wcycle, ewcMoveE);
+        wallcycle_stop(wcycle, WallCycleCounter::MoveE);
     }
 
     if (fr->dispersionCorrection)

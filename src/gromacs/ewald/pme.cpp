@@ -1202,10 +1202,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         }
         else
         {
-            wallcycle_start(wcycle, ewcPME_REDISTXF);
+            wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
             do_redist_pos_coeffs(pme, cr, bFirst, coordinates, coefficient);
 
-            wallcycle_stop(wcycle, ewcPME_REDISTXF);
+            wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
         }
 
         if (debug)
@@ -1213,7 +1213,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             fprintf(debug, "Rank= %6d, pme local particles=%6d\n", cr->nodeid, atc.numAtoms());
         }
 
-        wallcycle_start(wcycle, ewcPME_SPREAD);
+        wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
 
         /* Spread the coefficients on a grid */
         spread_on_grid(pme, &atc, pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
@@ -1237,7 +1237,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             copy_pmegrid_to_fftgrid(pme, grid, fftgrid, grid_index);
         }
 
-        wallcycle_stop(wcycle, ewcPME_SPREAD);
+        wallcycle_stop(wcycle, WallCycleCounter::PmeSpread);
 
         /* TODO If the OpenMP and single-threaded implementations
            converge, then spread_on_grid() and
@@ -1256,18 +1256,20 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 /* do 3d-fft */
                 if (thread == 0)
                 {
-                    wallcycle_start(wcycle, ewcPME_FFT);
+                    wallcycle_start(wcycle, WallCycleCounter::PmeFft);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX, thread, wcycle);
                 if (thread == 0)
                 {
-                    wallcycle_stop(wcycle, ewcPME_FFT);
+                    wallcycle_stop(wcycle, WallCycleCounter::PmeFft);
                 }
 
                 /* solve in k-space for our local cells */
                 if (thread == 0)
                 {
-                    wallcycle_start(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
+                    wallcycle_start(
+                            wcycle,
+                            (grid_index < DO_Q ? WallCycleCounter::PmeSolve : WallCycleCounter::LJPme));
                 }
                 if (grid_index < DO_Q)
                 {
@@ -1292,19 +1294,21 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
                 if (thread == 0)
                 {
-                    wallcycle_stop(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
+                    wallcycle_stop(
+                            wcycle,
+                            (grid_index < DO_Q ? WallCycleCounter::PmeSolve : WallCycleCounter::LJPme));
                     inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
                 }
 
                 /* do 3d-invfft */
                 if (thread == 0)
                 {
-                    wallcycle_start(wcycle, ewcPME_FFT);
+                    wallcycle_start(wcycle, WallCycleCounter::PmeFft);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL, thread, wcycle);
                 if (thread == 0)
                 {
-                    wallcycle_stop(wcycle, ewcPME_FFT);
+                    wallcycle_stop(wcycle, WallCycleCounter::PmeFft);
 
 
                     if (pme->nodeid == 0)
@@ -1317,7 +1321,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     /* Note: this wallcycle region is closed below
                        outside an OpenMP region, so take care if
                        refactoring code here. */
-                    wallcycle_start(wcycle, ewcPME_GATHER);
+                    wallcycle_start(wcycle, WallCycleCounter::PmeGather);
                 }
 
                 copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
@@ -1366,7 +1370,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             inc_nrnb(nrnb, eNR_GATHERFBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
             /* Note: this wallcycle region is opened above inside an OpenMP
                region, so take care if refactoring code here. */
-            wallcycle_stop(wcycle, ewcPME_GATHER);
+            wallcycle_stop(wcycle, WallCycleCounter::PmeGather);
         }
 
         if (computeEnergyAndVirial)
@@ -1431,7 +1435,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         break;
                     default: gmx_incons("Trying to access wrong FEP-state in LJ-PME routine");
                 }
-                wallcycle_start(wcycle, ewcPME_REDISTXF);
+                wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
 
                 do_redist_pos_coeffs(pme, cr, bFirst, coordinates, RedistC6);
                 pme->lb_buf1.resize(atc.numAtoms());
@@ -1449,7 +1453,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     local_sigma[i] = atc.coefficient[i];
                 }
 
-                wallcycle_stop(wcycle, ewcPME_REDISTXF);
+                wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
             }
             atc.coefficient = coefficientBuffer;
             calc_initial_lb_coeffs(coefficientBuffer, local_c6, local_sigma);
@@ -1464,7 +1468,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
                 grid = pmegrid->grid.grid;
 
-                wallcycle_start(wcycle, ewcPME_SPREAD);
+                wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
                 /* Spread the c6 on a grid */
                 spread_on_grid(pme, &atc, pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
 
@@ -1486,7 +1490,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     }
                     copy_pmegrid_to_fftgrid(pme, grid, fftgrid, grid_index);
                 }
-                wallcycle_stop(wcycle, ewcPME_SPREAD);
+                wallcycle_stop(wcycle, WallCycleCounter::PmeSpread);
 
                 /*Here we start a large thread parallel region*/
 #pragma omp parallel num_threads(pme->nthread) private(thread)
@@ -1497,13 +1501,13 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         /* do 3d-fft */
                         if (thread == 0)
                         {
-                            wallcycle_start(wcycle, ewcPME_FFT);
+                            wallcycle_start(wcycle, WallCycleCounter::PmeFft);
                         }
 
                         gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX, thread, wcycle);
                         if (thread == 0)
                         {
-                            wallcycle_stop(wcycle, ewcPME_FFT);
+                            wallcycle_stop(wcycle, WallCycleCounter::PmeFft);
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1519,7 +1523,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     thread = gmx_omp_get_thread_num();
                     if (thread == 0)
                     {
-                        wallcycle_start(wcycle, ewcLJPME);
+                        wallcycle_start(wcycle, WallCycleCounter::LJPme);
                     }
 
                     loop_count =
@@ -1532,7 +1536,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                                              thread);
                     if (thread == 0)
                     {
-                        wallcycle_stop(wcycle, ewcLJPME);
+                        wallcycle_stop(wcycle, WallCycleCounter::LJPme);
                         inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
                     }
                 }
@@ -1565,13 +1569,13 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         /* do 3d-invfft */
                         if (thread == 0)
                         {
-                            wallcycle_start(wcycle, ewcPME_FFT);
+                            wallcycle_start(wcycle, WallCycleCounter::PmeFft);
                         }
 
                         gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL, thread, wcycle);
                         if (thread == 0)
                         {
-                            wallcycle_stop(wcycle, ewcPME_FFT);
+                            wallcycle_stop(wcycle, WallCycleCounter::PmeFft);
 
 
                             if (pme->nodeid == 0)
@@ -1580,7 +1584,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                                 npme      = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                                 inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                             }
-                            wallcycle_start(wcycle, ewcPME_GATHER);
+                            wallcycle_start(wcycle, WallCycleCounter::PmeGather);
                         }
 
                         copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
@@ -1619,7 +1623,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                              eNR_GATHERFBSP,
                              pme->pme_order * pme->pme_order * pme->pme_order * pme->atc[0].numAtoms());
                 }
-                wallcycle_stop(wcycle, ewcPME_GATHER);
+                wallcycle_stop(wcycle, WallCycleCounter::PmeGather);
 
                 bFirst = FALSE;
             } /* for (grid_index = 8; grid_index >= 2; --grid_index) */
@@ -1628,7 +1632,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
     if (stepWork.computeForces && pme->nnodes > 1)
     {
-        wallcycle_start(wcycle, ewcPME_REDISTXF);
+        wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
         for (d = 0; d < pme->ndecompdim; d++)
         {
             gmx::ArrayRef<gmx::RVec> forcesRef;
@@ -1648,7 +1652,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             }
         }
 
-        wallcycle_stop(wcycle, ewcPME_REDISTXF);
+        wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
     }
 
     if (computeEnergyAndVirial)

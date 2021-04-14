@@ -206,7 +206,7 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(
-            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullWallcycle);
+            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullptr);
 
     gmxForceCalculator_->nbv_ = std::move(nbv);
 }

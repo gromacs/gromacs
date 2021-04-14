@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2017, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ struct fft5d_time_t
 typedef struct fft5d_time_t* fft5d_time;
 #else
 #    include "gromacs/timing/wallcycle.h"
-typedef gmx_wallcycle_t fft5d_time;
+typedef gmx_wallcycle* fft5d_time;
 #endif
 
 namespace gmx

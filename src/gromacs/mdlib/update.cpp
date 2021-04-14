@@ -139,7 +139,7 @@ public:
     void finish_update(const t_inputrec& inputRecord,
                        const t_mdatoms*  md,
                        t_state*          state,
-                       gmx_wallcycle_t   wcycle,
+                       gmx_wallcycle*    wcycle,
                        bool              haveConstraints);
 
     void update_sd_second_half(const t_inputrec&                 inputRecord,
@@ -151,7 +151,7 @@ public:
                                t_state*                          state,
                                const t_commrec*                  cr,
                                t_nrnb*                           nrnb,
-                               gmx_wallcycle_t                   wcycle,
+                               gmx_wallcycle*                    wcycle,
                                gmx::Constraints*                 constr,
                                bool                              do_log,
                                bool                              do_ene);
@@ -246,7 +246,7 @@ void Update::update_coords(const t_inputrec&                                inpu
 void Update::finish_update(const t_inputrec& inputRecord,
                            const t_mdatoms*  md,
                            t_state*          state,
-                           gmx_wallcycle_t   wcycle,
+                           gmx_wallcycle*    wcycle,
                            const bool        haveConstraints)
 {
     return impl_->finish_update(inputRecord, md, state, wcycle, haveConstraints);
@@ -259,7 +259,7 @@ void Update::update_sd_second_half(const t_inputrec& inputRecord,
                                    t_state*          state,
                                    const t_commrec*  cr,
                                    t_nrnb*           nrnb,
-                                   gmx_wallcycle_t   wcycle,
+                                   gmx_wallcycle*    wcycle,
                                    gmx::Constraints* constr,
                                    bool              do_log,
                                    bool              do_ene)
@@ -1394,7 +1394,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                                          t_state*                          state,
                                          const t_commrec*                  cr,
                                          t_nrnb*                           nrnb,
-                                         gmx_wallcycle_t                   wcycle,
+                                         gmx_wallcycle*                    wcycle,
                                          gmx::Constraints*                 constr,
                                          bool                              do_log,
                                          bool                              do_ene)
@@ -1415,7 +1415,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
          */
         real dt = inputRecord.delta_t;
 
-        wallcycle_start(wcycle, ewcUPDATE);
+        wallcycle_start(wcycle, WallCycleCounter::Update);
 
         int nth = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1448,7 +1448,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
-        wallcycle_stop(wcycle, ewcUPDATE);
+        wallcycle_stop(wcycle, WallCycleCounter::Update);
 
         /* Constrain the coordinates upd->xp for half a time step */
         bool computeVirial = false;
@@ -1473,14 +1473,14 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
 void Update::Impl::finish_update(const t_inputrec& inputRecord,
                                  const t_mdatoms*  md,
                                  t_state*          state,
-                                 gmx_wallcycle_t   wcycle,
+                                 gmx_wallcycle*    wcycle,
                                  const bool        haveConstraints)
 {
     /* NOTE: Currently we always integrate to a temporary buffer and
      * then copy the results back here.
      */
 
-    wallcycle_start_nocount(wcycle, ewcUPDATE);
+    wallcycle_start_nocount(wcycle, WallCycleCounter::Update);
 
     const int homenr = md->homenr;
     auto      xp     = makeConstArrayRef(xp_).subArray(0, homenr);
@@ -1521,7 +1521,7 @@ void Update::Impl::finish_update(const t_inputrec& inputRecord,
         }
     }
 
-    wallcycle_stop(wcycle, ewcUPDATE);
+    wallcycle_stop(wcycle, WallCycleCounter::Update);
 }
 
 void Update::Impl::update_coords(const t_inputrec&                 inputRecord,

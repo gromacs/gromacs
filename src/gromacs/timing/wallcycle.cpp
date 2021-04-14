@@ -44,6 +44,7 @@
 #include <cstdlib>
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/functions.h"
@@ -51,12 +52,15 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcyclereporting.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 
 //! Whether wallcycle debugging is enabled
 constexpr bool gmx_unused enableWallcycleDebug = (DEBUG_WCYCLE != 0);
@@ -71,87 +75,97 @@ constexpr bool gmx_unused debugPrintDepth = false /* enableWallcycleDebug */;
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */
-static const char* wcn[ewcNR] = { "Run",
-                                  "Step",
-                                  "PP during PME",
-                                  "Domain decomp.",
-                                  "DD comm. load",
-                                  "DD comm. bounds",
-                                  "Vsite constr.",
-                                  "Send X to PME",
-                                  "Neighbor search",
-                                  "Launch GPU ops.",
-                                  "Comm. coord.",
-                                  "Force",
-                                  "Wait + Comm. F",
-                                  "PME mesh",
-                                  "PME redist. X/F",
-                                  "PME spread",
-                                  "PME gather",
-                                  "PME 3D-FFT",
-                                  "PME 3D-FFT Comm.",
-                                  "PME solve LJ",
-                                  "PME solve Elec",
-                                  "PME wait for PP",
-                                  "Wait + Recv. PME F",
-                                  "Wait PME GPU spread",
-                                  "PME 3D-FFT",
-                                  "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
-                                  "Wait PME GPU gather",
-                                  "Wait Bonded GPU",
-                                  "Reduce GPU PME F",
-                                  "Wait GPU NB nonloc.",
-                                  "Wait GPU NB local",
-                                  "Wait GPU state copy",
-                                  "NB X/F buffer ops.",
-                                  "Vsite spread",
-                                  "COM pull force",
-                                  "AWH",
-                                  "Write traj.",
-                                  "Update",
-                                  "Constraints",
-                                  "Comm. energies",
-                                  "Enforced rotation",
-                                  "Add rot. forces",
-                                  "Position swapping",
-                                  "IMD",
-                                  "Test" };
+static const char* enumValuetoString(WallCycleCounter enumValue)
+{
+    constexpr gmx::EnumerationArray<WallCycleCounter, const char*> wallCycleCounterNames = {
+        "Run",
+        "Step",
+        "PP during PME",
+        "Domain decomp.",
+        "DD comm. load",
+        "DD comm. bounds",
+        "Vsite constr.",
+        "Send X to PME",
+        "Neighbor search",
+        "Launch GPU ops.",
+        "Comm. coord.",
+        "Force",
+        "Wait + Comm. F",
+        "PME mesh",
+        "PME redist. X/F",
+        "PME spread",
+        "PME gather",
+        "PME 3D-FFT",
+        "PME 3D-FFT Comm.",
+        "PME solve LJ",
+        "PME solve Elec",
+        "PME wait for PP",
+        "Wait + Recv. PME F",
+        "Wait PME GPU spread",
+        "PME 3D-FFT",
+        "PME solve", /* the strings for FFT/solve are repeated here for mixed mode counters */
+        "Wait PME GPU gather",
+        "Wait Bonded GPU",
+        "Reduce GPU PME F",
+        "Wait GPU NB nonloc.",
+        "Wait GPU NB local",
+        "Wait GPU state copy",
+        "NB X/F buffer ops.",
+        "Vsite spread",
+        "COM pull force",
+        "AWH",
+        "Write traj.",
+        "Update",
+        "Constraints",
+        "Comm. energies",
+        "Enforced rotation",
+        "Add rot. forces",
+        "Position swapping",
+        "IMD",
+        "Test"
+    };
+    return wallCycleCounterNames[enumValue];
+}
 
-static const char* wcsn[ewcsNR] = {
-    "DD redist.",
-    "DD NS grid + sort",
-    "DD setup comm.",
-    "DD make top.",
-    "DD make constr.",
-    "DD top. other",
-    "DD GPU ops.",
-    "NS grid local",
-    "NS grid non-loc.",
-    "NS search local",
-    "NS search non-loc.",
-    "Bonded F",
-    "Bonded-FEP F",
-    "Restraints F",
-    "Listed buffer ops.",
-    "Nonbonded pruning",
-    "Nonbonded F kernel",
-    "Nonbonded F clear",
-    "Nonbonded FEP",
-    "Launch NB GPU tasks",
-    "Launch Bonded GPU tasks",
-    "Launch PME GPU tasks",
-    "Launch state copy",
-    "Ewald F correction",
-    "NB X buffer ops.",
-    "NB F buffer ops.",
-    "Clear force buffer",
-    "Launch GPU NB X buffer ops.",
-    "Launch GPU NB F buffer ops.",
-    "Launch GPU Comm. coord.",
-    "Launch GPU Comm. force.",
-    "Launch GPU update",
-    "Test subcounter",
-};
+static const char* enumValuetoString(WallCycleSubCounter enumValue)
+{
+    constexpr gmx::EnumerationArray<WallCycleSubCounter, const char*> wallCycleSubCounterNames = {
+        "DD redist.",
+        "DD NS grid + sort",
+        "DD setup comm.",
+        "DD make top.",
+        "DD make constr.",
+        "DD top. other",
+        "DD GPU ops.",
+        "NS grid local",
+        "NS grid non-loc.",
+        "NS search local",
+        "NS search non-loc.",
+        "Bonded F",
+        "Bonded-FEP F",
+        "Restraints F",
+        "Listed buffer ops.",
+        "Nonbonded pruning",
+        "Nonbonded F kernel",
+        "Nonbonded F clear",
+        "Nonbonded FEP",
+        "Launch NB GPU tasks",
+        "Launch Bonded GPU tasks",
+        "Launch PME GPU tasks",
+        "Launch state copy",
+        "Ewald F correction",
+        "NB X buffer ops.",
+        "NB F buffer ops.",
+        "Clear force buffer",
+        "Launch GPU NB X buffer ops.",
+        "Launch GPU NB F buffer ops.",
+        "Launch GPU Comm. coord.",
+        "Launch GPU Comm. force.",
+        "Launch GPU update",
+        "Test subcounter"
+    };
+    return wallCycleSubCounterNames[enumValue];
+}
 
 /* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
 static const char* enumValuetoString(PmeStage enumValue)
@@ -168,23 +182,22 @@ bool wallcycle_have_counter()
     return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr)
+std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr)
 {
-    gmx_wallcycle_t wc;
+    std::unique_ptr<gmx_wallcycle> wc;
 
 
     if (!wallcycle_have_counter())
     {
-        return nullptr;
+        return wc;
     }
 
-    snew(wc, 1);
+    wc = std::make_unique<gmx_wallcycle>();
 
-    wc->haveInvalidCount = FALSE;
-    wc->wc_barrier       = FALSE;
-    wc->wcc_all          = nullptr;
+    wc->haveInvalidCount = false;
+    wc->wc_barrier       = false;
     wc->wc_depth         = 0;
-    wc->ewc_prev         = -1;
+    wc->ewc_prev         = WallCycleCounter::Count;
     wc->reset_counters   = resetstep;
     wc->cr               = cr;
 
@@ -196,23 +209,17 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr)
         {
             fprintf(fplog, "\nWill call MPI_Barrier before each cycle start/stop call\n\n");
         }
-        wc->wc_barrier = TRUE;
+        wc->wc_barrier = true;
     }
 #endif
 
-    snew(wc->wcc, ewcNR);
     if (getenv("GMX_CYCLE_ALL") != nullptr)
     {
         if (fplog)
         {
             fprintf(fplog, "\nWill time all the code during the run\n\n");
         }
-        snew(wc->wcc_all, ewcNR * ewcNR);
-    }
-
-    if (sc_useCycleSubcounters)
-    {
-        snew(wc->wcsc, ewcsNR);
+        wc->wcc_all.resize(sc_numWallCycleCountersSquared);
     }
 
 #if DEBUG_WCYCLE
@@ -223,32 +230,10 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, const t_commrec* cr)
     return wc;
 }
 
-void wallcycle_destroy(gmx_wallcycle_t wc)
-{
-    if (wc == nullptr)
-    {
-        return;
-    }
-
-    if (wc->wcc != nullptr)
-    {
-        sfree(wc->wcc);
-    }
-    if (wc->wcc_all != nullptr)
-    {
-        sfree(wc->wcc_all);
-    }
-    if (wc->wcsc != nullptr)
-    {
-        sfree(wc->wcsc);
-    }
-    sfree(wc);
-}
-
 #if DEBUG_WCYCLE
-static void debug_start_check(gmx_wallcycle_t wc, int ewc)
+static void debug_start_check(gmx_wallcycle* wc, WallCycleCounter ewc)
 {
-    if (wc->count_depth < 0 || wc->count_depth >= DEPTH_MAX)
+    if (wc->count_depth < 0 || wc->count_depth >= c_MaxWallCycleDepth)
     {
         gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", wc->count_depth + 1);
     }
@@ -258,41 +243,44 @@ static void debug_start_check(gmx_wallcycle_t wc, int ewc)
     if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
     {
         std::string indentStr(4 * wc->count_depth, ' ');
-        fprintf(stderr, "%swcycle_start depth %d, %s\n", indentStr.c_str(), wc->count_depth, wcn[ewc]);
+        fprintf(stderr, "%swcycle_start depth %d, %s\n", indentStr.c_str(), wc->count_depth, enumValuetoString(ewc));
     }
 }
 
-static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
+static void debug_stop_check(gmx_wallcycle* wc, WallCycleCounter ewc)
 {
     if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
     {
         std::string indentStr(4 * wc->count_depth, ' ');
-        fprintf(stderr, "%swcycle_stop  depth %d, %s\n", indentStr.c_str(), wc->count_depth, wcn[ewc]);
+        fprintf(stderr, "%swcycle_stop  depth %d, %s\n", indentStr.c_str(), wc->count_depth, enumValuetoString(ewc));
     }
 
     wc->count_depth--;
 
     if (wc->count_depth < 0)
     {
-        gmx_fatal(FARGS, "wallcycle counter depth out of range when stopping %s: %d", wcn[ewc], wc->count_depth);
+        gmx_fatal(FARGS,
+                  "wallcycle counter depth out of range when stopping %s: %d",
+                  enumValuetoString(ewc),
+                  wc->count_depth);
     }
     if (wc->counterlist[wc->count_depth] != ewc)
     {
         gmx_fatal(FARGS,
                   "wallcycle mismatch at stop, start %s, stop %s",
-                  wcn[wc->counterlist[wc->count_depth]],
-                  wcn[ewc]);
+                  enumValuetoString(wc->counterlist[wc->count_depth]),
+                  enumValuetoString(ewc));
     }
 }
 #endif
 
-void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c)
+void wallcycle_get(gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c)
 {
     *n = wc->wcc[ewc].n;
     *c = static_cast<double>(wc->wcc[ewc].c);
 }
 
-void wallcycle_sub_get(gmx_wallcycle_t wc, int ewcs, int* n, double* c)
+void wallcycle_sub_get(gmx_wallcycle* wc, WallCycleSubCounter ewcs, int* n, double* c)
 {
     if (sc_useCycleSubcounters && wc != nullptr)
     {
@@ -301,48 +289,43 @@ void wallcycle_sub_get(gmx_wallcycle_t wc, int ewcs, int* n, double* c)
     }
 }
 
-void wallcycle_reset_all(gmx_wallcycle_t wc)
+void wallcycle_reset_all(gmx_wallcycle* wc)
 {
-    int i;
-
     if (wc == nullptr)
     {
         return;
     }
 
-    for (i = 0; i < ewcNR; i++)
+    for (auto& counter : wc->wcc)
     {
-        wc->wcc[i].n = 0;
-        wc->wcc[i].c = 0;
+        counter.n = 0;
+        counter.c = 0;
     }
-    wc->haveInvalidCount = FALSE;
+    wc->haveInvalidCount = false;
 
-    if (wc->wcc_all)
+    if (!wc->wcc_all.empty())
     {
-        for (i = 0; i < ewcNR * ewcNR; i++)
+        for (int i = 0; i < sc_numWallCycleCountersSquared; i++)
         {
             wc->wcc_all[i].n = 0;
             wc->wcc_all[i].c = 0;
         }
     }
-    if (wc->wcsc)
+    for (auto& counter : wc->wcsc)
     {
-        for (i = 0; i < ewcsNR; i++)
-        {
-            wc->wcsc[i].n = 0;
-            wc->wcsc[i].c = 0;
-        }
+        counter.n = 0;
+        counter.c = 0;
     }
 }
 
-static gmx_bool is_pme_counter(int ewc)
+static bool is_pme_counter(WallCycleCounter ewc)
 {
-    return (ewc >= ewcPMEMESH && ewc <= ewcPMEWAITCOMM);
+    return (ewc >= WallCycleCounter::PmeMesh && ewc <= WallCycleCounter::PmeWaitComm);
 }
 
-static gmx_bool is_pme_subcounter(int ewc)
+static bool is_pme_subcounter(WallCycleCounter ewc)
 {
-    return (ewc >= ewcPME_REDISTXF && ewc < ewcPMEWAITCOMM);
+    return (ewc >= WallCycleCounter::PmeRedistXF && ewc < WallCycleCounter::PmeWaitComm);
 }
 
 void wallcycleBarrier(gmx_wallcycle* wc)
@@ -358,7 +341,10 @@ void wallcycleBarrier(gmx_wallcycle* wc)
 }
 
 /* Subtract counter ewc_sub timed inside a timing block for ewc_main */
-static void subtract_cycles(wallcc_t* wcc, int ewc_main, int ewc_sub)
+// NOLINTNEXTLINE(google-runtime-references)
+static void subtract_cycles(gmx::EnumerationArray<WallCycleCounter, wallcc_t>& wcc,
+                            WallCycleCounter                                   ewc_main,
+                            WallCycleCounter                                   ewc_sub)
 {
     if (wcc[ewc_sub].n > 0)
     {
@@ -374,45 +360,47 @@ static void subtract_cycles(wallcc_t* wcc, int ewc_main, int ewc_sub)
     }
 }
 
-void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme)
+void wallcycle_scale_by_num_threads(gmx_wallcycle* wc, bool isPmeRank, int nthreads_pp, int nthreads_pme)
 {
     if (wc == nullptr)
     {
         return;
     }
 
-    for (int i = 0; i < ewcNR; i++)
+    for (auto key : keysOf(wc->wcc))
     {
-        if (is_pme_counter(i) || (i == ewcRUN && isPmeRank))
+        if (is_pme_counter(key) || (key == WallCycleCounter::Run && isPmeRank))
         {
-            wc->wcc[i].c *= nthreads_pme;
+            wc->wcc[key].c *= nthreads_pme;
 
-            if (wc->wcc_all)
+            if (!wc->wcc_all.empty())
             {
-                for (int j = 0; j < ewcNR; j++)
+                const int current = static_cast<int>(key);
+                for (int j = 0; j < sc_numWallCycleCounters; j++)
                 {
-                    wc->wcc_all[i * ewcNR + j].c *= nthreads_pme;
+                    wc->wcc_all[current * sc_numWallCycleCounters + j].c *= nthreads_pme;
                 }
             }
         }
         else
         {
-            wc->wcc[i].c *= nthreads_pp;
+            wc->wcc[key].c *= nthreads_pp;
 
-            if (wc->wcc_all)
+            if (!wc->wcc_all.empty())
             {
-                for (int j = 0; j < ewcNR; j++)
+                const int current = static_cast<int>(key);
+                for (int j = 0; j < sc_numWallCycleCounters; j++)
                 {
-                    wc->wcc_all[i * ewcNR + j].c *= nthreads_pp;
+                    wc->wcc_all[current * sc_numWallCycleCounters + j].c *= nthreads_pp;
                 }
             }
         }
     }
-    if (sc_useCycleSubcounters && wc->wcsc && !isPmeRank)
+    if (sc_useCycleSubcounters && !isPmeRank)
     {
-        for (int i = 0; i < ewcsNR; i++)
+        for (auto counter : wc->wcsc)
         {
-            wc->wcsc[i].c *= nthreads_pp;
+            counter.c *= nthreads_pp;
         }
     }
 }
@@ -429,16 +417,15 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthr
  * wcc_all are unused by the GPU reporting, but it is not satisfactory
  * for the future. Also, there's no need for MPI_Allreduce, since
  * only MASTERRANK uses any of the results. */
-WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle_t wc)
+WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 {
-    WallcycleCounts cycles_sum;
-    wallcc_t*       wcc;
-    double          cycles[int(ewcNR) + int(ewcsNR)];
+    WallcycleCounts                                    cycles_sum;
+    gmx::EnumerationArray<WallCycleCounter, double>    cyclesMain;
+    gmx::EnumerationArray<WallCycleSubCounter, double> cyclesSub;
 #if GMX_MPI
-    double cycles_n[int(ewcNR) + int(ewcsNR) + 1];
+    gmx::EnumerationArray<WallCycleCounter, double>    cyclesMainOnNode;
+    gmx::EnumerationArray<WallCycleSubCounter, double> cyclesSubOnNode;
 #endif
-    int i;
-    int nsum;
 
     if (wc == nullptr)
     {
@@ -448,104 +435,128 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle_t wc)
         return cycles_sum;
     }
 
-    wcc = wc->wcc;
+    auto& wcc = wc->wcc;
 
-    subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMLOAD);
-    subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMBOUND);
+    subtract_cycles(wcc, WallCycleCounter::Domdec, WallCycleCounter::DDCommLoad);
+    subtract_cycles(wcc, WallCycleCounter::Domdec, WallCycleCounter::DDCommBound);
 
-    subtract_cycles(wcc, ewcPME_FFT, ewcPME_FFTCOMM);
+    subtract_cycles(wcc, WallCycleCounter::PmeFft, WallCycleCounter::PmeFftComm);
 
     if (cr->npmenodes == 0)
     {
         /* All nodes do PME (or no PME at all) */
-        subtract_cycles(wcc, ewcFORCE, ewcPMEMESH);
+        subtract_cycles(wcc, WallCycleCounter::Force, WallCycleCounter::PmeMesh);
     }
     else
     {
         /* The are PME-only nodes */
-        if (wcc[ewcPMEMESH].n > 0)
+        if (wcc[WallCycleCounter::PmeMesh].n > 0)
         {
             /* This must be a PME only node, calculate the Wait + Comm. time */
-            GMX_ASSERT(wcc[ewcRUN].c >= wcc[ewcPMEMESH].c,
+            GMX_ASSERT(wcc[WallCycleCounter::Run].c >= wcc[WallCycleCounter::PmeMesh].c,
                        "Total run ticks must be greater than PME-only ticks");
-            wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH].c;
+            wcc[WallCycleCounter::PmeWaitComm].c =
+                    wcc[WallCycleCounter::Run].c - wcc[WallCycleCounter::PmeMesh].c;
         }
     }
 
     /* Store the cycles in a double buffer for summing */
-    for (i = 0; i < ewcNR; i++)
+    for (auto key : keysOf(wcc))
     {
 #if GMX_MPI
-        cycles_n[i] = static_cast<double>(wcc[i].n);
+        cyclesMainOnNode[key] = static_cast<double>(wcc[key].n);
 #endif
-        cycles[i] = static_cast<double>(wcc[i].c);
+        cyclesMain[key] = static_cast<double>(wcc[key].c);
     }
-    nsum = ewcNR;
-    if (wc->wcsc)
+    if (sc_useCycleSubcounters)
     {
-        for (i = 0; i < ewcsNR; i++)
+        for (auto key : keysOf(wc->wcsc))
         {
 #if GMX_MPI
-            cycles_n[ewcNR + i] = static_cast<double>(wc->wcsc[i].n);
+            cyclesSubOnNode[key] = static_cast<double>(wc->wcsc[key].n);
 #endif
-            cycles[ewcNR + i] = static_cast<double>(wc->wcsc[i].c);
+            cyclesSub[key] = static_cast<double>(wc->wcsc[key].c);
         }
-        nsum += ewcsNR;
     }
 
 #if GMX_MPI
     if (cr->nnodes > 1)
     {
-        double buf[int(ewcNR) + int(ewcsNR) + 1];
+        gmx::EnumerationArray<WallCycleCounter, double>    bufMain;
+        gmx::EnumerationArray<WallCycleSubCounter, double> bufSub;
 
         // TODO this code is used only at the end of the run, so we
         // can just do a simple reduce of haveInvalidCount in
         // wallcycle_print, and avoid bugs
-        cycles_n[nsum] = (wc->haveInvalidCount ? 1 : 0);
+        double haveInvalidCount = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cycles_n, buf, nsum + 1, MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
-        for (i = 0; i < ewcNR; i++)
+        MPI_Allreduce(cyclesMainOnNode.data(), bufMain.data(), bufMain.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+        if (sc_useCycleSubcounters)
         {
-            wcc[i].n = gmx::roundToInt(buf[i]);
+            MPI_Allreduce(cyclesSubOnNode.data(), bufSub.data(), bufSub.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
         }
-        wc->haveInvalidCount = (buf[nsum] > 0);
-        if (wc->wcsc)
+        MPI_Allreduce(MPI_IN_PLACE, &haveInvalidCount, 1, MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+        for (auto key : keysOf(wcc))
         {
-            for (i = 0; i < ewcsNR; i++)
+            wcc[key].n = gmx::roundToInt(bufMain[key]);
+        }
+        wc->haveInvalidCount = (haveInvalidCount > 0);
+        if (sc_useCycleSubcounters)
+        {
+            for (auto key : keysOf(wc->wcsc))
             {
-                wc->wcsc[i].n = gmx::roundToInt(buf[ewcNR + i]);
+                wc->wcsc[key].n = gmx::roundToInt(bufSub[key]);
             }
         }
 
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cycles, cycles_sum.data(), nsum, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
-
-        if (wc->wcc_all != nullptr)
+        MPI_Allreduce(cyclesMain.data(), cycles_sum.data(), cyclesMain.size(), MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
+        if (sc_useCycleSubcounters)
         {
-            double *buf_all, *cyc_all;
+            MPI_Allreduce(cyclesSub.data(),
+                          cycles_sum.data() + sc_numWallCycleCounters,
+                          cyclesSub.size(),
+                          MPI_DOUBLE,
+                          MPI_SUM,
+                          cr->mpi_comm_mysim);
+        }
 
-            snew(cyc_all, ewcNR * ewcNR);
-            snew(buf_all, ewcNR * ewcNR);
-            for (i = 0; i < ewcNR * ewcNR; i++)
+        if (!wc->wcc_all.empty())
+        {
+            std::array<double, sc_numWallCycleCountersSquared> cyc_all;
+            std::array<double, sc_numWallCycleCountersSquared> buf_all;
+
+            for (int i = 0; i < sc_numWallCycleCountersSquared; i++)
             {
                 cyc_all[i] = wc->wcc_all[i].c;
             }
             // TODO Use MPI_Reduce
-            MPI_Allreduce(cyc_all, buf_all, ewcNR * ewcNR, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
-            for (i = 0; i < ewcNR * ewcNR; i++)
+            MPI_Allreduce(cyc_all.data(),
+                          buf_all.data(),
+                          sc_numWallCycleCountersSquared,
+                          MPI_DOUBLE,
+                          MPI_SUM,
+                          cr->mpi_comm_mysim);
+            for (int i = 0; i < sc_numWallCycleCountersSquared; i++)
             {
                 wc->wcc_all[i].c = static_cast<gmx_cycles_t>(buf_all[i]);
             }
-            sfree(buf_all);
-            sfree(cyc_all);
         }
     }
     else
 #endif
     {
-        for (i = 0; i < nsum; i++)
+        for (auto key : keysOf(cyclesMain))
         {
-            cycles_sum[i] = cycles[i];
+            cycles_sum[static_cast<int>(key)] = cyclesMain[key];
+        }
+        if (sc_useCycleSubcounters)
+        {
+            for (auto key : keysOf(cyclesSub))
+            {
+                const int offset   = static_cast<int>(key) + sc_numWallCycleCounters;
+                cycles_sum[offset] = cyclesSub[key];
+            }
         }
     }
 
@@ -669,14 +680,14 @@ void wallcycle_print(FILE*                            fplog,
                      int                              nth_pp,
                      int                              nth_pme,
                      double                           realtime,
-                     gmx_wallcycle_t                  wc,
+                     gmx_wallcycle*                   wc,
                      const WallcycleCounts&           cyc_sum,
                      const gmx_wallclock_gpu_nbnxn_t* gpu_nbnxn_t,
                      const gmx_wallclock_gpu_pme_t*   gpu_pme_t)
 {
     double      tot, tot_for_pp, tot_for_rest, tot_cpu_overlap, gpu_cpu_ratio;
     double      c2t, c2t_pp, c2t_pme = 0;
-    int         i, j, npp, nth_tot;
+    int         npp, nth_tot;
     char        buf[STRLEN];
     const char* hline =
             "-----------------------------------------------------------------------------";
@@ -699,7 +710,7 @@ void wallcycle_print(FILE*                            fplog,
     /* When using PME-only nodes, the next line is valid for both
        PP-only and PME-only nodes because they started ewcRUN at the
        same time. */
-    tot        = cyc_sum[ewcRUN];
+    tot        = cyc_sum[static_cast<int>(WallCycleCounter::Run)];
     tot_for_pp = 0;
 
     if (tot <= 0.0)
@@ -749,44 +760,63 @@ void wallcycle_print(FILE*                            fplog,
     print_header(fplog, npp, nth_pp, npme, nth_pme);
 
     fprintf(fplog, "%s\n", hline);
-    for (i = ewcPPDURINGPME + 1; i < ewcNR; i++)
+    gmx::EnumerationWrapper<WallCycleCounter> iter;
+    for (auto key = gmx::EnumerationIterator<WallCycleCounter>(WallCycleCounter::Domdec);
+         key != iter.end();
+         ++key)
     {
-        if (is_pme_subcounter(i))
+
+        if (is_pme_subcounter(*key))
         {
             /* Do not count these at all */
         }
-        else if (npme > 0 && is_pme_counter(i))
+        else if (npme > 0 && is_pme_counter(*key))
         {
             /* Print timing information for PME-only nodes, but add an
              * asterisk so the reader of the table can know that the
              * walltimes are not meant to add up. The asterisk still
              * fits in the required maximum of 19 characters. */
-            char buffer[STRLEN];
-            snprintf(buffer, STRLEN, "%s *", wcn[i]);
-            print_cycles(fplog, c2t_pme, buffer, npme, nth_pme, wc->wcc[i].n, cyc_sum[i], tot);
+            std::string message = gmx::formatString("%s *", enumValuetoString(*key));
+            print_cycles(fplog,
+                         c2t_pme,
+                         message.c_str(),
+                         npme,
+                         nth_pme,
+                         wc->wcc[*key].n,
+                         cyc_sum[static_cast<int>(*key)],
+                         tot);
         }
         else
         {
             /* Print timing information when it is for a PP or PP+PME
                node */
-            print_cycles(fplog, c2t_pp, wcn[i], npp, nth_pp, wc->wcc[i].n, cyc_sum[i], tot);
-            tot_for_pp += cyc_sum[i];
+            print_cycles(fplog,
+                         c2t_pp,
+                         enumValuetoString(*key),
+                         npp,
+                         nth_pp,
+                         wc->wcc[*key].n,
+                         cyc_sum[static_cast<int>(*key)],
+                         tot);
+            tot_for_pp += cyc_sum[static_cast<int>(*key)];
         }
     }
-    if (wc->wcc_all != nullptr)
+    if (!wc->wcc_all.empty())
     {
-        for (i = 0; i < ewcNR; i++)
+        for (auto i : keysOf(wc->wcc))
         {
-            for (j = 0; j < ewcNR; j++)
+            const int countI = static_cast<int>(i);
+            for (auto j : keysOf(wc->wcc))
             {
-                snprintf(buf, 20, "%-9.9s %-9.9s", wcn[i], wcn[j]);
+                const int countJ = static_cast<int>(j);
+                snprintf(buf, 20, "%-9.9s %-9.9s", enumValuetoString(i), enumValuetoString(j));
                 print_cycles(fplog,
                              c2t_pp,
                              buf,
                              npp,
                              nth_pp,
-                             wc->wcc_all[i * ewcNR + j].n,
-                             wc->wcc_all[i * ewcNR + j].c,
+                             wc->wcc_all[countI * sc_numWallCycleCounters + countJ].n,
+                             wc->wcc_all[countI * sc_numWallCycleCounters + countJ].c,
                              tot);
             }
         }
@@ -806,16 +836,18 @@ void wallcycle_print(FILE*                            fplog,
                 hline);
     }
 
-    if (wc->wcc[ewcPMEMESH].n > 0)
+    if (wc->wcc[WallCycleCounter::PmeMesh].n > 0)
     {
         // A workaround to not print breakdown when no subcounters were recorded.
         // TODO: figure out and record PME GPU counters (what to do with the waiting ones?)
-        std::vector<int> validPmeSubcounterIndices;
-        for (i = ewcPPDURINGPME + 1; i < ewcNR; i++)
+        std::vector<WallCycleCounter> validPmeSubcounterIndices;
+        for (auto key = gmx::EnumerationIterator<WallCycleCounter>(WallCycleCounter::Domdec);
+             key != iter.end();
+             key++)
         {
-            if (is_pme_subcounter(i) && wc->wcc[i].n > 0)
+            if (is_pme_subcounter(*key) && wc->wcc[*key].n > 0)
             {
-                validPmeSubcounterIndices.push_back(i);
+                validPmeSubcounterIndices.push_back(*key);
             }
         }
 
@@ -827,24 +859,31 @@ void wallcycle_print(FILE*                            fplog,
             {
                 print_cycles(fplog,
                              npme > 0 ? c2t_pme : c2t_pp,
-                             wcn[i],
+                             enumValuetoString(i),
                              npme > 0 ? npme : npp,
                              nth_pme,
                              wc->wcc[i].n,
-                             cyc_sum[i],
+                             cyc_sum[static_cast<int>(i)],
                              tot);
             }
             fprintf(fplog, "%s\n", hline);
         }
     }
 
-    if (sc_useCycleSubcounters && wc->wcsc)
+    if (sc_useCycleSubcounters)
     {
         fprintf(fplog, " Breakdown of PP computation\n");
         fprintf(fplog, "%s\n", hline);
-        for (i = 0; i < ewcsNR; i++)
+        for (auto key : keysOf(wc->wcsc))
         {
-            print_cycles(fplog, c2t_pp, wcsn[i], npp, nth_pp, wc->wcsc[i].n, cyc_sum[ewcNR + i], tot);
+            print_cycles(fplog,
+                         c2t_pp,
+                         enumValuetoString(key),
+                         npp,
+                         nth_pp,
+                         wc->wcsc[key].n,
+                         cyc_sum[sc_numWallCycleCounters + static_cast<int>(key)],
+                         tot);
         }
         fprintf(fplog, "%s\n", hline);
     }
@@ -865,19 +904,19 @@ void wallcycle_print(FILE*                            fplog,
         tot_gpu += gpu_nbnxn_t->pl_h2d_t + gpu_nbnxn_t->nb_h2d_t + gpu_nbnxn_t->nb_d2h_t;
 
         /* add up the kernel timings */
-        for (i = 0; i < 2; i++)
+        for (int i = 0; i < 2; i++)
         {
-            for (j = 0; j < 2; j++)
+            for (int j = 0; j < 2; j++)
             {
                 tot_gpu += gpu_nbnxn_t->ktime[i][j].t;
             }
         }
         tot_gpu += gpu_nbnxn_t->pruneTime.t;
 
-        tot_cpu_overlap = wc->wcc[ewcFORCE].c;
-        if (wc->wcc[ewcPMEMESH].n > 0)
+        tot_cpu_overlap = wc->wcc[WallCycleCounter::Force].c;
+        if (wc->wcc[WallCycleCounter::PmeMesh].n > 0)
         {
-            tot_cpu_overlap += wc->wcc[ewcPMEMESH].c;
+            tot_cpu_overlap += wc->wcc[WallCycleCounter::PmeMesh].c;
         }
         tot_cpu_overlap *= realtime * 1000 / tot; /* convert s to ms */
 
@@ -889,9 +928,9 @@ void wallcycle_print(FILE*                            fplog,
         print_gputimes(fplog, "Pair list H2D", gpu_nbnxn_t->pl_h2d_c, gpu_nbnxn_t->pl_h2d_t, tot_gpu);
         print_gputimes(fplog, "X / q H2D", gpu_nbnxn_t->nb_c, gpu_nbnxn_t->nb_h2d_t, tot_gpu);
 
-        for (i = 0; i < 2; i++)
+        for (int i = 0; i < 2; i++)
         {
-            for (j = 0; j < 2; j++)
+            for (int j = 0; j < 2; j++)
             {
                 if (gpu_nbnxn_t->ktime[i][j].c)
                 {
@@ -939,18 +978,18 @@ void wallcycle_print(FILE*                            fplog,
             fprintf(fplog, "%s\n", hline);
         }
         gpu_cpu_ratio = tot_gpu / tot_cpu_overlap;
-        if (gpu_nbnxn_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
+        if (gpu_nbnxn_t->nb_c > 0 && wc->wcc[WallCycleCounter::Force].n > 0)
         {
             fprintf(fplog,
                     "\nAverage per-step force GPU/CPU evaluation time ratio: %.3f ms/%.3f ms = "
                     "%.3f\n",
                     tot_gpu / gpu_nbnxn_t->nb_c,
-                    tot_cpu_overlap / wc->wcc[ewcFORCE].n,
+                    tot_cpu_overlap / wc->wcc[WallCycleCounter::Force].n,
                     gpu_cpu_ratio);
         }
 
         /* only print notes related to CPU-GPU load balance with PME */
-        if (wc->wcc[ewcPMEMESH].n > 0)
+        if (wc->wcc[WallCycleCounter::PmeMesh].n > 0)
         {
             fprintf(fplog, "For optimal resource utilization this ratio should be close to 1\n");
 
@@ -1011,10 +1050,12 @@ void wallcycle_print(FILE*                            fplog,
                         "call, so timings are not those of real runs.");
     }
 
-    if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 && (cyc_sum[ewcDOMDEC] > tot * 0.1 || cyc_sum[ewcNS] > tot * 0.1))
+    if (wc->wcc[WallCycleCounter::NbXFBufOps].n > 0
+        && (cyc_sum[static_cast<int>(WallCycleCounter::Domdec)] > tot * 0.1
+            || cyc_sum[static_cast<int>(WallCycleCounter::NS)] > tot * 0.1))
     {
         /* Only the sim master calls this function, so always print to stderr */
-        if (wc->wcc[ewcDOMDEC].n == 0)
+        if (wc->wcc[WallCycleCounter::Domdec].n == 0)
         {
             GMX_LOG(mdlog.warning)
                     .asParagraph()
@@ -1022,7 +1063,7 @@ void wallcycle_print(FILE*                            fplog,
                             "NOTE: %d %% of the run time was spent in pair search,\n"
                             "      you might want to increase nstlist (this has no effect on "
                             "accuracy)\n",
-                            gmx::roundToInt(100 * cyc_sum[ewcNS] / tot));
+                            gmx::roundToInt(100 * cyc_sum[static_cast<int>(WallCycleCounter::NS)] / tot));
         }
         else
         {
@@ -1033,38 +1074,36 @@ void wallcycle_print(FILE*                            fplog,
                             "      %d %% of the run time was spent in pair search,\n"
                             "      you might want to increase nstlist (this has no effect on "
                             "accuracy)\n",
-                            gmx::roundToInt(100 * cyc_sum[ewcDOMDEC] / tot),
-                            gmx::roundToInt(100 * cyc_sum[ewcNS] / tot));
+                            gmx::roundToInt(100 * cyc_sum[static_cast<int>(WallCycleCounter::Domdec)] / tot),
+                            gmx::roundToInt(100 * cyc_sum[static_cast<int>(WallCycleCounter::NS)] / tot));
         }
     }
 
-    if (cyc_sum[ewcMoveE] > tot * 0.05)
+    if (cyc_sum[static_cast<int>(WallCycleCounter::MoveE)] > tot * 0.05)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
                 .appendTextFormatted(
                         "NOTE: %d %% of the run time was spent communicating energies,\n"
                         "      you might want to increase some nst* mdp options\n",
-                        gmx::roundToInt(100 * cyc_sum[ewcMoveE] / tot));
+                        gmx::roundToInt(100 * cyc_sum[static_cast<int>(WallCycleCounter::MoveE)] / tot));
     }
 }
 
-extern int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
+int64_t wcycle_get_reset_counters(gmx_wallcycle* wc)
 {
     if (wc == nullptr)
     {
         return -1;
     }
-
     return wc->reset_counters;
 }
 
-extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, int64_t reset_counters)
+void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters)
 {
     if (wc == nullptr)
     {
         return;
     }
-
     wc->reset_counters = reset_counters;
 }

@@ -304,7 +304,7 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         GMX_ASSERT(forceWithVirial, "Need a valid ForceWithVirial object");
     }
 
-    wallcycle_start(wallcycle, ewcAWH);
+    wallcycle_start(wallcycle, WallCycleCounter::Awh);
 
     t_pbc pbc;
     set_pbc(&pbc, pbcType, box);
@@ -394,7 +394,7 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         }
     }
 
-    wallcycle_stop(wallcycle, ewcAWH);
+    wallcycle_stop(wallcycle, WallCycleCounter::Awh);
 
     return MASTER(commRecord_) ? static_cast<real>(awhPotential) : 0;
 }

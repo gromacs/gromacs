@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,7 +170,7 @@ int gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t pfft_setup,
 int gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t   pfft_setup,
                                enum gmx_fft_direction dir,
                                int                    thread,
-                               gmx_wallcycle_t        wcycle)
+                               gmx_wallcycle*         wcycle)
 {
     if (((pfft_setup->p1->flags & FFT5D_REALCOMPLEX) == 0)
         ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))

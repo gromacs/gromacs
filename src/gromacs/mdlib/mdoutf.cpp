@@ -91,7 +91,7 @@ struct gmx_mdoutf
     int                            natoms_global;
     int                            natoms_x_compressed;
     const SimulationGroups*        groups; /* for compressed position writing */
-    gmx_wallcycle_t                wcycle;
+    gmx_wallcycle*                 wcycle;
     rvec*                          f_global;
     gmx::IMDOutputProvider*        outputProvider;
     const gmx::MDModulesNotifiers* mdModulesNotifiers;
@@ -110,7 +110,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                          const t_inputrec*              ir,
                          const gmx_mtop_t&              top_global,
                          const gmx_output_env_t*        oenv,
-                         gmx_wallcycle_t                wcycle,
+                         gmx_wallcycle*                 wcycle,
                          const gmx::StartingBehavior    startingBehavior,
                          bool                           simulationsShareState,
                          const gmx_multisim_t*          ms)
@@ -261,7 +261,7 @@ FILE* mdoutf_get_fp_dhdl(gmx_mdoutf_t of)
     return of->fp_dhdl;
 }
 
-gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
+gmx_wallcycle* mdoutf_get_wcycle(gmx_mdoutf_t of)
 {
     return of->wcycle;
 }
@@ -753,10 +753,10 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
 {
     if (of->tng || of->tng_low_prec)
     {
-        wallcycle_start(of->wcycle, ewcTRAJ);
+        wallcycle_start(of->wcycle, WallCycleCounter::Traj);
         gmx_tng_close(&of->tng);
         gmx_tng_close(&of->tng_low_prec);
-        wallcycle_stop(of->wcycle, ewcTRAJ);
+        wallcycle_stop(of->wcycle, WallCycleCounter::Traj);
     }
 }
 

@@ -44,6 +44,7 @@
 #include "config.h"
 
 #include <chrono>
+#include <memory>
 #include <thread>
 
 #include "gromacs/timing/cyclecounter.h"
@@ -72,31 +73,30 @@ class TimingTest : public ::testing::Test
 {
 public:
     TimingTest() : wcycle(wallcycle_init(nullptr, 0, nullptr)) {}
-    ~TimingTest() override { wallcycle_destroy(wcycle); }
 
 protected:
-    const int       delayInMilliseconds = 1;
-    gmx_wallcycle_t wcycle;
+    const int                      delayInMilliseconds = 1;
+    std::unique_ptr<gmx_wallcycle> wcycle;
 };
 
 
 //! Test whether the we can run the cycle counter.
 TEST_F(TimingTest, RunWallCycle)
 {
-    int    probe = 0, ref = 1;
-    int    n1, n2;
-    double c1, c2;
+    WallCycleCounter probe = WallCycleCounter::Run, ref = WallCycleCounter::Step;
+    int              n1, n2;
+    double           c1, c2;
 
     //! credit cycles from enclosing call to the ref field of wcycle
-    wallcycle_start(wcycle, ref);
+    wallcycle_start(wcycle.get(), ref);
     //! cycles from the probe call
-    wallcycle_start(wcycle, probe);
+    wallcycle_start(wcycle.get(), probe);
     sleepForMilliseconds(delayInMilliseconds);
-    wallcycle_stop(wcycle, probe);
-    wallcycle_stop(wcycle, ref);
+    wallcycle_stop(wcycle.get(), probe);
+    wallcycle_stop(wcycle.get(), ref);
     //! extract both
-    wallcycle_get(wcycle, probe, &n1, &c1);
-    wallcycle_get(wcycle, ref, &n2, &c2);
+    wallcycle_get(wcycle.get(), probe, &n1, &c1);
+    wallcycle_get(wcycle.get(), ref, &n2, &c2);
 
     EXPECT_EQ(n1, n2);
     EXPECT_DOUBLE_EQ_TOL(c1, c2, relativeToleranceAsFloatingPoint(c1, 5e-3));
@@ -108,17 +108,17 @@ TEST_F(TimingTest, RunWallCycleSub)
 {
     if (useCycleSubcounters)
     {
-        int    probe = 0;
-        int    ref   = 1;
-        int    n1, n2;
-        double c1, c2;
-        wallcycle_sub_start(wcycle, ref);
-        wallcycle_sub_start(wcycle, probe);
+        WallCycleSubCounter probe = WallCycleSubCounter::DDRedist;
+        WallCycleSubCounter ref   = WallCycleSubCounter::DDGrid;
+        int                 n1, n2;
+        double              c1, c2;
+        wallcycle_sub_start(wcycle.get(), ref);
+        wallcycle_sub_start(wcycle.get(), probe);
         sleepForMilliseconds(delayInMilliseconds);
-        wallcycle_sub_stop(wcycle, probe);
-        wallcycle_sub_stop(wcycle, ref);
-        wallcycle_sub_get(wcycle, probe, &n1, &c1);
-        wallcycle_sub_get(wcycle, ref, &n2, &c2);
+        wallcycle_sub_stop(wcycle.get(), probe);
+        wallcycle_sub_stop(wcycle.get(), ref);
+        wallcycle_sub_get(wcycle.get(), probe, &n1, &c1);
+        wallcycle_sub_get(wcycle.get(), ref, &n2, &c2);
 
         EXPECT_EQ(n1, n2);
         EXPECT_DOUBLE_EQ_TOL(c1, c2, relativeToleranceAsFloatingPoint(c1, 5e-3));

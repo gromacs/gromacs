@@ -258,7 +258,7 @@ void dd_get_constraint_range(const gmx_domdec_t& dd, int* at_start, int* at_end)
 
 void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_wallcycle* wcycle)
 {
-    wallcycle_start(wcycle, ewcMOVEX);
+    wallcycle_start(wcycle, WallCycleCounter::MoveX);
 
     rvec shift = { 0, 0, 0 };
 
@@ -347,12 +347,12 @@ void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, g
         nzone += nzone;
     }
 
-    wallcycle_stop(wcycle, ewcMOVEX);
+    wallcycle_stop(wcycle, WallCycleCounter::MoveX);
 }
 
 void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces, gmx_wallcycle* wcycle)
 {
-    wallcycle_start(wcycle, ewcMOVEF);
+    wallcycle_start(wcycle, WallCycleCounter::MoveF);
 
     gmx::ArrayRef<gmx::RVec> f      = forceWithShiftForces->force();
     gmx::ArrayRef<gmx::RVec> fshift = forceWithShiftForces->shiftForces();
@@ -456,7 +456,7 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
         }
         nzone /= 2;
     }
-    wallcycle_stop(wcycle, ewcMOVEF);
+    wallcycle_stop(wcycle, WallCycleCounter::MoveF);
 }
 
 /* Convenience function for extracting a real buffer from an rvec buffer

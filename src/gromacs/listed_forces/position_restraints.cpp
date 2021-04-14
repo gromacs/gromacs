@@ -463,7 +463,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                            gmx::ArrayRef<const real>     lambda,
                            const t_forcerec*             fr)
 {
-    wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
+    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::Restraints);
 
     auto& foreignTerms = enerd->foreignLambdaTerms;
     for (int i = 0; i < 1 + foreignTerms.numLambdas(); i++)
@@ -487,7 +487,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                                      fr->posres_comB);
         foreignTerms.accumulate(i, v, dvdl);
     }
-    wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
+    wallcycle_sub_stop(wcycle, WallCycleSubCounter::Restraints);
 }
 
 /*! \brief Helper function that wraps calls to fbposres for

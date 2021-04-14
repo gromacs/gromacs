@@ -2053,7 +2053,7 @@ gmx_bool do_swapcoords(t_commrec*        cr,
     rvec                com_solvent, com_particle; /* solvent and swap molecule's center of mass */
 
 
-    wallcycle_start(wcycle, ewcSWAP);
+    wallcycle_start(wcycle, WallCycleCounter::Swap);
 
     set_pbc(s->pbc, ir->pbcType, box);
 
@@ -2242,7 +2242,7 @@ gmx_bool do_swapcoords(t_commrec*        cr,
 
     } /* end of if(bSwap) */
 
-    wallcycle_stop(wcycle, ewcSWAP);
+    wallcycle_stop(wcycle, WallCycleCounter::Swap);
 
     return bSwap;
 }

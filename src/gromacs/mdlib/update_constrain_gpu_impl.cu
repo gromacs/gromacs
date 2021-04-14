@@ -109,8 +109,8 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                          const float                       dtPressureCouple,
                                          const matrix                      prVelocityScalingMatrix)
 {
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
 
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
@@ -141,16 +141,16 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     coordinatesReady_->markEvent(deviceStream_);
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 
     return;
 }
 
 void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 {
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
 
     ScalingMatrix mu(scalingMatrix);
 
@@ -166,14 +166,14 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
 void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
 {
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
 
     ScalingMatrix mu(scalingMatrix);
 
@@ -189,8 +189,8 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
@@ -227,8 +227,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
                                    const t_mdatoms&              md)
 {
     // TODO wallcycle
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
 
     GMX_ASSERT(d_x != nullptr, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
@@ -253,8 +253,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
 void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)

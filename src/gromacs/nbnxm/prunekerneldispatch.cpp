@@ -100,8 +100,8 @@ void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality i
 
 void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
 {
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_NONBONDED);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchGpuNonBonded);
 
     const bool stepIsEven =
             (pairlistSets().numStepsWithPairlist(step) % (2 * pairlistSets().params().mtsFactor) == 0);
@@ -111,6 +111,6 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
             stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,
             pairlistSets().params().numRollingPruningParts);
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NONBONDED);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNonBonded);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }

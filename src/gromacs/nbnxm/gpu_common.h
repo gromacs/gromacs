@@ -286,18 +286,18 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
             // we start without counting and only when the task finished we issue a
             // start/stop to increment.
             // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
-            wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
+            wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuNbL);
 
             if (!haveStreamTasksCompleted(*nb->deviceStreams[iLocality]))
             {
-                wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+                wallcycle_stop(wcycle, WallCycleCounter::WaitGpuNbL);
 
                 // Early return to skip the steps below that we have to do only
                 // after the NB task completed
                 return false;
             }
 
-            wallcycle_increment_event_count(wcycle, ewcWAIT_GPU_NB_L);
+            wallcycle_increment_event_count(wcycle, WallCycleCounter::WaitGpuNbL);
         }
         else if (haveResultToWaitFor)
         {
@@ -361,8 +361,8 @@ float gpu_wait_finish_task(NbnxmGpu*                nb,
                            gmx_wallcycle*           wcycle)
 {
     auto cycleCounter = (atomToInteractionLocality(aloc) == InteractionLocality::Local)
-                                ? ewcWAIT_GPU_NB_L
-                                : ewcWAIT_GPU_NB_NL;
+                                ? WallCycleCounter::WaitGpuNbL
+                                : WallCycleCounter::WaitGpuNbNL;
 
     wallcycle_start(wcycle, cycleCounter);
     gpu_try_finish_task(nb, stepWork, aloc, e_lj, e_el, shiftForces, GpuTaskCompletion::Wait, wcycle);

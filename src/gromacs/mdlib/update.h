@@ -144,7 +144,7 @@ public:
     void finish_update(const t_inputrec& inputRecord,
                        const t_mdatoms*  md,
                        t_state*          state,
-                       gmx_wallcycle_t   wcycle,
+                       gmx_wallcycle*    wcycle,
                        bool              haveConstraints);
 
     /*! \brief Secong part of the SD integrator.
@@ -172,7 +172,7 @@ public:
                                t_state*          state,
                                const t_commrec*  cr,
                                t_nrnb*           nrnb,
-                               gmx_wallcycle_t   wcycle,
+                               gmx_wallcycle*    wcycle,
                                gmx::Constraints* constr,
                                bool              do_log,
                                bool              do_ene);

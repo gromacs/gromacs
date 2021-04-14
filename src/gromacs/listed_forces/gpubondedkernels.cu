@@ -914,8 +914,8 @@ void GpuBonded::Impl::launchKernel()
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
 
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_BONDED);
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
 
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 
@@ -935,8 +935,8 @@ void GpuBonded::Impl::launchKernel()
                     "exec_kernel_gpu<calcVir, calcEner>",
                     kernelArgs);
 
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
 void GpuBonded::launchKernel(const gmx::StepWorkload& stepWork)

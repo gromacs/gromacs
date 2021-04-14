@@ -305,7 +305,7 @@ void LegacySimulator::do_tpi()
 
     /* Print to log file  */
     walltime_accounting_start_time(walltime_accounting);
-    wallcycle_start(wcycle, ewcRUN);
+    wallcycle_start(wcycle, WallCycleCounter::Run);
     print_start(fplog, cr, walltime_accounting, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */

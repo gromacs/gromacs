@@ -928,7 +928,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
                     t_forcerec*                    fr,
                     const matrix                   box,
                     gmx::ArrayRef<const gmx::RVec> x,
-                    gmx_wallcycle_t                wcycle,
+                    gmx_wallcycle*                 wcycle,
                     int64_t                        step,
                     int64_t                        step_rel,
                     gmx_bool*                      bPrinting,
@@ -946,7 +946,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
 
     n_prev      = pme_lb->cycles_n;
     cycles_prev = pme_lb->cycles_c;
-    wallcycle_get(wcycle, ewcSTEP, &pme_lb->cycles_n, &pme_lb->cycles_c);
+    wallcycle_get(wcycle, WallCycleCounter::Step, &pme_lb->cycles_n, &pme_lb->cycles_c);
 
     /* Before the first step we haven't done any steps yet.
      * Also handle cases where ir.init_step % ir.nstlist != 0.

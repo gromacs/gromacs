@@ -79,7 +79,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                          const t_inputrec*              ir,
                          const gmx_mtop_t&              mtop,
                          const gmx_output_env_t*        oenv,
-                         gmx_wallcycle_t                wcycle,
+                         gmx_wallcycle*                 wcycle,
                          gmx::StartingBehavior          startingBehavior,
                          bool                           simulationsShareState,
                          const gmx_multisim_t*          ms);
@@ -91,7 +91,7 @@ ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 FILE* mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
 
 /*! \brief Getter for wallcycle timer */
-gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
+gmx_wallcycle* mdoutf_get_wcycle(gmx_mdoutf_t of);
 
 /*! \brief Close TNG files if they are open.
  *
