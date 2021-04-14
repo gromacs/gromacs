@@ -168,7 +168,6 @@ private:
     int numTempScaleValues_ = 0;
     /*! \brief Array with temperature scaling factors.
      * This is temporary solution to remap data from t_grp_tcstat into plain array.
-     * Not used in SYCL.
      * \todo Replace with better solution.
      */
     gmx::HostVector<float> h_lambdas_;

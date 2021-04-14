@@ -232,13 +232,25 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
         GMX_ASSERT(checkDeviceBuffer(d_lambdas_, numTempScaleValues_),
                    "Number of temperature scaling factors changed since it was set for the "
                    "last time.");
-        { // Explicitly limiting the scope of host accessor. Not strictly necessary here.
-            auto ha_lambdas_ = d_lambdas_.buffer_->get_access<mode::discard_write>();
-            for (int i = 0; i < numTempScaleValues_; i++)
-            {
-                ha_lambdas_[i] = tcstat[i].lambda;
-            }
+        GMX_RELEASE_ASSERT(gmx::ssize(h_lambdas_) == numTempScaleValues_,
+                           "Number of temperature scaling factors changed since it was set for the "
+                           "last time.");
+        /* We could use host accessors here, without h_lambdas_.
+         * According to a quick test, host accessor is slightly faster when using DPC++ and
+         * LevelZero compared to using h_lambdas_ + cgh.copy. But with DPC++ and OpenCL, the host
+         * accessor waits for fReadyOnDevice in UpdateConstrainGpu::Impl::integrate. See #4023. */
+
+        for (int i = 0; i < numTempScaleValues_; i++)
+        {
+            h_lambdas_[i] = tcstat[i].lambda;
         }
+        copyToDeviceBuffer(&d_lambdas_,
+                           h_lambdas_.data(),
+                           0,
+                           numTempScaleValues_,
+                           deviceStream_,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
     }
     NumTempScaleValues tempVelocityScalingType =
             getTempScalingType(doTemperatureScaling, numTempScaleValues_);
@@ -284,6 +296,7 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
     // If the temperature coupling is enabled, we need to make space for scaling factors
     if (numTempScaleValues_ > 0)
     {
+        h_lambdas_.resize(numTempScaleValues_);
         reallocateDeviceBuffer(
                 &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
     }
