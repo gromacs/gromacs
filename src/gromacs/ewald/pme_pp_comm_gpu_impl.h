@@ -44,9 +44,7 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
-#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -75,7 +73,7 @@ public:
 
     /*! \brief Pull force buffer directly from GPU memory on PME
      * rank to either GPU or CPU memory on PP task using CUDA
-     * Memory copy.
+     * Memory copy or CUDA-aware MPI.
      *
      * recvPtr should be in GPU or CPU memory if recvPmeForceToGpu
      * is true or false, respectively. If receiving to GPU, this
@@ -89,25 +87,20 @@ public:
      * \param[in] recvSize Number of elements to receive
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeCudaDirect(void* recvPtr, int recvSize, bool receivePmeForceToGpu);
+    void receiveForceFromPme(float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using CUDA
-     * Memory copy. sendPtr should be in GPU or CPU memory if
-     * sendPmeCoordinatesFromGpu is true or false respectively. If
-     * sending from GPU, this method should be called after the
-     * local GPU coordinate buffer operations. The remote PME task will
-     * automatically wait for data to be copied before commencing PME force calculations.
+     * Memory copy or CUDA-aware MPI. If sending from GPU, this method should
+     * be called after the local GPU coordinate buffer operations.
+     * The remote PME task will automatically wait for data to be copied
+     * before commencing PME force calculations.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] sendPmeCoordinatesFromGpu Whether send is from GPU, otherwise CPU
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeCudaDirect(void*                 sendPtr,
-                                        int                   sendSize,
-                                        bool                  sendPmeCoordinatesFromGpu,
-                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPme(float3* sendPtr, int sendSize, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU
@@ -120,14 +113,54 @@ public:
     GpuEventSynchronizer* getForcesReadySynchronizer();
 
 private:
+    /*! \brief Pull force buffer directly from GPU memory on PME
+     * rank to either GPU or CPU memory on PP task using CUDA
+     * Memory copy. This method is used with Thread-MPI.
+     * \param[out] recvPtr CPU buffer to receive PME force data
+     * \param[in] recvSize Number of elements to receive
+     * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
+     */
+    void receiveForceFromPmeCudaDirect(float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
+
+    /*! \brief Pull force buffer directly from GPU memory on PME
+     * rank to either GPU or CPU memory on PP task using CUDA-aware
+     * MPI. This method is used with process-MPI.
+     * \param[out] recvPtr CPU buffer to receive PME force data
+     * \param[in] recvSize Number of elements to receive
+     */
+    void receiveForceFromPmeCudaMpi(float3* recvPtr, int recvSize);
+
+    /*! \brief Push coordinates buffer directly to GPU memory on PME
+     * task, from either GPU or CPU memory on PP task using CUDA Memory copy.
+     * This method is used with Thread-MPI.
+     * \param[in] sendPtr Buffer with coordinate data
+     * \param[in] sendSize Number of elements to send
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     */
+    void sendCoordinatesToPmeCudaDirect(float3*               sendPtr,
+                                        int                   sendSize,
+                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+
+    /*! \brief Push coordinates buffer directly to GPU memory on PME
+     * task, from either GPU or CPU memory on PP task using CUDA-aware MPI.
+     * This method is used with process-MPI.
+     * \param[in] sendPtr Buffer with coordinate data
+     * \param[in] sendSize Number of elements to send
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     */
+    void sendCoordinatesToPmeCudaMpi(float3*               sendPtr,
+                                     int                   sendSize,
+                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+
+private:
     //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
     //! Handle for CUDA stream used for the communication operations in this class
     const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
-    void* remotePmeXBuffer_ = nullptr;
+    float3* remotePmeXBuffer_ = nullptr;
     //! Remote location of PME force data buffer
-    void* remotePmeFBuffer_ = nullptr;
+    float3* remotePmeFBuffer_ = nullptr;
     //! communicator for simulation
     MPI_Comm comm_;
     //! Rank of PME task

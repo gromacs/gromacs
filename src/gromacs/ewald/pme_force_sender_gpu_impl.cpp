@@ -90,6 +90,17 @@ void PmeForceSenderGpu::sendFSynchronizerToPpCudaDirect(int /* ppRank */)
                "implementation.");
 }
 
+void PmeForceSenderGpu::sendFToPpCudaMpi(DeviceBuffer<RVec> /* sendbuf */,
+                                         int /* offset */,
+                                         int /* numBytes */,
+                                         int /* ppRank */,
+                                         MPI_Request* /* request */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
 } // namespace gmx
 
 #endif // !GMX_GPU_CUDA

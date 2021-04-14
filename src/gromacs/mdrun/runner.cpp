@@ -209,14 +209,13 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_GPU_CUDA && useGpuForNonbonded && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     devFlags.enableGpuHaloExchange = GMX_GPU_CUDA && getenv("GMX_GPU_DD_COMMS") != nullptr;
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
-    devFlags.enableGpuPmePPComm =
-            GMX_GPU_CUDA && GMX_THREAD_MPI && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
+    devFlags.enableGpuPmePPComm = GMX_GPU_CUDA && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
 
 #pragma GCC diagnostic pop
 
     // Direct GPU comm path is being used with CUDA_AWARE_MPI
     // make sure underlying MPI implementation is CUDA-aware
-    if (!GMX_THREAD_MPI && devFlags.enableGpuHaloExchange)
+    if (!GMX_THREAD_MPI && (devFlags.enableGpuPmePPComm || devFlags.enableGpuHaloExchange))
     {
         const bool haveDetectedCudaAwareMpi =
                 (checkMpiCudaAwareSupport() == CudaAwareMpiStatus::Supported);
@@ -241,7 +240,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             devFlags.usingCudaAwareMpi = true;
             GMX_LOG(mdlog.warning)
                     .asParagraph()
-                    .appendTextFormatted("Using CUDA-aware MPI for 'GPU halo exchange' feature.");
+                    .appendTextFormatted(
+                            "Using CUDA-aware MPI for 'GPU halo exchange' or 'GPU PME-PP "
+                            "communications' feature.");
         }
         else
         {
@@ -254,6 +255,17 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                                 "halo exchange' feature will not be enabled as GROMACS couldn't "
                                 "detect CUDA_aware support in underlying MPI implementation.");
                 devFlags.enableGpuHaloExchange = false;
+            }
+            if (devFlags.enableGpuPmePPComm)
+            {
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendText(
+                                "GMX_GPU_PME_PP_COMMS environment variable detected, but the "
+                                "'GPU PME-PP communications' feature will not be enabled as "
+                                "GROMACS couldn't "
+                                "detect CUDA_aware support in underlying MPI implementation.");
+                devFlags.enableGpuPmePPComm = false;
             }
 
             GMX_LOG(mdlog.warning)
@@ -2037,6 +2049,7 @@ int Mdrunner::mdrunner()
                     walltime_accounting,
                     inputrec.get(),
                     pmeRunMode,
+                    runScheduleWork.simulationWork.useGpuPmePpCommunication,
                     deviceStreamManager.get());
     }
 

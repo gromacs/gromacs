@@ -87,10 +87,20 @@ public:
     void sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f);
 
     /*! \brief
-     * Send force synchronizer to PP rank
+     * Send force synchronizer to PP rank (used with Thread-MPI)
      * \param[in] ppRank           PP rank to receive data
      */
     void sendFSynchronizerToPpCudaDirect(int ppRank);
+
+    /*! \brief
+     * Send force to PP rank (used with Lib-MPI)
+     * \param[in] sendbuf  force buffer in GPU memory
+     * \param[in] offset   starting element in buffer
+     * \param[in] numBytes number of bytes to transfer
+     * \param[in] ppRank   PP rank to receive data
+     * \param[in] request  MPI request to track asynchronous MPI call status
+     */
+    void sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf, int offset, int numBytes, int ppRank, MPI_Request* request);
 
 private:
     class Impl;

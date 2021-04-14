@@ -89,7 +89,17 @@ void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpCudaDirect(in
                "implementation.");
 }
 
-void PmeCoordinateReceiverGpu::enqueueWaitReceiveCoordinatesFromPpCudaDirect()
+void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> /* recvbuf */,
+                                                                     int /* numAtoms */,
+                                                                     int /* numBytes */,
+                                                                     int /* ppRank */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
+void PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromPpRanks()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

@@ -45,6 +45,7 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
 class DeviceContext;
@@ -84,18 +85,25 @@ public:
      * \param[in]  recvSize Number of elements to receive
      * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeCudaDirect(void* recvPtr, int recvSize, bool recvPmeForceToGpu);
+    void receiveForceFromPme(RVec* recvPtr, int recvSize, bool recvPmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME task
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] sendPmeCoordinatesFromGpu Whether send is from GPU, otherwise CPU
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeCudaDirect(void*                 sendPtr,
-                                        int                   sendSize,
-                                        bool                  sendPmeCoordinatesFromGpu,
-                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
+                                     int                   sendSize,
+                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+
+    /*! \brief Push coordinates buffer from host memory directly to GPU memory on PME task
+     * \param[in] sendPtr Buffer with coordinate data
+     * \param[in] sendSize Number of elements to send
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     */
+    void sendCoordinatesToPmeFromCpu(RVec*                 sendPtr,
+                                     int                   sendSize,
+                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief
      * Return pointer to buffer used for staging PME force on GPU

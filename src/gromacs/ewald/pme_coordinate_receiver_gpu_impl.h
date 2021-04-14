@@ -79,9 +79,19 @@ public:
     void receiveCoordinatesSynchronizerFromPpCudaDirect(int ppRank);
 
     /*! \brief
-     * enqueue wait for coordinate data from PP ranks
+     * Used for lib MPI, receives co-ordinates from PP ranks
+     * \param[in] recvbuf   coordinates buffer in GPU memory
+     * \param[in] numAtoms  starting element in buffer
+     * \param[in] numBytes  number of bytes to transfer
+     * \param[in] ppRank    PP rank to send data
      */
-    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
+    void launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf, int numAtoms, int numBytes, int ppRank);
+
+    /*! \brief
+     * For lib MPI, wait for coordinates from PP ranks
+     * For thread MPI, enqueue PP co-ordinate transfer event into PME stream
+     */
+    void synchronizeOnCoordinatesFromPpRanks();
 
 private:
     //! CUDA stream for PME operations

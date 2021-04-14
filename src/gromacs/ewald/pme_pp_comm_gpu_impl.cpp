@@ -83,19 +83,25 @@ void PmePpCommGpu::reinit(int /* size */)
                "correct implementation.");
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void* /* recvPtr */,
-                                                 int /* recvSize */,
-                                                 bool /* receivePmeForceToGpu */)
+void PmePpCommGpu::receiveForceFromPme(RVec* /* recvPtr */, int /* recvSize */, bool /* receivePmeForceToGpu */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void* /* sendPtr */,
-                                                  int /* sendSize */,
-                                                  bool /* sendPmeCoordinatesFromGpu */,
-                                                  GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
+void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
+                                               int /* sendSize */,
+                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */,
+                                               int /* sendSize */,
+                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

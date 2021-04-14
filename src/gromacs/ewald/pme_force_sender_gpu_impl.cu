@@ -62,9 +62,6 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
     comm_(comm),
     ppRanks_(ppRanks)
 {
-    GMX_RELEASE_ASSERT(
-            GMX_THREAD_MPI,
-            "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
 }
 
 PmeForceSenderGpu::Impl::~Impl() = default;
@@ -72,6 +69,13 @@ PmeForceSenderGpu::Impl::~Impl() = default;
 /*! \brief  sends force buffer address to PP ranks */
 void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(DeviceBuffer<Float3> d_f)
 {
+    // Need to send address to PP rank only for thread-MPI as PP rank pulls
+    // data using cudamemcpy
+    if (!GMX_THREAD_MPI)
+    {
+        return;
+    }
+#if GMX_MPI
     int ind_start = 0;
     int ind_end   = 0;
     for (const auto& receiver : ppRanks_)
@@ -80,27 +84,53 @@ void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(DeviceBuffer<Float
         ind_end   = ind_start + receiver.numAtoms;
 
         // Data will be transferred directly from GPU.
-        void* sendBuf = reinterpret_cast<void*>(&d_f[ind_start]);
+        Float3* sendBuf = &d_f[ind_start];
 
-#if GMX_MPI
-        MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
-#else
-        GMX_UNUSED_VALUE(sendBuf);
-#endif
+        MPI_Send(&sendBuf, sizeof(Float3*), MPI_BYTE, receiver.rankId, 0, comm_);
     }
+#else
+    GMX_UNUSED_VALUE(d_f);
+#endif
 }
 
 /*! \brief Send PME synchronizer directly using CUDA memory copy */
 void PmeForceSenderGpu::Impl::sendFSynchronizerToPpCudaDirect(int ppRank)
 {
+    GMX_ASSERT(GMX_THREAD_MPI,
+               "sendFSynchronizerToPpCudaDirect is expected to be called only for Thread-MPI");
+
     // Data will be pulled directly from PP task
 #if GMX_MPI
     // TODO Using MPI_Isend would be more efficient, particularly when
     // sending to multiple PP ranks
     MPI_Send(&pmeForcesReady_, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
 #else
-    GMX_UNUSED_VALUE(pmeSyncPtr);
     GMX_UNUSED_VALUE(ppRank);
+#endif
+}
+
+/*! \brief Send PME data directly using CUDA-aware MPI */
+void PmeForceSenderGpu::Impl::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
+                                               int                offset,
+                                               int                numBytes,
+                                               int                ppRank,
+                                               MPI_Request*       request)
+{
+    GMX_ASSERT(GMX_LIB_MPI, "sendFToPpCudaMpi is expected to be called only for Lib-MPI");
+
+#if GMX_MPI
+    // if using GPU direct comm with CUDA-aware MPI, make sure forces are ready on device
+    // before sending it to PP ranks
+    pmeForcesReady_->waitForEvent();
+
+    MPI_Isend(sendbuf[offset], numBytes, MPI_BYTE, ppRank, 0, comm_, request);
+
+#else
+    GMX_UNUSED_VALUE(sendbuf);
+    GMX_UNUSED_VALUE(offset);
+    GMX_UNUSED_VALUE(numBytes);
+    GMX_UNUSED_VALUE(ppRank);
+    GMX_UNUSED_VALUE(request);
 #endif
 }
 
@@ -121,6 +151,15 @@ void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f)
 void PmeForceSenderGpu::sendFSynchronizerToPpCudaDirect(int ppRank)
 {
     impl_->sendFSynchronizerToPpCudaDirect(ppRank);
+}
+
+void PmeForceSenderGpu::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
+                                         int                offset,
+                                         int                numBytes,
+                                         int                ppRank,
+                                         MPI_Request*       request)
+{
+    impl_->sendFToPpCudaMpi(sendbuf, offset, numBytes, ppRank, request);
 }
 
 
