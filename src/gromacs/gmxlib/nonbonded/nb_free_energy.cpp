@@ -202,7 +202,12 @@ template<typename DataTypes, bool useSoftCore, bool scLambdasOrAlphasDiffer, boo
 static void nb_free_energy_kernel(const t_nblist&                nlist,
                                   gmx::ArrayRef<const gmx::RVec> coords,
                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
-                                  const t_forcerec&              fr,
+                                  const int                      ntype,
+                                  const real                     rlist,
+                                  const interaction_const_t&     ic,
+                                  gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                  gmx::ArrayRef<const real>      nbfp,
+                                  gmx::ArrayRef<const real>      nbfp_grid,
                                   gmx::ArrayRef<const real>      chargeA,
                                   gmx::ArrayRef<const real>      chargeB,
                                   gmx::ArrayRef<const int>       typeA,
@@ -230,9 +235,6 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     constexpr real two        = 2.0;
     constexpr real six        = 6.0;
 
-    /* Extract pointer to non-bonded interaction constants */
-    const interaction_const_t* ic = fr.ic.get();
-
     // Extract pair list data
     const int                nri    = nlist.nri;
     gmx::ArrayRef<const int> iinr   = nlist.iinr;
@@ -241,14 +243,9 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     gmx::ArrayRef<const int> shift  = nlist.shift;
     gmx::ArrayRef<const int> gid    = nlist.gid;
 
-    const auto                shiftvec  = fr.shift_vec;
-    const int                 ntype     = fr.ntype;
-    gmx::ArrayRef<const real> nbfp      = fr.nbfp;
-    gmx::ArrayRef<const real> nbfp_grid = fr.ljpme_c6grid;
-
     const real  lambda_coul   = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
     const real  lambda_vdw    = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
-    const auto& scParams      = *ic->softCoreParameters;
+    const auto& scParams      = *ic.softCoreParameters;
     const real  alpha_coul    = scParams.alphaCoulomb;
     const real  alpha_vdw     = scParams.alphaVdw;
     const real  lam_power     = scParams.lambdaPower;
@@ -259,23 +256,23 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     const bool  doPotential   = ((flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
     // Extract data from interaction_const_t
-    const real facel           = ic->epsfac;
-    const real rCoulomb        = ic->rcoulomb;
-    const real krf             = ic->reactionFieldCoefficient;
-    const real crf             = ic->reactionFieldShift;
-    const real shLjEwald       = ic->sh_lj_ewald;
-    const real rVdw            = ic->rvdw;
-    const real dispersionShift = ic->dispersion_shift.cpot;
-    const real repulsionShift  = ic->repulsion_shift.cpot;
+    const real facel           = ic.epsfac;
+    const real rCoulomb        = ic.rcoulomb;
+    const real krf             = ic.reactionFieldCoefficient;
+    const real crf             = ic.reactionFieldShift;
+    const real shLjEwald       = ic.sh_lj_ewald;
+    const real rVdw            = ic.rvdw;
+    const real dispersionShift = ic.dispersion_shift.cpot;
+    const real repulsionShift  = ic.repulsion_shift.cpot;
 
     // Note that the nbnxm kernels do not support Coulomb potential switching at all
-    GMX_ASSERT(ic->coulomb_modifier != InteractionModifiers::PotSwitch,
+    GMX_ASSERT(ic.coulomb_modifier != InteractionModifiers::PotSwitch,
                "Potential switching is not supported for Coulomb with FEP");
 
     real vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     if (vdwModifierIsPotSwitch)
     {
-        const real d = ic->rvdw - ic->rvdw_switch;
+        const real d = ic.rvdw - ic.rvdw_switch;
         vdw_swV3     = -10.0 / (d * d * d);
         vdw_swV4     = 15.0 / (d * d * d * d);
         vdw_swV5     = -6.0 / (d * d * d * d * d);
@@ -290,7 +287,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     }
 
     NbkernelElecType icoul;
-    if (ic->eeltype == CoulombInteractionType::Cut || EEL_RF(ic->eeltype))
+    if (ic.eeltype == CoulombInteractionType::Cut || EEL_RF(ic.eeltype))
     {
         icoul = NbkernelElecType::ReactionField;
     }
@@ -299,7 +296,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
         icoul = NbkernelElecType::None;
     }
 
-    real rcutoff_max2 = std::max(ic->rcoulomb, ic->rvdw);
+    real rcutoff_max2 = std::max(ic.rcoulomb, ic.rvdw);
     rcutoff_max2      = rcutoff_max2 * rcutoff_max2;
 
     const real* tab_ewald_F_lj           = nullptr;
@@ -312,18 +309,18 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     real        sh_ewald                 = 0;
     if (elecInteractionTypeIsEwald || vdwInteractionTypeIsEwald)
     {
-        sh_ewald = ic->sh_ewald;
+        sh_ewald = ic.sh_ewald;
     }
     if (elecInteractionTypeIsEwald)
     {
-        const auto& coulombTables = *ic->coulombEwaldTables;
+        const auto& coulombTables = *ic.coulombEwaldTables;
         ewtab                     = coulombTables.tableFDV0.data();
         coulombTableScale         = coulombTables.scale;
         coulombTableScaleInvHalf  = half / coulombTableScale;
     }
     if (vdwInteractionTypeIsEwald)
     {
-        const auto& vdwTables = *ic->vdwEwaldTables;
+        const auto& vdwTables = *ic.vdwEwaldTables;
         tab_ewald_F_lj        = vdwTables.tableF.data();
         tab_ewald_V_lj        = vdwTables.tableV.data();
         vdwTableScale         = vdwTables.scale;
@@ -377,7 +374,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     real* gmx_restrict f      = &(forceWithShiftForces->force()[0][0]);
     real* gmx_restrict fshift = &(forceWithShiftForces->shiftForces()[0][0]);
 
-    const real rlistSquared = gmx::square(fr.rlist);
+    const real rlistSquared = gmx::square(rlist);
 
     int numExcludedPairsBeyondRlist = 0;
 
@@ -624,7 +621,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
 
                             if (vdwModifierIsPotSwitch)
                             {
-                                RealType d        = rV - ic->rvdw_switch;
+                                RealType d        = rV - ic.rvdw_switch;
                                 d                 = (d > zero) ? d : zero;
                                 const RealType d2 = d * d;
                                 const RealType sw =
@@ -862,14 +859,19 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
                   "The error is likely triggered by the use of couple-intramol=no "
                   "and the maximal distance in the decoupled molecule exceeding rlist.",
                   numExcludedPairsBeyondRlist,
-                  fr.rlist);
+                  rlist);
     }
 }
 
 typedef void (*KernelFunction)(const t_nblist&                nlist,
                                gmx::ArrayRef<const gmx::RVec> coords,
                                gmx::ForceWithShiftForces*     forceWithShiftForces,
-                               const t_forcerec&              fr,
+                               const int                      ntype,
+                               const real                     rlist,
+                               const interaction_const_t&     ic,
+                               gmx::ArrayRef<const gmx::RVec> shiftvec,
+                               gmx::ArrayRef<const real>      nbfp,
+                               gmx::ArrayRef<const real>      nbfp_grid,
                                gmx::ArrayRef<const real>      chargeA,
                                gmx::ArrayRef<const real>      chargeB,
                                gmx::ArrayRef<const int>       typeA,
@@ -997,7 +999,13 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
 void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                gmx::ArrayRef<const gmx::RVec> coords,
                                gmx::ForceWithShiftForces*     ff,
-                               const t_forcerec&              fr,
+                               const bool                     useSimd,
+                               const int                      ntype,
+                               const real                     rlist,
+                               const interaction_const_t&     ic,
+                               gmx::ArrayRef<const gmx::RVec> shiftvec,
+                               gmx::ArrayRef<const real>      nbfp,
+                               gmx::ArrayRef<const real>      nbfp_grid,
                                gmx::ArrayRef<const real>      chargeA,
                                gmx::ArrayRef<const real>      chargeB,
                                gmx::ArrayRef<const int>       typeA,
@@ -1009,7 +1017,6 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                gmx::ArrayRef<real>            energygrp_vdw,
                                t_nrnb*                        nrnb)
 {
-    const interaction_const_t& ic = *fr.ic;
     GMX_ASSERT(EEL_PME_EWALD(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut || EEL_RF(ic.eeltype),
                "Unsupported eeltype with free energy");
     GMX_ASSERT(ic.softCoreParameters, "We need soft-core parameters");
@@ -1019,7 +1026,6 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
     const bool  elecInteractionTypeIsEwald = (EEL_PME_EWALD(ic.eeltype));
     const bool  vdwModifierIsPotSwitch     = (ic.vdw_modifier == InteractionModifiers::PotSwitch);
     bool        scLambdasOrAlphasDiffer    = true;
-    const bool  useSimd                    = fr.use_simd_kernels;
 
     if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
     {
@@ -1042,5 +1048,23 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                 vdwModifierIsPotSwitch,
                                 useSimd,
                                 ic);
-    kernelFunc(nlist, coords, ff, fr, chargeA, chargeB, typeA, typeB, flags, lambda, dvdl, energygrp_elec, energygrp_vdw, nrnb);
+    kernelFunc(nlist,
+               coords,
+               ff,
+               ntype,
+               rlist,
+               ic,
+               shiftvec,
+               nbfp,
+               nbfp_grid,
+               chargeA,
+               chargeB,
+               typeA,
+               typeB,
+               flags,
+               lambda,
+               dvdl,
+               energygrp_elec,
+               energygrp_vdw,
+               nrnb);
 }

@@ -44,6 +44,7 @@
 struct t_forcerec;
 struct t_nrnb;
 struct t_nblist;
+struct interaction_const_t;
 namespace gmx
 {
 class ForceWithShiftForces;
@@ -54,7 +55,13 @@ class ArrayRef;
 void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                gmx::ArrayRef<const gmx::RVec> coords,
                                gmx::ForceWithShiftForces*     forceWithShiftForces,
-                               const t_forcerec&              fr,
+                               bool                           useSimd,
+                               int                            ntype,
+                               real                           rlist,
+                               const interaction_const_t&     ic,
+                               gmx::ArrayRef<const gmx::RVec> shiftvec,
+                               gmx::ArrayRef<const real>      nbfp,
+                               gmx::ArrayRef<const real>      nbfp_grid,
                                gmx::ArrayRef<const real>      chargeA,
                                gmx::ArrayRef<const real>      chargeB,
                                gmx::ArrayRef<const int>       typeA,
