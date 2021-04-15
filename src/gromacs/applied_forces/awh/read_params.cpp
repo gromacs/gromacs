@@ -626,11 +626,7 @@ void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
 
 } // namespace
 
-AwhDimParams::AwhDimParams(std::vector<t_inpfile>* inp,
-                           const std::string&      prefix,
-                           const t_inputrec&       ir,
-                           warninp_t               wi,
-                           bool                    bComment)
+AwhDimParams::AwhDimParams(std::vector<t_inpfile>* inp, const std::string& prefix, warninp_t wi, bool bComment)
 {
     std::string opt;
     if (bComment)
@@ -710,8 +706,6 @@ AwhDimParams::AwhDimParams(std::vector<t_inpfile>* inp,
     }
     opt            = prefix + "-cover-diameter";
     coverDiameter_ = get_ereal(inp, opt, 0, wi);
-
-    checkDimParams(prefix, *this, ir, wi);
 }
 
 AwhDimParams::AwhDimParams(ISerializer* serializer)
@@ -744,11 +738,7 @@ void AwhDimParams::serialize(ISerializer* serializer)
     serializer->doDouble(&coverDiameter_);
 }
 
-AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp,
-                             const std::string&      prefix,
-                             const t_inputrec&       ir,
-                             warninp_t               wi,
-                             bool                    bComment)
+AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& prefix, warninp_t wi, bool bComment)
 {
     if (bComment)
     {
@@ -830,9 +820,8 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp,
     {
         bComment              = bComment && d == 0;
         std::string prefixdim = prefix + formatString("-dim%d", d + 1);
-        dimParams_.emplace_back(inp, prefixdim, ir, wi, bComment);
+        dimParams_.emplace_back(inp, prefixdim, wi, bComment);
     }
-    checkBiasParams(*this, prefix, ir, wi);
 }
 
 AwhBiasParams::AwhBiasParams(ISerializer* serializer)
@@ -882,7 +871,7 @@ void AwhBiasParams::serialize(ISerializer* serializer)
     }
 }
 
-AwhParams::AwhParams(std::vector<t_inpfile>* inp, const t_inputrec& ir, warninp_t wi)
+AwhParams::AwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
 {
     std::string opt;
 
@@ -934,9 +923,8 @@ AwhParams::AwhParams(std::vector<t_inpfile>* inp, const t_inputrec& ir, warninp_
     {
         bool        bComment  = (k == 0);
         std::string prefixawh = formatString("awh%d", k + 1);
-        awhBiasParams_.emplace_back(inp, prefixawh, ir, wi, bComment);
+        awhBiasParams_.emplace_back(inp, prefixawh, wi, bComment);
     }
-    checkAwhParams(*this, ir, wi);
     checkInputConsistencyAwh(*this, wi);
 }
 

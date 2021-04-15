@@ -2222,7 +2222,7 @@ void get_ir(const char*     mdparin,
     ir->bDoAwh = (getEnum<Boolean>(&inp, "awh", wi) != Boolean::No);
     if (ir->bDoAwh)
     {
-        ir->awhParams = std::make_unique<gmx::AwhParams>(&inp, *ir, wi);
+        ir->awhParams = std::make_unique<gmx::AwhParams>(&inp, wi);
     }
 
     /* Enforced rotation */
