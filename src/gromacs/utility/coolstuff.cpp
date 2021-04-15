@@ -1445,8 +1445,6 @@ std::string getCoolQuote()
           "married, it never occurred to him to verify this statement by examining his wives' "
           "mouths.",
           "Bertrand Russell" },
-        { "I had trouble with physics in college. When I signed up I thought it said psychics.",
-          "Greg Tamblyn" },
         { "I don't believe in astrology; I'm a Sagittarian and we're skeptical.",
           "Arthur C. Clarke" },
         { "I see they found out the universe is 80 million years older than we thought. It's also "
