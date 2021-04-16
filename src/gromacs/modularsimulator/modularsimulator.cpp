@@ -120,7 +120,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                                                              ReportPreviousStepConservedEnergy::No,
                                                              PropagatorTag("LeapFrogPropagator"));
         }
-        builder->add<Propagator<IntegrationStep::LeapFrog>>(
+        builder->add<Propagator<IntegrationStage::LeapFrog>>(
                 PropagatorTag("LeapFrogPropagator"), legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {
@@ -136,7 +136,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
     {
         // The velocity verlet integration algorithm
         builder->add<ForceElement>();
-        builder->add<Propagator<IntegrationStep::VelocitiesOnly>>(
+        builder->add<Propagator<IntegrationStage::VelocitiesOnly>>(
                 PropagatorTag("VelocityHalfStep"), 0.5 * legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {
@@ -153,7 +153,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                     ReportPreviousStepConservedEnergy::Yes,
                     PropagatorTag("VelocityHalfAndPositionFullStep"));
         }
-        builder->add<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
+        builder->add<Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>>(
                 PropagatorTag("VelocityHalfAndPositionFullStep"), legacySimulatorData_->inputrec->delta_t);
         if (legacySimulatorData_->constr)
         {

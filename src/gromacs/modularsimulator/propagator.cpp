@@ -52,7 +52,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"
@@ -60,6 +59,16 @@
 
 namespace gmx
 {
+namespace
+{
+// Names of integration steps, only used locally for error messages
+constexpr EnumerationArray<IntegrationStage, const char*> integrationStepNames = {
+    "IntegrationStage::PositionsOnly",   "IntegrationStage::VelocitiesOnly",
+    "IntegrationStage::LeapFrog",        "IntegrationStage::VelocityVerletPositionsAndVelocities",
+    "IntegrationStage::ScaleVelocities", "IntegrationStage::ScalePositions"
+};
+} // namespace
+
 //! Update velocities
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
@@ -123,6 +132,32 @@ static void inline updatePositions(int         a,
     }
 }
 
+//! Scale velocities
+template<NumVelocityScalingValues numStartVelocityScalingValues>
+static void inline scaleVelocities(int a, real lambda, rvec* gmx_restrict v)
+{
+    if (numStartVelocityScalingValues != NumVelocityScalingValues::None)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            v[a][d] *= lambda;
+        }
+    }
+}
+
+//! Scale positions
+template<NumPositionScalingValues numPositionScalingValues>
+static void inline scalePositions(int a, real lambda, rvec* gmx_restrict x)
+{
+    if (numPositionScalingValues != NumPositionScalingValues::None)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            x[a][d] *= lambda;
+        }
+    }
+}
+
 //! Helper function diagonalizing the PR matrix if possible
 template<ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 static inline bool diagonalizePRMatrix(matrix matrixPR, rvec diagPR)
@@ -151,8 +186,9 @@ static inline bool diagonalizePRMatrix(matrix matrixPR, rvec diagPR)
 template<>
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
-         NumVelocityScalingValues        numEndVelocityScalingValues>
-void Propagator<IntegrationStep::PositionsOnly>::run()
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
@@ -181,12 +217,55 @@ void Propagator<IntegrationStep::PositionsOnly>::run()
     wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
+//! Propagation (scale position only)
+template<>
+template<NumVelocityScalingValues        numStartVelocityScalingValues,
+         ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::ScalePositions>::run()
+{
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
+
+    auto* x = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+
+    const real lambda =
+            (numPositionScalingValues == NumPositionScalingValues::Single) ? positionScaling_[0] : 1.0;
+
+    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int homenr = mdAtoms_->mdatoms()->homenr;
+
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x) \
+        firstprivate(lambda)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+
+            for (int a = start_th; a < end_th; a++)
+            {
+                scalePositions<numPositionScalingValues>(
+                        a,
+                        (numPositionScalingValues == NumPositionScalingValues::Multiple)
+                                ? positionScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                : lambda,
+                        x);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
+}
+
 //! Propagation (velocity only)
 template<>
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
-         NumVelocityScalingValues        numEndVelocityScalingValues>
-void Propagator<IntegrationStep::VelocitiesOnly>::run()
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::VelocitiesOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
@@ -265,8 +344,9 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
 template<>
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
-         NumVelocityScalingValues        numEndVelocityScalingValues>
-void Propagator<IntegrationStep::LeapFrog>::run()
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
@@ -349,8 +429,9 @@ void Propagator<IntegrationStep::LeapFrog>::run()
 template<>
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
-         NumVelocityScalingValues        numEndVelocityScalingValues>
-void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
@@ -429,11 +510,61 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
     wallcycle_stop(wcycle_, WallCycleCounter::Update);
 }
 
-template<IntegrationStep algorithm>
-Propagator<algorithm>::Propagator(double               timestep,
-                                  StatePropagatorData* statePropagatorData,
-                                  const MDAtoms*       mdAtoms,
-                                  gmx_wallcycle*       wcycle) :
+//! Scaling (velocity scaling only)
+template<>
+template<NumVelocityScalingValues        numStartVelocityScalingValues,
+         ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+         NumVelocityScalingValues        numEndVelocityScalingValues,
+         NumPositionScalingValues        numPositionScalingValues>
+void Propagator<IntegrationStage::ScaleVelocities>::run()
+{
+    if (numStartVelocityScalingValues == NumVelocityScalingValues::None)
+    {
+        return;
+    }
+    wallcycle_start(wcycle_, WallCycleCounter::Update);
+
+    auto* v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+
+    const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
+                                     ? startVelocityScaling_[0]
+                                     : 1.0;
+
+    const int nth    = gmx_omp_nthreads_get(emntUpdate);
+    const int homenr = mdAtoms_->mdatoms()->homenr;
+
+// const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
+// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v) \
+        firstprivate(nth, homenr, lambdaStart)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th = 0;
+            int end_th   = 0;
+            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+
+            for (int a = start_th; a < end_th; a++)
+            {
+                scaleVelocities<numStartVelocityScalingValues>(
+                        a,
+                        numStartVelocityScalingValues == NumVelocityScalingValues::Multiple
+                                ? startVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
+                                : lambdaStart,
+                        v);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+    wallcycle_stop(wcycle_, WallCycleCounter::Update);
+}
+
+template<IntegrationStage integrationStage>
+Propagator<integrationStage>::Propagator(double               timestep,
+                                         StatePropagatorData* statePropagatorData,
+                                         const MDAtoms*       mdAtoms,
+                                         gmx_wallcycle*       wcycle) :
     timestep_(timestep),
     statePropagatorData_(statePropagatorData),
     doSingleStartVelocityScaling_(false),
@@ -449,14 +580,54 @@ Propagator<algorithm>::Propagator(double               timestep,
 {
 }
 
-template<IntegrationStep algorithm>
-void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
-                                         Time gmx_unused            time,
-                                         const RegisterRunFunction& registerRunFunction)
+template<IntegrationStage integrationStage>
+void Propagator<integrationStage>::scheduleTask(Step step,
+                                                Time gmx_unused            time,
+                                                const RegisterRunFunction& registerRunFunction)
 {
     const bool doSingleVScalingThisStep =
             (doSingleStartVelocityScaling_ && (step == scalingStepVelocity_));
     const bool doGroupVScalingThisStep = (doGroupStartVelocityScaling_ && (step == scalingStepVelocity_));
+
+    if (integrationStage == IntegrationStage::ScaleVelocities)
+    {
+        // IntegrationStage::ScaleVelocities only needs to run if some kind of
+        // velocity scaling is needed on the current step.
+        if (!doSingleVScalingThisStep && !doGroupVScalingThisStep)
+        {
+            return;
+        }
+    }
+
+    if (integrationStage == IntegrationStage::ScalePositions)
+    {
+        // IntegrationStage::ScalePositions only needs to run if
+        // position scaling is needed on the current step.
+        if (step != scalingStepPosition_)
+        {
+            return;
+        }
+        // Since IntegrationStage::ScalePositions is the only stage for which position scaling
+        // is implemented we handle it here to avoid enlarging the decision tree below.
+        if (doSinglePositionScaling_)
+        {
+            registerRunFunction([this]() {
+                run<NumVelocityScalingValues::None,
+                    ParrinelloRahmanVelocityScaling::No,
+                    NumVelocityScalingValues::None,
+                    NumPositionScalingValues::Single>();
+            });
+        }
+        else if (doGroupPositionScaling_)
+        {
+            registerRunFunction([this]() {
+                run<NumVelocityScalingValues::None,
+                    ParrinelloRahmanVelocityScaling::No,
+                    NumVelocityScalingValues::None,
+                    NumPositionScalingValues::Multiple>();
+            });
+        }
+    }
 
     const bool doParrinelloRahmanThisStep = (step == scalingStepPR_);
 
@@ -467,13 +638,19 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
             if (doSingleEndVelocityScaling_)
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::Full, NumVelocityScalingValues::Single>();
+                    run<NumVelocityScalingValues::Single,
+                        ParrinelloRahmanVelocityScaling::Full,
+                        NumVelocityScalingValues::Single,
+                        NumPositionScalingValues::None>();
                 });
             }
             else
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::Full, NumVelocityScalingValues::None>();
+                    run<NumVelocityScalingValues::Single,
+                        ParrinelloRahmanVelocityScaling::Full,
+                        NumVelocityScalingValues::None,
+                        NumPositionScalingValues::None>();
                 });
             }
         }
@@ -482,13 +659,19 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
             if (doSingleEndVelocityScaling_)
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::No, NumVelocityScalingValues::Single>();
+                    run<NumVelocityScalingValues::Single,
+                        ParrinelloRahmanVelocityScaling::No,
+                        NumVelocityScalingValues::Single,
+                        NumPositionScalingValues::None>();
                 });
             }
             else
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::No, NumVelocityScalingValues::None>();
+                    run<NumVelocityScalingValues::Single,
+                        ParrinelloRahmanVelocityScaling::No,
+                        NumVelocityScalingValues::None,
+                        NumPositionScalingValues::None>();
                 });
             }
         }
@@ -500,13 +683,19 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
             if (doGroupEndVelocityScaling_)
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full, NumVelocityScalingValues::Multiple>();
+                    run<NumVelocityScalingValues::Multiple,
+                        ParrinelloRahmanVelocityScaling::Full,
+                        NumVelocityScalingValues::Multiple,
+                        NumPositionScalingValues::None>();
                 });
             }
             else
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full, NumVelocityScalingValues::None>();
+                    run<NumVelocityScalingValues::Multiple,
+                        ParrinelloRahmanVelocityScaling::Full,
+                        NumVelocityScalingValues::None,
+                        NumPositionScalingValues::None>();
                 });
             }
         }
@@ -515,13 +704,19 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
             if (doGroupEndVelocityScaling_)
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No, NumVelocityScalingValues::Multiple>();
+                    run<NumVelocityScalingValues::Multiple,
+                        ParrinelloRahmanVelocityScaling::No,
+                        NumVelocityScalingValues::Multiple,
+                        NumPositionScalingValues::None>();
                 });
             }
             else
             {
                 registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No, NumVelocityScalingValues::None>();
+                    run<NumVelocityScalingValues::Multiple,
+                        ParrinelloRahmanVelocityScaling::No,
+                        NumVelocityScalingValues::None,
+                        NumPositionScalingValues::None>();
                 });
             }
         }
@@ -531,28 +726,64 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
         if (doParrinelloRahmanThisStep)
         {
             registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::Full, NumVelocityScalingValues::None>();
+                run<NumVelocityScalingValues::None,
+                    ParrinelloRahmanVelocityScaling::Full,
+                    NumVelocityScalingValues::None,
+                    NumPositionScalingValues::None>();
             });
         }
         else
         {
             registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::No, NumVelocityScalingValues::None>();
+                run<NumVelocityScalingValues::None,
+                    ParrinelloRahmanVelocityScaling::No,
+                    NumVelocityScalingValues::None,
+                    NumPositionScalingValues::None>();
             });
         }
     }
 }
 
-template<IntegrationStep algorithm>
-void Propagator<algorithm>::setNumVelocityScalingVariables(int numVelocityScalingVariables,
-                                                           ScaleVelocities scaleVelocities)
+template<IntegrationStage integrationStage>
+constexpr bool hasStartVelocityScaling()
 {
-    if (algorithm == IntegrationStep::PositionsOnly)
-    {
-        gmx_fatal(FARGS, "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
-    }
-    GMX_ASSERT(startVelocityScaling_.empty(),
-               "Number of velocity scaling variables cannot be changed once set.");
+    return (integrationStage == IntegrationStage::VelocitiesOnly
+            || integrationStage == IntegrationStage::LeapFrog
+            || integrationStage == IntegrationStage::VelocityVerletPositionsAndVelocities
+            || integrationStage == IntegrationStage::ScaleVelocities);
+}
+
+template<IntegrationStage integrationStage>
+constexpr bool hasEndVelocityScaling()
+{
+    return (hasStartVelocityScaling<integrationStage>()
+            && integrationStage != IntegrationStage::ScaleVelocities);
+}
+
+template<IntegrationStage integrationStage>
+constexpr bool hasPositionScaling()
+{
+    return (integrationStage == IntegrationStage::ScalePositions);
+}
+
+template<IntegrationStage integrationStage>
+constexpr bool hasParrinelloRahmanScaling()
+{
+    return (integrationStage == IntegrationStage::VelocitiesOnly
+            || integrationStage == IntegrationStage::LeapFrog
+            || integrationStage == IntegrationStage::VelocityVerletPositionsAndVelocities);
+}
+
+template<IntegrationStage integrationStage>
+void Propagator<integrationStage>::setNumVelocityScalingVariables(int numVelocityScalingVariables,
+                                                                  ScaleVelocities scaleVelocities)
+{
+    GMX_RELEASE_ASSERT(
+            hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>(),
+            formatString("Velocity scaling not implemented for %s", integrationStepNames[integrationStage])
+                    .c_str());
+    GMX_RELEASE_ASSERT(startVelocityScaling_.empty(),
+                       "Number of velocity scaling variables cannot be changed once set.");
 
     const bool scaleEndVelocities = (scaleVelocities == ScaleVelocities::PreStepAndPostStep);
     startVelocityScaling_.resize(numVelocityScalingVariables, 1.);
@@ -566,45 +797,87 @@ void Propagator<algorithm>::setNumVelocityScalingVariables(int numVelocityScalin
     doGroupEndVelocityScaling_    = doGroupStartVelocityScaling_ && scaleEndVelocities;
 }
 
-template<IntegrationStep algorithm>
-ArrayRef<real> Propagator<algorithm>::viewOnStartVelocityScaling()
+template<IntegrationStage integrationStage>
+void Propagator<integrationStage>::setNumPositionScalingVariables(int numPositionScalingVariables)
 {
-    GMX_RELEASE_ASSERT(algorithm != IntegrationStep::PositionsOnly,
-                       "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(hasPositionScaling<integrationStage>(),
+                       formatString("Position scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
+    GMX_RELEASE_ASSERT(positionScaling_.empty(),
+                       "Number of position scaling variables cannot be changed once set.");
+    positionScaling_.resize(numPositionScalingVariables, 1.);
+    doSinglePositionScaling_ = (numPositionScalingVariables == 1);
+    doGroupPositionScaling_  = (numPositionScalingVariables > 1);
+}
+
+template<IntegrationStage integrationStage>
+ArrayRef<real> Propagator<integrationStage>::viewOnStartVelocityScaling()
+{
+    GMX_RELEASE_ASSERT(hasStartVelocityScaling<integrationStage>(),
+                       formatString("Start velocity scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
     GMX_RELEASE_ASSERT(!startVelocityScaling_.empty(),
                        "Number of velocity scaling variables not set.");
 
     return startVelocityScaling_;
 }
 
-template<IntegrationStep algorithm>
-ArrayRef<real> Propagator<algorithm>::viewOnEndVelocityScaling()
+template<IntegrationStage integrationStage>
+ArrayRef<real> Propagator<integrationStage>::viewOnEndVelocityScaling()
 {
-    GMX_RELEASE_ASSERT(algorithm != IntegrationStep::PositionsOnly,
-                       "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(hasEndVelocityScaling<integrationStage>(),
+                       formatString("End velocity scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
     GMX_RELEASE_ASSERT(!endVelocityScaling_.empty(),
                        "Number of velocity scaling variables not set.");
 
     return endVelocityScaling_;
 }
 
-template<IntegrationStep algorithm>
-PropagatorCallback Propagator<algorithm>::velocityScalingCallback()
+template<IntegrationStage integrationStage>
+ArrayRef<real> Propagator<integrationStage>::viewOnPositionScaling()
 {
-    if (algorithm == IntegrationStep::PositionsOnly)
-    {
-        gmx_fatal(FARGS, "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
-    }
+    GMX_RELEASE_ASSERT(hasPositionScaling<integrationStage>(),
+                       formatString("Position scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
+    GMX_RELEASE_ASSERT(!positionScaling_.empty(), "Number of position scaling variables not set.");
+
+    return positionScaling_;
+}
+
+template<IntegrationStage integrationStage>
+PropagatorCallback Propagator<integrationStage>::velocityScalingCallback()
+{
+    GMX_RELEASE_ASSERT(
+            hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>(),
+            formatString("Velocity scaling not implemented for %s", integrationStepNames[integrationStage])
+                    .c_str());
 
     return [this](Step step) { scalingStepVelocity_ = step; };
 }
 
-template<IntegrationStep algorithm>
-ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
+template<IntegrationStage integrationStage>
+PropagatorCallback Propagator<integrationStage>::positionScalingCallback()
 {
-    GMX_RELEASE_ASSERT(
-            algorithm != IntegrationStep::PositionsOnly,
-            "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(hasPositionScaling<integrationStage>(),
+                       formatString("Position scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
+
+    return [this](Step step) { scalingStepPosition_ = step; };
+}
+
+template<IntegrationStage integrationStage>
+ArrayRef<rvec> Propagator<integrationStage>::viewOnPRScalingMatrix()
+{
+    GMX_RELEASE_ASSERT(hasParrinelloRahmanScaling<integrationStage>(),
+                       formatString("Parrinello-Rahman scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
 
     clear_mat(matrixPR_);
     // gcc-5 needs this to be explicit (all other tested compilers would be ok
@@ -612,18 +885,21 @@ ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
     return ArrayRef<rvec>(matrixPR_);
 }
 
-template<IntegrationStep algorithm>
-PropagatorCallback Propagator<algorithm>::prScalingCallback()
+template<IntegrationStage integrationStage>
+PropagatorCallback Propagator<integrationStage>::prScalingCallback()
 {
-    GMX_RELEASE_ASSERT(
-            algorithm != IntegrationStep::PositionsOnly,
-            "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(hasParrinelloRahmanScaling<integrationStage>(),
+                       formatString("Parrinello-Rahman scaling not implemented for %s",
+                                    integrationStepNames[integrationStage])
+                               .c_str());
 
     return [this](Step step) { scalingStepPR_ = step; };
 }
 
-template<IntegrationStep algorithm>
-ISimulatorElement* Propagator<algorithm>::getElementPointerImpl(
+// doxygen is confused by the two definitions
+//! \cond
+template<IntegrationStage integrationStage>
+ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
@@ -633,9 +909,13 @@ ISimulatorElement* Propagator<algorithm>::getElementPointerImpl(
         const PropagatorTag&                  propagatorTag,
         double                                timestep)
 {
-    auto* element    = builderHelper->storeElement(std::make_unique<Propagator<algorithm>>(
+    GMX_RELEASE_ASSERT(!(integrationStage == IntegrationStage::ScaleVelocities
+                         || integrationStage == IntegrationStage::ScalePositions)
+                               || (timestep == 0.0),
+                       "Scaling elements don't propagate the system.");
+    auto* element    = builderHelper->storeElement(std::make_unique<Propagator<integrationStage>>(
             timestep, statePropagatorData, legacySimulatorData->mdAtoms, legacySimulatorData->wcycle));
-    auto* propagator = static_cast<Propagator<algorithm>*>(element);
+    auto* propagator = static_cast<Propagator<integrationStage>*>(element);
     builderHelper->registerWithThermostat(
             { [propagator](int num, ScaleVelocities scaleVelocities) {
                  propagator->setNumVelocityScalingVariables(num, scaleVelocities);
@@ -651,10 +931,37 @@ ISimulatorElement* Propagator<algorithm>::getElementPointerImpl(
     return element;
 }
 
+template<IntegrationStage integrationStage>
+ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
+        LegacySimulatorData*                    legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+        StatePropagatorData*                    statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper*              globalCommunicationHelper,
+        const PropagatorTag&                    propagatorTag)
+{
+    GMX_RELEASE_ASSERT(
+            integrationStage == IntegrationStage::ScaleVelocities
+                    || integrationStage == IntegrationStage::ScalePositions,
+            "Adding a propagator without time step is only allowed for scaling elements");
+    return getElementPointerImpl(legacySimulatorData,
+                                 builderHelper,
+                                 statePropagatorData,
+                                 energyData,
+                                 freeEnergyPerturbationData,
+                                 globalCommunicationHelper,
+                                 propagatorTag,
+                                 0.0);
+}
+//! \endcond
+
 // Explicit template initializations
-template class Propagator<IntegrationStep::PositionsOnly>;
-template class Propagator<IntegrationStep::VelocitiesOnly>;
-template class Propagator<IntegrationStep::LeapFrog>;
-template class Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>;
+template class Propagator<IntegrationStage::PositionsOnly>;
+template class Propagator<IntegrationStage::VelocitiesOnly>;
+template class Propagator<IntegrationStage::LeapFrog>;
+template class Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>;
+template class Propagator<IntegrationStage::ScaleVelocities>;
+template class Propagator<IntegrationStage::ScalePositions>;
 
 } // namespace gmx

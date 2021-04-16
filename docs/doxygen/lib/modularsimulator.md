@@ -206,7 +206,7 @@ the simulator algorithm.
                                                  VRescaleThermostatUseFullStepKE::No,
                                                  PropagatorTag("LeapFrogPropagator"));
             }
-            builder->add<Propagator<IntegrationStep::LeapFrog>>(PropagatorTag("LeapFrogPropagator"),
+            builder->add<Propagator<IntegrationStage::LeapFrog>>(PropagatorTag("LeapFrogPropagator"),
                                                                 legacySimulatorData_->inputrec->delta_t);
             if (legacySimulatorData_->constr)
             {

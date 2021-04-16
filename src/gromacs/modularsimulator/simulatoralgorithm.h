@@ -69,11 +69,11 @@
 
 namespace gmx
 {
-enum class IntegrationStep;
+enum class IntegrationStage;
 class EnergyData;
 class ModularSimulator;
 class ResetHandler;
-template<IntegrationStep algorithm>
+template<IntegrationStage integrationStage>
 class Propagator;
 class TopologyHolder;
 
