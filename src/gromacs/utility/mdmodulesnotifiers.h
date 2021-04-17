@@ -41,13 +41,13 @@
  * \ingroup module_utility
  */
 
-#ifndef GMX_UTILITY_MDMODULENOTIFICATION_H
-#define GMX_UTILITY_MDMODULENOTIFICATION_H
+#ifndef GMX_UTILITY_MDMODULESNOTIFIERS_H
+#define GMX_UTILITY_MDMODULESNOTIFIERS_H
 
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/mdmodulenotification-impl.h"
+#include "gromacs/utility/mdmodulesnotifier.h"
 
 struct t_commrec;
 struct gmx_mtop_t;

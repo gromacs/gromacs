@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/mdmodulenotification-impl.h"
+#include "gromacs/utility/mdmodulesnotifier.h"
 
 #include <gmock/gmock.h>
 

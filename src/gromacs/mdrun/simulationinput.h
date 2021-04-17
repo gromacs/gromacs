@@ -48,7 +48,7 @@
 
 #include "gromacs/mdrun/simulationinputhandle.h"
 #include "gromacs/mdtypes/checkpointdata.h"
-#include "gromacs/utility/mdmodulenotification.h"
+#include "gromacs/utility/mdmodulesnotifiers.h"
 
 // Forward declarations for types from other modules that are opaque to the public API.
 // TODO: Document the sources of these symbols or import a (self-documenting) fwd header.

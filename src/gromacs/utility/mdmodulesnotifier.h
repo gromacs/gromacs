@@ -34,15 +34,15 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::MDModulesNotifier.
+ * Declares gmx::MDModulesNotifier and builder.
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
  * \ingroup module_utility
  */
 
-#ifndef GMX_UTILITY_MDMODULENOTIFICATION_IMPL_H
-#define GMX_UTILITY_MDMODULENOTIFICATION_IMPL_H
+#ifndef GMX_UTILITY_MDMODULESNOTIFIER_H
+#define GMX_UTILITY_MDMODULESNOTIFIER_H
 
 #include <functional>
 #include <vector>
