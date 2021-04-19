@@ -444,10 +444,10 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     }
 
     clear_rvec(com);
-    mtot       = 0;
-    int  j     = 0;
-    auto massT = md->massT;
-    auto cORF  = md->cORF;
+    mtot        = 0;
+    int   j     = 0;
+    auto* massT = md->massT;
+    auto* cORF  = md->cORF;
     for (int i = 0; i < md->nr; i++)
     {
         if (cORF[i] == 0)

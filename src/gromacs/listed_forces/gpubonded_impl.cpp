@@ -45,6 +45,7 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <string>
 
 #include "gromacs/listed_forces/gpubonded.h"
@@ -58,21 +59,16 @@ namespace gmx
 //! Returns whether there are any interactions in ilists suitable for a GPU.
 static bool someInteractionsCanRunOnGpu(const InteractionLists& ilists)
 {
-    for (int fType : fTypesOnGpu)
-    {
-        if (!ilists[fType].iatoms.empty())
-        {
-            // Perturbation is not implemented in the GPU bonded
-            // kernels. If all the interactions were actually
-            // perturbed, then that will be detected later on each
-            // domain, and work will never run on the GPU. This is
-            // very unlikely to occur, and has little run-time cost,
-            // so we don't complicate the code by catering for it
-            // here.
-            return true;
-        }
-    }
-    return false;
+    // Perturbation is not implemented in the GPU bonded
+    // kernels. If all the interactions were actually
+    // perturbed, then that will be detected later on each
+    // domain, and work will never run on the GPU. This is
+    // very unlikely to occur, and has little run-time cost,
+    // so we don't complicate the code by catering for it
+    // here.
+    return std::any_of(fTypesOnGpu.begin(), fTypesOnGpu.end(), [ilists](int fType) {
+        return !ilists[fType].iatoms.empty();
+    });
 }
 
 //! Returns whether there are any bonded interactions in the global topology suitable for a GPU.

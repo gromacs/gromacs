@@ -427,11 +427,11 @@ static real do_pairs_general(int                 ftype,
 
     const real epsfac = fr->ic->epsfac;
 
-    bFreeEnergy     = FALSE;
-    auto cENER      = md->cENER;
-    auto bPerturbed = md->bPerturbed;
-    auto chargeA    = md->chargeA;
-    auto chargeB    = md->chargeB;
+    bFreeEnergy      = FALSE;
+    auto* cENER      = md->cENER;
+    auto* bPerturbed = md->bPerturbed;
+    auto* chargeA    = md->chargeA;
+    auto* chargeB    = md->chargeB;
     for (i = 0; (i < nbonds);)
     {
         itype = iatoms[i++];
@@ -592,7 +592,7 @@ static void do_pairs_simple(int              nbonds,
     std::int32_t aj[pack_size];
     real         coeff[3 * pack_size];
 #endif
-    auto chargeA = md->chargeA;
+    auto* chargeA = md->chargeA;
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size * nfa1)
