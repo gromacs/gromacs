@@ -558,29 +558,29 @@ struct xdr_type
 template<>
 struct xdr_type<int>
 {
-    static const int value = xdr_datatype_int;
+    static const XdrDataType value = XdrDataType::Int;
 };
 
 template<>
 struct xdr_type<float>
 {
-    static const int value = xdr_datatype_float;
+    static const XdrDataType value = XdrDataType::Float;
 };
 
 template<>
 struct xdr_type<double>
 {
-    static const int value = xdr_datatype_double;
+    static const XdrDataType value = XdrDataType::Double;
 };
 
-//! \brief Returns size in byte of an xdr_datatype
-static inline unsigned int sizeOfXdrType(int xdrType)
+//! \brief Returns size in byte of an XdrDataType
+static inline unsigned int sizeOfXdrType(XdrDataType xdrType)
 {
     switch (xdrType)
     {
-        case xdr_datatype_int: return sizeof(int);
-        case xdr_datatype_float: return sizeof(float);
-        case xdr_datatype_double: return sizeof(double);
+        case XdrDataType::Int: return sizeof(int);
+        case XdrDataType::Float: return sizeof(float);
+        case XdrDataType::Double: return sizeof(double);
         default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 
@@ -588,13 +588,13 @@ static inline unsigned int sizeOfXdrType(int xdrType)
 }
 
 //! \brief Returns the XDR process function for i/o of an XDR type
-static inline xdrproc_t xdrProc(int xdrType)
+static inline xdrproc_t xdrProc(XdrDataType xdrType)
 {
     switch (xdrType)
     {
-        case xdr_datatype_int: return reinterpret_cast<xdrproc_t>(xdr_int);
-        case xdr_datatype_float: return reinterpret_cast<xdrproc_t>(xdr_float);
-        case xdr_datatype_double: return reinterpret_cast<xdrproc_t>(xdr_double);
+        case XdrDataType::Int: return reinterpret_cast<xdrproc_t>(xdr_int);
+        case XdrDataType::Float: return reinterpret_cast<xdrproc_t>(xdr_float);
+        case XdrDataType::Double: return reinterpret_cast<xdrproc_t>(xdr_double);
         default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 
@@ -609,7 +609,7 @@ static inline xdrproc_t xdrProc(int xdrType)
  * When list==NULL only reads the elements.
  */
 template<typename Enum>
-static bool_t listXdrVector(XDR* xd, Enum ecpt, int nf, int xdrType, FILE* list, CptElementType cptElementType)
+static bool_t listXdrVector(XDR* xd, Enum ecpt, int nf, XdrDataType xdrType, FILE* list, CptElementType cptElementType)
 {
     bool_t res = 0;
 
@@ -621,10 +621,10 @@ static bool_t listXdrVector(XDR* xd, Enum ecpt, int nf, int xdrType, FILE* list,
     {
         switch (xdrType)
         {
-            case xdr_datatype_int:
+            case XdrDataType::Int:
                 pr_ivec(list, 0, enumValueToString(ecpt), reinterpret_cast<const int*>(data.data()), nf, TRUE);
                 break;
-            case xdr_datatype_float:
+            case XdrDataType::Float:
 #if !GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
@@ -637,7 +637,7 @@ static bool_t listXdrVector(XDR* xd, Enum ecpt, int nf, int xdrType, FILE* list,
                     pr_fvec(list, 0, enumValueToString(ecpt), reinterpret_cast<const float*>(data.data()), nf, TRUE);
                 }
                 break;
-            case xdr_datatype_double:
+            case XdrDataType::Double:
 #if GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
@@ -748,9 +748,11 @@ static int doVectorLow(XDR*                           xd,
         return -1;
     }
     /* Read/write the element data type */
-    constexpr int xdrTypeInTheCode = xdr_type<T>::value;
-    int           xdrTypeInTheFile = xdrTypeInTheCode;
-    res                            = xdr_int(xd, &xdrTypeInTheFile);
+    constexpr XdrDataType xdrTypeInTheCode      = xdr_type<T>::value;
+    XdrDataType           xdrTypeInTheFile      = xdrTypeInTheCode;
+    int                   xdrTypeInTheFileAsInt = static_cast<int>(xdrTypeInTheFile);
+    res                                         = xdr_int(xd, &xdrTypeInTheFileAsInt);
+    xdrTypeInTheFile                            = static_cast<XdrDataType>(xdrTypeInTheFileAsInt);
     if (res == 0)
     {
         return -1;
@@ -781,11 +783,11 @@ static int doVectorLow(XDR*                           xd,
             sprintf(buf,
                     "mismatch for state entry %s, code precision is %s, file precision is %s",
                     enumValueToString(ecpt),
-                    xdr_datatype_names[xdrTypeInTheCode],
-                    xdr_datatype_names[xdrTypeInTheFile]);
+                    enumValueToString(xdrTypeInTheCode),
+                    enumValueToString(xdrTypeInTheFile));
 
             /* Matching int and real should never occur, but check anyhow */
-            if (xdrTypeInTheFile == xdr_datatype_int || xdrTypeInTheCode == xdr_datatype_int)
+            if (xdrTypeInTheFile == XdrDataType::Int || xdrTypeInTheCode == XdrDataType::Int)
             {
                 gmx_fatal(FARGS,
                           "Type %s: incompatible checkpoint formats or corrupted checkpoint file.",

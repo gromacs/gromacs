@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,17 +39,18 @@
 
 /* the xdr data types; note that there is no data type 'real' because
    here we deal with the types as they are actually written to disk.  */
-typedef enum
+enum class XdrDataType : int
 {
-    xdr_datatype_int,
-    xdr_datatype_float,
-    xdr_datatype_double,
-    xdr_datatype_int64,
-    xdr_datatype_char,
-    xdr_datatype_string
-} xdr_datatype;
+    Int,
+    Float,
+    Double,
+    Int64,
+    Char,
+    String,
+    Count
+};
 
-/* names corresponding to the xdr_datatype enum */
-extern const char* xdr_datatype_names[];
+/* names corresponding to the XdrDataType enum */
+const char* enumValueToString(XdrDataType enumValue);
 
 #endif

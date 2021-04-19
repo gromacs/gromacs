@@ -2815,8 +2815,9 @@ static void read_edr_rawdh_block(samples_t**   smp,
     int           startj;
 
     /* check the block types etc. */
-    if ((blk->nsub < 3) || (blk->sub[0].type != xdr_datatype_int) || (blk->sub[1].type != xdr_datatype_double)
-        || ((blk->sub[2].type != xdr_datatype_float) && (blk->sub[2].type != xdr_datatype_double))
+    if ((blk->nsub < 3) || (blk->sub[0].type != XdrDataType::Int)
+        || (blk->sub[1].type != XdrDataType::Double)
+        || ((blk->sub[2].type != XdrDataType::Float) && (blk->sub[2].type != XdrDataType::Double))
         || (blk->sub[0].nr < 1) || (blk->sub[1].nr < 1))
     {
         gmx_fatal(FARGS, "Unexpected/corrupted block data in file %s around time %f.", filename, start_time);
@@ -2883,7 +2884,7 @@ static void read_edr_rawdh_block(samples_t**   smp,
     /* and copy the data*/
     for (j = 0; j < blk->sub[2].nr; j++)
     {
-        if (blk->sub[2].type == xdr_datatype_float)
+        if (blk->sub[2].type == XdrDataType::Float)
         {
             s->du[startj + j] = blk->sub[2].fval[j];
         }
@@ -2915,8 +2916,8 @@ static samples_t* read_edr_hist_block(int*          nsamples,
     int           nbins[2];
 
     /* check the block types etc. */
-    if ((blk->nsub < 2) || (blk->sub[0].type != xdr_datatype_double)
-        || (blk->sub[1].type != xdr_datatype_int64) || (blk->sub[0].nr < 2) || (blk->sub[1].nr < 2))
+    if ((blk->nsub < 2) || (blk->sub[0].type != XdrDataType::Double)
+        || (blk->sub[1].type != XdrDataType::Int64) || (blk->sub[0].nr < 2) || (blk->sub[1].nr < 2))
     {
         gmx_fatal(FARGS, "Unexpected/corrupted block data in file %s around time %f", filename, start_time);
     }
@@ -3083,7 +3084,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
             if (fr->block[i].id == enxDHCOLL)
             {
                 nlam++;
-                if ((fr->block[i].nsub < 1) || (fr->block[i].sub[0].type != xdr_datatype_double)
+                if ((fr->block[i].nsub < 1) || (fr->block[i].sub[0].type != XdrDataType::Double)
                     || (fr->block[i].sub[0].nr < 5))
                 {
                     gmx_fatal(FARGS, "Unexpected block data in file %s", fn);

@@ -100,9 +100,9 @@ static void enxsubblock_init(t_enxsubblock* sb)
 {
     sb->nr = 0;
 #if GMX_DOUBLE
-    sb->type = xdr_datatype_double;
+    sb->type = XdrDataType::Double;
 #else
-    sb->type            = xdr_datatype_float;
+    sb->type                = XdrDataType::Float;
 #endif
     sb->fval       = nullptr;
     sb->dval       = nullptr;
@@ -173,42 +173,42 @@ static void enxsubblock_alloc(t_enxsubblock* sb)
     /* allocate the appropriate amount of memory */
     switch (sb->type)
     {
-        case xdr_datatype_float:
+        case XdrDataType::Float:
             if (sb->nr > sb->fval_alloc)
             {
                 srenew(sb->fval, sb->nr);
                 sb->fval_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_double:
+        case XdrDataType::Double:
             if (sb->nr > sb->dval_alloc)
             {
                 srenew(sb->dval, sb->nr);
                 sb->dval_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_int:
+        case XdrDataType::Int:
             if (sb->nr > sb->ival_alloc)
             {
                 srenew(sb->ival, sb->nr);
                 sb->ival_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_int64:
+        case XdrDataType::Int64:
             if (sb->nr > sb->lval_alloc)
             {
                 srenew(sb->lval, sb->nr);
                 sb->lval_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_char:
+        case XdrDataType::Char:
             if (sb->nr > sb->cval_alloc)
             {
                 srenew(sb->cval, sb->nr);
                 sb->cval_alloc = sb->nr;
             }
             break;
-        case xdr_datatype_string:
+        case XdrDataType::String:
             if (sb->nr > sb->sval_alloc)
             {
                 int i;
@@ -456,9 +456,9 @@ static gmx_bool do_eheader(ener_file_t ef,
     int      ndisre = 0;
     int      startb = 0;
 #if !GMX_DOUBLE
-    xdr_datatype dtreal = xdr_datatype_float;
+    XdrDataType xdrDataType = XdrDataType::Float;
 #else
-    xdr_datatype dtreal = xdr_datatype_double;
+    XdrDataType xdrDataType = XdrDataType::Double;
 #endif
 
     if (bWrongPrecision)
@@ -643,8 +643,8 @@ static gmx_bool do_eheader(ener_file_t ef,
         fr->block[0].id          = enxDISRE;
         fr->block[0].sub[0].nr   = ndisre;
         fr->block[0].sub[1].nr   = ndisre;
-        fr->block[0].sub[0].type = dtreal;
-        fr->block[0].sub[1].type = dtreal;
+        fr->block[0].sub[0].type = xdrDataType;
+        fr->block[0].sub[1].type = xdrDataType;
         startb++;
     }
 
@@ -667,7 +667,7 @@ static gmx_bool do_eheader(ener_file_t ef,
                 {
                     gmx_incons("Writing an old version .edr file with too many subblocks");
                 }
-                if (fr->block[b].sub[0].type != dtreal)
+                if (fr->block[b].sub[0].type != xdrDataType)
                 {
                     gmx_incons("Writing an old version .edr file the wrong subblock type");
                 }
@@ -680,7 +680,7 @@ static gmx_bool do_eheader(ener_file_t ef,
             }
             fr->block[b].id          = b - startb;
             fr->block[b].sub[0].nr   = nrint;
-            fr->block[b].sub[0].type = dtreal;
+            fr->block[b].sub[0].type = xdrDataType;
         }
         else
         {
@@ -701,12 +701,12 @@ static gmx_bool do_eheader(ener_file_t ef,
             for (i = 0; i < nsub; i++)
             {
                 t_enxsubblock* sub    = &(fr->block[b].sub[i]); /* shortcut */
-                int            typenr = sub->type;
+                int            typenr = static_cast<int>(sub->type);
 
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, typenr);
                 *bOK = *bOK && gmx_fio_do_int(ef->fio, sub->nr);
 
-                sub->type = static_cast<xdr_datatype>(typenr);
+                sub->type = static_cast<XdrDataType>(typenr);
             }
         }
     }
@@ -1092,20 +1092,20 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
             /* read/write data */
             switch (sub->type)
             {
-                case xdr_datatype_float:
+                case XdrDataType::Float:
                     bOK1 = gmx_fio_ndo_float(ef->fio, sub->fval, sub->nr);
                     break;
-                case xdr_datatype_double:
+                case XdrDataType::Double:
                     bOK1 = gmx_fio_ndo_double(ef->fio, sub->dval, sub->nr);
                     break;
-                case xdr_datatype_int: bOK1 = gmx_fio_ndo_int(ef->fio, sub->ival, sub->nr); break;
-                case xdr_datatype_int64:
+                case XdrDataType::Int: bOK1 = gmx_fio_ndo_int(ef->fio, sub->ival, sub->nr); break;
+                case XdrDataType::Int64:
                     bOK1 = gmx_fio_ndo_int64(ef->fio, sub->lval, sub->nr);
                     break;
-                case xdr_datatype_char:
+                case XdrDataType::Char:
                     bOK1 = gmx_fio_ndo_uchar(ef->fio, sub->cval, sub->nr);
                     break;
-                case xdr_datatype_string:
+                case XdrDataType::String:
                     bOK1 = gmx_fio_ndo_string(ef->fio, sub->sval, sub->nr);
                     break;
                 default:
@@ -1455,37 +1455,37 @@ static void cmp_eblocks(t_enxframe* fr1, t_enxframe* fr2, real ftol, real abstol
                     {
                         switch (s1->type)
                         {
-                            case xdr_datatype_float:
+                            case XdrDataType::Float:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_float(stdout, buf, i, s1->fval[k], s2->fval[k], ftol, abstol);
                                 }
                                 break;
-                            case xdr_datatype_double:
+                            case XdrDataType::Double:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_double(stdout, buf, i, s1->dval[k], s2->dval[k], ftol, abstol);
                                 }
                                 break;
-                            case xdr_datatype_int:
+                            case XdrDataType::Int:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_int(stdout, buf, i, s1->ival[k], s2->ival[k]);
                                 }
                                 break;
-                            case xdr_datatype_int64:
+                            case XdrDataType::Int64:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_int64(stdout, buf, s1->lval[k], s2->lval[k]);
                                 }
                                 break;
-                            case xdr_datatype_char:
+                            case XdrDataType::Char:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_uc(stdout, buf, i, s1->cval[k], s2->cval[k]);
                                 }
                                 break;
-                            case xdr_datatype_string:
+                            case XdrDataType::String:
                                 for (k = 0; k < s1->nr; k++)
                                 {
                                     cmp_str(stdout, buf, i, s1->sval[k], s2->sval[k]);

@@ -90,11 +90,11 @@ static double mypow(double x, double y)
 static real blk_value(t_enxblock* blk, int sub, int index)
 {
     range_check(index, 0, blk->sub[sub].nr);
-    if (blk->sub[sub].type == xdr_datatype_float)
+    if (blk->sub[sub].type == XdrDataType::Float)
     {
         return blk->sub[sub].fval[index];
     }
-    else if (blk->sub[sub].type == xdr_datatype_double)
+    else if (blk->sub[sub].type == XdrDataType::Double)
     {
         return blk->sub[sub].dval[index];
     }

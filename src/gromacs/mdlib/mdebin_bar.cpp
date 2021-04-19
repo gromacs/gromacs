@@ -255,7 +255,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
                                                     starting from first coord in
                                                     the main delta_h_coll) */
         blk->sub[0].nr   = 2;
-        blk->sub[0].type = xdr_datatype_int;
+        blk->sub[0].type = XdrDataType::Int;
         blk->sub[0].ival = dh->subblock_meta_i;
 
         /* subblock 2 */
@@ -264,7 +264,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
             dh->subblock_meta_d[i] = dh->lambda[i];
         }
         blk->sub[1].nr   = dh->nlambda;
-        blk->sub[1].type = xdr_datatype_double;
+        blk->sub[1].type = XdrDataType::Double;
         blk->sub[1].dval = dh->subblock_meta_d;
 
         /* subblock 3 */
@@ -276,9 +276,9 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
 
             blk->sub[2].nr = dh->ndh;
             /* Michael commented in 2012 that this use of explicit
-               xdr_datatype_float was good for F@H for now.
+               XdrDataType::Float was good for F@H for now.
                Apparently it's still good enough. */
-            blk->sub[2].type = xdr_datatype_float;
+            blk->sub[2].type = XdrDataType::Float;
             for (i = 0; i < dh->ndh; i++)
             {
                 dh->dhf[i] = static_cast<float>(dh->dh[i]);
@@ -289,7 +289,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
         else
         {
             blk->sub[2].nr   = 0;
-            blk->sub[2].type = xdr_datatype_float;
+            blk->sub[2].type = XdrDataType::Float;
             blk->sub[2].fval = nullptr;
         }
     }
@@ -350,7 +350,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
         }
         dh->subblock_meta_d[1] = dh->dx;
         blk->sub[0].nr         = 2 + ((dh->nlambda > 1) ? dh->nlambda : 0);
-        blk->sub[0].type       = xdr_datatype_double;
+        blk->sub[0].type       = XdrDataType::Double;
         blk->sub[0].dval       = dh->subblock_meta_d;
 
         /* subblock 2: the starting point(s) as a long integer */
@@ -365,7 +365,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
         dh->subblock_meta_l[k++] = dh->derivative;
 
         blk->sub[1].nr   = nhist_written + 3;
-        blk->sub[1].type = xdr_datatype_int64;
+        blk->sub[1].type = XdrDataType::Int64;
         blk->sub[1].lval = dh->subblock_meta_l;
 
         /* subblock 3 + 4 : the histogram data */
@@ -373,7 +373,7 @@ static void mde_delta_h_handle_block(t_mde_delta_h* dh, t_enxblock* blk)
         {
             blk->sub[i + 2].nr = dh->maxbin[i] + 1; /* it's +1 because size=index+1
                                                        in C */
-            blk->sub[i + 2].type = xdr_datatype_int;
+            blk->sub[i + 2].type = XdrDataType::Int;
             blk->sub[i + 2].ival = dh->bin[i];
         }
     }
@@ -700,7 +700,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll* dhc, t_enxframe* fr, int 
     }
     blk->id          = enxDHCOLL;
     blk->sub[0].nr   = c_subblockDNumPreEntries + dhc->n_lambda_vec;
-    blk->sub[0].type = xdr_datatype_double;
+    blk->sub[0].type = XdrDataType::Double;
     blk->sub[0].dval = dhc->subblock_d;
 
     if (dhc->native_lambda_components != nullptr)
@@ -713,7 +713,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll* dhc, t_enxframe* fr, int 
             dhc->subblock_i[c_subblockINumPreEntries + i] = dhc->native_lambda_components[i];
         }
         blk->sub[1].nr   = c_subblockINumPreEntries + dhc->n_lambda_vec;
-        blk->sub[1].type = xdr_datatype_int;
+        blk->sub[1].type = XdrDataType::Int;
         blk->sub[1].ival = dhc->subblock_i;
     }
 

@@ -1438,7 +1438,7 @@ static void do_dhdl(t_enxframe*             fr,
         else if (fr->block[i].id == enxDHCOLL)
         {
             nblock_dhcoll++;
-            if ((fr->block[i].nsub < 1) || (fr->block[i].sub[0].type != xdr_datatype_double)
+            if ((fr->block[i].nsub < 1) || (fr->block[i].sub[0].type != XdrDataType::Double)
                 || (fr->block[i].sub[0].nr < 5))
             {
                 gmx_fatal(FARGS, "Unexpected block data");
@@ -1531,8 +1531,8 @@ static void do_dhdl(t_enxframe*             fr,
                 int     nhist, derivative;
 
                 /* check the block types etc. */
-                if ((blk->nsub < 2) || (blk->sub[0].type != xdr_datatype_double)
-                    || (blk->sub[1].type != xdr_datatype_int64) || (blk->sub[0].nr < 2)
+                if ((blk->nsub < 2) || (blk->sub[0].type != XdrDataType::Double)
+                    || (blk->sub[1].type != XdrDataType::Int64) || (blk->sub[0].nr < 2)
                     || (blk->sub[1].nr < 2))
                 {
                     gmx_fatal(FARGS, "Unexpected block data in file");
@@ -1616,7 +1616,7 @@ static void do_dhdl(t_enxframe*             fr,
                 if (blk->id == enxDH)
                 {
                     double value;
-                    if (blk->sub[2].type == xdr_datatype_float)
+                    if (blk->sub[2].type == XdrDataType::Float)
                     {
                         value = blk->sub[2].fval[i];
                     }

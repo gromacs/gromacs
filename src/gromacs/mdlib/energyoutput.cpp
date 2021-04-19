@@ -1223,10 +1223,10 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[b].id        = id[b];
             fr.block[b].sub[0].nr = nr[b];
 #if !GMX_DOUBLE
-            fr.block[b].sub[0].type = xdr_datatype_float;
+            fr.block[b].sub[0].type = XdrDataType::Float;
             fr.block[b].sub[0].fval = block[b];
 #else
-            fr.block[b].sub[0].type  = xdr_datatype_double;
+            fr.block[b].sub[0].type  = XdrDataType::Double;
             fr.block[b].sub[0].dval  = block[b];
 #endif
         }
@@ -1244,13 +1244,13 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[db].sub[0].nr     = ndisre;
             fr.block[db].sub[1].nr     = ndisre;
 #if !GMX_DOUBLE
-            fr.block[db].sub[0].type = xdr_datatype_float;
-            fr.block[db].sub[1].type = xdr_datatype_float;
+            fr.block[db].sub[0].type = XdrDataType::Float;
+            fr.block[db].sub[1].type = XdrDataType::Float;
             fr.block[db].sub[0].fval = disres.rt;
             fr.block[db].sub[1].fval = disres.rm3tav;
 #else
-            fr.block[db].sub[0].type = xdr_datatype_double;
-            fr.block[db].sub[1].type = xdr_datatype_double;
+            fr.block[db].sub[0].type = XdrDataType::Double;
+            fr.block[db].sub[1].type = XdrDataType::Double;
             fr.block[db].sub[0].dval = disres.rt;
             fr.block[db].sub[1].dval = disres.rm3tav;
 #endif

@@ -517,41 +517,41 @@ void list_ene(const char* fn)
                     printf("  Sub block %3d (%5d elems, type=%s) values:\n",
                            i,
                            sb->nr,
-                           xdr_datatype_names[sb->type]);
+                           enumValueToString(sb->type));
 
                     switch (sb->type)
                     {
-                        case xdr_datatype_float:
+                        case XdrDataType::Float:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d   %8.4f\n", j, sb->fval[j]);
                             }
                             break;
-                        case xdr_datatype_double:
+                        case XdrDataType::Double:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d   %10.6f\n", j, sb->dval[j]);
                             }
                             break;
-                        case xdr_datatype_int:
+                        case XdrDataType::Int:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d %10d\n", j, sb->ival[j]);
                             }
                             break;
-                        case xdr_datatype_int64:
+                        case XdrDataType::Int64:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d %s\n", j, gmx_step_str(sb->lval[j], buf));
                             }
                             break;
-                        case xdr_datatype_char:
+                        case XdrDataType::Char:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d %1c\n", j, sb->cval[j]);
                             }
                             break;
-                        case xdr_datatype_string:
+                        case XdrDataType::String:
                             for (j = 0; j < sb->nr; j++)
                             {
                                 printf("%14d %80s\n", j, sb->sval[j]);
