@@ -12,7 +12,8 @@
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   FFT: FFTW3
-#   Parallelism nt/ntomp: 4/2
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
 
 gromacs:gcc-9:release:configure:
   extends:
@@ -77,6 +78,9 @@ gromacs:gcc-9:release:regressiontest:
     BUILD_DIR: release-builds-gcc
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
     LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
   tags:
     - k8s-scilifelab
