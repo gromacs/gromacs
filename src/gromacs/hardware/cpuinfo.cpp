@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -810,14 +810,14 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
     // testNames map above, and if it's a match return the vendor.
-    for (auto& l : { "vendor_id", "vendor", "manufacture", "model", "processor", "cpu" })
+    for (const auto& l : { "vendor_id", "vendor", "manufacture", "model", "processor", "cpu" })
     {
         if (cpuInfo.count(l) != 0U)
         {
             // there was a line with this left-hand side in /proc/cpuinfo
             const std::string& s1 = cpuInfo.at(l);
 
-            for (auto& t : testVendors)
+            for (const auto& t : testVendors)
             {
                 const std::string& s2 = t.first;
 
@@ -865,7 +865,7 @@ void detectProcCpuInfoIbm(const std::map<std::string, std::string>& cpuInfo,
         features->insert(CpuInfo::Feature::Ibm_Qpx);
     }
 
-    for (auto& l : { "model name", "model", "Processor", "cpu" })
+    for (const auto& l : { "model name", "model", "Processor", "cpu" })
     {
         if (cpuInfo.count(l) != 0U)
         {

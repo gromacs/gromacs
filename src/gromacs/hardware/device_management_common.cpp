@@ -156,7 +156,7 @@ void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInforma
                        "DeviceInformation for OpenCL/SYCL can not be serialized");
     int numDevices = deviceInfoList.size();
     serializer->doInt(&numDevices);
-    for (auto& deviceInfo : deviceInfoList)
+    for (const auto& deviceInfo : deviceInfoList)
     {
         serializer->doOpaque(reinterpret_cast<char*>(deviceInfo.get()), sizeof(DeviceInformation));
     }

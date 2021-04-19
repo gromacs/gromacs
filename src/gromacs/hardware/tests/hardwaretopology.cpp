@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,7 +163,7 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
 
         // Check that the sum of numa domains is the total processor count
         int processorsinNumaNudes = 0;
-        for (auto& n : hwTop.machine().numa.nodes)
+        for (const auto& n : hwTop.machine().numa.nodes)
         {
             processorsinNumaNudes += n.logicalProcessorId.size();
         }
@@ -175,9 +175,9 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         {
             elem = 0;
         }
-        for (auto& n : hwTop.machine().numa.nodes)
+        for (const auto& n : hwTop.machine().numa.nodes)
         {
-            for (auto& idx : n.logicalProcessorId)
+            for (const auto& idx : n.logicalProcessorId)
             {
                 v[idx] = 1;
             }
@@ -186,7 +186,7 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         EXPECT_EQ(uniqueProcessorsinNumaNudes, hwTop.machine().logicalProcessorCount);
 
         // We must have some memory in a numa node
-        for (auto& n : hwTop.machine().numa.nodes)
+        for (const auto& n : hwTop.machine().numa.nodes)
         {
             EXPECT_GT(n.memory, 0);
         }
@@ -196,11 +196,11 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         EXPECT_GT(hwTop.machine().numa.maxRelativeLatency, 0);
         // Check number of rows matches # numa nodes
         EXPECT_EQ(hwTop.machine().numa.relativeLatency.size(), hwTop.machine().numa.nodes.size());
-        for (auto& v2 : hwTop.machine().numa.relativeLatency)
+        for (const auto& v2 : hwTop.machine().numa.relativeLatency)
         {
             // Check that size of each row matches # numa nodes
             EXPECT_EQ(v2.size(), hwTop.machine().numa.nodes.size());
-            for (auto& latency : v2)
+            for (const auto& latency : v2)
             {
                 // Latency values should be positive
                 EXPECT_GT(latency, 0);

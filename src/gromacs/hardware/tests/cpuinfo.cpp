@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ TEST(CpuInfoTest, SupportLevel)
     if (c.supportLevel() >= gmx::CpuInfo::SupportLevel::LogicalProcessorInfo)
     {
         // Make sure assigned numbers are reasonable if we have them
-        for (auto& l : c.logicalProcessors())
+        for (const auto& l : c.logicalProcessors())
         {
             EXPECT_GE(l.socketRankInMachine, 0)
                     << "Impossible socket index for logical processor. " << commonMsg << std::endl;
