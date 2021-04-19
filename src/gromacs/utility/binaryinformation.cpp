@@ -120,6 +120,7 @@ void printCopyright(gmx::TextWriter* writer)
                                                 "Aldert van Buuren",
                                                 "Rudi van Drunen",
                                                 "Anton Feenstra",
+                                                "Gaurav Garg",
                                                 "Gilles Gouaillardet",
                                                 "Alan Gray",
                                                 "Gerrit Groenhof",
