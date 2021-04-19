@@ -70,8 +70,6 @@
 
 #include "thermochemistry.h"
 
-static const char* proj_unit;
-
 static real tick_spacing(real range, int minticks)
 {
     real sp;
@@ -473,6 +471,7 @@ static void project(const char*             trajfile,
                     const char*             twodplotfile,
                     const char*             threedplotfile,
                     const char*             filterfile,
+                    const char*             projUnit,
                     int                     skip,
                     const char*             extremefile,
                     gmx_bool                bExtrAll,
@@ -649,7 +648,7 @@ static void project(const char*             trajfile,
             sprintf(str, "vec %d", eignr[outvec[v]] + 1);
             ylabel[v] = gmx_strdup(str);
         }
-        sprintf(str, "projection on eigenvectors (%s)", proj_unit);
+        sprintf(str, "projection on eigenvectors (%s)", projUnit);
         write_xvgr_graphs(projfile,
                           noutvec,
                           1,
@@ -669,8 +668,8 @@ static void project(const char*             trajfile,
 
     if (twodplotfile)
     {
-        sprintf(str, "projection on eigenvector %d (%s)", eignr[outvec[0]] + 1, proj_unit);
-        sprintf(str2, "projection on eigenvector %d (%s)", eignr[outvec[noutvec - 1]] + 1, proj_unit);
+        sprintf(str, "projection on eigenvector %d (%s)", eignr[outvec[0]] + 1, projUnit);
+        sprintf(str2, "projection on eigenvector %d (%s)", eignr[outvec[noutvec - 1]] + 1, projUnit);
         xvgrout = xvgropen(twodplotfile, "2D projection of trajectory", str, str2, oenv);
         for (i = 0; i < nframes; i++)
         {
@@ -1383,9 +1382,10 @@ int gmx_anaeig(int argc, char* argv[])
     }
 
     snew(sqrtm, natoms);
+    std::string projUnit;
     if (bM && bDMA1)
     {
-        proj_unit = "u\\S1/2\\Nnm";
+        projUnit = "u\\S1/2\\Nnm";
         for (i = 0; (i < natoms); i++)
         {
             sqrtm[i] = std::sqrt(atoms->atom[index[i]].m);
@@ -1393,7 +1393,7 @@ int gmx_anaeig(int argc, char* argv[])
     }
     else
     {
-        proj_unit = "nm";
+        projUnit = "nm";
         for (i = 0; (i < natoms); i++)
         {
             sqrtm[i] = 1.0;
@@ -1523,6 +1523,7 @@ int gmx_anaeig(int argc, char* argv[])
                 TwoDPlotFile,
                 ThreeDPlotFile,
                 FilterFile,
+                projUnit.c_str(),
                 skip,
                 ExtremeFile,
                 bFirstLastSet,

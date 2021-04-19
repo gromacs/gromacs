@@ -612,7 +612,6 @@ extern void save_data(structure_factor_t*     sft,
     xvgrclose(fp);
 }
 
-
 extern double CMSF(gmx_structurefactors_t* gsf, int type, int nh, double lambda, double sin_theta)
 /*
  * return Cromer-Mann fit for the atomic scattering factor:

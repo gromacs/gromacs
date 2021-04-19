@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,11 @@
 #include "fitahx.h"
 
 #include <cmath>
+#include <vector>
 
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -75,24 +77,24 @@ static void my_sub_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
 
 real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[], rvec x[], int nca, int caindex[], gmx_bool bFit)
 {
-    static rvec* xref = nullptr;
-    static real* mass = nullptr;
-    const real   d    = 0.15;  /* Rise per residue (nm)    */
-    const real   tw   = 1.745; /* Twist per residue (rad)  */
-    const real   rad  = 0.23;  /* Radius of the helix (nm) */
-    real         phi0, trms, rms;
-    rvec         dx, xcm;
-    int          ai, i, nmass;
+    static std::vector<gmx::RVec> xref;
+    static std::vector<real>      mass;
+    const real                    d   = 0.15;  /* Rise per residue (nm)    */
+    const real                    tw  = 1.745; /* Twist per residue (rad)  */
+    const real                    rad = 0.23;  /* Radius of the helix (nm) */
+    real                          phi0, trms, rms;
+    rvec                          dx, xcm;
+    int                           ai, i, nmass;
 
     if (nca < 3)
     {
         gmx_fatal(FARGS, "Need at least 3 Calphas to fit to, (now %d)...\n", nca);
     }
 
-    if (xref == nullptr)
+    if (xref.empty())
     {
-        snew(xref, natoms);
-        snew(mass, natoms);
+        xref.resize(natoms);
+        mass.resize(natoms);
     }
     phi0 = 0;
     for (i = 0; (i < nca); i++)
@@ -120,8 +122,8 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[], rvec x[]
     }
 
     /* Center the referece around the origin */
-    my_calc_xcm(nca, caindex, xref, xcm);
-    my_sub_xcm(nca, caindex, xref, xcm);
+    my_calc_xcm(nca, caindex, as_rvec_array(xref.data()), xcm);
+    my_sub_xcm(nca, caindex, as_rvec_array(xref.data()), xcm);
 
     if (bFit)
     {
@@ -149,7 +151,7 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[], rvec x[]
     /* Now call the fitting routine */
     if (bFit)
     {
-        do_fit(natoms, mass, xref, x);
+        do_fit(natoms, mass.data(), as_rvec_array(xref.data()), x);
     }
 
     /* Reset masses and calc rms */

@@ -73,11 +73,9 @@
 /* This probably sucks but it seems to work.                                */
 /****************************************************************************/
 
-static int ce = 0, cb = 0;
-
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-static void p_integrate(double* result, const double data[], int ndata, double slWidth)
+static void p_integrate(double* result, const double data[], int ndata, double slWidth, int cb, int ce)
 {
     int    i, slice;
     double sum;
@@ -117,6 +115,8 @@ static void calc_potential(const char*             fn,
                            double                  fudge_z,
                            gmx_bool                bSpherical,
                            gmx_bool                bCorrect,
+                           int                     cb,
+                           int                     ce,
                            const gmx_output_env_t* oenv)
 {
     rvec*        x0;     /* coordinates without pbc */
@@ -317,7 +317,7 @@ static void calc_potential(const char*             fn,
     for (n = 0; n < nr_grps; n++)
     {
         /* integrate twice to get field and potential */
-        p_integrate((*slField)[n], (*slCharge)[n], *nslices, *slWidth);
+        p_integrate((*slField)[n], (*slCharge)[n], *nslices, *slWidth, cb, ce);
     }
 
 
@@ -348,7 +348,7 @@ static void calc_potential(const char*             fn,
 
     for (n = 0; n < nr_grps; n++)
     {
-        p_integrate((*slPotential)[n], (*slField)[n], *nslices, *slWidth);
+        p_integrate((*slPotential)[n], (*slField)[n], *nslices, *slWidth, cb, ce);
     }
 
     /* Now correct for eps0 and in spherical case for r*/
@@ -382,6 +382,8 @@ static void plot_potential(double*                 potential[],
                            int                     nr_grps,
                            const char* const       grpname[],
                            double                  slWidth,
+                           int                     cb,
+                           int                     ce,
                            const gmx_output_env_t* oenv)
 {
     FILE *pot,     /* xvgr file with potential */
@@ -443,6 +445,8 @@ int gmx_potential(int argc, char* argv[])
     static gmx_bool    bSpherical = FALSE; /* default is bilayer types   */
     static real        fudge_z    = 0;     /* translate coordinates      */
     static gmx_bool    bCorrect   = false;
+    int                cb         = 0;
+    int                ce         = 0;
     t_pargs            pa[]       = {
         { "-d",
           FALSE,
@@ -534,6 +538,8 @@ int gmx_potential(int argc, char* argv[])
                    fudge_z,
                    bSpherical,
                    bCorrect,
+                   cb,
+                   ce,
                    oenv);
 
     plot_potential(potential,
@@ -546,6 +552,8 @@ int gmx_potential(int argc, char* argv[])
                    ngrps,
                    grpname,
                    slWidth,
+                   cb,
+                   ce,
                    oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);  /* view xvgr file */

@@ -81,6 +81,7 @@
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* hxtypenames[NRHXTYPES] = { "n-n",   "n-n+1", "n-n+2", "n-n+3",
                                               "n-n+4", "n-n+5", "n-n>6" };
 #define MAXHH 4
@@ -108,9 +109,9 @@ static const unsigned char c_acceptorMask = (1 << 0);
 static const unsigned char c_donorMask    = (1 << 1);
 static const unsigned char c_inGroupMask  = (1 << 2);
 
-
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* grpnames[grNR] = { "0", "1", "I" };
-
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bDebug = FALSE;
 
 #define HB_NO 0
@@ -266,7 +267,7 @@ static void add_frames(t_hbdata* hb, int nframes)
 #define OFFSET(frame) ((frame) / 32)
 #define MASK(frame) (1 << ((frame) % 32))
 
-static void _set_hb(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
+static void set_hb_function(unsigned int hbexist[], unsigned int frame, gmx_bool bValue)
 {
     if (bValue)
     {
@@ -300,7 +301,7 @@ static void set_hb(t_hbdata* hb, int id, int ih, int ia, int frame, int ihb)
         gmx_fatal(FARGS, "Incomprehensible iValue %d in set_hb", ihb);
     }
 
-    _set_hb(ghptr, frame - hb->hbmap[id][ia]->n0, TRUE);
+    set_hb_function(ghptr, frame - hb->hbmap[id][ia]->n0, TRUE);
 }
 
 static void add_ff(t_hbdata* hbd, int id, int h, int ia, int frame, int ihb)
@@ -369,7 +370,7 @@ static void inc_nhbonds(t_donors* ddd, int d, int h)
     }
 }
 
-static int _acceptor_index(t_acceptors* a, int grp, int i, const char* file, int line)
+static int acceptor_index_function(t_acceptors* a, int grp, int i, const char* file, int line)
 {
     int ai = a->aptr[i];
 
@@ -386,9 +387,9 @@ static int _acceptor_index(t_acceptors* a, int grp, int i, const char* file, int
         return ai;
     }
 }
-#define acceptor_index(a, grp, i) _acceptor_index(a, grp, i, __FILE__, __LINE__)
+#define acceptor_index(a, grp, i) acceptor_index_function(a, grp, i, __FILE__, __LINE__)
 
-static int _donor_index(t_donors* d, int grp, int i, const char* file, int line)
+static int donor_index_function(t_donors* d, int grp, int i, const char* file, int line)
 {
     int di = d->dptr[i];
 
@@ -410,7 +411,7 @@ static int _donor_index(t_donors* d, int grp, int i, const char* file, int line)
         return di;
     }
 }
-#define donor_index(d, grp, i) _donor_index(d, grp, i, __FILE__, __LINE__)
+#define donor_index(d, grp, i) donor_index_function(d, grp, i, __FILE__, __LINE__)
 
 static gmx_bool isInterchangable(t_hbdata* hb, int d, int a, int grpa, int grpd)
 {
@@ -1461,8 +1462,8 @@ static void do_merge(t_hbdata* hb, int ntmp, bool htmp[], bool gtmp[], t_hbond* 
     /* Copy temp array to target array */
     for (m = 0; (m <= nnframes); m++)
     {
-        _set_hb(hb0->h[0], m, htmp[m]);
-        _set_hb(hb0->g[0], m, gtmp[m]);
+        set_hb_function(hb0->h[0], m, htmp[m]);
+        set_hb_function(hb0->g[0], m, gtmp[m]);
     }
 
     /* Set scalar variables */
@@ -2916,17 +2917,17 @@ int gmx_hbond(int argc, char* argv[])
     snew(rdist, nrbin + 1);
 
 #if !GMX_OPENMP
-#    define __ADIST adist
-#    define __RDIST rdist
-#    define __HBDATA hb
-#else /* GMX_OPENMP ==================================================    \
-       * Set up the OpenMP stuff,                                       | \
-       * like the number of threads and such                            | \
-       * Also start the parallel loop.                                  | \
-       */
-#    define __ADIST p_adist[threadNr]
-#    define __RDIST p_rdist[threadNr]
-#    define __HBDATA p_hb[threadNr]
+#    define __ADIST adist // NOLINT(bugprone-reserved-identifier)
+#    define __RDIST rdist // NOLINT(bugprone-reserved-identifier)
+#    define __HBDATA hb   // NOLINT(bugprone-reserved-identifier)
+#else                     /* GMX_OPENMP ==================================================    \
+                           * Set up the OpenMP stuff,                                       | \
+                           * like the number of threads and such                            | \
+                           * Also start the parallel loop.                                  | \
+                           */
+#    define __ADIST p_adist[threadNr] // NOLINT(bugprone-reserved-identifier)
+#    define __RDIST p_rdist[threadNr] // NOLINT(bugprone-reserved-identifier)
+#    define __HBDATA p_hb[threadNr]   // NOLINT(bugprone-reserved-identifier)
 #endif
     if (bOMP)
     {

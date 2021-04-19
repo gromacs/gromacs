@@ -83,8 +83,10 @@ typedef struct
     real v;
 } t_toppop;
 
-static t_toppop* top  = nullptr;
-static int       ntop = 0;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static t_toppop* top = nullptr;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static int ntop = 0;
 
 typedef struct
 {

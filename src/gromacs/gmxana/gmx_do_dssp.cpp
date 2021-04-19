@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,13 +111,13 @@ static int strip_dssp(FILE*                   tapeout,
                       int                     average_area[],
                       const gmx_output_env_t* oenv)
 {
-    static gmx_bool bFirst = TRUE;
-    static char*    ssbuf;
-    char            buf[STRLEN + 1];
-    char            SSTP;
-    int             nr, iacc, nresidues;
-    int             naccf, naccb; /* Count hydrophobic and hydrophilic residues */
-    real            iaccf, iaccb;
+    static gmx_bool    bFirst = TRUE;
+    static std::string ssbuf;
+    char               buf[STRLEN + 1];
+    char               SSTP;
+    int                nr, iacc, nresidues;
+    int                naccf, naccb; /* Count hydrophobic and hydrophilic residues */
+    real               iaccf, iaccb;
 
 
     /* Skip header */
@@ -133,7 +133,7 @@ static int strip_dssp(FILE*                   tapeout,
          * we allocate 2*nres-1, since for each chain there is a
          * separating line in the temp file. (At most each residue
          * could have been defined as a separate chain.) */
-        snew(ssbuf, 2 * nres - 1);
+        ssbuf.resize(2 * nres - 1);
     }
 
     iaccb = iaccf = 0;

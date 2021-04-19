@@ -39,6 +39,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -121,15 +122,15 @@ static real calc_gyro(rvec     x[],
 
 static void calc_gyro_z(rvec x[], matrix box, int gnx, const int index[], t_atom atom[], int nz, real time, FILE* out)
 {
-    static dvec*   inertia = nullptr;
-    static double* tm      = nullptr;
-    int            i, ii, j, zi;
-    real           zf, w, sdet, e1, e2;
+    static std::vector<gmx::DVec> inertia;
+    static std::vector<double>    tm;
+    int                           i, ii, j, zi;
+    real                          zf, w, sdet, e1, e2;
 
-    if (inertia == nullptr)
+    if (inertia.empty())
     {
-        snew(inertia, nz);
-        snew(tm, nz);
+        inertia.resize(nz);
+        tm.resize(nz);
     }
 
     for (i = 0; i < nz; i++)

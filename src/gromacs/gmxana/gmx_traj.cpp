@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -160,16 +161,16 @@ static void print_data(FILE*       fp,
                        gmx_bool    bDim[],
                        const char* sffmt)
 {
-    static rvec* xav = nullptr;
+    static std::vector<gmx::RVec> xav;
 
     if (bCom)
     {
-        if (xav == nullptr)
+        if (xav.empty())
         {
-            snew(xav, ngrps);
+            xav.resize(ngrps);
         }
-        average_data(x, xav, mass, ngrps, isize, index);
-        low_print_data(fp, time, xav, ngrps, nullptr, bDim, sffmt);
+        average_data(x, as_rvec_array(xav.data()), mass, ngrps, isize, index);
+        low_print_data(fp, time, as_rvec_array(xav.data()), ngrps, nullptr, bDim, sffmt);
     }
     else
     {
@@ -185,16 +186,17 @@ static void write_trx_x(t_trxstatus*      status,
                         int               isize[],
                         int**             index)
 {
-    static rvec*    xav   = nullptr;
+    static std::vector<gmx::RVec> xav;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
     static t_atoms* atoms = nullptr;
     t_trxframe      fr_av;
     int             i;
 
     if (bCom)
     {
-        if (xav == nullptr)
+        if (xav.empty())
         {
-            snew(xav, ngrps);
+            xav.resize(ngrps);
             snew(atoms, 1);
             *atoms = *fr->atoms;
             snew(atoms->atom, ngrps);
@@ -208,11 +210,11 @@ static void write_trx_x(t_trxstatus*      status,
                 atoms->atomname[i] = fr->atoms->atomname[index[i][0]];
             }
         }
-        average_data(fr->x, xav, mass, ngrps, isize, index);
+        average_data(fr->x, as_rvec_array(xav.data()), mass, ngrps, isize, index);
         fr_av        = *fr;
         fr_av.natoms = ngrps;
         fr_av.atoms  = atoms;
-        fr_av.x      = xav;
+        fr_av.x      = as_rvec_array(xav.data());
         write_trxframe(status, &fr_av, nullptr);
     }
     else

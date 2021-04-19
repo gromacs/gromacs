@@ -39,6 +39,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -157,14 +158,14 @@ static void calc_axes(rvec x[], t_atom atom[], const int gnx[], int* index[], gm
 
 static void dump_axes(t_trxstatus* status, t_trxframe* fr, t_atoms* outat, t_bundle* bun)
 {
-    t_trxframe   frout;
-    static rvec* xout = nullptr;
-    int          i;
+    t_trxframe                    frout;
+    static std::vector<gmx::RVec> xout;
+    int                           i;
 
     GMX_ASSERT(outat->nr >= bun->n, "");
-    if (xout == nullptr)
+    if (xout.empty())
     {
-        snew(xout, outat->nr);
+        xout.resize(outat->nr);
     }
 
     for (i = 0; i < bun->n; i++)
@@ -187,7 +188,7 @@ static void dump_axes(t_trxstatus* status, t_trxframe* fr, t_atoms* outat, t_bun
     frout.bAtoms = TRUE;
     frout.natoms = outat->nr;
     frout.atoms  = outat;
-    frout.x      = xout;
+    frout.x      = as_rvec_array(xout.data());
     write_trxframe(status, &frout, nullptr);
 }
 

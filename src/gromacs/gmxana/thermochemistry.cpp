@@ -55,7 +55,7 @@ double calcZeroPointEnergy(gmx::ArrayRef<const real> eigval, real scale_factor)
     // Convert frequency (ps^-1) to energy (kJ/mol)
     double factor = gmx::c_planck * gmx::c_pico / (2.0 * M_PI);
     double zpe    = 0;
-    for (auto& r : eigval)
+    for (const auto& r : eigval)
     {
         double omega = eigval_to_frequency(r);
         zpe += 0.5 * factor * scale_factor * omega;
