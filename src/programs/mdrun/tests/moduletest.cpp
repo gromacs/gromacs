@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,9 +83,11 @@ namespace
 
 #if GMX_OPENMP || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 int g_numOpenMPThreads = 1;
 #endif
 //! \cond
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
@@ -148,7 +150,7 @@ void SimulationRunner::useStringAsMdpFile(const std::string& mdpString)
     mdpInputContents_ = mdpString;
 }
 
-void SimulationRunner::useStringAsNdxFile(const char* ndxString)
+void SimulationRunner::useStringAsNdxFile(const char* ndxString) const
 {
     gmx::TextWriter::writeFileFromString(ndxFileName_, ndxString);
 }
@@ -245,7 +247,7 @@ int SimulationRunner::callGrompp()
     return callGrompp(CommandLine());
 }
 
-int SimulationRunner::changeTprNsteps(int nsteps)
+int SimulationRunner::changeTprNsteps(int nsteps) const
 {
     CommandLine caller;
     caller.append("convert-tpr");
@@ -258,7 +260,7 @@ int SimulationRunner::changeTprNsteps(int nsteps)
     return gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &caller);
 }
 
-int SimulationRunner::callNmeig()
+int SimulationRunner::callNmeig() const
 {
     /* Conforming to style guide by not passing a non-const reference
        to this function. Passing a non-const reference might make it
@@ -330,8 +332,10 @@ int SimulationRunner::callMdrun()
 // ====
 
 // static
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 MPI_Comm MdrunTestFixtureBase::communicator_ = MPI_COMM_NULL;
 // static
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::hwinfo_;
 
 // static

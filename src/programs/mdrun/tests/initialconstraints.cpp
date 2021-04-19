@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ TEST_P(InitialConstraintsTest, Works)
 {
     const int         nsteps     = 1;
     const float       timestep   = 0.001;
-    auto              integrator = GetParam();
+    const auto*       integrator = GetParam();
     const std::string integratorName(integrator);
     SCOPED_TRACE("Integrating with " + integratorName);
     const std::string theMdpFile = formatString(

@@ -107,13 +107,13 @@ void EnergyComparison::operator()(const EnergyFrame& reference, const EnergyFram
                  + test.frameName());
     for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
     {
-        auto& energyName = referenceIt->first;
+        const auto& energyName = referenceIt->first;
         SCOPED_TRACE("Comparing " + energyName + " between frames");
         auto testIt = test.find(energyName);
         if (testIt != test.end())
         {
-            auto& energyValueInReference = referenceIt->second;
-            auto& energyValueInTest      = testIt->second;
+            const auto& energyValueInReference = referenceIt->second;
+            const auto& energyValueInTest      = testIt->second;
             EXPECT_REAL_EQ_TOL(
                     energyValueInReference, energyValueInTest, energyTermsToCompare_.at(energyName));
         }
