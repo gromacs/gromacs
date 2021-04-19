@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -183,8 +183,8 @@ private:
         if (currentObject_->keyExists(name))
         {
             currentKnownNames_->insert(name);
-            auto parentObject     = currentObject_;
-            auto parentKnownNames = currentKnownNames_;
+            const auto* parentObject     = currentObject_;
+            auto*       parentKnownNames = currentKnownNames_;
             // TODO: Consider what to do with mismatching types.
             currentObject_ = &(*currentObject_)[name].asObject();
             currentPath_.append(name);
@@ -231,7 +231,7 @@ private:
     {
         const std::string& name          = section.name();
         auto               parentBuilder = currentObjectBuilder_;
-        auto               parentObject  = currentSourceObject_;
+        const auto*        parentObject  = currentSourceObject_;
         currentObjectBuilder_            = currentObjectBuilder_.addObject(name);
         currentSourceObject_ = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
                                         ? &(*currentSourceObject_)[name].asObject()
