@@ -810,7 +810,7 @@ void AnalysisDataStorage::startParallelDataStorage(AbstractAnalysisData*        
 AnalysisDataStorageFrame& AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader& header)
 {
     GMX_ASSERT(header.isValid(), "Invalid header");
-    internal::AnalysisDataStorageFrameData* storedFrame;
+    internal::AnalysisDataStorageFrameData* storedFrame = nullptr;
     if (impl_->storeAll())
     {
         size_t size = header.index() + 1;

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
- * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -267,43 +267,22 @@ void AbstractAverageHistogram::init(const AnalysisHistogramSettings& settings)
 
 AverageHistogramPointer AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 {
-    int nbins;
-    if (bIntegerBins)
-    {
-        nbins = (rowCount() + 1) / 2;
-    }
-    else
-    {
-        nbins = rowCount() / 2;
-    }
+    const int nbins = bIntegerBins ? (rowCount() + 1) / 2 : rowCount() / 2;
 
     AverageHistogramPointer dest(new StaticAverageHistogram(
             histogramFromBins(settings().firstEdge(), nbins, 2 * xstep()).integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
-    int i, j;
-    for (i = j = 0; i < nbins; ++i)
+    for (int i = 0, j = 0; i < nbins; ++i)
     {
         const bool bFirstHalfBin = (bIntegerBins && i == 0);
         for (int c = 0; c < columnCount(); ++c)
         {
-            real v1, v2;
-            real e1, e2;
-            if (bFirstHalfBin)
-            {
-                v1 = value(0, c).value();
-                e1 = value(0, c).error();
-                v2 = 0;
-                e2 = 0;
-            }
-            else
-            {
-                v1 = value(j, c).value();
-                e1 = value(j, c).error();
-                v2 = value(j + 1, c).value();
-                e2 = value(j + 1, c).error();
-            }
+            const real v1 = bFirstHalfBin ? value(0, c).value() : value(j, c).value();
+            const real v2 = bFirstHalfBin ? 0 : value(j + 1, c).value();
+            const real e1 = bFirstHalfBin ? value(0, c).error() : value(j, c).error();
+            const real e2 = bFirstHalfBin ? 0 : value(j + 1, c).error();
             dest->value(i, c).setValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
         }
         if (bFirstHalfBin)

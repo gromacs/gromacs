@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ public:
      * calls the notification functions in \p module as if the module had
      * been registered to the data object when the data was added.
      */
-    void presentData(AbstractAnalysisData* data, IAnalysisDataModule* module);
+    void presentData(AbstractAnalysisData* data, IAnalysisDataModule* module) const;
 
     //! List of modules added to the data.
     ModuleList modules_;
@@ -216,7 +216,7 @@ void AnalysisDataModuleManager::Impl::checkModuleProperties(const IAnalysisDataM
     }
 }
 
-void AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData* data, IAnalysisDataModule* module)
+void AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData* data, IAnalysisDataModule* module) const
 {
     if (state_ == eNotStarted)
     {

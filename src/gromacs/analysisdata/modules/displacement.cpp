@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,8 +252,6 @@ void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader
         return;
     }
 
-    int step, i;
-
     if (_impl->nstored == 2)
     {
         if (_impl->histm)
@@ -266,7 +264,7 @@ void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader
     AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
     moduleManager().notifyFrameStart(header);
 
-    for (i = _impl->ci - _impl->nmax, step = 1; step < _impl->nstored && i != _impl->ci;
+    for (int i = _impl->ci - _impl->nmax, step = 1; step < _impl->nstored && i != _impl->ci;
          i -= _impl->nmax, ++step)
     {
         if (i < 0)
