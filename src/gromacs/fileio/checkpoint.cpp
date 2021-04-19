@@ -475,6 +475,40 @@ static int do_cpt_u_chars(XDR* xd, const char* desc, int n, unsigned char* i, FI
     return 0;
 }
 
+template<typename EnumType>
+static int do_cpt_enum_as_int(XDR* xd, const char* desc, EnumType* enumValue, FILE* list)
+{
+    static_assert(std::is_same<std::underlying_type_t<EnumType>, int>::value,
+                  "Only enums with underlying type int are supported.");
+    auto castedValue = static_cast<int>(*enumValue);
+    if (xdr_int(xd, &castedValue) == 0)
+    {
+        return -1;
+    }
+    *enumValue = static_cast<EnumType>(castedValue);
+    if (list)
+    {
+        fprintf(list, "%s = %d\n", desc, castedValue);
+    }
+    return 0;
+}
+
+template<typename EnumType>
+static int do_cpt_n_enum_as_int(XDR* xd, const char* desc, int n, EnumType* enumValue, FILE* list)
+{
+    bool_t res = 1;
+    for (int j = 0; j < n && res; j++)
+    {
+        res &= do_cpt_enum_as_int<EnumType>(xd, desc, &enumValue[j], list);
+    }
+    if (res == 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static void do_cpt_int_err(XDR* xd, const char* desc, int* i, FILE* list)
 {
     if (do_cpt_int(xd, desc, i, list) < 0)
@@ -1501,7 +1535,7 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
         snew(swapstate->ionType, swapstate->nIonTypes);
     }
 
-    for (int ic = 0; ic < eCompNR; ic++)
+    for (auto ic : gmx::EnumerationWrapper<Compartment>{})
     {
         for (int ii = 0; ii < swapstate->nIonTypes; ii++)
         {
@@ -1545,7 +1579,7 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
     }
 
     /* Ion flux per channel */
-    for (int ic = 0; ic < eChanNR; ic++)
+    for (auto ic : gmx::EnumerationWrapper<Channel>{})
     {
         for (int ii = 0; ii < swapstate->nIonTypes; ii++)
         {
@@ -1585,27 +1619,32 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
             snew(gs->comp_from, gs->nMol);
         }
 
-        do_cpt_u_chars(xd, "channel history", gs->nMol, gs->channel_label, list);
-        do_cpt_u_chars(xd, "domain history", gs->nMol, gs->comp_from, list);
+        do_cpt_n_enum_as_int<ChannelHistory>(xd, "channel history", gs->nMol, gs->channel_label, list);
+        do_cpt_n_enum_as_int<Domain>(xd, "domain history", gs->nMol, gs->comp_from, list);
     }
 
     /* Save the last known whole positions to checkpoint
      * file to be able to also make multimeric channels whole in PBC */
-    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[eChan0], list);
-    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[eChan1], list);
+    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[Channel::Zero], list);
+    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[Channel::One], list);
     if (bRead)
     {
-        snew(swapstate->xc_old_whole[eChan0], swapstate->nat[eChan0]);
-        snew(swapstate->xc_old_whole[eChan1], swapstate->nat[eChan1]);
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0], swapstate->xc_old_whole[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1], swapstate->xc_old_whole[eChan1], list);
+        snew(swapstate->xc_old_whole[Channel::Zero], swapstate->nat[Channel::Zero]);
+        snew(swapstate->xc_old_whole[Channel::One], swapstate->nat[Channel::One]);
+        do_cpt_n_rvecs_err(
+                xd, "Ch0 whole x", swapstate->nat[Channel::Zero], swapstate->xc_old_whole[Channel::Zero], list);
+        do_cpt_n_rvecs_err(
+                xd, "Ch1 whole x", swapstate->nat[Channel::One], swapstate->xc_old_whole[Channel::One], list);
     }
     else
     {
+        do_cpt_n_rvecs_err(xd,
+                           "Ch0 whole x",
+                           swapstate->nat[Channel::Zero],
+                           *swapstate->xc_old_whole_p[Channel::Zero],
+                           list);
         do_cpt_n_rvecs_err(
-                xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
-        do_cpt_n_rvecs_err(
-                xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
+                xd, "Ch1 whole x", swapstate->nat[Channel::One], *swapstate->xc_old_whole_p[Channel::One], list);
     }
 
     return 0;

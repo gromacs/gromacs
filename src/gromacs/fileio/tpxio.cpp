@@ -863,7 +863,7 @@ static void do_swapgroup(gmx::ISerializer* serializer, t_swapGroup* g)
     serializer->doIntArray(g->ind, g->nat);
 
     /* Requested counts for compartments A and B */
-    serializer->doIntArray(g->nmolReq, eCompNR);
+    serializer->doIntArray(g->nmolReq.data(), static_cast<int>(Compartment::Count));
 }
 
 static void do_swapcoords_tpx(gmx::ISerializer* serializer, t_swapcoords* swap, int file_version)

@@ -276,7 +276,7 @@ struct t_swapGroup
     //! The global ion group atoms numbers
     int* ind;
     //! Requested number of molecules of this type per compartment
-    int nmolReq[eCompNR];
+    gmx::EnumerationArray<Compartment, int> nmolReq;
 };
 
 struct t_swapcoords
@@ -298,7 +298,7 @@ struct t_swapcoords
     //! Ion counts may deviate from the requested values by +-threshold before a swap is done
     real threshold;
     //! Offset of the swap layer (='bulk') with respect to the compartment-defining layers
-    real bulkOffset[eCompNR];
+    gmx::EnumerationArray<Compartment, real> bulkOffset;
     //! Number of groups to be controlled
     int ngrp;
     //! All swap groups, including split and solvent

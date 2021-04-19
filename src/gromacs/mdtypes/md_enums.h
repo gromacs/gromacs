@@ -74,22 +74,22 @@ const char* enumValueToString(Boolean enumValue);
 const char* booleanValueToString(bool value);
 
 //! \brief The two compartments for CompEL setups.
-enum eCompartment
+enum class Compartment : int
 {
-    eCompA,
-    eCompB,
-    eCompNR
+    A,
+    B,
+    Count
 };
 
 /*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.
  *
  * In principle one could also use modified setups with more than two channels.
  */
-enum eChannel
+enum class Channel : int
 {
-    eChan0,
-    eChan1,
-    eChanNR
+    Zero,
+    One,
+    Count
 };
 
 /*! \brief Temperature coupling type
