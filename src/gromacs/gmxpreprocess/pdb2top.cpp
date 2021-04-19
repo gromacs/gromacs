@@ -697,7 +697,7 @@ void write_top(FILE*                                   out,
                const char*                             molname,
                t_atoms*                                at,
                bool                                    bRTPresname,
-               int                                     bts[],
+               gmx::ArrayRef<const int>                bts,
                gmx::ArrayRef<const InteractionsOfType> plist,
                t_excls                                 excls[],
                PreprocessingAtomTypes*                 atype,
@@ -712,15 +712,27 @@ void write_top(FILE*                                   out,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds(out, at->nr, Directive::d_bonds, F_BONDS, bts[ebtsBONDS], plist);
+        print_bondeds(
+                out, at->nr, Directive::d_bonds, F_BONDS, bts[static_cast<int>(BondedTypes::Bonds)], plist);
         print_bondeds(out, at->nr, Directive::d_constraints, F_CONSTR, 0, plist);
         print_bondeds(out, at->nr, Directive::d_constraints, F_CONSTRNC, 0, plist);
         print_bondeds(out, at->nr, Directive::d_pairs, F_LJ14, 0, plist);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, at->nr, Directive::d_angles, F_ANGLES, bts[ebtsANGLES], plist);
-        print_bondeds(out, at->nr, Directive::d_dihedrals, F_PDIHS, bts[ebtsPDIHS], plist);
-        print_bondeds(out, at->nr, Directive::d_dihedrals, F_IDIHS, bts[ebtsIDIHS], plist);
-        print_bondeds(out, at->nr, Directive::d_cmap, F_CMAP, bts[ebtsCMAP], plist);
+        print_bondeds(
+                out, at->nr, Directive::d_angles, F_ANGLES, bts[static_cast<int>(BondedTypes::Angles)], plist);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_dihedrals,
+                      F_PDIHS,
+                      bts[static_cast<int>(BondedTypes::ProperDihedrals)],
+                      plist);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_dihedrals,
+                      F_IDIHS,
+                      bts[static_cast<int>(BondedTypes::ImproperDihedrals)],
+                      plist);
+        print_bondeds(out, at->nr, Directive::d_cmap, F_CMAP, bts[static_cast<int>(BondedTypes::Cmap)], plist);
         print_bondeds(out, at->nr, Directive::d_polarization, F_POLARIZATION, 0, plist);
         print_bondeds(out, at->nr, Directive::d_thole_polarization, F_THOLE_POL, 0, plist);
         print_bondeds(out, at->nr, Directive::d_vsites2, F_VSITE2, 0, plist);
@@ -790,7 +802,7 @@ static void at2bonds(InteractionsOfType*                  psb,
     for (int resind = 0; (resind < atoms->nres) && (i < atoms->nr); resind++)
     {
         /* add bonds from list of bonded interactions */
-        for (const auto& patch : globalPatches[resind].rb[ebtsBONDS].b)
+        for (const auto& patch : globalPatches[resind].rb[BondedTypes::Bonds].b)
         {
             /* Unfortunately we can not issue errors or warnings
              * for missing atoms in bonds, as the hydrogens and terminal atoms
@@ -945,9 +957,9 @@ static void check_restp_types(const PreprocessResidue& r0, const PreprocessResid
                      static_cast<int>(r0.bRemoveDihedralIfWithImproper),
                      static_cast<int>(r1.bRemoveDihedralIfWithImproper));
 
-    for (int i = 0; i < ebtsNR; i++)
+    for (auto i : gmx::EnumerationWrapper<BondedTypes>{})
     {
-        check_restp_type(btsNames[i], r0.rb[i].type, r1.rb[i].type);
+        check_restp_type(enumValueToString(i), r0.rb[i].type, r1.rb[i].type);
     }
 }
 
@@ -1422,7 +1434,7 @@ static void gen_cmap(InteractionsOfType*                    psb,
     for (residx = 0; residx < nres; residx++)
     {
         /* Add CMAP terms from the list of CMAP interactions */
-        for (const auto& b : usedPpResidues[residx].rb[ebtsCMAP].b)
+        for (const auto& b : usedPpResidues[residx].rb[BondedTypes::Cmap].b)
         {
             bool bAddCMAP = true;
             /* Loop over atoms in a candidate CMAP interaction and
@@ -1538,12 +1550,12 @@ void pdb2top(FILE*                                  top_file,
              gmx::ArrayRef<const int>               cyclicBondsIndex,
              const gmx::MDLogger&                   logger)
 {
-    std::array<InteractionsOfType, F_NRE> plist;
-    t_excls*                              excls;
-    int*                                  cgnr;
-    int*                                  vsite_type;
-    int                                   i, nmissat;
-    int                                   bts[ebtsNR];
+    std::array<InteractionsOfType, F_NRE>   plist;
+    t_excls*                                excls;
+    int*                                    cgnr;
+    int*                                    vsite_type;
+    int                                     i, nmissat;
+    gmx::EnumerationArray<BondedTypes, int> bts;
 
     ResidueType rt;
 
@@ -1660,7 +1672,7 @@ void pdb2top(FILE*                                  top_file,
         /* We can copy the bonded types from the first restp,
          * since the types have to be identical for all residues in one molecule.
          */
-        for (i = 0; i < ebtsNR; i++)
+        for (auto i : gmx::EnumerationWrapper<BondedTypes>{})
         {
             bts[i] = usedPpResidues[0].rb[i].type;
         }

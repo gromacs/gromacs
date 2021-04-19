@@ -44,6 +44,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/stringtoenumvalueconverter.h"
 
 #include "hackblock.h"
 
@@ -163,7 +165,7 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
     return TRUE;
 }
 
-static bool read_bondeds(int bt, FILE* in, char* line, PreprocessResidue* rtpDBEntry)
+static bool read_bondeds(BondedTypes bt, FILE* in, char* line, PreprocessResidue* rtpDBEntry)
 {
     char str[STRLEN];
 
@@ -173,7 +175,7 @@ static bool read_bondeds(int bt, FILE* in, char* line, PreprocessResidue* rtpDBE
         int ni;
         rtpDBEntry->rb[bt].b.emplace_back();
         BondedInteraction* newBond = &rtpDBEntry->rb[bt].b.back();
-        for (int j = 0; j < btsNiatoms[bt]; j++)
+        for (int j = 0; j < enumValueToNumIAtoms(bt); j++)
         {
             if (sscanf(line + n, "%s%n", str, &ni) == 1)
             {
@@ -196,15 +198,15 @@ static bool read_bondeds(int bt, FILE* in, char* line, PreprocessResidue* rtpDBE
     return TRUE;
 }
 
-static void print_resbondeds(FILE* out, int bt, const PreprocessResidue& rtpDBEntry)
+static void print_resbondeds(FILE* out, BondedTypes bt, const PreprocessResidue& rtpDBEntry)
 {
     if (!rtpDBEntry.rb[bt].b.empty())
     {
-        fprintf(out, " [ %s ]\n", btsNames[bt]);
+        fprintf(out, " [ %s ]\n", enumValueToString(bt));
 
         for (const auto& b : rtpDBEntry.rb[bt].b)
         {
-            for (int j = 0; j < btsNiatoms[bt]; j++)
+            for (int j = 0; j < enumValueToNumIAtoms(bt); j++)
             {
                 fprintf(out, "%6s ", b.a[j].c_str());
             }
@@ -234,21 +236,13 @@ static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
     }
 }
 
-static int get_bt(char* header)
+static std::optional<BondedTypes> get_bt(char* header)
 {
-    int i;
-
-    for (i = 0; i < ebtsNR; i++)
-    {
-        if (gmx_strcasecmp(btsNames[i], header) == 0)
-        {
-            return i;
-        }
-    }
-    return NOTSET;
+    gmx::StringToEnumValueConverter<BondedTypes, enumValueToString> converter;
+    return converter.valueFrom(header);
 }
 
-/* print all the ebtsNR type numbers */
+/* print all the BondedTypes type numbers */
 static void print_resall_header(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
     fprintf(out, "[ bondedtypes ]\n");
@@ -304,7 +298,7 @@ void print_resall(FILE* out, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry, 
         if (r.natom() > 0)
         {
             print_resatoms(out, atype, r);
-            for (int bt = 0; bt < ebtsNR; bt++)
+            for (auto bt : gmx::EnumerationWrapper<BondedTypes>{})
             {
                 print_resbondeds(out, bt, r);
             }
@@ -321,7 +315,7 @@ void readResidueDatabase(const std::string&              rrdb,
 {
     FILE* in;
     char  filebase[STRLEN], line[STRLEN], header[STRLEN];
-    int   bt, nparam;
+    int   nparam;
     int   dum1, dum2, dum3;
     bool  bNextResidue, bError;
 
@@ -333,12 +327,12 @@ void readResidueDatabase(const std::string&              rrdb,
 
     /* these bonded parameters will overwritten be when  *
      * there is a [ bondedtypes ] entry in the .rtp file */
-    header_settings.rb[ebtsBONDS].type  = 1; /* normal bonds     */
-    header_settings.rb[ebtsANGLES].type = 1; /* normal angles    */
-    header_settings.rb[ebtsPDIHS].type  = 1; /* normal dihedrals */
-    header_settings.rb[ebtsIDIHS].type  = 2; /* normal impropers */
-    header_settings.rb[ebtsEXCLS].type  = 1; /* normal exclusions */
-    header_settings.rb[ebtsCMAP].type   = 1; /* normal cmap torsions */
+    header_settings.rb[BondedTypes::Bonds].type             = 1; /* normal bonds     */
+    header_settings.rb[BondedTypes::Angles].type            = 1; /* normal angles    */
+    header_settings.rb[BondedTypes::ProperDihedrals].type   = 1; /* normal dihedrals */
+    header_settings.rb[BondedTypes::ImproperDihedrals].type = 2; /* normal impropers */
+    header_settings.rb[BondedTypes::Exclusions].type        = 1; /* normal exclusions */
+    header_settings.rb[BondedTypes::Cmap].type              = 1; /* normal cmap torsions */
 
     header_settings.bKeepAllGeneratedDihedrals    = FALSE;
     header_settings.nrexcl                        = 3;
@@ -372,10 +366,10 @@ void readResidueDatabase(const std::string&              rrdb,
         get_a_line(in, line, STRLEN);
         if ((nparam = sscanf(line,
                              "%d %d %d %d %d %d %d %d",
-                             &header_settings.rb[ebtsBONDS].type,
-                             &header_settings.rb[ebtsANGLES].type,
-                             &header_settings.rb[ebtsPDIHS].type,
-                             &header_settings.rb[ebtsIDIHS].type,
+                             &header_settings.rb[BondedTypes::Bonds].type,
+                             &header_settings.rb[BondedTypes::Angles].type,
+                             &header_settings.rb[BondedTypes::ProperDihedrals].type,
+                             &header_settings.rb[BondedTypes::ImproperDihedrals].type,
                              &dum1,
                              &header_settings.nrexcl,
                              &dum2,
@@ -456,11 +450,11 @@ void readResidueDatabase(const std::string&              rrdb,
             }
             else
             {
-                bt = get_bt(header);
-                if (bt != NOTSET)
+                auto bt = get_bt(header);
+                if (bt.has_value())
                 {
                     /* header is an bonded directive */
-                    bError = !read_bondeds(bt, in, line, res);
+                    bError = !read_bondeds(*bt, in, line, res);
                 }
                 else if (gmx::equalCaseInsensitive("atoms", header, 5))
                 {

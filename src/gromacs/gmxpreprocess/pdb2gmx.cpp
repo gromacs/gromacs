@@ -1365,7 +1365,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
     auto        res = getDatabaseEntry(newName, rtpFFDB);
     const char *name_ai, *name_aj;
 
-    for (const auto& patch : res->rb[ebtsBONDS].b)
+    for (const auto& patch : res->rb[BondedTypes::Bonds].b)
     { /* Search backward bond for n/5' terminus */
         name_ai = patch.ai().c_str();
         name_aj = patch.aj().c_str();
@@ -1394,7 +1394,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
             newName = rtpname;
         }
         res = getDatabaseEntry(newName, rtpFFDB);
-        for (const auto& patch : res->rb[ebtsBONDS].b)
+        for (const auto& patch : res->rb[BondedTypes::Bonds].b)
         {
             /* Seach forward bond for c/3' terminus */
             name_ai = patch.ai().c_str();

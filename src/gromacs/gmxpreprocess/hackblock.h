@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 struct t_atom;
 struct t_symtab;
@@ -61,23 +62,23 @@ class ArrayRef;
 
 /*! \brief
  * Used for reading .rtp/.tdb
- * ebtsBONDS must be the first, new types can be added to the end
+ * BondedTypes::Bonds must be the first, new types can be added to the end
  * these *MUST* correspond to the arrays in hackblock.cpp
  */
-enum
+enum class BondedTypes : int
 {
-    ebtsBONDS,
-    ebtsANGLES,
-    ebtsPDIHS,
-    ebtsIDIHS,
-    ebtsEXCLS,
-    ebtsCMAP,
-    ebtsNR
+    Bonds,
+    Angles,
+    ProperDihedrals,
+    ImproperDihedrals,
+    Exclusions,
+    Cmap,
+    Count
 };
 //! Names for interaction type entries
-extern const char* btsNames[ebtsNR];
+const char* enumValueToString(BondedTypes enumValue);
 //! Numbers for atoms in the interactions.
-extern const int btsNiatoms[ebtsNR];
+int enumValueToNumIAtoms(BondedTypes enumValue);
 
 /* if changing any of these structs, make sure that all of the
    free/clear/copy/merge_t_* functions stay updated */
@@ -145,7 +146,7 @@ struct PreprocessResidue
     //! Delete dihedrals also defined by impropers.
     bool bRemoveDihedralIfWithImproper = false;
     //! List of bonded interactions to potentially add.
-    std::array<BondedInteractionList, ebtsNR> rb;
+    gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Get number of atoms in residue.
     int natom() const { return atom.size(); }
 };
@@ -223,7 +224,7 @@ struct MoleculePatchDatabase
     //! List of changes to atoms.
     std::vector<MoleculePatch> hack;
     //! List of bonded interactions to potentially add.
-    std::array<BondedInteractionList, ebtsNR> rb;
+    gmx::EnumerationArray<BondedTypes, BondedInteractionList> rb;
     //! Number of atoms to modify
     int nhack() const { return hack.size(); }
 };
