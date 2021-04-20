@@ -92,6 +92,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -119,7 +120,13 @@ using gmx::DdRankOrder;
 using gmx::DlbOption;
 using gmx::DomdecOptions;
 
-static const char* edlbs_names[int(DlbState::nr)] = { "off", "off", "auto", "locked", "on", "on" };
+static const char* enumValueToString(DlbState enumValue)
+{
+    static constexpr gmx::EnumerationArray<DlbState, const char*> dlbStateNames = {
+        "off", "off", "auto", "locked", "on", "on"
+    };
+    return dlbStateNames[enumValue];
+}
 
 /* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -1912,14 +1919,9 @@ static gmx_domdec_comm_t* init_dd_comm()
 /* Returns whether mtop contains constraints and/or vsites */
 static bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
-    for (const auto ilists : IListRange(mtop))
-    {
-        if (!extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty())
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(IListRange(mtop).begin(), IListRange(mtop).end(), [](const auto ilist) {
+        return !extractILists(ilist.list(), IF_CONSTRAINT | IF_VSITE).empty();
+    });
 }
 
 static void setupUpdateGroups(const gmx::MDLogger& mdlog,
@@ -2880,7 +2882,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
             determineInitialDlbState(mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, ir);
     GMX_LOG(mdlog.info)
             .appendTextFormatted("Dynamic load balancing: %s",
-                                 edlbs_names[static_cast<int>(ddSettings.initialDlbState)]);
+                                 enumValueToString(ddSettings.initialDlbState));
 
     return ddSettings;
 }

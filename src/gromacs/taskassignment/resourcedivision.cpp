@@ -582,10 +582,10 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         GMX_RELEASE_ASSERT(nthreads_omp_faster_default >= nthreads_omp_mpi_ok_max,
                            "Inconsistent OpenMP thread count default values");
     }
-    GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1,
+    GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) >= 1,
                        "Must have at least one OpenMP thread");
 
-    nth_omp_max = gmx_omp_nthreads_get(emntDefault);
+    nth_omp_max = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */

@@ -617,7 +617,7 @@ void dd_redistribute_cg(FILE*         fplog,
     matrix tcm;
     make_tric_corr_matrix(npbcdim, state->box, tcm);
 
-    const int nthread = gmx_omp_nthreads_get(emntDomdec);
+    const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 
     /* Compute the center of geometry for all home charge groups
      * and put them in the box and determine where they should go.

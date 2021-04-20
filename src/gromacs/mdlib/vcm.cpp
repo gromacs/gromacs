@@ -97,7 +97,7 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
                     *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
         }
 
-        thread_vcm.resize(gmx_omp_nthreads_get(emntDefault) * stride);
+        thread_vcm.resize(gmx_omp_nthreads_get(ModuleMultiThread::Default) * stride);
     }
 
     nFreeze = ir.opts.nFreeze;
@@ -160,7 +160,7 @@ void calc_vcm_grp(const t_mdatoms&               md,
     {
         return;
     }
-    int nthreads = gmx_omp_nthreads_get(emntDefault);
+    int nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 
     {
 #pragma omp parallel num_threads(nthreads) default(none) shared(x, v, vcm, md)
@@ -364,7 +364,7 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
         const int             homenr   = mdatoms.homenr;
         const unsigned short* group_id = mdatoms.cVCM;
 
-        int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
+        int gmx_unused nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
         // homenr could be shared, but gcc-8 & gcc-9 don't agree how to write that...
         // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
 #pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdatoms) \

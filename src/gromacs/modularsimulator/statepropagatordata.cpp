@@ -309,7 +309,7 @@ ForceBuffers* StatePropagatorData::forcePointer()
 
 void StatePropagatorData::copyPosition()
 {
-    int nth = gmx_omp_nthreads_get(emntUpdate);
+    int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth)
     for (int th = 0; th < nth; th++)

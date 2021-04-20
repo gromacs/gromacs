@@ -111,7 +111,7 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
     Lincs* lincsd;
     int    maxwarn         = 100;
     int    warncount_lincs = 0;
-    gmx_omp_nthreads_set(emntLINCS, 1);
+    gmx_omp_nthreads_set(ModuleMultiThread::LINCS, 1);
 
     // Communication record
     t_commrec cr;

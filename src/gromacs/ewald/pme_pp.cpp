@@ -553,7 +553,7 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
     void* recvptr = reinterpret_cast<void*>(buffer.data());
     recvFFromPme(pmePpCommGpu, recvptr, natoms, cr, useGpuPmePpComms, receivePmeForceToGpu);
 
-    int nt = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, natoms);
+    int nt = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, natoms);
 
     gmx::ArrayRef<gmx::RVec> f = forceWithVirial->force_;
 

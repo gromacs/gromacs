@@ -80,7 +80,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static char const* RotStr = { "Enforced rotation:" };
+static const std::string RotStr = { "Enforced rotation:" };
 
 /* Set the minimum weight for the determination of the slab centers */
 #define WEIGHT_MIN (10 * GMX_FLOAT_MIN)
@@ -496,7 +496,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
         }
         if (count > er->mpi_bufsize)
         {
-            gmx_fatal(FARGS, "%s MPI buffer overflow, please report this error.", RotStr);
+            gmx_fatal(FARGS, "%s MPI buffer overflow, please report this error.", RotStr.c_str());
         }
 
 #if GMX_MPI
@@ -2593,13 +2593,19 @@ static void get_firstlast_slab_check(gmx_enfrotgrp* erg, /* The rotation group (
     /* Check whether we have reference data to compare against */
     if (erg->slab_first < erg->slab_first_ref)
     {
-        gmx_fatal(FARGS, "%s No reference data for first slab (n=%d), unable to proceed.", RotStr, erg->slab_first);
+        gmx_fatal(FARGS,
+                  "%s No reference data for first slab (n=%d), unable to proceed.",
+                  RotStr.c_str(),
+                  erg->slab_first);
     }
 
     /* Check whether we have reference data to compare against */
     if (erg->slab_last > erg->slab_last_ref)
     {
-        gmx_fatal(FARGS, "%s No reference data for last slab (n=%d), unable to proceed.", RotStr, erg->slab_last);
+        gmx_fatal(FARGS,
+                  "%s No reference data for last slab (n=%d), unable to proceed.",
+                  RotStr.c_str(),
+                  erg->slab_last);
     }
 }
 
@@ -3343,7 +3349,7 @@ static void allocate_slabs(gmx_enfrotgrp* erg, FILE* fplog, gmx_bool bVerbose)
     {
         fprintf(fplog,
                 "%s allocating memory to store data for %d slabs (rotation group %d).\n",
-                RotStr,
+                RotStr.c_str(),
                 nslabs,
                 erg->groupIndex);
     }
@@ -3698,7 +3704,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
 
     if (MASTER(cr) && mdrunOptions.verbose)
     {
-        fprintf(stdout, "%s Initializing ...\n", RotStr);
+        fprintf(stdout, "%s Initializing ...\n", RotStr.c_str());
     }
 
     auto        enforcedRotation = std::make_unique<gmx::EnforcedRotation>();
@@ -3720,7 +3726,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     {
         if (nullptr != fplog)
         {
-            fprintf(fplog, "%s rerun - will write rotation output every available step.\n", RotStr);
+            fprintf(fplog, "%s rerun - will write rotation output every available step.\n", RotStr.c_str());
         }
         er->nstrout = 1;
         er->nstsout = 1;
@@ -3765,7 +3771,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
         {
             fprintf(fplog,
                     "%s group %d type '%s'\n",
-                    RotStr,
+                    RotStr.c_str(),
                     groupIndex,
                     enumValueToString(erg->rotg->eType));
         }

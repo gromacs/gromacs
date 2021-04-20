@@ -990,7 +990,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
     int gridEnd   = 0;
     getAtomRanges(gridSet, locality, &gridBegin, &gridEnd);
 
-    const int nth = gmx_omp_nthreads_get(emntPairsearch);
+    const int nth = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
     {
@@ -1246,7 +1246,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
         return;
     }
 
-    int nth = gmx_omp_nthreads_get(emntNonbonded);
+    int nth = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
 
     if (nbat->out.size() > 1)
     {

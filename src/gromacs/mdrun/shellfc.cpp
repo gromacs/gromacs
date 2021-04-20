@@ -558,7 +558,7 @@ void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellf
 
     std::vector<t_shell>& shells = shfc->shells;
     shells.clear();
-    auto ptype = md.ptype;
+    auto* ptype = md.ptype;
     for (int i = a0; i < a1; i++)
     {
         if (ptype[i] == ParticleType::Shell)
@@ -848,9 +848,9 @@ static void init_adir(gmx_shellfc_t*            shfc,
     rvec* x_old = as_rvec_array(xOld.paddedArrayRef().data());
     rvec* x     = as_rvec_array(xCurrent.paddedArrayRef().data());
 
-    auto ptype   = md.ptype;
-    auto invmass = gmx::arrayRefFromArray(md.invmass, md.nr);
-    dt           = ir->delta_t;
+    auto* ptype   = md.ptype;
+    auto  invmass = gmx::arrayRefFromArray(md.invmass, md.nr);
+    dt            = ir->delta_t;
 
     /* Does NOT work with freeze groups (yet) */
     for (n = 0; n < end; n++)
@@ -1024,7 +1024,8 @@ void relax_shell_flexcon(FILE*                         fplog,
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        put_atoms_in_box_omp(fr->pbcType, box, x.subArray(0, md.homenr), gmx_omp_nthreads_get(emntDefault));
+        put_atoms_in_box_omp(
+                fr->pbcType, box, x.subArray(0, md.homenr), gmx_omp_nthreads_get(ModuleMultiThread::Default));
     }
 
     if (nflexcon)

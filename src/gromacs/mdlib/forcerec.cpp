@@ -1025,7 +1025,7 @@ void init_forcerec(FILE*                            fplog,
             forcerec->listedForces.emplace_back(
                     mtop.ffparams,
                     mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                    gmx_omp_nthreads_get(emntBonded),
+                    gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                     interactionSelection,
                     fplog);
         }
@@ -1036,7 +1036,7 @@ void init_forcerec(FILE*                            fplog,
         forcerec->listedForces.emplace_back(
                 mtop.ffparams,
                 mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                gmx_omp_nthreads_get(emntBonded),
+                gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                 ListedForces::interactionSelectionAll(),
                 fplog);
     }
@@ -1061,7 +1061,7 @@ void init_forcerec(FILE*                            fplog,
 
     forcerec->print_force = print_force;
 
-    forcerec->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
+    forcerec->nthread_ewc = gmx_omp_nthreads_get(ModuleMultiThread::Bonded);
     forcerec->ewc_t.resize(forcerec->nthread_ewc);
 
     if (inputrec.eDispCorr != DispersionCorrectionType::No)

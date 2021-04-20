@@ -570,7 +570,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
     int ngl = 0;
     for (int i = 0; i < natoms_sys; i++)
     {
-        if (const auto entry = dd->ga2la->find(i))
+        if (const auto* entry = dd->ga2la->find(i))
         {
             const int a = entry->la;
             if (a >= numAtomsInZones)
@@ -1847,7 +1847,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
          * This can not be done in init_domain_decomposition,
          * as the numbers of threads is determined later.
          */
-        int numThreads = gmx_omp_nthreads_get(emntDomdec);
+        int numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
         comm->dth.resize(numThreads);
     }
 
@@ -3280,7 +3280,7 @@ void dd_partition_system(FILE*                     fplog,
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
 
-    auto mdatoms = mdAtoms->mdatoms();
+    auto* mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */

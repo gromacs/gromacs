@@ -146,7 +146,7 @@ static void sum_forces(ArrayRef<RVec> f, ArrayRef<const RVec> forceToAdd)
     GMX_ASSERT(f.size() >= forceToAdd.size(), "Accumulation buffer should be sufficiently large");
     const int end = forceToAdd.size();
 
-    int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
+    int gmx_unused nt = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 #pragma omp parallel for num_threads(nt) schedule(static)
     for (int i = 0; i < end; i++)
     {
@@ -449,7 +449,7 @@ static void do_nb_verlet(t_forcerec*                fr,
 
 static inline void clearRVecs(ArrayRef<RVec> v, const bool useOpenmpThreading)
 {
-    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, v.ssize());
+    int nth = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, v.ssize());
 
     /* Note that we would like to avoid this conditional by putting it
      * into the omp pragma instead, but then we still take the full
@@ -1087,7 +1087,7 @@ static void combineMtsForces(const int      numAtoms,
                              ArrayRef<RVec> forceMts,
                              const real     mtsFactor)
 {
-    const int gmx_unused numThreads = gmx_omp_nthreads_get(emntDefault);
+    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
     for (int i = 0; i < numAtoms; i++)
     {
@@ -1261,7 +1261,7 @@ void do_force(FILE*                               fplog,
             put_atoms_in_box_omp(fr->pbcType,
                                  box,
                                  x.unpaddedArrayRef().subArray(0, mdatoms->homenr),
-                                 gmx_omp_nthreads_get(emntDefault));
+                                 gmx_omp_nthreads_get(ModuleMultiThread::Default));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
         }
     }
@@ -1273,10 +1273,10 @@ void do_force(FILE*                               fplog,
     const bool reinitGpuPmePpComms =
             GMX_MPI && simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
-    const auto localXReadyOnDevice = (useGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
-                                             ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                       AtomLocality::Local, simulationWork, stepWork)
-                                             : nullptr;
+    auto* localXReadyOnDevice = (useGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
+                                              ? stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                                        AtomLocality::Local, simulationWork, stepWork)
+                                              : nullptr;
 
     // Copy coordinate from the GPU if update is on the GPU and there
     // are forces to be computed on the CPU, or for the computation of

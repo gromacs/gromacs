@@ -65,7 +65,7 @@ void calc_mu(int                            start,
 
     mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-    num_threads(gmx_omp_nthreads_get(emntDefault))
+    num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Default))
     for (int i = start; i < end; i++)
     {
         // Trivial OpenMP region that cannot throw
@@ -86,7 +86,7 @@ void calc_mu(int                            start,
     {
         mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-        num_threads(gmx_omp_nthreads_get(emntDefault))
+        num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Default))
         for (int i = start; i < end; i++)
         {
             // Trivial OpenMP region that cannot throw

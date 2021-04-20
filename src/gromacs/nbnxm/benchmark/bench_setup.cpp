@@ -444,8 +444,8 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
 void bench(const int sizeFactor, const KernelBenchOptions& options)
 {
     // We don't want to call gmx_omp_nthreads_init(), so we init what we need
-    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
-    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, options.numThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, options.numThreads);
 
     const gmx::BenchmarkSystem system(sizeFactor, options.outputFile);
 

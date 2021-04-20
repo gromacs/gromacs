@@ -597,7 +597,7 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
     int numKeysEstimate = std::min(mtop.natoms / 20, mtop.natoms / (2 * dd->nnodes));
     dc->ga2la           = std::make_unique<gmx::HashedMap<int>>(numKeysEstimate);
 
-    dc->nthread = gmx_omp_nthreads_get(emntDomdec);
+    dc->nthread = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
     dc->ils.resize(dc->nthread);
 
     dd->constraint_comm = new gmx_domdec_specat_comm_t;

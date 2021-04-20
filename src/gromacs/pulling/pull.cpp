@@ -1425,6 +1425,7 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
  * We could use a different, local mutex for each pull object, but the overhead
  * is extremely small here and registration is only done during initialization.
  */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex registrationMutex;
 
 using Lock = std::lock_guard<std::mutex>;
@@ -1990,7 +1991,7 @@ struct pull_t* init_pull(FILE*                     fplog,
     pull->params = *pull_params;
 
     /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
-    const int maxNumThreads = std::max(1, gmx_omp_nthreads_get(emntDefault));
+    const int maxNumThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Default));
 
     for (int i = 0; i < pull_params->ngroup; ++i)
     {

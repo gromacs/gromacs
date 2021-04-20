@@ -196,7 +196,7 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
     auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     auto v  = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
 
-    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     int homenr = mdAtoms_->mdatoms()->homenr;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x, xp, v)
@@ -232,7 +232,7 @@ void Propagator<IntegrationStage::ScalePositions>::run()
     const real lambda =
             (numPositionScalingValues == NumPositionScalingValues::Single) ? positionScaling_[0] : 1.0;
 
-    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     int homenr = mdAtoms_->mdatoms()->homenr;
 
 #pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x) \
@@ -283,7 +283,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
-    const int nth    = gmx_omp_nthreads_get(emntUpdate);
+    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
@@ -366,7 +366,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
-    const int nth    = gmx_omp_nthreads_get(emntUpdate);
+    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
@@ -451,7 +451,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
-    const int nth    = gmx_omp_nthreads_get(emntUpdate);
+    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
@@ -530,7 +530,7 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
                                      ? startVelocityScaling_[0]
                                      : 1.0;
 
-    const int nth    = gmx_omp_nthreads_get(emntUpdate);
+    const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...

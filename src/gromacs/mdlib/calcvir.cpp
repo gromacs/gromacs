@@ -104,7 +104,7 @@ void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir, bool bScrewPB
 {
     matrix x_times_f;
 
-    int nthreads = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, nxf * 9);
+    int nthreads = gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread::Default, nxf * 9);
 
     GMX_ASSERT(nthreads >= 1, "Avoids uninitialized x_times_f (warning)");
 

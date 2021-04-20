@@ -670,7 +670,7 @@ static bool do_em_step(const t_commrec*                          cr,
     start = 0;
     end   = md->homenr;
 
-    nthreads = gmx_omp_nthreads_get(emntUpdate);
+    nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel num_threads(nthreads)
     {
         const rvec* x1 = s1->x.rvec_array();
@@ -828,7 +828,7 @@ void setCoordinates(std::vector<RVec>* coords, ArrayRef<const RVec> refCoords)
 {
     coords->resize(refCoords.size());
 
-    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntUpdate);
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int i = 0; i < ssize(refCoords); i++)
     {
@@ -843,7 +843,7 @@ real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> 
 
     real maxDiffSquared = 0;
 
-    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntUpdate);
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for reduction(max : maxDiffSquared) num_threads(nthreads) schedule(static)
     for (int i = 0; i < ssize(coords1); i++)
     {
@@ -1243,7 +1243,7 @@ void LegacySimulator::do_cg()
     tensor            vir, pres;
     int               number_steps, neval = 0, nstcg = inputrec->nstcgsteep;
     int               m, step, nminstep;
-    auto              mdatoms = mdAtoms->mdatoms();
+    auto*             mdatoms = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
             .asParagraph()
@@ -1935,7 +1935,7 @@ void LegacySimulator::do_lbfgs()
     em_state_t         ems;
     gmx_localtop_t     top(top_global.ffparams);
     gmx_global_stat_t  gstat;
-    auto               mdatoms = mdAtoms->mdatoms();
+    auto*              mdatoms = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
             .asParagraph()
@@ -2746,7 +2746,7 @@ void LegacySimulator::do_steep()
     int               nsteps;
     int               count          = 0;
     int               steps_accepted = 0;
-    auto              mdatoms        = mdAtoms->mdatoms();
+    auto*             mdatoms        = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
             .asParagraph()
@@ -3064,11 +3064,11 @@ void LegacySimulator::do_nm()
     real*               full_matrix   = nullptr;
 
     /* added with respect to mdrun */
-    int  row, col;
-    real der_range = 10.0 * std::sqrt(GMX_REAL_EPS);
-    real x_min;
-    bool bIsMaster = MASTER(cr);
-    auto mdatoms   = mdAtoms->mdatoms();
+    int   row, col;
+    real  der_range = 10.0 * std::sqrt(GMX_REAL_EPS);
+    real  x_min;
+    bool  bIsMaster = MASTER(cr);
+    auto* mdatoms   = mdAtoms->mdatoms();
 
     GMX_LOG(mdlog.info)
             .asParagraph()

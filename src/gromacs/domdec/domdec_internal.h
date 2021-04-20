@@ -280,7 +280,7 @@ enum class DlbState
     offTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
     onCanTurnOff,         /**< DLB is on and can turn off when slow */
     onUser,               /**< DLB is permanently on per user request */
-    nr                    /**< The number of DLB states */
+    Count                 /**< The number of DLB states */
 };
 
 /*! \brief The PME domain decomposition for one dimension */

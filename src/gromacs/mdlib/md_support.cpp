@@ -111,7 +111,7 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
         }
     }
     ekind->dekindl_old = ekind->dekindl;
-    int nthread        = gmx_omp_nthreads_get(emntUpdate);
+    int nthread        = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (int thread = 0; thread < nthread; thread++)

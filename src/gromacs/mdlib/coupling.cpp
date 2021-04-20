@@ -93,7 +93,8 @@ static const double sy_const_5[] = { 0.2967324292201065,
                                      0.2967324292201065,
                                      0.2967324292201065 };
 
-static const double* sy_const[] = { nullptr, sy_const_1, nullptr, sy_const_3, nullptr, sy_const_5 };
+static constexpr std::array<const double*, 6> sy_const = { nullptr,    sy_const_1, nullptr,
+                                                           sy_const_3, nullptr,    sy_const_5 };
 
 
 void update_tcouple(int64_t           step,
@@ -292,7 +293,7 @@ void update_pcouple_after_coordinates(FILE*                fplog,
                 /* Scale the coordinates */
                 if (scaleCoordinates)
                 {
-                    auto x = state->x.rvec_array();
+                    auto* x = state->x.rvec_array();
                     for (int n = start; n < start + homenr; n++)
                     {
                         tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
@@ -1132,7 +1133,7 @@ void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
     /* Scale the positions and the velocities */
     if (scaleCoordinates)
     {
-        const int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int n = start; n < start + nr_atoms; n++)
         {

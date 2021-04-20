@@ -163,7 +163,8 @@ namespace gmx
 // TODO: Convert to use the nbnxm kernels by putting the system and the teset molecule on two separate search grids
 void LegacySimulator::do_tpi()
 {
-    GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) == 1, "TPI does not support OpenMP");
+    GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) == 1,
+                       "TPI does not support OpenMP");
 
     gmx_localtop_t    top(top_global.ffparams);
     gmx::ForceBuffers f;
@@ -191,7 +192,7 @@ void LegacySimulator::do_tpi()
     double            invbinw, *bin, refvolshift, logV, bUlogV;
     gmx_bool          bEnergyOutOfBounds;
     const char*       tpid_leg[2] = { "direct", "reweighted" };
-    auto              mdatoms     = mdAtoms->mdatoms();
+    auto*             mdatoms     = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
 

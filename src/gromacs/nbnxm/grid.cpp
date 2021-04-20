@@ -1378,7 +1378,7 @@ void Grid::setCellIndices(int                            ddZone,
     srcAtomBegin_ = *atomRange.begin();
     srcAtomEnd_   = *atomRange.end();
 
-    const int nthread = gmx_omp_nthreads_get(emntPairsearch);
+    const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 
     const int numAtomsPerCell = geometry_.numAtomsPerCell;
 

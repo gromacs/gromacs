@@ -439,7 +439,7 @@ static void mdrunner_start_fn(const void* arg)
 {
     try
     {
-        auto masterMdrunner = reinterpret_cast<const gmx::Mdrunner*>(arg);
+        const auto* masterMdrunner = reinterpret_cast<const gmx::Mdrunner*>(arg);
         /* copy the arg list to make sure that it's thread-local. This
            doesn't copy pointed-to items, of course; fnm, cr and fplog
            are reset in the call below, all others should be const. */
@@ -752,15 +752,15 @@ static void finish_run(FILE*                     fplog,
      * to the code that handled the thread region, so that there's a
      * mechanism to keep cycle counting working during the transition
      * to task parallelism. */
-    int nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
-    int nthreads_pme = gmx_omp_nthreads_get(emntPME);
+    int nthreads_pp  = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
+    int nthreads_pme = gmx_omp_nthreads_get(ModuleMultiThread::PME);
     wallcycle_scale_by_num_threads(
             wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
     auto cycle_sum(wallcycle_sum(cr, wcycle));
 
     if (printReport)
     {
-        auto nbnxn_gpu_timings =
+        auto* nbnxn_gpu_timings =
                 (nbv != nullptr && nbv->useGpu()) ? Nbnxm::gpu_get_timings(nbv->gpu_nbv) : nullptr;
         gmx_wallclock_gpu_pme_t pme_gpu_timings = {};
 
@@ -1563,8 +1563,9 @@ int Mdrunner::mdrunner()
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    const int numThreadsOnThisRank = thisRankHasDuty(cr, DUTY_PP) ? gmx_omp_nthreads_get(emntNonbonded)
-                                                                  : gmx_omp_nthreads_get(emntPME);
+    const int numThreadsOnThisRank = thisRankHasDuty(cr, DUTY_PP)
+                                             ? gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded)
+                                             : gmx_omp_nthreads_get(ModuleMultiThread::PME);
     checkHardwareOversubscription(
             numThreadsOnThisRank, cr->nodeid, *hwinfo_->hardwareTopology, physicalNodeComm, mdlog);
 
@@ -1837,7 +1838,7 @@ int Mdrunner::mdrunner()
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q,
                                        ewaldcoeff_lj,
-                                       gmx_omp_nthreads_get(emntPME),
+                                       gmx_omp_nthreads_get(ModuleMultiThread::PME),
                                        pmeRunMode,
                                        nullptr,
                                        deviceContext,
@@ -1864,7 +1865,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         /* Assumes uniform use of the number of OpenMP threads */
-        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Default));
 
         if (inputrec->bPull)
         {
@@ -1934,7 +1935,9 @@ int Mdrunner::mdrunner()
                            "cos_acceleration is only supported by integrator=md");
 
         /* Kinetic energy data */
-        gmx_ekindata_t ekind(inputrec->opts.ngtc, inputrec->cos_accel, gmx_omp_nthreads_get(emntUpdate));
+        gmx_ekindata_t ekind(inputrec->opts.ngtc,
+                             inputrec->cos_accel,
+                             gmx_omp_nthreads_get(ModuleMultiThread::Update));
 
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec.get(),
@@ -2041,7 +2044,7 @@ int Mdrunner::mdrunner()
     {
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
-        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::PME));
         gmx_pmeonly(pmedata,
                     cr,
                     &nrnb,

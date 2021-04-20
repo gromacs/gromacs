@@ -767,7 +767,7 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
         mbi.push_back(mbiMolblock);
     }
 
-    for (int th = 0; th < gmx_omp_nthreads_get(emntDomdec); th++)
+    for (int th = 0; th < gmx_omp_nthreads_get(ModuleMultiThread::Domdec); th++)
     {
         th_work.emplace_back(mtop.ffparams);
     }

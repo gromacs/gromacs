@@ -83,7 +83,7 @@ namespace
 {
 
 //! Helper variable to localise the text of an often repeated message.
-const char* g_specifyEverythingFormatString =
+const char* const g_specifyEverythingFormatString =
         "When you use mdrun -gputasks, %s must be set to non-default "
         "values, so that the device IDs can be interpreted correctly."
 #if GMX_GPU

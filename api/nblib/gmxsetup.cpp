@@ -103,8 +103,8 @@ NbvSetupUtil::NbvSetupUtil() : gmxForceCalculator_(std::make_unique<GmxForceCalc
 void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
 {
     // Todo: find a more general way to initialize hardware
-    gmx_omp_nthreads_set(emntPairsearch, options.numOpenMPThreads);
-    gmx_omp_nthreads_set(emntNonbonded, options.numOpenMPThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, options.numOpenMPThreads);
+    gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, options.numOpenMPThreads);
 }
 
 Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)

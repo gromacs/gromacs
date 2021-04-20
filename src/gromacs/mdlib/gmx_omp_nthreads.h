@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,22 +49,22 @@ class MDLogger;
 }
 
 /** Enum values corresponding to multithreaded algorithmic modules. */
-typedef enum module_nth
+enum class ModuleMultiThread : int
 {
     /* Default is meant to be used in OMP regions outside the named
      * algorithmic modules listed below. */
-    emntDefault,
-    emntDomdec,
-    emntPairsearch,
-    emntNonbonded,
-    emntBonded,
-    emntPME,
-    emntUpdate,
-    emntVSITE,
-    emntLINCS,
-    emntSETTLE,
-    emntNR
-} module_nth_t;
+    Default,
+    Domdec,
+    Pairsearch,
+    Nonbonded,
+    Bonded,
+    PME,
+    Update,
+    VSITE,
+    LINCS,
+    SETTLE,
+    Count
+};
 
 /*! \brief
  * Initializes the per-module thread count.
@@ -82,7 +82,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod. */
-int gmx_omp_nthreads_get(int mod);
+int gmx_omp_nthreads_get(ModuleMultiThread mod);
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod for simple rvec operations.
@@ -92,7 +92,7 @@ int gmx_omp_nthreads_get(int mod);
  * the reduction in computional cost due to parallelization. This routine
  * returns 1 when the overhead is expected to be higher than the gain.
  */
-static inline int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
+static inline int gmx_omp_nthreads_get_simple_rvec_task(ModuleMultiThread mod, int nrvec)
 {
     /* There can be a relatively large overhead to an OpenMP parallel for loop.
      * This overhead increases, slowly, with the numbe of threads used.
@@ -121,7 +121,7 @@ static inline int gmx_omp_nthreads_get_simple_rvec_task(int mod, int nrvec)
 /*! \brief Sets the number of threads to be used in module.
  *
  * Intended for use in testing. */
-void gmx_omp_nthreads_set(int mod, int nthreads);
+void gmx_omp_nthreads_set(ModuleMultiThread mod, int nthreads);
 
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the

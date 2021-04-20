@@ -1417,7 +1417,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
 
         wallcycle_start(wcycle, WallCycleCounter::Update);
 
-        int nth = gmx_omp_nthreads_get(emntUpdate);
+        int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
         for (int th = 0; th < nth; th++)
@@ -1512,7 +1512,7 @@ void Update::Impl::finish_update(const t_inputrec& inputRecord,
         /* We have no frozen atoms or fully frozen atoms which have not
          * been moved by the update, so we can simply copy all coordinates.
          */
-        int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
+        int gmx_unused nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel for num_threads(nth) schedule(static)
         for (int i = 0; i < homenr; i++)
         {
@@ -1560,7 +1560,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
     }
 
     /* ############# START The update of velocities and positions ######### */
-    int nth = gmx_omp_nthreads_get(emntUpdate);
+    int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1703,7 +1703,7 @@ void Update::Impl::update_for_constraint_virial(const t_inputrec&   inputRecord,
     // Cast to real for faster code, no loss in precision
     const real dt = inputRecord.delta_t;
 
-    const int nth = gmx_omp_nthreads_get(emntUpdate);
+    const int nth = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)

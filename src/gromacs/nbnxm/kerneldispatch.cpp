@@ -256,9 +256,9 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
 
-    auto shiftVecPointer = as_rvec_array(shiftVectors.data());
+    const auto* shiftVecPointer = as_rvec_array(shiftVectors.data());
 
-    int gmx_unused nthreads = gmx_omp_nthreads_get(emntNonbonded);
+    int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
     wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedClear);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (gmx::index nb = 0; nb < pairlists.ssize(); nb++)
@@ -544,7 +544,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality      
     gmx::ArrayRef<real> energygrp_elec = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
     gmx::ArrayRef<real> energygrp_vdw = enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
 
-    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == nbl_fep.ssize(),
+    GMX_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded) == nbl_fep.ssize(),
                "Number of lists should be same as number of NB threads");
 
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::NonbondedFep);

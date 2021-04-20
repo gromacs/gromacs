@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
         testData->state_.v[i] = testData->v_[i];
     }
 
-    gmx_omp_nthreads_set(emntUpdate, 1);
+    gmx_omp_nthreads_set(ModuleMultiThread::Update, 1);
 
     for (int step = 0; step < numSteps; step++)
     {

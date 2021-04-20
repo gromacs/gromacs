@@ -1505,7 +1505,7 @@ Lincs* init_lincs(FILE*                            fplog,
      * The current constraint to task assignment code can create independent
      * tasks only when not more than two constraints are connected sequentially.
      */
-    li->ntask    = gmx_omp_nthreads_get(emntLINCS);
+    li->ntask    = gmx_omp_nthreads_get(ModuleMultiThread::LINCS);
     li->bTaskDep = (li->ntask > 1 && bMoreThanTwoSeq);
     if (debug)
     {

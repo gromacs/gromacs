@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
@@ -60,31 +61,43 @@ typedef struct
     int gnth;     /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
     int gnth_pme; /**< Global num. of threads per PME only process/tMPI thread. */
 
-    int      nth[emntNR]; /**< Number of threads for each module, indexed with module_nth_t */
-    gmx_bool initialized; /**< TRUE if the module as been initialized. */
+    gmx::EnumerationArray<ModuleMultiThread, int> nth; /**< Number of threads for each module, indexed with module_nth_t */
+    bool initialized; /**< TRUE if the module as been initialized. */
 } omp_module_nthreads_t;
 
 /** Names of environment variables to set the per module number of threads.
  *
  *  Indexed with the values of module_nth_t.
  * */
-static const char* modth_env_var[emntNR] = { "GMX_DEFAULT_NUM_THREADS should never be set",
-                                             "GMX_DOMDEC_NUM_THREADS",
-                                             "GMX_PAIRSEARCH_NUM_THREADS",
-                                             "GMX_NONBONDED_NUM_THREADS",
-                                             "GMX_LISTED_FORCES_NUM_THREADS",
-                                             "GMX_PME_NUM_THREADS",
-                                             "GMX_UPDATE_NUM_THREADS",
-                                             "GMX_VSITE_NUM_THREADS",
-                                             "GMX_LINCS_NUM_THREADS",
-                                             "GMX_SETTLE_NUM_THREADS" };
+static const char* enumValueToEnvVariableString(ModuleMultiThread enumValue)
+{
+    constexpr gmx::EnumerationArray<ModuleMultiThread, const char*> moduleMultiThreadEnvVariableNames = {
+        "GMX_DEFAULT_NUM_THREADS should never be set",
+        "GMX_DOMDEC_NUM_THREADS",
+        "GMX_PAIRSEARCH_NUM_THREADS",
+        "GMX_NONBONDED_NUM_THREADS",
+        "GMX_LISTED_FORCES_NUM_THREADS",
+        "GMX_PME_NUM_THREADS",
+        "GMX_UPDATE_NUM_THREADS",
+        "GMX_VSITE_NUM_THREADS",
+        "GMX_LINCS_NUM_THREADS",
+        "GMX_SETTLE_NUM_THREADS"
+    };
+    return moduleMultiThreadEnvVariableNames[enumValue];
+}
 
 /** Names of the modules. */
-static const char* mod_name[emntNR] = { "default",     "domain decomposition",
-                                        "pair search", "non-bonded",
-                                        "bonded",      "PME",
-                                        "update",      "LINCS",
-                                        "SETTLE" };
+static const char* enumValueToString(ModuleMultiThread enumValue)
+{
+    constexpr gmx::EnumerationArray<ModuleMultiThread, const char*> moduleMultiThreadNames = {
+        "default",     "domain decomposition",
+        "pair search", "non-bonded",
+        "bonded",      "PME",
+        "update",      "LINCS",
+        "SETTLE"
+    };
+    return moduleMultiThreadNames[enumValue];
+}
 
 /** Number of threads for each algorithmic module.
  *
@@ -94,6 +107,7 @@ static const char* mod_name[emntNR] = { "default",     "domain decomposition",
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
  * */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, FALSE };
 
 
@@ -106,7 +120,7 @@ static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, FALS
  *  GMX_*_NUM_THERADS env var is set, case in which its value overrides
  *  the default.
  */
-static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSepPME)
+static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m, gmx_bool bSepPME)
 {
     char* env;
     int   nth;
@@ -115,20 +129,20 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSe
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
-    if (m == emntDefault)
+    if (m == ModuleMultiThread::Default)
     {
         return;
     }
 
     /* check the environment variable */
-    if ((env = getenv(modth_env_var[m])) != nullptr)
+    if ((env = getenv(enumValueToEnvVariableString(m))) != nullptr)
     {
         sscanf(env, "%d", &nth);
 
         if (!bOMP)
         {
             gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
-                        modth_env_var[m],
+                        enumValueToEnvVariableString(m),
                         nth,
                         gmx::getProgramContext().displayName());
         }
@@ -140,26 +154,26 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSe
             gmx_warning(
                     "%s=%d is set, the default number of threads also "
                     "needs to be set with OMP_NUM_THREADS!",
-                    modth_env_var[m],
+                    enumValueToEnvVariableString(m),
                     nth);
         }
 
         /* only babble if we are really overriding with a different value */
-        if ((bSepPME && m == emntPME && nth != modth.gnth_pme) || (nth != modth.gnth))
+        if ((bSepPME && m == ModuleMultiThread::PME && nth != modth.gnth_pme) || (nth != modth.gnth))
         {
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted("%s=%d set, overriding the default number of %s threads",
-                                         modth_env_var[m],
+                                         enumValueToString(m),
                                          nth,
-                                         mod_name[m]);
+                                         enumValueToEnvVariableString(m));
         }
     }
     else
     {
         /* pick the global PME node nthreads if we are setting the number
          * of threads in separate PME nodes  */
-        nth = (bSepPME && m == emntPME) ? modth.gnth_pme : modth.gnth;
+        nth = (bSepPME && m == ModuleMultiThread::PME) ? modth.gnth_pme : modth.gnth;
     }
 
     gmx_omp_nthreads_set(m, nth);
@@ -335,16 +349,16 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     }
 
     /* now set the per-module values */
-    modth.nth[emntDefault] = modth.gnth;
-    pick_module_nthreads(mdlog, emntDomdec, bSepPME);
-    pick_module_nthreads(mdlog, emntPairsearch, bSepPME);
-    pick_module_nthreads(mdlog, emntNonbonded, bSepPME);
-    pick_module_nthreads(mdlog, emntBonded, bSepPME);
-    pick_module_nthreads(mdlog, emntPME, bSepPME);
-    pick_module_nthreads(mdlog, emntUpdate, bSepPME);
-    pick_module_nthreads(mdlog, emntVSITE, bSepPME);
-    pick_module_nthreads(mdlog, emntLINCS, bSepPME);
-    pick_module_nthreads(mdlog, emntSETTLE, bSepPME);
+    modth.nth[ModuleMultiThread::Default] = modth.gnth;
+    pick_module_nthreads(mdlog, ModuleMultiThread::Domdec, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Pairsearch, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Nonbonded, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Bonded, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::PME, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Update, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::VSITE, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::LINCS, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::SETTLE, bSepPME);
 
     /* set the number of threads globally */
     if (bOMP)
@@ -477,9 +491,9 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
     reportOpenmpSettings(mdlog, cr, bOMP, bSepPME);
 }
 
-int gmx_omp_nthreads_get(int mod)
+int gmx_omp_nthreads_get(ModuleMultiThread mod)
 {
-    if (mod < 0 || mod >= emntNR)
+    if (mod < ModuleMultiThread::Default || mod >= ModuleMultiThread::Count)
     {
         /* invalid module queried */
         return -1;
@@ -490,11 +504,12 @@ int gmx_omp_nthreads_get(int mod)
     }
 }
 
-void gmx_omp_nthreads_set(int mod, int nthreads)
+void gmx_omp_nthreads_set(ModuleMultiThread mod, int nthreads)
 {
     /* Catch an attempt to set the number of threads on an invalid
      * OpenMP module. */
-    GMX_RELEASE_ASSERT(mod >= 0 && mod < emntNR, "Trying to set nthreads on invalid OpenMP module");
+    GMX_RELEASE_ASSERT(mod >= ModuleMultiThread::Default && mod < ModuleMultiThread::Count,
+                       "Trying to set nthreads on invalid OpenMP module");
 
     modth.nth[mod] = nthreads;
 }

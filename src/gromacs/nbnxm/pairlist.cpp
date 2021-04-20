@@ -661,7 +661,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
     isCpuType_(!sc_isGpuPairListType[pairlistParams.pairlistType])
 {
 
-    const int numLists = gmx_omp_nthreads_get(emntNonbonded);
+    const int numLists = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
 
     if (!combineLists_ && numLists > NBNXN_BUFFERFLAG_MAX_THREADS)
     {
@@ -2600,7 +2600,7 @@ static void combine_nblists(gmx::ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPai
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-    const int gmx_unused nthreads = gmx_omp_nthreads_get(emntPairsearch);
+    const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (gmx::index n = 0; n < nbls.ssize(); n++)
@@ -2673,7 +2673,7 @@ static void balance_fep_lists(gmx::ArrayRef<std::unique_ptr<t_nblist>> fepLists,
 
     const int nrj_target = (nrj_tot + numLists - 1) / numLists;
 
-    GMX_ASSERT(gmx_omp_nthreads_get(emntNonbonded) == numLists,
+    GMX_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded) == numLists,
                "We should have as many work objects as FEP lists");
 
 #pragma omp parallel for schedule(static) num_threads(numLists)
