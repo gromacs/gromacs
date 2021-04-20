@@ -82,12 +82,16 @@ typedef struct t_pstack
     struct t_pstack* prev;
 } t_pstack;
 
-static t_pstack* pstack           = nullptr;
-static bool      bUnbuffered      = false;
-static int       s_maxBackupCount = 0;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static t_pstack* pstack = nullptr;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static bool bUnbuffered = false;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static int s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex pstack_mutex;
 
 using Lock = std::lock_guard<std::mutex>;
@@ -97,7 +101,7 @@ namespace gmx
 namespace
 {
 //! Global library file finder; stores the object set with setLibraryFileFinder().
-const DataFileFinder* g_libFileFinder;
+const DataFileFinder* g_libFileFinder; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 //! Default library file finder if nothing is set.
 const DataFileFinder g_defaultLibFileFinder;
 } // namespace

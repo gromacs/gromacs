@@ -174,7 +174,6 @@ public:
         abstol_(abstol)
     {
     }
-
     void compareObjects(const KeyValueTreeObject& obj1, const KeyValueTreeObject& obj2)
     {
         for (const auto& prop1 : obj1.properties())

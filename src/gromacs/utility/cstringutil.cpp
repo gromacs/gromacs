@@ -298,7 +298,7 @@ const unsigned int gmx_string_hash_init = 5381;
 
 unsigned int gmx_string_fullhash_func(const char* s, unsigned int hash_init)
 {
-    int c = 0;
+    char c = 0;
 
     while ((c = (*s++)) != '\0')
     {

@@ -56,7 +56,9 @@
 #    include "gromacs/utility/gmxmpi.h"
 #endif
 
-static bool       g_bOverAllocDD = false;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static bool g_bOverAllocDD = false;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex g_overAllocMutex;
 
 void* save_malloc(const char* name, const char* file, int line, size_t size)

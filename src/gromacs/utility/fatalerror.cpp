@@ -65,13 +65,13 @@
 
 #include "errorformat.h"
 
-static bool bDebug = false;
+static bool bDebug = false; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-FILE*    debug        = nullptr;
-gmx_bool gmx_debug_at = FALSE;
+FILE* debug        = nullptr; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+bool  gmx_debug_at = false;   // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-static FILE*      log_file = nullptr;
-static std::mutex error_mutex;
+static FILE*      log_file = nullptr; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+static std::mutex error_mutex;        // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 using Lock = std::lock_guard<std::mutex>;
 
@@ -112,6 +112,7 @@ static void default_error_handler(const char* title, const std::string& msg, con
     gmx::internal::printFatalErrorFooter(stderr);
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_error_handler_t gmx_error_handler = default_error_handler;
 
 void gmx_set_error_handler(gmx_error_handler_t func)

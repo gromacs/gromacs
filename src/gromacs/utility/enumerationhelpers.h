@@ -200,7 +200,7 @@ public:
  * \tparam  ArraySize  Size in entries of the array.
  */
 template<typename EnumType, typename DataType, EnumType ArraySize = EnumType::Count>
-struct EnumerationArray final
+struct EnumerationArray final // NOLINT
 {
     //! Convenience alias
     using EnumerationWrapperType = EnumerationWrapper<EnumType, ArraySize>;

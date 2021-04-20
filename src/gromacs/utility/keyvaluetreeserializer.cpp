@@ -68,14 +68,19 @@ private:
         SerializerFunction   serialize;
         DeserializerFunction deserialize;
     };
-
-    static std::mutex                                    s_initMutex;
-    static std::map<std::type_index, Serializer>         s_serializers;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+    static std::mutex s_initMutex;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+    static std::map<std::type_index, Serializer> s_serializers;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
     static std::map<unsigned char, DeserializerFunction> s_deserializers;
 };
 
-std::mutex                                                     ValueSerializer::s_initMutex;
-std::map<std::type_index, ValueSerializer::Serializer>         ValueSerializer::s_serializers;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+std::mutex ValueSerializer::s_initMutex;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+std::map<std::type_index, ValueSerializer::Serializer> ValueSerializer::s_serializers;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::map<unsigned char, ValueSerializer::DeserializerFunction> ValueSerializer::s_deserializers;
 
 template<typename T>
