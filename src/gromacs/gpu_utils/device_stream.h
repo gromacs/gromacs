@@ -101,6 +101,7 @@ public:
     DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
 
     //! Destructor
+    // NOLINTNEXTLINE(performance-trivially-destructible)
     ~DeviceStream();
 
     /*! \brief Check if the underlying stream is valid.

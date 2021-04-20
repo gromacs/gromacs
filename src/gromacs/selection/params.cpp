@@ -328,7 +328,7 @@ static void parse_values_range(const SelectionParserValueList& values, gmx_ana_s
     /* Sort the ranges and merge consequent ones */
     if (param->val.type == INT_VALUE)
     {
-        const auto range_data = reinterpret_cast<std::array<int, 2>*>(idata);
+        auto* range_data = reinterpret_cast<std::array<int, 2>*>(idata);
         sort(range_data, range_data + n, cmp_range<int>);
         for (i = j = 2; i < 2 * n; i += 2)
         {
@@ -349,7 +349,7 @@ static void parse_values_range(const SelectionParserValueList& values, gmx_ana_s
     }
     else
     {
-        const auto range_data = reinterpret_cast<std::array<real, 2>*>(rdata);
+        auto* range_data = reinterpret_cast<std::array<real, 2>*>(rdata);
         sort(range_data, range_data + n, cmp_range<real>);
         for (i = j = 2; i < 2 * n; i += 2)
         {

@@ -148,7 +148,7 @@ public:
         getMassesIfRequired(top);
     }
 
-    void getMassesIfRequired(gmx_mtop_t* top)
+    void getMassesIfRequired(gmx_mtop_t* top) const
     {
         const bool massRequired = selections_.requiredTopologyProperties().needsMasses;
         if (!massRequired)

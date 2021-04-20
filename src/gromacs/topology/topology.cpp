@@ -37,6 +37,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "topology.h"
 
 #include <cstdio>
@@ -55,22 +56,22 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
-static gmx::EnumerationArray<SimulationAtomGroupType, const char*> c_simulationAtomGroupTypeShortNames = {
-    { "T-Coupling",
-      "Energy Mon.",
-      "Acc. not used",
-      "Freeze",
-      "User1",
-      "User2",
-      "VCM",
-      "Compressed X",
-      "Or. Res. Fit",
-      "QMMM" }
-};
-
 const char* shortName(SimulationAtomGroupType type)
 {
-    return c_simulationAtomGroupTypeShortNames[type];
+    constexpr gmx::EnumerationArray<SimulationAtomGroupType, const char*> sc_simulationAtomGroupTypeShortNames = {
+        { "T-Coupling",
+          "Energy Mon.",
+          "Acc. not used",
+          "Freeze",
+          "User1",
+          "User2",
+          "VCM",
+          "Compressed X",
+          "Or. Res. Fit",
+          "QMMM" }
+    };
+
+    return sc_simulationAtomGroupTypeShortNames[type];
 }
 
 void init_top(t_topology* top)
@@ -287,7 +288,11 @@ static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIn
     int index = 0;
     for (const auto& group : grps)
     {
-        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.size());
+        fprintf(fp,
+                "%s[%-12s] nr=%zu, name=[",
+                title,
+                shortName(static_cast<SimulationAtomGroupType>(index)),
+                group.size());
         for (const auto& entry : group)
         {
             fprintf(fp, " %s", *(grpname[entry]));
@@ -309,9 +314,9 @@ static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
-    for (const auto& group : c_simulationAtomGroupTypeShortNames)
+    for (const auto group : gmx::EnumerationWrapper<SimulationAtomGroupType>{})
     {
-        printf(" %5.5s", group);
+        printf(" %5.5s", shortName(group));
     }
     printf("\n");
 
@@ -744,11 +749,7 @@ void compareAtomGroups(FILE* fp, const SimulationGroups& g0, const SimulationGro
         {
             for (int j = 0; j < natoms0; j++)
             {
-                cmp_int(fp,
-                        c_simulationAtomGroupTypeShortNames[group],
-                        j,
-                        getGroupType(g0, group, j),
-                        getGroupType(g1, group, j));
+                cmp_int(fp, shortName(group), j, getGroupType(g0, group, j), getGroupType(g1, group, j));
             }
         }
     }

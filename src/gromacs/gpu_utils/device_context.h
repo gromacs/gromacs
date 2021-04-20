@@ -72,6 +72,7 @@ public:
     //! Constructor.
     DeviceContext(const DeviceInformation& deviceInfo);
     //! Destructor
+    // NOLINTNEXTLINE(performance-trivially-destructible)
     ~DeviceContext();
 
     //! Get the associated device information
