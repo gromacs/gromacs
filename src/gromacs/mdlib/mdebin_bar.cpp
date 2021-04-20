@@ -443,11 +443,11 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
     snew(dhc->subblock_i, c_subblockINumPreEntries + dhc->n_lambda_vec);
 
     /* now decide which data to write out */
-    dhc->nlambda     = 0;
-    dhc->ndhdl       = 0;
-    dhc->dh_expanded = nullptr;
-    dhc->dh_energy   = nullptr;
-    dhc->dh_pv       = nullptr;
+    dhc->nlambda           = 0;
+    dhc->ndhdl             = 0;
+    dhc->dh_expanded_index = -1;
+    dhc->dh_energy_index   = -1;
+    dhc->dh_pv_index       = -1;
 
     /* total number of raw data point collections in the sample */
     dhc->ndh = 0;
@@ -506,7 +506,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
         n = 0;
         if (bExpanded)
         {
-            dhc->dh_expanded = dhc->dh + n;
+            dhc->dh_expanded_index = n;
             mde_delta_h_init(dhc->dh + n,
                              inputrec.fepvals->dh_hist_size,
                              inputrec.fepvals->dh_hist_spacing,
@@ -519,7 +519,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
         }
         if (bEnergy)
         {
-            dhc->dh_energy = dhc->dh + n;
+            dhc->dh_energy_index = n;
             mde_delta_h_init(dhc->dh + n,
                              inputrec.fepvals->dh_hist_size,
                              inputrec.fepvals->dh_hist_spacing,
@@ -534,7 +534,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
         n_lambda_components = 0;
         if (fep->dhdl_derivatives == DhDlDerivativeCalculation::Yes)
         {
-            dhc->dh_dhdl = dhc->dh + n;
+            dhc->dh_dhdl_index = n;
             for (auto i : keysOf(fep->separate_dvdl))
             {
                 if (inputrec.fepvals->separate_dvdl[i])
@@ -564,7 +564,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
             }
         }
         /* add the lambdas */
-        dhc->dh_du = dhc->dh + n;
+        dhc->dh_du_index = n;
         snew(lambda_vec, n_lambda_components);
         for (i = inputrec.fepvals->lambda_start_n; i < inputrec.fepvals->lambda_stop_n; i++)
         {
@@ -591,7 +591,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec)
         sfree(lambda_vec);
         if (bPV)
         {
-            dhc->dh_pv = dhc->dh + n;
+            dhc->dh_pv_index = n;
             mde_delta_h_init(dhc->dh + n,
                              inputrec.fepvals->dh_hist_size,
                              inputrec.fepvals->dh_hist_spacing,
@@ -642,23 +642,23 @@ void mde_delta_h_coll_add_dh(t_mde_delta_h_coll*   dhc,
 
     for (i = 0; i < dhc->ndhdl; i++)
     {
-        mde_delta_h_add_dh(dhc->dh_dhdl + i, dhdl[i]);
+        mde_delta_h_add_dh(&dhc->dh[dhc->dh_dhdl_index + i], dhdl[i]);
     }
     for (i = 0; i < dhc->nlambda; i++)
     {
-        mde_delta_h_add_dh(dhc->dh_du + i, foreign_dU[i]);
+        mde_delta_h_add_dh(&dhc->dh[dhc->dh_du_index + i], foreign_dU[i]);
     }
-    if (dhc->dh_pv != nullptr)
+    if (dhc->dh_pv_index >= 0)
     {
-        mde_delta_h_add_dh(dhc->dh_pv, pV);
+        mde_delta_h_add_dh(&dhc->dh[dhc->dh_pv_index], pV);
     }
-    if (dhc->dh_energy != nullptr)
+    if (dhc->dh_energy_index >= 0)
     {
-        mde_delta_h_add_dh(dhc->dh_energy, energy);
+        mde_delta_h_add_dh(&dhc->dh[dhc->dh_energy_index], energy);
     }
-    if (dhc->dh_expanded != nullptr)
+    if (dhc->dh_expanded_index >= 0)
     {
-        mde_delta_h_add_dh(dhc->dh_expanded, fep_state);
+        mde_delta_h_add_dh(&dhc->dh[dhc->dh_expanded_index], fep_state);
     }
 }
 

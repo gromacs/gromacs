@@ -94,16 +94,15 @@ struct t_mde_delta_h_coll
     t_mde_delta_h* dh;  /* the delta h data */
     int            ndh; /* the number of delta_h structures */
 
-    int            nlambda; /* number of bar dU delta_h structures */
-    t_mde_delta_h* dh_du;   /* the delta h data (pointer into dh) */
+    int nlambda;     /* number of bar dU delta_h structures */
+    int dh_du_index; /* the delta h data (index into dh) */
 
-    int            ndhdl;   /* number of bar dU delta_h structures */
-    t_mde_delta_h* dh_dhdl; /* the dhdl data (pointer into dh) */
+    int ndhdl;         /* number of bar dU delta_h structures */
+    int dh_dhdl_index; /* the dhdl data (index into dh) */
 
-    t_mde_delta_h* dh_energy;   /* energy output block (pointer into dh) */
-    t_mde_delta_h* dh_pv;       /* pV output block (pointer into dh) */
-    t_mde_delta_h* dh_expanded; /* expanded ensemble output block (pointer
-                                   into dh) */
+    int dh_energy_index;   /* energy output block (index into dh) */
+    int dh_pv_index;       /* pV output block (index into dh) */
+    int dh_expanded_index; /* expanded ensemble output block (index into dh) */
 
     double start_time;     /* start time of the current dh collection */
     double delta_time;     /* time difference between samples */
@@ -122,10 +121,6 @@ struct t_mde_delta_h_coll
 
     double* subblock_d; /* for writing a metadata mdebin subblock for I/O */
     int*    subblock_i; /* for writing a metadata mdebin subblock for I/O */
-
-    double* lambda_vec_subblock; /* native lambda vector data subblock for
-                                    I/O */
-    int* lambda_index_subblock;  /* lambda vector index data subblock for I/O */
 };
 
 
