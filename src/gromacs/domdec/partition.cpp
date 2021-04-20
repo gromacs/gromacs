@@ -43,6 +43,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/utility/arrayref.h"
 #include "partition.h"
 
 #include "config.h"
@@ -3289,11 +3290,14 @@ void dd_partition_system(FILE*                     fplog,
                                 mdatoms->nChargePerturbed != 0,
                                 mdatoms->nTypePerturbed != 0,
                                 gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
+                                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                                 : gmx::ArrayRef<real>{},
                                 gmx::arrayRefFromArray(mdatoms->sqrt_c6A, mdatoms->nr),
-                                gmx::arrayRefFromArray(mdatoms->sqrt_c6B, mdatoms->nr),
+                                mdatoms->sqrt_c6B ? gmx::arrayRefFromArray(mdatoms->sqrt_c6B, mdatoms->nr)
+                                                  : gmx::ArrayRef<real>{},
                                 gmx::arrayRefFromArray(mdatoms->sigmaA, mdatoms->nr),
-                                gmx::arrayRefFromArray(mdatoms->sigmaB, mdatoms->nr),
+                                mdatoms->sigmaB ? gmx::arrayRefFromArray(mdatoms->sigmaB, mdatoms->nr)
+                                                : gmx::ArrayRef<real>{},
                                 dd_pme_maxshift_x(*dd),
                                 dd_pme_maxshift_y(*dd));
     }
