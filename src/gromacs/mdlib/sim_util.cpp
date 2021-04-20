@@ -1274,9 +1274,9 @@ void do_force(FILE*                               fplog,
             GMX_MPI && simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
     auto* localXReadyOnDevice = (useGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
-                                              ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                        AtomLocality::Local, simulationWork, stepWork)
-                                              : nullptr;
+                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                                  AtomLocality::Local, simulationWork, stepWork)
+                                        : nullptr;
 
     // Copy coordinate from the GPU if update is on the GPU and there
     // are forces to be computed on the CPU, or for the computation of
