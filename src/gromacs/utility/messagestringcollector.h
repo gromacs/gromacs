@@ -99,13 +99,13 @@ public:
     void clear();
 
     /*! \brief
-     * Returns true if any messages have been added.
+     * Returns false if any messages have been added.
      *
-     * \returns true if append() has been called at least once.
+     * \returns false if append() has been called at least once.
      *
      * The return value is identical to `toString().empty()`.
-     * Calls to startContext() or finishContext() only do not cause this
-     * function to return true.
+     * Calls to startContext() or finishContext() do not affect the
+     * return value of this function.
      */
     bool isEmpty() const;
     /*! \brief
