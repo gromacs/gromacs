@@ -137,8 +137,21 @@ void integrateVVFirstStep(int64_t                                  step,
             trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ1);
         }
 
-        upd->update_coords(
-                *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtVELOCITY1, cr, constr != nullptr);
+        upd->update_coords(*ir,
+                           step,
+                           mdatoms->homenr,
+                           mdatoms->havePartiallyFrozenAtoms,
+                           gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr),
+                           gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                           gmx::arrayRefFromArray(mdatoms->invMassPerDim, mdatoms->nr),
+                           state,
+                           f->view().forceWithPadding(),
+                           fcdata,
+                           ekind,
+                           M,
+                           etrtVELOCITY1,
+                           cr,
+                           constr != nullptr);
 
         wallcycle_stop(wcycle, WallCycleCounter::Update);
         constrain_velocities(constr, do_log, do_ene, step, state, nullptr, bCalcVir, shake_vir);
@@ -332,8 +345,21 @@ void integrateVVSecondStep(int64_t                                  step,
                            gmx_wallcycle*                           wcycle)
 {
     /* velocity half-step update */
-    upd->update_coords(
-            *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtVELOCITY2, cr, constr != nullptr);
+    upd->update_coords(*ir,
+                       step,
+                       mdatoms->homenr,
+                       mdatoms->havePartiallyFrozenAtoms,
+                       gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr),
+                       gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                       gmx::arrayRefFromArray(mdatoms->invMassPerDim, mdatoms->nr),
+                       state,
+                       f->view().forceWithPadding(),
+                       fcdata,
+                       ekind,
+                       M,
+                       etrtVELOCITY2,
+                       cr,
+                       constr != nullptr);
 
 
     /* Above, initialize just copies ekinh into ekin,
@@ -352,16 +378,40 @@ void integrateVVSecondStep(int64_t                                  step,
         updatePrevStepPullCom(pull_work, state);
     }
 
-    upd->update_coords(
-            *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtPOSITION, cr, constr != nullptr);
+    upd->update_coords(*ir,
+                       step,
+                       mdatoms->homenr,
+                       mdatoms->havePartiallyFrozenAtoms,
+                       gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr),
+                       gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                       gmx::arrayRefFromArray(mdatoms->invMassPerDim, mdatoms->nr),
+                       state,
+                       f->view().forceWithPadding(),
+                       fcdata,
+                       ekind,
+                       M,
+                       etrtPOSITION,
+                       cr,
+                       constr != nullptr);
 
     wallcycle_stop(wcycle, WallCycleCounter::Update);
 
     constrain_coordinates(
             constr, do_log, do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
 
-    upd->update_sd_second_half(
-            *ir, step, dvdl_constr, mdatoms, state, cr, nrnb, wcycle, constr, do_log, do_ene);
+    upd->update_sd_second_half(*ir,
+                               step,
+                               dvdl_constr,
+                               mdatoms->homenr,
+                               gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr),
+                               gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                               state,
+                               cr,
+                               nrnb,
+                               wcycle,
+                               constr,
+                               do_log,
+                               do_ene);
     upd->finish_update(*ir, mdatoms, state, wcycle, constr != nullptr);
 
     if (ir->eI == IntegrationAlgorithm::VVAK)
@@ -395,8 +445,21 @@ void integrateVVSecondStep(int64_t                                  step,
         /* now we know the scaling, we can compute the positions again */
         std::copy(cbuf->begin(), cbuf->end(), state->x.begin());
 
-        upd->update_coords(
-                *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtPOSITION, cr, constr != nullptr);
+        upd->update_coords(*ir,
+                           step,
+                           mdatoms->homenr,
+                           mdatoms->havePartiallyFrozenAtoms,
+                           gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr),
+                           gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                           gmx::arrayRefFromArray(mdatoms->invMassPerDim, mdatoms->nr),
+                           state,
+                           f->view().forceWithPadding(),
+                           fcdata,
+                           ekind,
+                           M,
+                           etrtPOSITION,
+                           cr,
+                           constr != nullptr);
         wallcycle_stop(wcycle, WallCycleCounter::Update);
 
         /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */

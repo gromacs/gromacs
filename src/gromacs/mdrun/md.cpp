@@ -1544,7 +1544,14 @@ void gmx::LegacySimulator::do_md()
                 if (fr->useMts && bCalcVir && constr != nullptr)
                 {
                     upd.update_for_constraint_virial(
-                            *ir, *mdatoms, *state, f.view().forceWithPadding(), *ekind);
+                            *ir,
+                            mdatoms->homenr,
+                            mdatoms->havePartiallyFrozenAtoms,
+                            gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                            gmx::arrayRefFromArray(mdatoms->invMassPerDim, mdatoms->nr),
+                            *state,
+                            f.view().forceWithPadding(),
+                            *ekind);
 
                     constrain_coordinates(constr,
                                           do_log,
@@ -1561,8 +1568,21 @@ void gmx::LegacySimulator::do_md()
                         (fr->useMts && step % ir->mtsLevels[1].stepFactor == 0)
                                 ? f.view().forceMtsCombinedWithPadding()
                                 : f.view().forceWithPadding();
-                upd.update_coords(
-                        *ir, step, mdatoms, state, forceCombined, fcdata, ekind, M, etrtPOSITION, cr, constr != nullptr);
+                upd.update_coords(*ir,
+                                  step,
+                                  mdatoms->homenr,
+                                  mdatoms->havePartiallyFrozenAtoms,
+                                  gmx::arrayRefFromArray(md->ptype, md->nr),
+                                  gmx::arrayRefFromArray(md->invmass, md->nr),
+                                  gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
+                                  state,
+                                  forceCombined,
+                                  fcdata,
+                                  ekind,
+                                  M,
+                                  etrtPOSITION,
+                                  cr,
+                                  constr != nullptr);
 
                 wallcycle_stop(wcycle, WallCycleCounter::Update);
 
@@ -1576,8 +1596,19 @@ void gmx::LegacySimulator::do_md()
                                       bCalcVir && !fr->useMts,
                                       shake_vir);
 
-                upd.update_sd_second_half(
-                        *ir, step, &dvdl_constr, mdatoms, state, cr, nrnb, wcycle, constr, do_log, do_ene);
+                upd.update_sd_second_half(*ir,
+                                          step,
+                                          &dvdl_constr,
+                                          mdatoms->homenr,
+                                          gmx::arrayRefFromArray(md->ptype, md->nr),
+                                          gmx::arrayRefFromArray(md->invmass, md->nr),
+                                          state,
+                                          cr,
+                                          nrnb,
+                                          wcycle,
+                                          constr,
+                                          do_log,
+                                          do_ene);
                 upd.finish_update(*ir, mdatoms, state, wcycle, constr != nullptr);
             }
 

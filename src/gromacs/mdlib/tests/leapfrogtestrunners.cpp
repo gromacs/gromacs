@@ -71,17 +71,22 @@ void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 
     for (int step = 0; step < numSteps; step++)
     {
-        testData->update_->update_coords(testData->inputRecord_,
-                                         step,
-                                         &testData->mdAtoms_,
-                                         &testData->state_,
-                                         testData->f_,
-                                         testData->forceCalculationData_,
-                                         &testData->kineticEnergyData_,
-                                         testData->velocityScalingMatrix_,
-                                         etrtNONE,
-                                         nullptr,
-                                         false);
+        testData->update_->update_coords(
+                testData->inputRecord_,
+                step,
+                testData->mdAtoms_.homenr,
+                testData->mdAtoms_.havePartiallyFrozenAtoms,
+                gmx::arrayRefFromArray(testData->mdAtoms_.ptype, testData->mdAtoms_.nr),
+                gmx::arrayRefFromArray(testData->mdAtoms_.invmass, testData->mdAtoms_.nr),
+                gmx::arrayRefFromArray(testData->mdAtoms_.invMassPerDim, testData->mdAtoms_.nr),
+                &testData->state_,
+                testData->f_,
+                testData->forceCalculationData_,
+                &testData->kineticEnergyData_,
+                testData->velocityScalingMatrix_,
+                etrtNONE,
+                nullptr,
+                false);
         testData->update_->finish_update(
                 testData->inputRecord_, &testData->mdAtoms_, &testData->state_, nullptr, false);
     }

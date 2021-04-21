@@ -126,7 +126,7 @@ public:
                        bool                                             havePartiallyFrozenAtoms,
                        gmx::ArrayRef<const ParticleType>                ptype,
                        gmx::ArrayRef<const real>                        invMass,
-                       gmx::ArrayRef<rvec>                              invMassPerDim,
+                       gmx::ArrayRef<const rvec>                        invMassPerDim,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                        const t_fcdata&                                  fcdata,
@@ -156,12 +156,12 @@ public:
                                bool                              do_log,
                                bool                              do_ene);
 
-    void update_for_constraint_virial(const t_inputrec&   inputRecord,
-                                      int                 homenr,
-                                      bool                havePartiallyFrozenAtoms,
-                                      gmx::ArrayRef<real> invmass,
-                                      gmx::ArrayRef<rvec> invMassPerDim,
-                                      const t_state&      state,
+    void update_for_constraint_virial(const t_inputrec&         inputRecord,
+                                      int                       homenr,
+                                      bool                      havePartiallyFrozenAtoms,
+                                      gmx::ArrayRef<const real> invmass,
+                                      gmx::ArrayRef<const rvec> invMassPerDim,
+                                      const t_state&            state,
                                       const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                       const gmx_ekindata_t&                            ekind);
 
@@ -214,10 +214,14 @@ BoxDeformation* Update::deform() const
     return impl_->deform();
 }
 
-void Update::update_coords(const t_inputrec&                                inputRecord,
-                           int64_t                                          step,
-                           const t_mdatoms*                                 md,
-                           t_state*                                         state,
+void Update::update_coords(const t_inputrec&                 inputRecord,
+                           int64_t                           step,
+                           const int                         homenr,
+                           const bool                        havePartiallyFrozenAtoms,
+                           gmx::ArrayRef<const ParticleType> ptype,
+                           gmx::ArrayRef<const real>         invMass,
+                           gmx::ArrayRef<const rvec>         invMassPerDim,
+                           t_state*                          state,
                            const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                            const t_fcdata&                                  fcdata,
                            const gmx_ekindata_t*                            ekind,
@@ -228,11 +232,11 @@ void Update::update_coords(const t_inputrec&                                inpu
 {
     return impl_->update_coords(inputRecord,
                                 step,
-                                md->homenr,
-                                md->havePartiallyFrozenAtoms,
-                                gmx::arrayRefFromArray(md->ptype, md->nr),
-                                gmx::arrayRefFromArray(md->invmass, md->nr),
-                                gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
+                                homenr,
+                                havePartiallyFrozenAtoms,
+                                ptype,
+                                invMass,
+                                invMassPerDim,
                                 state,
                                 f,
                                 fcdata,
@@ -252,47 +256,35 @@ void Update::finish_update(const t_inputrec& inputRecord,
     return impl_->finish_update(inputRecord, md, state, wcycle, haveConstraints);
 }
 
-void Update::update_sd_second_half(const t_inputrec& inputRecord,
-                                   int64_t           step,
-                                   real*             dvdlambda,
-                                   const t_mdatoms*  md,
-                                   t_state*          state,
-                                   const t_commrec*  cr,
-                                   t_nrnb*           nrnb,
-                                   gmx_wallcycle*    wcycle,
-                                   gmx::Constraints* constr,
-                                   bool              do_log,
-                                   bool              do_ene)
+void Update::update_sd_second_half(const t_inputrec&                 inputRecord,
+                                   int64_t                           step,
+                                   real*                             dvdlambda,
+                                   const int                         homenr,
+                                   gmx::ArrayRef<const ParticleType> ptype,
+                                   gmx::ArrayRef<const real>         invMass,
+                                   t_state*                          state,
+                                   const t_commrec*                  cr,
+                                   t_nrnb*                           nrnb,
+                                   gmx_wallcycle*                    wcycle,
+                                   gmx::Constraints*                 constr,
+                                   bool                              do_log,
+                                   bool                              do_ene)
 {
-    return impl_->update_sd_second_half(inputRecord,
-                                        step,
-                                        dvdlambda,
-                                        md->homenr,
-                                        gmx::arrayRefFromArray(md->ptype, md->nr),
-                                        gmx::arrayRefFromArray(md->invmass, md->nr),
-                                        state,
-                                        cr,
-                                        nrnb,
-                                        wcycle,
-                                        constr,
-                                        do_log,
-                                        do_ene);
+    return impl_->update_sd_second_half(
+            inputRecord, step, dvdlambda, homenr, ptype, invMass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
 }
 
-void Update::update_for_constraint_virial(const t_inputrec& inputRecord,
-                                          const t_mdatoms&  md,
-                                          const t_state&    state,
+void Update::update_for_constraint_virial(const t_inputrec&         inputRecord,
+                                          const int                 homenr,
+                                          const bool                havePartiallyFrozenAtoms,
+                                          gmx::ArrayRef<const real> invmass,
+                                          gmx::ArrayRef<const rvec> invMassPerDim,
+                                          const t_state&            state,
                                           const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                           const gmx_ekindata_t&                            ekind)
 {
-    return impl_->update_for_constraint_virial(inputRecord,
-                                               md.homenr,
-                                               md.havePartiallyFrozenAtoms,
-                                               gmx::arrayRefFromArray(md.invmass, md.nr),
-                                               gmx::arrayRefFromArray(md.invMassPerDim, md.nr),
-                                               state,
-                                               f,
-                                               ekind);
+    return impl_->update_for_constraint_virial(
+            inputRecord, homenr, havePartiallyFrozenAtoms, invmass, invMassPerDim, state, f, ekind);
 }
 
 void Update::update_temperature_constants(const t_inputrec& inputRecord)
@@ -802,10 +794,10 @@ static void doUpdateMDDoNotUpdateVelocities(int         start,
                                             rvec* gmx_restrict xprime,
                                             const rvec* gmx_restrict v,
                                             const rvec* gmx_restrict f,
-                                            bool gmx_unused     havePartiallyFrozenAtoms,
-                                            gmx::ArrayRef<real> gmx_unused invmass,
-                                            gmx::ArrayRef<rvec>            invMassPerDim,
-                                            const gmx_ekindata_t&          ekind)
+                                            bool gmx_unused           havePartiallyFrozenAtoms,
+                                            gmx::ArrayRef<const real> gmx_unused invmass,
+                                            gmx::ArrayRef<const rvec>            invMassPerDim,
+                                            const gmx_ekindata_t&                ekind)
 {
     GMX_ASSERT(nrend == start || xprime != x,
                "For SIMD optimization certain compilers need to have xprime != x");
@@ -1530,7 +1522,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  bool                              havePartiallyFrozenAtoms,
                                  gmx::ArrayRef<const ParticleType> ptype,
                                  gmx::ArrayRef<const real>         invMass,
-                                 gmx::ArrayRef<rvec>               invMassPerDim,
+                                 gmx::ArrayRef<const rvec>         invMassPerDim,
                                  t_state*                          state,
                                  const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                  const t_fcdata&                                  fcdata,
@@ -1688,12 +1680,12 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
     }
 }
 
-void Update::Impl::update_for_constraint_virial(const t_inputrec&   inputRecord,
-                                                int                 homenr,
-                                                bool                havePartiallyFrozenAtoms,
-                                                gmx::ArrayRef<real> invmass,
-                                                gmx::ArrayRef<rvec> invMassPerDim,
-                                                const t_state&      state,
+void Update::Impl::update_for_constraint_virial(const t_inputrec&         inputRecord,
+                                                int                       homenr,
+                                                bool                      havePartiallyFrozenAtoms,
+                                                gmx::ArrayRef<const real> invmass,
+                                                gmx::ArrayRef<const rvec> invMassPerDim,
+                                                const t_state&            state,
                                                 const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                                 const gmx_ekindata_t& ekind)
 {

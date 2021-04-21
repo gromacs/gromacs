@@ -59,6 +59,7 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 class t_state;
+enum class ParticleType;
 
 namespace gmx
 {
@@ -107,21 +108,29 @@ public:
      *
      * Selects the appropriate integrator, based on the input record and performs a numerical integration step.
      *
-     * \param[in]  inputRecord      Input record.
-     * \param[in]  step             Current timestep.
-     * \param[in]  md               MD atoms data.
-     * \param[in]  state            System state object.
-     * \param[in]  f                Buffer with atomic forces for home particles.
-     * \param[in]  fcdata           Force calculation data to update distance and orientation restraints.
-     * \param[in]  ekind            Kinetic energy data (for temperature coupling, energy groups, etc.).
-     * \param[in]  M                Parrinello-Rahman velocity scaling matrix.
-     * \param[in]  updatePart       What should be updated, coordinates or velocities. This enum only used in VV integrator.
-     * \param[in]  cr               Comunication record  (Old comment: these shouldn't be here -- need to think about it).
-     * \param[in]  haveConstraints  If the system has constraints.
+     * \param[in]  inputRecord               Input record.
+     * \param[in]  step                      Current timestep.
+     * \param[in]  homenr                    The number of atoms on this processor.
+     * \param[in]  havePartiallyFrozenAtoms  Whether atoms are frozen along 1 or 2 (not 3) dimensions?
+     * \param[in]  ptype                     The list of particle types.
+     * \param[in]  invMass                   Inverse atomic mass per atom, 0 for vsites and shells.
+     * \param[in]  invMassPerDim             Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
+     * \param[in]  state                     System state object.
+     * \param[in]  f                         Buffer with atomic forces for home particles.
+     * \param[in]  fcdata                    Force calculation data to update distance and orientation restraints.
+     * \param[in]  ekind                     Kinetic energy data (for temperature coupling, energy groups, etc.).
+     * \param[in]  M                         Parrinello-Rahman velocity scaling matrix.
+     * \param[in]  updatePart                What should be updated, coordinates or velocities. This enum only used in VV integrator.
+     * \param[in]  cr                        Comunication record  (Old comment: these shouldn't be here -- need to think about it).
+     * \param[in]  haveConstraints           If the system has constraints.
      */
     void update_coords(const t_inputrec&                                inputRecord,
                        int64_t                                          step,
-                       const t_mdatoms*                                 md,
+                       int                                              homenr,
+                       bool                                             havePartiallyFrozenAtoms,
+                       gmx::ArrayRef<const ParticleType>                ptype,
+                       gmx::ArrayRef<const real>                        invMass,
+                       gmx::ArrayRef<const rvec>                        invMassPerDim,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                        const t_fcdata&                                  fcdata,
@@ -155,7 +164,9 @@ public:
      * \param[in]  step         Current timestep.
      * \param[in]  dvdlambda    Free energy derivative. Contribution to be added to
      *                          the bonded interactions.
-     * \param[in]  md           MD atoms data.
+     * \param[in]  homenr       The number of atoms on this processor.
+     * \param[in]  ptype        The list of particle types.
+     * \param[in]  invMass      Inverse atomic mass per atom, 0 for vsites and shells.
      * \param[in]  state        System state object.
      * \param[in]  cr           Comunication record.
      * \param[in]  nrnb         Cycle counters.
@@ -165,24 +176,29 @@ public:
      * \param[in]  do_log       If this is logging step.
      * \param[in]  do_ene       If this is an energy evaluation step.
      */
-    void update_sd_second_half(const t_inputrec& inputRecord,
-                               int64_t           step,
-                               real*             dvdlambda,
-                               const t_mdatoms*  md,
-                               t_state*          state,
-                               const t_commrec*  cr,
-                               t_nrnb*           nrnb,
-                               gmx_wallcycle*    wcycle,
-                               gmx::Constraints* constr,
-                               bool              do_log,
-                               bool              do_ene);
+    void update_sd_second_half(const t_inputrec&                 inputRecord,
+                               int64_t                           step,
+                               real*                             dvdlambda,
+                               int                               homenr,
+                               gmx::ArrayRef<const ParticleType> ptype,
+                               gmx::ArrayRef<const real>         invMass,
+                               t_state*                          state,
+                               const t_commrec*                  cr,
+                               t_nrnb*                           nrnb,
+                               gmx_wallcycle*                    wcycle,
+                               gmx::Constraints*                 constr,
+                               bool                              do_log,
+                               bool                              do_ene);
 
     /*! \brief Performs a leap-frog update without updating \p state so the constrain virial
      * can be computed.
      */
-    void update_for_constraint_virial(const t_inputrec&                                inputRecord,
-                                      const t_mdatoms&                                 md,
-                                      const t_state&                                   state,
+    void update_for_constraint_virial(const t_inputrec&         inputRecord,
+                                      int                       homenr,
+                                      bool                      havePartiallyFrozenAtoms,
+                                      gmx::ArrayRef<const real> invmass,
+                                      gmx::ArrayRef<const rvec> invMassPerDim,
+                                      const t_state&            state,
                                       const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                       const gmx_ekindata_t&                            ekind);
 
