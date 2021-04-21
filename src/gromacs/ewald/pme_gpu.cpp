@@ -294,7 +294,7 @@ static void sum_forces(gmx::ArrayRef<gmx::RVec> f, gmx::ArrayRef<const gmx::RVec
 {
     const int end = forceToAdd.size();
 
-    int gmx_unused nt = gmx_omp_nthreads_get(ModuleMultiThread::PME);
+    int gmx_unused nt = gmx_omp_nthreads_get(ModuleMultiThread::Pme);
 #pragma omp parallel for num_threads(nt) schedule(static)
     for (int i = 0; i < end; i++)
     {

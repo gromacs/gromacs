@@ -459,7 +459,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (nsettle > 0)
     {
-        nth = gmx_omp_nthreads_get(ModuleMultiThread::SETTLE);
+        nth = gmx_omp_nthreads_get(ModuleMultiThread::Settle);
     }
     else
     {
@@ -1200,7 +1200,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
         }
 
         /* Allocate thread-local work arrays */
-        int nthreads = gmx_omp_nthreads_get(ModuleMultiThread::SETTLE);
+        int nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Settle);
         if (nthreads > 1 && threadConstraintsVirial == nullptr)
         {
             snew(threadConstraintsVirial, nthreads);

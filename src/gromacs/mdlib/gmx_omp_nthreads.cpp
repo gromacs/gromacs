@@ -159,7 +159,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
         }
 
         /* only babble if we are really overriding with a different value */
-        if ((bSepPME && m == ModuleMultiThread::PME && nth != modth.gnth_pme) || (nth != modth.gnth))
+        if ((bSepPME && m == ModuleMultiThread::Pme && nth != modth.gnth_pme) || (nth != modth.gnth))
         {
             GMX_LOG(mdlog.warning)
                     .asParagraph()
@@ -173,7 +173,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
     {
         /* pick the global PME node nthreads if we are setting the number
          * of threads in separate PME nodes  */
-        nth = (bSepPME && m == ModuleMultiThread::PME) ? modth.gnth_pme : modth.gnth;
+        nth = (bSepPME && m == ModuleMultiThread::Pme) ? modth.gnth_pme : modth.gnth;
     }
 
     gmx_omp_nthreads_set(m, nth);
@@ -354,11 +354,11 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     pick_module_nthreads(mdlog, ModuleMultiThread::Pairsearch, bSepPME);
     pick_module_nthreads(mdlog, ModuleMultiThread::Nonbonded, bSepPME);
     pick_module_nthreads(mdlog, ModuleMultiThread::Bonded, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::PME, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Pme, bSepPME);
     pick_module_nthreads(mdlog, ModuleMultiThread::Update, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::VSITE, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::LINCS, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::SETTLE, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::VirtualSite, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Lincs, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Settle, bSepPME);
 
     /* set the number of threads globally */
     if (bOMP)

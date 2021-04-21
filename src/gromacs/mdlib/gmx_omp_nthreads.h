@@ -58,11 +58,11 @@ enum class ModuleMultiThread : int
     Pairsearch,
     Nonbonded,
     Bonded,
-    PME,
+    Pme,
     Update,
-    VSITE,
-    LINCS,
-    SETTLE,
+    VirtualSite,
+    Lincs,
+    Settle,
     Count
 };
 

@@ -2606,7 +2606,7 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
     return std::make_unique<VirtualSitesHandler>(mtop, cr->dd, pbcType);
 }
 
-ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThread::VSITE))
+ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThread::VirtualSite))
 {
     if (numThreads_ > 1)
     {

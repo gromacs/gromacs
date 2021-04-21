@@ -753,7 +753,7 @@ static void finish_run(FILE*                     fplog,
      * mechanism to keep cycle counting working during the transition
      * to task parallelism. */
     int nthreads_pp  = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
-    int nthreads_pme = gmx_omp_nthreads_get(ModuleMultiThread::PME);
+    int nthreads_pme = gmx_omp_nthreads_get(ModuleMultiThread::Pme);
     wallcycle_scale_by_num_threads(
             wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
     auto cycle_sum(wallcycle_sum(cr, wcycle));
@@ -1565,7 +1565,7 @@ int Mdrunner::mdrunner()
      */
     const int numThreadsOnThisRank = thisRankHasDuty(cr, DUTY_PP)
                                              ? gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded)
-                                             : gmx_omp_nthreads_get(ModuleMultiThread::PME);
+                                             : gmx_omp_nthreads_get(ModuleMultiThread::Pme);
     checkHardwareOversubscription(
             numThreadsOnThisRank, cr->nodeid, *hwinfo_->hardwareTopology, physicalNodeComm, mdlog);
 
@@ -1838,7 +1838,7 @@ int Mdrunner::mdrunner()
                                        mdrunOptions.reproducible,
                                        ewaldcoeff_q,
                                        ewaldcoeff_lj,
-                                       gmx_omp_nthreads_get(ModuleMultiThread::PME),
+                                       gmx_omp_nthreads_get(ModuleMultiThread::Pme),
                                        pmeRunMode,
                                        nullptr,
                                        deviceContext,
@@ -2044,7 +2044,7 @@ int Mdrunner::mdrunner()
     {
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
-        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::PME));
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Pme));
         gmx_pmeonly(pmedata,
                     cr,
                     &nrnb,
