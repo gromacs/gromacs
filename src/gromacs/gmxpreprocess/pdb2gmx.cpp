@@ -1305,6 +1305,11 @@ bool checkChainCyclicity(t_atoms*                               pdba,
                          real                                   long_bond_dist_,
                          real                                   short_bond_dist_)
 {
+    // if start and end are the same, we can't have a cycle
+    if (start_ter == end_ter)
+    {
+        return false;
+    }
     int         ai = -1, aj = -1;
     char*       rtpname = *(pdba->resinfo[start_ter].rtp);
     std::string newName = search_resrename(rr, rtpname, false, false, false);

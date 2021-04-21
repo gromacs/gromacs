@@ -27,6 +27,14 @@ using GPU update with dipole moment calculation.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect behaviour with single residue chains in pdb2gmx
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The code for chcking for cyclic molecules could lead to single residue chains
+incorrectly to be assigned as circular molecules.
+
+:issue:`4029`
+
 Fix grompp check for position restraints with absolute reference
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
