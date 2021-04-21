@@ -80,6 +80,14 @@ public:
      */
     void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, const char* re);
 
+    /*! \brief
+     * Expects that no log entries were made at a given level.
+     *
+     * If not called for a log level, all entries for that level are
+     * accepted.
+     */
+    void expectNoEntries(gmx::MDLogger::LogLevel level);
+
 private:
     class Impl;
 

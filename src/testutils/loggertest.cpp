@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,6 +106,12 @@ void LoggerTestHelper::expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, c
     using ::testing::Field;
     auto& target = impl_->getTarget(level);
     EXPECT_CALL(target, writeEntry(Field(&LogEntry::text, ContainsRegex(re))));
+}
+
+void LoggerTestHelper::expectNoEntries(gmx::MDLogger::LogLevel level)
+{
+    auto& target = impl_->getTarget(level);
+    EXPECT_CALL(target, writeEntry(testing::_)).Times(0);
 }
 
 } // namespace test
