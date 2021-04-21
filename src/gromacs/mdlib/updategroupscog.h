@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,13 +69,13 @@ public:
      * \note \p numHomeAtoms only affects the performance up till the first
      *       call to clear().
      *
-     * \param[in] mtop                         The global topology
-     * \param[in] updateGroupsPerMoleculetype  List of update groups for each molecule type in \p mtop
-     * \param[in] temperature                  The maximum reference temperature, pass -1 when unknown or not applicable
-     * \param[in] numHomeAtoms                 Estimate of the number of home atoms per DD cell
+     * \param[in] mtop                            The global topology
+     * \param[in] updateGroupingsPerMoleculeType  List of update groups for each molecule type in \p mtop
+     * \param[in] temperature                     The maximum reference temperature, pass -1 when unknown or not applicable
+     * \param[in] numHomeAtoms                    Estimate of the number of home atoms per DD cell
      */
     UpdateGroupsCog(const gmx_mtop_t&                           mtop,
-                    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupsPerMoleculetype,
+                    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
                     real                                        temperature,
                     int                                         numHomeAtoms);
 

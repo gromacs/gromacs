@@ -180,10 +180,10 @@ int countNonlinearVsites(const gmx_mtop_t& mtop);
 /*! \brief Return the number of virtual sites that cross update groups
  *
  * \param[in] mtop                           The global topology
- * \param[in] updateGroupingPerMoleculetype  Update grouping per molecule type, pass empty when not using update groups
+ * \param[in] updateGroupingsPerMoleculeType  Update grouping per molecule type, pass empty when not using update groups
  */
 int countInterUpdategroupVsites(const gmx_mtop_t&                 mtop,
-                                ArrayRef<const RangePartitioning> updateGroupingPerMoleculetype);
+                                ArrayRef<const RangePartitioning> updateGroupingsPerMoleculeType);
 
 /*! \brief Create the virtual site handler
  *

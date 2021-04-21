@@ -206,10 +206,10 @@ int ddglatnr(const gmx_domdec_t* dd, int i)
     return atnr;
 }
 
-gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t& dd)
+gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingsPerMoleculeType(const gmx_domdec_t& dd)
 {
     GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
-    return dd.comm->systemInfo.updateGroupingPerMoleculetype;
+    return dd.comm->systemInfo.updateGroupingsPerMoleculeType;
 }
 
 void dd_store_state(const gmx_domdec_t& dd, t_state* state)
@@ -1939,8 +1939,8 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
         return;
     }
 
-    systemInfo->updateGroupingPerMoleculetype = gmx::makeUpdateGroups(mtop);
-    systemInfo->useUpdateGroups               = (!systemInfo->updateGroupingPerMoleculetype.empty()
+    systemInfo->updateGroupingsPerMoleculeType = gmx::makeUpdateGroups(mtop);
+    systemInfo->useUpdateGroups = (!systemInfo->updateGroupingsPerMoleculeType.empty()
                                    && getenv("GMX_NO_UPDATEGROUPS") == nullptr);
 
     if (systemInfo->useUpdateGroups)
@@ -1949,11 +1949,11 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
         for (const auto& molblock : mtop.molblock)
         {
             numUpdateGroups += molblock.nmol
-                               * systemInfo->updateGroupingPerMoleculetype[molblock.type].numBlocks();
+                               * systemInfo->updateGroupingsPerMoleculeType[molblock.type].numBlocks();
         }
 
         systemInfo->maxUpdateGroupRadius = computeMaxUpdateGroupRadius(
-                mtop, systemInfo->updateGroupingPerMoleculetype, maxReferenceTemperature(inputrec));
+                mtop, systemInfo->updateGroupingsPerMoleculeType, maxReferenceTemperature(inputrec));
 
         /* To use update groups, the large domain-to-domain cutoff distance
          * should be compatible with the box size.
@@ -1976,7 +1976,7 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
                     .appendTextFormatted(
                             "The combination of rlist and box size prohibits the use of update "
                             "groups\n");
-            systemInfo->updateGroupingPerMoleculetype.clear();
+            systemInfo->updateGroupingsPerMoleculeType.clear();
         }
     }
 }
@@ -1992,15 +1992,15 @@ UnitCellInfo::UnitCellInfo(const t_inputrec& ir) :
 /* Returns whether molecules are always whole, i.e. not broken by PBC */
 static bool moleculesAreAlwaysWhole(const gmx_mtop_t&                           mtop,
                                     const bool                                  useUpdateGroups,
-                                    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype)
+                                    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType)
 {
     if (useUpdateGroups)
     {
-        GMX_RELEASE_ASSERT(updateGroupingPerMoleculetype.size() == mtop.moltype.size(),
+        GMX_RELEASE_ASSERT(updateGroupingsPerMoleculeType.size() == mtop.moltype.size(),
                            "Need one grouping per moltype");
         for (size_t mol = 0; mol < mtop.moltype.size(); mol++)
         {
-            if (updateGroupingPerMoleculetype[mol].numBlocks() > 1)
+            if (updateGroupingsPerMoleculeType[mol].numBlocks() > 1)
             {
                 return false;
             }
@@ -2043,7 +2043,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
     }
 
     systemInfo.moleculesAreAlwaysWhole = moleculesAreAlwaysWhole(
-            mtop, systemInfo.useUpdateGroups, systemInfo.updateGroupingPerMoleculetype);
+            mtop, systemInfo.useUpdateGroups, systemInfo.updateGroupingsPerMoleculeType);
     systemInfo.haveInterDomainBondeds =
             (!systemInfo.moleculesAreAlwaysWhole || mtop.bIntermolecularInteractions);
     systemInfo.haveInterDomainMultiBodyBondeds =
@@ -2088,7 +2088,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
      */
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
     const real     limitForAtomDisplacement          = minCellSizeForAtomDisplacement(
-            mtop, ir, systemInfo.updateGroupingPerMoleculetype, c_chanceThatAtomMovesBeyondDomain);
+            mtop, ir, systemInfo.updateGroupingsPerMoleculeType, c_chanceThatAtomMovesBeyondDomain);
     GMX_LOG(mdlog.info).appendTextFormatted("Minimum cell size due to atom displacement: %.3f nm", limitForAtomDisplacement);
 
     systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, limitForAtomDisplacement);
@@ -2419,7 +2419,7 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
          */
         const int homeAtomCountEstimate = mtop.natoms / numPPRanks;
         comm->updateGroupsCog           = std::make_unique<gmx::UpdateGroupsCog>(
-                mtop, systemInfo.updateGroupingPerMoleculetype, maxReferenceTemperature(ir), homeAtomCountEstimate);
+                mtop, systemInfo.updateGroupingsPerMoleculeType, maxReferenceTemperature(ir), homeAtomCountEstimate);
     }
 
     /* Set the DD setup given by ddGridSetup */
@@ -2578,7 +2578,7 @@ static void writeSettings(gmx::TextWriter*   log,
     }
 
     const bool haveInterDomainVsites =
-            (countInterUpdategroupVsites(mtop, comm->systemInfo.updateGroupingPerMoleculetype) != 0);
+            (countInterUpdategroupVsites(mtop, comm->systemInfo.updateGroupingsPerMoleculeType) != 0);
 
     if (comm->systemInfo.haveInterDomainBondeds || haveInterDomainVsites
         || comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)

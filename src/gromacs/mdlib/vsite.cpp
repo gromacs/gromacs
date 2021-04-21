@@ -2530,7 +2530,7 @@ void VirtualSitesHandler::spreadForces(ArrayRef<const RVec> x,
 }
 
 int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop,
-                                gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype)
+                                gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType)
 {
     int n_intercg_vsite = 0;
     for (const gmx_molblock_t& molb : mtop.molblock)
@@ -2538,9 +2538,9 @@ int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop
         const gmx_moltype_t& molt = mtop.moltype[molb.type];
 
         std::vector<int> atomToGroup;
-        if (!updateGroupingPerMoleculetype.empty())
+        if (!updateGroupingsPerMoleculeType.empty())
         {
-            atomToGroup = makeAtomToGroupMapping(updateGroupingPerMoleculetype[molb.type]);
+            atomToGroup = makeAtomToGroupMapping(updateGroupingsPerMoleculeType[molb.type]);
         }
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
@@ -2635,13 +2635,13 @@ ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThr
 //! Returns the number of inter update-group vsites
 static int getNumInterUpdategroupVsites(const gmx_mtop_t& mtop, const gmx_domdec_t* domdec)
 {
-    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype;
+    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType;
     if (domdec)
     {
-        updateGroupingPerMoleculetype = getUpdateGroupingPerMoleculetype(*domdec);
+        updateGroupingsPerMoleculeType = getUpdateGroupingsPerMoleculeType(*domdec);
     }
 
-    return countInterUpdategroupVsites(mtop, updateGroupingPerMoleculetype);
+    return countInterUpdategroupVsites(mtop, updateGroupingsPerMoleculeType);
 }
 
 VirtualSitesHandler::Impl::Impl(const gmx_mtop_t& mtop, gmx_domdec_t* domdec, const PbcType pbcType) :

@@ -105,7 +105,7 @@ class ArrayRef;
 int ddglatnr(const gmx_domdec_t* dd, int i);
 
 /*! \brief Returns a list of update group partitioning for each molecule type or empty when update groups are not used */
-gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(const gmx_domdec_t& dd);
+gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingsPerMoleculeType(const gmx_domdec_t& dd);
 
 /*! \brief Store the global cg indices of the home cgs in state,
  *

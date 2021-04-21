@@ -53,7 +53,7 @@ namespace gmx
 {
 
 UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mtop,
-                                 gmx::ArrayRef<const gmx::RangePartitioning> updateGroupsPerMoleculetype,
+                                 gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
                                  real                                        temperature,
                                  int                                         numHomeAtoms) :
     globalToLocalMap_(numHomeAtoms),
@@ -62,7 +62,7 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mto
     int firstUpdateGroupInMolecule = 0;
     for (const auto& molblock : mtop.molblock)
     {
-        const auto& updateGroups = updateGroupsPerMoleculetype[molblock.type];
+        const auto& updateGroups = updateGroupingsPerMoleculeType[molblock.type];
         indicesPerMoleculeblock_.push_back({ firstUpdateGroupInMolecule, updateGroups.numBlocks(), {} });
         auto& groupIndex = indicesPerMoleculeblock_.back().groupIndex_;
 
@@ -74,7 +74,7 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mto
         firstUpdateGroupInMolecule += molblock.nmol * updateGroups.numBlocks();
     }
 
-    maxUpdateGroupRadius_ = computeMaxUpdateGroupRadius(mtop, updateGroupsPerMoleculetype, temperature);
+    maxUpdateGroupRadius_ = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
 }
 
 void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,

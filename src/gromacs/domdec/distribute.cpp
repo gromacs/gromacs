@@ -406,7 +406,7 @@ static std::vector<std::vector<int>> getAtomGroupDistribution(const gmx::MDLogge
         for (const gmx_molblock_t& molblock : mtop.molblock)
         {
             const auto& updateGrouping =
-                    dd->comm->systemInfo.updateGroupingPerMoleculetype[molblock.type];
+                    dd->comm->systemInfo.updateGroupingsPerMoleculeType[molblock.type];
 
             for (int mol = 0; mol < molblock.nmol; mol++)
             {
