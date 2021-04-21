@@ -68,25 +68,21 @@ template<class IndexType>
 static inline void atomicFetchAdd(DeviceAccessor<float, mode_atomic> acc, const IndexType idx, const float val)
 {
 #if GMX_SYCL_DPCPP
-    if (cl::sycl::isnormal(val))
-    {
-        sycl_2020::atomic_ref<float, sycl_2020::memory_order::relaxed, sycl_2020::memory_scope::device, cl::sycl::access::address_space::global_space>
-                fout_atomic(acc[idx]);
-        fout_atomic.fetch_add(val);
-    }
+    sycl_2020::atomic_ref<float, sycl_2020::memory_order::relaxed, sycl_2020::memory_scope::device, cl::sycl::access::address_space::global_space>
+            fout_atomic(acc[idx]);
+    fout_atomic.fetch_add(val);
 #elif GMX_SYCL_HIPSYCL
-    if (std::isnormal(val)) // No sycl::isnormal in hipSYCL
-    {
 #    ifdef SYCL_DEVICE_ONLY
-        /* While there is support for float atomics on device, the host implementation uses
-         * Clang's __atomic_fetch_add intrinsic, that, at least in Clang 11, does not support
-         * floats. Luckily, we don't want to run on host. */
-        acc[idx].fetch_add(val);
+    /* While there is support for float atomics on device, the host implementation uses
+     * Clang's __atomic_fetch_add intrinsic, that, at least in Clang 11, does not support
+     * floats. Luckily, we don't want to run on host. */
+    acc[idx].fetch_add(val);
 #    else
-        GMX_UNUSED_VALUE(acc);
-        GMX_UNUSED_VALUE(idx);
+    GMX_ASSERT(false, "hipSYCL host codepath not supported");
+    GMX_UNUSED_VALUE(val);
+    GMX_UNUSED_VALUE(acc);
+    GMX_UNUSED_VALUE(idx);
 #    endif
-    }
 #endif
 }
 
