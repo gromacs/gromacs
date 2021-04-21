@@ -45,7 +45,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
@@ -56,7 +55,6 @@ struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 enum class ParticleType;
@@ -145,13 +143,15 @@ public:
      * Copy the updated coordinates to the main coordinates buffer for the atoms that are not frozen.
      *
      * \param[in]  inputRecord      Input record.
-     * \param[in]  md               MD atoms data.
+     * \param[in]  havePartiallyFrozenAtoms  Whether atoms are frozen along 1 or 2 (not 3) dimensions?
+     * \param[in]  homenr                    The number of atoms on this processor.
      * \param[in]  state            System state object.
      * \param[in]  wcycle           Wall-clock cycle counter.
      * \param[in]  haveConstraints  If the system has constraints.
      */
     void finish_update(const t_inputrec& inputRecord,
-                       const t_mdatoms*  md,
+                       bool              havePartiallyFrozenAtoms,
+                       int               homenr,
                        t_state*          state,
                        gmx_wallcycle*    wcycle,
                        bool              haveConstraints);

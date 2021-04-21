@@ -46,21 +46,17 @@
 #include <memory>
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -68,9 +64,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
@@ -82,7 +76,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -136,11 +129,13 @@ public:
                        const t_commrec*                                 cr,
                        bool                                             haveConstraints);
 
-    void finish_update(const t_inputrec& inputRecord,
-                       const t_mdatoms*  md,
-                       t_state*          state,
-                       gmx_wallcycle*    wcycle,
-                       bool              haveConstraints);
+    void finish_update(const t_inputrec&                   inputRecord,
+                       bool                                havePartiallyFrozenAtoms,
+                       int                                 homenr,
+                       gmx::ArrayRef<const unsigned short> cFREEZE,
+                       t_state*                            state,
+                       gmx_wallcycle*                      wcycle,
+                       bool                                haveConstraints);
 
     void update_sd_second_half(const t_inputrec&                 inputRecord,
                                int64_t                           step,
@@ -248,12 +243,14 @@ void Update::update_coords(const t_inputrec&                 inputRecord,
 }
 
 void Update::finish_update(const t_inputrec& inputRecord,
-                           const t_mdatoms*  md,
+                           const bool        havePartiallyFrozenAtoms,
+                           const int         homenr,
                            t_state*          state,
                            gmx_wallcycle*    wcycle,
                            const bool        haveConstraints)
 {
-    return impl_->finish_update(inputRecord, md, state, wcycle, haveConstraints);
+    return impl_->finish_update(
+            inputRecord, havePartiallyFrozenAtoms, homenr, impl_->cFREEZE_, state, wcycle, haveConstraints);
 }
 
 void Update::update_sd_second_half(const t_inputrec&                 inputRecord,
@@ -1462,11 +1459,13 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
     }
 }
 
-void Update::Impl::finish_update(const t_inputrec& inputRecord,
-                                 const t_mdatoms*  md,
-                                 t_state*          state,
-                                 gmx_wallcycle*    wcycle,
-                                 const bool        haveConstraints)
+void Update::Impl::finish_update(const t_inputrec&                   inputRecord,
+                                 const bool                          havePartiallyFrozenAtoms,
+                                 const int                           homenr,
+                                 gmx::ArrayRef<const unsigned short> cFREEZE,
+                                 t_state*                            state,
+                                 gmx_wallcycle*                      wcycle,
+                                 const bool                          haveConstraints)
 {
     /* NOTE: Currently we always integrate to a temporary buffer and
      * then copy the results back here.
@@ -1474,11 +1473,10 @@ void Update::Impl::finish_update(const t_inputrec& inputRecord,
 
     wallcycle_start_nocount(wcycle, WallCycleCounter::Update);
 
-    const int homenr = md->homenr;
-    auto      xp     = makeConstArrayRef(xp_).subArray(0, homenr);
-    auto      x      = makeArrayRef(state->x).subArray(0, homenr);
+    auto xp = makeConstArrayRef(xp_).subArray(0, homenr);
+    auto x  = makeArrayRef(state->x).subArray(0, homenr);
 
-    if (md->havePartiallyFrozenAtoms && haveConstraints)
+    if (havePartiallyFrozenAtoms && haveConstraints)
     {
         /* We have atoms that are frozen along some, but not all dimensions,
          * then constraints will have moved them also along the frozen dimensions.
@@ -1488,7 +1486,7 @@ void Update::Impl::finish_update(const t_inputrec& inputRecord,
 
         for (int i = 0; i < homenr; i++)
         {
-            const int g = md->cFREEZE[i];
+            const int g = cFREEZE[i];
 
             for (int d = 0; d < DIM; d++)
             {

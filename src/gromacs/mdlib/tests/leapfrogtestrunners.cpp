@@ -87,8 +87,12 @@ void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
                 etrtNONE,
                 nullptr,
                 false);
-        testData->update_->finish_update(
-                testData->inputRecord_, &testData->mdAtoms_, &testData->state_, nullptr, false);
+        testData->update_->finish_update(testData->inputRecord_,
+                                         testData->mdAtoms_.havePartiallyFrozenAtoms,
+                                         testData->mdAtoms_.homenr,
+                                         &testData->state_,
+                                         nullptr,
+                                         false);
     }
     const auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)
