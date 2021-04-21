@@ -1523,8 +1523,15 @@ void gmx::LegacySimulator::do_md()
                                     *md);
 
                     // Copy data to the GPU after buffers might have being reinitialized
+                    // coordinates have been copied already if PME or buffer ops has not needed it this step.
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
-                    stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                    const bool useGpuPmeOnThisRank = runScheduleWork->simulationWork.useGpuPme
+                        && thisRankHasDuty(cr, DUTY_PME)
+                        && runScheduleWork->stepWork.computeSlowForces;
+                    if (!useGpuPmeOnThisRank && !runScheduleWork->stepWork.useGpuXBufferOps)
+                    {
+                        stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                    }
                 }
 
                 if (simulationWork.useGpuPme && !runScheduleWork->simulationWork.useGpuPmePpCommunication
