@@ -535,9 +535,9 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
     // Hence, the two are decoupled.
     constexpr int prunedClusterPairSize = c_clSize * c_splitClSize;
 #if defined(HIPSYCL_PLATFORM_ROCM) // SYCL-TODO AMD RDNA/RDNA2 has 32-wide exec; how can we check for that?
-    constexpr int subGroupSize = c_clSize * c_clSize;
+    gmx_unused constexpr int subGroupSize = c_clSize * c_clSize;
 #else
-    constexpr int subGroupSize = prunedClusterPairSize;
+    gmx_unused constexpr int subGroupSize = prunedClusterPairSize;
 #endif
 
     return [=](cl::sycl::nd_item<1> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
@@ -664,7 +664,8 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
                 continue;
             }
             const int wexclIdx = a_plistCJ4[j4].imei[imeiIdx].excl_ind;
-            const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (subGroupSize - 1)]; // sg.get_local_linear_id()
+            static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
+            const unsigned wexcl = a_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 const bool maskSet =
