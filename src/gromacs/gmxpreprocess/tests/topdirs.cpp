@@ -54,7 +54,7 @@ TEST(TopDirTests, NamesArrayHasCorrectSize)
         // If the enumeration is extended, but there is no matching
         // name, then at least one element will be value initialized,
         // ie. to nullptr, which this test will catch.
-        auto name = enumValueToString(d);
+        const auto* name = enumValueToString(d);
         EXPECT_NE(name, nullptr);
     }
 }

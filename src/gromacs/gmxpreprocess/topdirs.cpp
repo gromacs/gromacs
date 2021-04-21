@@ -291,6 +291,7 @@ Directive str2dir(char* dstr)
     return Directive::d_invalid;
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx::EnumerationArray<Directive, Directive*> necessary = { { nullptr } };
 
 static void set_nec(Directive** n, ...)

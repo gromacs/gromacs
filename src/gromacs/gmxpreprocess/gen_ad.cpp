@@ -58,6 +58,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

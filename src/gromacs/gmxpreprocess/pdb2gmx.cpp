@@ -37,6 +37,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "pdb2gmx.h"
 
 #include <cctype>
@@ -121,17 +122,133 @@ const char* res2bb_notermini(const std::string& name, gmx::ArrayRef<const RtpRen
     return found != rr.end() ? found->main.c_str() : name.c_str();
 }
 
-const char* select_res(int                            nr,
-                       int                            resnr,
-                       const char*                    name[],
-                       const char*                    expl[],
-                       const char*                    title,
-                       gmx::ArrayRef<const RtpRename> rr)
+const char* enumValueToLongString(HistidineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<HistidineStates, const char*> histidineStatesLongNames = {
+        "H on ND1 only", "H on NE2 only", "H on ND1 and NE2", "Coupled to Heme"
+    };
+    return histidineStatesLongNames[enumValue];
+}
+
+enum class AspartateStates : int
+{
+    Deprot,
+    Prot,
+    Count
+};
+
+const char* enumValueToString(AspartateStates enumValue)
+{
+    constexpr gmx::EnumerationArray<AspartateStates, const char*> aspartateStateNames = { "ASP",
+                                                                                          "ASPH" };
+    return aspartateStateNames[enumValue];
+}
+
+const char* enumValueToLongString(AspartateStates enumValue)
+{
+    constexpr gmx::EnumerationArray<AspartateStates, const char*> aspartateStateLongNames = {
+        "Not protonated (charge -1)", "Protonated (charge 0)"
+    };
+    return aspartateStateLongNames[enumValue];
+}
+
+enum class GlutamateStates : int
+{
+    Deprot,
+    Prot,
+    Count
+};
+
+const char* enumValueToString(GlutamateStates enumValue)
+{
+    constexpr gmx::EnumerationArray<GlutamateStates, const char*> glutamateStateNames = { "GLU",
+                                                                                          "GLUH" };
+    return glutamateStateNames[enumValue];
+}
+
+const char* enumValueToLongString(GlutamateStates enumValue)
+{
+    constexpr gmx::EnumerationArray<GlutamateStates, const char*> glutamateStateLongNames = {
+        "Not protonated (charge -1)", "Protonated (charge 0)"
+    };
+    return glutamateStateLongNames[enumValue];
+}
+
+enum class GlutamineStates : int
+{
+    Deprot,
+    Prot,
+    Count
+};
+
+const char* enumValueToString(GlutamineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<GlutamineStates, const char*> glutamineStateNames = { "GLN",
+                                                                                          "QLN" };
+    return glutamineStateNames[enumValue];
+}
+
+const char* enumValueToLongString(GlutamineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<GlutamineStates, const char*> glutamineStateLongNames = {
+        "Not protonated (charge 0)", "Protonated (charge +1)"
+    };
+    return glutamineStateLongNames[enumValue];
+}
+
+enum class LysineStates : int
+{
+    Deprot,
+    Prot,
+    Count
+};
+
+const char* enumValueToString(LysineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<LysineStates, const char*> lysineStateNames = { "LYSN", "LYS" };
+    return lysineStateNames[enumValue];
+}
+
+const char* enumValueToLongString(LysineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<LysineStates, const char*> lysineStateLongNames = {
+        "Not protonated (charge 0)", "Protonated (charge +1)"
+    };
+    return lysineStateLongNames[enumValue];
+}
+
+enum class ArginineStates : int
+{
+    Deprot,
+    Prot,
+    Count
+};
+
+const char* enumValueToString(ArginineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<ArginineStates, const char*> arginineStatesNames = { "ARGN",
+                                                                                         "ARG" };
+    return arginineStatesNames[enumValue];
+}
+
+const char* enumValueToLongString(ArginineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<ArginineStates, const char*> arginineStatesLongNames = {
+        "Not protonated (charge 0)", "Protonated (charge +1)"
+    };
+    return arginineStatesLongNames[enumValue];
+}
+
+template<typename EnumType>
+const char* select_res(int resnr, const char* title, gmx::ArrayRef<const RtpRename> rr)
 {
     printf("Which %s type do you want for residue %d\n", title, resnr + 1);
-    for (int sel = 0; (sel < nr); sel++)
+    for (auto sel : gmx::EnumerationWrapper<EnumType>{})
     {
-        printf("%d. %s (%s)\n", sel, expl[sel], res2bb_notermini(name[sel], rr));
+        printf("%d. %s (%s)\n",
+               static_cast<int>(sel),
+               enumValueToString(sel),
+               res2bb_notermini(enumValueToString(sel), rr));
     }
     printf("\nType a number:");
     fflush(stdout);
@@ -142,86 +259,37 @@ const char* select_res(int                            nr,
         gmx_fatal(FARGS, "Answer me for res %s %d!", title, resnr + 1);
     }
 
-    return name[userSelection];
+    return enumValueToLongString(static_cast<EnumType>(userSelection));
 }
 
 const char* get_asptp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    enum
-    {
-        easp,
-        easpH,
-        easpNR
-    };
-    const char* lh[easpNR]   = { "ASP", "ASPH" };
-    const char* expl[easpNR] = { "Not protonated (charge -1)", "Protonated (charge 0)" };
-
-    return select_res(easpNR, resnr, lh, expl, "ASPARTIC ACID", rr);
+    return select_res<AspartateStates>(resnr, "ASPARTIC ACID", rr);
 }
 
 const char* get_glutp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    enum
-    {
-        eglu,
-        egluH,
-        egluNR
-    };
-    const char* lh[egluNR]   = { "GLU", "GLUH" };
-    const char* expl[egluNR] = { "Not protonated (charge -1)", "Protonated (charge 0)" };
-
-    return select_res(egluNR, resnr, lh, expl, "GLUTAMIC ACID", rr);
+    return select_res<GlutamateStates>(resnr, "GLUTAMIC ACID", rr);
 }
 
 const char* get_glntp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    enum
-    {
-        egln,
-        eglnH,
-        eglnNR
-    };
-    const char* lh[eglnNR]   = { "GLN", "QLN" };
-    const char* expl[eglnNR] = { "Not protonated (charge 0)", "Protonated (charge +1)" };
-
-    return select_res(eglnNR, resnr, lh, expl, "GLUTAMINE", rr);
+    return select_res<GlutamineStates>(resnr, "GLUTAMINE", rr);
 }
 
 const char* get_lystp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    enum
-    {
-        elys,
-        elysH,
-        elysNR
-    };
-    const char* lh[elysNR]   = { "LYSN", "LYS" };
-    const char* expl[elysNR] = { "Not protonated (charge 0)", "Protonated (charge +1)" };
-
-    return select_res(elysNR, resnr, lh, expl, "LYSINE", rr);
+    return select_res<LysineStates>(resnr, "LYSINE", rr);
 }
 
 const char* get_argtp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    enum
-    {
-        earg,
-        eargH,
-        eargNR
-    };
-    const char* lh[eargNR]   = { "ARGN", "ARG" };
-    const char* expl[eargNR] = { "Not protonated (charge 0)", "Protonated (charge +1)" };
-
-    return select_res(eargNR, resnr, lh, expl, "ARGININE", rr);
+    return select_res<ArginineStates>(resnr, "ARGININE", rr);
 }
 
 const char* get_histp(int resnr, gmx::ArrayRef<const RtpRename> rr)
 {
-    const char* expl[ehisNR] = {
-        "H on ND1 only", "H on NE2 only", "H on ND1 and NE2", "Coupled to Heme"
-    };
-
-    return select_res(ehisNR, resnr, hh, expl, "HISTIDINE", rr);
+    return select_res<HistidineStates>(resnr, "HISTIDINE", rr);
 }
 
 void read_rtprename(const char* fname, FILE* fp, std::vector<RtpRename>* rtprename)
@@ -1432,7 +1500,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
 struct t_pdbchain
 {
     char             chainid   = ' ';
-    char             chainnum  = ' ';
+    int              chainnum  = ' '; // char, but stored as int to make clang-tidy happy
     int              start     = -1;
     int              natom     = -1;
     bool             bAllWat   = false;

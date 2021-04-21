@@ -116,6 +116,7 @@ struct gmx_inputrec_strings
     char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_inputrec_strings* inputrecStrings = nullptr;
 
 void init_inputrec_strings()
@@ -147,9 +148,11 @@ enum
                         * make a rest group for the remaining particles.    */
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* constraints[eshNR + 1] = { "none",     "h-bonds",    "all-bonds",
                                               "h-angles", "all-angles", nullptr };
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* couple_lam[ecouplamNR + 1] = { "vdw-q", "vdw", "q", "none", nullptr };
 
 static void getSimTemps(int ntemps, t_simtemp* simtemp, gmx::ArrayRef<double> temperature_lambdas)

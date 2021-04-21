@@ -56,11 +56,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-static const char* RotStr = "Enforced rotation:";
-
-
-static char s_vec[STRLEN];
-
+static const std::string RotStr = "Enforced rotation:";
 
 static void string2dvec(char buf[], dvec nums)
 {
@@ -100,6 +96,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
     /* Read the rotation groups */
     std::vector<std::string> rotateGroups(rot->ngrp);
     char                     readBuffer[STRLEN];
+    char                     s_vec[STRLEN];
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
@@ -133,7 +130,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         }
         fprintf(stderr,
                 "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
-                RotStr,
+                RotStr.c_str(),
                 g,
                 enumValueToString(rotg->eType),
                 vec[0],
@@ -249,7 +246,7 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
     }
     if (!bSame)
     {
-        sprintf(warn_buf, "%s Box size in reference file %s differs from actual box size!", RotStr, fn);
+        sprintf(warn_buf, "%s Box size in reference file %s differs from actual box size!", RotStr.c_str(), fn);
         warning(wi, warn_buf);
         pr_rvecs(stderr, 0, "Your box is:", box, 3);
         pr_rvecs(stderr, 0, "Box in file:", f_box, 3);
@@ -268,7 +265,7 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        fprintf(stderr, "%s group %d has %d reference positions.\n", RotStr, g, rotg->nat);
+        fprintf(stderr, "%s group %d has %d reference positions.\n", RotStr.c_str(), g, rotg->nat);
         snew(rotg->x_ref, rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
@@ -283,7 +280,7 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
             gmx_fatal(FARGS,
                       "%s The file containing the reference positions was not found.\n"
                       "Expected the file '%s' for group %d.\n",
-                      RotStr,
+                      RotStr.c_str(),
                       reffile,
                       g);
         }

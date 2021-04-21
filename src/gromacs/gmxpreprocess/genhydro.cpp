@@ -177,7 +177,7 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
 {
     /* we'll recursively add atoms to atoms */
     int pos = 0;
-    for (auto& singlePatch : newPatch.hack)
+    for (const auto& singlePatch : newPatch.hack)
     {
         /* first check if we're in the N- or C-terminus, then we should ignore
            all hacks involving atoms from resp. previous or next residue

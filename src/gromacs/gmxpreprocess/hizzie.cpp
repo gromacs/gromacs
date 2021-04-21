@@ -180,15 +180,16 @@ void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real dist)
                                       "NZ", "OG",  "OG1", "OH", "NE1", "OW" };
 #define NPD asize(prot_don)
 
-    bool *    donor, *acceptor;
-    bool*     hbond;
-    bool      bHDd, bHEd;
-    rvec      xh1, xh2;
-    int       natom;
-    int       i, j, nd, na, hisind, type = -1;
-    int       nd1, ne2, cg, cd2, ce1;
-    t_blocka* hb;
-    char*     atomnm;
+    bool *          donor, *acceptor;
+    bool*           hbond;
+    bool            bHDd, bHEd;
+    rvec            xh1, xh2;
+    int             natom;
+    int             i, j, nd, na, hisind;
+    HistidineStates type = HistidineStates::Count;
+    int             nd1, ne2, cg, cd2, ce1;
+    t_blocka*       hb;
+    char*           atomnm;
 
     natom = pdba->nr;
 
@@ -288,25 +289,28 @@ void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real dist)
                     {
                         if (bHEd)
                         {
-                            type = ehisH;
+                            type = HistidineStates::H;
                         }
                         else
                         {
-                            type = ehisA;
+                            type = HistidineStates::A;
                         }
                     }
                     else
                     {
-                        type = ehisB;
+                        type = HistidineStates::B;
                     }
-                    fprintf(stderr, "Will use %s for residue %d\n", hh[type], pdba->resinfo[hisind].nr);
+                    fprintf(stderr,
+                            "Will use %s for residue %d\n",
+                            enumValueToString(type),
+                            pdba->resinfo[hisind].nr);
                 }
                 else
                 {
                     gmx_fatal(FARGS, "Incomplete ring in HIS%d", pdba->resinfo[hisind].nr);
                 }
 
-                pdba->resinfo[hisind].rtp = put_symtab(symtab, hh[type]);
+                pdba->resinfo[hisind].rtp = put_symtab(symtab, enumValueToString(type));
             }
         }
     }

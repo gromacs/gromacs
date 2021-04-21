@@ -529,7 +529,7 @@ static void enter_function(const InteractionsOfType* p,
 {
     int start = ffparams->numTypes();
 
-    for (auto& parm : p->interactionTypes)
+    for (const auto& parm : p->interactionTypes)
     {
         int type = enter_params(ffparams, ftype, parm.forceParam(), comb, reppow, start, bAppend);
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */

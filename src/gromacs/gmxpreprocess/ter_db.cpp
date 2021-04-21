@@ -39,10 +39,12 @@
 
 #include "ter_db.h"
 
+#include <array>
 #include <cctype>
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -54,6 +56,7 @@
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -66,6 +69,7 @@
 #include "hackblock.h"
 #include "resall.h"
 
+/* use bonded types definitions in hackblock.h */
 enum class ReplaceType : int
 {
     Repl,

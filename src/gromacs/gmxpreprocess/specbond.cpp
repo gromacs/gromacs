@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,17 +121,12 @@ std::vector<SpecialBond> generateSpecialBonds()
 
 static bool is_special(gmx::ArrayRef<const SpecialBond> sb, const char* res, const char* atom)
 {
-    for (const auto& bond : sb)
-    {
-        if (((strncmp(bond.firstResidue.c_str(), res, 3) == 0)
-             && (gmx::equalCaseInsensitive(bond.firstAtomName, atom)))
-            || ((strncmp(bond.secondResidue.c_str(), res, 3) == 0)
-                && (gmx::equalCaseInsensitive(bond.secondAtomName, atom))))
-        {
-            return TRUE;
-        }
-    }
-    return FALSE;
+    return std::any_of(sb.begin(), sb.end(), [res, atom](const auto& bond) {
+        return (((strncmp(bond.firstResidue.c_str(), res, 3) == 0)
+                 && (gmx::equalCaseInsensitive(bond.firstAtomName, atom)))
+                || ((strncmp(bond.secondResidue.c_str(), res, 3) == 0)
+                    && (gmx::equalCaseInsensitive(bond.secondAtomName, atom))));
+    });
 }
 
 static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, int a2, real d, int* index_sb, bool* bSwap)

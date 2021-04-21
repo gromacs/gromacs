@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 class PreprocessingAtomTypes;
 
@@ -64,16 +65,16 @@ struct PreprocessResidue;
 struct DisulfideBond;
 struct t_symtab;
 
-/* this *MUST* correspond to array in pdb2top.c */
-enum
+/* this *MUST* correspond to array in pdb2top.cpp */
+enum class HistidineStates : int
 {
-    ehisA,
-    ehisB,
-    ehisH,
-    ehis1,
-    ehisNR
+    A,
+    B,
+    H,
+    One,
+    Count
 };
-extern const char* hh[ehisNR];
+const char* enumValueToString(HistidineStates enumValue);
 
 void choose_ff(const char*          ffsel,
                char*                forcefield,

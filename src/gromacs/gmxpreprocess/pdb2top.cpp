@@ -68,6 +68,7 @@
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -84,8 +85,13 @@
 #include "hackblock.h"
 #include "resall.h"
 
-/* this must correspond to enum in pdb2top.h */
-const char* hh[ehisNR] = { "HISD", "HISE", "HISH", "HIS1" };
+const char* enumValueToString(HistidineStates enumValue)
+{
+    constexpr gmx::EnumerationArray<HistidineStates, const char*> histidineStateNames = {
+        "HISD", "HISE", "HISH", "HIS1"
+    };
+    return histidineStateNames[enumValue];
+}
 
 static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, int i0, int i, const gmx::MDLogger& logger)
 {

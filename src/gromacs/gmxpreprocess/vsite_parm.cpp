@@ -80,7 +80,7 @@ public:
     {
         GMX_RELEASE_ASSERT(atomIndex.size() <= atomIndex_.size(),
                            "Cannot add more atom indices than maximum number");
-        auto atomIndexIt = atomIndex_.begin();
+        auto* atomIndexIt = atomIndex_.begin();
         for (const auto index : atomIndex)
         {
             *atomIndexIt++ = index;
@@ -182,7 +182,7 @@ static AllVsiteBondedInteractions createVsiteBondedInformation(int              
     AllVsiteBondedInteractions allVsiteBondeds;
     for (int k = 0; k < nrat; k++)
     {
-        for (auto& vsite : at2vb[atoms[k]].vSiteBondedParameters)
+        for (const auto& vsite : at2vb[atoms[k]].vSiteBondedParameters)
         {
             int                      ftype   = vsite.ftype_;
             const InteractionOfType& type    = vsite.vsiteInteraction_;

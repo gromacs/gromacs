@@ -122,7 +122,7 @@ InteractionOfType::InteractionOfType(gmx::ArrayRef<const int>  atoms,
             params.size() <= forceParam_.size(),
             gmx::formatString("Cannot have more parameters than the maximum number possible (%d)", MAXFORCEPARAM)
                     .c_str());
-    auto forceParamIt = forceParam_.begin();
+    auto* forceParamIt = forceParam_.begin();
     for (const auto param : params)
     {
         *forceParamIt++ = param;

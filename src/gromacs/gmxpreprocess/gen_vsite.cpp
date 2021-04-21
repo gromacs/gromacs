@@ -1657,7 +1657,7 @@ static bool is_vsite(int vsite_type)
     }
 }
 
-static char atomnamesuffix[] = "1234";
+static const char atomnamesuffix[] = "1234";
 
 void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                PreprocessingAtomTypes*                atype,

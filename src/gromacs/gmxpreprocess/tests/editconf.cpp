@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ public:
         ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
 
         // Check the output
-        auto                 extension = ftp2ext(std::get<1>(GetParam()));
+        const auto*          extension = ftp2ext(std::get<1>(GetParam()));
         TestReferenceChecker rootChecker(this->rootChecker());
         rootChecker.checkString(extension, testName);
         checkOutputFiles();
