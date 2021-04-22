@@ -60,8 +60,6 @@ static constexpr auto mode_atomic = GMX_SYCL_DPCPP ? cl::sycl::access::mode::rea
 
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
  *
- * Skips sub-normal values.
- *
  * The implementation differences between DPCPP and hipSYCL are explained in \ref mode_atomic.
  */
 template<class IndexType>
