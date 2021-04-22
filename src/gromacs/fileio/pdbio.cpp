@@ -575,18 +575,20 @@ void get_pdb_atomnumber(const t_atoms* atoms, AtomProperties* aps)
                 atomNumberSet = true;
             }
         }
-        std::string buf;
+        static constexpr size_t sc_maxElementNameLength = 3;
+        static_assert(sizeof(atoms->atom[i].elem) >= sc_maxElementNameLength + 1);
+        std::string element;
         if (atomNumberSet)
         {
             atoms->atom[i].atomnumber = atomnumber;
-            buf                       = aps->elementFromAtomNumber(atomnumber);
+            element                   = aps->elementFromAtomNumber(atomnumber);
             if (debug)
             {
                 fprintf(debug, "Atomnumber for atom '%s' is %d\n", anm, atomnumber);
             }
         }
-        buf.resize(3);
-        std::strncpy(atoms->atom[i].elem, buf.c_str(), 4);
+        element.resize(sc_maxElementNameLength);
+        std::strcpy(atoms->atom[i].elem, element.c_str());
     }
 }
 

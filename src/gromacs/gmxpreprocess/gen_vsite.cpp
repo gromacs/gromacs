@@ -274,7 +274,7 @@ static void read_vsite_database(const char*                            ddbname,
         {
             if (pline[0] == OPENDIR)
             {
-                strncpy(dirstr, pline + 1, STRLEN - 2);
+                strncpy(dirstr, pline + 1, STRLEN - 1);
                 if ((ch = strchr(dirstr, CLOSEDIR)) != nullptr)
                 {
                     (*ch) = 0;
