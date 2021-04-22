@@ -1939,7 +1939,7 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
         return;
     }
 
-    systemInfo->updateGroupingsPerMoleculeType = gmx::makeUpdateGroups(mtop);
+    systemInfo->updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
     systemInfo->useUpdateGroups = (!systemInfo->updateGroupingsPerMoleculeType.empty()
                                    && getenv("GMX_NO_UPDATEGROUPS") == nullptr);
 

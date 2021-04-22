@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,10 +109,10 @@ TEST(UpdateGroupsCog, ComputesCogs)
     mtop.ffparams.iparams.push_back(iparams);
 
     // Run the test
-    auto updateGroups = makeUpdateGroups(mtop);
-    real temperature  = 300;
+    auto updateGroupingsPerMoleculeType = makeUpdateGroupingsPerMoleculeType(mtop);
+    real temperature                    = 300;
 
-    UpdateGroupsCog updateGroupsCog(mtop, updateGroups, temperature, numAtoms);
+    UpdateGroupsCog updateGroupsCog(mtop, updateGroupingsPerMoleculeType, temperature, numAtoms);
 
     EXPECT_FLOAT_EQ(updateGroupsCog.maxUpdateGroupRadius(), 0.083887339);
 

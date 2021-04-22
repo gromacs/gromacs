@@ -338,7 +338,8 @@ static int detectGroup(int                     firstAtom,
 }
 
 /*! \brief Returns a list of update groups for \p moltype */
-static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::ArrayRef<const t_iparams> iparams)
+static RangePartitioning makeUpdateGroupingsPerMoleculeType(const gmx_moltype_t&           moltype,
+                                                            gmx::ArrayRef<const t_iparams> iparams)
 {
     RangePartitioning groups;
 
@@ -386,16 +387,17 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
     return groups;
 }
 
-std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t& mtop)
+std::vector<RangePartitioning> makeUpdateGroupingsPerMoleculeType(const gmx_mtop_t& mtop)
 {
-    std::vector<RangePartitioning> updateGroups;
+    std::vector<RangePartitioning> updateGroupingsPerMoleculeType;
 
     bool systemSatisfiesCriteria = true;
     for (const gmx_moltype_t& moltype : mtop.moltype)
     {
-        updateGroups.push_back(makeUpdateGroups(moltype, mtop.ffparams.iparams));
+        updateGroupingsPerMoleculeType.push_back(
+                makeUpdateGroupingsPerMoleculeType(moltype, mtop.ffparams.iparams));
 
-        if (updateGroups.back().numBlocks() == 0)
+        if (updateGroupingsPerMoleculeType.back().numBlocks() == 0)
         {
             systemSatisfiesCriteria = false;
         }
@@ -403,10 +405,10 @@ std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t& mtop)
 
     if (!systemSatisfiesCriteria)
     {
-        updateGroups.clear();
+        updateGroupingsPerMoleculeType.clear();
     }
 
-    return updateGroups;
+    return updateGroupingsPerMoleculeType;
 }
 
 /*! \brief Returns a map of angles ilist.iatoms indices with the middle atom as key */
@@ -588,7 +590,7 @@ static real constraintGroupRadius(const gmx_moltype_t&                     molty
 /*! \brief Returns the maximum update group radius for \p moltype */
 static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
                                         gmx::ArrayRef<const t_iparams> iparams,
-                                        const RangePartitioning&       updateGroups,
+                                        const RangePartitioning&       updateGrouping,
                                         real                           temperature)
 {
     GMX_RELEASE_ASSERT(!hasFlexibleConstraints(moltype, iparams),
@@ -601,9 +603,9 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
     const auto angleIndices = getAngleIndices(moltype);
 
     real maxRadius = 0;
-    for (int group = 0; group < updateGroups.numBlocks(); group++)
+    for (int group = 0; group < updateGrouping.numBlocks(); group++)
     {
-        if (updateGroups.block(group).size() == 1)
+        if (updateGrouping.block(group).size() == 1)
         {
             /* Single atom group, radius is zero */
             continue;
@@ -612,7 +614,7 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
         /* Find the atom maxAtom with the maximum number of constraints */
         int maxNumConstraints = 0;
         int maxAtom           = -1;
-        for (int a : updateGroups.block(group))
+        for (int a : updateGrouping.block(group))
         {
             const int numConstraints = at2con[a].ssize();
             if (numConstraints > maxNumConstraints)
@@ -726,25 +728,24 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
 }
 
 real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
-                                 gmx::ArrayRef<const RangePartitioning> updateGroups,
+                                 gmx::ArrayRef<const RangePartitioning> updateGroupingsPerMoleculeType,
                                  real                                   temperature)
 {
-    if (updateGroups.empty())
+    if (updateGroupingsPerMoleculeType.empty())
     {
         return 0;
     }
 
-    GMX_RELEASE_ASSERT(updateGroups.size() == mtop.moltype.size(),
+    GMX_RELEASE_ASSERT(updateGroupingsPerMoleculeType.size() == mtop.moltype.size(),
                        "We need one update group entry per moleculetype");
 
     real maxRadius = 0;
 
     for (size_t moltype = 0; moltype < mtop.moltype.size(); moltype++)
     {
-        maxRadius = std::max(
-                maxRadius,
-                computeMaxUpdateGroupRadius(
-                        mtop.moltype[moltype], mtop.ffparams.iparams, updateGroups[moltype], temperature));
+        const real radiusOfThisMoleculeType = computeMaxUpdateGroupRadius(
+                mtop.moltype[moltype], mtop.ffparams.iparams, updateGroupingsPerMoleculeType[moltype], temperature);
+        maxRadius = std::max(maxRadius, radiusOfThisMoleculeType);
     }
 
     return maxRadius;
