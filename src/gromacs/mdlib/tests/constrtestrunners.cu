@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/mdlib/lincs_gpu.cuh"
+#include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/unique_cptr.h"
 

@@ -49,7 +49,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
-#include "gromacs/gpu_utils/gputraits.cuh"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
@@ -57,6 +57,15 @@ class InteractionDefinitions;
 
 namespace gmx
 {
+
+//! A pair of atoms indexes
+struct AtomPair
+{
+    //! First atom
+    int i;
+    //! Second atom
+    int j;
+};
 
 /* \brief LINCS parameters and GPU pointers
  *
@@ -73,9 +82,9 @@ struct LincsGpuKernelParameters
     //! Number of iterations used to correct the projection
     int numIterations;
     //! 1/mass for all atoms (GPU)
-    float* d_inverseMasses;
+    DeviceBuffer<float> d_inverseMasses;
     //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ], GPU)
-    float* d_virialScaled;
+    DeviceBuffer<float> d_virialScaled;
     /*! \brief Total number of threads.
      *
      *  This covers all constraints and gaps in the ends of the thread blocks
@@ -84,17 +93,17 @@ struct LincsGpuKernelParameters
      */
     int numConstraintsThreads;
     //! List of constrained atoms (GPU memory)
-    int2* d_constraints;
+    DeviceBuffer<AtomPair> d_constraints;
     //! Equilibrium distances for the constraints (GPU)
-    float* d_constraintsTargetLengths;
+    DeviceBuffer<float> d_constraintsTargetLengths;
     //! Number of constraints, coupled with the current one (GPU)
-    int* d_coupledConstraintsCounts;
+    DeviceBuffer<int> d_coupledConstraintsCounts;
     //! List of coupled with the current one (GPU)
-    int* d_coupledConstraintsIndices;
+    DeviceBuffer<int> d_coupledConstraintsIndices;
     //! Elements of the coupling matrix.
-    float* d_matrixA;
+    DeviceBuffer<float> d_matrixA;
     //! Mass factors (GPU)
-    float* d_massFactors;
+    DeviceBuffer<float> d_massFactors;
 };
 
 /*! \internal \brief Class with interfaces and data for GPU version of LINCS. */
