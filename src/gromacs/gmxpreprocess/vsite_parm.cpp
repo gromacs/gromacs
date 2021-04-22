@@ -39,6 +39,7 @@
 
 #include "vsite_parm.h"
 
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -80,7 +81,7 @@ public:
     {
         GMX_RELEASE_ASSERT(atomIndex.size() <= atomIndex_.size(),
                            "Cannot add more atom indices than maximum number");
-        auto* atomIndexIt = atomIndex_.begin();
+        std::array<int, 4>::iterator atomIndexIt = atomIndex_.begin();
         for (const auto index : atomIndex)
         {
             *atomIndexIt++ = index;

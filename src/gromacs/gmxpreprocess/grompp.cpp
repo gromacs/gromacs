@@ -39,6 +39,7 @@
 
 #include "grompp.h"
 
+#include <array>
 #include <cerrno>
 #include <climits>
 #include <cmath>
@@ -122,7 +123,7 @@ InteractionOfType::InteractionOfType(gmx::ArrayRef<const int>  atoms,
             params.size() <= forceParam_.size(),
             gmx::formatString("Cannot have more parameters than the maximum number possible (%d)", MAXFORCEPARAM)
                     .c_str());
-    auto* forceParamIt = forceParam_.begin();
+    std::array<real, MAXFORCEPARAM>::iterator forceParamIt = forceParam_.begin();
     for (const auto param : params)
     {
         *forceParamIt++ = param;
