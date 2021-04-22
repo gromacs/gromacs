@@ -490,7 +490,7 @@ static void receive_virial_energy(const t_commrec*      cr,
         *dvdlambda_lj += cve.dvdlambda_lj;
         *pme_cycles = cve.cycles;
 
-        if (cve.stop_cond != gmx_stop_cond_none)
+        if (cve.stop_cond != StopCondition::None)
         {
             gmx_set_stop_condition(cve.stop_cond);
         }

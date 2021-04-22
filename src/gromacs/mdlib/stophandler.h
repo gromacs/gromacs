@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ namespace gmx
  *   * stop at the next neighbor-searching step
  *   * stop as soon as signal is received
  */
-enum class StopSignal
+enum class StopSignal : int
 {
     noSignal         = 0,
     stopAtNextNSStep = 1,
@@ -151,7 +151,7 @@ public:
      */
     void setSignal() const
     {
-        for (auto& condition : stopConditions_)
+        for (const auto& condition : stopConditions_)
         {
             const StopSignal sig = condition();
             if (sig != StopSignal::noSignal)
@@ -207,10 +207,10 @@ public:
     StopSignal getSignal(FILE* fplog);
 
 private:
-    int        handledStopCondition_;
-    const bool makeBinaryReproducibleSimulation_;
-    const int  nstSignalComm_;
-    const int  nstList_;
+    StopCondition handledStopCondition_;
+    const bool    makeBinaryReproducibleSimulation_;
+    const int     nstSignalComm_;
+    const int     nstList_;
 };
 
 /*! \libinternal

@@ -93,14 +93,14 @@ TEST_F(GmxApiTest, RunnerReinitialize)
         auto session = system.launch(context);
 
         // Try to simulate an interrupt signal to catch.
-        gmx_set_stop_condition(gmx_stop_cond_next_ns);
+        gmx_set_stop_condition(StopCondition::NextNS);
 
         auto status = session->run();
         EXPECT_FALSE(status.success());
 
         // If this assertion fails, it is not an error, but it indicates expected behavior has
         // changed and we need to consider the impact of whatever changes caused this.
-        EXPECT_NE(gmx_get_stop_condition(), gmx_stop_cond_none);
+        EXPECT_NE(gmx_get_stop_condition(), StopCondition::None);
 
         session->close();
     } // allow system and session to be destroyed.
@@ -113,18 +113,18 @@ TEST_F(GmxApiTest, RunnerReinitialize)
         // changed and we need to consider the impact of whatever changes caused this.
         // We are expecting that the libgromacs state has retained the stop condition from the
         // previously issued SIGINT
-        EXPECT_NE(gmx_get_stop_condition(), gmx_stop_cond_none);
+        EXPECT_NE(gmx_get_stop_condition(), StopCondition::None);
 
         auto session = system.launch(context);
 
         // Launching a session should clear the stop condition.
-        EXPECT_EQ(gmx_get_stop_condition(), gmx_stop_cond_none);
+        EXPECT_EQ(gmx_get_stop_condition(), StopCondition::None);
 
         auto status = session->run();
         EXPECT_TRUE(status.success());
 
         // Stop condition should still be clear.
-        EXPECT_EQ(gmx_get_stop_condition(), gmx_stop_cond_none);
+        EXPECT_EQ(gmx_get_stop_condition(), StopCondition::None);
 
         session->close();
     }

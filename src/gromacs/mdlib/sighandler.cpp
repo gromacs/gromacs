@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,28 +44,35 @@
 #include <csignal>
 #include <cstdlib>
 
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-const char* gmx_stop_cond_name[] = { "None",
-                                     "Stop at the next neighbor search step",
-                                     "Stop at the next step",
-                                     "Abort" };
+const char* enumValueToString(StopCondition enumValue)
+{
+    constexpr gmx::EnumerationArray<StopCondition, const char*> stopConditionNames = {
+        "None", "Stop at the next neighbor search step", "Stop at the next step", "Abort"
+    };
+    return stopConditionNames[enumValue];
+}
 
 /* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */
-static const char* gmx_signal_name[] = {
+static const char* const gmx_signal_name[] = {
     "None", "INT",  "TERM", "second INT/TERM", "remote INT/TERM", "remote second INT/TERM",
     "USR1", "Abort"
 };
 
-static volatile sig_atomic_t stop_condition   = gmx_stop_cond_none;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static volatile StopCondition stop_condition = StopCondition::None;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile sig_atomic_t last_signal_name = 0;
-
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile sig_atomic_t usr_condition = 0;
 
 void gmx_reset_stop_condition()
 {
-    stop_condition = gmx_stop_cond_none;
+    stop_condition = StopCondition::None;
     // last_signal_name and usr_condition are left untouched by reset.
 }
 
@@ -79,7 +86,13 @@ static void signal_handler(int n)
         case SIGTERM:
         case SIGINT:
             /* we explicitly set things up to allow this: */
-            stop_condition++;
+            switch (stop_condition)
+            {
+                case StopCondition::None: stop_condition = StopCondition::NextNS; break;
+                case StopCondition::NextNS: stop_condition = StopCondition::Next; break;
+                case StopCondition::Next: stop_condition = StopCondition::Abort; break;
+                default: GMX_THROW(gmx::InternalError("Stop condition increased beyond abort"));
+            }
             if (n == SIGINT)
             {
                 last_signal_name = 1;
@@ -88,11 +101,11 @@ static void signal_handler(int n)
             {
                 last_signal_name = 2;
             }
-            if (stop_condition == gmx_stop_cond_next)
+            if (stop_condition == StopCondition::Next)
             {
                 last_signal_name = 3;
             }
-            if (stop_condition >= gmx_stop_cond_abort)
+            if (stop_condition >= StopCondition::Abort)
             {
                 abort();
             }
@@ -147,21 +160,21 @@ void signal_handler_install()
 #endif
 }
 
-gmx_stop_cond_t gmx_get_stop_condition()
+StopCondition gmx_get_stop_condition()
 {
-    return static_cast<gmx_stop_cond_t>(stop_condition);
+    return stop_condition;
 }
 
-void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
+void gmx_set_stop_condition(StopCondition recvd_stop_cond)
 {
     if (recvd_stop_cond > stop_condition)
     {
         stop_condition = recvd_stop_cond;
-        if (stop_condition == gmx_stop_cond_next_ns)
+        if (stop_condition == StopCondition::NextNS)
         {
             last_signal_name = 4;
         }
-        if (stop_condition == gmx_stop_cond_next)
+        if (stop_condition == StopCondition::Next)
         {
             last_signal_name = 5;
         }

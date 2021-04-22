@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+#include <csignal>
+
 /* NOTE: the terminology is:
    incoming signals (provided by the operating system, or transmitted from
    other nodes) lead to stop conditions. These stop conditions should be
@@ -46,17 +48,18 @@
 
 /* the stop conditions. They are explicitly allowed to be compared against
    each other. */
-typedef enum
+enum class StopCondition : sig_atomic_t
 {
-    gmx_stop_cond_none = 0,
-    gmx_stop_cond_next_ns, /* stop a the next neighbour searching step */
-    gmx_stop_cond_next,    /* stop a the next step */
-    gmx_stop_cond_abort    /* stop now. (this should never be seen) */
-} gmx_stop_cond_t;
+    None = 0,
+    NextNS, /* stop a the next neighbour searching step */
+    Next,   /* stop a the next step */
+    Abort,  /* stop now. (this should never be seen) */
+    Count
+};
 
 /* Our names for the stop conditions.
    These must match the number given in gmx_stop_cond_t.*/
-extern const char* gmx_stop_cond_name[];
+const char* enumValueToString(StopCondition enumValue);
 
 /* the externally visible functions: */
 
@@ -64,10 +67,10 @@ extern const char* gmx_stop_cond_name[];
 void signal_handler_install();
 
 /* get the current stop condition */
-gmx_stop_cond_t gmx_get_stop_condition();
+StopCondition gmx_get_stop_condition();
 
 /* set the stop condition upon receiving a remote one */
-void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
+void gmx_set_stop_condition(StopCondition recvd_stop_cond);
 
 /*!
  * \brief Reinitializes the global stop condition.

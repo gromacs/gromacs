@@ -137,6 +137,6 @@ struct gmx_pme_comm_vir_ene_t
     real   dvdlambda_q;
     real   dvdlambda_lj;
     //@}
-    float           cycles;    /**< Counter of CPU cycles used */
-    gmx_stop_cond_t stop_cond; /**< Flag used in responding to an external signal to terminate */
+    float         cycles;    /**< Counter of CPU cycles used */
+    StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
 };

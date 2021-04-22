@@ -82,6 +82,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
@@ -101,6 +102,8 @@ constexpr int c_headerSize = 8;
 
 /*! \brief IMD Protocol Version. */
 constexpr int c_protocolVersion = 2;
+
+enum class IMDMessageType : int;
 
 /*! \internal
  * \brief
@@ -179,7 +182,7 @@ public:
      * Do conversion from Cal->Joule and from
      * Angstrom -> nm and from a pointer array to arrays to 3*N array.
      */
-    void copyToMDForces();
+    void copyToMDForces() const;
     /*! \brief Return true if any of the forces or indices changed. */
     bool bForcesChanged() const;
     /*! \brief Update the old_f_ind and old_forces arrays to contain the current values. */
@@ -201,7 +204,7 @@ public:
     /*! \brief Creates the molecule start-end position array of molecules in the IMD group. */
     void prepareMoleculesInImdGroup(const gmx_mtop_t& top_global);
     /*! \brief Removes shifts of molecules diffused outside of the box. */
-    void removeMolecularShifts(const matrix box);
+    void removeMolecularShifts(const matrix box) const;
     /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
     void prepareForPositionAssembly(const t_commrec* cr, gmx::ArrayRef<const gmx::RVec> coords);
     /*! \brief Interact with any connected VMD session */
@@ -339,35 +342,39 @@ std::unique_ptr<IMDModule> createInteractiveMolecularDynamicsModule()
  *
  * We use the same records as the NAMD/VMD IMD implementation.
  */
-typedef enum IMDType_t
+enum class IMDMessageType : int
 {
-    IMD_DISCONNECT, /**< client disconnect                               */
-    IMD_ENERGIES,   /**< energy data                                     */
-    IMD_FCOORDS,    /**< atomic coordinates                              */
-    IMD_GO,         /**< start command for the simulation                */
-    IMD_HANDSHAKE,  /**< handshake to determine little/big endianness    */
-    IMD_KILL,       /**< terminates the simulation                       */
-    IMD_MDCOMM,     /**< force data                                      */
-    IMD_PAUSE,      /**< pauses the simulation                           */
-    IMD_TRATE,      /**< sets the IMD transmission and processing rate   */
-    IMD_IOERROR,    /**< I/O error                                       */
-    IMD_NR          /**< number of entries                               */
-} IMDMessageType;
+    Disconnect, /**< client disconnect                               */
+    Energies,   /**< energy data                                     */
+    FCoords,    /**< atomic coordinates                              */
+    Go,         /**< start command for the simulation                */
+    Handshake,  /**< handshake to determine little/big endianness    */
+    Kill,       /**< terminates the simulation                       */
+    Mdcomm,     /**< force data                                      */
+    Pause,      /**< pauses the simulation                           */
+    TRate,      /**< sets the IMD transmission and processing rate   */
+    IOerror,    /**< I/O error                                       */
+    Count       /**< number of entries                               */
+};
 
 
 /*! \brief Names of the IMDType for error messages.
  */
-static const char* eIMDType_names[IMD_NR + 1] = { "IMD_DISCONNECT", "IMD_ENERGIES",  "IMD_FCOORDS",
-                                                  "IMD_GO",         "IMD_HANDSHAKE", "IMD_KILL",
-                                                  "IMD_MDCOMM",     "IMD_PAUSE",     "IMD_TRATE",
-                                                  "IMD_IOERROR",    nullptr };
+static const char* enumValueToString(IMDMessageType enumValue)
+{
+    constexpr gmx::EnumerationArray<IMDMessageType, const char*> imdMessageTypeNames = {
+        "IMD_DISCONNECT", "IMD_ENERGIES", "IMD_FCOORDS", "IMD_GO",    "IMD_HANDSHAKE",
+        "IMD_KILL",       "IMD_MDCOMM",   "IMD_PAUSE",   "IMD_TRATE", "IMD_IOERROR"
+    };
+    return imdMessageTypeNames[enumValue];
+}
 
 
 /*! \brief Fills the header with message and the length argument. */
 static void fill_header(IMDHeader* header, IMDMessageType type, int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = imd_htonl(static_cast<int32_t>(type));
+    header->type   = imd_htonl(static_cast<int>(type));
     header->length = imd_htonl(length);
 }
 
@@ -376,7 +383,7 @@ static void fill_header(IMDHeader* header, IMDMessageType type, int32_t length)
 static void swap_header(IMDHeader* header)
 {
     /* and vice versa... */
-    header->type   = imd_ntohl(header->type);
+    header->type   = imd_ntohl(static_cast<int>(header->type));
     header->length = imd_ntohl(header->length);
 }
 
@@ -453,7 +460,7 @@ static int imd_handshake(IMDSocket* socket)
     IMDHeader header;
 
 
-    fill_header(&header, IMD_HANDSHAKE, 1);
+    fill_header(&header, IMDMessageType::Handshake, 1);
     header.length = c_protocolVersion; /* client wants unswapped version */
 
     return static_cast<int>(imd_write_multiple(socket, reinterpret_cast<char*>(&header), c_headerSize)
@@ -468,7 +475,7 @@ static int imd_send_energies(IMDSocket* socket, const IMDEnergyBlock* energies, 
 
 
     recsize = c_headerSize + sizeof(IMDEnergyBlock);
-    fill_header(reinterpret_cast<IMDHeader*>(buffer), IMD_ENERGIES, 1);
+    fill_header(reinterpret_cast<IMDHeader*>(buffer), IMDMessageType::Energies, 1);
     memcpy(buffer + c_headerSize, energies, sizeof(IMDEnergyBlock));
 
     return static_cast<int>(imd_write_multiple(socket, buffer, recsize) != recsize);
@@ -483,7 +490,7 @@ static IMDMessageType imd_recv_header(IMDSocket* socket, int32_t* length)
 
     if (imd_read_multiple(socket, reinterpret_cast<char*>(&header), c_headerSize) != c_headerSize)
     {
-        return IMD_IOERROR;
+        return IMDMessageType::IOerror;
     }
     swap_header(&header);
     *length = header.length;
@@ -567,7 +574,7 @@ static int imd_send_rvecs(IMDSocket* socket, int nat, rvec* x, char* buffer)
     size = c_headerSize + 3 * sizeof(float) * nat;
 
     /* Prepare header */
-    fill_header(reinterpret_cast<IMDHeader*>(buffer), IMD_FCOORDS, static_cast<int32_t>(nat));
+    fill_header(reinterpret_cast<IMDHeader*>(buffer), IMDMessageType::FCoords, static_cast<int32_t>(nat));
     for (i = 0; i < nat; i++)
     {
         sendx[0] = static_cast<float>(x[i][0]) * gmx::c_nm2A;
@@ -668,7 +675,7 @@ bool ImdSession::Impl::tryConnect()
 
         /* Check if we get the proper "GO" command from client. */
         if (imdsock_tryread(clientsocket, c_connectWait, 0) != 1
-            || imd_recv_header(clientsocket, &(length)) != IMD_GO)
+            || imd_recv_header(clientsocket, &(length)) != IMDMessageType::Go)
         {
             issueFatalError("No IMD_GO order received. IMD connection failed.");
         }
@@ -686,7 +693,7 @@ bool ImdSession::Impl::tryConnect()
 void ImdSession::Impl::blockConnect()
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (!(static_cast<int>(gmx_get_stop_condition()) == gmx_stop_cond_none))
+    if (!(gmx_get_stop_condition() == StopCondition::None))
     {
         return;
     }
@@ -695,7 +702,7 @@ void ImdSession::Impl::blockConnect()
             .appendTextFormatted("%s Will wait until I have a connection and IMD_GO orders.", IMDstr);
 
     /* while we have no clientsocket... 2nd part: we should still react on ctrl+c */
-    while ((!clientsocket) && (static_cast<int>(gmx_get_stop_condition()) == gmx_stop_cond_none))
+    while ((!clientsocket) && (gmx_get_stop_condition() == StopCondition::None))
     {
         tryConnect();
         imd_sleep(c_loopWait);
@@ -731,7 +738,7 @@ void ImdSession::Impl::prepareMDForces()
 }
 
 
-void ImdSession::Impl::copyToMDForces()
+void ImdSession::Impl::copyToMDForces() const
 {
     int  i;
     real conversion = gmx::c_cal2Joule * gmx::c_nm2A;
@@ -936,7 +943,7 @@ void ImdSession::Impl::readCommand()
         switch (itype)
         {
             /* IMD asks us to terminate the simulation, check if the user allowed this */
-            case IMD_KILL:
+            case IMDMessageType::Kill:
                 if (bTerminatable)
                 {
                     GMX_LOG(mdlog.warning)
@@ -946,7 +953,7 @@ void ImdSession::Impl::readCommand()
                                     IMDstr);
                     bTerminated = true;
                     bWConnect   = false;
-                    gmx_set_stop_condition(gmx_stop_cond_next);
+                    gmx_set_stop_condition(StopCondition::Next);
                 }
                 else
                 {
@@ -960,19 +967,19 @@ void ImdSession::Impl::readCommand()
                 break;
 
             /* the client doen't want to talk to us anymore */
-            case IMD_DISCONNECT:
+            case IMDMessageType::Disconnect:
                 GMX_LOG(mdlog.warning).appendTextFormatted(" %s Disconnecting client.", IMDstr);
                 disconnectClient();
                 break;
 
             /* we got new forces, read them and set bNewForces flag */
-            case IMD_MDCOMM:
+            case IMDMessageType::Mdcomm:
                 readVmdForces();
                 bNewForces = true;
                 break;
 
             /* the client asks us to (un)pause the simulation. So we toggle the IMDpaused state */
-            case IMD_PAUSE:
+            case IMDMessageType::Pause:
                 if (IMDpaused)
                 {
                     GMX_LOG(mdlog.warning).appendTextFormatted(" %s Un-pause command received.", IMDstr);
@@ -988,7 +995,7 @@ void ImdSession::Impl::readCommand()
 
             /* the client sets a new transfer rate, if we get 0, we reset the rate
              * to the default. VMD filters 0 however */
-            case IMD_TRATE:
+            case IMDMessageType::TRate:
                 nstimd_new = (length > 0) ? length : defaultNstImd;
                 GMX_LOG(mdlog.warning)
                         .appendTextFormatted(" %s Update frequency will be set to %d.", IMDstr, nstimd_new);
@@ -997,9 +1004,8 @@ void ImdSession::Impl::readCommand()
             /* Catch all rule for the remaining IMD types which we don't expect */
             default:
                 GMX_LOG(mdlog.warning)
-                        .appendTextFormatted(" %s Received unexpected %s.",
-                                             IMDstr,
-                                             enum_name(static_cast<int>(itype), IMD_NR, eIMDType_names));
+                        .appendTextFormatted(
+                                " %s Received unexpected %s.", IMDstr, enumValueToString(itype));
                 issueFatalError("Terminating connection");
                 break;
         } /* end switch */
@@ -1158,7 +1164,7 @@ static void shift_positions(const matrix box,
 }
 
 
-void ImdSession::Impl::removeMolecularShifts(const matrix box)
+void ImdSession::Impl::removeMolecularShifts(const matrix box) const
 {
     /* for each molecule also present in IMD group */
     for (int i = 0; i < mols.nr; i++)
@@ -1312,7 +1318,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
                                            const gmx::StartingBehavior    startingBehavior)
 {
     std::unique_ptr<ImdSession> session(new ImdSession(mdlog));
-    auto                        impl = session->impl_.get();
+    auto*                       impl = session->impl_.get();
 
     /* We will allow IMD sessions only if supported by the binary and
        explicitly enabled in the .tpr file */
