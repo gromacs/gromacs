@@ -947,17 +947,6 @@ static int do_cpte_reals(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE* 
             xd, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
 }
 
-/* This function does the same as do_cpte_reals,
- * except that on reading it ignores the passed value of *n
- * and stores the value read from the checkpoint file in *n.
- */
-template<typename Enum>
-static int do_cpte_n_reals(XDR* xd, Enum ecpt, int sflags, int* n, real** v, FILE* list)
-{
-    return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, -1, n, v, nullptr, list, CptElementType::real);
-}
-
 template<typename Enum>
 static int do_cpte_real(XDR* xd, Enum ecpt, int sflags, real* r, FILE* list)
 {
@@ -1425,15 +1414,13 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                     ret = do_cpte_real(xd, *i, sflags, &state->hist.disre_initf, list);
                     break;
                 case StateEntry::DisreRm3Tav:
-                    ret = do_cpte_n_reals(
-                            xd, *i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list);
+                    ret = doVector<real>(xd, *i, sflags, &state->hist.disre_rm3tav, list);
                     break;
                 case StateEntry::OrireInitF:
                     ret = do_cpte_real(xd, *i, sflags, &state->hist.orire_initf, list);
                     break;
                 case StateEntry::OrireDtav:
-                    ret = do_cpte_n_reals(
-                            xd, *i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list);
+                    ret = doVector<real>(xd, *i, sflags, &state->hist.orire_Dtav, list);
                     break;
                 case StateEntry::PullComPrevStep:
                     ret = doVector<double>(xd, *i, sflags, &state->pull_com_prev_step, list);

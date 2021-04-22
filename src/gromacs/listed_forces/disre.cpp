@@ -201,8 +201,7 @@ void init_disres(FILE*                 fplog,
         hist->disre_initf = 1.0;
         /* Allocate space for the r^-3 time averages */
         state->flags |= enumValueToBitMask(StateEntry::DisreRm3Tav);
-        hist->ndisrepairs = dd->npair;
-        snew(hist->disre_rm3tav, hist->ndisrepairs);
+        hist->disre_rm3tav.resize(dd->npair);
     }
     /* Allocate space for a copy of rm3tav,
      * so we can call do_force without modifying the state.

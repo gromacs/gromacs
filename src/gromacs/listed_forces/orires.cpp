@@ -194,8 +194,7 @@ void init_orires(FILE*                 fplog,
         globalState->flags |= enumValueToBitMask(StateEntry::OrireInitF);
         globalState->hist.orire_initf = 1;
         globalState->flags |= enumValueToBitMask(StateEntry::OrireDtav);
-        globalState->hist.norire_Dtav = od->nr * 5;
-        snew(globalState->hist.orire_Dtav, globalState->hist.norire_Dtav);
+        globalState->hist.orire_Dtav.resize(od->nr * 5);
     }
 
     snew(od->oinsl, od->nr);

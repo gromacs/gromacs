@@ -65,15 +65,7 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-history_t::history_t() :
-    disre_initf(0),
-    ndisrepairs(0),
-    disre_rm3tav(nullptr),
-    orire_initf(0),
-    norire_Dtav(0),
-    orire_Dtav(nullptr)
-{
-}
+history_t::history_t() : disre_initf(0), orire_initf(0) {}
 
 ekinstate_t::ekinstate_t() :
     bUpToDate(FALSE),

@@ -151,12 +151,10 @@ class history_t
 public:
     history_t();
 
-    real  disre_initf;  //!< The scaling factor for initializing the time av.
-    int   ndisrepairs;  //!< The number of distance restraints
-    real* disre_rm3tav; //!< The r^-3 time averaged pair distances
-    real  orire_initf;  //!< The scaling factor for initializing the time av.
-    int   norire_Dtav;  //!< The number of matrix element in dtav (npair*5)
-    real* orire_Dtav;   //!< The time averaged orientation tensors
+    real              disre_initf;  //!< The scaling factor for initializing the time av.
+    std::vector<real> disre_rm3tav; //!< The r^-3 time averaged pair distances
+    real              orire_initf;  //!< The scaling factor for initializing the time av.
+    std::vector<real> orire_Dtav;   //!< The time averaged orientation tensors
 };
 
 /*! \libinternal \brief Struct used for checkpointing only
