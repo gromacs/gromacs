@@ -40,6 +40,9 @@ list(REMOVE_ITEM MDLIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_stubs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_internal_hip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_internal_sycl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/langevin_gpu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/langevin_gpu_internal_hip.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/langevin_gpu_internal_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu_internal_hip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu_internal_sycl.cpp
@@ -60,6 +63,8 @@ if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
        gpuforcereduction_impl.cpp
        gpuforcereduction_impl_internal.cu
+       langevin_gpu.cpp
+       langevin_gpu_internal.cu
        leapfrog_gpu.cpp
        leapfrog_gpu_internal.cu
        lincs_gpu.cpp
@@ -76,6 +81,7 @@ if(GMX_GPU_CUDA)
     endif()
     _gmx_add_files_to_property(CUDA_SOURCES
        gpuforcereduction_impl.cpp
+       langevin_gpu.cpp
        leapfrog_gpu.cpp
        lincs_gpu.cpp
        settle_gpu.cpp
@@ -85,6 +91,8 @@ elseif(GMX_GPU_HIP)
     gmx_add_libgromacs_sources(
        gpuforcereduction_impl.cpp
        gpuforcereduction_impl_internal_hip.cpp
+       langevin_gpu.cpp
+       langevin_gpu_internal_hip.cpp
        leapfrog_gpu.cpp
        leapfrog_gpu_internal_hip.cpp
        lincs_gpu.cpp
@@ -97,6 +105,8 @@ elseif(GMX_GPU_HIP)
     _gmx_add_files_to_property(HIP_SOURCES
        gpuforcereduction_impl.cpp
        gpuforcereduction_impl_internal_hip.cpp
+       langevin_gpu.cpp
+       langevin_gpu_internal_hip.cpp
        leapfrog_gpu.cpp
        leapfrog_gpu_internal_hip.cpp
        lincs_gpu.cpp
@@ -110,6 +120,8 @@ elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         gpuforcereduction_impl.cpp
         gpuforcereduction_impl_internal_sycl.cpp
+        langevin_gpu.cpp
+        langevin_gpu_internal_sycl.cpp
         leapfrog_gpu.cpp
         leapfrog_gpu_internal_sycl.cpp
         lincs_gpu.cpp
@@ -124,6 +136,8 @@ elseif(GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES
         gpuforcereduction_impl.cpp
         gpuforcereduction_impl_internal_sycl.cpp
+        langevin_gpu.cpp
+        langevin_gpu_internal_sycl.cpp
         leapfrog_gpu.cpp
         leapfrog_gpu_internal_sycl.cpp
         lincs_gpu.cpp

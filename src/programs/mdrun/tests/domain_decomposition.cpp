@@ -105,8 +105,22 @@ enum class CouplingFlavor : int
 const char* enumValueToString(const CouplingFlavor enumValue)
 {
     static constexpr gmx::EnumerationArray<CouplingFlavor, const char*> s_names = {
-        "No", "TemperatureAndPressure"
+        "No", "TempAndPressure"
     };
+    return s_names[enumValue];
+}
+
+enum class IntegratorFlavor : int
+{
+    Md,
+    Sd,
+    Count
+};
+
+const char* enumValueToString(const IntegratorFlavor enumValue)
+{
+    // Must be lower-case so we can use it directly in mdp files
+    static constexpr gmx::EnumerationArray<IntegratorFlavor, const char*> s_names = { "md", "sd" };
     return s_names[enumValue];
 }
 
@@ -138,7 +152,7 @@ enum class SeparatePmeRankFlavor : int
 };
 
 //! \brief Tuple containing parameters for MDP/TPR file generation
-using MdpFlavor = std::tuple<ElectrostaticsFlavor, CouplingFlavor>;
+using MdpFlavor = std::tuple<ElectrostaticsFlavor, CouplingFlavor, IntegratorFlavor>;
 //! \brief Tuple containing parameters for mdrun command line
 using RuntimeFlavor = std::tuple<NonbondedFlavor, PmeFlavor, UpdateFlavor, SeparatePmeRankFlavor>;
 
@@ -151,6 +165,8 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
                                                 bool gmx_unused haveCompatibleDevices)
 {
     const auto electrostaticsFlavor = std::get<0>(mdpFlavor);
+    const auto couplingFlavor       = std::get<1>(mdpFlavor);
+    const auto integratorFlavor     = std::get<2>(mdpFlavor);
     const auto [nonbondedFlavor, pmeFlavor, updateFlavor, separatePmeRankFlavor] = runtimeFlavor;
 
     const int  numRanks       = gmx::test::getNumberOfTestMpiRanks();
@@ -172,14 +188,27 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #if GMX_GPU
     errorReasons.appendIf(haveAnyGpuWork && !haveCompatibleDevices,
                           "Cannot use GPU offload without a compatible GPU");
-    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Update && updateFlavor == UpdateFlavor::Gpu,
-                          "GPU Update not supported");
+    errorReasons.appendIf(integratorFlavor == IntegratorFlavor::Md
+                                  && !gmx::GpuConfigurationCapabilities::UpdateLeapfrog
+                                  && !gmx::GpuConfigurationCapabilities::Constraints
+                                  && updateFlavor == UpdateFlavor::Gpu,
+                          "GPU Update with leapfrog not supported");
+    errorReasons.appendIf(integratorFlavor == IntegratorFlavor::Sd
+                                  && !gmx::GpuConfigurationCapabilities::UpdateSD
+                                  && updateFlavor == UpdateFlavor::Gpu,
+                          "GPU Update with stochastic dynamics not supported");
     errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme && pmeFlavor == PmeFlavor::Gpu,
                           "GPU PME not supported");
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Can not use GPU update and CPU PME on a separate rank");
 #endif
+    // The SD integrator handles temperature coupling internally; combining it with
+    // an explicit thermostat is invalid input for grompp.
+    errorReasons.appendIf(integratorFlavor == IntegratorFlavor::Sd
+                                  && couplingFlavor == CouplingFlavor::TemperatureAndPressure,
+                          "SD integrator does its own temperature coupling, "
+                          "so an explicit thermostat is not allowed.");
     errorReasons.appendIf(haveAnyGpuWork && nonbondedFlavor == NonbondedFlavor::Cpu,
                           "Cannot offload PME or Update to GPU without offloading Nonbondeds");
     if ((std::getenv("GMX_GPU_PME_DECOMPOSITION")) == nullptr)
@@ -210,9 +239,11 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 
 std::string nameOfMdpFlavor(const MdpFlavor mdpFlavor)
 {
-    const auto [electrostaticsFlavor, couplingFlavor] = mdpFlavor;
-    return gmx::formatString(
-            "%s_%s_coupling", enumValueToString(electrostaticsFlavor), enumValueToString(couplingFlavor));
+    const auto [electrostaticsFlavor, couplingFlavor, integratorFlavor] = mdpFlavor;
+    return gmx::formatString("%s_%s_coupling_%s",
+                             enumValueToString(electrostaticsFlavor),
+                             enumValueToString(couplingFlavor),
+                             enumValueToString(integratorFlavor));
 }
 
 std::string nameOfRuntimeFlavor(const RuntimeFlavor runtimeFlavor)
@@ -233,7 +264,7 @@ const gmx::test::NameOfTestFromTuple<DomDecSpecialCasesTestParameters> sc_testNa
 //! \brief Generate the contents of the MDP file
 std::string buildMdpInputFileContent(MdpFlavor mdpFlavor)
 {
-    const auto [electrostaticsFlavor, couplingFlavor] = mdpFlavor;
+    const auto [electrostaticsFlavor, couplingFlavor, integratorFlavor] = mdpFlavor;
     std::string mdpInputFileContent{
         "cutoff-scheme = verlet\n"
         "nsteps = 20\n"
@@ -242,6 +273,8 @@ std::string buildMdpInputFileContent(MdpFlavor mdpFlavor)
         "nstenergy = 5\n"
         "vdwtype = cut-off\n"
     };
+
+    mdpInputFileContent.append(gmx::formatString("integrator = %s\n", enumValueToString(integratorFlavor)));
 
     switch (electrostaticsFlavor)
     {
@@ -256,14 +289,34 @@ std::string buildMdpInputFileContent(MdpFlavor mdpFlavor)
         default: GMX_RELEASE_ASSERT(false, "Invalid value");
     }
 
+    // The SD integrator implements its own temperature coupling and needs to
+    // be configured with reference temperatures, time constants and a seed.
+    if (integratorFlavor == IntegratorFlavor::Sd)
+    {
+        mdpInputFileContent.append(
+                "tc-grps = System\n"
+                "ref_t = 298\n"
+                "tau_t = 2.0\n"
+                "ld_seed = 1729\n");
+    }
+
     switch (couplingFlavor)
     {
-        case CouplingFlavor::No: mdpInputFileContent.append("pcoupl = no\ntcoupl = no\n"); break;
+        case CouplingFlavor::No:
+            mdpInputFileContent.append("pcoupl = no\n");
+            if (integratorFlavor != IntegratorFlavor::Sd)
+            {
+                mdpInputFileContent.append("tcoupl = no\n");
+            }
+            break;
         case CouplingFlavor::TemperatureAndPressure:
             mdpInputFileContent.append(
                     "pcoupl = c-rescale\n"
                     "ref-p = 1.0\n"
                     "compressibility = 4.5e-5\n");
+            // Only the MD integrator pairs with an explicit thermostat here.
+            // SD provides its own temperature coupling and the combination
+            // is filtered out in reasonsTestIsInvalid().
             mdpInputFileContent.append(
                     "tcoupl = v-rescale\n"
                     "tc-grps = System\n"
@@ -293,18 +346,26 @@ struct MdpFlavorHash
 {
     std::size_t operator()(const MdpFlavor& mdpFlavor) const
     {
-        const auto [electrostaticsFlavor, couplingFlavor] = mdpFlavor;
-        return static_cast<int>(electrostaticsFlavor) * static_cast<int>(CouplingFlavor::Count)
-               + static_cast<int>(couplingFlavor);
+        const auto [electrostaticsFlavor, couplingFlavor, integratorFlavor] = mdpFlavor;
+        std::size_t value = static_cast<int>(electrostaticsFlavor);
+        value = value * static_cast<int>(CouplingFlavor::Count) + static_cast<int>(couplingFlavor);
+        value = value * static_cast<int>(IntegratorFlavor::Count) + static_cast<int>(integratorFlavor);
+        return value;
     }
 };
 
-// We need to iterate over all valid MdpFlavor values when generating TPRs
-constexpr std::array<MdpFlavor, 4> sc_mdpFlavors = {
-    std::make_tuple(ElectrostaticsFlavor::ReactionField, CouplingFlavor::No),
-    std::make_tuple(ElectrostaticsFlavor::ReactionField, CouplingFlavor::TemperatureAndPressure),
-    std::make_tuple(ElectrostaticsFlavor::Pme, CouplingFlavor::No),
-    std::make_tuple(ElectrostaticsFlavor::Pme, CouplingFlavor::TemperatureAndPressure),
+// We need to iterate over all valid MdpFlavor values when generating TPRs.
+// SD with the temperature/pressure coupling flavor is filtered out at run-time, so we
+// only include the SD entries that pass validation.
+constexpr std::array<MdpFlavor, 6> sc_mdpFlavors = {
+    std::make_tuple(ElectrostaticsFlavor::ReactionField, CouplingFlavor::No, IntegratorFlavor::Md),
+    std::make_tuple(ElectrostaticsFlavor::ReactionField,
+                    CouplingFlavor::TemperatureAndPressure,
+                    IntegratorFlavor::Md),
+    std::make_tuple(ElectrostaticsFlavor::Pme, CouplingFlavor::No, IntegratorFlavor::Md),
+    std::make_tuple(ElectrostaticsFlavor::Pme, CouplingFlavor::TemperatureAndPressure, IntegratorFlavor::Md),
+    std::make_tuple(ElectrostaticsFlavor::ReactionField, CouplingFlavor::No, IntegratorFlavor::Sd),
+    std::make_tuple(ElectrostaticsFlavor::Pme, CouplingFlavor::No, IntegratorFlavor::Sd),
 };
 
 //! Test fixture for domain decomposition special cases
@@ -351,9 +412,10 @@ void DomDecSpecialCasesTest::SetUpTestSuite()
         // Change the GRO file to the one where both water molecules are close by.
         runner.useGroFromDatabase("spc2_and_vacuum");
 
-        std::string tprFileNameSuffix = gmx::formatString("%s_%s.tpr",
+        std::string tprFileNameSuffix = gmx::formatString("%s_%s_%s.tpr",
                                                           enumValueToString(std::get<0>(mdpFlavor)),
-                                                          enumValueToString(std::get<1>(mdpFlavor)));
+                                                          enumValueToString(std::get<1>(mdpFlavor)),
+                                                          enumValueToString(std::get<2>(mdpFlavor)));
         std::replace(tprFileNameSuffix.begin(), tprFileNameSuffix.end(), ' ', '_');
         runner.tprFileName_ = s_testFileManager->getTemporaryFilePath(tprFileNameSuffix).string();
         // Note that only one rank actually generates a tpr file
@@ -395,7 +457,7 @@ TEST_P(DomDecSpecialCasesTest, EmptyDomain)
 #if GMX_GPU
 constexpr std::array<OffloadFlavor, 2> sc_offloadFlavors{ OffloadFlavor::Cpu, OffloadFlavor::Gpu };
 #else
-// We would have skippen GPU tests anyway, but why even bother instantiating them
+// We would have skipped GPU tests anyway, but why even bother instantiating them
 constexpr std::array<OffloadFlavor, 1> sc_offloadFlavors{ OffloadFlavor::Cpu };
 #endif
 

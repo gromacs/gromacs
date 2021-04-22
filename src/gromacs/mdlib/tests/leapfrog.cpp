@@ -215,7 +215,7 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<LeapFrogHostTestRunner>());
     // If supported, add runners for the GPU version for each available GPU
-    if (GpuConfigurationCapabilities::Update)
+    if (GpuConfigurationCapabilities::UpdateLeapfrog)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {

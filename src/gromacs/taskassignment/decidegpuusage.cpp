@@ -784,6 +784,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf((inputrec.eConstrAlg == ConstraintAlgorithm::Shake && hasAnyConstraints
                            && gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints) > 0),
                           "SHAKE constraints are not supported.");
+    errorReasons.appendIf((!GpuConfigurationCapabilities::Constraints && hasAnyConstraints
+                           && gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints) > 0),
+                          "Backend does not support constraints");
+
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread) or inactive, or
     // 2. Non-bonded interactions are on the GPU.
@@ -798,24 +802,27 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         errorReasons.append("Compatible GPUs must have been found.");
         silenceWarningMessageWithUpdateAuto = true;
     }
-    if (!GpuConfigurationCapabilities::Update)
-    {
-        errorReasons.append("Backend doesn't support GPU update+constraints.");
-        // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments
-        GMX_UNUSED_VALUE(silenceWarningMessageWithUpdateAuto);
-        silenceWarningMessageWithUpdateAuto = true;
-    }
-    errorReasons.appendIf((inputrec.eI != IntegrationAlgorithm::MD),
-                          "Only the md integrator is supported.");
+    errorReasons.appendIf(inputrec.eI == IntegrationAlgorithm::MD && !GpuConfigurationCapabilities::UpdateLeapfrog,
+                          "Backend doesn't support GPU update with leapfrog integrator");
+    errorReasons.appendIf(inputrec.eI == IntegrationAlgorithm::SD1 && !GpuConfigurationCapabilities::UpdateSD,
+                          "Backend doesn't support GPU update with stochastic dynamics integrator");
+
+    errorReasons.appendIf(
+            (inputrec.eI != IntegrationAlgorithm::MD && inputrec.eI != IntegrationAlgorithm::SD1),
+            "Only the md and sd integrators are supported.");
     errorReasons.appendIf((inputrec.etc == TemperatureCoupling::NoseHoover),
                           "Nose-Hoover temperature coupling is not supported.");
     errorReasons.appendIf((!(inputrec.pressureCouplingOptions.epc == PressureCoupling::No
                              || inputrec.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
                              || inputrec.pressureCouplingOptions.epc == PressureCoupling::Berendsen
                              || inputrec.pressureCouplingOptions.epc == PressureCoupling::CRescale)),
-
                           "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are "
                           "supported.");
+    errorReasons.appendIf(
+            inputrec.eI == IntegrationAlgorithm::SD1
+                    && inputrec.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman,
+            "The SD integrator cannot be used with Parrinello-Rahman pressure coupling. "
+            "C-rescale pressure coupling is recommended.");
     errorReasons.appendIf((inputrec.cos_accel != 0 || inputrec.useConstantAcceleration),
                           "Acceleration is not supported.");
     errorReasons.appendIf(ir_haveBoxDeformation(inputrec), "Box deformation is not supported.");

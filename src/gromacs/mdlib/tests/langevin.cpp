@@ -59,12 +59,15 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 
 #include "langevintestdata.h"
@@ -183,6 +186,14 @@ TEST_P(LangevinTest, SimpleIntegration)
     std::vector<std::unique_ptr<ILangevinTestRunner>> runners;
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<LangevinHostTestRunner>());
+    // If supported, add runners for the GPU version for each available GPU
+    if (GpuConfigurationCapabilities::UpdateSD)
+    {
+        for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
+        {
+            runners.emplace_back(std::make_unique<LangevinDeviceTestRunner>(*testDevice));
+        }
+    }
 
     for (const auto& runner : runners)
     {
