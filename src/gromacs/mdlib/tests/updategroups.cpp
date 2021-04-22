@@ -145,179 +145,224 @@ gmx_moltype_t waterFlexAngle()
     return moltype;
 }
 
-TEST(UpdateGroups, ethaneUA)
+//! Test fixture class
+class UpdateGroupsTest : public ::testing::Test
 {
-    gmx_mtop_t mtop;
+public:
+    //! Global toplogy to use in tests
+    gmx_mtop_t mtop_;
+    //! Default temperature for tests
+    real temperature_ = 298;
+};
 
-    mtop.moltype.emplace_back(ethaneUA());
-    t_iparams iparams;
-    iparams.constr = { 0.3, 0.3 };
-    mtop.ffparams.iparams.push_back(iparams);
+TEST_F(UpdateGroupsTest, WithEthaneUA)
+{
+    mtop_.moltype.emplace_back(ethaneUA());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.3, 0.3 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
 
-    real temperature = 298;
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.3 / 2);
 }
 
-TEST(UpdateGroups, methane)
+TEST_F(UpdateGroupsTest, WithMethane)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(methane());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(methane());
-    t_iparams iparams;
-    iparams.constr = { 0.1, 0.1 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
 
-    real temperature = 298;
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.14);
 }
-TEST(UpdateGroups, ethane)
+TEST_F(UpdateGroupsTest, WithEthane)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(ethane());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+        iparams.harmonic = { 107.800, 276.144, 107.800, 276.144 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(ethane());
-    t_iparams iparams;
-    iparams.constr = { 0.1, 0.1 };
-    mtop.ffparams.iparams.push_back(iparams);
-    iparams.harmonic = { 107.800, 276.144, 107.800, 276.144 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
 
-    real temperature = 298;
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
+    EXPECT_FLOAT_EQ(maxRadius, 0.094746813);
+}
+
+TEST_F(UpdateGroupsTest, CheckRadiusCalculationAtDifferentTemperaturesWithEthane)
+{
+    mtop_.moltype.emplace_back(ethane());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+        iparams.harmonic = { 107.800, 276.144, 107.800, 276.144 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
+
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
+    EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
+
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.094746813);
 
-    temperature = 0;
-    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    // Observe that the temperature affects the radius only when valid
+    temperature_ = 0;
+    maxRadius    = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.10310466);
 
-    temperature = -1;
-    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    temperature_ = -1;
+    maxRadius    = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.125);
 }
 
-TEST(UpdateGroups, butaneUA)
+TEST_F(UpdateGroupsTest, WithButaneUA)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(butaneUA());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.3, 0.3 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(butaneUA());
-    t_iparams iparams;
-    iparams.constr = { 0.3, 0.3 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     EXPECT_EQ(updateGroupingsPerMoleculeType.size(), 0);
 }
 
-TEST(UpdateGroups, waterThreeSite)
+TEST_F(UpdateGroupsTest, WithWaterThreeSite)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(waterThreeSite());
+    {
+        t_iparams iparams;
+        iparams.settle = { 0.1, 0.1633 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(waterThreeSite());
-    t_iparams iparams;
-    iparams.settle = { 0.1, 0.1633 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
 
-    real temperature = 298;
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.083887339);
 }
 
 // Tests update group with virtual site
-TEST(UpdateGroups, waterFourSite)
+TEST_F(UpdateGroupsTest, WithWaterFourSite)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(waterFourSite());
+    {
+        t_iparams iparams[2];
+        iparams[0].settle = { 0.1, 0.1633 };
+        iparams[1].vsite  = { 0.128, 0.128 };
+        mtop_.ffparams.iparams.push_back(iparams[0]);
+        mtop_.ffparams.iparams.push_back(iparams[1]);
+    }
 
-    mtop.moltype.emplace_back(waterFourSite());
-    t_iparams iparams[2];
-    iparams[0].settle = { 0.1, 0.1633 };
-    iparams[1].vsite  = { 0.128, 0.128 };
-    mtop.ffparams.iparams.push_back(iparams[0]);
-    mtop.ffparams.iparams.push_back(iparams[1]);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
 }
 
-TEST(UpdateGroups, fourAtomsWithSettle)
+TEST_F(UpdateGroupsTest, WithFourAtomsWithSettle)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(waterThreeSite());
+    mtop_.moltype.back().atoms.nr = 4;
 
-    mtop.moltype.emplace_back(waterThreeSite());
-    mtop.moltype.back().atoms.nr = 4;
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 2);
 }
 
 // Tests groups with two constraints and an angle potential
-TEST(UpdateGroups, waterFlexAngle)
+TEST_F(UpdateGroupsTest, WithWaterFlexAngle)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(waterFlexAngle());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+        iparams.harmonic = { 109.47, 383.0, 109.47, 383.0 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(waterFlexAngle());
-    t_iparams iparams;
-    iparams.constr = { 0.1, 0.1 };
-    mtop.ffparams.iparams.push_back(iparams);
-    iparams.harmonic = { 109.47, 383.0, 109.47, 383.0 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
 
-    real temperature = 298;
-    real maxRadius = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
+    EXPECT_FLOAT_EQ(maxRadius, 0.090824135);
+}
+
+TEST_F(UpdateGroupsTest, CheckRadiusCalculationAtDifferentTemperaturesWithWaterFlexAngle)
+{
+    mtop_.moltype.emplace_back(waterFlexAngle());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+        iparams.harmonic = { 109.47, 383.0, 109.47, 383.0 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
+
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
+
+    ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 1);
+    EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
+
+    real maxRadius = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.090824135);
 
-    temperature = 0;
-    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    // Observe that the temperature affects the radius only when valid
+    temperature_ = 0;
+    maxRadius    = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.1);
 
-    temperature = -1;
-    maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+    temperature_ = -1;
+    maxRadius    = computeMaxUpdateGroupRadius(mtop_, updateGroupingsPerMoleculeType, temperature_);
     EXPECT_FLOAT_EQ(maxRadius, 0.1);
 }
 
-TEST(UpdateGroups, twoMoltypes)
+TEST_F(UpdateGroupsTest, WithTwoMoltypes)
 {
-    gmx_mtop_t mtop;
+    mtop_.moltype.emplace_back(methane());
+    {
+        t_iparams iparams;
+        iparams.constr = { 0.1, 0.1 };
+        mtop_.ffparams.iparams.push_back(iparams);
+    }
 
-    mtop.moltype.emplace_back(methane());
-    t_iparams iparams;
-    iparams.constr = { 0.1, 0.1 };
-    mtop.ffparams.iparams.push_back(iparams);
-
-    mtop.moltype.emplace_back(waterThreeSite());
+    mtop_.moltype.emplace_back(waterThreeSite());
     // Note: iparams not accessed for SETTLE when not computing radius
 
-    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
+    auto updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop_);
 
     ASSERT_EQ(updateGroupingsPerMoleculeType.size(), 2);
     EXPECT_EQ(updateGroupingsPerMoleculeType[0].numBlocks(), 1);
