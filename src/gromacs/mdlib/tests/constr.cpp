@@ -674,7 +674,7 @@ public:
         runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
         runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
         // If supported, add runners for the GPU version of LINCS for each available GPU
-        if (GpuConfigurationCapabilities::Update)
+        if (GpuConfigurationCapabilities::Constraints)
         {
             for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
             {

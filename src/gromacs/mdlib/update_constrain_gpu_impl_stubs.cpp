@@ -91,7 +91,9 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
                                    gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
                                    const bool /* doParrinelloRahman */,
                                    const float /* dtPressureCouple */,
-                                   const Matrix3x3& /* prVelocityScalingMatrix*/)
+                                   const Matrix3x3& /* prVelocityScalingMatrix*/,
+                                   const int /* seed */,
+                                   const int64_t /* step */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
@@ -140,7 +142,7 @@ bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* m
 
 bool UpdateConstrainGpu::areConstraintsSupported()
 {
-    return GpuConfigurationCapabilities::Update;
+    return GpuConfigurationCapabilities::Constraints;
 }
 
 } // namespace gmx

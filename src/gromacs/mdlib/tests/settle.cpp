@@ -319,7 +319,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<SettleHostTestRunner>());
     // If supported, add runners for the GPU version for each available GPU
-    if (GpuConfigurationCapabilities::Update)
+    if (GpuConfigurationCapabilities::Constraints)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {

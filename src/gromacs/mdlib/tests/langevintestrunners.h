@@ -107,6 +107,36 @@ public:
     std::string hardwareDescription() override { return "CPU"; }
 };
 
+// Runner for the GPU version of the Langevin (SD) integrator.
+class LangevinDeviceTestRunner : public ILangevinTestRunner
+{
+public:
+    /*! \brief Constructor. Keeps a copy of the hardware context.
+     *
+     * \param[in] testDevice The device hardware context to be used by the runner.
+     */
+    LangevinDeviceTestRunner(const TestDevice& testDevice) : testDevice_(testDevice) {}
+    /*! \brief Integrate on the GPU for a given number of steps.
+     *
+     * Copies data from CPU to GPU, integrates the equation of motion
+     * for requested number of steps using the Langevin (SD) algorithm,
+     * copies the result back.
+     *
+     * \param[in]     testData  Data needed for the integrator
+     * \param[in]     numSteps  Total number of steps to run integration for.
+     */
+    void integrate(LangevinTestData* testData, int numSteps) override;
+    /*! \brief Get the hardware description
+     *
+     * \returns A string with GPU description.
+     */
+    std::string hardwareDescription() override { return testDevice_.description(); }
+
+private:
+    //! Test device to be used in the runner.
+    const TestDevice& testDevice_;
+};
+
 } // namespace test
 } // namespace gmx
 

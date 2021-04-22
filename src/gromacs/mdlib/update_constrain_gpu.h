@@ -77,14 +77,14 @@ public:
      *                                projection from it.
      * \param[in] mtop                Topology of the system: SETTLE gets the masses for O and H atoms
      *                                and target O-H and H-H distances from this object.
-     * \param[in] numTempScaleValues  Number of temperature scaling groups. Zero for no temperature scaling.
+     * \param[in] numTempCouplGroups  Number of temperature coupling groups. Zero for no temperature scaling or temperature coupling.
      * \param[in] deviceContext       GPU device context.
      * \param[in] deviceStream        GPU stream to use.
      * \param[in] wcycle              The wallclock counter
      */
     UpdateConstrainGpu(const t_inputrec&    ir,
                        const gmx_mtop_t&    mtop,
-                       int                  numTempScaleValues,
+                       int                  numTempCouplGroups,
                        const DeviceContext& deviceContext,
                        const DeviceStream&  deviceStream,
                        gmx_wallcycle*       wcycle);
@@ -107,6 +107,8 @@ public:
      * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
      * \param[in]  dtPressureCouple         Period between pressure coupling steps.
      * \param[in]  prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix.
+     * \param[in]  seed                     Random seed for sd integrator.
+     * \param[in]  step                     The step number in the simulation.
      */
     void integrate(GpuEventSynchronizer*             fReadyOnDevice,
                    real                              dt,
@@ -117,7 +119,9 @@ public:
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const gmx::Matrix3x3&             prVelocityScalingMatrix);
+                   const gmx::Matrix3x3&             prVelocityScalingMatrix,
+                   int                               seed,
+                   int64_t                           step);
 
     /*! \brief Scale coordinates on the GPU for the pressure coupling.
      *

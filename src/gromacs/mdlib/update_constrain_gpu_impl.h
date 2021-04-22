@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2026- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -51,6 +51,7 @@
 
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/math/matrix.h"
+#include "gromacs/mdlib/langevin_gpu.h"
 #include "gromacs/mdlib/leapfrog_gpu.h"
 #include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/mdlib/settle_gpu.h"
@@ -76,14 +77,14 @@ public:
      *                                projection from it.
      * \param[in] mtop                Topology of the system: SETTLE gets the masses for O and H atoms
      *                                and target O-H and H-H distances from this object.
-     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
+     * \param[in] numTempCouplGroups  Number of temperature coupling groups. Zero for no temperature scaling or temperature coupling.
      * \param[in] deviceContext       GPU device context.
      * \param[in] deviceStream        GPU stream to use.
      * \param[in] wcycle              The wallclock counter
      */
     Impl(const t_inputrec&    ir,
          const gmx_mtop_t&    mtop,
-         int                  numTempScaleValues,
+         int                  numTempCouplGroups,
          const DeviceContext& deviceContext,
          const DeviceStream&  deviceStream,
          gmx_wallcycle*       wcycle);
@@ -111,6 +112,8 @@ public:
      * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
      * \param[in]  dtPressureCouple         Period between pressure coupling steps.
      * \param[in]  prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix.
+     * \param[in]  seed                     Random seed for sd integrator.
+     * \param[in]  step                     The step number in the simulation.
      */
     void integrate(GpuEventSynchronizer*             fReadyOnDevice,
                    real                              dt,
@@ -121,7 +124,9 @@ public:
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const gmx::Matrix3x3&             prVelocityScalingMatrix);
+                   const gmx::Matrix3x3&             prVelocityScalingMatrix,
+                   int                               seed,
+                   int64_t                           step);
 
     /*! \brief Scale coordinates on the GPU for the pressure coupling.
      *
@@ -211,7 +216,9 @@ private:
     int numInverseMassesAlloc_ = -1;
 
     //! Leap-Frog integrator
-    std::unique_ptr<LeapFrogGpu> integrator_;
+    std::unique_ptr<LeapFrogGpu> integratorLeapFrog_;
+    //! Langevin (SD) integrator
+    std::unique_ptr<LangevinGpu> integratorLangevin_;
     //! LINCS GPU object to use for non-water constraints
     std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE GPU object for water constrains

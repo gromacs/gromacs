@@ -82,8 +82,12 @@ struct GpuConfigurationCapabilities
                 || (GMX_GPU_FFT_CUFFT != 0) || (GMX_GPU_FFT_CLFFT != 0));
     //! Whether this configuration supports running bonded kernels on the device
     static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
-    //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
-    static constexpr bool Update = GMX_GPU && !GMX_GPU_OPENCL;
+    //! Whether this configuration supports running update with leapfrog on the device +LINCS+SETTLE kernels on the device
+    static constexpr bool UpdateLeapfrog = GMX_GPU && !GMX_GPU_OPENCL;
+    //! Whether this configuration supports running update with stochastic dynamics on the device +LINCS+SETTLE kernels on the device
+    static constexpr bool UpdateSD = GMX_GPU && !GMX_GPU_OPENCL;
+    //! Whether this configuration supports running the constraint kernels (LINCS+SETTLE) on the device
+    static constexpr bool Constraints = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI
     static constexpr bool ThreadMpiDirectComm = GMX_GPU_CUDA || GMX_GPU_HIP;
     //! Whether this configuration supports running the direct GPU communication path with library-MPI
