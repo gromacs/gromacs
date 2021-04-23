@@ -34,11 +34,7 @@
  */
 /*! \internal \file
  *
- * \brief Implements SETTLE using CUDA
- *
- * This file contains implementation of SETTLE constraints algorithm
- * using CUDA, including class initialization, data-structures management
- * and GPU kernel.
+ * \brief CUDA-specific routines for the GPU implementation of SETTLE constraints algorithm.
  *
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
@@ -47,7 +43,7 @@
  */
 #include "gmxpre.h"
 
-#include "settle_gpu.cuh"
+#include "settle_gpu_internal.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -71,9 +67,10 @@ namespace gmx
 {
 
 //! Number of CUDA threads in a block
-constexpr static int c_threadsPerBlock = 256;
+constexpr static int sc_threadsPerBlock = 256;
+
 //! Maximum number of threads in a block (for __launch_bounds__)
-constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
+constexpr static int sc_maxThreadsPerBlock = sc_threadsPerBlock;
 
 /*! \brief SETTLE constraints kernel
  *
@@ -94,9 +91,9 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param [in]      pbcAiuc          Periodic boundary conditions data.
  */
 template<bool updateVelocities, bool computeVirial>
-__launch_bounds__(c_maxThreadsPerBlock) __global__
+__launch_bounds__(sc_maxThreadsPerBlock) __global__
         void settle_kernel(const int numSettles,
-                           const int3* __restrict__ gm_settles,
+                           const WaterMolecule* __restrict__ gm_settles,
                            const SettleParameters pars,
                            const float3* __restrict__ gm_x,
                            float3* __restrict__ gm_xprime,
@@ -131,15 +128,15 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     {
         // These are the indexes of three atoms in a single 'water' molecule.
         // TODO Can be reduced to one integer if atoms are consecutive in memory.
-        int3 indices = gm_settles[tid];
+        WaterMolecule indices = gm_settles[tid];
 
-        float3 x_ow1 = gm_x[indices.x];
-        float3 x_hw2 = gm_x[indices.y];
-        float3 x_hw3 = gm_x[indices.z];
+        float3 x_ow1 = gm_x[indices.ow1];
+        float3 x_hw2 = gm_x[indices.hw2];
+        float3 x_hw3 = gm_x[indices.hw3];
 
-        float3 xprime_ow1 = gm_xprime[indices.x];
-        float3 xprime_hw2 = gm_xprime[indices.y];
-        float3 xprime_hw3 = gm_xprime[indices.z];
+        float3 xprime_ow1 = gm_xprime[indices.ow1];
+        float3 xprime_hw2 = gm_xprime[indices.hw2];
+        float3 xprime_hw3 = gm_xprime[indices.hw3];
 
         float3 dist21 = pbcDxAiuc(pbcAiuc, x_hw2, x_ow1);
         float3 dist31 = pbcDxAiuc(pbcAiuc, x_hw3, x_ow1);
@@ -274,24 +271,24 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         const float3 dxHw2 = b3 - b1;
         const float3 dxHw3 = c3 - c1;
 
-        gm_xprime[indices.x] = xprime_ow1 + dxOw1;
-        gm_xprime[indices.y] = xprime_hw2 + dxHw2;
-        gm_xprime[indices.z] = xprime_hw3 + dxHw3;
+        gm_xprime[indices.ow1] = xprime_ow1 + dxOw1;
+        gm_xprime[indices.hw2] = xprime_hw2 + dxHw2;
+        gm_xprime[indices.hw3] = xprime_hw3 + dxHw3;
 
         if (updateVelocities)
         {
-            float3 v_ow1 = gm_v[indices.x];
-            float3 v_hw2 = gm_v[indices.y];
-            float3 v_hw3 = gm_v[indices.z];
+            float3 v_ow1 = gm_v[indices.ow1];
+            float3 v_hw2 = gm_v[indices.hw2];
+            float3 v_hw3 = gm_v[indices.hw3];
 
             /* Add the position correction divided by dt to the velocity */
             v_ow1 = dxOw1 * invdt + v_ow1;
             v_hw2 = dxHw2 * invdt + v_hw2;
             v_hw3 = dxHw3 * invdt + v_hw3;
 
-            gm_v[indices.x] = v_ow1;
-            gm_v[indices.y] = v_hw2;
-            gm_v[indices.z] = v_hw3;
+            gm_v[indices.ow1] = v_ow1;
+            gm_v[indices.hw2] = v_hw2;
+            gm_v[indices.hw3] = v_hw3;
         }
 
         if (computeVirial)
@@ -397,44 +394,37 @@ inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVi
     return kernelPtr;
 }
 
-void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
-                      DeviceBuffer<Float3>       d_xp,
-                      const bool                 updateVelocities,
-                      DeviceBuffer<Float3>       d_v,
-                      const real                 invdt,
-                      const bool                 computeVirial,
-                      tensor                     virialScaled,
-                      const PbcAiuc              pbcAiuc)
+void launchSettleGpuKernel(const int                         numSettles,
+                           const DeviceBuffer<WaterMolecule> d_atomIds,
+                           const SettleParameters            settleParameters,
+                           const DeviceBuffer<Float3>        d_x,
+                           DeviceBuffer<Float3>              d_xp,
+                           const bool                        updateVelocities,
+                           DeviceBuffer<Float3>              d_v,
+                           const real                        invdt,
+                           const bool                        computeVirial,
+                           DeviceBuffer<float>               virialScaled,
+                           const PbcAiuc                     pbcAiuc,
+                           const DeviceStream&               deviceStream)
 {
-
-    ensureNoPendingDeviceError("In CUDA version SETTLE");
-
-    // Early exit if no settles
-    if (numSettles_ == 0)
-    {
-        return;
-    }
-
-    if (computeVirial)
-    {
-        // Fill with zeros so the values can be reduced to it
-        // Only 6 values are needed because virial is symmetrical
-        clearDeviceBufferAsync(&d_virialScaled_, 0, 6, deviceStream_);
-    }
+    static_assert(
+            gmx::isPowerOfTwo(sc_threadsPerBlock),
+            "Number of threads per block should be a power of two in order for reduction to work.");
 
     auto kernelPtr = getSettleKernelPtr(updateVelocities, computeVirial);
 
     KernelLaunchConfig config;
-    config.blockSize[0] = c_threadsPerBlock;
+    config.blockSize[0] = sc_threadsPerBlock;
     config.blockSize[1] = 1;
     config.blockSize[2] = 1;
-    config.gridSize[0]  = (numSettles_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    config.gridSize[0]  = (numSettles + sc_threadsPerBlock - 1) / sc_threadsPerBlock;
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
+
     // Shared memory is only used for virial reduction
     if (computeVirial)
     {
-        config.sharedMemorySize = c_threadsPerBlock * 6 * sizeof(float);
+        config.sharedMemorySize = sc_threadsPerBlock * 6 * sizeof(float);
     }
     else
     {
@@ -443,184 +433,24 @@ void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
 
     const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
                                                       config,
-                                                      &numSettles_,
-                                                      &d_atomIds_,
-                                                      &settleParameters_,
+                                                      &numSettles,
+                                                      &d_atomIds,
+                                                      &settleParameters,
                                                       asFloat3Pointer(&d_x),
                                                       asFloat3Pointer(&d_xp),
                                                       &invdt,
                                                       asFloat3Pointer(&d_v),
-                                                      &d_virialScaled_,
+                                                      &virialScaled,
                                                       &pbcAiuc);
 
     launchGpuKernel(kernelPtr,
                     config,
-                    deviceStream_,
+                    deviceStream,
                     nullptr,
                     "settle_kernel<updateVelocities, computeVirial>",
                     kernelArgs);
 
-    if (computeVirial)
-    {
-        copyFromDeviceBuffer(
-                h_virialScaled_.data(), &d_virialScaled_, 0, 6, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-
-        // Mapping [XX, XY, XZ, YY, YZ, ZZ] internal format to a tensor object
-        virialScaled[XX][XX] += h_virialScaled_[0];
-        virialScaled[XX][YY] += h_virialScaled_[1];
-        virialScaled[XX][ZZ] += h_virialScaled_[2];
-
-        virialScaled[YY][XX] += h_virialScaled_[1];
-        virialScaled[YY][YY] += h_virialScaled_[3];
-        virialScaled[YY][ZZ] += h_virialScaled_[4];
-
-        virialScaled[ZZ][XX] += h_virialScaled_[2];
-        virialScaled[ZZ][YY] += h_virialScaled_[4];
-        virialScaled[ZZ][ZZ] += h_virialScaled_[5];
-    }
-
     return;
-}
-
-SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream)
-{
-    static_assert(sizeof(real) == sizeof(float),
-                  "Real numbers should be in single precision in GPU code.");
-    static_assert(
-            gmx::isPowerOfTwo(c_threadsPerBlock),
-            "Number of threads per block should be a power of two in order for reduction to work.");
-
-    // This is to prevent the assertion failure for the systems without water
-    int totalSettles = 0;
-    for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
-    {
-        const int        nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList  interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
-        std::vector<int> iatoms          = interactionList.iatoms;
-        totalSettles += iatoms.size() / nral1;
-    }
-    if (totalSettles == 0)
-    {
-        return;
-    }
-
-    // TODO This should be lifted to a separate subroutine that gets the values of Oxygen and
-    // Hydrogen masses, checks if they are consistent across the topology and if there is no more
-    // than two values for each mass if the free energy perturbation is enabled. In later case,
-    // masses may need to be updated on a regular basis (i.e. in set(...) method).
-    // TODO Do the checks for FEP
-    real mO = -1.0;
-    real mH = -1.0;
-
-    for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
-    {
-        const int        nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList  interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
-        std::vector<int> iatoms          = interactionList.iatoms;
-        for (unsigned i = 0; i < iatoms.size() / nral1; i++)
-        {
-            int3 settler;
-            settler.x  = iatoms[i * nral1 + 1]; // Oxygen index
-            settler.y  = iatoms[i * nral1 + 2]; // First hydrogen index
-            settler.z  = iatoms[i * nral1 + 3]; // Second hydrogen index
-            t_atom ow1 = mtop.moltype.at(mt).atoms.atom[settler.x];
-            t_atom hw2 = mtop.moltype.at(mt).atoms.atom[settler.y];
-            t_atom hw3 = mtop.moltype.at(mt).atoms.atom[settler.z];
-
-            if (mO < 0)
-            {
-                mO = ow1.m;
-            }
-            if (mH < 0)
-            {
-                mH = hw2.m;
-            }
-            GMX_RELEASE_ASSERT(mO == ow1.m,
-                               "Topology has different values for oxygen mass. Should be identical "
-                               "in order to use SETTLE.");
-            GMX_RELEASE_ASSERT(hw2.m == hw3.m && hw2.m == mH,
-                               "Topology has different values for hydrogen mass. Should be "
-                               "identical in order to use SETTLE.");
-        }
-    }
-
-    GMX_RELEASE_ASSERT(mO > 0, "Could not find oxygen mass in the topology. Needed in SETTLE.");
-    GMX_RELEASE_ASSERT(mH > 0, "Could not find hydrogen mass in the topology. Needed in SETTLE.");
-
-    // TODO Very similar to SETTLE initialization on CPU. Should be lifted to a separate method
-    // (one that gets dOH and dHH values and checks them for consistency)
-    int settle_type = -1;
-    for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
-    {
-        const int       nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
-        for (int i = 0; i < interactionList.size(); i += nral1)
-        {
-            if (settle_type == -1)
-            {
-                settle_type = interactionList.iatoms[i];
-            }
-            else if (interactionList.iatoms[i] != settle_type)
-            {
-                gmx_fatal(FARGS,
-                          "The [molecules] section of your topology specifies more than one block "
-                          "of\n"
-                          "a [moleculetype] with a [settles] block. Only one such is allowed.\n"
-                          "If you are trying to partition your solvent into different *groups*\n"
-                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong "
-                          "approach. Index\n"
-                          "files specify groups. Otherwise, you may wish to change the least-used\n"
-                          "block of molecules with SETTLE constraints into 3 normal constraints.");
-            }
-        }
-    }
-
-    GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
-
-    real dOH = mtop.ffparams.iparams[settle_type].settle.doh;
-    real dHH = mtop.ffparams.iparams[settle_type].settle.dhh;
-
-    settleParameters_ = settleParameters(mO, mH, 1.0 / mO, 1.0 / mH, dOH, dHH);
-
-    allocateDeviceBuffer(&d_virialScaled_, 6, deviceContext_);
-    h_virialScaled_.resize(6);
-}
-
-SettleGpu::~SettleGpu()
-{
-    // Early exit if there is no settles
-    if (numSettles_ == 0)
-    {
-        return;
-    }
-    freeDeviceBuffer(&d_virialScaled_);
-    if (numAtomIdsAlloc_ > 0)
-    {
-        freeDeviceBuffer(&d_atomIds_);
-    }
-}
-
-void SettleGpu::set(const InteractionDefinitions& idef)
-{
-    const int              nral1     = 1 + NRAL(F_SETTLE);
-    const InteractionList& il_settle = idef.il[F_SETTLE];
-    ArrayRef<const int>    iatoms    = il_settle.iatoms;
-    numSettles_                      = il_settle.size() / nral1;
-
-    reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, deviceContext_);
-    h_atomIds_.resize(numSettles_);
-    for (int i = 0; i < numSettles_; i++)
-    {
-        int3 settler;
-        settler.x        = iatoms[i * nral1 + 1]; // Oxygen index
-        settler.y        = iatoms[i * nral1 + 2]; // First hydrogen index
-        settler.z        = iatoms[i * nral1 + 3]; // Second hydrogen index
-        h_atomIds_.at(i) = settler;
-    }
-    copyToDeviceBuffer(
-            &d_atomIds_, h_atomIds_.data(), 0, numSettles_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
 }
 
 } // namespace gmx

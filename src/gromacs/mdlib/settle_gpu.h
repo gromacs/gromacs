@@ -40,8 +40,8 @@
  *
  * \ingroup module_mdlib
  */
-#ifndef GMX_MDLIB_SETTLE_GPU_CUH
-#define GMX_MDLIB_SETTLE_GPU_CUH
+#ifndef GMX_MDLIB_SETTLE_GPU_H
+#define GMX_MDLIB_SETTLE_GPU_H
 
 #include "gmxpre.h"
 
@@ -61,6 +61,18 @@ class InteractionDefinitions;
 
 namespace gmx
 {
+
+//! Indices of atoms in a water molecule
+struct WaterMolecule
+{
+    //! Oxygen atom
+    int ow1;
+    //! First hydrogen atom
+    int hw2;
+    //! Second hydrogen atom
+    int hw3;
+};
+
 
 /*! \internal \brief Class with interfaces and data for GPU version of SETTLE. */
 class SettleGpu
@@ -134,15 +146,15 @@ private:
     //! Scaled virial tensor (9 reals, GPU)
     std::vector<float> h_virialScaled_;
     //! Scaled virial tensor (9 reals, GPU)
-    float* d_virialScaled_;
+    DeviceBuffer<float> d_virialScaled_;
 
     //! Number of settles
     int numSettles_ = 0;
 
-    //! Indexes of atoms (.x for oxygen, .y and.z for hydrogens, CPU)
-    std::vector<int3> h_atomIds_;
-    //! Indexes of atoms (.x for oxygen, .y and.z for hydrogens, GPU)
-    int3* d_atomIds_;
+    //! Indexes of atoms (.i for oxygen, .j and.k for hydrogens, CPU)
+    std::vector<WaterMolecule> h_atomIds_;
+    //! Indexes of atoms (.i for oxygen, .j and.k for hydrogens, GPU)
+    DeviceBuffer<WaterMolecule> d_atomIds_;
     //! Current size of the array of atom IDs
     int numAtomIds_ = -1;
     //! Allocated size for the array of atom IDs
@@ -154,4 +166,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_MDLIB_SETTLE_GPU_CUH
+#endif // GMX_MDLIB_SETTLE_GPU_H

@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/mdlib/settle_gpu.cuh"
+#include "gromacs/mdlib/settle_gpu.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/test_device.h"
