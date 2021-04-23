@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "timecontrol.h"
 
 #include <mutex>
@@ -48,41 +49,43 @@
          Please keep it that way. */
 
 /* Globals for trajectory input */
-typedef struct
+struct t_timecontrol
 {
-    real     t;
-    gmx_bool bSet;
-} t_timecontrol;
+    t_timecontrol(real inputT, bool inputSet) : t(inputT), bSet(inputSet) {}
+    real t;
+    bool bSet;
+};
 
-static t_timecontrol timecontrol[TNR] = { { 0, FALSE }, { 0, FALSE }, { 0, FALSE } };
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+static gmx::EnumerationArray<TimeControl, t_timecontrol> timecontrol = { t_timecontrol(0, false),
+                                                                         t_timecontrol(0, false),
+                                                                         t_timecontrol(0, false) };
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex g_timeControlMutex;
 
-gmx_bool bTimeSet(int tcontrol)
+gmx_bool bTimeSet(TimeControl tcontrol)
 {
     gmx_bool ret;
 
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].bSet;
 
     return ret;
 }
 
-real rTimeValue(int tcontrol)
+real rTimeValue(TimeControl tcontrol)
 {
     real ret;
 
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].t;
     return ret;
 }
 
-void setTimeValue(int tcontrol, real value)
+void setTimeValue(TimeControl tcontrol, real value)
 {
     const std::lock_guard<std::mutex> lock(g_timeControlMutex);
-    range_check(tcontrol, 0, TNR);
     timecontrol[tcontrol].t    = value;
     timecontrol[tcontrol].bSet = TRUE;
 }

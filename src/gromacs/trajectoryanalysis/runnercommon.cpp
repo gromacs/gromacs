@@ -406,15 +406,15 @@ void TrajectoryAnalysisRunnerCommon::optionsFinished()
 
     if (impl_->bStartTimeSet_)
     {
-        setTimeValue(TBEGIN, impl_->startTime_);
+        setTimeValue(TimeControl::Begin, impl_->startTime_);
     }
     if (impl_->bEndTimeSet_)
     {
-        setTimeValue(TEND, impl_->endTime_);
+        setTimeValue(TimeControl::End, impl_->endTime_);
     }
     if (impl_->bDeltaTimeSet_)
     {
-        setTimeValue(TDELTA, impl_->deltaTime_);
+        setTimeValue(TimeControl::Delta, impl_->deltaTime_);
     }
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,21 +63,21 @@ typedef enum
     eYBottom
 } eYPos;
 
-enum
+enum class Fonts : int
 {
-    efontTIMES,
-    efontTIMESITALIC,
-    efontTIMESBOLD,
-    efontTIMESBOLDITALIC,
-    efontHELV,
-    efontHELVITALIC,
-    efontHELVBOLD,
-    efontHELVBOLDITALIC,
-    efontCOUR,
-    efontCOURITALIC,
-    efontCOURBOLD,
-    efontCOURBOLDITALIC,
-    efontNR
+    Times,
+    TimesItalic,
+    TimesBold,
+    TimesBoldItalic,
+    Helvetica,
+    HelveticaItalic,
+    HelveticaBold,
+    HelveticaBoldItalic,
+    Courier,
+    CourierItalic,
+    CourierBold,
+    CourierBoldItalic,
+    Count
 };
 
 
@@ -91,7 +91,7 @@ struct t_psdata
 };
 
 
-extern const char* fontnm[efontNR];
+const char* enumValueToString(Fonts enumValue);
 
 t_psdata ps_open(const char* fn, real x1, real y1, real x2, real y2);
 
@@ -122,7 +122,7 @@ void ps_fillarcslice(t_psdata* ps, real xc, real yc, real rad1, real rad2, real 
 
 void ps_circle(t_psdata* ps, real x1, real y1, real rad);
 
-void ps_font(t_psdata* ps, int font, real size);
+void ps_font(t_psdata* ps, Fonts font, real size);
 void ps_strfont(t_psdata* ps, char* font, real size);
 
 void ps_text(t_psdata* ps, real x1, real y1, const std::string& str);

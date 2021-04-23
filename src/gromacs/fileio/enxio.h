@@ -95,6 +95,7 @@ enum
 };
 
 /* names for the above enum */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 extern const char* enx_block_id_name[];
 
 

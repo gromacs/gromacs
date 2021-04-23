@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 
 #include "xvgr.h"
 
+#include <array>
 #include <cassert>
 #include <cctype>
 #include <cstring>
@@ -418,8 +419,8 @@ void xvgr_line_props(FILE* out, int NrSet, int LineStyle, int LineColor, const g
     }
 }
 
-static const char* LocTypeStr[] = { "view", "world" };
-static const char* BoxFillStr[] = { "none", "color", "pattern" };
+static constexpr std::array<const char*, 2> LocTypeStr = { "view", "world" };
+static constexpr std::array<const char*, 3> BoxFillStr = { "none", "color", "pattern" };
 
 void xvgr_box(FILE*                   out,
               int                     LocType,

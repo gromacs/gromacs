@@ -161,7 +161,7 @@ gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(gmx::ArrayRef<const t_inpfil
 {
     gmx::KeyValueTreeBuilder builder;
     auto                     root = builder.rootObject();
-    for (auto& local : inp)
+    for (const auto& local : inp)
     {
         root.addValue<std::string>(local.name_, !local.value_.empty() ? local.value_ : "");
     }

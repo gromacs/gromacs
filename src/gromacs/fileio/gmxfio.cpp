@@ -70,6 +70,7 @@
 
 /* the list of open files is a linked list, with a dummy element at its head;
        it is initialized when the first file is opened. */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static t_fileio* open_files = nullptr;
 
 
@@ -82,6 +83,7 @@ static t_fileio* open_files = nullptr;
    opening and closing of files, or during global operations like
    iterating along all open files. All these cases should be rare
    during the simulation. */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex open_file_mutex;
 
 using Lock = std::lock_guard<std::mutex>;

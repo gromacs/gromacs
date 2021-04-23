@@ -268,7 +268,7 @@ void ChainIdFiller::fill(t_atoms* atoms, const int startAtomIndex, const int end
     {
         // We always assign a new chain number, but only assign a chain id
         // characters for larger molecules.
-        int chainIdToAssign;
+        char chainIdToAssign;
         if (endAtomIndex - startAtomIndex >= s_chainMinAtoms && !outOfIds_)
         {
             /* Set the chain id for the output */

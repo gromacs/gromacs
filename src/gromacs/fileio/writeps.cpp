@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,16 +40,21 @@
 #include "writeps.h"
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
 using namespace gmx;
 
-const char* fontnm[efontNR] = {
-    "Times-Roman", "Times-Italic",      "Times-Bold",     "Times-BoldItalic",
-    "Helvetica",   "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
-    "Courier",     "Courier-Oblique",   "Courier-Bold",   "Courier-BoldOblique"
-};
+const char* enumValueToString(Fonts enumValue)
+{
+    gmx::EnumerationArray<Fonts, const char*> fontNames = {
+        "Times-Roman", "Times-Italic",      "Times-Bold",     "Times-BoldItalic",
+        "Helvetica",   "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
+        "Courier",     "Courier-Oblique",   "Courier-Bold",   "Courier-BoldOblique"
+    };
+    return fontNames[enumValue];
+}
 
 t_psdata ps_open(const char* fn, real x1, real y1, real x2, real y2)
 {
@@ -251,15 +256,15 @@ void ps_circle(t_psdata* ps, real x1, real y1, real rad)
     ps_arc(ps, x1, y1, rad, 0, 360);
 }
 
-void ps_font(t_psdata* ps, int font, real size)
+void ps_font(t_psdata* ps, Fonts font, real size)
 {
 
-    if ((font < 0) || (font > efontNR))
+    if (font == Fonts::Count)
     {
-        fprintf(stderr, "Invalid Font: %d, using %s\n", font, fontnm[0]);
-        font = 0;
+        fprintf(stderr, "Invalid Font: %d, using %s\n", static_cast<int>(font), enumValueToString(Fonts::Times));
+        font = Fonts::Times;
     }
-    fprintf(ps->fp, "/%s findfont\n", fontnm[font]);
+    fprintf(ps->fp, "/%s findfont\n", enumValueToString(font));
     fprintf(ps->fp, "%g scalefont setfont\n", size);
 }
 

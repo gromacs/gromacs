@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@
 struct t_trxstatus
 {
     int  flags; /* flags for read_first/next_frame  */
-    int  __frame;
+    int  currentFrame;
     real t0;                 /* time of the first frame, needed  *
                               * for skipping frames with -dt     */
     real                 tf; /* internal frame time              */
@@ -124,9 +124,10 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 #endif
 
     r = -1;
-    if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN))) && (!bTimeSet(TEND) || (t <= rTimeValue(TEND))))
+    if ((!bTimeSet(TimeControl::Begin) || (t >= rTimeValue(TimeControl::Begin)))
+        && (!bTimeSet(TimeControl::End) || (t <= rTimeValue(TimeControl::End))))
     {
-        if (bTimeSet(TDELTA) && !bRmod_fd(t, t0, rTimeValue(TDELTA), bDouble))
+        if (bTimeSet(TimeControl::Delta) && !bRmod_fd(t, t0, rTimeValue(TimeControl::Delta), bDouble))
         {
             r = -1;
         }
@@ -135,7 +136,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
             r = 0;
         }
     }
-    else if (bTimeSet(TEND) && (t >= rTimeValue(TEND)))
+    else if (bTimeSet(TimeControl::End) && (t >= rTimeValue(TimeControl::End)))
     {
         r = 1;
     }
@@ -145,9 +146,9 @@ int check_times2(real t, real t0, gmx_bool bDouble)
                 "t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
                 t,
                 t0,
-                rTimeValue(TBEGIN),
-                rTimeValue(TEND),
-                rTimeValue(TDELTA),
+                rTimeValue(TimeControl::Begin),
+                rTimeValue(TimeControl::End),
+                rTimeValue(TimeControl::Delta),
                 r);
     }
     return r;
@@ -160,7 +161,7 @@ int check_times(real t)
 
 static void initcount(t_trxstatus* status)
 {
-    status->__frame = -1;
+    status->currentFrame = -1;
 }
 
 static void status_init(t_trxstatus* status)
@@ -168,7 +169,7 @@ static void status_init(t_trxstatus* status)
     status->flags           = 0;
     status->xframe          = nullptr;
     status->fio             = nullptr;
-    status->__frame         = -1;
+    status->currentFrame    = -1;
     status->t0              = 0;
     status->tf              = 0;
     status->persistent_line = nullptr;
@@ -178,24 +179,24 @@ static void status_init(t_trxstatus* status)
 
 int nframes_read(t_trxstatus* status)
 {
-    return status->__frame;
+    return status->currentFrame;
 }
 
 static void printcount_(t_trxstatus* status, const gmx_output_env_t* oenv, const char* l, real t)
 {
-    if ((status->__frame < 2 * SKIP1 || status->__frame % SKIP1 == 0)
-        && (status->__frame < 2 * SKIP2 || status->__frame % SKIP2 == 0)
-        && (status->__frame < 2 * SKIP3 || status->__frame % SKIP3 == 0)
+    if ((status->currentFrame < 2 * SKIP1 || status->currentFrame % SKIP1 == 0)
+        && (status->currentFrame < 2 * SKIP2 || status->currentFrame % SKIP2 == 0)
+        && (status->currentFrame < 2 * SKIP3 || status->currentFrame % SKIP3 == 0)
         && output_env_get_trajectory_io_verbosity(oenv) != 0)
     {
-        fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->__frame, output_env_conv_time(oenv, t));
+        fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->currentFrame, output_env_conv_time(oenv, t));
         fflush(stderr);
     }
 }
 
 static void printcount(t_trxstatus* status, const gmx_output_env_t* oenv, real t, gmx_bool bSkip)
 {
-    status->__frame++;
+    status->currentFrame++;
     printcount_(status, oenv, bSkip ? "Skipping frame" : "Reading frame", t);
 }
 
@@ -210,11 +211,11 @@ static void printincomp(t_trxstatus* status, t_trxframe* fr)
 {
     if (fr->not_ok & HEADER_NOT_OK)
     {
-        fprintf(stderr, "WARNING: Incomplete header: nr %d time %g\n", status->__frame + 1, fr->time);
+        fprintf(stderr, "WARNING: Incomplete header: nr %d time %g\n", status->currentFrame + 1, fr->time);
     }
     else if (fr->not_ok)
     {
-        fprintf(stderr, "WARNING: Incomplete frame: nr %d time %g\n", status->__frame + 1, fr->time);
+        fprintf(stderr, "WARNING: Incomplete frame: nr %d time %g\n", status->currentFrame + 1, fr->time);
     }
     fflush(stderr);
 }
@@ -843,14 +844,14 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 break;
             }
             case efXTC:
-                if (bTimeSet(TBEGIN) && (status->tf < rTimeValue(TBEGIN)))
+                if (bTimeSet(TimeControl::Begin) && (status->tf < rTimeValue(TimeControl::Begin)))
                 {
-                    if (xtc_seek_time(status->fio, rTimeValue(TBEGIN), fr->natoms, TRUE))
+                    if (xtc_seek_time(status->fio, rTimeValue(TimeControl::Begin), fr->natoms, TRUE))
                     {
                         gmx_fatal(FARGS,
                                   "Specified frame (time %f) doesn't exist or file "
                                   "corrupt/inconsistent.",
-                                  rTimeValue(TBEGIN));
+                                  rTimeValue(TimeControl::Begin));
                     }
                     initcount(status);
                 }

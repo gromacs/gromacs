@@ -36,8 +36,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _checkpoint_h
-#define _checkpoint_h
+#ifndef GMX_FILEIO_CHECKPOINT_H
+#define GMX_FILEIO_CHECKPOINT_H
 
 #include <cstdio>
 
