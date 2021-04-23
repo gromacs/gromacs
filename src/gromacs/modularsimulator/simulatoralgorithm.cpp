@@ -635,9 +635,21 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             registerWithInfrastructureAndSignallers(signaller.get());
             algorithm.signallerList_.emplace(algorithm.signallerList_.begin(), std::move(signaller));
         };
-        const auto* inputrec = legacySimulatorData_->inputrec;
+        const auto* inputrec   = legacySimulatorData_->inputrec;
+        auto        virialMode = EnergySignallerVirialMode::Off;
+        if (inputrec->epc != PressureCoupling::No)
+        {
+            if (EI_VV(inputrec->eI))
+            {
+                virialMode = EnergySignallerVirialMode::OnStepAndNext;
+            }
+            else
+            {
+                virialMode = EnergySignallerVirialMode::OnStep;
+            }
+        }
         addSignaller(energySignallerBuilder_.build(
-                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple));
+                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple, virialMode));
         addSignaller(trajectorySignallerBuilder_.build(inputrec->nstxout,
                                                        inputrec->nstvout,
                                                        inputrec->nstfout,

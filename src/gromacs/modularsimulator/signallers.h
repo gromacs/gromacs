@@ -333,6 +333,15 @@ private:
     std::optional<SignallerCallback> registerLastStepCallback() override;
 };
 
+//! When we calculate virial
+enum class EnergySignallerVirialMode
+{
+    Off,           //!< No specific virial calculation - calculate when energy is calculated
+    OnStep,        //!< Calculate on virial frequency steps
+    OnStepAndNext, //!< Calculate on virial frequency steps and on step after
+    Count          //!< The number of entries
+};
+
 /*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling energy related special steps
@@ -372,13 +381,15 @@ private:
      * \param nstcalcenergy                 The energy calculation frequency
      * \param nstcalcfreeenergy             The free energy calculation frequency
      * \param nstcalcvirial                 The free energy calculation frequency
+     * \param virialMode                    Indicates which steps will calculate virial
      */
     EnergySignaller(std::vector<SignallerCallback> calculateEnergyCallbacks,
                     std::vector<SignallerCallback> calculateVirialCallbacks,
                     std::vector<SignallerCallback> calculateFreeEnergyCallbacks,
                     int                            nstcalcenergy,
                     int                            nstcalcfreeenergy,
-                    int                            nstcalcvirial);
+                    int                            nstcalcvirial,
+                    EnergySignallerVirialMode      virialMode);
 
     //! Client callbacks
     //! {
@@ -393,6 +404,8 @@ private:
     const int nstcalcfreeenergy_;
     //! The virial calculation frequency
     const int nstcalcvirial_;
+    //! The virial calculation mode
+    const EnergySignallerVirialMode virialMode_;
 
     //! ITrajectorySignallerClient implementation
     std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;

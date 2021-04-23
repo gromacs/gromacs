@@ -220,13 +220,15 @@ EnergySignaller::EnergySignaller(std::vector<SignallerCallback> calculateEnergyC
                                  std::vector<SignallerCallback> calculateFreeEnergyCallbacks,
                                  int                            nstcalcenergy,
                                  int                            nstcalcfreeenergy,
-                                 int                            nstcalcvirial) :
+                                 int                            nstcalcvirial,
+                                 EnergySignallerVirialMode      virialMode) :
     calculateEnergyCallbacks_(std::move(calculateEnergyCallbacks)),
     calculateVirialCallbacks_(std::move(calculateVirialCallbacks)),
     calculateFreeEnergyCallbacks_(std::move(calculateFreeEnergyCallbacks)),
     nstcalcenergy_(nstcalcenergy),
     nstcalcfreeenergy_(nstcalcfreeenergy),
     nstcalcvirial_(nstcalcvirial),
+    virialMode_(virialMode),
     energyWritingStep_(-1),
     trajectoryRegistrationDone_(false),
     loggingStep_(-1),
@@ -236,16 +238,22 @@ EnergySignaller::EnergySignaller(std::vector<SignallerCallback> calculateEnergyC
 
 void EnergySignaller::signal(Step step, Time time)
 {
-    bool calculateEnergy     = do_per_step(step, nstcalcenergy_);
-    bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_);
-    bool calculateVirial     = do_per_step(step, nstcalcvirial_);
-    bool writeEnergy         = energyWritingStep_ == step;
+    const bool writeEnergy     = (energyWritingStep_ == step);
+    const bool writeLog        = (loggingStep_ == step);
+    const bool calculateEnergy = writeEnergy || writeLog || do_per_step(step, nstcalcenergy_);
+    const bool calculateVirial = calculateEnergy
+                                 || ((virialMode_ == EnergySignallerVirialMode::OnStep
+                                      || virialMode_ == EnergySignallerVirialMode::OnStepAndNext)
+                                     && do_per_step(step, nstcalcvirial_))
+                                 || (virialMode_ == EnergySignallerVirialMode::OnStepAndNext
+                                     && do_per_step(step - 1, nstcalcvirial_));
+    const bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_);
 
-    if (calculateEnergy || writeEnergy || step == loggingStep_)
+    if (calculateEnergy)
     {
         runAllCallbacks(calculateEnergyCallbacks_, step, time);
     }
-    if (calculateEnergy || writeEnergy || step == loggingStep_ || calculateVirial)
+    if (calculateVirial)
     {
         runAllCallbacks(calculateVirialCallbacks_, step, time);
     }
