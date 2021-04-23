@@ -170,6 +170,7 @@ struct PmeGpuProgramImpl
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device
     explicit PmeGpuProgramImpl(const DeviceContext& deviceContext);
+    // NOLINTNEXTLINE(performance-trivially-destructible)
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 

@@ -92,6 +92,7 @@ FILE* debug = 0;
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static std::mutex big_fftw_mutex;
 #    define FFTW_LOCK              \
         try                        \

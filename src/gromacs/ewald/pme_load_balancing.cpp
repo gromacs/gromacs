@@ -44,6 +44,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "pme_load_balancing.h"
 
 #include <cassert>
@@ -142,22 +143,28 @@ const int c_numPostSwitchTuningIntervalSkip = 1;
 const double c_startupTimeDelay = 5.0;
 
 /*! \brief Enumeration whose values describe the effect limiting the load balancing */
-enum epmelb
+enum class PmeLoadBalancingLimit : int
 {
-    epmelblimNO,
-    epmelblimBOX,
-    epmelblimDD,
-    epmelblimPMEGRID,
-    epmelblimMAXSCALING,
-    epmelblimNR
+    No,
+    Box,
+    DD,
+    PmeGrid,
+    MaxScaling,
+    Count
 };
 
-/*! \brief Descriptive strings matching ::epmelb */
-static const char* pmelblim_str[epmelblimNR] = { "no",
-                                                 "box size",
-                                                 "domain decompostion",
-                                                 "PME grid restriction",
-                                                 "maximum allowed grid scaling" };
+/*! \brief Descriptive strings for PmeLoadBalancingLimit \c enumValue */
+static const char* enumValueToString(PmeLoadBalancingLimit enumValue)
+{
+    constexpr gmx::EnumerationArray<PmeLoadBalancingLimit, const char*> pmeLoadBalancingLimitNames = {
+        "no",
+        "box size",
+        "domain decompostion",
+        "PME grid restriction",
+        "maximum allowed grid scaling"
+    };
+    return pmeLoadBalancingLimitNames[enumValue];
+}
 
 struct pme_load_balancing_t
 {
@@ -183,7 +190,7 @@ struct pme_load_balancing_t
     int                      lower_limit;        /**< don't go below this setup index */
     int                      start;    /**< start of setup index range to consider in stage>0 */
     int                      end;      /**< end   of setup index range to consider in stage>0 */
-    int                      elimited; /**< was the balancing limited, uses enum above */
+    PmeLoadBalancingLimit    elimited; /**< was the balancing limited, uses enum above */
     CutoffScheme             cutoff_scheme; /**< Verlet or group cut-offs */
 
     int stage; /**< the current stage */
@@ -294,7 +301,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->lower_limit = 0;
     pme_lb->start       = 0;
     pme_lb->end         = 0;
-    pme_lb->elimited    = epmelblimNO;
+    pme_lb->elimited    = PmeLoadBalancingLimit::No;
 
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
@@ -500,7 +507,7 @@ static void print_loadbal_limited(FILE* fp_err, FILE* fp_log, int64_t step, pme_
     auto buf = gmx::formatString(
             "step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
             gmx::int64ToString(step).c_str(),
-            pmelblim_str[pme_lb->elimited],
+            enumValueToString(pme_lb->elimited),
             pme_lb->setup[pme_loadbal_end(pme_lb) - 1].rcut_coulomb);
     if (fp_err != nullptr)
     {
@@ -694,7 +701,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
                 if (!OK)
                 {
-                    pme_lb->elimited = epmelblimPMEGRID;
+                    pme_lb->elimited = PmeLoadBalancingLimit::PmeGrid;
                 }
             }
 
@@ -702,7 +709,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                 && pme_lb->setup[pme_lb->cur + 1].spacing > c_maxSpacingScaling * pme_lb->setup[0].spacing)
             {
                 OK               = FALSE;
-                pme_lb->elimited = epmelblimMAXSCALING;
+                pme_lb->elimited = PmeLoadBalancingLimit::MaxScaling;
             }
 
             if (OK && ir.pbcType != PbcType::No)
@@ -711,7 +718,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                       <= max_cutoff2(ir.pbcType, box));
                 if (!OK)
                 {
-                    pme_lb->elimited = epmelblimBOX;
+                    pme_lb->elimited = PmeLoadBalancingLimit::Box;
                 }
             }
 
@@ -726,7 +733,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                     {
                         /* Failed: do not use this setup */
                         pme_lb->cur--;
-                        pme_lb->elimited = epmelblimDD;
+                        pme_lb->elimited = PmeLoadBalancingLimit::DD;
                     }
                 }
             }
@@ -818,7 +825,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
             /* Limit the range to below the current cut-off, scan from start */
             pme_lb->end      = pme_lb->cur;
             pme_lb->cur      = pme_lb->start;
-            pme_lb->elimited = epmelblimDD;
+            pme_lb->elimited = PmeLoadBalancingLimit::DD;
             print_loadbal_limited(fp_err, fp_log, step, pme_lb);
         }
     }
@@ -1140,13 +1147,13 @@ static void print_pme_loadbal_settings(pme_load_balancing_t* pme_lb,
     fprintf(fplog, "       P P   -   P M E   L O A D   B A L A N C I N G\n");
     fprintf(fplog, "\n");
     /* Here we only warn when the optimal setting is the last one */
-    if (pme_lb->elimited != epmelblimNO && pme_lb->cur == pme_loadbal_end(pme_lb) - 1)
+    if (pme_lb->elimited != PmeLoadBalancingLimit::No && pme_lb->cur == pme_loadbal_end(pme_lb) - 1)
     {
         fprintf(fplog,
                 " NOTE: The PP/PME load balancing was limited by the %s,\n",
-                pmelblim_str[pme_lb->elimited]);
+                enumValueToString(pme_lb->elimited));
         fprintf(fplog, "       you might not have reached a good load balance.\n");
-        if (pme_lb->elimited == epmelblimDD)
+        if (pme_lb->elimited == PmeLoadBalancingLimit::DD)
         {
             fprintf(fplog, "       Try different mdrun -dd settings or lower the -dds value.\n");
         }
@@ -1179,7 +1186,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t* pme_lb,
 
 void pme_loadbal_done(pme_load_balancing_t* pme_lb, FILE* fplog, const gmx::MDLogger& mdlog, gmx_bool bNonBondedOnGPU)
 {
-    if (fplog != nullptr && (pme_lb->cur > 0 || pme_lb->elimited != epmelblimNO))
+    if (fplog != nullptr && (pme_lb->cur > 0 || pme_lb->elimited != PmeLoadBalancingLimit::No))
     {
         print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
     }

@@ -179,4 +179,4 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     // clang-format on
 }
 
-PmeGpuProgramImpl::~PmeGpuProgramImpl() {}
+PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;
