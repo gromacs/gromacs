@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,8 +162,8 @@ public:
     ArrayRef<T> front()
     {
         GMX_ASSERT(size() > 0, "Must contain a list if front() is called");
-        auto beginPtr = elements_.data();
-        auto endPtr   = beginPtr + listRanges_[1];
+        auto* beginPtr = elements_.data();
+        auto* endPtr   = beginPtr + listRanges_[1];
         return { beginPtr, endPtr };
     }
     /*! \brief Returns a reference to the final list

@@ -35,6 +35,9 @@
 #
 #         -misc-no-recursion
 # We have way too many functions and methods relying on recursion
+#
+#         -cppcoreguidelines-avoid-non-const-global-variables
+# Test code relies on exported and globally accessible variables.
 Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
@@ -60,7 +63,8 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureA
          -bugprone-narrowing-conversions,
          -google-readability-avoid-underscore-in-googletest-name,
          -cppcoreguidelines-init-variables,
-         -misc-no-recursion
+         -misc-no-recursion,
+         -cppcoreguidelines-avoid-non-const-global-variables
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

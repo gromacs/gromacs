@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ bool ForceProviders::hasForceProvider() const
 void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInput,
                                      ForceProviderOutput*      forceProviderOutput) const
 {
-    for (auto provider : impl_->providers_)
+    for (auto* provider : impl_->providers_)
     {
         provider->calculateForces(forceProviderInput, forceProviderOutput);
     }

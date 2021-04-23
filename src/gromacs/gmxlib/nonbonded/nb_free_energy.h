@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nb_free_energy_h_
-#define _nb_free_energy_h_
+#ifndef GMX_GMXLIB_NONBONDED_NB_FREE_ENERGY_H
+#define GMX_GMXLIB_NONBONDED_NB_FREE_ENERGY_H
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"

@@ -1158,8 +1158,8 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(int                      
                                                        const gmx_output_env_t*     oenv,
                                                        const t_commrec*            cr)
 {
-    auto edHandle = std::make_unique<gmx::EssentialDynamics>();
-    auto ed       = edHandle->getLegacyED();
+    auto  edHandle = std::make_unique<gmx::EssentialDynamics>();
+    auto* ed       = edHandle->getLegacyED();
     /* We want to perform ED (this switch might later be upgraded to EssentialDynamicsType::Flooding) */
     ed->eEDtype = EssentialDynamicsType::EDSampling;
 
@@ -2818,8 +2818,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
                     "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
-    auto edHandle = ed_open(mtop.natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
-    auto ed       = edHandle->getLegacyED();
+    auto  edHandle = ed_open(mtop.natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
+    auto* ed       = edHandle->getLegacyED();
     GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
     constr->saveEdsamPointer(ed);
 

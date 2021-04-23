@@ -253,7 +253,7 @@ CrossCorrelationEvaluationHelperValues evaluateHelperValues(DensitySimilarityMea
 
     index i = 0;
 
-    auto referenceIterator = begin(reference);
+    const auto* referenceIterator = begin(reference);
     for (const real comp : compared)
     {
         const real refHelper        = *referenceIterator - helperValues.meanReference;
@@ -284,7 +284,7 @@ public:
     {
     }
     //! Evaluate the cross correlation gradient at a voxel
-    real operator()(real reference, real comparison)
+    real operator()(real reference, real comparison) const
     {
         return prefactor_
                * (reference - meanReference_ - comparisonPrefactor_ * (comparison - meanComparison_));

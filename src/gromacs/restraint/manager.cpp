@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,10 +87,12 @@ public:
 
 private:
     //! Regulate initialization of the shared resource when (re)initialized.
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
     static std::mutex initializationMutex_;
 };
 
 // Initialize static members
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 std::mutex RestraintManager::Impl::initializationMutex_{};
 
 

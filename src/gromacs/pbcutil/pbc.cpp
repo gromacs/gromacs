@@ -209,6 +209,7 @@ real max_cutoff2(PbcType pbcType, const matrix box)
 }
 
 //! Set to true if warning has been printed
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bWarnedGuess = FALSE;
 
 PbcType guessPbcType(const matrix box)

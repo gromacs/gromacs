@@ -35,6 +35,13 @@
 #
 #         -misc-no-recursion
 # We have way too many functions and methods relying on recursion
+#
+#         -cppcoreguidelines-avoid-non-const-global-variables
+# There are quite a lot of static variables in the test code that
+# can not be replaced.
+#
+#         -modernize-avoid-bind
+# Some code needs to use std::bind and can't be modernized quickly.
 Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
@@ -60,7 +67,9 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureA
          -bugprone-narrowing-conversions,
          -google-readability-avoid-underscore-in-googletest-name,
          -cppcoreguidelines-init-variables,
-         -misc-no-recursion
+         -misc-no-recursion,
+         -cppcoreguidelines-avoid-non-const-global-variables,
+         -modernize-avoid-bind
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

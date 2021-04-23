@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,7 @@ public:
 };
 
 //! Global instance of DefaultThreadAffinityAccess
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 DefaultThreadAffinityAccess g_defaultAffinityAccess;
 
 } // namespace
@@ -138,11 +139,11 @@ static bool get_thread_affinity_layout(const gmx::MDLogger&         mdlog,
         hwThreadsPerCore = hwTop.machine().sockets[0].cores[0].hwThreads.size();
         snew(*localityOrder, hwThreads);
         int i = 0;
-        for (auto& s : hwTop.machine().sockets)
+        for (const auto& s : hwTop.machine().sockets)
         {
-            for (auto& c : s.cores)
+            for (const auto& c : s.cores)
             {
-                for (auto& t : c.hwThreads)
+                for (const auto& t : c.hwThreads)
                 {
                     (*localityOrder)[i++] = t.logicalProcessorId;
                 }

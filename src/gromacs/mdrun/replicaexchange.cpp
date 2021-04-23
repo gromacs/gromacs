@@ -45,6 +45,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "replicaexchange.h"
 
 #include "config.h"

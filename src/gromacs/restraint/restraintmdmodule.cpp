@@ -130,7 +130,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     const int  site1  = static_cast<int>(sites_.front().index());
     const int* aLocal = &site1;
     // Set forces using index `site1` if no domain decomposition, otherwise set with local index if available.
-    auto& force = forceProviderOutput->forceWithVirial_.force_;
+    const auto& force = forceProviderOutput->forceWithVirial_.force_;
     if ((cr.dd == nullptr) || (aLocal = cr.dd->ga2la->findHome(site1)))
     {
         force[static_cast<size_t>(*aLocal)] += result.force;

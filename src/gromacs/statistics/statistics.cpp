@@ -37,6 +37,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "statistics.h"
 
 #include <cmath>

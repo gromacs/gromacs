@@ -73,7 +73,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
-static real minthird = -1.0 / 3.0, minsixth = -1.0 / 6.0;
+static constexpr real minthird = -1.0 / 3.0, minsixth = -1.0 / 6.0;
 
 static double mypow(double x, double y)
 {

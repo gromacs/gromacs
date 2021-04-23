@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -188,7 +188,7 @@ public:
      * \param[in] requirements Requirements for adding to the object.
      * \returns The newly created object.
      */
-    TrajectoryFrameWriterPointer runTest(const char* filename, const OutputRequirements& requirements)
+    TrajectoryFrameWriterPointer runTest(const char* filename, const OutputRequirements& requirements) const
     {
         return createMinimalTrajectoryFrameWriter(filename, dummyTopology_, dummySelection_, requirements);
     }

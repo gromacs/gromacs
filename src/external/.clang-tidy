@@ -1,4 +1,4 @@
 # We don't want any checks at all for external code, but that leads to
 # clang-tidy complaining that it is being run with no checks. So we
 # let it use a single check that is irrelevant for GROMACS.
-Checks: -clang-analyzer*,zircon-temporary-objects
+Checks: -clang-analyzer*,zircon-temporary-objects, -cppcoreguidelines*

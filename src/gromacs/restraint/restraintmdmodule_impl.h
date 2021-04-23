@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,9 +135,9 @@ public:
         if (DOMAINDECOMP(&cr)) // Domain decomposition
         {
             // Get global-to-local indexing structure
-            auto crossRef = cr.dd->ga2la;
+            auto* crossRef = cr.dd->ga2la;
             GMX_ASSERT(crossRef, "Domain decomposition must provide global/local cross-reference.");
-            if (const auto localIndex = crossRef->findHome(index_))
+            if (const auto* localIndex = crossRef->findHome(index_))
             {
                 GMX_ASSERT(localIndex,
                            "Expect not to reach this point if findHome does not find index_.");

@@ -37,8 +37,10 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/arrayref.h"
 #include "make_ndx.h"
 
+#include <array>
 #include <cctype>
 #include <cstring>
 

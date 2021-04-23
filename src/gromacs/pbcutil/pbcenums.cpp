@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,31 +50,19 @@
 namespace gmx
 {
 
-/*! \brief Names for different centering types.
- *
- * Those names need to be in sync with the CenteringType enum class
- * and reflect the same fields there.
- */
-static EnumerationArray<CenteringType, const char*> c_centeringTypeShortNames = {
-    { "Triclinic", "Rectangular", "Zero-Based" }
-};
-
-/*! \brief Names for different centering types.
- *
- * Those names need to be in sync with the UnitCellType enum class
- * and reflect the same fields there.
- */
-static EnumerationArray<UnitCellType, const char*> c_unitCellTypeShortNames = {
-    { "Triclinic", "Rectangular", "Compact" }
-};
-
 const char* centerTypeNames(CenteringType type)
 {
+    constexpr EnumerationArray<CenteringType, const char*> c_centeringTypeShortNames = {
+        "Triclinic", "Rectangular", "Zero-Based"
+    };
     return c_centeringTypeShortNames[type];
 }
 
 const char* unitCellTypeNames(UnitCellType type)
 {
+    constexpr EnumerationArray<UnitCellType, const char*> c_unitCellTypeShortNames = {
+        "Triclinic", "Rectangular", "Compact"
+    };
     return c_unitCellTypeShortNames[type];
 }
 

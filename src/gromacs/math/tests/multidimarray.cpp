@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -291,7 +291,7 @@ TEST_F(MultiDimArrayTest, viewBegin)
 TEST_F(MultiDimArrayTest, viewEnd)
 {
     static_array_type::view_type view = staticArray_.asView();
-    auto                         x    = end(view);
+    auto*                        x    = end(view);
     --x;
     view(2, 2) = testNumber_;
     EXPECT_EQ(*x, testNumber_);
@@ -308,8 +308,8 @@ TEST_F(MultiDimArrayTest, constViewConstBegin)
 TEST_F(MultiDimArrayTest, constViewConstEnd)
 {
     staticArray_(2, 2) = testNumber_;
-    const auto view    = staticArray_.asConstView();
-    auto       x       = end(view);
+    const auto  view   = staticArray_.asConstView();
+    const auto* x      = end(view);
     --x;
     EXPECT_EQ(*x, testNumber_);
 }

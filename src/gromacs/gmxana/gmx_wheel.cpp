@@ -220,10 +220,10 @@ int gmx_wheel(int argc, char* argv[])
         "the number of residues and each consecutive line contains a residue name."
     };
     gmx_output_env_t* oenv;
-    static real       rot0  = 0;
-    static gmx_bool   bNum  = TRUE;
-    static char*      title = nullptr;
-    static int        r0    = 1;
+    real              rot0  = 0;
+    gmx_bool          bNum  = TRUE;
+    char*             title = nullptr;
+    int               r0    = 1;
     t_pargs  pa[]  = { { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
                      { "-rot0",
                        FALSE,

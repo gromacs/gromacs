@@ -24,7 +24,9 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,
          -readability-magic-numbers,
          -cppcoreguidelines-macro-usage,
          -cppcoreguidelines-narrowing-conversions,
-         -bugprone-narrowing-conversions
+         -cppcoreguidelines-init-variables,
+         -bugprone-narrowing-conversions,
+         -misc-no-recursion
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
