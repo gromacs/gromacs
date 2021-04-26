@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,12 +69,14 @@ static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };
  * hence there are many more NULL field (which have to be at the end of
  * the array).
  */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 const char* s_ffn[effnNR + 2] = { nullptr, "none",  "exp",   "aexp",  "exp_exp", "exp5", "exp7",
                                   "exp9",  nullptr, nullptr, nullptr, nullptr,   nullptr };
 
 // clang-format off
 // needed because clang-format wants to break the lines below
 /*! \brief Long description for each fitting function type */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* longs_ffn[effnNR]
         = { "no fit",
             "y = exp(-x/|a0|)",
@@ -389,6 +391,7 @@ static double lmc_errest_3_parm(double x, const double* a)
 }
 
 /*! \brief array of fitting functions corresponding to the pre-defined types */
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 t_lmcurve lmcurves[effnNR + 1] = { lmc_exp_one_parm,  lmc_exp_one_parm, lmc_exp_two_parm,
                                    lmc_exp_exp,       lmc_exp_5_parm,   lmc_exp_7_parm,
                                    lmc_exp_9_parm,    lmc_vac_2_parm,   lmc_erffit,
