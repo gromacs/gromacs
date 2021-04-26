@@ -155,7 +155,7 @@ bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates)
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
     int    numTargetPoints = 0;
-    for (auto& pointState : pointStates)
+    for (const auto& pointState : pointStates)
     {
         if (!pointState.inTargetRegion())
         {
@@ -177,7 +177,7 @@ bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates)
     /* Sum up weight of points that do or don't pass the check. */
     double equilibratedWeight    = 0;
     double notEquilibratedWeight = 0;
-    for (auto& pointState : pointStates)
+    for (const auto& pointState : pointStates)
     {
         double targetWeight  = pointState.target();
         double sampledWeight = pointState.weightSumTot() * inverseTotalWeight;

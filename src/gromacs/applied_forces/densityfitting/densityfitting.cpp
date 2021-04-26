@@ -198,7 +198,7 @@ public:
     void setSimulationTimeStep(double timeStep) { simulationTimeStep_ = timeStep; }
 
     //! Return the simulation time step
-    double simulationTimeStep() { return simulationTimeStep_; }
+    double simulationTimeStep() const { return simulationTimeStep_; }
 
 private:
     //! The reference density to fit to

@@ -275,7 +275,6 @@ private:
      */
     bool isOutputStep(int64_t step) const;
 
-private:
     std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
     const int64_t    seed_;   /**< Random seed for MC jumping with umbrella type bias potential. */
     const int        nstout_; /**< Interval in steps for writing to energy file. */

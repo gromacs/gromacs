@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,9 +83,9 @@ struct DensityFittingParameters
     //! The time constant for the adaptive force scaling in ps
     real adaptiveForceScalingTimeConstant_ = 4;
     //! Translation of the structure, so that the coordinates that are fitted are x+translation
-    std::string translationString_ = "";
+    std::string translationString_;
     //! Linear transformation of the structure, so that the coordinates that are fitted are Matrix * x
-    std::string transformationMatrixString_ = "";
+    std::string transformationMatrixString_;
 };
 
 /*!\brief Check if two structs holding density fitting parameters are equal.

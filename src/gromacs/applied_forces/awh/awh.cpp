@@ -116,14 +116,10 @@ struct BiasCoupledToSystem
  */
 static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
 {
-    for (const auto& awhDimParam : awhBiasParams.dimParams())
-    {
-        if (awhDimParam.coordinateProvider() == AwhCoordinateProviderType::Pull)
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(
+            awhBiasParams.dimParams().begin(), awhBiasParams.dimParams().end(), [](const auto& awhDimParam) {
+                return awhDimParam.coordinateProvider() == AwhCoordinateProviderType::Pull;
+            });
 }
 
 /*! \brief Checks whether any dimension uses pulling as a coordinate provider.
@@ -133,14 +129,9 @@ static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
  */
 static bool anyDimUsesPull(const AwhParams& awhParams)
 {
-    for (const auto& awhBiasParam : awhParams.awhBiasParams())
-    {
-        if (anyDimUsesPull(awhBiasParam))
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(awhParams.awhBiasParams().begin(),
+                       awhParams.awhBiasParams().end(),
+                       [](const auto& awhBiasParam) { return anyDimUsesPull(awhBiasParam); });
 }
 
 /*! \brief Checks whether any dimension uses pulling as a coordinate provider.
@@ -150,14 +141,9 @@ static bool anyDimUsesPull(const AwhParams& awhParams)
  */
 static bool anyDimUsesPull(const ArrayRef<BiasCoupledToSystem> biasCoupledToSystem)
 {
-    for (const auto& biasCts : biasCoupledToSystem)
-    {
-        if (!biasCts.pullCoordIndex_.empty())
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(biasCoupledToSystem.begin(), biasCoupledToSystem.end(), [](const auto& biasCts) {
+        return !biasCts.pullCoordIndex_.empty();
+    });
 }
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias bias, const std::vector<int>& pullCoordIndex) :
@@ -506,7 +492,7 @@ void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
 
     /* Get the total number of energy subblocks that AWH needs */
     int numSubblocks = 0;
-    for (auto& biasCoupledToSystem : biasCoupledToSystem_)
+    for (const auto& biasCoupledToSystem : biasCoupledToSystem_)
     {
         numSubblocks += biasCoupledToSystem.bias_.numEnergySubblocksToWrite();
     }
@@ -524,7 +510,7 @@ void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
 
     /* Transfer AWH data blocks to energy sub blocks */
     int energySubblockCount = 0;
-    for (auto& biasCoupledToSystem : biasCoupledToSystem_)
+    for (const auto& biasCoupledToSystem : biasCoupledToSystem_)
     {
         energySubblockCount += biasCoupledToSystem.bias_.writeToEnergySubblocks(
                 &(awhEnergyBlock->sub[energySubblockCount]));
@@ -554,14 +540,9 @@ bool Awh::needForeignEnergyDifferences(const int64_t step) const
     /* Check whether the bias(es) that has/have a FEP lambda dimension should sample coordinates
      * this step. Since the biases may have different sampleCoordStep it is necessary to check
      * this combination. */
-    for (const auto& biasCts : biasCoupledToSystem_)
-    {
-        if (biasCts.bias_.hasFepLambdaDimension() && biasCts.bias_.isSampleCoordStep(step))
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(biasCoupledToSystem_.begin(), biasCoupledToSystem_.end(), [step](const auto& biasCts) {
+        return biasCts.bias_.hasFepLambdaDimension() && biasCts.bias_.isSampleCoordStep(step);
+    });
 }
 
 std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,

@@ -149,7 +149,7 @@ TEST(biasGridTest, neighborhood)
             haveCorrectNumNeighbors = false;
         }
 
-        for (auto& j : point.neighbor)
+        for (const auto& j : point.neighbor)
         {
             if (j >= 0 && j < numPoints)
             {
@@ -187,7 +187,7 @@ TEST(biasGridTest, neighborhood)
         }
 
         /* Clear the marked points in the checking grid */
-        for (auto& neighbor : point.neighbor)
+        for (const auto& neighbor : point.neighbor)
         {
             if (neighbor >= 0 && neighbor < numPoints)
             {

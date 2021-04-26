@@ -188,7 +188,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
     }
 
     std::vector<double> pointBias, logPmfsum;
-    for (auto& point : bias.state().points())
+    for (const auto& point : bias.state().points())
     {
         pointBias.push_back(point.bias());
         logPmfsum.push_back(point.logPmfSum());

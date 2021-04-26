@@ -314,7 +314,7 @@ void BiasState::calcConvolvedPmf(ArrayRef<const DimParams> dimParams,
     {
         double           freeEnergyWeights = 0;
         const GridPoint& point             = grid.point(m);
-        for (auto& neighbor : point.neighbor)
+        for (const auto& neighbor : point.neighbor)
         {
             /* Do not convolve the bias along a lambda axis - only use the pmf from the current point */
             if (!pointsHaveDifferentLambda(grid, m, neighbor))
@@ -411,7 +411,7 @@ int BiasState::warnForHistogramAnomalies(const BiasGrid& grid, int biasIndex, do
     /* Sum up the histograms and get their normalization */
     double sumVisits  = 0;
     double sumWeights = 0;
-    for (auto& pointState : points_)
+    for (const auto& pointState : points_)
     {
         if (pointState.inTargetRegion())
         {
@@ -677,7 +677,7 @@ void BiasState::doSkippedUpdatesInNeighborhood(const BiasParams& params, const B
 
     /* For each neighbor point of the center point, refresh its state by adding the results of all past, skipped updates. */
     const std::vector<int>& neighbors = grid.point(coordState_.gridpointIndex()).neighbor;
-    for (auto& neighbor : neighbors)
+    for (const auto& neighbor : neighbors)
     {
         bool didUpdate = points_[neighbor].performPreviouslySkippedUpdates(
                 params, histogramSize_.numUpdates(), weightHistScaling, logPmfsumScaling);
