@@ -122,7 +122,6 @@ public:
         bool operator!=(const param_type& x) const { return !operator==(x); }
     };
 
-public:
     /*! \brief Construct new distribution with given integer parameters.
      *
      * \param a   Lower end of range (inclusive)

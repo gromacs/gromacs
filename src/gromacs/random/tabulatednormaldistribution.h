@@ -213,7 +213,6 @@ public:
         return table;
     }
 
-public:
     /*! \brief Construct new normal distribution with specified mean & stdddev.
      *
      *  \param mean    Mean value of tabulated normal distribution

@@ -152,7 +152,6 @@ public:
         bool operator!=(const param_type& x) const { return !operator==(x); }
     };
 
-public:
     /*! \brief Construct new distribution with given floating-point parameters.
      *
      * \param mean     Mean of normal distribution

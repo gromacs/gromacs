@@ -135,7 +135,6 @@ public:
         bool operator!=(const param_type& x) const { return !operator==(x); }
     };
 
-public:
     /*! \brief Construct new distribution with given floating-point parameter.
      *
      * \param lambda   lambda/decay parameter
