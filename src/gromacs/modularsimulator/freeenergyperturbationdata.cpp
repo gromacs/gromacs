@@ -73,7 +73,10 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
     // available on master. We have the lambda vector available everywhere, so we pass a `true`
     // for isMaster on all ranks. See #3647.
     initialize_lambdas(fplog_,
-                       inputrec_,
+                       inputrec_.efep,
+                       inputrec_.bSimTemp,
+                       *inputrec_.fepvals,
+                       inputrec_.simtempvals->temperatures,
                        gmx::arrayRefFromArray(inputrec_.opts.ref_t, inputrec_.opts.ngtc),
                        true,
                        &currentFEPState_,

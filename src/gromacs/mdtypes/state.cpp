@@ -344,26 +344,28 @@ void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, const 
     }
 }
 
-void initialize_lambdas(FILE*               fplog,
-                        const t_inputrec&   ir,
-                        gmx::ArrayRef<real> ref_t,
-                        bool                isMaster,
-                        int*                fep_state,
-                        gmx::ArrayRef<real> lambda)
+void initialize_lambdas(FILE*                            fplog,
+                        const FreeEnergyPerturbationType freeEnergyPerturbationType,
+                        const bool                       haveSimulatedTempering,
+                        const t_lambda&                  fep,
+                        gmx::ArrayRef<const real>        simulatedTemperingTemps,
+                        gmx::ArrayRef<real>              ref_t,
+                        bool                             isMaster,
+                        int*                             fep_state,
+                        gmx::ArrayRef<real>              lambda)
 {
     /* TODO: Clean up initialization of fep_state and lambda in
        t_state.  This function works, but could probably use a logic
        rewrite to keep all the different types of efep straight. */
 
-    if ((ir.efep == FreeEnergyPerturbationType::No) && (!ir.bSimTemp))
+    if ((freeEnergyPerturbationType == FreeEnergyPerturbationType::No) && (!haveSimulatedTempering))
     {
         return;
     }
 
-    const t_lambda* fep = ir.fepvals.get();
     if (isMaster)
     {
-        *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
+        *fep_state = fep.init_fep_state; /* this might overwrite the checkpoint
                                              if checkpoint is set -- a kludge is in for now
                                              to prevent this.*/
     }
@@ -372,27 +374,27 @@ void initialize_lambdas(FILE*               fplog,
     {
         double thisLambda;
         /* overwrite lambda state with init_lambda for now for backwards compatibility */
-        if (fep->init_lambda >= 0) /* if it's -1, it was never initialized */
+        if (fep.init_lambda >= 0) /* if it's -1, it was never initialized */
         {
-            thisLambda = fep->init_lambda;
+            thisLambda = fep.init_lambda;
         }
         else
         {
-            thisLambda = fep->all_lambda[i][fep->init_fep_state];
+            thisLambda = fep.all_lambda[i][fep.init_fep_state];
         }
         if (isMaster)
         {
             lambda[i] = thisLambda;
         }
     }
-    if (ir.bSimTemp)
+    if (haveSimulatedTempering)
     {
         /* need to rescale control temperatures to match current state */
         for (int i = 0; i < ref_t.ssize(); i++)
         {
             if (ref_t[i] > 0)
             {
-                ref_t[i] = ir.simtempvals->temperatures[fep->init_fep_state];
+                ref_t[i] = simulatedTemperingTemps[fep.init_fep_state];
             }
         }
     }

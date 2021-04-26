@@ -67,6 +67,8 @@
 #include "gromacs/utility/real.h"
 
 struct t_inputrec;
+struct t_lambda;
+enum class FreeEnergyPerturbationType;
 
 namespace gmx
 {
@@ -363,11 +365,14 @@ void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, bool i
  * and lambda on master rank.
  *
  * Reports the initial lambda state to the log file. */
-void initialize_lambdas(FILE*               fplog,
-                        const t_inputrec&   ir,
-                        gmx::ArrayRef<real> ref_t,
-                        bool                isMaster,
-                        int*                fep_state,
-                        gmx::ArrayRef<real> lambda);
+void initialize_lambdas(FILE*                      fplog,
+                        FreeEnergyPerturbationType freeEnergyPerturbationType,
+                        bool                       haveSimulatedTempering,
+                        const t_lambda&            fep,
+                        gmx::ArrayRef<const real>  simulatedTemperingTemps,
+                        gmx::ArrayRef<real>        ref_t,
+                        bool                       isMaster,
+                        int*                       fep_state,
+                        gmx::ArrayRef<real>        lambda);
 
 #endif

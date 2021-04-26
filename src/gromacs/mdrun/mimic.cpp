@@ -229,7 +229,10 @@ void gmx::LegacySimulator::do_mimic()
     }
 
     initialize_lambdas(fplog,
-                       *ir,
+                       ir->efep,
+                       ir->bSimTemp,
+                       *ir->fepvals,
+                       ir->simtempvals->temperatures,
                        gmx::arrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
                        MASTER(cr),
                        &state_global->fep_state,
