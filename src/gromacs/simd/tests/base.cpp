@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ int SimdBaseTest::s_nPoints = 10000;
 ::testing::AssertionResult SimdBaseTest::compareVectorRealUlp(const char*              refExpr,
                                                               const char*              tstExpr,
                                                               const std::vector<real>& ref,
-                                                              const std::vector<real>& tst)
+                                                              const std::vector<real>& tst) const
 {
     std::vector<real>         absDiff(tst.size());
     std::vector<std::int64_t> ulpDiff(tst.size());
