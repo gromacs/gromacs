@@ -44,18 +44,44 @@
 
 #include "update_constrain_gpu_internal.h"
 
+#include "gromacs/gpu_utils/devicebuffer_sycl.h"
+#include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-void launchScaleCoordinatesKernel(const int /* numAtoms */,
-                                  DeviceBuffer<Float3> /* d_coordinates */,
-                                  const ScalingMatrix /* mu */,
-                                  const DeviceStream& /* deviceStream */)
+static auto scaleKernel(cl::sycl::handler&                                         cgh,
+                        DeviceAccessor<Float3, cl::sycl::access::mode::read_write> a_x,
+                        const ScalingMatrix                                        scalingMatrix)
 {
-    // SYCL_TODO
-    GMX_RELEASE_ASSERT(false, "Coordinates scaling is not yet implemented in SYCL.");
+    cgh.require(a_x);
+
+    return [=](cl::sycl::id<1> itemIdx) {
+        Float3 x     = a_x[itemIdx];
+        x[0]         = scalingMatrix.xx * x[0] + scalingMatrix.yx * x[1] + scalingMatrix.zx * x[2];
+        x[1]         = scalingMatrix.yy * x[1] + scalingMatrix.zy * x[2];
+        x[2]         = scalingMatrix.zz * x[2];
+        a_x[itemIdx] = x;
+    };
+}
+
+void launchScaleCoordinatesKernel(const int            numAtoms,
+                                  DeviceBuffer<Float3> d_coordinates,
+                                  const ScalingMatrix  mu,
+                                  const DeviceStream&  deviceStream)
+{
+    const cl::sycl::range<1> rangeAllAtoms(numAtoms);
+    cl::sycl::queue          queue = deviceStream.stream();
+
+    cl::sycl::event e = queue.submit([&](cl::sycl::handler& cgh) {
+        auto kernel = scaleKernel(cgh, d_coordinates, mu);
+        cgh.parallel_for<class ScaleKernelName>(rangeAllAtoms, kernel);
+    });
+    // TODO: Although this only happens on the pressure coupling steps, this synchronization
+    //       can affect the performance if nstpcouple is small. See Issue #4018
+    e.wait_and_throw();
 }
 
 } // namespace gmx
