@@ -418,8 +418,6 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
                                          : gmx::PinningPolicy::CannotBePinned);
 
-    auto nbat = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
-
     int mimimumNumEnergyGroupNonbonded = inputrec.opts.ngener;
     if (inputrec.opts.ngener - inputrec.nwall == 1)
     {
@@ -429,9 +427,10 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
          */
         mimimumNumEnergyGroupNonbonded = 1;
     }
-    nbnxn_atomdata_init(
+
+    auto nbat = std::make_unique<nbnxn_atomdata_t>(
+            pinPolicy,
             mdlog,
-            nbat.get(),
             kernelSetup.kernelType,
             enbnxninitcombrule,
             forcerec.ntype,

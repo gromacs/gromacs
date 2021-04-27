@@ -232,9 +232,24 @@ struct nbnxn_atomdata_t
 
     /*! \brief Constructor
      *
-     * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transferred to a GPU
+     * \param[in] pinningPolicy      Sets the pinning policy for all data that might be transferred
+     *                               to a GPU
+     * \param[in] mdlog              The logger
+     * \param[in] kernelType         Nonbonded NxN kernel type
+     * \param[in] enbnxninitcombrule LJ combination rule
+     * \param[in] ntype              Number of atom types
+     * \param[in] nbfp               Non-bonded force parameters
+     * \param[in] n_energygroups     Number of energy groups
+     * \param[in] nout               Number of output data structures
      */
-    nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
+    nbnxn_atomdata_t(gmx::PinningPolicy        pinningPolicy,
+                     const gmx::MDLogger&      mdlog,
+                     Nbnxm::KernelType         kernelType,
+                     int                       enbnxninitcombrule,
+                     int                       ntype,
+                     gmx::ArrayRef<const real> nbfp,
+                     int                       n_energygroups,
+                     int                       nout);
 
     //! Returns a const reference to the parameters
     const Params& params() const { return params_; }

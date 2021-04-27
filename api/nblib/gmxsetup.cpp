@@ -192,17 +192,14 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
     auto pairSearch   = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
-
-    // Needs to be called with the number of unique ParticleTypes
-    nbnxn_atomdata_init(gmx::MDLogger(),
-                        atomData.get(),
-                        kernelSetup.kernelType,
-                        combinationRule,
-                        numParticleTypes,
-                        nonbondedParameters_,
-                        1,
-                        numThreads);
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
+                                                       gmx::MDLogger(),
+                                                       kernelSetup.kernelType,
+                                                       combinationRule,
+                                                       numParticleTypes,
+                                                       nonbondedParameters_,
+                                                       1,
+                                                       numThreads);
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(

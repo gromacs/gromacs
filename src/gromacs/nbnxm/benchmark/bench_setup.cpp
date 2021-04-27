@@ -200,20 +200,18 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
+                                                       gmx::MDLogger(),
+                                                       kernelSetup.kernelType,
+                                                       combinationRule,
+                                                       system.numAtomTypes,
+                                                       system.nonbondedParameters,
+                                                       1,
+                                                       numThreads);
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(
             std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullptr);
-
-    nbnxn_atomdata_init(gmx::MDLogger(),
-                        nbv->nbat.get(),
-                        kernelSetup.kernelType,
-                        combinationRule,
-                        system.numAtomTypes,
-                        system.nonbondedParameters,
-                        1,
-                        numThreads);
 
     t_nrnb nrnb;
 

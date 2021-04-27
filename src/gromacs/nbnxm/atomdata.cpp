@@ -432,17 +432,6 @@ nbnxn_atomdata_t::Params::Params(gmx::PinningPolicy pinningPolicy) :
 {
 }
 
-nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy) :
-    params_(pinningPolicy),
-    numAtoms_(0),
-    natoms_local(0),
-    shift_vec({}, { pinningPolicy }),
-    x_({}, { pinningPolicy }),
-    simdMasks(),
-    bUseBufferFlags(FALSE)
-{
-}
-
 /* Initializes an nbnxn_atomdata_t::Params data structure */
 static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                                        nbnxn_atomdata_t::Params* params,
@@ -626,17 +615,24 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
 }
 
 /* Initializes an nbnxn_atomdata_t data structure */
-void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
-                         nbnxn_atomdata_t*       nbat,
-                         const Nbnxm::KernelType kernelType,
-                         int                     enbnxninitcombrule,
-                         int                     ntype,
-                         ArrayRef<const real>    nbfp,
-                         int                     n_energygroups,
-                         int                     nout)
+nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy      pinningPolicy,
+                                   const gmx::MDLogger&    mdlog,
+                                   const Nbnxm::KernelType kernelType,
+                                   int                     enbnxninitcombrule,
+                                   int                     ntype,
+                                   ArrayRef<const real>    nbfp,
+                                   int                     n_energygroups,
+                                   int                     nout) :
+    params_(pinningPolicy),
+    numAtoms_(0),
+    natoms_local(0),
+    shift_vec({}, { pinningPolicy }),
+    x_({}, { pinningPolicy }),
+    simdMasks(),
+    bUseBufferFlags(FALSE)
 {
     nbnxn_atomdata_params_init(
-            mdlog, &nbat->paramsDeprecated(), kernelType, enbnxninitcombrule, ntype, nbfp, n_energygroups);
+            mdlog, &paramsDeprecated(), kernelType, enbnxninitcombrule, ntype, nbfp, n_energygroups);
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
     const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);
@@ -648,38 +644,37 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
             int pack_x = std::max(c_nbnxnCpuIClusterSize, Nbnxm::JClusterSizePerKernelType[kernelType]);
             switch (pack_x)
             {
-                case 4: nbat->XFormat = nbatX4; break;
-                case 8: nbat->XFormat = nbatX8; break;
+                case 4: XFormat = nbatX4; break;
+                case 8: XFormat = nbatX8; break;
                 default: gmx_incons("Unsupported packing width");
             }
         }
         else
         {
-            nbat->XFormat = nbatXYZ;
+            XFormat = nbatXYZ;
         }
 
-        nbat->FFormat = nbat->XFormat;
+        FFormat = XFormat;
     }
     else
     {
-        nbat->XFormat = nbatXYZQ;
-        nbat->FFormat = nbatXYZ;
+        XFormat = nbatXYZQ;
+        FFormat = nbatXYZ;
     }
 
-    nbat->shift_vec.resize(gmx::c_numShiftVectors);
+    shift_vec.resize(gmx::c_numShiftVectors);
 
-    nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
-    nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
+    xstride = (XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
+    fstride = (FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
 
     /* Initialize the output data structures */
     for (int i = 0; i < nout; i++)
     {
-        const auto& pinningPolicy = nbat->params().type.get_allocator().pinningPolicy();
-        nbat->out.emplace_back(
-                kernelType, nbat->params().nenergrp, 1 << nbat->params().neg_2log, pinningPolicy);
+        const auto& pinningPolicy = params().type.get_allocator().pinningPolicy();
+        out.emplace_back(kernelType, params().nenergrp, 1 << params().neg_2log, pinningPolicy);
     }
 
-    nbat->buffer_flags.clear();
+    buffer_flags.clear();
 }
 
 template<int packSize>
