@@ -462,9 +462,11 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         // assign stuff
         for (auto& v : machine->numa.relativeLatency)
         {
-            std::transform(v.begin(), v.end(), v.begin(), [minLatency](const auto& value) {
-                return value *= 1.0 / minLatency;
-            });
+            // Rescale the latencies to a relative float-point value
+            for (float& value : v)
+            {
+                value /= minLatency;
+            }
         }
         machine->numa.baseLatency = 1.0; // latencies still do not have any units in hwloc-2.x
         machine->numa.maxRelativeLatency = maxLatency / minLatency;
