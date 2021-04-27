@@ -70,7 +70,7 @@ public:
     {
     }
 
-    void makeModuleOptions(Options* options)
+    void makeModuleOptions(Options* options) const
     {
         // Create a section for applied-forces modules
         auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));

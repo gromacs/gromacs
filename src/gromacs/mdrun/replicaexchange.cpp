@@ -66,6 +66,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/random/uniformrealdistribution.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
@@ -79,13 +80,13 @@ constexpr int c_probabilityCutoff = 100;
 #define MSRANK(ms, nodeid) (nodeid)
 
 //! Enum for replica exchange flavours
-enum
+enum class ReplicaExchangeType : int
 {
-    ereTEMP,
-    ereLAMBDA,
-    ereENDSINGLE,
-    ereTL,
-    ereNR
+    Temperature,
+    Lambda,
+    EndSingle,
+    TemperatureLambda,
+    Count
 };
 /*! \brief Strings describing replica exchange flavours.
  *
@@ -97,10 +98,13 @@ enum
  *  'lambda_and_pressure', 'temperature_lambda_pressure'?; Let's wait
  *  until we feel better about the pressure control methods giving
  *  exact ensembles.  Right now, we assume constant pressure */
-static const char* erename[ereNR] = { "temperature",
-                                      "lambda",
-                                      "end_single_marker",
-                                      "temperature and lambda" };
+static const char* enumValueToString(ReplicaExchangeType enumValue)
+{
+    constexpr gmx::EnumerationArray<ReplicaExchangeType, const char*> replicateExchangeTypeNames = {
+        "temperature", "lambda", "end_single_marker", "temperature and lambda"
+    };
+    return replicateExchangeTypeNames[enumValue];
+}
 
 //! Working data for replica exchange.
 struct gmx_repl_ex
@@ -111,10 +115,10 @@ struct gmx_repl_ex
     int nrepl;
     //! Temperature
     real temp;
-    //! Replica exchange type from ere enum
-    int type;
+    //! Replica exchange type from ReplicaExchangeType enum
+    ReplicaExchangeType type;
     //! Quantity, e.g. temperature or lambda; first index is ere, second index is replica ID
-    real** q;
+    gmx::EnumerationArray<ReplicaExchangeType, real*> q;
     //! Use constant pressure and temperature
     gmx_bool bNPT;
     //! Replica pressures
@@ -162,7 +166,7 @@ struct gmx_repl_ex
 // TODO We should add Doxygen here some time.
 //! \cond
 
-static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, int ere, real q)
+static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, ReplicaExchangeType ere, real q)
 {
     real*    qall;
     gmx_bool bDiff;
@@ -239,7 +243,6 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 
     re->repl  = ms->simulationIndex_;
     re->nrepl = ms->numSimulations_;
-    snew(re->q, ereENDSINGLE);
 
     fprintf(fplog, "Repl  There are %d replicas:\n", re->nrepl);
 
@@ -273,13 +276,14 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
         }
     }
 
-    re->type = -1;
-    bTemp    = repl_quantity(ms, re, ereTEMP, re->temp);
+    re->type = ReplicaExchangeType::Count;
+    bTemp    = repl_quantity(ms, re, ReplicaExchangeType::Temperature, re->temp);
     if (ir->efep != FreeEnergyPerturbationType::No)
     {
-        bLambda = repl_quantity(ms, re, ereLAMBDA, static_cast<real>(ir->fepvals->init_fep_state));
+        bLambda = repl_quantity(
+                ms, re, ReplicaExchangeType::Lambda, static_cast<real>(ir->fepvals->init_fep_state));
     }
-    if (re->type == -1) /* nothing was assigned */
+    if (re->type == ReplicaExchangeType::Count) /* nothing was assigned */
     {
         gmx_fatal(FARGS,
                   "The properties of the %d systems are all the same, there is nothing to exchange",
@@ -287,7 +291,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     }
     if (bLambda && bTemp)
     {
-        re->type = ereTL;
+        re->type = ReplicaExchangeType::TemperatureLambda;
     }
 
     if (bTemp)
@@ -349,7 +353,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
         re->ind[i] = i;
     }
 
-    if (re->type < ereENDSINGLE)
+    if (re->type < ReplicaExchangeType::EndSingle)
     {
 
         for (i = 0; i < re->nrepl; i++)
@@ -367,14 +371,14 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                               "replicas on increasing %s",
                               i,
                               j,
-                              erename[re->type],
+                              enumValueToString(re->type),
                               re->q[re->type][i],
                               re->q[re->type][j],
-                              erename[re->type]);
+                              enumValueToString(re->type));
                 }
                 else if (re->q[re->type][re->ind[j]] == re->q[re->type][re->ind[i]])
                 {
-                    gmx_fatal(FARGS, "Two replicas have identical %ss", erename[re->type]);
+                    gmx_fatal(FARGS, "Two replicas have identical %ss", enumValueToString(re->type));
                 }
             }
         }
@@ -389,7 +393,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 
     switch (re->type)
     {
-        case ereTEMP:
+        case ReplicaExchangeType::Temperature:
             fprintf(fplog, "\nReplica exchange in temperature\n");
             for (i = 0; i < re->nrepl; i++)
             {
@@ -397,7 +401,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             }
             fprintf(fplog, "\n");
             break;
-        case ereLAMBDA:
+        case ReplicaExchangeType::Lambda:
             fprintf(fplog, "\nReplica exchange in lambda\n");
             for (i = 0; i < re->nrepl; i++)
             {
@@ -405,16 +409,16 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             }
             fprintf(fplog, "\n");
             break;
-        case ereTL:
+        case ReplicaExchangeType::TemperatureLambda:
             fprintf(fplog, "\nReplica exchange in temperature and lambda state\n");
             for (i = 0; i < re->nrepl; i++)
             {
-                fprintf(fplog, " %5.1f", re->q[ereTEMP][re->ind[i]]);
+                fprintf(fplog, " %5.1f", re->q[ReplicaExchangeType::Temperature][re->ind[i]]);
             }
             fprintf(fplog, "\n");
             for (i = 0; i < re->nrepl; i++)
             {
-                fprintf(fplog, " %5d", static_cast<int>(re->q[ereLAMBDA][re->ind[i]]));
+                fprintf(fplog, " %5d", static_cast<int>(re->q[ReplicaExchangeType::Lambda][re->ind[i]]));
             }
             fprintf(fplog, "\n");
             break;
@@ -772,14 +776,14 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
 
     switch (re->type)
     {
-        case ereTEMP:
+        case ReplicaExchangeType::Temperature:
             /*
              * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
              */
             ediff = Epot[b] - Epot[a];
             delta = -(beta[bp] - beta[ap]) * ediff;
             break;
-        case ereLAMBDA:
+        case ReplicaExchangeType::Lambda:
             /* two cases:  when we are permuted, and not.  */
             /* non-permuted:
                ediff =  E_new - E_old
@@ -807,7 +811,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
             ediff = (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b]);
             delta = ediff * beta[a]; /* assume all same temperature in this case */
             break;
-        case ereTL:
+        case ReplicaExchangeType::TemperatureLambda:
             /* not permuted:  */
             /* delta =  reduced E_new - reduced E_old
                      =  [beta_b H_b(x_a) + beta_a H_a(x_b)] - [beta_b H_b(x_b) + beta_a H_a(x_a)]
@@ -888,7 +892,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
         bVol              = TRUE;
         re->Vol[re->repl] = vol;
     }
-    if ((re->type == ereTEMP || re->type == ereTL))
+    if ((re->type == ReplicaExchangeType::Temperature || re->type == ReplicaExchangeType::TemperatureLambda))
     {
         for (i = 0; i < re->nrepl; i++)
         {
@@ -899,7 +903,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
         /* temperatures of different states*/
         for (i = 0; i < re->nrepl; i++)
         {
-            re->beta[i] = 1.0 / (re->q[ereTEMP][i] * gmx::c_boltz);
+            re->beta[i] = 1.0 / (re->q[ReplicaExchangeType::Temperature][i] * gmx::c_boltz);
         }
     }
     else
@@ -909,7 +913,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
             re->beta[i] = 1.0 / (re->temp * gmx::c_boltz); /* we have a single temperature */
         }
     }
-    if (re->type == ereLAMBDA || re->type == ereTL)
+    if (re->type == ReplicaExchangeType::Lambda || re->type == ReplicaExchangeType::TemperatureLambda)
     {
         bDLambda = TRUE;
         /* lambda differences. */
@@ -924,7 +928,8 @@ static void test_for_replica_exchange(FILE*                 fplog,
         }
         for (i = 0; i < re->nrepl; i++)
         {
-            re->de[i][re->repl] = enerd->foreignLambdaTerms.deltaH(re->q[ereLAMBDA][i]);
+            re->de[i][re->repl] =
+                    enerd->foreignLambdaTerms.deltaH(re->q[ReplicaExchangeType::Lambda][i]);
         }
     }
 
@@ -1322,11 +1327,12 @@ gmx_bool replica_exchange(FILE*                 fplog,
             }
             /* For temperature-type replica exchange, we need to scale
              * the velocities. */
-            if (re->type == ereTEMP || re->type == ereTL)
+            if (re->type == ReplicaExchangeType::Temperature || re->type == ReplicaExchangeType::TemperatureLambda)
             {
-                scale_velocities(state->v,
-                                 std::sqrt(re->q[ereTEMP][replica_id]
-                                           / re->q[ereTEMP][re->destinations[replica_id]]));
+                scale_velocities(
+                        state->v,
+                        std::sqrt(re->q[ReplicaExchangeType::Temperature][replica_id]
+                                  / re->q[ReplicaExchangeType::Temperature][re->destinations[replica_id]]));
             }
         }
 
