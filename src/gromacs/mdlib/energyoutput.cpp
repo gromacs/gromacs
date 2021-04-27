@@ -548,9 +548,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         /* Currently dh histograms are only written with dynamics */
         if (EI_DYNAMICS(inputrec.eI))
         {
-            snew(dhc_, 1);
-
-            mde_delta_h_coll_init(dhc_, inputrec);
+            dhc_ = std::make_unique<t_mde_delta_h_coll>(inputrec);
         }
         fp_dhdl_ = nullptr;
         dE_.resize(inputrec.fepvals->n_lambda);
@@ -574,7 +572,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 EnergyOutput::~EnergyOutput()
 {
     done_ebin(ebin_);
-    done_mde_delta_h_coll(dhc_);
 }
 
 } // namespace gmx
@@ -1123,7 +1120,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             }
             store_energy = enerd->term[F_ETOT];
             /* store_dh is dE */
-            mde_delta_h_coll_add_dh(dhc_,
+            mde_delta_h_coll_add_dh(dhc_.get(),
                                     static_cast<double>(fep_state),
                                     store_energy,
                                     pv,
@@ -1260,13 +1257,13 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
         /* Free energy perturbation blocks */
         if (dhc_)
         {
-            mde_delta_h_coll_handle_block(dhc_, &fr, fr.nblock);
+            mde_delta_h_coll_handle_block(dhc_.get(), &fr, fr.nblock);
         }
 
         /* we can now free & reset the data in the blocks */
         if (dhc_)
         {
-            mde_delta_h_coll_reset(dhc_);
+            mde_delta_h_coll_reset(dhc_.get());
         }
 
         /* AWH bias blocks. */
@@ -1448,7 +1445,7 @@ void EnergyOutput::fillEnergyHistory(energyhistory_t* enerhist) const
     }
     if (dhc_)
     {
-        mde_delta_h_coll_update_energyhistory(dhc_, enerhist);
+        mde_delta_h_coll_update_energyhistory(dhc_.get(), enerhist);
     }
 }
 
@@ -1480,7 +1477,7 @@ void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
     }
     if (dhc_)
     {
-        mde_delta_h_coll_restore_energyhistory(dhc_, enerhist.deltaHForeignLambdas.get());
+        mde_delta_h_coll_restore_energyhistory(dhc_.get(), enerhist.deltaHForeignLambdas.get());
     }
 }
 

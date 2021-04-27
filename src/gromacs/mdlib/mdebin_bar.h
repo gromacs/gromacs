@@ -36,54 +36,61 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _mdebin_bar_h
-#define _mdebin_bar_h
+#ifndef GMX_MDLIB_MDEBIN_BAR_H
+#define GMX_MDLIB_MDEBIN_BAR_H
 
-#include "gromacs/mdlib/energyoutput.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/real.h"
 
 /* The functions & data structures here describe writing
    energy differences (or their histogram )for use with g_bar */
 
 class delta_h_history_t;
 struct t_enxframe;
+class energyhistory_t;
+struct t_inputrec;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 /* Data for one foreign lambda, or derivative. */
 typedef struct
 {
-    real*        dh;     /* the raw energy data. */
-    float*       dhf;    /* raw difference data -- in floats, for storage. */
-    unsigned int ndh;    /* number of data points */
-    unsigned int ndhmax; /* the maximum number of points */
+    std::vector<real>  dh;     /* the raw energy data. */
+    std::vector<float> dhf;    /* raw difference data -- in floats, for storage. */
+    unsigned int       ndh;    /* number of data points */
+    unsigned int       ndhmax; /* the maximum number of points */
 
-    int nhist;              /* the number of histograms. There can either be
-                               0 (for no histograms)
-                               1 (for 'foreign lambda' histograms)
-                               2 (for derivative histograms: there's
-                                  a 'forward' and 'backward' histogram
-                                  containing the minimum and maximum
-                                  values, respectively). */
-    int*   bin[2];          /* the histogram(s) */
-    double dx;              /* the histogram spacing in kJ/mol. This is the
-                               same for the two histograms? */
-    unsigned int nbins;     /* the number of bins in the histograms*/
-    int64_t      x0[2];     /* the starting point in units of spacing
-                                       of the histogram */
-    unsigned int maxbin[2]; /* highest bin number with data */
+    int nhist;                           /* the number of histograms. There can either be
+                                            0 (for no histograms)
+                                            1 (for 'foreign lambda' histograms)
+                                            2 (for derivative histograms: there's
+                                               a 'forward' and 'backward' histogram
+                                               containing the minimum and maximum
+                                               values, respectively). */
+    std::array<std::vector<int>, 2> bin; /* the histogram(s) */
+    double                          dx;  /* the histogram spacing in kJ/mol. This is the
+                                            same for the two histograms? */
+    unsigned int           nbins;        /* the number of bins in the histograms*/
+    std::array<int64_t, 2> x0;           /* the starting point in units of spacing
+                                        of the histogram */
+    std::array<unsigned int, 2> maxbin;  /* highest bin number with data */
 
-    int type;        /* the block type according to dhbtDH, etc. */
-    int derivative;  /* The derivative direction (as an index in the lambda
-                        vector) if this delta_h contains derivatives */
-    double* lambda;  /* lambda vector (or NULL if not applicable) */
-    int     nlambda; /* length of the lambda vector */
-    bool    written; /* whether this data has already been written out */
+    int type;                    /* the block type according to dhbtDH, etc. */
+    int derivative;              /* The derivative direction (as an index in the lambda
+                                    vector) if this delta_h contains derivatives */
+    std::vector<double> lambda;  /* lambda vector (or NULL if not applicable) */
+    int                 nlambda; /* length of the lambda vector */
+    bool                written; /* whether this data has already been written out */
 
-    int64_t subblock_meta_l[5]; /* metadata for an mdebin subblock for
+    std::array<int64_t, 5> subblock_meta_l; /* metadata for an mdebin subblock for
                                            I/O: for histogram counts, etc.*/
-    double* subblock_meta_d;    /* metadata subblock for I/O, used for
+    std::vector<double> subblock_meta_d;    /* metadata subblock for I/O, used for
                                    communicating doubles (i.e. the lambda
                                    vector) */
-    int subblock_meta_i[4];     /* metadata subblock for I/O, used for
+    std::array<int, 4> subblock_meta_i;     /* metadata subblock for I/O, used for
                                    communicating ints (i.e. derivative indices,
                                    etc.) */
 } t_mde_delta_h;
@@ -91,8 +98,10 @@ typedef struct
 /* the type definition is in mdebin_bar.h */
 struct t_mde_delta_h_coll
 {
-    t_mde_delta_h* dh;  /* the delta h data */
-    int            ndh; /* the number of delta_h structures */
+    t_mde_delta_h_coll(const t_inputrec& inputrec);
+
+    std::vector<t_mde_delta_h> dh;  /* the delta h data */
+    int                        ndh; /* the number of delta_h structures */
 
     int nlambda;     /* number of bar dU delta_h structures */
     int dh_du_index; /* the delta h data (index into dh) */
@@ -111,26 +120,17 @@ struct t_mde_delta_h_coll
     double delta_lambda;   /* delta lambda, for continuous motion of state */
     double temperature;    /* the temperature of the samples*/
 
-    double* native_lambda_vec;     /* The lambda vector describing the current
+    std::vector<double> native_lambda_vec;     /* The lambda vector describing the current
                                       lambda state if it is set (NULL otherwise) */
-    int  n_lambda_vec;             /* the size of the native lambda vector */
-    int* native_lambda_components; /* the native lambda (and by extension,
+    int              n_lambda_vec;             /* the size of the native lambda vector */
+    std::vector<int> native_lambda_components; /* the native lambda (and by extension,
                                       foreign lambda) components in terms
                                       of efptFEP, efptMASS, etc. */
-    int lambda_index;              /* the lambda_fep_state */
+    int lambda_index;                          /* the lambda_fep_state */
 
-    double* subblock_d; /* for writing a metadata mdebin subblock for I/O */
-    int*    subblock_i; /* for writing a metadata mdebin subblock for I/O */
+    std::vector<double> subblock_d; /* for writing a metadata mdebin subblock for I/O */
+    std::vector<int>    subblock_i; /* for writing a metadata mdebin subblock for I/O */
 };
-
-
-/* initialize a collection of delta h histograms/sets
-    dhc      = the collection
-    inputrec = the input record */
-
-void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec& inputrec);
-
-void done_mde_delta_h_coll(t_mde_delta_h_coll* dhc);
 
 /* add a bunch of samples to the delta_h collection
     dhc = the collection
@@ -169,4 +169,4 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll* dhc, energy
 /* restore the variables from an energyhistory */
 void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll* dhc, const delta_h_history_t* deltaH);
 
-#endif /* _mdebin_bar_h */
+#endif /* GMX_MDLIB_MDEBIN_BAR_H */

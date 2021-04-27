@@ -413,7 +413,7 @@ private:
     //! Energy components for dhdl.xvg output
     std::vector<double> dE_;
     //! The delta U components (raw data + histogram)
-    t_mde_delta_h_coll* dhc_ = nullptr;
+    std::unique_ptr<t_mde_delta_h_coll> dhc_;
     //! Temperatures for simulated tempering groups
     std::vector<real> temperatures_;
 
