@@ -1548,39 +1548,39 @@ static void set_dd_corners(const gmx_domdec_t* dd, int dim0, int dim1, int dim2,
     }
 }
 
-/*! \brief Add the atom groups we need to send in this pulse from this
- * zone to \p localAtomGroups and \p work. */
-static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
-                               int                      zonei,
-                               int                      zone,
-                               int                      cg0,
-                               int                      cg1,
-                               gmx::ArrayRef<const int> globalAtomGroupIndices,
-                               int                      dim,
-                               int                      dim_ind,
-                               int                      dim0,
-                               int                      dim1,
-                               int                      dim2,
-                               real                     r_comm2,
-                               real                     r_bcomm2,
-                               matrix                   box,
-                               bool                     distanceIsTriclinic,
-                               rvec*                    normal,
-                               real                     skew_fac2_d,
-                               real                     skew_fac_01,
-                               rvec*                    v_d,
-                               rvec*                    v_0,
-                               rvec*                    v_1,
-                               const dd_corners_t*      c,
-                               const rvec               sf2_round,
-                               gmx_bool                 bDistBonded,
-                               gmx_bool                 bBondComm,
-                               gmx_bool                 bDist2B,
-                               gmx_bool                 bDistMB,
-                               rvec*                    cg_cm,
-                               gmx::ArrayRef<const int> cginfo,
-                               std::vector<int>*        localAtomGroups,
-                               dd_comm_setup_work_t*    work)
+/*! \brief Add the atom groups and coordinates we need to send in this
+ * pulse from this zone to \p localAtomGroups and \p work. */
+static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
+                                  int                            zonei,
+                                  int                            zone,
+                                  int                            cg0,
+                                  int                            cg1,
+                                  gmx::ArrayRef<const int>       globalAtomGroupIndices,
+                                  int                            dim,
+                                  int                            dim_ind,
+                                  int                            dim0,
+                                  int                            dim1,
+                                  int                            dim2,
+                                  real                           r_comm2,
+                                  real                           r_bcomm2,
+                                  matrix                         box,
+                                  bool                           distanceIsTriclinic,
+                                  rvec*                          normal,
+                                  real                           skew_fac2_d,
+                                  real                           skew_fac_01,
+                                  rvec*                          v_d,
+                                  rvec*                          v_0,
+                                  rvec*                          v_1,
+                                  const dd_corners_t*            c,
+                                  const rvec                     sf2_round,
+                                  gmx_bool                       bDistBonded,
+                                  gmx_bool                       bBondComm,
+                                  gmx_bool                       bDist2B,
+                                  gmx_bool                       bDistMB,
+                                  gmx::ArrayRef<const gmx::RVec> coordinates,
+                                  gmx::ArrayRef<const int>       cginfo,
+                                  std::vector<int>*              localAtomGroups,
+                                  dd_comm_setup_work_t*          work)
 {
     gmx_domdec_comm_t* comm;
     gmx_bool           bScrew;
@@ -1610,14 +1610,14 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
         if (!distanceIsTriclinic)
         {
             /* Rectangular direction, easy */
-            r = cg_cm[cg][dim] - c->c[dim_ind][zone];
+            r = coordinates[cg][dim] - c->c[dim_ind][zone];
             if (r > 0)
             {
                 r2 += r * r;
             }
             if (bDistMB_pulse)
             {
-                r = cg_cm[cg][dim] - c->bc[dim_ind];
+                r = coordinates[cg][dim] - c->bc[dim_ind];
                 if (r > 0)
                 {
                     rb2 += r * r;
@@ -1628,7 +1628,7 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
              */
             if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
             {
-                r = cg_cm[cg][dim0] - c->cr0;
+                r = coordinates[cg][dim0] - c->cr0;
                 /* This is the first dimension, so always r >= 0 */
                 r2 += r * r;
                 if (bDistMB_pulse)
@@ -1638,14 +1638,14 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
             }
             if (dim_ind == 2 && (zonei == 2 || zonei == 3))
             {
-                r = cg_cm[cg][dim1] - c->cr1[zone];
+                r = coordinates[cg][dim1] - c->cr1[zone];
                 if (r > 0)
                 {
                     r2 += r * r;
                 }
                 if (bDistMB_pulse)
                 {
-                    r = cg_cm[cg][dim1] - c->bcr1;
+                    r = coordinates[cg][dim1] - c->bcr1;
                     if (r > 0)
                     {
                         rb2 += r * r;
@@ -1663,10 +1663,10 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
              */
             if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
             {
-                rn[dim0] = cg_cm[cg][dim0] - c->cr0;
+                rn[dim0] = coordinates[cg][dim0] - c->cr0;
                 for (i = dim0 + 1; i < DIM; i++)
                 {
-                    rn[dim0] -= cg_cm[cg][i] * v_0[i][dim0];
+                    rn[dim0] -= coordinates[cg][i] * v_0[i][dim0];
                 }
                 r2 = rn[dim0] * rn[dim0] * sf2_round[dim0];
                 if (bDistMB_pulse)
@@ -1693,11 +1693,11 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
             if (dim_ind == 2 && (zonei == 2 || zonei == 3))
             {
                 GMX_ASSERT(dim1 >= 0 && dim1 < DIM, "Must have a valid dimension index");
-                rn[dim1] += cg_cm[cg][dim1] - c->cr1[zone];
+                rn[dim1] += coordinates[cg][dim1] - c->cr1[zone];
                 tric_sh = 0;
                 for (i = dim1 + 1; i < DIM; i++)
                 {
-                    tric_sh -= cg_cm[cg][i] * v_1[i][dim1];
+                    tric_sh -= coordinates[cg][i] * v_1[i][dim1];
                 }
                 rn[dim1] += tric_sh;
                 if (rn[dim1] > 0)
@@ -1717,7 +1717,7 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
                 }
                 if (bDistMB_pulse)
                 {
-                    rb[dim1] += cg_cm[cg][dim1] - c->bcr1 + tric_sh;
+                    rb[dim1] += coordinates[cg][dim1] - c->bcr1 + tric_sh;
                     if (rb[dim1] > 0)
                     {
                         rb2 += rb[dim1] * rb[dim1] * sf2_round[dim1];
@@ -1736,11 +1736,11 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
                 }
             }
             /* The distance along the communication direction */
-            rn[dim] += cg_cm[cg][dim] - c->c[dim_ind][zone];
+            rn[dim] += coordinates[cg][dim] - c->c[dim_ind][zone];
             tric_sh = 0;
             for (i = dim + 1; i < DIM; i++)
             {
-                tric_sh -= cg_cm[cg][i] * v_d[i][dim];
+                tric_sh -= coordinates[cg][i] * v_d[i][dim];
             }
             rn[dim] += tric_sh;
             if (rn[dim] > 0)
@@ -1758,7 +1758,7 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
             {
                 clear_rvec(rb);
                 GMX_ASSERT(dim >= 0 && dim < DIM, "Must have a valid dimension index");
-                rb[dim] += cg_cm[cg][dim] - c->bc[dim_ind] + tric_sh;
+                rb[dim] += coordinates[cg][dim] - c->bc[dim_ind] + tric_sh;
                 if (rb[dim] > 0)
                 {
                     rb2 += rb[dim] * rb[dim] * skew_fac2_d;
@@ -1787,8 +1787,8 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
             rvec posPbc;
             if (dd->ci[dim] == 0)
             {
-                /* Correct cg_cm for pbc */
-                rvec_add(cg_cm[cg], box[dim], posPbc);
+                /* Correct coordinates for pbc */
+                rvec_add(coordinates[cg], box[dim], posPbc);
                 if (bScrew)
                 {
                     posPbc[YY] = box[YY][YY] - posPbc[YY];
@@ -1797,7 +1797,7 @@ static void get_zone_pulse_cgs(gmx_domdec_t*            dd,
             }
             else
             {
-                copy_rvec(cg_cm[cg], posPbc);
+                copy_rvec(coordinates[cg], posPbc);
             }
             vbuf.emplace_back(posPbc[XX], posPbc[YY], posPbc[ZZ]);
 
@@ -2018,38 +2018,38 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                         int cg0_th = cg0 + ((cg1 - cg0) * th) / numThreads;
                         int cg1_th = cg0 + ((cg1 - cg0) * (th + 1)) / numThreads;
 
-                        /* Get the cg's for this pulse in this zone */
-                        get_zone_pulse_cgs(dd,
-                                           zonei,
-                                           zone,
-                                           cg0_th,
-                                           cg1_th,
-                                           dd->globalAtomGroupIndices,
-                                           dim,
-                                           dim_ind,
-                                           dim0,
-                                           dim1,
-                                           dim2,
-                                           r_comm2,
-                                           r_bcomm2,
-                                           box,
-                                           distanceIsTriclinic,
-                                           normal,
-                                           skew_fac2_d,
-                                           skew_fac_01,
-                                           v_d,
-                                           v_0,
-                                           v_1,
-                                           &corners,
-                                           sf2_round,
-                                           bDistBonded,
-                                           bBondComm,
-                                           bDist2B,
-                                           bDistMB,
-                                           state->x.rvec_array(),
-                                           fr->cginfo,
-                                           th == 0 ? &ind->index : &work.localAtomGroupBuffer,
-                                           &work);
+                        /* Get the atom groups and coordinates for this pulse in this zone */
+                        get_zone_pulse_groups(dd,
+                                              zonei,
+                                              zone,
+                                              cg0_th,
+                                              cg1_th,
+                                              dd->globalAtomGroupIndices,
+                                              dim,
+                                              dim_ind,
+                                              dim0,
+                                              dim1,
+                                              dim2,
+                                              r_comm2,
+                                              r_bcomm2,
+                                              box,
+                                              distanceIsTriclinic,
+                                              normal,
+                                              skew_fac2_d,
+                                              skew_fac_01,
+                                              v_d,
+                                              v_0,
+                                              v_1,
+                                              &corners,
+                                              sf2_round,
+                                              bDistBonded,
+                                              bBondComm,
+                                              bDist2B,
+                                              bDistMB,
+                                              state->x,
+                                              fr->cginfo,
+                                              th == 0 ? &ind->index : &work.localAtomGroupBuffer,
+                                              &work);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 } // END
@@ -2122,7 +2122,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
             }
             ddSendrecv<int>(dd, dim_ind, dddirBackward, work.atomGroupBuffer, integerBufferRef);
 
-            /* Make space for cg_cm */
+            /* Make space for cginfo */
             dd_resize_atominfo_and_state(fr, state, pos_cg + ind->nrecv[nzone]);
 
             /* Communicate the coordinates */

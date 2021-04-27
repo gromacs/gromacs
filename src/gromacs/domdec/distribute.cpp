@@ -289,7 +289,7 @@ static inline int computeAtomGroupDomainIndex(const gmx_domdec_t& dd,
                                               const matrix                           box,
                                               rvec*                                  pos)
 {
-    /* Set the reference location cg_cm for assigning the group */
+    /* Set the reference location for assigning the group */
     rvec cog;
     int  numAtoms = atomEnd - atomBegin;
     if (numAtoms == 1)
