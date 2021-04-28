@@ -1296,7 +1296,9 @@ void gmx::LegacySimulator::do_md()
                                               state->dfhist,
                                               step,
                                               state->v.rvec_array(),
-                                              md);
+                                              md->homenr,
+                                              md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                                      : gmx::ArrayRef<const unsigned short>());
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {

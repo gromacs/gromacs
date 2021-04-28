@@ -40,36 +40,17 @@
 #include <cmath>
 #include <cstdio>
 
-#include <algorithm>
-
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xtcio.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/listed_forces/disre.h"
-#include "gromacs/listed_forces/orires.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdlib/calcmu.h"
-#include "gromacs/mdlib/constr.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "expanded_internal.h"
@@ -1348,16 +1329,17 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
     }
 }
 
-int ExpandedEnsembleDynamics(FILE*                 log,
-                             t_inputrec*           ir,
-                             const gmx_enerdata_t* enerd,
-                             t_state*              state,
-                             t_extmass*            MassQ,
-                             int                   fep_state,
-                             df_history_t*         dfhist,
-                             int64_t               step,
-                             rvec*                 v,
-                             const t_mdatoms*      mdatoms)
+int ExpandedEnsembleDynamics(FILE*                               log,
+                             t_inputrec*                         ir,
+                             const gmx_enerdata_t*               enerd,
+                             t_state*                            state,
+                             t_extmass*                          MassQ,
+                             int                                 fep_state,
+                             df_history_t*                       dfhist,
+                             int64_t                             step,
+                             rvec*                               v,
+                             const int                           homenr,
+                             gmx::ArrayRef<const unsigned short> cTC)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {
@@ -1504,13 +1486,13 @@ int ExpandedEnsembleDynamics(FILE*                 log,
         /* we don't need to manipulate the ekind information, as it isn't due to be reset until the next step anyway */
 
         nstart = 0;
-        nend   = mdatoms->homenr;
+        nend   = homenr;
         for (n = nstart; n < nend; n++)
         {
             gt = 0;
-            if (mdatoms->cTC)
+            if (!cTC.empty())
             {
-                gt = mdatoms->cTC[n];
+                gt = cTC[n];
             }
             for (d = 0; d < DIM; d++)
             {
