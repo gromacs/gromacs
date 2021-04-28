@@ -165,22 +165,25 @@ static void tableForce(real r, const t_forcetable& tab, real Cd, real Cr, real* 
     }
 }
 
-real do_walls(const t_inputrec&              ir,
-              const t_forcerec&              fr,
-              const matrix                   box,
-              const t_mdatoms&               md,
-              gmx::ArrayRef<const gmx::RVec> x,
-              gmx::ForceWithVirial*          forceWithVirial,
-              real                           lambda,
-              real                           Vlj[],
-              t_nrnb*                        nrnb)
+real do_walls(const t_inputrec&                   ir,
+              const t_forcerec&                   fr,
+              const matrix                        box,
+              gmx::ArrayRef<const int>            typeA,
+              gmx::ArrayRef<const int>            typeB,
+              gmx::ArrayRef<const unsigned short> cENER,
+              const int                           homenr,
+              const int                           numPerturbedAtoms,
+              gmx::ArrayRef<const gmx::RVec>      x,
+              gmx::ForceWithVirial*               forceWithVirial,
+              real                                lambda,
+              gmx::ArrayRef<real>                 Vlj,
+              t_nrnb*                             nrnb)
 {
     constexpr real sixth   = 1.0 / 6.0;
     constexpr real twelfth = 1.0 / 12.0;
 
-    int                   ntw[2];
-    real                  fac_d[2], fac_r[2];
-    const unsigned short* gid = md.cENER;
+    int  ntw[2];
+    real fac_d[2], fac_r[2];
 
     const int   nwall     = ir.nwall;
     const int   ngid      = ir.opts.ngener;
@@ -210,36 +213,36 @@ real do_walls(const t_inputrec&              ir,
 
     real   dvdlambda = 0;
     double sumRF     = 0;
-    for (int lam = 0; lam < (md.nPerturbed ? 2 : 1); lam++)
+    for (int lam = 0; lam < (numPerturbedAtoms ? 2 : 1); lam++)
     {
-        real       lamfac;
-        const int* type;
-        if (md.nPerturbed)
+        real                     lamfac;
+        gmx::ArrayRef<const int> type;
+        if (numPerturbedAtoms != 0)
         {
             if (lam == 0)
             {
                 lamfac = 1 - lambda;
-                type   = md.typeA;
+                type   = typeA;
             }
             else
             {
                 lamfac = lambda;
-                type   = md.typeB;
+                type   = typeB;
             }
         }
         else
         {
             lamfac = 1;
-            type   = md.typeA;
+            type   = typeA;
         }
 
         real Vlambda = 0;
-        for (int i = 0; i < md.homenr; i++)
+        for (int i = 0; i < homenr; i++)
         {
             for (int w = 0; w < std::min(nwall, 2); w++)
             {
                 /* The wall energy groups are always at the end of the list */
-                const int ggid = gid[i] * ngid + ngid - nwall + w;
+                const int ggid = cENER[i] * ngid + ngid - nwall + w;
                 const int at   = type[i];
                 /* nbfp now includes the 6/12 derivative prefactors */
                 const real Cd = nbfp[ntw[w] + 2 * at] * sixth;
@@ -274,7 +277,7 @@ real do_walls(const t_inputrec&              ir,
                     switch (ir.wall_type)
                     {
                         case WallType::Table:
-                            tableForce(r, *fr.wall_tab[w][gid[i]], Cd, Cr, &V, &F);
+                            tableForce(r, *fr.wall_tab[w][cENER[i]], Cd, Cr, &V, &F);
                             F *= lamfac;
                             break;
                         case WallType::NineThree:
@@ -324,12 +327,12 @@ real do_walls(const t_inputrec&              ir,
                 }
             }
         }
-        if (md.nPerturbed)
+        if (numPerturbedAtoms != 0)
         {
             dvdlambda += (lam == 0 ? -1 : 1) * Vlambda;
         }
 
-        inc_nrnb(nrnb, eNR_WALLS, md.homenr);
+        inc_nrnb(nrnb, eNR_WALLS, homenr);
     }
 
     if (forceWithVirial->computeVirial_)

@@ -58,14 +58,18 @@ void make_wall_tables(FILE*                   fplog,
                       const SimulationGroups* groups,
                       t_forcerec*             fr);
 
-real do_walls(const t_inputrec&              ir,
-              const t_forcerec&              fr,
-              const matrix                   box,
-              const t_mdatoms&               md,
-              gmx::ArrayRef<const gmx::RVec> x,
-              gmx::ForceWithVirial*          forceWithVirial,
-              real                           lambda,
-              real                           Vlj[],
-              t_nrnb*                        nrnb);
+real do_walls(const t_inputrec&                   ir,
+              const t_forcerec&                   fr,
+              const matrix                        box,
+              gmx::ArrayRef<const int>            typeA,
+              gmx::ArrayRef<const int>            typeB,
+              gmx::ArrayRef<const unsigned short> cENER,
+              int                                 homenr,
+              int                                 numPerturbedAtoms,
+              gmx::ArrayRef<const gmx::RVec>      x,
+              gmx::ForceWithVirial*               forceWithVirial,
+              real                                lambda,
+              gmx::ArrayRef<real>                 Vlj,
+              t_nrnb*                             nrnb);
 
 #endif
