@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,11 +73,20 @@ enum class DlbOption
     Count             //!< The number of options
 };
 
+/*! \brief Options for checking bonded interactions.
+ *
+ * These values must match the bool false and true used for mdrun -ddcheck */
+enum class DDBondedChecking
+{
+    ExcludeZeroLimit = 0, //!< Do not check bonded interactions that go to 0 for large distances
+    All              = 1  //!< Check all bonded interactions
+};
+
 /*! \libinternal \brief Structure containing all (command line) options for the domain decomposition */
 struct DomdecOptions
 {
-    //! If true, check that all bonded interactions have been assigned to exactly one domain/rank.
-    bool checkBondedInteractions = true;
+    //! Style of bonded-interaction checking
+    DDBondedChecking ddBondedChecking = DDBondedChecking::All;
     //! If true, don't communicate all atoms between the non-bonded cut-off and the larger bonded cut-off, but only those that have non-local bonded interactions. This significantly reduces the communication volume.
     bool useBondedCommunication = true;
     //! The domain decomposition grid cell count, 0 means let domdec choose based on the number of ranks.

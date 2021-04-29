@@ -1960,14 +1960,8 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog,
-                            cr->dd,
-                            mtop,
-                            vsite.get(),
-                            *inputrec,
-                            domdecOptions.checkBondedInteractions ? DDBondedChecking::All
-                                                                  : DDBondedChecking::ExcludeZeroLimit,
-                            fr->cginfo_mb);
+            dd_init_bondeds(
+                    fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking, fr->cginfo_mb);
         }
 
         if (runScheduleWork.simulationWork.useGpuBufferOps)

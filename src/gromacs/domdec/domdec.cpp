@@ -2137,11 +2137,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
 
             if (ddRole == DDRole::Master)
             {
-                const DDBondedChecking ddBondedChecking = options.checkBondedInteractions
-                                                                  ? DDBondedChecking::All
-                                                                  : DDBondedChecking::ExcludeZeroLimit;
-
-                dd_bonded_cg_distance(mdlog, mtop, ir, xGlobal, box, ddBondedChecking, &r_2b, &r_mb);
+                dd_bonded_cg_distance(mdlog, mtop, ir, xGlobal, box, options.ddBondedChecking, &r_2b, &r_mb);
             }
             gmx_bcast(sizeof(r_2b), &r_2b, communicator);
             gmx_bcast(sizeof(r_mb), &r_mb, communicator);
@@ -2500,7 +2496,7 @@ void dd_init_bondeds(FILE*                           fplog,
                      const gmx_mtop_t&               mtop,
                      const gmx::VirtualSitesHandler* vsite,
                      const t_inputrec&               inputrec,
-                     const DDBondedChecking          ddBondedChecking,
+                     const gmx::DDBondedChecking     ddBondedChecking,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb)
 {
     dd_make_reverse_top(fplog, dd, mtop, vsite, inputrec, ddBondedChecking);

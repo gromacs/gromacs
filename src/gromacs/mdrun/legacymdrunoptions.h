@@ -227,7 +227,7 @@ public:
         { "-ddcheck",
           FALSE,
           etBOOL,
-          { &domdecOptions.checkBondedInteractions },
+          { &domdecOptions.ddBondedChecking },
           "Check for all bonded interactions with DD" },
         { "-ddbondcomm",
           FALSE,

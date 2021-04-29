@@ -58,6 +58,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/options.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -92,6 +93,7 @@
 #include "dump.h"
 
 using gmx::ArrayRef;
+using gmx::DDBondedChecking;
 using gmx::ListOfLists;
 using gmx::RVec;
 
@@ -790,6 +792,9 @@ void dd_make_reverse_top(FILE*                           fplog,
      * Otherwise we need to assign them to multiple domains and set up
      * the parallel version constraint algorithm(s).
      */
+    GMX_RELEASE_ASSERT(ddBondedChecking == DDBondedChecking::ExcludeZeroLimit
+                               || ddBondedChecking == DDBondedChecking::All,
+                       "Invalid enum value for mdrun -ddcheck");
     const ReverseTopOptions rtOptions(ddBondedChecking,
                                       !dd->comm->systemInfo.haveSplitConstraints,
                                       !dd->comm->systemInfo.haveSplitSettles);

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,6 +189,40 @@ TEST_F(ParseCommonArgsTest, ParsesBooleanArgs)
     EXPECT_FALSE(value1);
     EXPECT_TRUE(value2);
     EXPECT_TRUE(value3);
+}
+
+TEST_F(ParseCommonArgsTest, ParsesBooleanArgsToValuesOfSuitableEnum)
+{
+    enum class LikeBool
+    {
+        No  = 0,
+        Yes = 1
+    };
+    // Set up the default values
+    LikeBool value1 = LikeBool::No;
+    LikeBool value2 = LikeBool::No;
+    LikeBool value3 = LikeBool::No;
+    LikeBool value4 = LikeBool::Yes;
+    LikeBool value5 = LikeBool::Yes;
+    LikeBool value6 = LikeBool::Yes;
+    // Set up 6 options
+    t_pargs pa[] = { { "-b1", FALSE, etBOOL, { &value1 }, "Description" },
+                     { "-b2", FALSE, etBOOL, { &value2 }, "Description" },
+                     { "-b3", FALSE, etBOOL, { &value3 }, "Description" },
+                     { "-b4", FALSE, etBOOL, { &value4 }, "Description" },
+                     { "-b5", FALSE, etBOOL, { &value5 }, "Description" },
+                     { "-b6", FALSE, etBOOL, { &value6 }, "Description" } };
+    // Set some to yes and no, leave some as default
+    const char* const cmdline[] = { "test", "-b1", "-nob2", "-b4", "-nob5" };
+
+    parseFromArray(cmdline, 0, {}, pa);
+    // Expetactions
+    EXPECT_EQ(value1, LikeBool::Yes) << "set to yes";
+    EXPECT_EQ(value2, LikeBool::No) << "set to no";
+    EXPECT_EQ(value3, LikeBool::No) << "preserves the default of no";
+    EXPECT_EQ(value4, LikeBool::Yes) << "set to yes";
+    EXPECT_EQ(value5, LikeBool::No) << "set to no";
+    EXPECT_EQ(value6, LikeBool::Yes) << "preserves the default of yes";
 }
 
 TEST_F(ParseCommonArgsTest, ParsesVectorArgs)

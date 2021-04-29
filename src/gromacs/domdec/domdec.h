@@ -94,6 +94,7 @@ class RangePartitioning;
 class VirtualSitesHandler;
 template<typename>
 class ArrayRef;
+enum class DDBondedChecking;
 } // namespace gmx
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -156,20 +157,13 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
 
-/*! \brief Options for checking bonded interactions */
-enum class DDBondedChecking
-{
-    All,             //!< Check all bonded interactions
-    ExcludeZeroLimit //!< Do not check bonded interactions that go to 0 for large distances
-};
-
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE*                           fplog,
                      gmx_domdec_t*                   dd,
                      const gmx_mtop_t&               mtop,
                      const gmx::VirtualSitesHandler* vsite,
                      const t_inputrec&               inputrec,
-                     DDBondedChecking                ddBondedChecking,
+                     gmx::DDBondedChecking           ddBondedChecking,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb);
 
 /*! \brief Returns whether molecules are always whole, i.e. not broken by PBC */
@@ -279,7 +273,7 @@ void dd_make_reverse_top(FILE*                           fplog,
                          const gmx_mtop_t&               mtop,
                          const gmx::VirtualSitesHandler* vsite,
                          const t_inputrec&               inputrec,
-                         DDBondedChecking                ddBondedChecking);
+                         gmx::DDBondedChecking           ddBondedChecking);
 
 /*! \brief Return whether the total bonded interaction count across
  * domains should be checked this step. */
@@ -340,7 +334,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
                            const t_inputrec&              ir,
                            gmx::ArrayRef<const gmx::RVec> x,
                            const matrix                   box,
-                           DDBondedChecking               ddBondedChecking,
+                           gmx::DDBondedChecking          ddBondedChecking,
                            real*                          r_2b,
                            real*                          r_mb);
 
