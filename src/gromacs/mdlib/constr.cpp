@@ -1102,6 +1102,15 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
 
         settled = std::make_unique<SettleData>(mtop);
 
+        // SETTLE with perturbed masses is not implemented. grompp now checks
+        // for this, but old .tpr files that did this might still exist.
+        if (haveFepPerturbedMassesInSettles(mtop))
+        {
+            gmx_fatal(FARGS,
+                      "SETTLE is not implemented for atoms whose mass is perturbed. "
+                      "You might\ninstead use normal constraints.");
+        }
+
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
         {

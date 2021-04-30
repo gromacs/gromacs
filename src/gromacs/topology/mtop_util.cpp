@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2008,2009,2010, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1081,6 +1081,25 @@ bool haveFepPerturbedMasses(const gmx_mtop_t& mtop)
         }
     }
 
+    return false;
+}
+
+bool haveFepPerturbedMassesInSettles(const gmx_mtop_t& mtop)
+{
+    for (const gmx_moltype_t& molt : mtop.moltype)
+    {
+        if (!molt.ilist[F_SETTLE].empty())
+        {
+            for (int a = 0; a < molt.atoms.nr; a++)
+            {
+                const t_atom& atom = molt.atoms.atom[a];
+                if (atom.m != atom.mB)
+                {
+                    return true;
+                }
+            }
+        }
+    }
     return false;
 }
 

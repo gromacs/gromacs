@@ -17,12 +17,21 @@ Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Removed a potential race condition with GPU update
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Fixed possible (but so far unobserved) race condition in coordinate copy when
 using GPU update with dipole moment calculation.
 
 :issue:`4024`
+
+Prohibited SETTLE interactions for atoms with perturbed masses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Older implementations produced varying degrees of wrong results because
+this has never been implemented. Now both ``mdrun`` and ``grompp``
+refuse to handle such a system, suggesting using normal constraints.
+
+:issue:`3959`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^

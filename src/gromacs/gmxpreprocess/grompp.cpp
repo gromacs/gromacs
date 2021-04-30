@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2080,6 +2080,13 @@ int gmx_grompp(int argc, char* argv[])
 
     /* check masses */
     check_mol(&sys, wi);
+
+    if (haveFepPerturbedMassesInSettles(sys))
+    {
+        warning_error(wi,
+                      "SETTLE is not implemented for atoms whose mass is perturbed. "
+                      "You might instead use normal constraints.");
+    }
 
     checkForUnboundAtoms(&sys, bVerbose, wi, logger);
 
