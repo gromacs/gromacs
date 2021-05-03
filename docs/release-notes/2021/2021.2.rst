@@ -73,6 +73,11 @@ Fix Apple OpenCL build
 
 :issue:`4008`
 
+Fixed compilation issue with GCC 11
+""""""""""""""""""""""""""""""""""""
+
+:issue:`4039`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
