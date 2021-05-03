@@ -305,16 +305,16 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
                                      const matrix                   box);
 
 /*! \brief Generate the local topology and virtual site data */
-void dd_make_local_top(struct gmx_domdec_t*       dd,
-                       struct gmx_domdec_zones_t* zones,
-                       int                        npbcdim,
-                       matrix                     box,
-                       rvec                       cellsize_min,
-                       const ivec                 npulse,
-                       t_forcerec*                fr,
-                       rvec*                      cgcm_or_x,
-                       const gmx_mtop_t&          top,
-                       gmx_localtop_t*            ltop);
+void dd_make_local_top(struct gmx_domdec_t*           dd,
+                       struct gmx_domdec_zones_t*     zones,
+                       int                            npbcdim,
+                       matrix                         box,
+                       rvec                           cellsize_min,
+                       const ivec                     npulse,
+                       t_forcerec*                    fr,
+                       gmx::ArrayRef<const gmx::RVec> coordinates,
+                       const gmx_mtop_t&              top,
+                       gmx_localtop_t*                ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
 void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);

@@ -3198,7 +3198,7 @@ void dd_partition_system(FILE*                     fplog,
                       comm->cellsize_min,
                       numPulses,
                       fr,
-                      state_local->x.rvec_array(),
+                      state_local->x,
                       top_global,
                       top_local);
 
