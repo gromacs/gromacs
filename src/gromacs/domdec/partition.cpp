@@ -3222,7 +3222,7 @@ void dd_partition_system(FILE*                     fplog,
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
-                if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
+                if (dd->comm->systemInfo.mayHaveSplitConstraints || dd->comm->systemInfo.mayHaveSplitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
                     n = dd_make_local_constraints(dd,

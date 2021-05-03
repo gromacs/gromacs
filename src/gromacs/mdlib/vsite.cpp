@@ -232,7 +232,10 @@ class VirtualSitesHandler::Impl
 {
 public:
     //! Constructor, domdec should be nullptr without DD
-    Impl(const gmx_mtop_t& mtop, gmx_domdec_t* domdec, PbcType pbcType);
+    Impl(const gmx_mtop_t&                 mtop,
+         gmx_domdec_t*                     domdec,
+         PbcType                           pbcType,
+         ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType);
 
     //! Returns the number of virtual sites acting over multiple update groups
     int numInterUpdategroupVirtualSites() const { return numInterUpdategroupVirtualSites_; }
@@ -2574,7 +2577,8 @@ int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop
 
 std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& mtop,
                                                              const t_commrec*  cr,
-                                                             PbcType           pbcType)
+                                                             PbcType           pbcType,
+                                                             ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType)
 {
     GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
 
@@ -2603,7 +2607,7 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
         return vsite;
     }
 
-    return std::make_unique<VirtualSitesHandler>(mtop, cr->dd, pbcType);
+    return std::make_unique<VirtualSitesHandler>(mtop, cr->dd, pbcType, updateGroupingPerMoleculeType);
 }
 
 ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThread::VirtualSite))
@@ -2632,27 +2636,21 @@ ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThr
     }
 }
 
-//! Returns the number of inter update-group vsites
-static int getNumInterUpdategroupVsites(const gmx_mtop_t& mtop, const gmx_domdec_t* domdec)
-{
-    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType;
-    if (domdec)
-    {
-        updateGroupingsPerMoleculeType = getUpdateGroupingsPerMoleculeType(*domdec);
-    }
-
-    return countInterUpdategroupVsites(mtop, updateGroupingsPerMoleculeType);
-}
-
-VirtualSitesHandler::Impl::Impl(const gmx_mtop_t& mtop, gmx_domdec_t* domdec, const PbcType pbcType) :
-    numInterUpdategroupVirtualSites_(getNumInterUpdategroupVsites(mtop, domdec)),
+VirtualSitesHandler::Impl::Impl(const gmx_mtop_t&                       mtop,
+                                gmx_domdec_t*                           domdec,
+                                const PbcType                           pbcType,
+                                const ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType) :
+    numInterUpdategroupVirtualSites_(countInterUpdategroupVsites(mtop, updateGroupingPerMoleculeType)),
     domainInfo_({ pbcType, pbcType != PbcType::No && numInterUpdategroupVirtualSites_ > 0, domdec }),
     iparams_(mtop.ffparams.iparams)
 {
 }
 
-VirtualSitesHandler::VirtualSitesHandler(const gmx_mtop_t& mtop, gmx_domdec_t* domdec, const PbcType pbcType) :
-    impl_(new Impl(mtop, domdec, pbcType))
+VirtualSitesHandler::VirtualSitesHandler(const gmx_mtop_t&                       mtop,
+                                         gmx_domdec_t*                           domdec,
+                                         const PbcType                           pbcType,
+                                         const ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType) :
+    impl_(new Impl(mtop, domdec, pbcType, updateGroupingPerMoleculeType))
 {
 }
 

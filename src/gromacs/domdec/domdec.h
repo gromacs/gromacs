@@ -151,8 +151,8 @@ int dd_pme_maxshift_x(const gmx_domdec_t& dd);
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim y */
 int dd_pme_maxshift_y(const gmx_domdec_t& dd);
 
-/*! \brief Return whether constraints, not including settles, cross domain boundaries */
-bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
+/*! \brief Return whether constraints, not including settles, may cross domain boundaries */
+bool ddMayHaveSplitConstraints(const gmx_domdec_t& dd);
 
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);

@@ -442,9 +442,9 @@ struct DDSystemInfo
     real cellsizeLimit = 0;
 
     //! Can atoms connected by constraints be assigned to different domains?
-    bool haveSplitConstraints = false;
+    bool mayHaveSplitConstraints = false;
     //! Can atoms connected by settles be assigned to different domains?
-    bool haveSplitSettles = false;
+    bool mayHaveSplitSettles = false;
     //! Estimated communication range needed for constraints
     real constraintCommunicationRange = 0;
 

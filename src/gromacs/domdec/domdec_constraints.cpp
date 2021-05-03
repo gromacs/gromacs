@@ -407,7 +407,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
     // called...
-    GMX_RELEASE_ASSERT(dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles,
+    GMX_RELEASE_ASSERT(dd->comm->systemInfo.mayHaveSplitConstraints || dd->comm->systemInfo.mayHaveSplitSettles,
                        "dd_make_local_constraints called when there are no local constraints");
     // ... and init_domdec_constraints always sets
     // dd->constraint_comm...
@@ -439,7 +439,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
 
     gmx::ArrayRef<const std::vector<int>> at2settle_mt;
     /* When settle works inside charge groups, we assigned them already */
-    if (dd->comm->systemInfo.haveSplitSettles)
+    if (dd->comm->systemInfo.mayHaveSplitSettles)
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
         GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");

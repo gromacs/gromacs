@@ -982,9 +982,9 @@ int dd_pme_maxshift_y(const gmx_domdec_t& dd)
     }
 }
 
-bool ddHaveSplitConstraints(const gmx_domdec_t& dd)
+bool ddMayHaveSplitConstraints(const gmx_domdec_t& dd)
 {
-    return dd.comm->systemInfo.haveSplitConstraints;
+    return dd.comm->systemInfo.mayHaveSplitConstraints;
 }
 
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd)
@@ -2051,14 +2051,14 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
 
     if (systemInfo.useUpdateGroups)
     {
-        systemInfo.haveSplitConstraints = false;
-        systemInfo.haveSplitSettles     = false;
+        systemInfo.mayHaveSplitConstraints = false;
+        systemInfo.mayHaveSplitSettles     = false;
     }
     else
     {
-        systemInfo.haveSplitConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
-                                           || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0);
-        systemInfo.haveSplitSettles     = (gmx_mtop_ftype_count(mtop, F_SETTLE) > 0);
+        systemInfo.mayHaveSplitConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
+                                              || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0);
+        systemInfo.mayHaveSplitSettles     = (gmx_mtop_ftype_count(mtop, F_SETTLE) > 0);
     }
 
     if (ir.rlist == 0)
@@ -2180,7 +2180,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
     }
 
     systemInfo.constraintCommunicationRange = 0;
-    if (systemInfo.haveSplitConstraints && options.constraintCommunicationRange <= 0)
+    if (systemInfo.mayHaveSplitConstraints && options.constraintCommunicationRange <= 0)
     {
         /* There is a cell size limit due to the constraints (P-LINCS) */
         systemInfo.constraintCommunicationRange = gmx::constr_r_max(mdlog, &mtop, &ir);
@@ -2225,7 +2225,7 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
 {
     if (options.numCells[XX] <= 0 && (ddGridSetup.numDomains[XX] == 0))
     {
-        const bool  bC = (systemInfo.haveSplitConstraints
+        const bool  bC = (systemInfo.mayHaveSplitConstraints
                          && systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
         std::string message =
                 gmx::formatString("Change the number of ranks or mdrun option %s%s%s",
@@ -2577,7 +2577,7 @@ static void writeSettings(gmx::TextWriter*   log,
             (countInterUpdategroupVsites(mtop, comm->systemInfo.updateGroupingsPerMoleculeType) != 0);
 
     if (comm->systemInfo.haveInterDomainBondeds || haveInterDomainVsites
-        || comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)
+        || comm->systemInfo.mayHaveSplitConstraints || comm->systemInfo.mayHaveSplitSettles)
     {
         std::string decompUnits;
         if (comm->systemInfo.useUpdateGroups)
@@ -2631,7 +2631,7 @@ static void writeSettings(gmx::TextWriter*   log,
         {
             log->writeLineFormatted("%40s  %-7s %6.3f nm", "virtual site constructions", "(-rcon)", limit);
         }
-        if (comm->systemInfo.haveSplitConstraints || comm->systemInfo.haveSplitSettles)
+        if (comm->systemInfo.mayHaveSplitConstraints || comm->systemInfo.mayHaveSplitSettles)
         {
             std::string separation =
                     gmx::formatString("atoms separated by up to %d constraints", 1 + ir.nProjOrder);

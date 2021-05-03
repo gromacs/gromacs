@@ -371,7 +371,7 @@ public:
         // TODO This object will always return zero as RMSD value.
         //      It is more relevant to have non-zero value for testing.
         constraints_ = makeConstraints(
-                mtop_, inputrec_, nullptr, false, nullptr, &cr_, nullptr, nullptr, nullptr, false);
+                mtop_, inputrec_, nullptr, false, nullptr, &cr_, false, nullptr, nullptr, nullptr, false);
     }
 
     /*! \brief Helper function to generate synthetic data to output

@@ -107,6 +107,7 @@ private:
                 pull_t*               pull_work,
                 FILE*                 log,
                 const t_commrec*      cr,
+                bool                  haveHaveSplitConstraints,
                 const gmx_multisim_t* ms,
                 t_nrnb*               nrnb,
                 gmx_wallcycle*        wcycle,

@@ -1725,7 +1725,12 @@ int Mdrunner::mdrunner()
         }
 
         /* Initialize the virtual site communication */
-        vsite = makeVirtualSitesHandler(mtop, cr, fr->pbcType);
+        gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType;
+        if (DOMAINDECOMP(cr))
+        {
+            updateGroupingsPerMoleculeType = getUpdateGroupingsPerMoleculeType(*cr->dd);
+        }
+        vsite = makeVirtualSitesHandler(mtop, cr, fr->pbcType, updateGroupingsPerMoleculeType);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1922,8 +1927,17 @@ int Mdrunner::mdrunner()
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints. */
-        auto constr = makeConstraints(
-                mtop, *inputrec, pull_work, doEssentialDynamics, fplog, cr, ms, &nrnb, wcycle.get(), fr->bMolPBC);
+        auto constr = makeConstraints(mtop,
+                                      *inputrec,
+                                      pull_work,
+                                      doEssentialDynamics,
+                                      fplog,
+                                      cr,
+                                      DOMAINDECOMP(cr) && ddMayHaveSplitConstraints(*cr->dd),
+                                      ms,
+                                      &nrnb,
+                                      wcycle.get(),
+                                      fr->bMolPBC);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),

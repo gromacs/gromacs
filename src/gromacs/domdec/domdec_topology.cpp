@@ -800,8 +800,8 @@ void dd_make_reverse_top(FILE*                           fplog,
                                || ddBondedChecking == DDBondedChecking::All,
                        "Invalid enum value for mdrun -ddcheck");
     const ReverseTopOptions rtOptions(ddBondedChecking,
-                                      !dd->comm->systemInfo.haveSplitConstraints,
-                                      !dd->comm->systemInfo.haveSplitSettles);
+                                      !dd->comm->systemInfo.mayHaveSplitConstraints,
+                                      !dd->comm->systemInfo.mayHaveSplitSettles);
 
     dd->reverse_top = std::make_unique<gmx_reverse_top_t>(
             mtop, inputrec.efep != FreeEnergyPerturbationType::No, rtOptions);
@@ -832,7 +832,7 @@ void dd_make_reverse_top(FILE*                           fplog,
         init_domdec_vsites(dd, numInterUpdategroupVirtualSites);
     }
 
-    if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
+    if (dd->comm->systemInfo.mayHaveSplitConstraints || dd->comm->systemInfo.mayHaveSplitSettles)
     {
         init_domdec_constraints(dd, mtop);
     }
