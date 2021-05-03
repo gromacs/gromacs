@@ -556,6 +556,11 @@ static int makeTemporaryFilename(char* buf)
 #else
     fd = mkstemp(buf);
 
+    /* mkstemp creates 0600 files - respect umask instead */
+    mode_t currUmask = umask(0);
+    umask(currUmask);
+    fchmod(fd, 0666 & ~currUmask);
+
     if (fd < 0)
     {
         gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));

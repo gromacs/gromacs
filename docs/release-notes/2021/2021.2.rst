@@ -60,6 +60,14 @@ code incorrectly tried to construct a string from nullptr.
 
 :issue:`3055`
 
+Fix file permissions with ``gmx solvate`` and ``gmx genion``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+These used to write temporary files with Unix permissions 0600. Now
+they respect the umask of the process (typically 0644).
+
+:issue:`4040`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
