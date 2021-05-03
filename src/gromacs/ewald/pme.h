@@ -233,7 +233,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
  * pme struct. Currently does not work in parallel or with free
  * energy.
  */
-void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q, real* V);
+real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).
@@ -247,7 +247,10 @@ void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
  * \param[in]     chargesB   The pointer to the array of particle charges in state B. Only used if
  * charges are perturbed and can otherwise be nullptr.
  */
-void gmx_pme_reinit_atoms(gmx_pme_t* pme, int numAtoms, const real* chargesA, const real* chargesB);
+void gmx_pme_reinit_atoms(gmx_pme_t*                pme,
+                          int                       numAtoms,
+                          gmx::ArrayRef<const real> chargesA,
+                          gmx::ArrayRef<const real> chargesB);
 
 /* A block of PME GPU functions */
 

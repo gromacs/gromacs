@@ -989,7 +989,10 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
          */
         if (!pme_src->gpu && pme_src->nnodes == 1)
         {
-            gmx_pme_reinit_atoms(*pmedata, pme_src->atc[0].numAtoms(), nullptr, nullptr);
+            gmx_pme_reinit_atoms(*pmedata,
+                                 pme_src->atc[0].numAtoms(),
+                                 {},
+                                 {});
         }
         // TODO this is mostly passing around current values
     }
@@ -1000,7 +1003,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
     /* We would like to reuse the fft grids, but that's harder */
 }
 
-void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q, real* V)
+real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q)
 {
     pmegrids_t* grid;
 
@@ -1028,7 +1031,7 @@ void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, nullptr, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
 
-    *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
+    return gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
@@ -1778,13 +1781,16 @@ void gmx_pme_destroy(gmx_pme_t* pme)
     delete pme;
 }
 
-void gmx_pme_reinit_atoms(gmx_pme_t* pme, const int numAtoms, const real* chargesA, const real* chargesB)
+void gmx_pme_reinit_atoms(gmx_pme_t*                pme,
+                          const int                 numAtoms,
+                          gmx::ArrayRef<const real> chargesA,
+                          gmx::ArrayRef<const real> chargesB)
 {
     if (pme->gpu != nullptr)
     {
-        GMX_ASSERT(!(pme->bFEP_q && chargesB == nullptr),
+        GMX_ASSERT(!(pme->bFEP_q && !chargesB.empty()),
                    "B state charges must be specified if running Coulomb FEP on the GPU");
-        pme_gpu_reinit_atoms(pme->gpu, numAtoms, chargesA, pme->bFEP_q ? chargesB : nullptr);
+        pme_gpu_reinit_atoms(pme->gpu, numAtoms, chargesA.data(), pme->bFEP_q ? chargesB.data() : nullptr);
     }
     else
     {

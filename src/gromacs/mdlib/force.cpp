@@ -257,11 +257,10 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
                     /* Determine the PME grid energy of the test molecule
                      * with the PME grid potential of the other charges.
                      */
-                    gmx_pme_calc_energy(
+                    Vlr_q = gmx_pme_calc_energy(
                             fr->pmedata,
                             coordinates.subArray(md->homenr - fr->n_tpi, fr->n_tpi),
-                            gmx::arrayRefFromArray(md->chargeA + md->homenr - fr->n_tpi, fr->n_tpi),
-                            &Vlr_q);
+                            gmx::arrayRefFromArray(md->chargeA + md->homenr - fr->n_tpi, fr->n_tpi));
                 }
             }
         }

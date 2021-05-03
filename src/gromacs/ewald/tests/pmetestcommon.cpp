@@ -199,7 +199,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc              = &(pme->atc[0]);
             atc->x           = coordinates;
             atc->coefficient = charges;
-            gmx_pme_reinit_atoms(pme, atomCount, charges.data(), nullptr);
+            gmx_pme_reinit_atoms(pme, atomCount, charges, {});
             /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
             break;
 
@@ -208,7 +208,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc = &(pme->atc[0]);
             // We need to set atc->n for passing the size in the tests
             atc->setNumAtoms(atomCount);
-            gmx_pme_reinit_atoms(pme, atomCount, charges.data(), nullptr);
+            gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
             stateGpu->reinit(atomCount, atomCount);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
