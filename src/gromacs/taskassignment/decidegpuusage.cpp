@@ -573,11 +573,6 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
                     "small molecules, and box sizes close to half the pair-list cutoff are not "
                     "supported.\n ";
         }
-
-        if (pmeUsesCpu)
-        {
-            errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
-        }
     }
 
     if (havePmeOnlyRank)

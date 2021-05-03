@@ -82,3 +82,14 @@ Fix bond type in GROMOS force fields
 The bond type for C and +N in [ACE] was incorrect.
 
 :issue:`3995`
+
+
+Allow PME on CPU in runs with domain decomposition and GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Relaxed a limitation which prevented running parallel runs with domain
+decomposition and GPU update to use the CPU for PME (as long as combined
+PP-PME ranks are used). This allows parallel runs to scale when the CPU
+resources are sufficient for PME.
+
+:issue:`4035`
