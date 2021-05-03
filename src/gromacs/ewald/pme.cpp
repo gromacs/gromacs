@@ -989,10 +989,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
          */
         if (!pme_src->gpu && pme_src->nnodes == 1)
         {
-            gmx_pme_reinit_atoms(*pmedata,
-                                 pme_src->atc[0].numAtoms(),
-                                 {},
-                                 {});
+            gmx_pme_reinit_atoms(*pmedata, pme_src->atc[0].numAtoms(), {}, {});
         }
         // TODO this is mostly passing around current values
     }
