@@ -193,10 +193,10 @@ TEST_F(ParseCommonArgsTest, ParsesBooleanArgs)
 
 TEST_F(ParseCommonArgsTest, ParsesBooleanArgsToValuesOfSuitableEnum)
 {
-    enum class LikeBool
+    enum class LikeBool : bool
     {
-        No  = 0,
-        Yes = 1
+        No  = false,
+        Yes = true
     };
     // Set up the default values
     LikeBool value1 = LikeBool::No;
