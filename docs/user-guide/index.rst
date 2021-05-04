@@ -31,6 +31,7 @@ and search for a potential answer or ask a question from the community.
 .. toctree::
    :maxdepth: 2
 
+   known-issues
    getting-started
    system-preparation
    managing-simulations

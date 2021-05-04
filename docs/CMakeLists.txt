@@ -446,6 +446,7 @@ if (SPHINX_FOUND)
         user-guide/force-fields.rst
         user-guide/getting-started.rst
         user-guide/index.rst
+        user-guide/known-issues.rst
         user-guide/managing-simulations.rst
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst
