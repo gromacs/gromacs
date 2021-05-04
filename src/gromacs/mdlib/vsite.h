@@ -56,10 +56,10 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct t_commrec;
 struct InteractionList;
-struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
 enum class PbcType : int;
+enum class ParticleType : int;
 
 namespace gmx
 {
@@ -107,7 +107,10 @@ public:
     int numInterUpdategroupVirtualSites() const;
 
     //! Set VSites and distribute VSite work over threads, should be called after each DD partitioning
-    void setVirtualSites(ArrayRef<const InteractionList> ilist, const t_mdatoms& mdatoms);
+    void setVirtualSites(ArrayRef<const InteractionList> ilist,
+                         int                             numAtoms,
+                         int                             homenr,
+                         ArrayRef<const ParticleType>    ptype);
 
     /*! \brief Create positions of vsite atoms based for the local system
      *

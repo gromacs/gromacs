@@ -60,7 +60,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -214,7 +213,9 @@ public:
     //! Set VSites and distribute VSite work over threads, should be called after DD partitioning
     void setVirtualSites(ArrayRef<const InteractionList> ilist,
                          ArrayRef<const t_iparams>       iparams,
-                         const t_mdatoms&                mdatoms,
+                         int                             numAtoms,
+                         int                             homenr,
+                         ArrayRef<const ParticleType>    ptype,
                          bool                            useDomdec);
 
 private:
@@ -241,7 +242,10 @@ public:
     int numInterUpdategroupVirtualSites() const { return numInterUpdategroupVirtualSites_; }
 
     //! Set VSites and distribute VSite work over threads, should be called after DD partitioning
-    void setVirtualSites(ArrayRef<const InteractionList> ilist, const t_mdatoms& mdatoms);
+    void setVirtualSites(ArrayRef<const InteractionList> ilist,
+                         int                             numAtoms,
+                         int                             homenr,
+                         ArrayRef<const ParticleType>    ptype);
 
     /*! \brief Create positions of vsite atoms based for the local system
      *
@@ -2686,7 +2690,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                                  gmx::ArrayRef<int>              taskIndex,
                                  ArrayRef<const InteractionList> ilist,
                                  ArrayRef<const t_iparams>       ip,
-                                 const ParticleType*             ptype)
+                                 ArrayRef<const ParticleType>    ptype)
 {
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -2845,7 +2849,9 @@ static void assignVsitesToSingleTask(VsiteThread*                    tData,
 
 void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
                                     ArrayRef<const t_iparams>       iparams,
-                                    const t_mdatoms&                mdatoms,
+                                    const int                       numAtoms,
+                                    const int                       homenr,
+                                    ArrayRef<const ParticleType>    ptype,
                                     const bool                      useDomdec)
 {
     if (numThreads_ <= 1)
@@ -2918,15 +2924,15 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
          * When assigning vsites to threads, we should take care that the last
          * threads also covers the non-local range.
          */
-        vsite_atom_range = mdatoms.nr;
-        natperthread     = (mdatoms.homenr + numThreads_ - 1) / numThreads_;
+        vsite_atom_range = numAtoms;
+        natperthread     = (homenr + numThreads_ - 1) / numThreads_;
     }
 
     if (debug)
     {
         fprintf(debug,
                 "virtual site thread dist: natoms %d, range %d, natperthread %d\n",
-                mdatoms.nr,
+                numAtoms,
                 vsite_atom_range,
                 natperthread);
     }
@@ -2934,7 +2940,7 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
     /* To simplify the vsite assignment, we make an index which tells us
      * to which task particles, both non-vsites and vsites, are assigned.
      */
-    taskIndex_.resize(mdatoms.nr);
+    taskIndex_.resize(numAtoms);
 
     /* Initialize the task index array. Here we assign the non-vsite
      * particles to task=thread, so we easily figure out if vsites
@@ -2942,9 +2948,9 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
      */
     {
         int thread = 0;
-        for (int i = 0; i < mdatoms.nr; i++)
+        for (int i = 0; i < numAtoms; i++)
         {
-            if (mdatoms.ptype[i] == ParticleType::VSite)
+            if (ptype[i] == ParticleType::VSite)
             {
                 /* vsites are not assigned to a task yet */
                 taskIndex_[i] = -1;
@@ -3023,10 +3029,10 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
             else
             {
                 /* The last thread should cover up to the end of the range */
-                tData.rangeEnd = mdatoms.nr;
+                tData.rangeEnd = numAtoms;
             }
             assignVsitesToThread(
-                    &tData, thread, numThreads_, natperthread, taskIndex_, ilists, iparams, mdatoms.ptype);
+                    &tData, thread, numThreads_, natperthread, taskIndex_, ilists, iparams, ptype);
 
             if (tData.useInterdependentTask)
             {
@@ -3108,16 +3114,21 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
 }
 
 void VirtualSitesHandler::Impl::setVirtualSites(ArrayRef<const InteractionList> ilists,
-                                                const t_mdatoms&                mdatoms)
+                                                const int                       numAtoms,
+                                                const int                       homenr,
+                                                ArrayRef<const ParticleType>    ptype)
 {
     ilists_ = ilists;
 
-    threadingInfo_.setVirtualSites(ilists, iparams_, mdatoms, domainInfo_.useDomdec());
+    threadingInfo_.setVirtualSites(ilists, iparams_, numAtoms, homenr, ptype, domainInfo_.useDomdec());
 }
 
-void VirtualSitesHandler::setVirtualSites(ArrayRef<const InteractionList> ilists, const t_mdatoms& mdatoms)
+void VirtualSitesHandler::setVirtualSites(ArrayRef<const InteractionList> ilists,
+                                          const int                       numAtoms,
+                                          const int                       homenr,
+                                          ArrayRef<const ParticleType>    ptype)
 {
-    impl_->setVirtualSites(ilists, mdatoms);
+    impl_->setVirtualSites(ilists, numAtoms, homenr, ptype);
 }
 
 } // namespace gmx
