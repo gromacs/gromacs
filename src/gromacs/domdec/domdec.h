@@ -94,7 +94,7 @@ class RangePartitioning;
 class VirtualSitesHandler;
 template<typename>
 class ArrayRef;
-enum class DDBondedChecking;
+enum class DDBondedChecking : bool;
 } // namespace gmx
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.

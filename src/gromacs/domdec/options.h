@@ -76,10 +76,10 @@ enum class DlbOption
 /*! \brief Options for checking bonded interactions.
  *
  * These values must match the bool false and true used for mdrun -ddcheck */
-enum class DDBondedChecking
+enum class DDBondedChecking : bool
 {
-    ExcludeZeroLimit = 0, //!< Do not check bonded interactions that go to 0 for large distances
-    All              = 1  //!< Check all bonded interactions
+    ExcludeZeroLimit = false, //!< Do not check bonded interactions that go to 0 for large distances
+    All              = true   //!< Check all bonded interactions
 };
 
 /*! \libinternal \brief Structure containing all (command line) options for the domain decomposition */
