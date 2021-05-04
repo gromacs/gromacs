@@ -521,6 +521,8 @@ FilePtr openLibraryFile(const char* filename, bool bAddCWD, bool bFatal)
 /*! \brief Use mkstemp (or similar function to make a new temporary
  * file and (on non-Windows systems) return a file descriptor to it.
  *
+ * Note: not thread-safe on non-Windows systems
+ *
  * \todo Use std::string and std::vector<char>. */
 static int makeTemporaryFilename(char* buf)
 {
@@ -547,6 +549,11 @@ static int makeTemporaryFilename(char* buf)
     int fd = 0;
 #else
     int fd = mkstemp(buf);
+
+    /* mkstemp creates 0600 files - respect umask instead */
+    mode_t currUmask = umask(0);
+    umask(currUmask);
+    fchmod(fd, 0666 & ~currUmask);
 
     if (fd < 0)
     {
