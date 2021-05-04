@@ -572,7 +572,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         {
             auto globalFRef =
                     MASTER(cr) ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
-                                                        f_local.size())
+                                                        of->natoms_global)
                                : gmx::ArrayRef<gmx::RVec>();
             dd_collect_vec(cr->dd,
                            state_local->ddp_count,
