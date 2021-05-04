@@ -351,14 +351,15 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
     pull->group.emplace_back(t_pull_group());
     for (int groupNum = 1; groupNum < pull->ngroup; groupNum++)
     {
-        t_pull_group pullGroup; //= &pull->group[groupNum];
+        t_pull_group pullGroup;
         sprintf(buf, "pull-group%d-name", groupNum);
         setStringEntry(inp, buf, readBuffer, "");
         pullGroups[groupNum] = readBuffer;
         sprintf(buf, "pull-group%d-weights", groupNum);
         setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
-        pullGroup.pbcatom = get_eint(inp, buf, 0, wi);
+        pullGroup.pbcatom       = get_eint(inp, buf, 0, wi);
+        pullGroup.pbcatom_input = pullGroup.pbcatom;
 
         /* Initialize the pull group */
         pullGroup.weight = setupPullGroupWeights(wbuf);
