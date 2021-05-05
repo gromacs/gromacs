@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  *
- * \brief May be used to implement force reduction interfaces for non-GPU builds.
+ * \brief Implements backend-agnostic GPU Force Reduction functions
  *
  * \author Alan Gray <alang@nvidia.com>
  *
@@ -43,64 +43,158 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gpuforcereduction_impl.h"
 
-#include "gpuforcereduction.h"
-
-#if !GMX_GPU_CUDA
+#include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
+#if GMX_GPU_CUDA
+#    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
+#endif
+#include "gromacs/mdlib/gpuforcereduction_impl_internal.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-class GpuForceReduction::Impl
+GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext,
+                              const DeviceStream&  deviceStream,
+                              gmx_wallcycle*       wcycle) :
+    baseForce_(),
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
+    nbnxmForceToAdd_(),
+    rvecForceToAdd_(),
+    wcycle_(wcycle)
 {
+}
+
+void GpuForceReduction::Impl::reinit(DeviceBuffer<Float3>  baseForcePtr,
+                                     const int             numAtoms,
+                                     ArrayRef<const int>   cell,
+                                     const int             atomStart,
+                                     const bool            accumulate,
+                                     GpuEventSynchronizer* completionMarker)
+{
+    GMX_ASSERT((baseForcePtr != nullptr), "Input base force for reduction has no data");
+    baseForce_        = baseForcePtr;
+    numAtoms_         = numAtoms;
+    atomStart_        = atomStart;
+    accumulate_       = static_cast<int>(accumulate);
+    completionMarker_ = completionMarker;
+    cellInfo_.cell    = cell.data();
+
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    reallocateDeviceBuffer(
+            &cellInfo_.d_cell, numAtoms_, &cellInfo_.cellSize, &cellInfo_.cellSizeAlloc, deviceContext_);
+    copyToDeviceBuffer(&cellInfo_.d_cell,
+                       &(cellInfo_.cell[atomStart]),
+                       0,
+                       numAtoms_,
+                       deviceStream_,
+                       GpuApiCallBehavior::Async,
+                       nullptr);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
+
+    dependencyList_.clear();
 };
 
-GpuForceReduction::GpuForceReduction(const DeviceContext& /* deviceContext */,
-                                     const DeviceStream& /* deviceStream */,
-                                     gmx_wallcycle* /*wcycle*/) :
-    impl_(nullptr)
+void GpuForceReduction::Impl::registerNbnxmForce(DeviceBuffer<RVec> forcePtr)
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+    GMX_ASSERT(forcePtr, "Input force for reduction has no data");
+    nbnxmForceToAdd_ = forcePtr;
+};
+
+void GpuForceReduction::Impl::registerRvecForce(DeviceBuffer<RVec> forcePtr)
+{
+    GMX_ASSERT(forcePtr, "Input force for reduction has no data");
+    rvecForceToAdd_ = forcePtr;
+};
+
+void GpuForceReduction::Impl::addDependency(GpuEventSynchronizer* const dependency)
+{
+    dependencyList_.push_back(dependency);
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
-void GpuForceReduction::reinit(DeviceBuffer<RVec> /*baseForcePtr*/,
-                               const int /*numAtoms*/,
-                               ArrayRef<const int> /*cell*/,
-                               const int /*atomStart*/,
-                               const bool /*accumulate*/,
-                               GpuEventSynchronizer* /*completionMarker*/)
+void GpuForceReduction::Impl::execute()
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
+    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
+
+    if (numAtoms_ == 0)
+    {
+        return;
+    }
+
+    GMX_ASSERT(nbnxmForceToAdd_, "Nbnxm force for reduction has no data");
+
+    // Enqueue wait on all dependencies passed
+    for (auto* synchronizer : dependencyList_)
+    {
+        synchronizer->enqueueWaitEvent(deviceStream_);
+    }
+
+    const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
+
+    launchForceReductionKernel(numAtoms_,
+                               atomStart_,
+                               addRvecForce,
+                               accumulate_,
+                               nbnxmForceToAdd_,
+                               rvecForceToAdd_,
+                               baseForce_,
+                               cellInfo_.d_cell,
+                               deviceStream_);
+
+    // Mark that kernel has been launched
+    if (completionMarker_ != nullptr)
+    {
+        completionMarker_->markEvent(deviceStream_);
+    }
+
+    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
+    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
-void GpuForceReduction::registerNbnxmForce(DeviceBuffer<RVec> /* forcePtr */)
+GpuForceReduction::Impl::~Impl() = default;
+
+GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,
+                                     const DeviceStream&  deviceStream,
+                                     gmx_wallcycle*       wcycle) :
+    impl_(new Impl(deviceContext, deviceStream, wcycle))
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
-void GpuForceReduction::registerRvecForce(DeviceBuffer<gmx::RVec> /* forcePtr */)
+void GpuForceReduction::registerNbnxmForce(DeviceBuffer<RVec> forcePtr)
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+    impl_->registerNbnxmForce(forcePtr);
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
-void GpuForceReduction::addDependency(GpuEventSynchronizer* const /* dependency */)
+void GpuForceReduction::registerRvecForce(DeviceBuffer<RVec> forcePtr)
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+    impl_->registerRvecForce(forcePtr);
 }
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
+void GpuForceReduction::addDependency(GpuEventSynchronizer* const dependency)
+{
+    impl_->addDependency(dependency);
+}
+
+void GpuForceReduction::reinit(DeviceBuffer<RVec>    baseForcePtr,
+                               const int             numAtoms,
+                               ArrayRef<const int>   cell,
+                               const int             atomStart,
+                               const bool            accumulate,
+                               GpuEventSynchronizer* completionMarker)
+{
+    impl_->reinit(baseForcePtr, numAtoms, cell, atomStart, accumulate, completionMarker);
+}
 void GpuForceReduction::execute()
 {
-    GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
+    impl_->execute();
 }
 
 GpuForceReduction::~GpuForceReduction() = default;
 
 } // namespace gmx
-
-#endif

@@ -138,7 +138,7 @@ private:
     DeviceBuffer<RVec> nbnxmForceToAdd_;
     //! Rvec-format force to be added in this reduction
     DeviceBuffer<RVec> rvecForceToAdd_;
-    //! event to be marked when redcution launch has been completed
+    //! event to be marked when reduction launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;
     //! The wallclock counter
     gmx_wallcycle* wcycle_ = nullptr;

@@ -45,6 +45,8 @@
 
 #include <memory>
 
+#include "config.h"
+
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
@@ -57,6 +59,8 @@ class DeviceContext;
 
 namespace gmx
 {
+
+#define HAVE_GPU_FORCE_REDUCTION (GMX_GPU_CUDA)
 
 /*! \internal
  * \brief Manages the force reduction directly in GPU memory
@@ -92,7 +96,7 @@ public:
      *
      * \param [in] forcePtr  Pointer to force to be reduced
      */
-    void registerRvecForce(DeviceBuffer<gmx::RVec> forcePtr);
+    void registerRvecForce(DeviceBuffer<RVec> forcePtr);
 
     /*! \brief Add a dependency for this force reduction
      *
