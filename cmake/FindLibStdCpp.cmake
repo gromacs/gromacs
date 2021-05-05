@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ if (DEFINED GMX_GPLUSGPLUS_PATH)
     set(EXTRA_MESSAGE ", ignoring the value of GMX_GPLUSPLUS_PATH")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
    if ("${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_cmake_build_type}}" MATCHES "--gcc-toolchain")
        message(STATUS "The --gcc-toolchain option is already present in the CMAKE_CXX_FLAGS "
            "(or perhaps those specific to the CMAKE_BUILD_TYPE), and the GROMACS build "
@@ -87,7 +87,7 @@ if(NEED_TO_FIND_GPLUSPLUS)
     # Find a gcc (perhaps already specified by the user in
     # GMX_GPLUSPLUS_PATH) and prepare to reproducibly use its libstdc++.
     find_program(GMX_GPLUSPLUS_PATH g++)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
         set(EXTRA_MESSAGE
             " Clang supports using libc++ with -DCMAKE_CXX_FLAGS=--stdlib=libc++, and if so there will be no need to find g++.")
     endif()
@@ -120,7 +120,7 @@ if(NEED_TO_FIND_GPLUSPLUS)
     endif()
 
     # Now make some sanity checks on the compiler using libstdc++.
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" REALPATH)
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" DIRECTORY) #strip g++
         get_filename_component(GMX_GPLUSPLUS_PATH "${GMX_GPLUSPLUS_PATH}" DIRECTORY) #strip bin
@@ -137,7 +137,7 @@ if(NEED_TO_FIND_GPLUSPLUS)
     # Set up to use the libstdc++ from that g++. Note that we checked
     # the existing contents of CMAKE_CXX_FLAGS* variables earlier, so
     # we will not override any user settings here.
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${GMX_GPLUSPLUS_PATH}")
     else() #Intel
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gcc-name=${GMX_GPLUSPLUS_PATH}")
