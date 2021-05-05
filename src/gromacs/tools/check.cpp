@@ -799,14 +799,14 @@ int gmx_check(int argc, char* argv[])
     const char *fn1 = nullptr, *fn2 = nullptr, *tex = nullptr;
 
     gmx_output_env_t* oenv;
-    static real       vdw_fac  = 0.8;
-    static real       bon_lo   = 0.4;
-    static real       bon_hi   = 0.7;
-    static gmx_bool   bRMSD    = FALSE;
-    static real       ftol     = 0.001;
-    static real       abstol   = 0.001;
-    static gmx_bool   bCompAB  = FALSE;
-    static char*      lastener = nullptr;
+    real              vdw_fac  = 0.8;
+    real              bon_lo   = 0.4;
+    real              bon_hi   = 0.7;
+    gmx_bool          bRMSD    = FALSE;
+    real              ftol     = 0.001;
+    real              abstol   = 0.001;
+    gmx_bool          bCompAB  = FALSE;
+    char*             lastener = nullptr;
     static t_pargs    pa[]     = {
         { "-vdwfac",
           FALSE,

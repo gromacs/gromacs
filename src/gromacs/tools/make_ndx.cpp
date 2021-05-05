@@ -43,6 +43,8 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -51,6 +53,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -64,6 +67,7 @@
 #define NAME_LEN 1024
 static const int NOTSET = -92637;
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bCase = FALSE;
 
 static int or_groups(int nr1, const int* at1, int nr2, const int* at2, int* nr, int* at)
@@ -157,7 +161,7 @@ static gmx_bool is_name_char(char c)
     return (c != '\0' && std::strchr(spec, c) == nullptr);
 }
 
-static int parse_names(char** string, int* n_names, char** names)
+static int parse_names(char** string, int* n_names, gmx::ArrayRef<char*> names)
 {
     int i;
 
@@ -198,7 +202,7 @@ static int parse_names(char** string, int* n_names, char** names)
     return *n_names;
 }
 
-static gmx_bool parse_int_char(char** string, int* nr, char* c)
+static gmx_bool parse_int_char(char** string, int* nr, unsigned char* c)
 {
     char*    orig;
     gmx_bool bRet;
@@ -248,8 +252,9 @@ static gmx_bool parse_int_char(char** string, int* nr, char* c)
 
 static gmx_bool parse_int(char** string, int* nr)
 {
-    char *   orig, c;
-    gmx_bool bRet;
+    char*         orig;
+    unsigned char c;
+    gmx_bool      bRet;
 
     orig = *string;
     bRet = parse_int_char(string, nr, &c);
@@ -356,7 +361,8 @@ static int select_atomnumbers(char** string, const t_atoms* atoms, int n1, int* 
     return *nr;
 }
 
-static int select_residuenumbers(char** string, const t_atoms* atoms, int n1, char c, int* nr, int* index, char* gname)
+static int
+select_residuenumbers(char** string, const t_atoms* atoms, int n1, unsigned char c, int* nr, int* index, char* gname)
 {
     char       buf[STRLEN];
     int        i, j, up;
@@ -425,7 +431,8 @@ static int select_residuenumbers(char** string, const t_atoms* atoms, int n1, ch
     return *nr;
 }
 
-static int select_residueindices(char** string, const t_atoms* atoms, int n1, char c, int* nr, int* index, char* gname)
+static int
+select_residueindices(char** string, const t_atoms* atoms, int n1, unsigned char c, int* nr, int* index, char* gname)
 {
     /*this should be similar to select_residuenumbers except select by index (sequential numbering in file)*/
     /*resind+1 for 1-indexing*/
@@ -569,7 +576,7 @@ static gmx_bool comp_name(const char* name, const char* search)
     return matches;
 }
 
-static int select_chainnames(const t_atoms* atoms, int n_names, char** names, int* nr, int* index)
+static int select_chainnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index)
 {
     char name[2];
     int  j;
@@ -601,7 +608,7 @@ static int select_chainnames(const t_atoms* atoms, int n_names, char** names, in
     return *nr;
 }
 
-static int select_atomnames(const t_atoms* atoms, int n_names, char** names, int* nr, int* index, gmx_bool bType)
+static int select_atomnames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index, gmx_bool bType)
 {
     char* name;
     int   j;
@@ -639,7 +646,7 @@ static int select_atomnames(const t_atoms* atoms, int n_names, char** names, int
     return *nr;
 }
 
-static int select_residuenames(const t_atoms* atoms, int n_names, char** names, int* nr, int* index)
+static int select_residuenames(const t_atoms* atoms, int n_names, gmx::ArrayRef<char*> names, int* nr, int* index)
 {
     char* name;
     int   j;
@@ -686,7 +693,7 @@ static void copy2block(int n, const int* index, t_blocka* block)
     }
 }
 
-static void make_gname(int n, char** names, char* gname)
+static void make_gname(int n, gmx::ArrayRef<char*> names, char* gname)
 {
     int i;
 
@@ -907,31 +914,21 @@ static gmx_bool check_have_atoms(const t_atoms* atoms, char* string)
     }
 }
 
-static gmx_bool parse_entry(char**         string,
-                            int            natoms,
-                            const t_atoms* atoms,
-                            t_blocka*      block,
-                            char***        gn,
-                            int*           nr,
-                            int*           index,
-                            char*          gname)
+static gmx_bool parse_entry(char**               string,
+                            int                  natoms,
+                            const t_atoms*       atoms,
+                            t_blocka*            block,
+                            char***              gn,
+                            int*                 nr,
+                            int*                 index,
+                            char*                gname,
+                            gmx::ArrayRef<char*> entryNames)
 {
-    static char **  names, *ostring;
-    static gmx_bool bFirst = TRUE;
-    int             j, n_names, sel_nr1;
-    int             i, nr1, *index1;
-    char            c;
-    gmx_bool        bRet, bCompl;
-
-    if (bFirst)
-    {
-        bFirst = FALSE;
-        snew(names, MAXNAMES);
-        for (i = 0; i < MAXNAMES; i++)
-        {
-            snew(names[i], NAME_LEN + 1);
-        }
-    }
+    char*         ostring;
+    int           j, n_names, sel_nr1;
+    int           i, nr1, *index1;
+    unsigned char c;
+    gmx_bool      bRet, bCompl;
 
     bRet    = FALSE;
     sel_nr1 = NOTSET;
@@ -980,17 +977,17 @@ static gmx_bool parse_entry(char**         string,
             {
                 bRet = (select_atomnumbers(string, atoms, sel_nr1, nr, index, gname) != 0);
             }
-            else if (parse_names(string, &n_names, names))
+            else if (parse_names(string, &n_names, entryNames))
             {
-                bRet = (select_atomnames(atoms, n_names, names, nr, index, FALSE) != 0);
-                make_gname(n_names, names, gname);
+                bRet = (select_atomnames(atoms, n_names, entryNames, nr, index, FALSE) != 0);
+                make_gname(n_names, entryNames, gname);
             }
         }
     }
     else if ((*string)[0] == 't')
     {
         (*string)++;
-        if (check_have_atoms(atoms, ostring) && parse_names(string, &n_names, names))
+        if (check_have_atoms(atoms, ostring) && parse_names(string, &n_names, entryNames))
         {
             if (!(atoms->haveType))
             {
@@ -998,8 +995,8 @@ static gmx_bool parse_entry(char**         string,
             }
             else
             {
-                bRet = (select_atomnames(atoms, n_names, names, nr, index, TRUE) != 0);
-                make_gname(n_names, names, gname);
+                bRet = (select_atomnames(atoms, n_names, entryNames, nr, index, TRUE) != 0);
+                make_gname(n_names, entryNames, gname);
             }
         }
     }
@@ -1030,23 +1027,23 @@ static gmx_bool parse_entry(char**         string,
             {
                 bRet = (select_residuenumbers(string, atoms, sel_nr1, c, nr, index, gname) != 0);
             }
-            else if (parse_names(string, &n_names, names))
+            else if (parse_names(string, &n_names, entryNames))
             {
-                bRet = (select_residuenames(atoms, n_names, names, nr, index) != 0);
-                make_gname(n_names, names, gname);
+                bRet = (select_residuenames(atoms, n_names, entryNames, nr, index) != 0);
+                make_gname(n_names, entryNames, gname);
             }
         }
     }
     else if (std::strncmp(*string, "chain", 5) == 0)
     {
         (*string) += 5;
-        if (check_have_atoms(atoms, ostring) && parse_names(string, &n_names, names))
+        if (check_have_atoms(atoms, ostring) && parse_names(string, &n_names, entryNames))
         {
-            bRet = (select_chainnames(atoms, n_names, names, nr, index) != 0);
-            sprintf(gname, "ch%s", names[0]);
+            bRet = (select_chainnames(atoms, n_names, entryNames, nr, index) != 0);
+            sprintf(gname, "ch%s", entryNames[0]);
             for (i = 1; i < n_names; i++)
             {
-                std::strcat(gname, names[i]);
+                std::strcat(gname, entryNames[i]);
             }
         }
     }
@@ -1135,23 +1132,12 @@ static void list_residues(const t_atoms* atoms)
 
 static void edit_index(int natoms, const t_atoms* atoms, const rvec* x, t_blocka* block, char*** gn, gmx_bool bVerbose)
 {
-    static char **  atnames, *ostring;
-    static gmx_bool bFirst = TRUE;
-    char            inp_string[STRLEN], *string;
-    char            gname[STRLEN * 3], gname1[STRLEN], gname2[STRLEN];
-    int             i, i0, i1, sel_nr, sel_nr2, newgroup;
-    int             nr, nr1, nr2, *index, *index1, *index2;
-    gmx_bool        bAnd, bOr, bPrintOnce;
-
-    if (bFirst)
-    {
-        bFirst = FALSE;
-        snew(atnames, MAXNAMES);
-        for (i = 0; i < MAXNAMES; i++)
-        {
-            snew(atnames[i], NAME_LEN + 1);
-        }
-    }
+    char*    ostring;
+    char     inp_string[STRLEN], *string;
+    char     gname[STRLEN * 3], gname1[STRLEN], gname2[STRLEN];
+    int      i, i0, i1, sel_nr, sel_nr2, newgroup;
+    int      nr, nr1, nr2, *index, *index1, *index2;
+    gmx_bool bAnd, bOr, bPrintOnce;
 
     string = nullptr;
 
@@ -1161,6 +1147,12 @@ static void edit_index(int natoms, const t_atoms* atoms, const rvec* x, t_blocka
 
     newgroup   = NOTSET;
     bPrintOnce = TRUE;
+    std::array<char*, MAXNAMES> entryNames;
+    for (auto& name : entryNames)
+    {
+        snew(name, NAME_LEN + 1);
+    }
+
     do
     {
         gname1[0] = '\0';
@@ -1373,7 +1365,7 @@ static void edit_index(int natoms, const t_atoms* atoms, const rvec* x, t_blocka
         else if (string[0] != 'q')
         {
             nr2 = -1;
-            if (parse_entry(&string, natoms, atoms, block, gn, &nr, index, gname))
+            if (parse_entry(&string, natoms, atoms, block, gn, &nr, index, gname, entryNames))
             {
                 do
                 {
@@ -1402,7 +1394,7 @@ static void edit_index(int natoms, const t_atoms* atoms, const rvec* x, t_blocka
                             index1[i] = index[i];
                         }
                         std::strcpy(gname1, gname);
-                        if (parse_entry(&string, natoms, atoms, block, gn, &nr2, index2, gname2))
+                        if (parse_entry(&string, natoms, atoms, block, gn, &nr2, index2, gname2, entryNames))
                         {
                             if (bOr)
                             {
@@ -1440,6 +1432,10 @@ static void edit_index(int natoms, const t_atoms* atoms, const rvec* x, t_blocka
         }
     } while (string[0] != 'q');
 
+    for (auto& name : entryNames)
+    {
+        sfree(name);
+    }
     sfree(index);
     sfree(index1);
     sfree(index2);
@@ -1611,7 +1607,6 @@ int gmx_make_ndx(int argc, char* argv[])
         natoms = block2natoms(block);
         printf("Counted atom numbers up to %d in index file\n", natoms);
     }
-
     edit_index(natoms, &atoms, x, block, &gnames, bVerbose);
 
     write_index(ndxoutfile, block, gnames, bDuplicate, natoms);

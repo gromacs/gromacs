@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -402,14 +402,14 @@ int gmx_trjconv(int argc, char* argv[])
     const char* fit[efNR + 1] = { nullptr,       "none",    "rot+trans",   "rotxy+transxy",
                                   "translation", "transxy", "progressive", nullptr };
 
-    static gmx_bool bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
-    static gmx_bool bCenter = FALSE;
-    static int      skip_nr = 1, ndec = 3, nzero = 0;
-    static real     tzero = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
-    static rvec     newbox = { 0, 0, 0 }, shift = { 0, 0, 0 }, trans = { 0, 0, 0 };
-    static char*    exec_command = nullptr;
-    static real     dropunder = 0, dropover = 0;
-    static gmx_bool bRound = FALSE;
+    gmx_bool bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
+    gmx_bool bCenter = FALSE;
+    int      skip_nr = 1, ndec = 3, nzero = 0;
+    real     tzero = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
+    rvec     newbox = { 0, 0, 0 }, shift = { 0, 0, 0 }, trans = { 0, 0, 0 };
+    char*    exec_command = nullptr;
+    real     dropunder = 0, dropover = 0;
+    gmx_bool bRound = FALSE;
 
     t_pargs pa[] = {
         { "-skip", FALSE, etINT, { &skip_nr }, "Only write every nr-th frame" },
