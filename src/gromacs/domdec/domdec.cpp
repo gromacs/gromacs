@@ -2491,30 +2491,6 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
     }
 }
 
-void dd_init_bondeds(FILE*                           fplog,
-                     gmx_domdec_t*                   dd,
-                     const gmx_mtop_t&               mtop,
-                     const gmx::VirtualSitesHandler* vsite,
-                     const t_inputrec&               inputrec,
-                     const gmx::DDBondedChecking     ddBondedChecking,
-                     gmx::ArrayRef<cginfo_mb_t>      cginfo_mb)
-{
-    dd_make_reverse_top(fplog, dd, mtop, vsite, inputrec, ddBondedChecking);
-
-    gmx_domdec_comm_t* comm = dd->comm;
-
-    if (comm->systemInfo.filterBondedCommunication)
-    {
-        /* Communicate atoms beyond the cut-off for bonded interactions */
-        comm->bondedLinks = makeBondedLinks(mtop, cginfo_mb);
-    }
-    else
-    {
-        /* Only communicate atoms based on cut-off */
-        comm->bondedLinks = nullptr;
-    }
-}
-
 static void writeSettings(gmx::TextWriter*   log,
                           gmx_domdec_t*      dd,
                           const gmx_mtop_t&  mtop,

@@ -4,7 +4,8 @@ leak:add_to_list
 leak:atoms_to_constraints
 leak:atoms_to_settles
 leak:balance_fep_lists
-leak:dd_init_bondeds
+leak:dd_make_reverse_top
+leak:makeBondedLinks
 leak:dd_make_local_constraints
 leak:dd_move_f
 leak:dd_partition_system

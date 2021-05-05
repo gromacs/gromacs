@@ -1754,6 +1754,11 @@ int Mdrunner::mdrunner()
                 constructVirtualSitesGlobal(mtop, globalState->x);
             }
         }
+        // Make the DD reverse topology, now that any vsites that are present are available
+        if (DOMAINDECOMP(cr))
+        {
+            dd_make_reverse_top(fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking);
+        }
 
         if (EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
@@ -1971,11 +1976,10 @@ int Mdrunner::mdrunner()
         if (DOMAINDECOMP(cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
-            /* This call is not included in init_domain_decomposition mainly
+            /* This call is not included in init_domain_decomposition
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(
-                    fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking, fr->cginfo_mb);
+            makeBondedLinks(cr->dd, mtop, fr->cginfo_mb);
         }
 
         if (runScheduleWork.simulationWork.useGpuBufferOps)

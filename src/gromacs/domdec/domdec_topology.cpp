@@ -1898,8 +1898,16 @@ static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
     }
 }
 
-t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
+void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
 {
+
+    if (!dd->comm->systemInfo.filterBondedCommunication)
+    {
+        /* Only communicate atoms based on cut-off */
+        dd->comm->bondedLinks = nullptr;
+        return;
+    }
+
     t_blocka* link = nullptr;
 
     /* For each atom make a list of other atoms in the system
@@ -2046,7 +2054,7 @@ t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cgi
         fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop.natoms, ncgi);
     }
 
-    return link;
+    dd->comm->bondedLinks = link;
 }
 
 typedef struct

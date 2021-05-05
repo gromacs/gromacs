@@ -72,8 +72,6 @@ struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
-struct t_block;
-struct t_blocka;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -156,15 +154,6 @@ bool ddMayHaveSplitConstraints(const gmx_domdec_t& dd);
 
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
-
-/*! \brief Initialize data structures for bonded interactions */
-void dd_init_bondeds(FILE*                           fplog,
-                     gmx_domdec_t*                   dd,
-                     const gmx_mtop_t&               mtop,
-                     const gmx::VirtualSitesHandler* vsite,
-                     const t_inputrec&               inputrec,
-                     gmx::DDBondedChecking           ddBondedChecking,
-                     gmx::ArrayRef<cginfo_mb_t>      cginfo_mb);
 
 /*! \brief Returns whether molecules are always whole, i.e. not broken by PBC */
 bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd);
@@ -326,7 +315,7 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
  *
  * Also stores whether atoms are linked in \p cginfo_mb.
  */
-t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb);
+void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
