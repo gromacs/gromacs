@@ -24,6 +24,17 @@ using GPU update with dipole moment calculation.
 
 :issue:`4024`
 
+Avoided issues with global reduction observed with md-vv
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The new implementation for md-vv in the modular simulator could
+produce floating-point exceptions computing values on non-master ranks
+that were never used. This is now fixed by avoiding that
+computation. The other integrators were unaffected because they
+over-wrote the values computed.
+
+:issue:`4031`
+
 Prohibited SETTLE interactions for atoms with perturbed masses
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
