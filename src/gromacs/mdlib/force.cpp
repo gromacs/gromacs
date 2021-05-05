@@ -167,8 +167,10 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
                                 t,
                                 *fr,
                                 ir,
-                                gmx::constArrayRefFromArray(md->chargeA, md->nr),
-                                gmx::constArrayRefFromArray(md->chargeB, md->nr),
+                                md->chargeA ? gmx::constArrayRefFromArray(md->chargeA, md->nr)
+                                            : gmx::ArrayRef<const real>{},
+                                md->chargeB ? gmx::constArrayRefFromArray(md->chargeB, md->nr)
+                                            : gmx::ArrayRef<const real>{},
                                 (md->nChargePerturbed != 0),
                                 coordinates,
                                 box,
@@ -217,12 +219,18 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
                             fr->pmedata,
                             gmx::constArrayRefFromArray(coordinates.data(), md->homenr - fr->n_tpi),
                             forceWithVirial->force_,
-                            gmx::constArrayRefFromArray(md->chargeA, md->nr),
-                            gmx::constArrayRefFromArray(md->chargeB, md->nr),
-                            gmx::constArrayRefFromArray(md->sqrt_c6A, md->nr),
-                            gmx::constArrayRefFromArray(md->sqrt_c6B, md->nr),
-                            gmx::constArrayRefFromArray(md->sigmaA, md->nr),
-                            gmx::constArrayRefFromArray(md->sigmaB, md->nr),
+                            md->chargeA ? gmx::constArrayRefFromArray(md->chargeA, md->nr)
+                                        : gmx::ArrayRef<const real>{},
+                            md->chargeB ? gmx::constArrayRefFromArray(md->chargeB, md->nr)
+                                        : gmx::ArrayRef<const real>{},
+                            md->sqrt_c6A ? gmx::constArrayRefFromArray(md->sqrt_c6A, md->nr)
+                                         : gmx::ArrayRef<const real>{},
+                            md->sqrt_c6B ? gmx::constArrayRefFromArray(md->sqrt_c6B, md->nr)
+                                         : gmx::ArrayRef<const real>{},
+                            md->sigmaA ? gmx::constArrayRefFromArray(md->sigmaA, md->nr)
+                                       : gmx::ArrayRef<const real>{},
+                            md->sigmaB ? gmx::constArrayRefFromArray(md->sigmaB, md->nr)
+                                       : gmx::ArrayRef<const real>{},
                             box,
                             cr,
                             DOMAINDECOMP(cr) ? dd_pme_maxshift_x(*cr->dd) : 0,

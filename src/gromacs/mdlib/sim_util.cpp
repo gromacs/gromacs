@@ -1670,8 +1670,10 @@ void do_force(FILE*                               fplog,
         calc_mu(start,
                 mdatoms->homenr,
                 xRef,
-                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
+                mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
+                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
                 mdatoms->nChargePerturbed != 0,
                 dipoleData.muStaging[0],
                 dipoleData.muStaging[1]);
@@ -1763,35 +1765,45 @@ void do_force(FILE*                               fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        nbv->dispatchFreeEnergyKernel(InteractionLocality::Local,
-                                      *fr,
-                                      x.unpaddedArrayRef(),
-                                      &forceOutNonbonded->forceWithShiftForces(),
-                                      gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                      gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
-                                      gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr),
-                                      gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr),
-                                      inputrec.fepvals.get(),
-                                      lambda,
-                                      enerd,
-                                      stepWork,
-                                      nrnb);
+        nbv->dispatchFreeEnergyKernel(
+                InteractionLocality::Local,
+                *fr,
+                x.unpaddedArrayRef(),
+                &forceOutNonbonded->forceWithShiftForces(),
+                mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
+                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
+                mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
+                               : gmx::ArrayRef<int>{},
+                mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
+                               : gmx::ArrayRef<int>{},
+                inputrec.fepvals.get(),
+                lambda,
+                enerd,
+                stepWork,
+                nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
-            nbv->dispatchFreeEnergyKernel(InteractionLocality::NonLocal,
-                                          *fr,
-                                          x.unpaddedArrayRef(),
-                                          &forceOutNonbonded->forceWithShiftForces(),
-                                          gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                          gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr),
-                                          gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr),
-                                          gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr),
-                                          inputrec.fepvals.get(),
-                                          lambda,
-                                          enerd,
-                                          stepWork,
-                                          nrnb);
+            nbv->dispatchFreeEnergyKernel(
+                    InteractionLocality::NonLocal,
+                    *fr,
+                    x.unpaddedArrayRef(),
+                    &forceOutNonbonded->forceWithShiftForces(),
+                    mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
+                                     : gmx::ArrayRef<real>{},
+                    mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                     : gmx::ArrayRef<real>{},
+                    mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
+                                   : gmx::ArrayRef<int>{},
+                    mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
+                                   : gmx::ArrayRef<int>{},
+                    inputrec.fepvals.get(),
+                    lambda,
+                    enerd,
+                    stepWork,
+                    nrnb);
         }
     }
 
@@ -1841,9 +1853,12 @@ void do_force(FILE*                               fplog,
         real dvdl_walls = do_walls(inputrec,
                                    *fr,
                                    box,
-                                   gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr),
-                                   gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr),
-                                   gmx::arrayRefFromArray(mdatoms->cENER, mdatoms->nr),
+                                   mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
+                                                  : gmx::ArrayRef<int>{},
+                                   mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
+                                                  : gmx::ArrayRef<int>{},
+                                   mdatoms->cENER ? gmx::arrayRefFromArray(mdatoms->cENER, mdatoms->nr)
+                                                  : gmx::ArrayRef<unsigned short>{},
                                    mdatoms->homenr,
                                    mdatoms->nPerturbed,
                                    x.unpaddedConstArrayRef(),

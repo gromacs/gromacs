@@ -76,9 +76,15 @@ void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
                 step,
                 testData->mdAtoms_.homenr,
                 testData->mdAtoms_.havePartiallyFrozenAtoms,
-                gmx::arrayRefFromArray(testData->mdAtoms_.ptype, testData->mdAtoms_.nr),
-                gmx::arrayRefFromArray(testData->mdAtoms_.invmass, testData->mdAtoms_.nr),
-                gmx::arrayRefFromArray(testData->mdAtoms_.invMassPerDim, testData->mdAtoms_.nr),
+                testData->mdAtoms_.ptype
+                        ? gmx::arrayRefFromArray(testData->mdAtoms_.ptype, testData->mdAtoms_.nr)
+                        : gmx::ArrayRef<ParticleType>{},
+                testData->mdAtoms_.invmass
+                        ? gmx::arrayRefFromArray(testData->mdAtoms_.invmass, testData->mdAtoms_.nr)
+                        : gmx::ArrayRef<real>{},
+                testData->mdAtoms_.invMassPerDim ? gmx::arrayRefFromArray(testData->mdAtoms_.invMassPerDim,
+                                                                          testData->mdAtoms_.nr)
+                                                 : gmx::ArrayRef<rvec>{},
                 &testData->state_,
                 testData->f_,
                 testData->forceCalculationData_,

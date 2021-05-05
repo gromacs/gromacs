@@ -3285,21 +3285,25 @@ void dd_partition_system(FILE*                     fplog,
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr,
-                                *fr->ic,
-                                mdatoms->nChargePerturbed != 0,
-                                mdatoms->nTypePerturbed != 0,
-                                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
-                                                 : gmx::ArrayRef<real>{},
-                                gmx::arrayRefFromArray(mdatoms->sqrt_c6A, mdatoms->nr),
-                                mdatoms->sqrt_c6B ? gmx::arrayRefFromArray(mdatoms->sqrt_c6B, mdatoms->nr)
-                                                  : gmx::ArrayRef<real>{},
-                                gmx::arrayRefFromArray(mdatoms->sigmaA, mdatoms->nr),
-                                mdatoms->sigmaB ? gmx::arrayRefFromArray(mdatoms->sigmaB, mdatoms->nr)
-                                                : gmx::ArrayRef<real>{},
-                                dd_pme_maxshift_x(*dd),
-                                dd_pme_maxshift_y(*dd));
+        gmx_pme_send_parameters(
+                cr,
+                *fr->ic,
+                mdatoms->nChargePerturbed != 0,
+                mdatoms->nTypePerturbed != 0,
+                mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
+                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                 : gmx::ArrayRef<real>{},
+                mdatoms->sqrt_c6A ? gmx::arrayRefFromArray(mdatoms->sqrt_c6A, mdatoms->nr)
+                                  : gmx::ArrayRef<real>{},
+                mdatoms->sqrt_c6B ? gmx::arrayRefFromArray(mdatoms->sqrt_c6B, mdatoms->nr)
+                                  : gmx::ArrayRef<real>{},
+                mdatoms->sigmaA ? gmx::arrayRefFromArray(mdatoms->sigmaA, mdatoms->nr)
+                                : gmx::ArrayRef<real>{},
+                mdatoms->sigmaB ? gmx::arrayRefFromArray(mdatoms->sigmaB, mdatoms->nr)
+                                : gmx::ArrayRef<real>{},
+                dd_pme_maxshift_x(*dd),
+                dd_pme_maxshift_y(*dd));
     }
 
     if (dd->atomSets != nullptr)

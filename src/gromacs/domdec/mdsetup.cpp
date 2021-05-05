@@ -148,8 +148,10 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
         gmx_pme_reinit_atoms(fr->pmedata,
                              numPmeAtoms,
-                             gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                             gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr));
+                             mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
+                                              : gmx::ArrayRef<real>{},
+                             mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
+                                              : gmx::ArrayRef<real>{});
     }
 
     if (constr)
