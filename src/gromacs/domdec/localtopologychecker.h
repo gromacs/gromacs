@@ -46,11 +46,28 @@
 
 #include <optional>
 
+#include "gromacs/math/vectypes.h"
+
+struct gmx_domdec_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
+struct t_commrec;
+struct t_inputrec;
+
+namespace gmx
+{
+class MDLogger;
+template<typename>
+class ArrayRef;
+enum class DDBondedChecking : bool;
+} // namespace gmx
+
 namespace gmx
 {
 
 struct LocalTopologyChecker
 {
+public:
     /*! \brief Data to help check local topology construction
      *
      * Partitioning could incorrectly miss a bonded interaction.
@@ -80,5 +97,37 @@ struct LocalTopologyChecker
 };
 
 } // namespace gmx
+
+//! Set that the local topology should be checked via observables reduction
+void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, int numBondedInteractionsToReduce);
+
+/*! \brief Return whether the total bonded interaction count across
+ * domains should be checked in observables reduction. */
+bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd);
+
+//! Return the number of bonded interactions in this domain.
+int numBondedInteractions(const gmx_domdec_t& dd);
+
+/*! \brief Set total bonded interaction count across domains. */
+void setNumberOfBondedInteractionsOverAllDomains(gmx_domdec_t* dd, int newValue);
+
+/*! \brief Check whether bonded interactions are missing from the reverse topology
+ * produced by domain decomposition.
+ *
+ * Must only be called when DD is active.
+ *
+ * \param[in]    mdlog                                  Logger
+ * \param[in]    cr                                     Communication object
+ * \param[in]    top_global                             Global topology for the error message
+ * \param[in]    top_local                              Local topology for the error message
+ * \param[in]    x                                      Position vector for the error message
+ * \param[in]    box                                    Box matrix for the error message
+ */
+void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
+                                     t_commrec*                     cr,
+                                     const gmx_mtop_t&              top_global,
+                                     const gmx_localtop_t*          top_local,
+                                     gmx::ArrayRef<const gmx::RVec> x,
+                                     const matrix                   box);
 
 #endif

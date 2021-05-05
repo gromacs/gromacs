@@ -44,6 +44,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
@@ -373,7 +374,7 @@ void global_stat(const gmx_global_stat& gs,
         GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
                            "No need to check number of bonded interactions when not using domain "
                            "decomposition");
-        setNumberOfBondedInteractionsOverAllDomains(*cr->dd, gmx::roundToInt(nb));
+        setNumberOfBondedInteractionsOverAllDomains(cr->dd, gmx::roundToInt(nb));
     }
 
     if (!sig.empty())

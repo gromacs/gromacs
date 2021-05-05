@@ -241,15 +241,6 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 
 /* In domdec_top.c */
 
-/*! \brief Print error output when interactions are missing */
-[[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
-                                                t_commrec*                     cr,
-                                                int                            local_count,
-                                                const gmx_mtop_t&              top_global,
-                                                const gmx_localtop_t*          top_local,
-                                                gmx::ArrayRef<const gmx::RVec> x,
-                                                const matrix                   box);
-
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE*                           fplog,
                          gmx_domdec_t*                   dd,
@@ -257,39 +248,6 @@ void dd_make_reverse_top(FILE*                           fplog,
                          const gmx::VirtualSitesHandler* vsite,
                          const t_inputrec&               inputrec,
                          gmx::DDBondedChecking           ddBondedChecking);
-
-/*! \brief Set that the number of bonded interactions in the local
- * topology should be checked via observables reduction. */
-void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, int numBondedInteractionsToReduce);
-
-/*! \brief Return whether the total bonded interaction count across
- * domains should be checked this step. */
-bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd);
-
-//! Return the number of bonded interactions in this domain.
-int numBondedInteractions(const gmx_domdec_t& dd);
-
-/*! \brief Set total bonded interaction count across domains. */
-void setNumberOfBondedInteractionsOverAllDomains(const gmx_domdec_t& dd, int newValue);
-
-/*! \brief Check whether bonded interactions are missing from the reverse topology
- * produced by domain decomposition.
- *
- * Must only be called when DD is active.
- *
- * \param[in]    mdlog                                  Logger
- * \param[in]    cr                                     Communication object
- * \param[in]    top_global                             Global topology for the error message
- * \param[in]    top_local                              Local topology for the error message
- * \param[in]    x                                      Position vector for the error message
- * \param[in]    box                                    Box matrix for the error message
- */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
-                                     t_commrec*                     cr,
-                                     const gmx_mtop_t&              top_global,
-                                     const gmx_localtop_t*          top_local,
-                                     gmx::ArrayRef<const gmx::RVec> x,
-                                     const matrix                   box);
 
 /*! \brief Generate the local topology and virtual site data
  *

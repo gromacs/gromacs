@@ -164,4 +164,10 @@ public:
     std::unique_ptr<Impl> impl_;
 };
 
+/*! \brief Returns the number of atom entries for il in gmx_reverse_top_t */
+int nral_rt(int ftype);
+
+/*! \brief Return whether interactions of type \p ftype need to be assigned exactly once */
+bool dd_check_ftype(int ftype, const ReverseTopOptions& rtOptions);
+
 #endif

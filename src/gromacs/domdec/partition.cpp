@@ -60,6 +60,7 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/nsgrid.h"
 #include "gromacs/ewald/pme_pp.h"

@@ -44,6 +44,7 @@
 #include "computeglobalselement.h"
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
