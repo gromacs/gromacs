@@ -444,7 +444,16 @@ static void do_nb_verlet(t_forcerec*                fr,
         }
     }
 
-    nbv->dispatchNonbondedKernel(ilocality, *ic, stepWork, clearF, *fr, enerd, nrnb);
+    nbv->dispatchNonbondedKernel(
+            ilocality,
+            *ic,
+            stepWork,
+            clearF,
+            fr->shift_vec,
+            enerd->grpp.energyGroupPairTerms[fr->haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
+                                                                : NonBondedEnergyTerms::LJSR],
+            enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
+            nrnb);
 }
 
 static inline void clearRVecs(ArrayRef<RVec> v, const bool useOpenmpThreading)

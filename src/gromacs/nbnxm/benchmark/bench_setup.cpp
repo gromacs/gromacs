@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -358,7 +359,15 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
     for (int iter = 0; iter < options.numPreIterations; iter++)
     {
         nbv->dispatchNonbondedKernel(
-                gmx::InteractionLocality::Local, ic, stepWork, enbvClearFYes, system.forceRec, &enerd, &nrnb);
+                gmx::InteractionLocality::Local,
+                ic,
+                stepWork,
+                enbvClearFYes,
+                system.forceRec.shift_vec,
+                enerd.grpp.energyGroupPairTerms[system.forceRec.haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
+                                                                               : NonBondedEnergyTerms::LJSR],
+                enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
+                &nrnb);
     }
 
     const int numIterations = (doWarmup ? options.numWarmupIterations : options.numIterations);
@@ -369,7 +378,15 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
     {
         // Run the kernel without force clearing
         nbv->dispatchNonbondedKernel(
-                gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo, system.forceRec, &enerd, &nrnb);
+                gmx::InteractionLocality::Local,
+                ic,
+                stepWork,
+                enbvClearFNo,
+                system.forceRec.shift_vec,
+                enerd.grpp.energyGroupPairTerms[system.forceRec.haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
+                                                                               : NonBondedEnergyTerms::LJSR],
+                enerd.grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
+                &nrnb);
     }
     cycles = gmx_cycles_read() - cycles;
     if (!doWarmup)

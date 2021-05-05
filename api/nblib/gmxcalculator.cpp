@@ -73,13 +73,16 @@ void GmxForceCalculator::compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
     // update the coordinates in the backend
     nbv_->convertCoordinates(gmx::AtomLocality::Local, coordinateInput);
 
-    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                  *interactionConst_,
-                                  *stepWork_,
-                                  enbvClearFYes,
-                                  *forcerec_,
-                                  enerd_.get(),
-                                  nrnb_.get());
+    nbv_->dispatchNonbondedKernel(
+            gmx::InteractionLocality::Local,
+            *interactionConst_,
+            *stepWork_,
+            enbvClearFYes,
+            forcerec_->shift_vec,
+            enerd_->grpp.energyGroupPairTerms[forcerec_->haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
+                                                                        : NonBondedEnergyTerms::LJSR],
+            enerd_->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
+            nrnb_.get());
 
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, forceOutput);
 }

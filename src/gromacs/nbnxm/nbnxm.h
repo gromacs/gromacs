@@ -358,13 +358,14 @@ public:
     void dispatchPruneKernelGpu(int64_t step);
 
     //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
-    void dispatchNonbondedKernel(gmx::InteractionLocality   iLocality,
-                                 const interaction_const_t& ic,
-                                 const gmx::StepWorkload&   stepWork,
-                                 int                        clearF,
-                                 const t_forcerec&          fr,
-                                 gmx_enerdata_t*            enerd,
-                                 t_nrnb*                    nrnb);
+    void dispatchNonbondedKernel(gmx::InteractionLocality       iLocality,
+                                 const interaction_const_t&     ic,
+                                 const gmx::StepWorkload&       stepWork,
+                                 int                            clearF,
+                                 gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                 gmx::ArrayRef<real>            repulsionDispersionSR,
+                                 gmx::ArrayRef<real>            CoulombSR,
+                                 t_nrnb*                        nrnb) const;
 
     //! Executes the non-bonded free-energy kernel, always runs on the CPU
     void dispatchFreeEnergyKernel(gmx::InteractionLocality       iLocality,

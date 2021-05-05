@@ -441,13 +441,14 @@ static void accountFlops(t_nrnb*                    nrnb,
     }
 }
 
-void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLocality,
-                                                 const interaction_const_t& ic,
-                                                 const gmx::StepWorkload&   stepWork,
-                                                 int                        clearF,
-                                                 const t_forcerec&          fr,
-                                                 gmx_enerdata_t*            enerd,
-                                                 t_nrnb*                    nrnb)
+void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       iLocality,
+                                                 const interaction_const_t&     ic,
+                                                 const gmx::StepWorkload&       stepWork,
+                                                 int                            clearF,
+                                                 gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                                 gmx::ArrayRef<real> repulsionDispersionSR,
+                                                 gmx::ArrayRef<real> CoulombSR,
+                                                 t_nrnb*             nrnb) const
 {
     const PairlistSet& pairlistSet = pairlistSets().pairlistSet(iLocality);
 
@@ -456,19 +457,16 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
         case Nbnxm::KernelType::Cpu4x4_PlainC:
         case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-            nbnxn_kernel_cpu(
-                    pairlistSet,
-                    kernelSetup(),
-                    nbat.get(),
-                    ic,
-                    fr.shift_vec,
-                    stepWork,
-                    clearF,
-                    enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                    fr.haveBuckingham
-                            ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
-                            : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data(),
-                    wcycle_);
+            nbnxn_kernel_cpu(pairlistSet,
+                             kernelSetup(),
+                             nbat.get(),
+                             ic,
+                             shiftvec,
+                             stepWork,
+                             clearF,
+                             CoulombSR.data(),
+                             repulsionDispersionSR.data(),
+                             wcycle_);
             break;
 
         case Nbnxm::KernelType::Gpu8x8x8:
@@ -476,19 +474,16 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
             break;
 
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(
-                    pairlistSet.gpuList(),
-                    nbat.get(),
-                    &ic,
-                    fr.shift_vec,
-                    stepWork,
-                    clearF,
-                    nbat->out[0].f,
-                    nbat->out[0].fshift.data(),
-                    enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR].data(),
-                    fr.haveBuckingham
-                            ? enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::BuckinghamSR].data()
-                            : enerd->grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR].data());
+            nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
+                                 nbat.get(),
+                                 &ic,
+                                 shiftvec,
+                                 stepWork,
+                                 clearF,
+                                 nbat->out[0].f,
+                                 nbat->out[0].fshift.data(),
+                                 CoulombSR.data(),
+                                 repulsionDispersionSR.data());
             break;
 
         default: GMX_RELEASE_ASSERT(false, "Invalid nonbonded kernel type passed!");
