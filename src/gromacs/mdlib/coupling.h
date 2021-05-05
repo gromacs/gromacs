@@ -38,11 +38,13 @@
 #ifndef GMX_MDLIB_COUPLING_H
 #define GMX_MDLIB_COUPLING_H
 
-#include "gromacs/math/paddedvector.h"
+#include <cstdio>
+
+#include <array>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 class gmx_ekindata_t;
@@ -51,7 +53,6 @@ struct t_commrec;
 struct t_extmass;
 struct t_grpopts;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 
@@ -62,17 +63,20 @@ namespace gmx
 class BoxDeformation;
 class Constraints;
 class Update;
+template<typename>
+class ArrayRef;
 }; // namespace gmx
 
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */
 
-void update_tcouple(int64_t           step,
-                    const t_inputrec* inputrec,
-                    t_state*          state,
-                    gmx_ekindata_t*   ekind,
-                    const t_extmass*  MassQ,
-                    const t_mdatoms*  md);
+void update_tcouple(int64_t                             step,
+                    const t_inputrec*                   inputrec,
+                    t_state*                            state,
+                    gmx_ekindata_t*                     ekind,
+                    const t_extmass*                    MassQ,
+                    int                                 homenr,
+                    gmx::ArrayRef<const unsigned short> cTC);
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
 void update_pcouple_before_coordinates(FILE*             fplog,
@@ -81,78 +85,93 @@ void update_pcouple_before_coordinates(FILE*             fplog,
                                        t_state*          state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
-                                       gmx_bool          bInitStep);
+                                       bool              bInitStep);
 
 /* Update the box, to be called after the coordinate update.
  * For Berendsen P-coupling, also calculates the scaling factor
  * and scales the coordinates.
  * When the deform option is used, scales coordinates and box here.
  */
-void update_pcouple_after_coordinates(FILE*                fplog,
-                                      int64_t              step,
-                                      const t_inputrec*    inputrec,
-                                      const t_mdatoms*     md,
-                                      const matrix         pressure,
-                                      const matrix         forceVirial,
-                                      const matrix         constraintVirial,
-                                      matrix               pressureCouplingMu,
-                                      t_state*             state,
-                                      t_nrnb*              nrnb,
-                                      gmx::BoxDeformation* boxDeformation,
-                                      bool                 scaleCoordinates);
+void update_pcouple_after_coordinates(FILE*                               fplog,
+                                      int64_t                             step,
+                                      const t_inputrec*                   inputrec,
+                                      int                                 homenr,
+                                      gmx::ArrayRef<const unsigned short> cFREEZE,
+                                      const matrix                        pressure,
+                                      const matrix                        forceVirial,
+                                      const matrix                        constraintVirial,
+                                      matrix                              pressureCouplingMu,
+                                      t_state*                            state,
+                                      t_nrnb*                             nrnb,
+                                      gmx::BoxDeformation*                boxDeformation,
+                                      bool                                scaleCoordinates);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(const t_inputrec*        ir,
-                                            int64_t                  step,
-                                            const t_commrec*         cr,
-                                            const t_mdatoms*         md,
-                                            gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx::Update*       upd,
-                                            const gmx::Constraints*  constr);
+extern bool update_randomize_velocities(const t_inputrec*                   ir,
+                                        int64_t                             step,
+                                        const t_commrec*                    cr,
+                                        int                                 homenr,
+                                        gmx::ArrayRef<const unsigned short> cTC,
+                                        gmx::ArrayRef<const real>           invMass,
+                                        gmx::ArrayRef<gmx::RVec>            v,
+                                        const gmx::Update*                  upd,
+                                        const gmx::Constraints*             constr);
 
 void berendsen_tcoupl(const t_inputrec*    ir,
                       gmx_ekindata_t*      ekind,
                       real                 dt,
                       std::vector<double>& therm_integral); //NOLINT(google-runtime-references)
 
-void andersen_tcoupl(const t_inputrec*         ir,
-                     int64_t                   step,
-                     const t_commrec*          cr,
-                     const t_mdatoms*          md,
-                     gmx::ArrayRef<gmx::RVec>  v,
-                     real                      rate,
-                     const std::vector<bool>&  randomize,
-                     gmx::ArrayRef<const real> boltzfac);
+void andersen_tcoupl(const t_inputrec*                   ir,
+                     int64_t                             step,
+                     const t_commrec*                    cr,
+                     int                                 homenr,
+                     gmx::ArrayRef<const unsigned short> cTC,
+                     gmx::ArrayRef<const real>           invMass,
+                     gmx::ArrayRef<gmx::RVec>            v,
+                     real                                rate,
+                     const std::vector<bool>&            randomize,
+                     gmx::ArrayRef<const real>           boltzfac);
 
 void nosehoover_tcoupl(const t_grpopts*      opts,
                        const gmx_ekindata_t* ekind,
                        real                  dt,
-                       double                xi[],
-                       double                vxi[],
+                       gmx::ArrayRef<double> xi,
+                       gmx::ArrayRef<double> vxi,
                        const t_extmass*      MassQ);
 
-void trotter_update(const t_inputrec*               ir,
-                    int64_t                         step,
-                    gmx_ekindata_t*                 ekind,
-                    const gmx_enerdata_t*           enerd,
-                    t_state*                        state,
-                    const tensor                    vir,
-                    const t_mdatoms*                md,
-                    const t_extmass*                MassQ,
-                    gmx::ArrayRef<std::vector<int>> trotter_seqlist,
-                    int                             trotter_seqno);
+void trotter_update(const t_inputrec*                   ir,
+                    int64_t                             step,
+                    gmx_ekindata_t*                     ekind,
+                    const gmx_enerdata_t*               enerd,
+                    t_state*                            state,
+                    const tensor                        vir,
+                    int                                 homenr,
+                    gmx::ArrayRef<const unsigned short> cTC,
+                    gmx::ArrayRef<const real>           invMass,
+                    const t_extmass*                    MassQ,
+                    gmx::ArrayRef<std::vector<int>>     trotter_seqlist,
+                    int                                 trotter_seqno);
 
 std::array<std::vector<int>, ettTSEQMAX>
-init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* Mass, gmx_bool bTrotter);
+init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* Mass, bool bTrotter);
 
 real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
-void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, real dt, double therm_integral[]);
+void vrescale_tcoupl(const t_inputrec*     ir,
+                     int64_t               step,
+                     gmx_ekindata_t*       ekind,
+                     real                  dt,
+                     gmx::ArrayRef<double> therm_integral);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
-void rescale_velocities(const gmx_ekindata_t* ekind, const t_mdatoms* mdatoms, int start, int end, rvec v[]);
+void rescale_velocities(const gmx_ekindata_t*               ekind,
+                        gmx::ArrayRef<const unsigned short> cTC,
+                        int                                 start,
+                        int                                 end,
+                        gmx::ArrayRef<gmx::RVec>            v);
 /* Rescale the velocities with the scaling factor in ekind */
 
 //! Check whether we do simulated annealing.
@@ -183,7 +202,7 @@ void parrinellorahman_pcoupl(FILE*             fplog,
                              tensor            boxv,
                              tensor            M,
                              matrix            mu,
-                             gmx_bool          bFirstStep);
+                             bool              bFirstStep);
 
 /*! \brief Calculate the pressure coupling scaling matrix
  *
@@ -211,17 +230,17 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
  * coupling algorithm.
  */
 template<PressureCoupling pressureCouplingType>
-void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
-                                            const matrix         mu,
-                                            matrix               box,
-                                            matrix               box_rel,
-                                            int                  start,
-                                            int                  nr_atoms,
-                                            rvec                 x[],
-                                            rvec                 v[],
-                                            const unsigned short cFREEZE[],
-                                            t_nrnb*              nrnb,
-                                            bool                 scaleCoordinates);
+void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   ir,
+                                            const matrix                        mu,
+                                            matrix                              box,
+                                            matrix                              box_rel,
+                                            int                                 start,
+                                            int                                 nr_atoms,
+                                            gmx::ArrayRef<gmx::RVec>            x,
+                                            gmx::ArrayRef<gmx::RVec>            v,
+                                            gmx::ArrayRef<const unsigned short> cFREEZE,
+                                            t_nrnb*                             nrnb,
+                                            bool                                scaleCoordinates);
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir);
 

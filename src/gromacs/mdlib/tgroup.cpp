@@ -46,7 +46,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 
 
-real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
+real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, bool bEkinAveVel, bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T;

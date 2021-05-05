@@ -134,7 +134,19 @@ void integrateVVFirstStep(int64_t                                  step,
         else
         {
             /* this is for NHC in the Ekin(t+dt/2) version of vv */
-            trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ1);
+            trotter_update(ir,
+                           step,
+                           ekind,
+                           enerd,
+                           state,
+                           total_vir,
+                           mdatoms->homenr,
+                           mdatoms->cTC ? gmx::arrayRefFromArray(mdatoms->cTC, mdatoms->nr)
+                                        : gmx::ArrayRef<const unsigned short>(),
+                           gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                           MassQ,
+                           trotter_seq,
+                           ettTSEQ1);
         }
 
         upd->update_coords(*ir,
@@ -233,7 +245,19 @@ void integrateVVFirstStep(int64_t                                  step,
             if (bTrotter)
             {
                 m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ2);
+                trotter_update(ir,
+                               step,
+                               ekind,
+                               enerd,
+                               state,
+                               total_vir,
+                               mdatoms->homenr,
+                               mdatoms->cTC ? gmx::arrayRefFromArray(mdatoms->cTC, mdatoms->nr)
+                                            : gmx::ArrayRef<const unsigned short>(),
+                               gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                               MassQ,
+                               trotter_seq,
+                               ettTSEQ2);
 
                 /* TODO This is only needed when we're about to write
                  * a checkpoint, because we use it after the restart
@@ -442,7 +466,19 @@ void integrateVVSecondStep(int64_t                                  step,
                         bSumEkinhOld,
                         (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
         wallcycle_start(wcycle, WallCycleCounter::Update);
-        trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ4);
+        trotter_update(ir,
+                       step,
+                       ekind,
+                       enerd,
+                       state,
+                       total_vir,
+                       mdatoms->homenr,
+                       mdatoms->cTC ? gmx::arrayRefFromArray(mdatoms->cTC, mdatoms->nr)
+                                    : gmx::ArrayRef<const unsigned short>(),
+                       gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                       MassQ,
+                       trotter_seq,
+                       ettTSEQ4);
         /* now we know the scaling, we can compute the positions again */
         std::copy(cbuf->begin(), cbuf->end(), state->x.begin());
 

@@ -1396,7 +1396,16 @@ void gmx::LegacySimulator::do_md()
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
             gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(ir, step, cr, md, state->v, &upd, constr);
+            bIfRandomize = update_randomize_velocities(ir,
+                                                       step,
+                                                       cr,
+                                                       md->homenr,
+                                                       md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                                               : gmx::ArrayRef<const unsigned short>(),
+                                                       gmx::arrayRefFromArray(md->invmass, md->nr),
+                                                       state->v,
+                                                       &upd,
+                                                       constr);
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
@@ -1419,7 +1428,19 @@ void gmx::LegacySimulator::do_md()
         /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
         if (bTrotter)
         {
-            trotter_update(ir, step, ekind, enerd, state, total_vir, md, &MassQ, trotter_seq, ettTSEQ3);
+            trotter_update(ir,
+                           step,
+                           ekind,
+                           enerd,
+                           state,
+                           total_vir,
+                           md->homenr,
+                           md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                   : gmx::ArrayRef<const unsigned short>(),
+                           gmx::arrayRefFromArray(md->invmass, md->nr),
+                           &MassQ,
+                           trotter_seq,
+                           ettTSEQ3);
             /* We can only do Berendsen coupling after we have summed
              * the kinetic energy or virial. Since the happens
              * in global_state after update, we should only do it at
@@ -1428,7 +1449,14 @@ void gmx::LegacySimulator::do_md()
         }
         else
         {
-            update_tcouple(step, ir, state, ekind, &MassQ, md);
+            update_tcouple(step,
+                           ir,
+                           state,
+                           ekind,
+                           &MassQ,
+                           md->homenr,
+                           md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
+                                   : gmx::ArrayRef<const unsigned short>());
             update_pcouple_before_coordinates(fplog, step, ir, state, pressureCouplingMu, M, bInitStep);
         }
 
@@ -1728,8 +1756,20 @@ void gmx::LegacySimulator::do_md()
             accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
         }
 
-        update_pcouple_after_coordinates(
-                fplog, step, ir, md, pres, force_vir, shake_vir, pressureCouplingMu, state, nrnb, upd.deform(), !useGpuForUpdate);
+        update_pcouple_after_coordinates(fplog,
+                                         step,
+                                         ir,
+                                         md->homenr,
+                                         md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
+                                                     : gmx::ArrayRef<const unsigned short>(),
+                                         pres,
+                                         force_vir,
+                                         shake_vir,
+                                         pressureCouplingMu,
+                                         state,
+                                         nrnb,
+                                         upd.deform(),
+                                         !useGpuForUpdate);
 
         const bool doBerendsenPressureCoupling = (inputrec->epc == PressureCoupling::Berendsen
                                                   && do_per_step(step, inputrec->nstpcouple));

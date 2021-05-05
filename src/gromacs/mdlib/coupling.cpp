@@ -61,7 +61,6 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -97,12 +96,13 @@ static constexpr std::array<const double*, 6> sy_const = { nullptr,    sy_const_
                                                            sy_const_3, nullptr,    sy_const_5 };
 
 
-void update_tcouple(int64_t           step,
-                    const t_inputrec* inputrec,
-                    t_state*          state,
-                    gmx_ekindata_t*   ekind,
-                    const t_extmass*  MassQ,
-                    const t_mdatoms*  md)
+void update_tcouple(int64_t                             step,
+                    const t_inputrec*                   inputrec,
+                    t_state*                            state,
+                    gmx_ekindata_t*                     ekind,
+                    const t_extmass*                    MassQ,
+                    int                                 homenr,
+                    gmx::ArrayRef<const unsigned short> cTC)
 
 {
     // This condition was explicitly checked in previous version, but should have never been satisfied
@@ -144,22 +144,18 @@ void update_tcouple(int64_t           step,
                 berendsen_tcoupl(inputrec, ekind, dttc, state->therm_integral);
                 break;
             case TemperatureCoupling::NoseHoover:
-                nosehoover_tcoupl(&(inputrec->opts),
-                                  ekind,
-                                  dttc,
-                                  state->nosehoover_xi.data(),
-                                  state->nosehoover_vxi.data(),
-                                  MassQ);
+                nosehoover_tcoupl(
+                        &(inputrec->opts), ekind, dttc, state->nosehoover_xi, state->nosehoover_vxi, MassQ);
                 break;
             case TemperatureCoupling::VRescale:
-                vrescale_tcoupl(inputrec, step, ekind, dttc, state->therm_integral.data());
+                vrescale_tcoupl(inputrec, step, ekind, dttc, state->therm_integral);
                 break;
             default: gmx_fatal(FARGS, "Unknown temperature coupling algorithm");
         }
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind, md, 0, md->homenr, state->v.rvec_array());
+            rescale_velocities(ekind, cTC, 0, homenr, state->v);
         }
     }
     else
@@ -179,7 +175,7 @@ void update_pcouple_before_coordinates(FILE*             fplog,
                                        t_state*          state,
                                        matrix            parrinellorahmanMu,
                                        matrix            M,
-                                       gmx_bool          bInitStep)
+                                       bool              bInitStep)
 {
     /* Berendsen P-coupling is completely handled after the coordinate update.
      * Trotter P-coupling is handled by separate calls to trotter_update().
@@ -194,21 +190,21 @@ void update_pcouple_before_coordinates(FILE*             fplog,
     }
 }
 
-void update_pcouple_after_coordinates(FILE*                fplog,
-                                      int64_t              step,
-                                      const t_inputrec*    inputrec,
-                                      const t_mdatoms*     md,
-                                      const matrix         pressure,
-                                      const matrix         forceVirial,
-                                      const matrix         constraintVirial,
-                                      matrix               pressureCouplingMu,
-                                      t_state*             state,
-                                      t_nrnb*              nrnb,
-                                      gmx::BoxDeformation* boxDeformation,
-                                      const bool           scaleCoordinates)
+void update_pcouple_after_coordinates(FILE*                               fplog,
+                                      int64_t                             step,
+                                      const t_inputrec*                   inputrec,
+                                      const int                           homenr,
+                                      gmx::ArrayRef<const unsigned short> cFREEZE,
+                                      const matrix                        pressure,
+                                      const matrix                        forceVirial,
+                                      const matrix                        constraintVirial,
+                                      matrix                              pressureCouplingMu,
+                                      t_state*                            state,
+                                      t_nrnb*                             nrnb,
+                                      gmx::BoxDeformation*                boxDeformation,
+                                      const bool                          scaleCoordinates)
 {
-    int start  = 0;
-    int homenr = md->homenr;
+    int start = 0;
 
     /* Cast to real for faster code, no loss in precision (see comment above) */
     real dt = inputrec->delta_t;
@@ -232,17 +228,18 @@ void update_pcouple_after_coordinates(FILE*                fplog,
                                                                                     constraintVirial,
                                                                                     pressureCouplingMu,
                                                                                     &state->baros_integral);
-                pressureCouplingScaleBoxAndCoordinates<PressureCoupling::Berendsen>(inputrec,
-                                                                                    pressureCouplingMu,
-                                                                                    state->box,
-                                                                                    state->box_rel,
-                                                                                    start,
-                                                                                    homenr,
-                                                                                    state->x.rvec_array(),
-                                                                                    nullptr,
-                                                                                    md->cFREEZE,
-                                                                                    nrnb,
-                                                                                    scaleCoordinates);
+                pressureCouplingScaleBoxAndCoordinates<PressureCoupling::Berendsen>(
+                        inputrec,
+                        pressureCouplingMu,
+                        state->box,
+                        state->box_rel,
+                        start,
+                        homenr,
+                        state->x,
+                        gmx::ArrayRef<gmx::RVec>(),
+                        cFREEZE,
+                        nrnb,
+                        scaleCoordinates);
             }
             break;
         case (PressureCoupling::CRescale):
@@ -259,18 +256,17 @@ void update_pcouple_after_coordinates(FILE*                fplog,
                                                                                    constraintVirial,
                                                                                    pressureCouplingMu,
                                                                                    &state->baros_integral);
-                pressureCouplingScaleBoxAndCoordinates<PressureCoupling::CRescale>(
-                        inputrec,
-                        pressureCouplingMu,
-                        state->box,
-                        state->box_rel,
-                        start,
-                        homenr,
-                        state->x.rvec_array(),
-                        state->v.rvec_array(),
-                        md->cFREEZE,
-                        nrnb,
-                        scaleCoordinates);
+                pressureCouplingScaleBoxAndCoordinates<PressureCoupling::CRescale>(inputrec,
+                                                                                   pressureCouplingMu,
+                                                                                   state->box,
+                                                                                   state->box_rel,
+                                                                                   start,
+                                                                                   homenr,
+                                                                                   state->x,
+                                                                                   state->v,
+                                                                                   cFREEZE,
+                                                                                   nrnb,
+                                                                                   scaleCoordinates);
             }
             break;
         case (PressureCoupling::ParrinelloRahman):
@@ -335,13 +331,15 @@ void update_pcouple_after_coordinates(FILE*                fplog,
     }
 }
 
-extern gmx_bool update_randomize_velocities(const t_inputrec*        ir,
-                                            int64_t                  step,
-                                            const t_commrec*         cr,
-                                            const t_mdatoms*         md,
-                                            gmx::ArrayRef<gmx::RVec> v,
-                                            const gmx::Update*       upd,
-                                            const gmx::Constraints*  constr)
+extern bool update_randomize_velocities(const t_inputrec*                   ir,
+                                        int64_t                             step,
+                                        const t_commrec*                    cr,
+                                        int                                 homenr,
+                                        gmx::ArrayRef<const unsigned short> cTC,
+                                        gmx::ArrayRef<const real>           invMass,
+                                        gmx::ArrayRef<gmx::RVec>            v,
+                                        const gmx::Update*                  upd,
+                                        const gmx::Constraints*             constr)
 {
 
     real rate = (ir->delta_t) / ir->opts.tau_t[0];
@@ -364,21 +362,11 @@ extern gmx_bool update_randomize_velocities(const t_inputrec*        ir,
     if ((ir->etc == TemperatureCoupling::Andersen) || do_per_step(step, gmx::roundToInt(1.0 / rate)))
     {
         andersen_tcoupl(
-                ir, step, cr, md, v, rate, upd->getAndersenRandomizeGroup(), upd->getBoltzmanFactor());
+                ir, step, cr, homenr, cTC, invMass, v, rate, upd->getAndersenRandomizeGroup(), upd->getBoltzmanFactor());
         return TRUE;
     }
     return FALSE;
 }
-
-/*
-   static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
-    {},
-    {1},
-    {},
-    {0.828981543588751,-0.657963087177502,0.828981543588751},
-    {},
-    {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
-   };*/
 
 /* these integration routines are only referenced inside this file */
 static void NHC_trotter(const t_grpopts*      opts,
@@ -390,20 +378,20 @@ static void NHC_trotter(const t_grpopts*      opts,
                         double                scalefac[],
                         real*                 veta,
                         const t_extmass*      MassQ,
-                        gmx_bool              bEkinAveVel)
+                        bool                  bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int      i, j, mi, mj;
-    double   Ekin, Efac, reft, kT, nd;
-    double   dt;
-    double * ivxi, *ixi;
-    double*  GQ;
-    gmx_bool bBarostat;
-    int      mstepsi, mstepsj;
-    int      ns = SUZUKI_YOSHIDA_NUM; /* set the degree of integration in the types/state.h file */
-    int      nh = opts->nhchainlength;
+    int     i, j, mi, mj;
+    double  Ekin, Efac, reft, kT, nd;
+    double  dt;
+    double *ivxi, *ixi;
+    double* GQ;
+    bool    bBarostat;
+    int     mstepsi, mstepsj;
+    int     ns = SUZUKI_YOSHIDA_NUM; /* set the degree of integration in the types/state.h file */
+    int     nh = opts->nhchainlength;
 
     snew(GQ, nh);
     mstepsi = mstepsj = ns;
@@ -663,7 +651,7 @@ void parrinellorahman_pcoupl(FILE*             fplog,
                              tensor            boxv,
                              tensor            M,
                              matrix            mu,
-                             gmx_bool          bFirstStep)
+                             bool              bFirstStep)
 {
     /* This doesn't do any coordinate updating. It just
      * integrates the box vector equations from the calculated
@@ -1106,17 +1094,17 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
 }
 
 template<PressureCoupling pressureCouplingType>
-void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
-                                            const matrix         mu,
-                                            matrix               box,
-                                            matrix               box_rel,
-                                            int                  start,
-                                            int                  nr_atoms,
-                                            rvec                 x[],
-                                            rvec                 v[],
-                                            const unsigned short cFREEZE[],
-                                            t_nrnb*              nrnb,
-                                            const bool           scaleCoordinates)
+void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   ir,
+                                            const matrix                        mu,
+                                            matrix                              box,
+                                            matrix                              box_rel,
+                                            int                                 start,
+                                            int                                 nr_atoms,
+                                            gmx::ArrayRef<gmx::RVec>            x,
+                                            gmx::ArrayRef<gmx::RVec>            v,
+                                            gmx::ArrayRef<const unsigned short> cFREEZE,
+                                            t_nrnb*                             nrnb,
+                                            const bool                          scaleCoordinates)
 {
     static_assert(pressureCouplingType == PressureCoupling::Berendsen
                           || pressureCouplingType == PressureCoupling::CRescale,
@@ -1139,7 +1127,7 @@ void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
         {
             // Trivial OpenMP region that does not throw
             int g = 0;
-            if (cFREEZE != nullptr)
+            if (!cFREEZE.empty())
             {
                 g = cFREEZE[n];
             }
@@ -1227,14 +1215,16 @@ void berendsen_tcoupl(const t_inputrec* ir, gmx_ekindata_t* ekind, real dt, std:
     }
 }
 
-void andersen_tcoupl(const t_inputrec*         ir,
-                     int64_t                   step,
-                     const t_commrec*          cr,
-                     const t_mdatoms*          md,
-                     gmx::ArrayRef<gmx::RVec>  v,
-                     real                      rate,
-                     const std::vector<bool>&  randomize,
-                     gmx::ArrayRef<const real> boltzfac)
+void andersen_tcoupl(const t_inputrec*                   ir,
+                     int64_t                             step,
+                     const t_commrec*                    cr,
+                     const int                           homenr,
+                     gmx::ArrayRef<const unsigned short> cTC,
+                     gmx::ArrayRef<const real>           invMass,
+                     gmx::ArrayRef<gmx::RVec>            v,
+                     real                                rate,
+                     const std::vector<bool>&            randomize,
+                     gmx::ArrayRef<const real>           boltzfac)
 {
     const int*           gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     int                  i;
@@ -1245,16 +1235,16 @@ void andersen_tcoupl(const t_inputrec*         ir,
 
     /* randomize the velocities of the selected particles */
 
-    for (i = 0; i < md->homenr; i++) /* now loop over the list of atoms */
+    for (i = 0; i < homenr; i++) /* now loop over the list of atoms */
     {
-        int      ng = gatindex ? gatindex[i] : i;
-        gmx_bool bRandomize;
+        int  ng = gatindex ? gatindex[i] : i;
+        bool bRandomize;
 
         rng.restart(step, ng);
 
-        if (md->cTC)
+        if (!cTC.empty())
         {
-            gc = md->cTC[i]; /* assign the atom to a temperature group if there are more than one */
+            gc = cTC[i]; /* assign the atom to a temperature group if there are more than one */
         }
         if (randomize[gc])
         {
@@ -1274,7 +1264,7 @@ void andersen_tcoupl(const t_inputrec*         ir,
                 real scal;
                 int  d;
 
-                scal = std::sqrt(boltzfac[gc] * md->invmass[i]);
+                scal = std::sqrt(boltzfac[gc] * invMass[i]);
 
                 normalDist.reset();
 
@@ -1291,8 +1281,8 @@ void andersen_tcoupl(const t_inputrec*         ir,
 void nosehoover_tcoupl(const t_grpopts*      opts,
                        const gmx_ekindata_t* ekind,
                        real                  dt,
-                       double                xi[],
-                       double                vxi[],
+                       gmx::ArrayRef<double> xi,
+                       gmx::ArrayRef<double> vxi,
                        const t_extmass*      MassQ)
 {
     int  i;
@@ -1309,16 +1299,18 @@ void nosehoover_tcoupl(const t_grpopts*      opts,
     }
 }
 
-void trotter_update(const t_inputrec*               ir,
-                    int64_t                         step,
-                    gmx_ekindata_t*                 ekind,
-                    const gmx_enerdata_t*           enerd,
-                    t_state*                        state,
-                    const tensor                    vir,
-                    const t_mdatoms*                md,
-                    const t_extmass*                MassQ,
-                    gmx::ArrayRef<std::vector<int>> trotter_seqlist,
-                    int                             trotter_seqno)
+void trotter_update(const t_inputrec*                   ir,
+                    int64_t                             step,
+                    gmx_ekindata_t*                     ekind,
+                    const gmx_enerdata_t*               enerd,
+                    t_state*                            state,
+                    const tensor                        vir,
+                    int                                 homenr,
+                    gmx::ArrayRef<const unsigned short> cTC,
+                    gmx::ArrayRef<const real>           invMass,
+                    const t_extmass*                    MassQ,
+                    gmx::ArrayRef<std::vector<int>>     trotter_seqlist,
+                    int                                 trotter_seqno)
 {
 
     int              n, i, d, ngtc, gc = 0, t;
@@ -1328,7 +1320,7 @@ void trotter_update(const t_inputrec*               ir,
     real             dt;
     double *         scalefac, dtc;
     rvec             sumv = { 0, 0, 0 };
-    gmx_bool         bCouple;
+    bool             bCouple;
 
     if (trotter_seqno <= ettTSEQ2)
     {
@@ -1420,11 +1412,11 @@ void trotter_update(const t_inputrec*               ir,
                 /* but do we actually need the total? */
 
                 /* modify the velocities as well */
-                for (n = 0; n < md->homenr; n++)
+                for (n = 0; n < homenr; n++)
                 {
-                    if (md->cTC) /* does this conditional need to be here? is this always true?*/
+                    if (!cTC.empty()) /* does this conditional need to be here? is this always true?*/
                     {
-                        gc = md->cTC[n];
+                        gc = cTC[n];
                     }
                     for (d = 0; d < DIM; d++)
                     {
@@ -1435,7 +1427,7 @@ void trotter_update(const t_inputrec*               ir,
                     {
                         for (d = 0; d < DIM; d++)
                         {
-                            sumv[d] += (v[n][d]) / md->invmass[n];
+                            sumv[d] += (v[n][d]) / invMass[n];
                         }
                     }
                 }
@@ -1448,7 +1440,7 @@ void trotter_update(const t_inputrec*               ir,
 }
 
 
-extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, gmx_bool bInit)
+extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bInit)
 {
     int              n, i, j, d, ngtc, nh;
     const t_grpopts* opts;
@@ -1546,7 +1538,7 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
 }
 
 std::array<std::vector<int>, ettTSEQMAX>
-init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, gmx_bool bTrotter)
+init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrotter)
 {
     int              i, j, nnhpres, nh;
     const t_grpopts* opts;
@@ -1992,7 +1984,7 @@ real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut, int64_t ste
     return ekin_new;
 }
 
-void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, real dt, double therm_integral[])
+void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, real dt, gmx::ArrayRef<double> therm_integral)
 {
     const t_grpopts* opts;
     int              i;
@@ -2048,15 +2040,18 @@ void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, 
     }
 }
 
-void rescale_velocities(const gmx_ekindata_t* ekind, const t_mdatoms* mdatoms, int start, int end, rvec v[])
+void rescale_velocities(const gmx_ekindata_t*               ekind,
+                        gmx::ArrayRef<const unsigned short> cTC,
+                        int                                 start,
+                        int                                 end,
+                        gmx::ArrayRef<gmx::RVec>            v)
 {
-    const unsigned short*             cTC    = mdatoms->cTC;
     gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
     for (int n = start; n < end; n++)
     {
         int gt = 0;
-        if (cTC)
+        if (!cTC.empty())
         {
             gt = cTC[n];
         }
