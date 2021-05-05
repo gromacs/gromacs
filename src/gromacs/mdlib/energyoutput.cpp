@@ -1191,18 +1191,20 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
         nr[i] = 0;
     }
 
-    if (bOR && fcd->orires->nr > 0)
+    if (bOR && fcd->orires)
     {
         t_oriresdata& orires = *fcd->orires;
         diagonalize_orires_tensors(&orires);
-        nr[enxOR]     = orires.nr;
-        block[enxOR]  = orires.otav;
-        id[enxOR]     = enxOR;
-        nr[enxORI]    = (orires.oinsl != orires.otav) ? orires.nr : 0;
-        block[enxORI] = orires.oinsl;
+        nr[enxOR]    = orires.numRestraints;
+        block[enxOR] = orires.orientationsTimeAndEnsembleAv.data();
+        id[enxOR]    = enxOR;
+        nr[enxORI]   = (orires.orientations.data() != orires.orientationsTimeAndEnsembleAv.data())
+                             ? orires.numRestraints
+                             : 0;
+        block[enxORI] = orires.orientations.data();
         id[enxORI]    = enxORI;
-        nr[enxORT]    = orires.nex * 12;
-        block[enxORT] = orires.eig;
+        nr[enxORT]    = ssize(orires.eigenOutput);
+        block[enxORT] = orires.eigenOutput.data();
         id[enxORT]    = enxORT;
     }
 
@@ -1288,9 +1290,9 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
     free_enxframe(&fr);
     if (log)
     {
-        if (bOR && fcd->orires->nr > 0)
+        if (bOR && fcd->orires)
         {
-            print_orires_log(log, fcd->orires);
+            print_orires_log(log, fcd->orires.get());
         }
 
         fprintf(log, "   Energies (%s)\n", unit_energy);

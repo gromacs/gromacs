@@ -492,7 +492,7 @@ real calc_one_bond(int                           thread,
                                     gmx::arrayRefFromArray(md->chargeA, md->nr),
                                     fcd,
                                     fcd->disres,
-                                    fcd->orires,
+                                    fcd->orires.get(),
                                     global_atom_index,
                                     flavor);
         }
@@ -622,9 +622,9 @@ static void calcBondedForces(const InteractionDefinitions& idef,
 
 bool ListedForces::haveRestraints(const t_fcdata& fcdata) const
 {
-    GMX_ASSERT(fcdata.orires && fcdata.disres, "NMR restraints objects should be set up");
+    GMX_ASSERT(fcdata.disres, "NMR distance restraint object should be set up");
 
-    return (!idef_->il[F_POSRES].empty() || !idef_->il[F_FBPOSRES].empty() || fcdata.orires->nr > 0
+    return (!idef_->il[F_POSRES].empty() || !idef_->il[F_FBPOSRES].empty() || fcdata.orires
             || fcdata.disres->nres > 0);
 }
 
@@ -846,7 +846,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         }
 
         /* Do pre force calculation stuff which might require communication */
-        if (fcdata->orires->nr > 0)
+        if (fcdata->orires)
         {
             GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
             enerd->term[F_ORIRESDEV] = calc_orires_dev(ms,
@@ -857,7 +857,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                                        xWholeMolecules,
                                                        x,
                                                        fr->bMolPBC ? pbc : nullptr,
-                                                       fcdata->orires,
+                                                       fcdata->orires.get(),
                                                        hist);
         }
         if (fcdata->disres->nres > 0)

@@ -1208,9 +1208,11 @@ int Mdrunner::mdrunner()
                 globalState.get(),
                 replExParams.exchangeInterval > 0);
 
-    t_oriresdata* oriresdata;
-    snew(oriresdata, 1);
-    init_orires(fplog, mtop, inputrec.get(), cr, ms, globalState.get(), oriresdata);
+    std::unique_ptr<t_oriresdata> oriresData;
+    if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0)
+    {
+        oriresData = std::make_unique<t_oriresdata>(fplog, mtop, *inputrec, cr, ms, globalState.get());
+    }
 
     auto deform = prepareBoxDeformation(globalState != nullptr ? globalState->box : box,
                                         MASTER(cr) ? DDRole::Master : DDRole::Agent,
@@ -1661,7 +1663,7 @@ int Mdrunner::mdrunner()
                       pforce);
         // Dirty hack, for fixing disres and orires should be made mdmodules
         fr->fcdata->disres = disresdata;
-        fr->fcdata->orires = oriresdata;
+        fr->fcdata->orires.swap(oriresData);
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
@@ -2104,7 +2106,6 @@ int Mdrunner::mdrunner()
     fr.reset(nullptr); // destruct forcerec before gpu
     // TODO convert to C++ so we can get rid of these frees
     sfree(disresdata);
-    sfree(oriresdata);
 
     if (!hwinfo_->deviceInfoList.empty())
     {

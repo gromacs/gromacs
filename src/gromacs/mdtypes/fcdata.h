@@ -38,13 +38,21 @@
 #ifndef GMX_MDTYPES_FCDATA_H
 #define GMX_MDTYPES_FCDATA_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 enum class DistanceRestraintWeighting : int;
+struct gmx_mtop_t;
+struct gmx_multisim_t;
+struct t_commrec;
+struct t_inputrec;
+class t_state;
 
 typedef real rvec5[5];
 
@@ -84,36 +92,92 @@ struct OriresMatEq
 };
 
 /* Orientation restraining stuff */
-typedef struct t_oriresdata
+struct t_oriresdata
 {
-    real         fc;            /* Force constant for the restraints                  */
-    real         edt;           /* Multiplication factor for time averaging           */
-    real         edt_1;         /* 1 - edt                                            */
-    real         exp_min_t_tau; /* Factor for slowly switching on the force         */
-    int          nr;            /* The number of orientation restraints               */
-    int          nex;           /* The number of experiments                          */
-    int          typeMin;       /* The minimum iparam type index for restraints       */
-    int          nref;          /* The number of atoms for the fit                    */
-    real*        mref;          /* The masses of the reference atoms                  */
-    rvec*        xref;          /* The reference coordinates for the fit (nref)       */
-    rvec*        xtmp;          /* Temporary array for fitting (nref)                 */
-    matrix       R;             /* Rotation matrix to rotate to the reference coor.   */
-    tensor*      S;             /* Array of order tensors for each experiment (nexp)  */
-    rvec5*       Dinsl;         /* The order matrix D for all restraints (nr x 5)     */
-    rvec5*       Dins;          /* The ensemble averaged D (nr x 5)                   */
-    rvec5*       Dtav;          /* The time and ensemble averaged D (nr x 5)          */
-    real*        oinsl;         /* The calculated instantaneous orientations          */
-    real*        oins;          /* The calculated emsemble averaged orientations      */
-    real*        otav;          /* The calculated time and ensemble averaged orient.  */
-    real         rmsdev;        /* The weighted (using kfac) RMS deviation            */
-    OriresMatEq* tmpEq;         /* An temporary array of matrix + rhs                 */
-    real*        eig;           /* Eigenvalues/vectors, for output only (nex x 12)    */
+    /*! Constructor
+     *
+     * \param[in] fplog  Log file, can be nullptr
+     * \param[in] mtop   The global topology
+     * \param[in] ir     The input record
+     * \param[in] cr     The commrec, can be nullptr when not running in parallel
+     * \param[in] ms     The multisim communicator, pass nullptr to avoid ensemble averaging
+     * \param[in,out] globalState  The global state, orientation restraint entires are added
+     *
+     * \throws InvalidInputError when there is domain decomposition, fewer than 5 restraints,
+     *         periodic molecules or more than 1 molecule for a moleculetype with restraints.
+     */
+    t_oriresdata(FILE*                 fplog,
+                 const gmx_mtop_t&     mtop,
+                 const t_inputrec&     ir,
+                 const t_commrec*      cr,
+                 const gmx_multisim_t* ms,
+                 t_state*              globalState);
 
-    /* variables for diagonalization with diagonalize_orires_tensors()*/
-    double** M;
-    double*  eig_diag;
-    double** v;
-} t_oriresdata;
+    //! Destructor
+    ~t_oriresdata();
+
+    //! Force constant for the restraints
+    real fc;
+    //! Multiplication factor for time averaging
+    real edt;
+    //! 1 - edt
+    real edt_1;
+    //! Factor for slowly switching on the force
+    real exp_min_t_tau;
+    //! The number of orientation restraints
+    const int numRestraints;
+    //! The number of experiments
+    int numExperiments;
+    //! The minimum iparam type index for restraints
+    int typeMin;
+    //! The number of atoms for the fit
+    int numReferenceAtoms;
+    //! The masses of the reference atoms
+    std::vector<real> mref;
+    //! The reference coordinates for the fit
+    std::vector<gmx::RVec> xref;
+    //! Temporary array for fitting
+    std::vector<gmx::RVec> xtmp;
+    //! Rotation matrix to rotate to the reference coordinates
+    matrix rotationMatrix;
+    //! Array of order tensors, one for each experiment
+    tensor* orderTensors = nullptr;
+    //! The order tensor D for all restraints
+    rvec5* DTensors = nullptr;
+    //! The ensemble averaged D for all restraints
+    rvec5* DTensorsEnsembleAv = nullptr;
+    //! The time and ensemble averaged D restraints
+    rvec5* DTensorsTimeAndEnsembleAv = nullptr;
+    //! The calculated instantaneous orientations
+    std::vector<real> orientations;
+    //! The calculated emsemble averaged orientations
+    gmx::ArrayRef<real> orientationsEnsembleAv;
+    //! Buffer for the calculated emsemble averaged orientations, only used with ensemble averaging
+    std::vector<real> orientationsEnsembleAvBuffer;
+    //! The calculated time and ensemble averaged orientations
+    gmx::ArrayRef<real> orientationsTimeAndEnsembleAv;
+    //! The weighted (using kfac) RMS deviation
+    std::vector<real> orientationsTimeAndEnsembleAvBuffer;
+    //! Buffer for the weighted (using kfac) RMS deviation, only used with time averaging
+    real rmsdev;
+    //! An temporary array of matrix + rhs
+    std::vector<OriresMatEq> tmpEq;
+    //! The number of eigenvalues + eigenvectors per experiment
+    static constexpr int c_numEigenRealsPerExperiment = 12;
+    //! Eigenvalues/vectors, for output only (numExperiments x 12)
+    std::vector<real> eigenOutput;
+
+    // variables for diagonalization with diagonalize_orires_tensors()
+    //! Tensor to diagonalize
+    std::array<gmx::DVec, DIM> M;
+    //! Eigenvalues
+    std::array<double, DIM> eig_diag;
+    //! Eigenvectors
+    std::array<gmx::DVec, DIM> v;
+
+    // Default copy and assign would be incorrect and manual versions are not yet implemented.
+    GMX_DISALLOW_COPY_AND_ASSIGN(t_oriresdata);
+};
 
 /* Cubic spline table for tabulated bonded interactions */
 struct bondedtable_t
@@ -137,8 +201,8 @@ struct t_fcdata
     std::vector<bondedtable_t> dihtab;
 
     // TODO: Convert to C++ and unique_ptr (currently this data is not freed)
-    t_disresdata* disres = nullptr;
-    t_oriresdata* orires = nullptr;
+    t_disresdata*                 disres = nullptr;
+    std::unique_ptr<t_oriresdata> orires;
 };
 
 #endif

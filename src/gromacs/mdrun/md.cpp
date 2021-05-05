@@ -283,8 +283,7 @@ void gmx::LegacySimulator::do_md()
     {
         // TODO This implementation of ensemble orientation restraints is nasty because
         // a user can't just do multi-sim with single-sim orientation restraints.
-        bool usingEnsembleRestraints =
-                (fcdata.disres->nsystems > 1) || ((ms != nullptr) && (fcdata.orires->nr != 0));
+        bool usingEnsembleRestraints = (fcdata.disres->nsystems > 1) || ((ms != nullptr) && fcdata.orires);
         bool awhUsesMultiSim = (ir->bDoAwh && ir->awhParams->shareBiasMultisim() && (ms != nullptr));
 
         // Replica exchange, ensemble restraints and AWH need all
@@ -451,7 +450,7 @@ void gmx::LegacySimulator::do_md()
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(*ir->pull),
                            "Constraints pulling is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(fcdata.orires->nr == 0,
+        GMX_RELEASE_ASSERT(fcdata.orires == nullptr,
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->efep == FreeEnergyPerturbationType::No

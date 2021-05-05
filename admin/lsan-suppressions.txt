@@ -24,7 +24,6 @@ leak:init_df_history
 leak:init_disres
 leak:init_edsam
 leak:init_ekinstate
-leak:init_orires
 leak:init_rot
 leak:init_swapcoords
 leak:make_bondeds_zone
