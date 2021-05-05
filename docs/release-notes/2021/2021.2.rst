@@ -33,6 +33,16 @@ refuse to handle such a system, suggesting using normal constraints.
 
 :issue:`3959`
 
+Rerun now writes pull output correctly
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Refactoring omitted to preserve that pullf.xvg and pullx.xvg files
+should be written during a rerun. All 2019 and 2020 versions were
+affected, as well as 2021 and 2021.1. The pull output files are
+now written as they used to be in 2018 and earlier.
+
+:issue:`4043`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
