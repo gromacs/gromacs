@@ -123,6 +123,11 @@ static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gm
                     ato[to++] = afrom[from++];
                 }
                 break;
+            case F_ETOT:
+            case F_ECONSERVED:
+                // Don't reduce total and conserved energy
+                // because they are computed later (see #4301)
+                break;
             default:
                 if (bEner)
                 {

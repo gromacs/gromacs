@@ -116,8 +116,7 @@
 InteractionOfType::InteractionOfType(gmx::ArrayRef<const int>  atoms,
                                      gmx::ArrayRef<const real> params,
                                      const std::string&        name) :
-    atoms_(atoms.begin(), atoms.end()),
-    interactionTypeName_(name)
+    atoms_(atoms.begin(), atoms.end()), interactionTypeName_(name)
 {
     GMX_RELEASE_ASSERT(
             params.size() <= forceParam_.size(),
@@ -2177,6 +2176,13 @@ int gmx_grompp(int argc, char* argv[])
     /* check masses */
     check_mol(&sys, wi);
 
+    if (haveFepPerturbedMassesInSettles(sys))
+    {
+        warning_error(wi,
+                      "SETTLE is not implemented for atoms whose mass is perturbed. "
+                      "You might instead use normal constraints.");
+    }
+
     checkForUnboundAtoms(&sys, bVerbose, wi, logger);
 
     if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::BD)
@@ -2416,10 +2422,9 @@ int gmx_grompp(int argc, char* argv[])
                 ir->pbcType,
                 compressibility,
                 &ir->opts,
-                ir->efep != FreeEnergyPerturbationType::No
-                        ? ir->fepvals->all_lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Fep)]
-                                                 [ir->fepvals->init_fep_state]
-                        : 0,
+                ir->efep != FreeEnergyPerturbationType::No ? ir->fepvals->all_lambda[static_cast<int>(
+                        FreeEnergyPerturbationCouplingType::Fep)][ir->fepvals->init_fep_state]
+                                                           : 0,
                 sys,
                 wi);
     }

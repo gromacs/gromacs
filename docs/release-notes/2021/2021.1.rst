@@ -1,7 +1,7 @@
 GROMACS 2021.1 release notes
 ----------------------------
 
-This version was released on TODO, 2021. These release notes
+This version was released on March 8th, 2021. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2021 version, to fix known issues. It also incorporates all
 fixes made in version 2020.6 and earlier, which you can find described
@@ -16,6 +16,49 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix MiMiC with virtual sites
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It is likely that MiMiC with virtual sites has not worked
+correctly because the call to construct the sites was placed
+after the call that uses the sites. Now it should work, but we have not tested that it does.
+
+:issue:`3866`
+
+Fix mass perturbation to dH/dlambda
+"""""""""""""""""""""""""""""""""""
+
+The contribution for perturbed mass was missing in dH/dlambda.
+Note that this contribution was not missing from the foreign energy
+differences used for the Bennett acceptance ratio method.
+
+:issue:`3943`
+
+Running AWH with a convolved potential and an FEP dimension gives wrong results.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The output PMF is wrong when using awh-potential = convolved with a
+pull dimension combined with an FEP dimension. The FEP dimension
+always uses an umbrella potential and the combination does not work
+properly. This has been disabled in grompp.
+
+:issue:`3946`
+
+Remove velocity from partially frozen atoms in md-vv
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+md-vv would add some velocity to the frozen dimensions of partially
+frozen atoms during constraining. This did not lead to wrong
+trajectories, as the frozen dimensions of the positions are kept fixed
+during propagation. The non-zero velocities were, however, reported in
+trajectories and final configurations. They might also have lead to
+slightly wrong kinetic energies, since the reported kinetic energy is
+calculated after the velocities are constrained. All effects are
+expected to be relatively small, since they did not accumulate, as the
+velocities were regularly reset to zero once per step.
+
+:issue:`3849`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -28,12 +71,20 @@ usually lead to obviously incorrect outliers in analysis output.
 
 :issue:`3900`
 
-Fix range checking bug in gmx covar
-"""""""""""""""""""""""""""""""""""
+Fix range checking bug in ``gmx covar``
+"""""""""""""""""""""""""""""""""""""""
 
 A check was inverted causing range checking to be applied wrong.
 
 :issue:`3902`
+
+Fix various bugs in ``gmx xpm2ps``
+""""""""""""""""""""""""""""""""""
+
+Numerous minor issues were introduced in refactoring since
+|Gromacs| 5.1, now fixed.
+
+:issue:`3881`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -46,6 +97,15 @@ header. A problem with the ``M_PI`` math constant defined only by
 POSIX and not by C++ was also worked around.
 
 :issue:`3890`
+
+Improve grompp checks of AWH settings when sampling an FEP dimension
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Ensure that the AWH sampling interval is compatible with nstcalcenergy
+when sampling an FEP dimension using AWH. This avoids crashes in the
+first AWH sampling step (step > 0) if the settings were not correct.
+
+:issue:`3922`
 
 Miscellaneous
 ^^^^^^^^^^^^^

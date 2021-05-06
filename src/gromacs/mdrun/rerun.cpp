@@ -116,6 +116,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/utilities.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
@@ -820,6 +821,11 @@ void gmx::LegacySimulator::do_rerun()
                                                t,
                                                fr->fcdata.get(),
                                                awh);
+
+            if (ir->bPull)
+            {
+                pull_print_output(pull_work, step, t);
+            }
 
             if (do_per_step(step, ir->nstlog))
             {

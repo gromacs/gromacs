@@ -71,11 +71,19 @@ if (BUILD_TESTING)
     include(${TESTUTILS_DIR}/TestMacros.cmake)
 endif()
 
+add_custom_target(nblib-tests
+        COMMENT "Target to build all nblib tests including samples"
+        )
+# Ensure that "make tests" builds all nblib tests so the top-level
+# "make check" will work.
+add_dependencies(tests nblib-tests)
+
 # this allows all nblib tests to be run with "make check-nblib"
 add_custom_target(check-nblib
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R NbLib
         COMMENT "Running nblib tests"
         USES_TERMINAL VERBATIM)
+add_dependencies(check-nblib nblib-tests)
 
 set(NBLIB_MAJOR 0)
 set(NBLIB_MINOR 1)

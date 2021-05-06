@@ -220,7 +220,7 @@ struct MDModulesNotifiers
      * KeyValueTreeObjectBuilder enables writing of module internal data to
      *                           .tpr files.
      */
-    BuildMDModulesNotifier<EnergyCalculationFrequencyErrors*, IndexGroupsAndNames, KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
+    BuildMDModulesNotifier<EnergyCalculationFrequencyErrors*, const IndexGroupsAndNames&, KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *

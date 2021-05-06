@@ -30,7 +30,7 @@
  [ bonds ]
      C    CA   gb_27
      C     O   gb_5
-     C    +N   gb_19
+     C    +N   gb_10
  [ angles ]
    CA     C     O    ga_30   
    CA     C    +N    ga_19

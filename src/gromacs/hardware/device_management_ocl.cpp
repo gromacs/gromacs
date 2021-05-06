@@ -47,7 +47,15 @@
  */
 #include "gmxpre.h"
 
+#ifdef __APPLE__
+#    include <sys/sysctl.h>
+#endif
+
 #include "config.h"
+
+#ifdef __APPLE__
+#    include <sys/sysctl.h>
+#endif
 
 #include "gromacs/gpu_utils/oclraii.h"
 #include "gromacs/gpu_utils/oclutils.h"
@@ -66,6 +74,8 @@ namespace gmx
  * This is assumed to be true for OS X version of at least 10.10.4 and
  * all other OS flavors.
  *
+ * Uses the BSD sysctl() interfaces to extract the kernel version.
+ *
  * \return true if version is 14.4 or later (= OS X version 10.10.4),
  *         or OS is not Darwin.
  */
@@ -77,6 +87,9 @@ static bool runningOnCompatibleOSForAmd()
     size_t len = sizeof(kernelVersion);
 
     mib[0] = CTL_KERN;
+    mib[1] = KERN_OSRELEASE;
+
+    sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
     int major = strtod(kernelVersion, NULL);
     int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);

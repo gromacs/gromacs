@@ -33,8 +33,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-include(gmxTestICCNextGen)
-
 # Manage setup of the different FFT libraries we can use in Gromacs.
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
@@ -42,7 +40,7 @@ set(PKG_FFT_LIBS "")
 # all their stuff. It's not easy if you only want some of their
 # stuff...
 set(MKL_MANUALLY FALSE)
-if (GMX_FFT_LIBRARY STREQUAL "MKL" AND NOT GMX_ICC_NEXTGEN)
+if (GMX_FFT_LIBRARY STREQUAL "MKL" AND NOT GMX_INTEL_LLVM)
     # The user will have to provide the set of magic libraries in
     # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
     # don't have to keep specifying it, and can easily see that
@@ -136,6 +134,8 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
             # docs, but on Jenkins Win2k8, icl tries to interpret it
             # as a file. Shrug.
             set(FFT_LINKER_FLAGS "/Qmkl:sequential")
+        elseif(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 2021020)
+            set(FFT_LINKER_FLAGS "-qmkl=sequential")
         else()
             set(FFT_LINKER_FLAGS "-mkl=sequential")
         endif()

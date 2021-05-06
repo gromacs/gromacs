@@ -1,7 +1,7 @@
 GROMACS 2020.6 release notes
 ----------------------------
 
-This version was released on TODO, 2021. These release notes
+This version was released on March 4th, 2021. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020.5 version, to fix known issues.
 
@@ -14,8 +14,29 @@ previous 2020.5 version, to fix known issues.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Cosine acceleration failed to abort if it could not be run
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Cosine acceleration is only compatible with the leap-frog
+integrator (:mdp:`integrator = md`). |Gromacs| did, however,
+accept input files requesting cosine acceleration for other
+integration algorithms, and did report viscosity-related
+quantities from these simulations. Since the cosine acceleration
+was never applied in these cases, any results obtained from
+simulations with enabled cosine acceleration and integrators
+other than ``md`` should be regarded as invalid.
+
+:issue:`3903`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix range checking bug in ``gmx covar``
+"""""""""""""""""""""""""""""""""""""""
+
+A check was inverted causing range checking to be applied wrong.
+
+:issue:`3902`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

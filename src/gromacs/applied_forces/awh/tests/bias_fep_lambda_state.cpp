@@ -87,10 +87,7 @@ public:
          *   eawhgrowth:
          *     eawhgrowthLINEAR:     final, normal update phase
          *     ewahgrowthEXP_LINEAR: intial phase, updated size is constant
-         *   eawhpotential (test both, but for the FEP lambda state dimension MC will in practice be used,
-         *                  except that eawhpotentialCONVOLVED also gives a potential output):
-         *     eawhpotentialUMBRELLA:  MC on lambda state
-         *     eawhpotentialCONVOLVED: MD on a convolved potential landscape (falling back to MC on lambda state)
+         *   eawhpotential (test only eawhpotentialUMBRELLA (MC) for FEP lambda dimensions)
          *   disableUpdateSkips (should not affect the results):
          *     BiasParams::DisableUpdateSkips::yes: update the point state for every sample
          *     BiasParams::DisableUpdateSkips::no:  update the point state at an interval > 1 sample
@@ -226,8 +223,7 @@ INSTANTIATE_TEST_CASE_P(WithParameters,
                         BiasFepLambdaStateTest,
                         ::testing::Combine(::testing::Values(AwhHistogramGrowthType::Linear,
                                                              AwhHistogramGrowthType::ExponentialLinear),
-                                           ::testing::Values(AwhPotentialType::Umbrella,
-                                                             AwhPotentialType::Convolved),
+                                           ::testing::Values(AwhPotentialType::Umbrella),
                                            ::testing::Values(BiasParams::DisableUpdateSkips::yes,
                                                              BiasParams::DisableUpdateSkips::no)));
 
@@ -244,7 +240,7 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
             awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
     auto                    awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
     const AwhTestParameters params(getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,
-                                                        AwhPotentialType::Convolved,
+                                                        AwhPotentialType::Umbrella,
                                                         awhDimArrayRef,
                                                         false,
                                                         0.4,

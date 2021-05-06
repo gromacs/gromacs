@@ -52,6 +52,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "gromacs/commandline/filenm.h"
@@ -642,9 +643,9 @@ static bool do_em_step(const t_commrec*                          cr,
                        int64_t                                   count)
 
 {
-    t_state *s1, *s2;
-    int      start, end;
-    real     dvdl_constr;
+    t_state *    s1, *s2;
+    int          start, end;
+    real         dvdl_constr;
     int nthreads gmx_unused;
 
     bool validStep = true;

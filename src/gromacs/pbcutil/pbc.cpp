@@ -99,8 +99,7 @@ int numPbcDimensions(PbcType pbcType)
         case PbcType::XY: npbcdim = 2; break;
         case PbcType::Screw: npbcdim = 3; break;
         case PbcType::No: npbcdim = 0; break;
-        default:
-            gmx_fatal(FARGS, "Unknown pbcType=%s in numPbcDimensions", c_pbcTypeNames[pbcType].c_str());
+        default: GMX_RELEASE_ASSERT(false, "Invalid pbcType in numPbcDimensions");
     }
 
     return npbcdim;

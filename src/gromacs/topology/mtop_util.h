@@ -333,6 +333,9 @@ bool haveFepPerturbedNBInteractions(const gmx_mtop_t& mtop);
 //! Checks whether masses are perturbed for free-energy calculations
 bool haveFepPerturbedMasses(const gmx_mtop_t& mtop);
 
+//! Checks whether masses are perturbed for free-energy calculations in SETTLE interactions
+bool haveFepPerturbedMassesInSettles(const gmx_mtop_t& mtop);
+
 //! Checks whether constraints are perturbed for free-energy calculations
 bool havePerturbedConstraints(const gmx_mtop_t& mtop);
 

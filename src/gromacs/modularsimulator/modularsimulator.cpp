@@ -224,8 +224,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       !inputrec->useMts,
-                       "Multiple time stepping is not supported by the modular simulator.");
+                    !inputrec->useMts,
+                    "Multiple time stepping is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(!doRerun, "Rerun is not supported by the modular simulator.");
@@ -240,15 +240,14 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       inputrec->epc == PressureCoupling::No
-                               || inputrec->epc == PressureCoupling::ParrinelloRahman,
-                       "Only Parrinello-Rahman barostat is supported by the modular simulator.");
+                    inputrec->epc == PressureCoupling::No || inputrec->epc == PressureCoupling::ParrinelloRahman,
+                    "Only Parrinello-Rahman barostat is supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)
-                         || inputrecNvtTrotter(inputrec)),
-                       "Legacy Trotter decomposition is not supported by the modular simulator.");
+                    !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)
+                      || inputrecNvtTrotter(inputrec)),
+                    "Legacy Trotter decomposition is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(inputrec->efep == FreeEnergyPerturbationType::No
@@ -270,12 +269,12 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0
-                               && inputrec->deform[XX][ZZ] == 0.0 && inputrec->deform[YY][XX] == 0.0
-                               && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0
-                               && inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0
-                               && inputrec->deform[ZZ][ZZ] == 0.0,
-                       "Deformation is not supported by the modular simulator.");
+                    inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0
+                            && inputrec->deform[XX][ZZ] == 0.0 && inputrec->deform[YY][XX] == 0.0
+                            && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0
+                            && inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0
+                            && inputrec->deform[ZZ][ZZ] == 0.0,
+                    "Deformation is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(gmx_mtop_interaction_count(globalTopology, IF_VSITE) == 0,
@@ -290,8 +289,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       gmx_mtop_ftype_count(globalTopology, F_ORIRES) == 0,
-                       "Orientation restraints are not supported by the modular simulator.");
+                    gmx_mtop_ftype_count(globalTopology, F_ORIRES) == 0,
+                    "Orientation restraints are not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(ms == nullptr,
@@ -308,7 +307,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     }
     else
     {
-        auto distantRestraintEnsembleEnvVar = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+        auto* distantRestraintEnsembleEnvVar = getenv("GMX_DISRE_ENSEMBLE_SIZE");
         numEnsembleRestraintSystems =
                 (ms != nullptr && distantRestraintEnsembleEnvVar != nullptr)
                         ? static_cast<int>(strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
@@ -350,8 +349,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
-                       "Integration on the GPU is not supported by the modular simulator.");
+                    getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
+                    "Integration on the GPU is not supported by the modular simulator.");
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0
     isInputCompatible = isInputCompatible
@@ -361,14 +360,15 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible = isInputCompatible
                         && conditionalAssert(!GMX_FAHCORE,
                                              "GMX_FAHCORE not supported by the modular simulator.");
-    GMX_RELEASE_ASSERT(
-            isInputCompatible
-                    || !(inputrec->eI == IntegrationAlgorithm::VV
-                         && inputrec->epc == PressureCoupling::ParrinelloRahman),
-            "Requested Parrinello-Rahman barostat with md-vv, but other options are not compatible "
-            "with the modular simulator. The Parrinello-Rahman barostat is not implemented for "
-            "md-vv in the legacy simulator. Use a different pressure control algorithm.");
-
+    if (!isInputCompatible
+        && (inputrec->eI == IntegrationAlgorithm::VV && inputrec->epc == PressureCoupling::ParrinelloRahman))
+    {
+        gmx_fatal(FARGS,
+                  "Requested Parrinello-Rahman barostat with md-vv. This combination is only "
+                  "available in the modular simulator. Some other selected options are, however, "
+                  "only available in the legacy simulator. Use a different pressure control "
+                  "algorithm.");
+    }
     return isInputCompatible;
 }
 

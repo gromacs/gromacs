@@ -374,6 +374,8 @@ if (SPHINX_FOUND)
         release-notes/2022/major/portability.rst
         release-notes/2022/major/miscellaneous.rst
         release-notes/2022/major/api.rst
+        release-notes/2021/2021.3.rst
+        release-notes/2021/2021.2.rst
         release-notes/2021/2021.1.rst
         release-notes/2021/major/highlights.rst
         release-notes/2021/major/features.rst
@@ -455,6 +457,7 @@ if (SPHINX_FOUND)
         user-guide/force-fields.rst
         user-guide/getting-started.rst
         user-guide/index.rst
+        user-guide/known-issues.rst
         user-guide/managing-simulations.rst
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst

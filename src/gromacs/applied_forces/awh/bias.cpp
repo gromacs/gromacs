@@ -120,6 +120,10 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
                 "The step number is negative which is not supported by the AWH code."));
     }
 
+    GMX_RELEASE_ASSERT(!(params_.convolveForce && grid_.hasLambdaAxis()),
+                       "When using AWH to sample an FEP lambda dimension the AWH potential cannot "
+                       "be convolved.");
+
     state_.setCoordValue(grid_, coordValue);
 
     std::vector<double, AlignedAllocator<double>>& probWeightNeighbor = alignedTempWorkSpace_;
@@ -147,12 +151,6 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
             updateForceCorrelationGrid(probWeightNeighbor, neighborLambdaDhdl, t);
 
             state_.sampleCoordAndPmf(dimParams_, grid_, probWeightNeighbor, convolvedBias);
-        }
-        /* Set the umbrella grid point (for the lambda axis) to the
-         * current grid point. */
-        if (params_.convolveForce && grid_.hasLambdaAxis())
-        {
-            state_.setUmbrellaGridpointToGridpoint();
         }
     }
 

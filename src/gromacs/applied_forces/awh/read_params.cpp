@@ -35,9 +35,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 #include "gmxpre.h"
 
 #include "read_params.h"
+
+#include <algorithm>
 
 #include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/fileio/readinp.h"
@@ -1310,10 +1313,42 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, warninp_t 
         warning_error(wi, opt + " needs to be an integer > 0");
     }
 
-    for (int k = 0; k < awhParams.numBias(); k++)
+    bool       haveFepLambdaDim = false;
+    const auto awhBiasParams    = awhParams.awhBiasParams();
+    for (int k = 0; k < awhParams.numBias() && !haveFepLambdaDim; k++)
     {
         std::string prefixawh = formatString("awh%d", k + 1);
-        checkBiasParams(awhParams.awhBiasParams()[k], prefixawh, ir, wi);
+        checkBiasParams(awhBiasParams[k], prefixawh, ir, wi);
+        /* Check if there is a FEP lambda dimension. */
+        const auto dimParams = awhBiasParams[k].dimParams();
+        haveFepLambdaDim = std::any_of(dimParams.begin(), dimParams.end(), [](const auto& dimParam) {
+            return dimParam.coordinateProvider() == AwhCoordinateProviderType::FreeEnergyLambda;
+        });
+    }
+
+    if (haveFepLambdaDim)
+    {
+        if (awhParams.nstSampleCoord() % ir.nstcalcenergy != 0)
+        {
+            opt          = "awh-nstsample";
+            auto message = formatString(
+                    "%s (%d) should be a multiple of nstcalcenergy (%d) when using AWH for "
+                    "sampling an FEP lambda dimension",
+                    opt.c_str(),
+                    awhParams.nstSampleCoord(),
+                    ir.nstcalcenergy);
+            warning_error(wi, message);
+        }
+        if (awhParams.potential() != AwhPotentialType::Umbrella)
+        {
+            opt          = "awh-potential";
+            auto message = formatString(
+                    "%s (%s) must be set to %s when using AWH for sampling an FEP lambda dimension",
+                    opt.c_str(),
+                    enumValueToString(awhParams.potential()),
+                    enumValueToString(AwhPotentialType::Umbrella));
+            warning_error(wi, message);
+        }
     }
 
     if (ir.init_step != 0)

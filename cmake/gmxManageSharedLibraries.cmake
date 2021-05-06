@@ -142,7 +142,7 @@ IF( WIN32)
           gmx_manage_prefer_static_libs_flags("${build_type}")
       endforeach()
   ENDIF()
-  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
+  IF( CMAKE_C_COMPILER_ID STREQUAL "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
         STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
         set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)

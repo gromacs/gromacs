@@ -332,7 +332,7 @@ macro (gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_LANG "/permissive-" GMXC_CXXFLAGS)
     endif()
 
-    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "IntelLLVM")
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
@@ -343,7 +343,7 @@ macro (gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_WARN_NO_MISSING_FIELD_INITIALIZERS "-Wno-missing-field-initializers" GMXC_CFLAGS)
     endif()
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
         if (GMX_COMPILER_WARNINGS)
             # If used, -Wall should precede other options that silence warnings it enables
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall" GMXC_CXXFLAGS)
@@ -362,6 +362,10 @@ macro (gmx_c_flags)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_MISSING_FIELD_INITIALIZERS "-Wno-missing-field-initializers" GMXC_CXXFLAGS)
+	# Intel LLVM 2021.2 defaults to no-finite-math which isn't OK for GROMACS
+	if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 2021020)
+	    GMX_TEST_CXXFLAG(CXXFLAGS_FINITE_MATH "-fno-finite-math-only" GMXC_CXXFLAGS)
+        endif()
     endif()
 
     # Apple bastardized version of Clang

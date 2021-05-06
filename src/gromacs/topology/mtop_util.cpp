@@ -240,8 +240,7 @@ gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop, const t_a
 }
 
 IListIterator::IListIterator(const gmx_mtop_t& mtop, size_t molblock) :
-    mtop_(&mtop),
-    mblock_(molblock)
+    mtop_(&mtop), mblock_(molblock)
 {
 }
 
@@ -1050,6 +1049,25 @@ bool haveFepPerturbedMasses(const gmx_mtop_t& mtop)
         }
     }
 
+    return false;
+}
+
+bool haveFepPerturbedMassesInSettles(const gmx_mtop_t& mtop)
+{
+    for (const gmx_moltype_t& molt : mtop.moltype)
+    {
+        if (!molt.ilist[F_SETTLE].empty())
+        {
+            for (int a = 0; a < molt.atoms.nr; a++)
+            {
+                const t_atom& atom = molt.atoms.atom[a];
+                if (atom.m != atom.mB)
+                {
+                    return true;
+                }
+            }
+        }
+    }
     return false;
 }
 

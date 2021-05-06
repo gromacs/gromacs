@@ -49,6 +49,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <limits>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh_params.h"

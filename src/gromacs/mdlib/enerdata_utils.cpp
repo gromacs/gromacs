@@ -43,13 +43,12 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 ForeignLambdaTerms::ForeignLambdaTerms(int numLambdas) :
-    numLambdas_(numLambdas),
-    energies_(1 + numLambdas),
-    dhdl_(1 + numLambdas)
+    numLambdas_(numLambdas), energies_(1 + numLambdas), dhdl_(1 + numLambdas)
 {
 }
 
@@ -81,9 +80,7 @@ void ForeignLambdaTerms::zeroAllTerms()
 }
 
 gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
-    grpp(numEnergyGroups),
-    foreignLambdaTerms(numFepLambdas),
-    foreign_grpp(numEnergyGroups)
+    grpp(numEnergyGroups), foreignLambdaTerms(numFepLambdas), foreign_grpp(numEnergyGroups)
 {
 }
 
@@ -126,54 +123,48 @@ void sum_epot(const gmx_grppairener_t& grpp, real* epot)
     }
 }
 
-// Adds computed dV/dlambda contributions to the requested outputs
-static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
+// Adds computed dH/dlambda contribution i to the requested output
+static void set_dhdl_output(gmx_enerdata_t* enerd, FreeEnergyPerturbationCouplingType i, const t_lambda& fepvals)
 {
-    enerd->term[F_DVDL] = 0.0;
-    for (auto i : keysOf(fepvals.separate_dvdl))
+    if (fepvals.separate_dvdl[i])
     {
-        if (fepvals.separate_dvdl[i])
+        /* Translate free-energy term indices to idef term indices.
+         * Could this be done more readably/compactly?
+         */
+        int index;
+        switch (i)
         {
-            /* Translate free-energy term indices to idef term indices.
-             * Could this be done more readably/compactly?
-             */
-            int index;
-            switch (i)
-            {
-                case (FreeEnergyPerturbationCouplingType::Mass): index = F_DKDL; break;
-                case (FreeEnergyPerturbationCouplingType::Coul): index = F_DVDL_COUL; break;
-                case (FreeEnergyPerturbationCouplingType::Vdw): index = F_DVDL_VDW; break;
-                case (FreeEnergyPerturbationCouplingType::Bonded): index = F_DVDL_BONDED; break;
-                case (FreeEnergyPerturbationCouplingType::Restraint):
-                    index = F_DVDL_RESTRAINT;
-                    break;
-                default: index = F_DVDL; break;
-            }
-            enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
-            if (debug)
-            {
-                fprintf(debug,
-                        "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
-                        enumValueToString(i),
-                        static_cast<int>(i),
-                        enerd->term[index],
-                        enerd->dvdl_nonlin[i],
-                        enerd->dvdl_lin[i]);
-            }
+            case (FreeEnergyPerturbationCouplingType::Mass): index = F_DKDL; break;
+            case (FreeEnergyPerturbationCouplingType::Coul): index = F_DVDL_COUL; break;
+            case (FreeEnergyPerturbationCouplingType::Vdw): index = F_DVDL_VDW; break;
+            case (FreeEnergyPerturbationCouplingType::Bonded): index = F_DVDL_BONDED; break;
+            case (FreeEnergyPerturbationCouplingType::Restraint): index = F_DVDL_RESTRAINT; break;
+            default: index = F_DVDL; break;
         }
-        else
+        enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
+        if (debug)
         {
-            enerd->term[F_DVDL] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
-            if (debug)
-            {
-                fprintf(debug,
-                        "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
-                        enumValueToString(FreeEnergyPerturbationCouplingType::Fep),
-                        static_cast<int>(i),
-                        enerd->term[F_DVDL],
-                        enerd->dvdl_nonlin[i],
-                        enerd->dvdl_lin[i]);
-            }
+            fprintf(debug,
+                    "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
+                    enumValueToString(i),
+                    static_cast<int>(i),
+                    enerd->term[index],
+                    enerd->dvdl_nonlin[i],
+                    enerd->dvdl_lin[i]);
+        }
+    }
+    else
+    {
+        enerd->term[F_DVDL] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
+        if (debug)
+        {
+            fprintf(debug,
+                    "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
+                    enumValueToString(FreeEnergyPerturbationCouplingType::Fep),
+                    static_cast<int>(i),
+                    enerd->term[F_DVDL],
+                    enerd->dvdl_nonlin[i],
+                    enerd->dvdl_lin[i]);
         }
     }
 }
@@ -238,7 +229,15 @@ void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real
 
     if (fepvals)
     {
-        set_dvdl_output(enerd, *fepvals);
+        enerd->term[F_DVDL] = 0.0;
+        for (auto i : gmx::EnumerationWrapper<FreeEnergyPerturbationCouplingType>{})
+        {
+            // Skip kinetic terms here, as those are not available here yet
+            if (i != FreeEnergyPerturbationCouplingType::Mass)
+            {
+                set_dhdl_output(enerd, i, *fepvals);
+            }
+        }
 
         enerd->foreignLambdaTerms.finalizePotentialContributions(enerd->dvdl_lin, lambda, *fepvals);
     }
@@ -301,6 +300,9 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
     {
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
+
+    // Add computed mass dH/dlambda contribution to the requested output
+    set_dhdl_output(enerd, FreeEnergyPerturbationCouplingType::Mass, fepvals);
 
     enerd->foreignLambdaTerms.finalizeKineticContributions(
             enerd->term, enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass], lambda, fepvals);
