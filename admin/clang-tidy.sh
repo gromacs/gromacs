@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -107,12 +107,12 @@ then
         echo "Please set the path to run-clang-tidy using the git hook"
         echo "git config hooks.runclangtidypath /path/to/run-clang-tidy-9.py"
         echo "or by setting an environment variable, e.g."
-        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy-9.py"
+        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy-11.py"
         exit 2
     fi
     if ! which "$RUN_CLANG_TIDY" 1>/dev/null
     then
-        echo "run-clang-tidy-9.py not found: $RUN_CLANG_TIDY"
+        echo "run-clang-tidy-11.py not found: $RUN_CLANG_TIDY"
         exit 2
     fi
 fi

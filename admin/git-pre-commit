@@ -88,7 +88,7 @@ then
     if [ -z "$runclangtidy_path" ]
     then
         echo "Please set the path to run-clang-tidy using 'git config hooks.runclangtidypath'."
-        echo "Note that you need at least clang-tidy-9."
+        echo "Note that you should use clang-tidy-11 to get the same checking as in CI."
         exit 1
     fi
     export RUN_CLANG_TIDY="$runclangtidy_path"

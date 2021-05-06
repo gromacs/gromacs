@@ -7,7 +7,7 @@
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 18.04
-#   Compiler: Clang 8
+#   Compiler: Clang 11
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   FFT: FFTW3
@@ -18,10 +18,10 @@ gromacs:clang-ASAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 8
+    COMPILER_MAJOR_VERSION: 11
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
 gromacs:clang-ASAN:build:
@@ -31,7 +31,7 @@ gromacs:clang-ASAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
@@ -44,7 +44,7 @@ gromacs:clang-ASAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
@@ -58,7 +58,7 @@ gromacs:clang-ASAN:regressiontest:
     - .gromacs:base:regressiontest
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
