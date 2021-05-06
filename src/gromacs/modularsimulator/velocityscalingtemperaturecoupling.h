@@ -120,8 +120,8 @@ public:
     void elementTeardown() override {}
 
     //! Connect this to propagator
-    void connectWithMatchingPropagator(const PropagatorThermostatConnection& connectionData,
-                                       const PropagatorTag&                  propagatorTag);
+    void connectWithMatchingPropagator(const PropagatorConnection& connectionData,
+                                       const PropagatorTag&        propagatorTag);
 
     //! ICheckpointHelperClient write checkpoint implementation
     void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;

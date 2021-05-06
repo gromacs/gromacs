@@ -324,14 +324,10 @@ public:
     void storeValue(const std::string& key, const ValueType& value);
     //! Get previously stored data. Returns std::nullopt if key is not found.
     std::optional<std::any> getStoredValue(const std::string& key) const;
-    //! Register a thermostat that accepts propagator registrations
-    void registerThermostat(std::function<void(const PropagatorThermostatConnection&)> registrationFunction);
-    //! Register a barostat that accepts propagator registrations
-    void registerBarostat(std::function<void(const PropagatorBarostatConnection&)> registrationFunction);
-    //! Register a propagator to the thermostat used
-    void registerWithThermostat(PropagatorThermostatConnection connectionData);
-    //! Register a propagator to the barostat used
-    void registerWithBarostat(PropagatorBarostatConnection connectionData);
+    //! Register temperature / pressure control algorithm to be matched with a propagator
+    void registerTemperaturePressureControl(std::function<void(const PropagatorConnection&)> registrationFunction);
+    //! Register a propagator to be used with a temperature / pressure control algorithm
+    void registerPropagator(PropagatorConnection connectionData);
 
 private:
     //! Pointer to the associated ModularSimulatorAlgorithmBuilder
@@ -474,14 +470,10 @@ private:
      */
     std::vector<ICheckpointHelperClient*> checkpointClients_;
 
-    //! List of thermostat registration functions
-    std::vector<std::function<void(const PropagatorThermostatConnection&)>> thermostatRegistrationFunctions_;
-    //! List of barostat registration functions
-    std::vector<std::function<void(const PropagatorBarostatConnection&)>> barostatRegistrationFunctions_;
-    //! List of data to connect propagators to thermostats
-    std::vector<PropagatorThermostatConnection> propagatorThermostatConnections_;
-    //! List of data to connect propagators to barostats
-    std::vector<PropagatorBarostatConnection> propagatorBarostatConnections_;
+    //! List of data to connect propagators to thermostats / barostats
+    std::vector<PropagatorConnection> propagatorConnections_;
+    //! List of temperature / pressure control registration functions
+    std::vector<std::function<void(const PropagatorConnection&)>> pressureTemperatureControlRegistrationFunctions_;
 };
 
 /*! \internal

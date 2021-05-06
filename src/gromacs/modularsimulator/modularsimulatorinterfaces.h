@@ -505,33 +505,52 @@ private:
 };
 
 /*! \internal
- * \brief Information needed to connect a propagator to a thermostat
+ * \brief Information needed to connect a propagator to a temperature and / or pressure coupling element
  */
-struct PropagatorThermostatConnection
+struct PropagatorConnection
 {
-    //! Function variable for setting velocity scaling variables.
-    std::function<void(int, ScaleVelocities)> setNumVelocityScalingVariables;
-    //! Function variable for receiving view on velocity scaling (before step).
-    std::function<ArrayRef<real>()> getViewOnStartVelocityScaling;
-    //! Function variable for receiving view on velocity scaling (after step).
-    std::function<ArrayRef<real>()> getViewOnEndVelocityScaling;
-    //! Function variable for callback.
-    std::function<PropagatorCallback()> getVelocityScalingCallback;
     //! The tag of the creating propagator
     PropagatorTag tag;
-};
 
-/*! \internal
- * \brief Information needed to connect a propagator to a barostat
- */
-struct PropagatorBarostatConnection
-{
-    //! Function variable for receiving view on pressure scaling matrix.
+    //! Whether the propagator offers start velocity scaling
+    bool hasStartVelocityScaling() const
+    {
+        return setNumVelocityScalingVariables && getVelocityScalingCallback && getViewOnStartVelocityScaling;
+    }
+    //! Whether the propagator offers end velocity scaling
+    bool hasEndVelocityScaling() const
+    {
+        return setNumVelocityScalingVariables && getVelocityScalingCallback && getViewOnEndVelocityScaling;
+    }
+    //! Whether the propagator offers position scaling
+    bool hasPositionScaling() const
+    {
+        return setNumPositionScalingVariables && getPositionScalingCallback && getViewOnPositionScaling;
+    }
+    //! Whether the propagator offers Parrinello-Rahman scaling
+    bool hasParrinelloRahmanScaling() const
+    {
+        return getPRScalingCallback && getViewOnPRScalingMatrix;
+    }
+
+    //! Function object for setting velocity scaling variables
+    std::function<void(int, ScaleVelocities)> setNumVelocityScalingVariables;
+    //! Function object for setting velocity scaling variables
+    std::function<void(int)> setNumPositionScalingVariables;
+    //! Function object for receiving view on velocity scaling (before step)
+    std::function<ArrayRef<real>()> getViewOnStartVelocityScaling;
+    //! Function object for receiving view on velocity scaling (after step)
+    std::function<ArrayRef<real>()> getViewOnEndVelocityScaling;
+    //! Function object for receiving view on position scaling
+    std::function<ArrayRef<real>()> getViewOnPositionScaling;
+    //! Function object to request callback allowing to signal a velocity scaling step
+    std::function<PropagatorCallback()> getVelocityScalingCallback;
+    //! Function object to request callback allowing to signal a position scaling step
+    std::function<PropagatorCallback()> getPositionScalingCallback;
+    //! Function object for receiving view on pressure scaling matrix
     std::function<ArrayRef<rvec>()> getViewOnPRScalingMatrix;
-    //! Function variable for callback.
+    //! Function object to request callback allowing to signal a Parrinello-Rahman scaling step
     std::function<PropagatorCallback()> getPRScalingCallback;
-    //! The tag of the creating propagator
-    PropagatorTag tag;
 };
 
 //! /}

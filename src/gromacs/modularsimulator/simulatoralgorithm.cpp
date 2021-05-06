@@ -79,11 +79,9 @@
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
-#include "parrinellorahmanbarostat.h"
 #include "pmeloadbalancehelper.h"
 #include "propagator.h"
 #include "statepropagatordata.h"
-#include "velocityscalingtemperaturecoupling.h"
 
 namespace gmx
 {
@@ -453,18 +451,11 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
     algorithmHasBeenBuilt_ = true;
 
     // Connect propagators with thermostat / barostat
-    for (const auto& thermostatRegistration : thermostatRegistrationFunctions_)
+    for (const auto& registrationFunction : pressureTemperatureControlRegistrationFunctions_)
     {
-        for (const auto& connection : propagatorThermostatConnections_)
+        for (const auto& connection : propagatorConnections_)
         {
-            thermostatRegistration(connection);
-        }
-    }
-    for (const auto& barostatRegistration : barostatRegistrationFunctions_)
-    {
-        for (const auto& connection : propagatorBarostatConnections_)
-        {
-            barostatRegistration(connection);
+            registrationFunction(connection);
         }
     }
 
@@ -778,27 +769,15 @@ std::optional<std::any> ModularSimulatorAlgorithmBuilderHelper::getStoredValue(c
     }
 }
 
-void ModularSimulatorAlgorithmBuilderHelper::registerThermostat(
-        std::function<void(const PropagatorThermostatConnection&)> registrationFunction)
+void ModularSimulatorAlgorithmBuilderHelper::registerTemperaturePressureControl(
+        std::function<void(const PropagatorConnection&)> registrationFunction)
 {
-    builder_->thermostatRegistrationFunctions_.emplace_back(std::move(registrationFunction));
+    builder_->pressureTemperatureControlRegistrationFunctions_.emplace_back(std::move(registrationFunction));
 }
 
-void ModularSimulatorAlgorithmBuilderHelper::registerBarostat(
-        std::function<void(const PropagatorBarostatConnection&)> registrationFunction)
+void ModularSimulatorAlgorithmBuilderHelper::registerPropagator(PropagatorConnection connectionData)
 {
-    builder_->barostatRegistrationFunctions_.emplace_back(std::move(registrationFunction));
+    builder_->propagatorConnections_.emplace_back(std::move(connectionData));
 }
-
-void ModularSimulatorAlgorithmBuilderHelper::registerWithThermostat(PropagatorThermostatConnection connectionData)
-{
-    builder_->propagatorThermostatConnections_.emplace_back(std::move(connectionData));
-}
-
-void ModularSimulatorAlgorithmBuilderHelper::registerWithBarostat(PropagatorBarostatConnection connectionData)
-{
-    builder_->propagatorBarostatConnections_.emplace_back(std::move(connectionData));
-}
-
 
 } // namespace gmx

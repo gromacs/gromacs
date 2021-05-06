@@ -896,6 +896,76 @@ PropagatorCallback Propagator<integrationStage>::prScalingCallback()
     return [this](Step step) { scalingStepPR_ = step; };
 }
 
+template<IntegrationStage integrationStage>
+static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unused* propagator,
+                                          const PropagatorTag&                     propagatorTag)
+{
+    // gmx_unused is needed because gcc-7 & gcc-8 can't see that
+    // propagator is used for all IntegrationStage options
+
+    PropagatorConnection propagatorConnection{ propagatorTag };
+
+    // The clang-tidy version on our current CI throws 3 different warnings
+    // for the if constexpr lines, so disable linting for now. Also, this only
+    // works if the brace is on the same line, so turn off clang-format as well
+    // clang-format off
+    // NOLINTNEXTLINE
+    if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>()) {
+        // clang-format on
+        propagatorConnection.setNumVelocityScalingVariables =
+                [propagator](int num, ScaleVelocities scaleVelocities) {
+                    propagator->setNumVelocityScalingVariables(num, scaleVelocities);
+                };
+        propagatorConnection.getVelocityScalingCallback = [propagator]() {
+            return propagator->velocityScalingCallback();
+        };
+    }
+    // clang-format off
+    // NOLINTNEXTLINE
+    if constexpr (hasStartVelocityScaling<integrationStage>()) {
+        // clang-format on
+        propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
+            return propagator->viewOnStartVelocityScaling();
+        };
+    }
+    // clang-format off
+    // NOLINTNEXTLINE
+    if constexpr (hasEndVelocityScaling<integrationStage>()) {
+        // clang-format on
+        propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
+            return propagator->viewOnEndVelocityScaling();
+        };
+    }
+    // clang-format off
+    // NOLINTNEXTLINE
+    if constexpr (hasPositionScaling<integrationStage>()) {
+        // clang-format on
+        propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
+            propagator->setNumPositionScalingVariables(num);
+        };
+        propagatorConnection.getViewOnPositionScaling = [propagator]() {
+            return propagator->viewOnPositionScaling();
+        };
+        propagatorConnection.getPositionScalingCallback = [propagator]() {
+            return propagator->positionScalingCallback();
+        };
+    }
+    // clang-format off
+    // NOLINTNEXTLINE
+    if constexpr (hasParrinelloRahmanScaling<integrationStage>()) {
+        // clang-format on
+        propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
+            return propagator->viewOnPRScalingMatrix();
+        };
+        propagatorConnection.getPRScalingCallback = [propagator]() {
+            return propagator->prScalingCallback();
+        };
+    }
+
+    // NOLINTNEXTLINE(readability-misleading-indentation)
+    return propagatorConnection;
+}
+
 // doxygen is confused by the two definitions
 //! \cond
 template<IntegrationStage integrationStage>
@@ -916,18 +986,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
     auto* element    = builderHelper->storeElement(std::make_unique<Propagator<integrationStage>>(
             timestep, statePropagatorData, legacySimulatorData->mdAtoms, legacySimulatorData->wcycle));
     auto* propagator = static_cast<Propagator<integrationStage>*>(element);
-    builderHelper->registerWithThermostat(
-            { [propagator](int num, ScaleVelocities scaleVelocities) {
-                 propagator->setNumVelocityScalingVariables(num, scaleVelocities);
-             },
-              [propagator]() { return propagator->viewOnStartVelocityScaling(); },
-              [propagator]() { return propagator->viewOnEndVelocityScaling(); },
-              [propagator]() { return propagator->velocityScalingCallback(); },
-              propagatorTag });
-    builderHelper->registerWithBarostat(
-            { [propagator]() { return propagator->viewOnPRScalingMatrix(); },
-              [propagator]() { return propagator->prScalingCallback(); },
-              propagatorTag });
+    builderHelper->registerPropagator(getConnection<integrationStage>(propagator, propagatorTag));
     return element;
 }
 
