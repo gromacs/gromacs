@@ -727,6 +727,12 @@ static void print_nblist_statistics(FILE*                   fp,
 
     fprintf(fp, "nbl nci %zu ncj %d\n", nbl.ci.size(), nbl.ncjInUse);
     const int numAtomsJCluster = grid.geometry().numAtomsJCluster;
+
+    if (grid.numCells() == 0)
+    {
+        return;
+    }
+
     const double numAtomsPerCell = nbl.ncjInUse / static_cast<double>(grid.numCells()) * numAtomsJCluster;
     fprintf(fp,
             "nbl na_cj %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
@@ -959,19 +965,19 @@ gmx_unused static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
  * \param[in]     rbb2                The squared cut-off for putting cluster-pairs in the list based on bounding box distance only
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
-static void makeClusterListSimple(const Grid&       jGrid,
-                                  NbnxnPairlistCpu* nbl,
-                                  int               icluster,
-                                  int               jclusterFirst,
-                                  int               jclusterLast,
-                                  bool              excludeSubDiagonal,
+static void makeClusterListSimple(const Grid&              jGrid,
+                                  NbnxnPairlistCpu*        nbl,
+                                  int                      icluster,
+                                  int                      jclusterFirst,
+                                  int                      jclusterLast,
+                                  bool                     excludeSubDiagonal,
                                   const real* gmx_restrict x_j,
                                   real                     rlist2,
                                   float                    rbb2,
-                                  int* gmx_restrict numDistanceChecks)
+                                  int* gmx_restrict        numDistanceChecks)
 {
     const BoundingBox* gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
-    const real* gmx_restrict x_ci         = nbl->work->iClusterData.x.data();
+    const real* gmx_restrict        x_ci  = nbl->work->iClusterData.x.data();
 
     bool InRange = false;
     while (!InRange && jclusterFirst <= jclusterLast)
@@ -1271,8 +1277,7 @@ struct JListRanges
 #ifndef DOXYGEN
 template<typename CjListType>
 JListRanges::JListRanges(int cjIndexStart, int cjIndexEnd, gmx::ArrayRef<const CjListType> cjList) :
-    cjIndexStart(cjIndexStart),
-    cjIndexEnd(cjIndexEnd)
+    cjIndexStart(cjIndexStart), cjIndexEnd(cjIndexEnd)
 {
     GMX_ASSERT(cjIndexEnd > cjIndexStart, "JListRanges should only be called with non-empty lists");
 
@@ -1463,13 +1468,13 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                           NbnxnPairlistCpu*        nbl,
                           gmx_bool                 bDiagRemoved,
                           nbnxn_ci_t*              nbl_ci,
-                          real gmx_unused shx,
-                          real gmx_unused shy,
-                          real gmx_unused shz,
-                          real gmx_unused rlist_fep2,
-                          const Grid&     iGrid,
-                          const Grid&     jGrid,
-                          t_nblist*       nlist)
+                          real gmx_unused          shx,
+                          real gmx_unused          shy,
+                          real gmx_unused          shz,
+                          real gmx_unused          rlist_fep2,
+                          const Grid&              iGrid,
+                          const Grid&              jGrid,
+                          t_nblist*                nlist)
 {
     int gid_i  = 0;
     int gid_cj = 0;
@@ -1838,9 +1843,9 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
  * Sets all atom-pair exclusions from the topology stored in exclusions
  * as masks in the pair-list for i-super-cluster list entry iEntry.
  */
-static void setExclusionsForIEntry(const Nbnxm::GridSet& gridSet,
-                                   NbnxnPairlistGpu*     nbl,
-                                   gmx_bool              diagRemoved,
+static void setExclusionsForIEntry(const Nbnxm::GridSet&   gridSet,
+                                   NbnxnPairlistGpu*       nbl,
+                                   gmx_bool                diagRemoved,
                                    int gmx_unused          na_cj_2log,
                                    const nbnxn_sci_t&      iEntry,
                                    const ListOfLists<int>& exclusions)
@@ -1998,12 +2003,12 @@ static void sort_cj_excl(nbnxn_cj_t* cj, int ncj, NbnxnPairlistCpuWork* work)
 }
 
 /* Close this simple list i entry */
-static void closeIEntry(NbnxnPairlistCpu* nbl,
-                        int gmx_unused sp_max_av,
+static void closeIEntry(NbnxnPairlistCpu*   nbl,
+                        int gmx_unused      sp_max_av,
                         gmx_bool gmx_unused progBal,
-                        float gmx_unused nsp_tot_est,
-                        int gmx_unused thread,
-                        int gmx_unused nthread)
+                        float gmx_unused    nsp_tot_est,
+                        int gmx_unused      thread,
+                        int gmx_unused      nthread)
 {
     nbnxn_ci_t& ciEntry = nbl->ci.back();
 
@@ -2315,12 +2320,12 @@ static void icell_set_x(int                             ci,
 }
 
 /* Copies PBC shifted super-cell atom coordinates x,y,z to working array */
-static void icell_set_x(int                       ci,
-                        real                      shx,
-                        real                      shy,
-                        real                      shz,
-                        int                       stride,
-                        const real*               x,
+static void icell_set_x(int                                  ci,
+                        real                                 shx,
+                        real                                 shy,
+                        real                                 shz,
+                        int                                  stride,
+                        const real*                          x,
                         ClusterDistanceKernelType gmx_unused kernelType,
                         NbnxnPairlistGpuWork*                work)
 {
@@ -2936,16 +2941,16 @@ static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
     }
 }
 
-static void makeClusterListWrapper(NbnxnPairlistGpu* nbl,
-                                   const Grid& gmx_unused    iGrid,
-                                   const int                 ci,
-                                   const Grid&               jGrid,
-                                   const int                 firstCell,
-                                   const int                 lastCell,
-                                   const bool                excludeSubDiagonal,
-                                   const nbnxn_atomdata_t*   nbat,
-                                   const real                rlist2,
-                                   const real                rbb2,
+static void makeClusterListWrapper(NbnxnPairlistGpu*                    nbl,
+                                   const Grid& gmx_unused               iGrid,
+                                   const int                            ci,
+                                   const Grid&                          jGrid,
+                                   const int                            firstCell,
+                                   const int                            lastCell,
+                                   const bool                           excludeSubDiagonal,
+                                   const nbnxn_atomdata_t*              nbat,
+                                   const real                           rlist2,
+                                   const real                           rbb2,
                                    ClusterDistanceKernelType gmx_unused kernelType,
                                    int*                                 numDistanceChecks)
 {
@@ -3008,10 +3013,10 @@ static void setBufferFlags(const NbnxnPairlistCpu& nbl,
 }
 
 static void setBufferFlags(const NbnxnPairlistGpu gmx_unused& nbl,
-                           int gmx_unused ncj_old_j,
-                           int gmx_unused gridj_flag_shift,
+                           int gmx_unused                     ncj_old_j,
+                           int gmx_unused                     gridj_flag_shift,
                            gmx_bitmask_t gmx_unused* gridj_flag,
-                           int gmx_unused th)
+                           int gmx_unused            th)
 {
     GMX_ASSERT(false, "This function should never be called");
 }
@@ -3368,8 +3373,8 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                  */
                                 int midCell =
                                         columnStart
-                                        + static_cast<int>(bz1_frac
-                                                           * static_cast<real>(columnEnd - columnStart));
+                                        + static_cast<int>(
+                                                bz1_frac * static_cast<real>(columnEnd - columnStart));
                                 if (midCell >= columnEnd)
                                 {
                                     midCell = columnEnd - 1;
@@ -3597,13 +3602,13 @@ static void print_reduction_cost(gmx::ArrayRef<const gmx_bitmask_t> flags, int n
  * When setFlags==true, flag bit t is set in flag for all i and j clusters.
  */
 template<bool setFlags>
-static void copySelectedListRange(const nbnxn_ci_t* gmx_restrict srcCi,
+static void copySelectedListRange(const nbnxn_ci_t* gmx_restrict       srcCi,
                                   const NbnxnPairlistCpu* gmx_restrict src,
-                                  NbnxnPairlistCpu* gmx_restrict dest,
-                                  gmx_bitmask_t*                 flag,
-                                  int                            iFlagShift,
-                                  int                            jFlagShift,
-                                  int                            t)
+                                  NbnxnPairlistCpu* gmx_restrict       dest,
+                                  gmx_bitmask_t*                       flag,
+                                  int                                  iFlagShift,
+                                  int                                  jFlagShift,
+                                  int                                  t)
 {
     const int ncj = srcCi->cj_ind_end - srcCi->cj_ind_start;
 

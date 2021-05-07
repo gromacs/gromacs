@@ -79,8 +79,7 @@ Grid::Geometry::Geometry(const PairlistType pairlistType) :
 }
 
 Grid::Grid(const PairlistType pairlistType, const bool& haveFep) :
-    geometry_(pairlistType),
-    haveFep_(haveFep)
+    geometry_(pairlistType), haveFep_(haveFep)
 {
 }
 
@@ -296,9 +295,9 @@ static constexpr int c_sortGridMaxSizeFactor = c_sortGridRatio + 1;
  * sort should have a size of at least n_per_h*c_sortGridRatio + n,
  * or easier, allocate at least n*c_sortGridMaxSizeFactor elements.
  */
-static void sort_atoms(int      dim,
-                       gmx_bool Backwards,
-                       int gmx_unused dd_zone,
+static void sort_atoms(int                            dim,
+                       gmx_bool                       Backwards,
+                       int gmx_unused                 dd_zone,
                        bool gmx_unused                relevantAtomsAreWithinGridBounds,
                        int*                           a,
                        int                            n,
@@ -714,7 +713,10 @@ static void print_bbsizes_simple(FILE* fp, const Grid& grid)
         ba[YY] += bb.upper.y - bb.lower.y;
         ba[ZZ] += bb.upper.z - bb.lower.z;
     }
-    dsvmul(1.0 / grid.numCells(), ba, ba);
+    if (grid.numCells() > 0)
+    {
+        dsvmul(1.0 / grid.numCells(), ba, ba);
+    }
 
     const Grid::Dimensions& dims = grid.dimensions();
     real                    avgCellSizeZ =
