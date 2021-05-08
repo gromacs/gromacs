@@ -87,7 +87,9 @@ static inline void atomicFetchAdd(DeviceAccessor<float, mode_atomic> acc, const 
 namespace sycl_2020
 {
 #if GMX_SYCL_HIPSYCL
-__device__ static inline float shift_left(sycl_2020::sub_group, float var, sycl_2020::sub_group::linear_id_type delta)
+__device__ __host__ static inline float shift_left(sycl_2020::sub_group,
+                                                   float                                var,
+                                                   sycl_2020::sub_group::linear_id_type delta)
 {
     // No sycl::sub_group::shift_left / shuffle_down in hipSYCL yet
 #    ifdef SYCL_DEVICE_ONLY
@@ -108,12 +110,6 @@ __device__ static inline float shift_left(sycl_2020::sub_group, float var, sycl_
     return NAN;
 #    endif
 }
-__host__ static inline float shift_left(sycl_2020::sub_group, float, sycl_2020::sub_group::linear_id_type)
-{
-    // Should never be called
-    assert(false);
-    return NAN;
-}
 #elif GMX_SYCL_DPCPP
 static inline float shift_left(sycl_2020::sub_group sg, float var, sycl_2020::sub_group::linear_id_type delta)
 {
@@ -122,9 +118,9 @@ static inline float shift_left(sycl_2020::sub_group sg, float var, sycl_2020::su
 #endif
 
 #if GMX_SYCL_HIPSYCL
-__device__ static inline float shift_right(sycl_2020::sub_group,
-                                           float                                var,
-                                           sycl_2020::sub_group::linear_id_type delta)
+__device__ __host__ static inline float shift_right(sycl_2020::sub_group,
+                                                    float                                var,
+                                                    sycl_2020::sub_group::linear_id_type delta)
 {
     // No sycl::sub_group::shift_right / shuffle_up in hipSYCL yet
 #    ifdef SYCL_DEVICE_ONLY
@@ -144,12 +140,6 @@ __device__ static inline float shift_right(sycl_2020::sub_group,
     GMX_UNUSED_VALUE(delta);
     return NAN;
 #    endif
-}
-__host__ static inline float shift_right(sycl_2020::sub_group, float, sycl_2020::sub_group::linear_id_type)
-{
-    // Should never be called
-    assert(false);
-    return NAN;
 }
 #elif GMX_SYCL_DPCPP
 static inline float shift_right(sycl_2020::sub_group sg, float var, sycl_2020::sub_group::linear_id_type delta)
