@@ -81,9 +81,16 @@ DeviceBuffer<T>::~DeviceBuffer() = default;
 
 //! Copy constructor (references the same underlying SYCL buffer).
 template<typename T>
-DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T> const& src) :
-    buffer_(new ClSyclBufferWrapper(*src.buffer_))
+DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T> const& src)
 {
+    if (src.buffer_)
+    {
+        buffer_ = std::make_unique<ClSyclBufferWrapper>(*src.buffer_);
+    }
+    else
+    {
+        buffer_ = nullptr;
+    }
 }
 
 //! Move constructor.
@@ -94,7 +101,14 @@ DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T>&& src) noexcept = default;
 template<typename T>
 DeviceBuffer<T>& DeviceBuffer<T>::operator=(DeviceBuffer<T> const& src)
 {
-    buffer_.reset(new ClSyclBufferWrapper(*src.buffer_));
+    if (src.buffer_)
+    {
+        buffer_ = std::make_unique<ClSyclBufferWrapper>(*src.buffer_);
+    }
+    else
+    {
+        buffer_.reset(nullptr);
+    }
     return *this;
 }
 
