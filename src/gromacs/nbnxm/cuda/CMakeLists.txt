@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@ if(GMX_GPU_CUDA)
          nbnxm_cuda.cu
          nbnxm_cuda_data_mgmt.cu
          nbnxm_cuda_jit_support.cu
+         nbnxm_gpu_buffer_ops_internal.cu
          ${NBNXM_CUDA_KERNEL_SOURCES})
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_CUDA_SOURCES} PARENT_SCOPE)
 endif()

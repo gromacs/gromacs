@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,18 +33,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-/*! \internal \file
- *
- * \brief
- * CUDA kernels for GPU versions of copy_rvec_to_nbat_real and add_nbat_f_to_f.
+/*! \file
+ *  \brief Define CUDA kernel (and its wrapper) for transforming position coordinates from rvec to nbnxm layout.
  *
  *  \author Alan Gray <alang@nvidia.com>
  *  \author Jon Vincent <jvincent@nvidia.com>
+ *  \author Szilard Pall <pall.szilard@gmail.com>
  */
 
+#include "gmxpre.h"
+
+#include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/grid.h"
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
+#include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 
 /*! \brief CUDA kernel for transforming position coordinates from rvec to nbnxm layout.
  *
@@ -70,8 +74,7 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
                                                     int numAtomsPerCell)
 {
 
-
-    const float farAway = -1000000.0f;
+    const float farAway = -1000000.0F;
 
     // Map cell-level parallelism to y component of CUDA block index.
     int cxy = blockIdx.y;
@@ -102,3 +105,46 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
         }
     }
 }
+
+
+namespace Nbnxm
+{
+
+//! Number of CUDA threads in a block
+// TODO Optimize this through experimentation
+constexpr static int c_bufOpsThreadsPerBlock = 128;
+
+void launchNbnxmKernelTransformXToXq(const Grid&          grid,
+                                     NbnxmGpu*            nb,
+                                     DeviceBuffer<Float3> d_x,
+                                     const DeviceStream&  deviceStream,
+                                     const unsigned int   numColumnsMax,
+                                     const int            gridId)
+{
+    const int numColumns      = grid.numColumns();
+    const int cellOffset      = grid.cellOffset();
+    const int numAtomsPerCell = grid.numAtomsPerCell();
+
+    KernelLaunchConfig config;
+    config.blockSize[0] = c_bufOpsThreadsPerBlock;
+    config.blockSize[1] = 1;
+    config.blockSize[2] = 1;
+    config.gridSize[0]  = (grid.numCellsColumnMax() * numAtomsPerCell + c_bufOpsThreadsPerBlock - 1)
+                         / c_bufOpsThreadsPerBlock;
+    config.gridSize[1] = numColumns;
+    config.gridSize[2] = 1;
+    GMX_ASSERT(config.gridSize[0] > 0, "Can not have empty grid, early return above avoids this");
+    config.sharedMemorySize = 0;
+
+    auto       kernelFn      = nbnxn_gpu_x_to_nbat_x_kernel;
+    float3*    d_xFloat3     = asFloat3(d_x);
+    float4*    d_xq          = nb->atdat->xq;
+    const int* d_atomIndices = nb->atomIndices;
+    const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
+    const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
+    const auto kernelArgs    = prepareGpuKernelArguments(
+            kernelFn, config, &numColumns, &d_xq, &d_xFloat3, &d_atomIndices, &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
+    launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
+}
+
+} // namespace Nbnxm

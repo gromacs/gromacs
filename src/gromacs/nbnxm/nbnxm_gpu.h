@@ -250,7 +250,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused& gridSet,
  * \param[in]     mustInsertNonLocalDependency Whether synchronization between local and non-local
  * streams should be added. Typically, true if and only if that is the last grid in gridset.
  */
-CUDA_FUNC_QUALIFIER
+GPU_FUNC_QUALIFIER
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid gmx_unused& grid,
                            NbnxmGpu gmx_unused*    gpu_nbv,
                            DeviceBuffer<gmx::RVec> gmx_unused d_x,
@@ -258,7 +258,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid gmx_unused& grid,
                            gmx::AtomLocality gmx_unused locality,
                            int gmx_unused gridId,
                            int gmx_unused numColumnsMax,
-                           bool gmx_unused mustInsertNonLocalDependency) CUDA_FUNC_TERM;
+                           bool gmx_unused mustInsertNonLocalDependency) GPU_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
  *
@@ -311,9 +311,9 @@ bool haveGpuShortRangeWork(const NbnxmGpu gmx_unused* nb, gmx::InteractionLocali
  * \param[in] nb  The nonbonded data GPU structure
  * \returns       A pointer to the force buffer in GPU memory
  */
-CUDA_FUNC_QUALIFIER
+GPU_FUNC_QUALIFIER
 DeviceBuffer<gmx::RVec> getGpuForces(NbnxmGpu gmx_unused* nb)
-        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 } // namespace Nbnxm
 #endif

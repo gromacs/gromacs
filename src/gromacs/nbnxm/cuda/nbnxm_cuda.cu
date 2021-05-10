@@ -71,7 +71,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "nbnxm_buffer_ops_kernels.cuh"
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/
@@ -116,10 +115,6 @@
 
 namespace Nbnxm
 {
-
-//! Number of CUDA threads in a block
-// TODO Optimize this through experimentation
-constexpr static int c_bufOpsThreadsPerBlock = 128;
 
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomDataGpu, const NBParamGpu, const gpu_plist, bool);
@@ -708,83 +703,6 @@ void cuda_set_cacheconfig()
             CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
         }
     }
-}
-
-/* X buffer operations on GPU: performs conversion from rvec to nb format. */
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
-                           NbnxmGpu*                 nb,
-                           DeviceBuffer<gmx::RVec>   d_x,
-                           GpuEventSynchronizer*     xReadyOnDevice,
-                           const Nbnxm::AtomLocality locality,
-                           int                       gridId,
-                           int                       numColumnsMax,
-                           bool                      mustInsertNonLocalDependency)
-{
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    NBAtomDataGpu* adat = nb->atdat;
-
-    const int                  numColumns      = grid.numColumns();
-    const int                  cellOffset      = grid.cellOffset();
-    const int                  numAtomsPerCell = grid.numAtomsPerCell();
-    Nbnxm::InteractionLocality interactionLoc  = atomToInteractionLocality(locality);
-
-    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
-
-    if (xReadyOnDevice != nullptr)
-    {
-        // We only need to wait on the first iteration of the loop
-        xReadyOnDevice->enqueueWaitEvent(deviceStream);
-    }
-
-    int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
-    // avoid empty kernel launch, skip to inserting stream dependency
-    if (numAtoms != 0)
-    {
-        // TODO: This will only work with CUDA
-        GMX_ASSERT(d_x, "Need a valid device pointer");
-
-
-        KernelLaunchConfig config;
-        config.blockSize[0] = c_bufOpsThreadsPerBlock;
-        config.blockSize[1] = 1;
-        config.blockSize[2] = 1;
-        config.gridSize[0] = (grid.numCellsColumnMax() * numAtomsPerCell + c_bufOpsThreadsPerBlock - 1)
-                             / c_bufOpsThreadsPerBlock;
-        config.gridSize[1] = numColumns;
-        config.gridSize[2] = 1;
-        GMX_ASSERT(config.gridSize[0] > 0,
-                   "Can not have empty grid, early return above avoids this");
-        config.sharedMemorySize = 0;
-
-        auto       kernelFn      = nbnxn_gpu_x_to_nbat_x_kernel;
-        float4*    d_xq          = adat->xq;
-        float3*    d_xFloat3     = asFloat3(d_x);
-        const int* d_atomIndices = nb->atomIndices;
-        const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
-        const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
-        const auto kernelArgs    = prepareGpuKernelArguments(kernelFn,
-                                                          config,
-                                                          &numColumns,
-                                                          &d_xq,
-                                                          &d_xFloat3,
-                                                          &d_atomIndices,
-                                                          &d_cxy_na,
-                                                          &d_cxy_ind,
-                                                          &cellOffset,
-                                                          &numAtomsPerCell);
-        launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
-    }
-
-    if (mustInsertNonLocalDependency)
-    {
-        Nbnxm::nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
-    }
-}
-
-DeviceBuffer<Float3> getGpuForces(NbnxmGpu* nb)
-{
-    return nb->atdat->f;
 }
 
 } // namespace Nbnxm
