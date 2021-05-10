@@ -982,8 +982,9 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.useGpuFBufferOps = simulationWork.useGpuBufferOps && !flags.computeVirial;
     flags.useGpuPmeFReduction = flags.computeSlowForces && flags.useGpuFBufferOps && simulationWork.useGpuPme
                                 && (rankHasPmeDuty || simulationWork.useGpuPmePpCommunication);
-    flags.useGpuXHalo = simulationWork.useGpuHaloExchange;
-    flags.useGpuFHalo = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
+    flags.useGpuXHalo          = simulationWork.useGpuHaloExchange;
+    flags.useGpuFHalo          = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
+    flags.haveGpuPmeOnThisRank = simulationWork.useGpuPme && rankHasPmeDuty && flags.computeSlowForces;
 
     return flags;
 }
@@ -991,15 +992,12 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
 
 /* \brief Launch end-of-step GPU tasks: buffer clearing and rolling pruning.
  *
- * TODO: eliminate \p useGpuPmeOnThisRank when this is
- * incorporated in DomainLifetimeWorkload.
  */
 static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
                                     gmx::GpuBonded*                   gpuBonded,
                                     gmx_pme_t*                        pmedata,
                                     gmx_enerdata_t*                   enerd,
                                     const gmx::MdrunScheduleWorkload& runScheduleWork,
-                                    bool                              useGpuPmeOnThisRank,
                                     int64_t                           step,
                                     gmx_wallcycle*                    wcycle)
 {
@@ -1022,7 +1020,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
     }
 
-    if (useGpuPmeOnThisRank)
+    if (runScheduleWork.stepWork.haveGpuPmeOnThisRank)
     {
         pme_gpu_reinit_computation(pmedata, wcycle);
     }
@@ -1239,9 +1237,6 @@ void do_force(FILE*                               fplog,
             legacyFlags, inputrec.mtsLevels, step, simulationWork, thisRankHasDuty(cr, DUTY_PME));
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
-    const bool useGpuPmeOnThisRank =
-            simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces;
-
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -1282,9 +1277,9 @@ void do_force(FILE*                               fplog,
     const bool reinitGpuPmePpComms =
             GMX_MPI && simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
-    auto* localXReadyOnDevice = (useGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
+    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                  AtomLocality::Local, simulationWork, stepWork)
+                                                AtomLocality::Local, simulationWork, stepWork)
                                         : nullptr;
 
     // Copy coordinate from the GPU if update is on the GPU and there
@@ -1315,14 +1310,14 @@ void do_force(FILE*                               fplog,
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
     //       if the later is not offloaded.
-    if (useGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
+    if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
     {
         if (stepWork.doNeighborSearch)
         {
             // TODO refactor this to do_md, after partitioning.
             stateGpu->reinit(mdatoms->homenr,
                              cr->dd != nullptr ? dd_numAtomsZones(*cr->dd) : mdatoms->homenr);
-            if (useGpuPmeOnThisRank)
+            if (stepWork.haveGpuPmeOnThisRank)
             {
                 // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
                 pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
@@ -1363,7 +1358,7 @@ void do_force(FILE*                               fplog,
                                  wcycle);
     }
 
-    if (useGpuPmeOnThisRank)
+    if (stepWork.haveGpuPmeOnThisRank)
     {
         launchPmeGpuSpread(fr->pmedata,
                            box,
@@ -1519,7 +1514,7 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
     }
 
-    if (useGpuPmeOnThisRank)
+    if (stepWork.haveGpuPmeOnThisRank)
     {
         // In PME GPU and mixed mode we launch FFT / gather after the
         // X copy/transform to allow overlap as well as after the GPU NB
@@ -1582,7 +1577,7 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.useGpuXBufferOps)
             {
-                if (!useGpuPmeOnThisRank && !stepWork.useGpuXHalo)
+                if (!stepWork.haveGpuPmeOnThisRank && !stepWork.useGpuXHalo)
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
                 }
@@ -2059,7 +2054,7 @@ void do_force(FILE*                               fplog,
     const bool combineMtsForcesBeforeHaloExchange =
             (stepWork.computeForces && fr->useMts && stepWork.computeSlowForces
              && (legacyFlags & GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE) != 0
-             && !(stepWork.computeVirial || simulationWork.useGpuNonbonded || useGpuPmeOnThisRank));
+             && !(stepWork.computeVirial || simulationWork.useGpuNonbonded || stepWork.haveGpuPmeOnThisRank));
     if (combineMtsForcesBeforeHaloExchange)
     {
         const int numAtoms = havePPDomainDecomposition(cr) ? dd_numAtomsZones(*cr->dd) : mdatoms->homenr;
@@ -2117,8 +2112,9 @@ void do_force(FILE*                               fplog,
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
-    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPmeOnThisRank && simulationWork.useGpuNonbonded
-                             && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
+    bool alternateGpuWait =
+            (!c_disableAlternatingWait && stepWork.haveGpuPmeOnThisRank
+             && simulationWork.useGpuNonbonded && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(),
@@ -2131,7 +2127,7 @@ void do_force(FILE*                               fplog,
                                     wcycle);
     }
 
-    if (!alternateGpuWait && useGpuPmeOnThisRank)
+    if (!alternateGpuWait && stepWork.haveGpuPmeOnThisRank)
     {
         pme_gpu_wait_and_reduce(fr->pmedata,
                                 stepWork,
@@ -2272,8 +2268,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    launchGpuEndOfStepTasks(
-            nbv, fr->gpuBonded, fr->pmedata, enerd, *runScheduleWork, useGpuPmeOnThisRank, step, wcycle);
+    launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd, *runScheduleWork, step, wcycle);
 
     if (DOMAINDECOMP(cr))
     {

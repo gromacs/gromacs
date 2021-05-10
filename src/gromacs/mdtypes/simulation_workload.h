@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,8 @@ public:
     bool useGpuXHalo = false;
     //! Whether GPU forces halo exchange is active this step
     bool useGpuFHalo = false;
+    //! Whether GPU PME work is compute this step (can be false also on fast steps with MTS)
+    bool haveGpuPmeOnThisRank = false;
 };
 
 /*! \libinternal
