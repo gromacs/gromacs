@@ -111,8 +111,7 @@ struct VsiteBondParameter
 {
     //! Constructor initializes datastructure.
     VsiteBondParameter(int ftype, const InteractionOfType& vsiteInteraction) :
-        ftype_(ftype),
-        vsiteInteraction_(vsiteInteraction)
+        ftype_(ftype), vsiteInteraction_(vsiteInteraction)
     {
     }
     //! Function type for virtual site.
@@ -424,11 +423,11 @@ static bool calc_vsite3_param(PreprocessingAtomTypes*                     atypes
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 = ((gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[vsite->ak()], atypes), "MNH", 3))
             && (gmx::equalCaseInsensitive(
-                       get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MNH", 3)))
+                    get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MNH", 3)))
            || ((gmx::equalCaseInsensitive(
                        get_atomtype_name_AB(&at->atom[vsite->ak()], atypes), "MCH3", 4))
                && (gmx::equalCaseInsensitive(
-                          get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MCH3", 4)));
+                       get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MCH3", 4)));
 
     bjk    = get_bond_length(bonds, vsite->aj(), vsite->ak());
     bjl    = get_bond_length(bonds, vsite->aj(), vsite->al());
@@ -566,11 +565,11 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes*                     aty
      * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
     bXH3 = ((gmx::equalCaseInsensitive(get_atomtype_name_AB(&at->atom[vsite->ak()], atypes), "MNH", 3))
             && (gmx::equalCaseInsensitive(
-                       get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MNH", 3)))
+                    get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MNH", 3)))
            || ((gmx::equalCaseInsensitive(
                        get_atomtype_name_AB(&at->atom[vsite->ak()], atypes), "MCH3", 4))
                && (gmx::equalCaseInsensitive(
-                          get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MCH3", 4)));
+                       get_atomtype_name_AB(&at->atom[vsite->al()], atypes), "MCH3", 4)));
 
     /* check if construction parity must be swapped */
     bSwapParity = (vsite->c1() == -1);
@@ -953,8 +952,7 @@ class VsiteAtomMapping
 public:
     //! Only construct with all information in place or nothing
     VsiteAtomMapping(int functionType, int interactionIndex) :
-        functionType_(functionType),
-        interactionIndex_(interactionIndex)
+        functionType_(functionType), interactionIndex_(interactionIndex)
     {
     }
     VsiteAtomMapping() : functionType_(-1), interactionIndex_(-1) {}

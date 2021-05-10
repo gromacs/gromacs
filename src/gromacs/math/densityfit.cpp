@@ -98,8 +98,7 @@ private:
 };
 
 DensitySimilarityInnerProduct::DensitySimilarityInnerProduct(density referenceDensity) :
-    referenceDensity_{ referenceDensity },
-    gradient_{ referenceDensity.extents() }
+    referenceDensity_{ referenceDensity }, gradient_{ referenceDensity.extents() }
 {
     const auto numVoxels = gradient_.asConstView().mapping().required_span_size();
     /* the gradient for the inner product measure of fit is constant and does not
@@ -184,8 +183,7 @@ private:
 };
 
 DensitySimilarityRelativeEntropy::DensitySimilarityRelativeEntropy(density referenceDensity) :
-    referenceDensity_{ referenceDensity },
-    gradient_(referenceDensity.extents())
+    referenceDensity_{ referenceDensity }, gradient_(referenceDensity.extents())
 {
 }
 
@@ -330,8 +328,7 @@ private:
 };
 
 DensitySimilarityCrossCorrelation::DensitySimilarityCrossCorrelation(density referenceDensity) :
-    referenceDensity_{ referenceDensity },
-    gradient_(referenceDensity.extents())
+    referenceDensity_{ referenceDensity }, gradient_(referenceDensity.extents())
 {
 }
 

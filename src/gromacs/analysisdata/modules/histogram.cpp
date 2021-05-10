@@ -96,12 +96,7 @@ AnalysisHistogramSettingsInitializer::AnalysisHistogramSettingsInitializer() :
  */
 
 AnalysisHistogramSettings::AnalysisHistogramSettings() :
-    firstEdge_(0.0),
-    lastEdge_(0.0),
-    binWidth_(0.0),
-    inverseBinWidth_(0.0),
-    binCount_(0),
-    bAll_(false)
+    firstEdge_(0.0), lastEdge_(0.0), binWidth_(0.0), inverseBinWidth_(0.0), binCount_(0), bAll_(false)
 {
 }
 
@@ -513,8 +508,7 @@ BasicHistogramImpl::BasicHistogramImpl() : averager_(new BasicAverageHistogramMo
 
 
 BasicHistogramImpl::BasicHistogramImpl(const AnalysisHistogramSettings& settings) :
-    settings_(settings),
-    averager_(new BasicAverageHistogramModule(settings))
+    settings_(settings), averager_(new BasicAverageHistogramModule(settings))
 {
 }
 

@@ -46,8 +46,7 @@
 #include "gromacs/utility/exceptions.h"
 
 gmx_ekindata_t::gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numThreads) :
-    ngtc(numTempCoupleGroups),
-    nthreads_(numThreads)
+    ngtc(numTempCoupleGroups), nthreads_(numThreads)
 {
     tcstat.resize(ngtc);
     /* Set Berendsen tcoupl lambda's to 1,

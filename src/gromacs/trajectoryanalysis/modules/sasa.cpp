@@ -401,12 +401,7 @@ private:
 };
 
 Sasa::Sasa() :
-    solsize_(0.14),
-    ndots_(24),
-    dgsDefault_(0),
-    bIncludeSolute_(true),
-    mtop_(nullptr),
-    atoms_(nullptr)
+    solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), mtop_(nullptr), atoms_(nullptr)
 {
     // minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");

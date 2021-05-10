@@ -541,8 +541,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 public:
     //! Initialize help topic for the given selection method.
     KeywordDetailsHelpTopic(const std::string& name, const gmx_ana_selmethod_t& method) :
-        name_(name),
-        method_(method)
+        name_(name), method_(method)
     {
     }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ public:
         {
             if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
             {
-                cl_ulong start_ns, end_ns;
+                cl_ulong          start_ns, end_ns;
                 cl_int gmx_unused cl_error;
 
                 cl_error = clGetEventProfilingInfo(

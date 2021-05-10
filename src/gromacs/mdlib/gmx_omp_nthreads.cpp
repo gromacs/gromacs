@@ -240,9 +240,9 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
                                             int                  nthreads_hw_avail,
                                             int                  omp_nthreads_req,
                                             int                  omp_nthreads_pme_req,
-                                            gmx_bool gmx_unused bThisNodePMEOnly,
-                                            int                 numRanksOnThisNode,
-                                            gmx_bool            bSepPME)
+                                            gmx_bool gmx_unused  bThisNodePMEOnly,
+                                            int                  numRanksOnThisNode,
+                                            gmx_bool             bSepPME)
 {
     int   nth;
     char* env;

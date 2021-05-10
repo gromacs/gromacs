@@ -121,10 +121,7 @@ public:
      * called, but values cannot be accessed.
      */
     AnglePositionIterator(const SelectionList& selections, int posCountPerValue) :
-        selections_(selections),
-        posCountPerValue_(posCountPerValue),
-        currentSelection_(0),
-        nextPosition_(0)
+        selections_(selections), posCountPerValue_(posCountPerValue), currentSelection_(0), nextPosition_(0)
     {
     }
 

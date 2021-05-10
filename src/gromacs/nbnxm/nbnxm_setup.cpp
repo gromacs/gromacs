@@ -294,8 +294,7 @@ static KernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
 PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
                            const bool            haveMultipleDomains,
                            const int             minimumIlistCountForGpuBalancing) :
-    params_(pairlistParams),
-    minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
+    params_(pairlistParams), minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
     localSet_ = std::make_unique<PairlistSet>(params_);
 

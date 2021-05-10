@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,8 @@
  */
 gmx_opencl_inline void atomicAdd_l_f(volatile __local float* addr, float val)
 {
-    union {
+    union
+    {
         unsigned int u32;
         float        f32;
     } next, expected, current;
@@ -96,7 +97,8 @@ gmx_opencl_inline void atomicAdd_l_f3(__local float3* addr, float3 val)
  */
 gmx_opencl_inline void atomicAdd_g_f(volatile __global float* addr, float val)
 {
-    union {
+    union
+    {
         unsigned int u32;
         float        f32;
     } next, expected, current;

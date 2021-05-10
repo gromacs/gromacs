@@ -71,6 +71,6 @@ void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
                                gmx::ArrayRef<real>            dvdl,
                                gmx::ArrayRef<real>            energygrp_elec,
                                gmx::ArrayRef<real>            energygrp_vdw,
-                               t_nrnb* gmx_restrict nrnb);
+                               t_nrnb* gmx_restrict           nrnb);
 
 #endif

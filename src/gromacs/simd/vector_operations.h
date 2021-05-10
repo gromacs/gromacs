@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ namespace gmx
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
 static inline SimdFloat gmx_simdcall
-                        iprod(SimdFloat ax, SimdFloat ay, SimdFloat az, SimdFloat bx, SimdFloat by, SimdFloat bz)
+iprod(SimdFloat ax, SimdFloat ay, SimdFloat az, SimdFloat bx, SimdFloat by, SimdFloat bz)
 {
     SimdFloat ret;
 
@@ -168,7 +168,7 @@ static inline void gmx_simdcall cprod(SimdFloat  ax,
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
 static inline SimdDouble gmx_simdcall
-                         iprod(SimdDouble ax, SimdDouble ay, SimdDouble az, SimdDouble bx, SimdDouble by, SimdDouble bz)
+iprod(SimdDouble ax, SimdDouble ay, SimdDouble az, SimdDouble bx, SimdDouble by, SimdDouble bz)
 {
     SimdDouble ret;
 

@@ -753,9 +753,7 @@ void BiasGrid::initPoints()
 }
 
 GridAxis::GridAxis(double origin, double end, double period, double pointDensity) :
-    origin_(origin),
-    period_(period),
-    isFepLambdaAxis_(false)
+    origin_(origin), period_(period), isFepLambdaAxis_(false)
 {
     length_ = getIntervalLengthPeriodic(origin_, end, period_);
 
@@ -797,10 +795,7 @@ GridAxis::GridAxis(double origin, double end, double period, double pointDensity
 }
 
 GridAxis::GridAxis(double origin, double end, double period, int numPoints, bool isFepLambdaAxis) :
-    origin_(origin),
-    period_(period),
-    numPoints_(numPoints),
-    isFepLambdaAxis_(isFepLambdaAxis)
+    origin_(origin), period_(period), numPoints_(numPoints), isFepLambdaAxis_(isFepLambdaAxis)
 {
     if (isFepLambdaAxis)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,7 @@
 
 //! Constructor
 DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) :
-    deviceInfo_(deviceInfo),
-    context_(cl::sycl::context(deviceInfo.syclDevice))
+    deviceInfo_(deviceInfo), context_(cl::sycl::context(deviceInfo.syclDevice))
 {
 }
 

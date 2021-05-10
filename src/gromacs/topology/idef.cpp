@@ -501,9 +501,7 @@ void init_idef(t_idef* idef)
 }
 
 InteractionDefinitions::InteractionDefinitions(const gmx_ffparams_t& ffparams) :
-    iparams(ffparams.iparams),
-    functype(ffparams.functype),
-    cmap_grid(ffparams.cmap_grid)
+    iparams(ffparams.iparams), functype(ffparams.functype), cmap_grid(ffparams.cmap_grid)
 {
 }
 

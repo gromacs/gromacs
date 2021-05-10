@@ -192,7 +192,7 @@ typedef struct swap_group
     gmx::EnumerationArray<Compartment, t_compartment> comp; /**< Distribution of particles of this
                                        group across the two compartments */
     gmx::EnumerationArray<Compartment, real> vacancy; /**< How many molecules need to be swapped in? */
-    gmx::EnumerationArray<Channel, int> fluxfromAtoB; /**< Net flux of ions per channel */
+    gmx::EnumerationArray<Channel, int>      fluxfromAtoB; /**< Net flux of ions per channel */
     gmx::EnumerationArray<Channel, int> nCyl; /**< Number of ions residing in a channel         */
     int nCylBoth = 0; /**< Ions assigned to cyl0 and cyl1. Not good.             */
 } t_swapgrp;

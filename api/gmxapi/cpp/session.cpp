@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -350,8 +350,7 @@ std::shared_ptr<Session> launchSession(Context* context, const Workflow& work) n
 SessionImpl::~SessionImpl() = default;
 
 SessionResources::SessionResources(gmxapi::SessionImpl* session, std::string name) :
-    sessionImpl_(session),
-    name_(std::move(name))
+    sessionImpl_(session), name_(std::move(name))
 {
 }
 

@@ -425,8 +425,7 @@ class ModuleHelpTopic : public IHelpTopic
 public:
     //! Constructs a help topic for a specific module.
     ModuleHelpTopic(const ICommandLineModule& module, const CommandLineHelpModuleImpl& helpModule) :
-        module_(module),
-        helpModule_(helpModule)
+        module_(module), helpModule_(helpModule)
     {
     }
 
@@ -519,9 +518,7 @@ private:
 
 HelpExportReStructuredText::HelpExportReStructuredText(const CommandLineHelpModuleImpl& helpModule,
                                                        IFileOutputRedirector* outputRedirector) :
-    outputRedirector_(outputRedirector),
-    binaryName_(helpModule.binaryName_),
-    links_(eHelpOutputFormat_Rst)
+    outputRedirector_(outputRedirector), binaryName_(helpModule.binaryName_), links_(eHelpOutputFormat_Rst)
 {
     TextReader  linksFile("links.dat");
     std::string line;
@@ -793,8 +790,7 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
 {
 public:
     ModificationCheckingFileOutputStream(const char* path, IFileOutputRedirector* redirector) :
-        path_(path),
-        redirector_(redirector)
+        path_(path), redirector_(redirector)
     {
     }
 

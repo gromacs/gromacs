@@ -276,10 +276,7 @@ private:
     {
         //! Creates a conversion helper for a given `t_pargs` struct.
         explicit ProgramArgData(t_pargs* pa) :
-            pa(pa),
-            optionInfo(nullptr),
-            enumIndex(0),
-            boolValue(false)
+            pa(pa), optionInfo(nullptr), enumIndex(0), boolValue(false)
         {
         }
 

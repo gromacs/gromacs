@@ -84,7 +84,7 @@ typedef struct swaphistory_t
     int* fluxleak_p;                         // Pointer to this data
     bool bFromCpt;                           // Did we start from a checkpoint file?
     gmx::EnumerationArray<Channel, int> nat; // Size of xc_old_whole, i.e. the number of atoms in each channel
-    gmx::EnumerationArray<Channel, rvec*>  xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
+    gmx::EnumerationArray<Channel, rvec*> xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
     gmx::EnumerationArray<Channel, rvec**> xc_old_whole_p; // Pointer to these positions
     swapstateIons_t*                       ionType;        // History information for one ion type
 } swaphistory_t;

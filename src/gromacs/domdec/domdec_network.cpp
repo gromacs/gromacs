@@ -146,15 +146,15 @@ template void ddSendrecv(const gmx_domdec_t*, int, int, gmx::ArrayRef<real>, gmx
 template void ddSendrecv(const gmx_domdec_t*, int, int, gmx::ArrayRef<gmx::RVec>, gmx::ArrayRef<gmx::RVec>);
 
 void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
-                       int gmx_unused ddimind,
+                       int gmx_unused                        ddimind,
                        rvec gmx_unused* buf_s_fw,
-                       int gmx_unused n_s_fw,
+                       int gmx_unused   n_s_fw,
                        rvec gmx_unused* buf_r_fw,
-                       int gmx_unused n_r_fw,
+                       int gmx_unused   n_r_fw,
                        rvec gmx_unused* buf_s_bw,
-                       int gmx_unused n_s_bw,
+                       int gmx_unused   n_s_bw,
                        rvec gmx_unused* buf_r_bw,
-                       int gmx_unused n_r_bw)
+                       int gmx_unused   n_r_bw)
 {
 #if GMX_MPI
     MPI_Request req[4];
@@ -275,7 +275,7 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
 }
 
 void dd_gather(const gmx_domdec_t gmx_unused* dd,
-               int gmx_unused nbytes,
+               int gmx_unused                 nbytes,
                const void gmx_unused* src,
                void gmx_unused* dest)
 {
@@ -318,7 +318,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused* dd,
 }
 
 void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
-                int gmx_unused scount,
+                int gmx_unused                 scount,
                 const void gmx_unused* sbuf,
                 int gmx_unused* rcounts,
                 int gmx_unused* disps,

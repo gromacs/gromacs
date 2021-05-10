@@ -77,10 +77,7 @@ void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWo
 #ifndef DOXYGEN
 
 PairsearchWork::PairsearchWork() :
-    cp0({ { 0 } }),
-    ndistc(0),
-    nbl_fep(std::make_unique<t_nblist>()),
-    cp1({ { 0 } })
+    cp0({ { 0 } }), ndistc(0), nbl_fep(std::make_unique<t_nblist>()), cp1({ { 0 } })
 {
 }
 

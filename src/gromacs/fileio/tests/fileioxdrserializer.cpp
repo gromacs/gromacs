@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,12 +56,14 @@ namespace test
 {
 namespace
 {
-union IntAndFloat32 {
+union IntAndFloat32
+{
     std::int32_t int32Value_;
     float        floatValue_;
 };
 
-union IntAndFloat64 {
+union IntAndFloat64
+{
     std::int64_t int64Value_;
     double       doubleValue_;
 };
@@ -104,8 +106,8 @@ public:
         double         doubleValue_        = c_intAndFloat64.doubleValue_;
         int            intValue_           = integerSizeDependentTestingValue();
         real           realValue_          = std::is_same_v<real, double>
-                                  ? static_cast<real>(c_intAndFloat64.doubleValue_)
-                                  : static_cast<real>(c_intAndFloat32.floatValue_);
+                                                     ? static_cast<real>(c_intAndFloat64.doubleValue_)
+                                                     : static_cast<real>(c_intAndFloat32.floatValue_);
     } defaultValues_;
 
     TestFileManager fileManager_;

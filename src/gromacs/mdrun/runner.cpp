@@ -1837,10 +1837,10 @@ int Mdrunner::mdrunner()
                 const DeviceContext* deviceContext = runScheduleWork.simulationWork.useGpuPme
                                                              ? &deviceStreamManager->context()
                                                              : nullptr;
-                const DeviceStream* pmeStream =
+                const DeviceStream*  pmeStream =
                         runScheduleWork.simulationWork.useGpuPme
-                                ? &deviceStreamManager->stream(DeviceStreamType::Pme)
-                                : nullptr;
+                                 ? &deviceStreamManager->stream(DeviceStreamType::Pme)
+                                 : nullptr;
 
                 pmedata = gmx_pme_init(cr,
                                        getNumPmeDomains(cr->dd),

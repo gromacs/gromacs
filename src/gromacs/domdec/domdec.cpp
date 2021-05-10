@@ -1285,7 +1285,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
 static void make_pp_communicator(const gmx::MDLogger& mdlog,
                                  gmx_domdec_t*        dd,
                                  t_commrec gmx_unused* cr,
-                                 bool gmx_unused reorder)
+                                 bool gmx_unused       reorder)
 {
 #if GMX_MPI
     gmx_domdec_comm_t*  comm      = dd->comm;
@@ -1422,10 +1422,10 @@ static void receive_ddindex2simnodeid(gmx_domdec_t* dd, t_commrec* cr)
 static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
                                              t_commrec*           cr,
                                              const DdRankOrder    ddRankOrder,
-                                             bool gmx_unused    reorder,
-                                             const DDRankSetup& ddRankSetup,
-                                             ivec               ddCellIndex,
-                                             std::vector<int>*  pmeRanks)
+                                             bool gmx_unused      reorder,
+                                             const DDRankSetup&   ddRankSetup,
+                                             ivec                 ddCellIndex,
+                                             std::vector<int>*    pmeRanks)
 {
     CartesianRankSetup cartSetup;
 
@@ -2928,11 +2928,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
                                        const t_inputrec&    ir,
                                        const matrix         box,
                                        ArrayRef<const RVec> xGlobal) :
-    mdlog_(mdlog),
-    cr_(cr),
-    options_(options),
-    mtop_(mtop),
-    ir_(ir)
+    mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
 

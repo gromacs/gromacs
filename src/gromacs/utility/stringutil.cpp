@@ -338,11 +338,7 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target, 
  */
 
 TextLineWrapperSettings::TextLineWrapperSettings() :
-    maxLength_(0),
-    indent_(0),
-    firstLineIndent_(-1),
-    bKeepFinalSpaces_(false),
-    continuationChar_('\0')
+    maxLength_(0), indent_(0), firstLineIndent_(-1), bKeepFinalSpaces_(false), continuationChar_('\0')
 {
 }
 

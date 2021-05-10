@@ -124,9 +124,9 @@ class VRescaleTemperatureCoupling final : public ITemperatureCouplingImpl
 {
 public:
     //! Apply the v-rescale temperature control
-    real apply(Step step,
-               int  temperatureGroup,
-               real currentKineticEnergy,
+    real apply(Step                           step,
+               int                            temperatureGroup,
+               real                           currentKineticEnergy,
                real gmx_unused                currentTemperature,
                const TemperatureCouplingData& temperatureCouplingData) override
     {
@@ -516,7 +516,7 @@ void VelocityScalingTemperatureCoupling::elementSetup()
     }
 }
 
-void VelocityScalingTemperatureCoupling::scheduleTask(Step step,
+void VelocityScalingTemperatureCoupling::scheduleTask(Step                       step,
                                                       Time gmx_unused            time,
                                                       const RegisterRunFunction& registerRunFunction)
 {
@@ -568,9 +568,9 @@ void VelocityScalingTemperatureCoupling::setLambda(Step step)
         const real currentKineticEnergy = useFullStepKE_ == UseFullStepKE::Yes
                                                   ? trace(ekind->tcstat[temperatureGroup].ekinf)
                                                   : trace(ekind->tcstat[temperatureGroup].ekinh);
-        const real currentTemperature = useFullStepKE_ == UseFullStepKE::Yes
-                                                ? ekind->tcstat[temperatureGroup].T
-                                                : ekind->tcstat[temperatureGroup].Th;
+        const real currentTemperature   = useFullStepKE_ == UseFullStepKE::Yes
+                                                  ? ekind->tcstat[temperatureGroup].T
+                                                  : ekind->tcstat[temperatureGroup].Th;
 
         temperatureCouplingIntegral_[temperatureGroup] = temperatureCouplingImpl_->apply(
                 step, temperatureGroup, currentKineticEnergy, currentTemperature, thermostatData);

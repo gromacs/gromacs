@@ -870,7 +870,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
                                 fInvR += qi * qj
                                          * (pairExclMask * r2Inv
                                             - interpolateCoulombForceR(
-                                                      a_coulombTab, coulombTabScale, r2 * rInv))
+                                                    a_coulombTab, coulombTabScale, r2 * rInv))
                                          * rInv;
                             }
 

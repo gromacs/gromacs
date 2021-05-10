@@ -76,10 +76,7 @@ class SelectionOptionBehavior::Impl
 {
 public:
     Impl(SelectionCollection* selections, ITopologyProvider* topologyProvider) :
-        selections_(*selections),
-        topologyProvider_(*topologyProvider),
-        manager_(selections),
-        grps_(nullptr)
+        selections_(*selections), topologyProvider_(*topologyProvider), manager_(selections), grps_(nullptr)
     {
     }
     ~Impl()

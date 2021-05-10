@@ -94,7 +94,7 @@ void ConstraintsElement<variable>::elementSetup()
         const real lambdaBonded =
                 freeEnergyPerturbationData_
                         ? freeEnergyPerturbationData_->constLambdaView()[static_cast<int>(
-                                  FreeEnergyPerturbationCouplingType::Bonded)]
+                                FreeEnergyPerturbationCouplingType::Bonded)]
                         : 0;
         // Constrain the initial coordinates and velocities
         do_constrain_first(fplog_,
@@ -120,7 +120,7 @@ void ConstraintsElement<variable>::elementSetup()
 }
 
 template<ConstraintVariable variable>
-void ConstraintsElement<variable>::scheduleTask(Step step,
+void ConstraintsElement<variable>::scheduleTask(Step                       step,
                                                 Time gmx_unused            time,
                                                 const RegisterRunFunction& registerRunFunction)
 {

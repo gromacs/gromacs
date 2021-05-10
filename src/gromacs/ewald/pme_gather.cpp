@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,16 +77,12 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
  */
 struct do_fspline
 {
-    do_fspline(const gmx_pme_t* pme,
-               const real* gmx_restrict grid,
-               const PmeAtomComm* gmx_restrict atc,
+    do_fspline(const gmx_pme_t*                 pme,
+               const real* gmx_restrict         grid,
+               const PmeAtomComm* gmx_restrict  atc,
                const splinedata_t* gmx_restrict spline,
                int                              nn) :
-        pme(pme),
-        grid(grid),
-        atc(atc),
-        spline(spline),
-        nn(nn)
+        pme(pme), grid(grid), atc(atc), spline(spline), nn(nn)
     {
     }
 
@@ -285,9 +281,9 @@ struct do_fspline
     }
 #endif
 private:
-    const gmx_pme_t* const pme;
-    const real* const gmx_restrict grid;
-    const PmeAtomComm* const gmx_restrict atc;
+    const gmx_pme_t* const                 pme;
+    const real* const gmx_restrict         grid;
+    const PmeAtomComm* const gmx_restrict  atc;
     const splinedata_t* const gmx_restrict spline;
     const int                              nn;
 

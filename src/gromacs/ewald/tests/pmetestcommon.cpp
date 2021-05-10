@@ -910,8 +910,7 @@ const char* codePathToString(CodePath codePath)
 PmeTestHardwareContext::PmeTestHardwareContext() : codePath_(CodePath::CPU) {}
 
 PmeTestHardwareContext::PmeTestHardwareContext(TestDevice* testDevice) :
-    codePath_(CodePath::CPU),
-    testDevice_(testDevice)
+    codePath_(CodePath::CPU), testDevice_(testDevice)
 {
     setActiveDevice(testDevice_->deviceInfo());
     pmeGpuProgram_ = buildPmeGpuProgram(testDevice_->deviceContext());

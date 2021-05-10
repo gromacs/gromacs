@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,8 @@
 typedef struct
 {
     /** Value for each atom to match. */
-    union {
+    union
+    {
         int*   i;
         char** s;
         void*  ptr;
@@ -81,7 +82,8 @@ typedef struct
      */
     int nas;
     /** Values to match against. */
-    union {
+    union
+    {
         int*   i;
         char** s;
         void*  ptr;

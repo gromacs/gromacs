@@ -150,11 +150,11 @@ struct interaction_const_t
     real rcoulomb_switch = 0;
 
     /* PME/Ewald */
-    real ewaldcoeff_q  = 0;
-    real ewaldcoeff_lj = 0;
+    real         ewaldcoeff_q  = 0;
+    real         ewaldcoeff_lj = 0;
     LongRangeVdW ljpme_comb_rule = LongRangeVdW::Geom; /* LJ combination rule for the LJ PME mesh part */
-    real sh_ewald                = 0; /* -sh_ewald is added to the direct space potential */
-    real sh_lj_ewald = 0;             /* sh_lj_ewald is added to the correction potential */
+    real         sh_ewald        = 0; /* -sh_ewald is added to the direct space potential */
+    real         sh_lj_ewald = 0;     /* sh_lj_ewald is added to the correction potential */
 
     /* Dielectric constant resp. multiplication factor for charges */
     real epsilon_r = 1;

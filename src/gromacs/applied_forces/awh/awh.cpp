@@ -147,8 +147,7 @@ static bool anyDimUsesPull(const ArrayRef<BiasCoupledToSystem> biasCoupledToSyst
 }
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias bias, const std::vector<int>& pullCoordIndex) :
-    bias_(std::move(bias)),
-    pullCoordIndex_(pullCoordIndex)
+    bias_(std::move(bias)), pullCoordIndex_(pullCoordIndex)
 {
     /* We already checked for this in grompp, but check again here. */
     GMX_RELEASE_ASSERT(

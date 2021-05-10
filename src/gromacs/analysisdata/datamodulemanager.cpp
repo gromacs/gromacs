@@ -74,8 +74,7 @@ public:
     {
         //! Initializes the module information.
         explicit ModuleInfo(AnalysisDataModulePointer module) :
-            module(std::move(module)),
-            bParallel(false)
+            module(std::move(module)), bParallel(false)
         {
         }
 

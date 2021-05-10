@@ -205,10 +205,7 @@ public:
 };
 
 TextTableFormatter::Impl::Impl() :
-    firstColumnIndent_(0),
-    foldLastColumnToNextLineIndent_(-1),
-    bFirstRow_(true),
-    bPrintHeader_(false)
+    firstColumnIndent_(0), foldLastColumnToNextLineIndent_(-1), bFirstRow_(true), bPrintHeader_(false)
 {
 }
 

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v, Targs... Fargs)
+gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v, Targs... Fargs)
 {
     // For align 1 or 2: No multiplication of offset is needed
     if (align > 2)
@@ -120,28 +120,28 @@ static inline void gmx_simdcall
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v, Targs... Fargs)
+gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, offset, v, Fargs...);
 }
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v, Targs... Fargs)
+gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v, Fargs...);
 }
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadUTranspose(const float* base, const std::int32_t offset[], SimdFloat* v, Targs... Fargs)
+gatherLoadUTranspose(const float* base, const std::int32_t offset[], SimdFloat* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdFInt32Tag()), v, Fargs...);
 }
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     SimdFInt32 simdoffset = simdLoad(offset, SimdFInt32Tag());
     if (align > 2)
@@ -157,7 +157,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m512                                   t[4], t5, t6, t7, t8;
     int                                      i;
@@ -235,7 +235,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m512                                   t[4], t5, t6, t7, t8;
     int                                      i;

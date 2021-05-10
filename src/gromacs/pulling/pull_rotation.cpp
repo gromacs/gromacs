@@ -2479,7 +2479,7 @@ static real do_flex_lowlevel(gmx_enfrotgrp* erg,
     return V;
 }
 
-static void sort_collective_coordinates(gmx_enfrotgrp* erg,
+static void sort_collective_coordinates(gmx_enfrotgrp*    erg,
                                         sort_along_vec_t* data) /* Buffer for sorting the positions */
 {
     /* The projection of the position vector on the rotation vector is

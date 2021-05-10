@@ -372,8 +372,7 @@ private:
     typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
 
     KeyValueTreeTransformResult(KeyValueTreeObject&& object, MappingPointer&& mapping) :
-        object_(std::move(object)),
-        mapping_(std::move(mapping))
+        object_(std::move(object)), mapping_(std::move(mapping))
     {
     }
 

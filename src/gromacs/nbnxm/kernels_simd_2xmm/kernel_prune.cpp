@@ -62,10 +62,10 @@ void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*              nbl,
     nbl->cj.resize(nbl->cjOuter.size());
 
     const nbnxn_ci_t* gmx_restrict ciOuter = nbl->ciOuter.data();
-    nbnxn_ci_t* gmx_restrict ciInner       = nbl->ci.data();
+    nbnxn_ci_t* gmx_restrict       ciInner = nbl->ci.data();
 
     const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
-    nbnxn_cj_t* gmx_restrict cjInner       = nbl->cj.data();
+    nbnxn_cj_t* gmx_restrict       cjInner = nbl->cj.data();
 
     const real* gmx_restrict x = nbat->x().data();
 

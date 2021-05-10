@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,10 +92,10 @@ static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
-    const __m256  exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
-    const __m256  mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
+    const __m256 exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
+    const __m256 mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
     const __m256i exponentBias = _mm256_set1_epi32(126); // add 1 to make our definition identical to frexp()
-    const __m256  half = _mm256_set1_ps(0.5);
+    const __m256 half = _mm256_set1_ps(0.5);
 
     __m256i iExponent = _mm256_castps_si256(_mm256_and_ps(value.simdInternal_, exponentMask));
     iExponent         = _mm256_sub_epi32(_mm256_srli_epi32(iExponent, 23), exponentBias);

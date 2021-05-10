@@ -225,11 +225,10 @@ void increaseNstlist(FILE*               fp,
                        "with an appropriate message above");
 
     const bool  runningOnXeonPhi = (cpuinfo.brandString().find("Xeon Phi") != std::string::npos);
-    const float listfac_ok       = useOrEmulateGpuForNonbondeds
-                                     ? c_nbnxnListSizeFactorGPU
-                                     : runningOnXeonPhi ? c_nbnxnListSizeFactorIntelXeonPhi
-                                                        : c_nbnxnListSizeFactorCpu;
-    float listfac_max = listfac_ok + c_nbnxnListSizeFactorMargin;
+    const float listfac_ok       = useOrEmulateGpuForNonbondeds ? c_nbnxnListSizeFactorGPU
+                                   : runningOnXeonPhi           ? c_nbnxnListSizeFactorIntelXeonPhi
+                                                                : c_nbnxnListSizeFactorCpu;
+    float       listfac_max      = listfac_ok + c_nbnxnListSizeFactorMargin;
 
     const int nstlist_orig = ir->nstlist;
     if (nstlist_cmdline > 0)

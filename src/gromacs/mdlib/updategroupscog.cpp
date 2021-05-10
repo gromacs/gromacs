@@ -56,8 +56,7 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mto
                                  gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
                                  real                                        temperature,
                                  int                                         numHomeAtoms) :
-    globalToLocalMap_(numHomeAtoms),
-    mtop_(mtop)
+    globalToLocalMap_(numHomeAtoms), mtop_(mtop)
 {
     int firstUpdateGroupInMolecule = 0;
     for (const auto& molblock : mtop.molblock)

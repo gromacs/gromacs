@@ -109,8 +109,8 @@ static void reduceGroupEnergySimdBuffers(int numGroups, int numGroups_2log, nbnx
 
     const real* gmx_restrict vVdwSimd     = out->VSvdw.data();
     const real* gmx_restrict vCoulombSimd = out->VSc.data();
-    real* gmx_restrict vVdw               = out->Vvdw.data();
-    real* gmx_restrict vCoulomb           = out->Vc.data();
+    real* gmx_restrict       vVdw         = out->Vvdw.data();
+    real* gmx_restrict       vCoulomb     = out->Vc.data();
 
     /* The size of the SIMD energy group buffer array is:
      * numGroups*numGroups*numGroupsStorage*unrollj_half*simd_width

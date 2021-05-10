@@ -250,8 +250,8 @@ IVec rangeEndWithinLattice(const IVec& index, const dynamicExtents3D& extents, c
  * OuterProductEvaluator
  */
 
-mdspan<const float, dynamic_extent, dynamic_extent> OuterProductEvaluator::
-                                                    operator()(ArrayRef<const float> x, ArrayRef<const float> y)
+mdspan<const float, dynamic_extent, dynamic_extent>
+OuterProductEvaluator::operator()(ArrayRef<const float> x, ArrayRef<const float> y)
 {
     data_.resize(ssize(x), ssize(y));
     for (gmx::index xIndex = 0; xIndex < ssize(x); ++xIndex)

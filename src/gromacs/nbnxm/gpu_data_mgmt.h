@@ -84,7 +84,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager gmx_unused& deviceStreamManage
 GPU_FUNC_QUALIFIER
 void gpu_init_pairlist(NbnxmGpu gmx_unused*          nb,
                        const struct NbnxnPairlistGpu gmx_unused* h_nblist,
-                       gmx::InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
+                       gmx::InteractionLocality gmx_unused       iloc) GPU_FUNC_TERM;
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER

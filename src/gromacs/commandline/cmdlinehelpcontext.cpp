@@ -85,9 +85,7 @@ public:
     }
     //! Creates an implementation class from a low-level context.
     explicit Impl(const HelpWriterContext& writerContext) :
-        writerContext_(writerContext),
-        completionWriter_(nullptr),
-        bHidden_(false)
+        writerContext_(writerContext), completionWriter_(nullptr), bHidden_(false)
     {
     }
 

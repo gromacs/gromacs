@@ -71,7 +71,8 @@ public:
     }
 
 private:
-    union {
+    union
+    {
         char c[ValueSize];
         T    v;
     } u;
@@ -81,7 +82,8 @@ private:
 template<typename T>
 T swapEndian(const T& value)
 {
-    union {
+    union
+    {
         T                           value_;
         std::array<char, sizeof(T)> valueAsCharArray_;
     } endianessSwappedValue;

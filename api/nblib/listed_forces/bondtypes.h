@@ -150,9 +150,7 @@ struct CubicBondType
 {
     CubicBondType() = default;
     CubicBondType(ForceConstant fq, ForceConstant fc, EquilDistance d) :
-        quadraticForceConstant_(fq),
-        cubicForceConstant_(fc),
-        equilDistance_(d)
+        quadraticForceConstant_(fq), cubicForceConstant_(fc), equilDistance_(d)
     {
     }
 
@@ -191,9 +189,7 @@ class MorseBondType
 public:
     MorseBondType() = default;
     MorseBondType(ForceConstant f, Exponent e, EquilDistance d) :
-        forceConstant_(f),
-        exponent_(e),
-        equilDistance_(d)
+        forceConstant_(f), exponent_(e), equilDistance_(d)
     {
     }
 
@@ -249,15 +245,11 @@ public:
 
     ProperDihedral() = default;
     ProperDihedral(Radians phi, ForceConstant f, Multiplicity m) :
-        phi_(phi),
-        forceConstant_(f),
-        multiplicity_(m)
+        phi_(phi), forceConstant_(f), multiplicity_(m)
     {
     }
     ProperDihedral(Degrees phi, ForceConstant f, Multiplicity m) :
-        phi_(phi * DEG2RAD),
-        forceConstant_(f),
-        multiplicity_(m)
+        phi_(phi * DEG2RAD), forceConstant_(f), multiplicity_(m)
     {
     }
 
@@ -340,10 +332,7 @@ class Default5Center
 public:
     Default5Center() = default;
     Default5Center(Radians phi, Radians psi, ForceConstant fphi, ForceConstant fpsi) :
-        phi_(phi),
-        psi_(psi),
-        fphi_(fphi),
-        fpsi_(fpsi)
+        phi_(phi), psi_(psi), fphi_(fphi), fpsi_(fpsi)
     {
     }
 

@@ -299,10 +299,7 @@ std::vector<std::string> makeLegend(const AwhBiasParams& awhBiasParams,
 } // namespace
 
 OutputFile::OutputFile(const std::string& filename, const std::string& baseTitle, int numBias, int biasIndex) :
-    numDim_(0),
-    firstGraphSubBlock_(0),
-    numGraph_(0),
-    useKTForEnergy_(false)
+    numDim_(0), firstGraphSubBlock_(0), numGraph_(0), useKTForEnergy_(false)
 
 {
     baseFilename_ = filename.substr(0, filename.find('.'));

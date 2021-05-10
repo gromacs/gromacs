@@ -138,10 +138,7 @@ private:
  */
 
 IndexFileWriterModule::IndexFileWriterModule() :
-    fp_(nullptr),
-    currentGroup_(-1),
-    currentSize_(0),
-    bAnyWritten_(false)
+    fp_(nullptr), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
 {
 }
 

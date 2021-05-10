@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -313,10 +313,7 @@ public:
 
     //! Initializes an option with the given name.
     explicit StringOption(const char* name) :
-        MyBase(name),
-        enumValues_(nullptr),
-        enumValuesCount_(0),
-        defaultEnumIndex_(-1)
+        MyBase(name), enumValues_(nullptr), enumValuesCount_(0), defaultEnumIndex_(-1)
     {
     }
 
@@ -407,8 +404,7 @@ class EnumIndexStore : public IOptionValueStore<int>
 public:
     //! Initializes the storage for the given actual enum variables.
     EnumIndexStore(EnumType* store, std::vector<EnumType>* storeVector) :
-        store_(store),
-        storeVector_(storeVector)
+        store_(store), storeVector_(storeVector)
     {
         if (storeVector_ != nullptr)
         {
@@ -621,9 +617,7 @@ public:
 
     //! Initializes an option with the given name.
     explicit LegacyEnumOption(const char* name) :
-        MyBase(name),
-        enumValues_(nullptr),
-        enumValuesCount_(0)
+        MyBase(name), enumValues_(nullptr), enumValuesCount_(0)
     {
     }
 

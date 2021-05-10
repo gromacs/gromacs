@@ -102,8 +102,7 @@ public:
      * \param[in] context  Current \Gromacs program context.
      */
     explicit TestProgramContext(const IProgramContext& context) :
-        context_(context),
-        dataPath_(CMAKE_SOURCE_DIR)
+        context_(context), dataPath_(CMAKE_SOURCE_DIR)
     {
     }
 

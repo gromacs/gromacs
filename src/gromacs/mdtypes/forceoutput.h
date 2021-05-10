@@ -129,8 +129,7 @@ public:
      * \param[in] computeVirial  True when algorithms are required to provide their virial contribution (for the current force evaluation)
      */
     ForceWithVirial(const ArrayRef<RVec>& force, const bool computeVirial) :
-        force_(force),
-        computeVirial_(computeVirial)
+        force_(force), computeVirial_(computeVirial)
     {
         for (int dim1 = 0; dim1 < DIM; dim1++)
         {

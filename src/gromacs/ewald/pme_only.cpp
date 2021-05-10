@@ -254,7 +254,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       real*                        ewaldcoeff_lj,
                                       bool                         useGpuForPme,
                                       gmx::StatePropagatorDataGpu* stateGpu,
-                                      PmeRunMode gmx_unused runMode)
+                                      PmeRunMode gmx_unused        runMode)
 {
     int status = -1;
     int nat    = 0;

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
- * Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,10 +52,7 @@ namespace gmx
 {
 
 AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAnalysisData* data) :
-    source_(*data),
-    firstColumn_(firstColumn),
-    columnSpan_(columnSpan),
-    bParallel_(false)
+    source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan), bParallel_(false)
 {
     GMX_RELEASE_ASSERT(data != nullptr, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");

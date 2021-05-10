@@ -120,8 +120,7 @@ struct NbnxnPairlistGpuWork
     };
 
     NbnxnPairlistGpuWork() :
-        distanceBuffer(c_gpuNumClusterPerCell),
-        sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
+        distanceBuffer(c_gpuNumClusterPerCell), sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
     {
     }
 

@@ -124,9 +124,7 @@ float getNormalizationValue(AwhOutputEntryType outputType, const Bias& bias, int
 } // namespace
 
 AwhEnergyBlock::AwhEnergyBlock(int numPoints, Normalization normalizationType, float normalizationValue) :
-    normalizationType(normalizationType),
-    normalizationValue(normalizationValue),
-    data_(numPoints)
+    normalizationType(normalizationType), normalizationValue(normalizationValue), data_(numPoints)
 {
 }
 

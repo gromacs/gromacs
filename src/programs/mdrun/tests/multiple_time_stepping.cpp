@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,31 +126,31 @@ TEST_P(MtsComparisonTest, WithinTolerances)
     const int nstfout       = 2 * numSteps;
     auto      refMdpOptions = sharedMdpOptions
                          + gmx::formatString(
-                                   "mts       = no\n"
-                                   "nstcalcenergy = %d\n"
-                                   "nstenergy = %d\n"
-                                   "nstxout   = 0\n"
-                                   "nstvout   = 0\n"
-                                   "nstfout   = %d\n",
-                                   numSteps,
-                                   numSteps,
-                                   nstfout);
+                                 "mts       = no\n"
+                                 "nstcalcenergy = %d\n"
+                                 "nstenergy = %d\n"
+                                 "nstxout   = 0\n"
+                                 "nstvout   = 0\n"
+                                 "nstfout   = %d\n",
+                                 numSteps,
+                                 numSteps,
+                                 nstfout);
 
     auto mtsMdpOptions = sharedMdpOptions
                          + gmx::formatString(
-                                   "mts        = yes\n"
-                                   "mts-levels = 2\n"
-                                   "mts-level2-forces = %s\n"
-                                   "mts-level2-factor = 2\n"
-                                   "nstcalcenergy = %d\n"
-                                   "nstenergy  = %d\n"
-                                   "nstxout    = 0\n"
-                                   "nstvout    = 0\n"
-                                   "nstfout    = %d\n",
-                                   mtsScheme.c_str(),
-                                   numSteps,
-                                   numSteps,
-                                   nstfout);
+                                 "mts        = yes\n"
+                                 "mts-levels = 2\n"
+                                 "mts-level2-forces = %s\n"
+                                 "mts-level2-factor = 2\n"
+                                 "nstcalcenergy = %d\n"
+                                 "nstenergy  = %d\n"
+                                 "nstxout    = 0\n"
+                                 "nstvout    = 0\n"
+                                 "nstfout    = %d\n",
+                                 mtsScheme.c_str(),
+                                 numSteps,
+                                 numSteps,
+                                 nstfout);
 
     // At step 0 the energy and virial should only differ due to rounding errors
     EnergyTermsToCompare energyTermsToCompareStep0 = energyTermsToCompare(0.001, 0.01);

@@ -72,10 +72,7 @@ struct BaseEntry
 {
     //! Default constructor.
     BaseEntry(const std::string& aName, const std::string& rName) :
-        atomName(aName),
-        residueName(rName),
-        isAvailable(false),
-        value(0.0)
+        atomName(aName), residueName(rName), isAvailable(false), value(0.0)
     {
     }
     //! Name for atom.

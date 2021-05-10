@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -128,7 +128,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
+gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
 {
     __m128 t1, t2, t3, t4, t5, t6, t7, t8;
     __m256 tA, tB, tC, tD;
@@ -219,7 +219,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m256  tv3;
     __m128i mask = _mm_set_epi32(0, -1, -1, -1);
@@ -239,7 +239,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m256 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
     __m128 tA, tB, tC, tD, tE, tF, tG, tH, tX;
@@ -371,7 +371,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m256 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
     __m128 tA, tB, tC, tD, tE, tF, tG, tH, tX;
@@ -530,7 +530,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 simdoffset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 simdoffset, SimdFloat* v0, SimdFloat* v1)
 {
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t offset[GMX_SIMD_FLOAT_WIDTH];
     _mm256_store_si256(reinterpret_cast<__m256i*>(offset), simdoffset.simdInternal_);
@@ -540,7 +540,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 simdoffset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 simdoffset, SimdFloat* v0, SimdFloat* v1)
 {
     __m128 t1, t2, t3, t4, t5, t6, t7, t8;
     __m256 tA, tB, tC, tD;

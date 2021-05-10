@@ -92,9 +92,7 @@ public:
     SimulatorConfig(const MdrunOptions&    mdrunOptions,
                     StartingBehavior       startingBehavior,
                     MdrunScheduleWorkload* runScheduleWork) :
-        mdrunOptions_(mdrunOptions),
-        startingBehavior_(startingBehavior),
-        runScheduleWork_(runScheduleWork)
+        mdrunOptions_(mdrunOptions), startingBehavior_(startingBehavior), runScheduleWork_(runScheduleWork)
     {
     }
     // TODO: Specify copy and move semantics.
@@ -155,11 +153,7 @@ public:
                  gmx_multisim_t*   multisimCommRec,
                  const MDLogger&   logger,
                  gmx_output_env_t* outputEnv) :
-        fplog_{ fplog },
-        commRec_{ commRec },
-        multisimCommRec_{ multisimCommRec },
-        logger_{ logger },
-        outputEnv_{ outputEnv }
+        fplog_{ fplog }, commRec_{ commRec }, multisimCommRec_{ multisimCommRec }, logger_{ logger }, outputEnv_{ outputEnv }
     {
     }
 
@@ -183,9 +177,7 @@ class Profiling
 public:
     //! Build profiling information collection.
     Profiling(t_nrnb* nrnb, gmx_walltime_accounting* walltimeAccounting, gmx_wallcycle* wallCycle) :
-        nrnb(nrnb),
-        wallCycle(wallCycle),
-        walltimeAccounting(walltimeAccounting)
+        nrnb(nrnb), wallCycle(wallCycle), walltimeAccounting(walltimeAccounting)
     {
     }
 
@@ -205,9 +197,7 @@ class ConstraintsParam
 public:
     //! Build collection with handle to actual objects.
     ConstraintsParam(Constraints* constraints, gmx_enfrot* enforcedRotation, VirtualSitesHandler* vSite) :
-        constr(constraints),
-        enforcedRotation(enforcedRotation),
-        vsite(vSite)
+        constr(constraints), enforcedRotation(enforcedRotation), vsite(vSite)
     {
     }
 
@@ -227,10 +217,7 @@ class LegacyInput
 public:
     //! Build collection from legacy input data.
     LegacyInput(int filenamesSize, const t_filenm* filenamesData, t_inputrec* inputRec, t_forcerec* forceRec) :
-        numFile(filenamesSize),
-        filenames(filenamesData),
-        inputrec(inputRec),
-        forceRec(forceRec)
+        numFile(filenamesSize), filenames(filenamesData), inputrec(inputRec), forceRec(forceRec)
     {
     }
 
@@ -264,8 +251,7 @@ class SimulatorModules
 {
 public:
     SimulatorModules(IMDOutputProvider* mdOutputProvider, const MDModulesNotifiers& notifiers) :
-        outputProvider(mdOutputProvider),
-        mdModulesNotifiers(notifiers)
+        outputProvider(mdOutputProvider), mdModulesNotifiers(notifiers)
     {
     }
 
@@ -306,8 +292,7 @@ class TopologyData
 public:
     //! Build collection from simulation data.
     TopologyData(const gmx_mtop_t& globalTopology, MDAtoms* mdAtoms) :
-        top_global(globalTopology),
-        mdAtoms(mdAtoms)
+        top_global(globalTopology), mdAtoms(mdAtoms)
     {
     }
 

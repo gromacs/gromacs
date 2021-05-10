@@ -73,12 +73,12 @@ constexpr EnumerationArray<IntegrationStage, const char*> integrationStepNames =
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
          NumVelocityScalingValues        numEndVelocityScalingValues>
-static void inline updateVelocities(int         a,
-                                    real        dt,
-                                    real        lambdaStart,
-                                    real        lambdaEnd,
+static void inline updateVelocities(int                      a,
+                                    real                     dt,
+                                    real                     lambdaStart,
+                                    real                     lambdaEnd,
                                     const rvec* gmx_restrict invMassPerDim,
-                                    rvec* gmx_restrict v,
+                                    rvec* gmx_restrict       v,
                                     const rvec* gmx_restrict f,
                                     const rvec               diagPR,
                                     const matrix             matrixPR)
@@ -120,10 +120,10 @@ static void inline updateVelocities(int         a,
 }
 
 //! Update positions
-static void inline updatePositions(int         a,
-                                   real        dt,
+static void inline updatePositions(int                      a,
+                                   real                     dt,
                                    const rvec* gmx_restrict x,
-                                   rvec* gmx_restrict xprime,
+                                   rvec* gmx_restrict       xprime,
                                    const rvec* gmx_restrict v)
 {
     for (int d = 0; d < DIM; d++)
@@ -276,9 +276,9 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
                                      : 1.0;
-    const real lambdaEnd = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
-                                   ? endVelocityScaling_[0]
-                                   : 1.0;
+    const real lambdaEnd   = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
+                                     ? endVelocityScaling_[0]
+                                     : 1.0;
 
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
@@ -359,9 +359,9 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
                                      : 1.0;
-    const real lambdaEnd = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
-                                   ? endVelocityScaling_[0]
-                                   : 1.0;
+    const real lambdaEnd   = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
+                                     ? endVelocityScaling_[0]
+                                     : 1.0;
 
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
@@ -444,9 +444,9 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
                                      : 1.0;
-    const real lambdaEnd = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
-                                   ? endVelocityScaling_[0]
-                                   : 1.0;
+    const real lambdaEnd   = (numEndVelocityScalingValues == NumVelocityScalingValues::Single)
+                                     ? endVelocityScaling_[0]
+                                     : 1.0;
 
     const bool isFullScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
@@ -581,7 +581,7 @@ Propagator<integrationStage>::Propagator(double               timestep,
 }
 
 template<IntegrationStage integrationStage>
-void Propagator<integrationStage>::scheduleTask(Step step,
+void Propagator<integrationStage>::scheduleTask(Step                       step,
                                                 Time gmx_unused            time,
                                                 const RegisterRunFunction& registerRunFunction)
 {

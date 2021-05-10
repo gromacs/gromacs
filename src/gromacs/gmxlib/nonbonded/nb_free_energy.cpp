@@ -217,7 +217,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
                                   gmx::ArrayRef<real>            dvdl,
                                   gmx::ArrayRef<real>            energygrp_elec,
                                   gmx::ArrayRef<real>            energygrp_vdw,
-                                  t_nrnb* gmx_restrict nrnb)
+                                  t_nrnb* gmx_restrict           nrnb)
 {
 #define STATE_A 0
 #define STATE_B 1
@@ -370,7 +370,7 @@ static void nb_free_energy_kernel(const t_nblist&                nlist,
     }
 
     // TODO: We should get rid of using pointers to real
-    const real* x             = coords[0];
+    const real*        x      = coords[0];
     real* gmx_restrict f      = &(forceWithShiftForces->force()[0][0]);
     real* gmx_restrict fshift = &(forceWithShiftForces->shiftForces()[0][0]);
 
@@ -881,7 +881,7 @@ typedef void (*KernelFunction)(const t_nblist&                nlist,
                                gmx::ArrayRef<real>            dvdl,
                                gmx::ArrayRef<real>            energygrp_elec,
                                gmx::ArrayRef<real>            energygrp_vdw,
-                               t_nrnb* gmx_restrict nrnb);
+                               t_nrnb* gmx_restrict           nrnb);
 
 template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)

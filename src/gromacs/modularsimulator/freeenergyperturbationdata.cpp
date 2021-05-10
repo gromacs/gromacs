@@ -83,7 +83,7 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
                        lambda_);
 }
 
-void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
+void FreeEnergyPerturbationData::Element::scheduleTask(Step                       step,
                                                        Time gmx_unused            time,
                                                        const RegisterRunFunction& registerRunFunction)
 {
@@ -179,8 +179,7 @@ const std::string& FreeEnergyPerturbationData::Element::clientID()
 
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
                                              double                      deltaLambda) :
-    freeEnergyPerturbationData_(freeEnergyPerturbationElement),
-    lambdasChange_(deltaLambda != 0)
+    freeEnergyPerturbationData_(freeEnergyPerturbationElement), lambdasChange_(deltaLambda != 0)
 {
 }
 

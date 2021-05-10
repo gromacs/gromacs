@@ -84,8 +84,7 @@ struct PmeGpuSpecific
      * \param[in] pmeStream      GPU pme stream.
      */
     PmeGpuSpecific(const DeviceContext& deviceContext, const DeviceStream& pmeStream) :
-        deviceContext_(deviceContext),
-        pmeStream_(pmeStream)
+        deviceContext_(deviceContext), pmeStream_(pmeStream)
     {
     }
 

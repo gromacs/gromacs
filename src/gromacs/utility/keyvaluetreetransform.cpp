@@ -65,8 +65,7 @@ class KeyValueTreeTransformRulesScoped::Impl : public IKeyValueTreeTransformRule
 {
 public:
     Impl(internal::KeyValueTreeTransformerImpl* impl, const KeyValueTreePath& prefix) :
-        impl_(impl),
-        prefix_(prefix)
+        impl_(impl), prefix_(prefix)
     {
     }
 
@@ -97,8 +96,8 @@ KeyValueTreeTransformRulesScoped::KeyValueTreeTransformRulesScoped(internal::Key
 
 KeyValueTreeTransformRulesScoped::KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped&&) noexcept = default;
 
-KeyValueTreeTransformRulesScoped& KeyValueTreeTransformRulesScoped::
-                                  operator=(KeyValueTreeTransformRulesScoped&&) noexcept = default;
+KeyValueTreeTransformRulesScoped&
+KeyValueTreeTransformRulesScoped::operator=(KeyValueTreeTransformRulesScoped&&) noexcept = default;
 
 KeyValueTreeTransformRulesScoped::~KeyValueTreeTransformRulesScoped() {}
 
@@ -198,8 +197,7 @@ public:
         typedef std::map<std::string, Rule, StringCompare> ChildRuleMap;
 
         explicit Rule(StringCompareType keyMatchType) :
-            expectedType_(typeid(void)),
-            childRules_(keyMatchType)
+            expectedType_(typeid(void)), childRules_(keyMatchType)
         {
         }
 
@@ -257,8 +255,7 @@ public:
     {
     public:
         explicit Transformer(IKeyValueTreeErrorHandler* errorHandler) :
-            errorHandler_(errorHandler),
-            backMapping_(new KeyValueTreeBackMapping)
+            errorHandler_(errorHandler), backMapping_(new KeyValueTreeBackMapping)
         {
             if (errorHandler_ == nullptr)
             {
@@ -507,8 +504,7 @@ public:
 
 KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl* impl,
                                                                    const KeyValueTreePath& prefix) :
-    impl_(impl),
-    data_(new Data(prefix))
+    impl_(impl), data_(new Data(prefix))
 {
 }
 

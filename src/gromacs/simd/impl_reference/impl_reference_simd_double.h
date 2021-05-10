@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -364,7 +364,8 @@ static inline SimdDouble gmx_simdcall operator&(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -391,7 +392,8 @@ static inline SimdDouble gmx_simdcall andNot(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -418,7 +420,8 @@ static inline SimdDouble gmx_simdcall operator|(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -445,7 +448,8 @@ static inline SimdDouble gmx_simdcall operator^(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -975,7 +979,8 @@ static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        union {
+        union
+        {
             std::uint64_t i;
             double        d;
         } conv;

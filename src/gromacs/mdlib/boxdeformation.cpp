@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,8 +101,7 @@ BoxDeformation::BoxDeformation(double        timeStep,
                                int64_t       initialStep,
                                const tensor& deformationTensor,
                                const matrix& referenceBox) :
-    timeStep_(timeStep),
-    initialStep_(initialStep)
+    timeStep_(timeStep), initialStep_(initialStep)
 {
     copy_mat(deformationTensor, deformationTensor_);
     copy_mat(referenceBox, referenceBox_);

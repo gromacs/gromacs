@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -325,7 +325,8 @@ static inline float reduce(float a)
  */
 static inline float andNot(float a, float b)
 {
-    union {
+    union
+    {
         float         r;
         std::uint32_t i;
     } conv1, conv2;
@@ -353,7 +354,8 @@ static inline float andNot(float a, float b)
  */
 static inline bool testBits(float a)
 {
-    union {
+    union
+    {
         std::uint32_t i;
         float         f;
     } conv;
@@ -731,7 +733,8 @@ static inline double reduce(double a)
  */
 static inline double andNot(double a, double b)
 {
-    union {
+    union
+    {
         double        r;
         std::uint64_t i;
     } conv1, conv2;
@@ -759,7 +762,8 @@ static inline double andNot(double a, double b)
  */
 static inline bool testBits(double a)
 {
-    union {
+    union
+    {
         std::uint64_t i;
         double        f;
     } conv;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,7 @@ namespace gmx
 CompositeSimulatorElement::CompositeSimulatorElement(
         std::vector<compat::not_null<ISimulatorElement*>>    elementCallList,
         std::vector<std::unique_ptr<gmx::ISimulatorElement>> elements) :
-    elementCallList_(std::move(elementCallList)),
-    elementOwnershipList_(std::move(elements))
+    elementCallList_(std::move(elementCallList)), elementOwnershipList_(std::move(elements))
 {
 }
 

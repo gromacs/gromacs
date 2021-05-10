@@ -1203,9 +1203,7 @@ public:
      */
     MindistAction(int* closestPoint, real* minDist2, rvec* dx) // NOLINT(readability-non-const-parameter)
         :
-        closestPoint_(*closestPoint),
-        minDist2_(*minDist2),
-        dx_(*dx)
+        closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
     {
     }
     //! Copies the action.

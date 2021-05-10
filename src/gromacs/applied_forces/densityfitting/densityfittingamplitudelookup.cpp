@@ -220,7 +220,7 @@ DensityFittingAmplitudeLookup& DensityFittingAmplitudeLookup::operator=(const De
 
 DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(DensityFittingAmplitudeLookup&&) noexcept = default;
 
-DensityFittingAmplitudeLookup& DensityFittingAmplitudeLookup::
-                               operator=(DensityFittingAmplitudeLookup&&) noexcept = default;
+DensityFittingAmplitudeLookup&
+DensityFittingAmplitudeLookup::operator=(DensityFittingAmplitudeLookup&&) noexcept = default;
 
 } // namespace gmx

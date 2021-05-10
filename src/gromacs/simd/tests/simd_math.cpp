@@ -115,10 +115,10 @@ public:
         MatchRule    matchRule; //!< Decide what we consider a match
     };
 
-    ::testing::AssertionResult compareSimdMathFunction(const char* refFuncExpr,
-                                                       const char* simdFuncExpr,
-                                                       const char* compareSettingsExpr,
-                                                       real        refFunc(real x),
+    ::testing::AssertionResult compareSimdMathFunction(const char*            refFuncExpr,
+                                                       const char*            simdFuncExpr,
+                                                       const char*            compareSettingsExpr,
+                                                       real                   refFunc(real x),
                                                        SimdReal gmx_simdcall  simdFunc(SimdReal x),
                                                        const CompareSettings& compareSettings);
 
@@ -208,7 +208,8 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
             points--; // Used one point
         }
 
-        union {
+        union
+        {
             real                                                                               r;
             std::conditional<sizeof(real) == sizeof(double), std::int64_t, std::int32_t>::type i;
         } low, high, x;
@@ -282,7 +283,8 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
     real              refValMaxUlpDiff, simdValMaxUlpDiff;
     const int         niter = s_nPoints / GMX_SIMD_REAL_WIDTH;
 
-    union {
+    union
+    {
         real                                                                               r;
         std::conditional<sizeof(real) == sizeof(double), std::int64_t, std::int32_t>::type i;
     } conv0, conv1;

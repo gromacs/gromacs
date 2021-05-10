@@ -65,10 +65,7 @@ NeighborSearchSignaller::NeighborSearchSignaller(std::vector<SignallerCallback> 
                                                  Step                           nstlist,
                                                  Step                           initStep,
                                                  Time                           initTime) :
-    callbacks_(std::move(callbacks)),
-    nstlist_(nstlist),
-    initStep_(initStep),
-    initTime_(initTime)
+    callbacks_(std::move(callbacks)), nstlist_(nstlist), initStep_(initStep), initTime_(initTime)
 {
 }
 

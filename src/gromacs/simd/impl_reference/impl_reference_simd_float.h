@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -363,7 +363,8 @@ static inline SimdFloat gmx_simdcall operator&(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union {
+    union
+    {
         float        r;
         std::int32_t i;
     } conv1, conv2;
@@ -390,7 +391,8 @@ static inline SimdFloat gmx_simdcall andNot(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union {
+    union
+    {
         float        r;
         std::int32_t i;
     } conv1, conv2;
@@ -417,7 +419,8 @@ static inline SimdFloat gmx_simdcall operator|(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union {
+    union
+    {
         float        r;
         std::int32_t i;
     } conv1, conv2;
@@ -444,7 +447,8 @@ static inline SimdFloat gmx_simdcall operator^(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union {
+    union
+    {
         float        r;
         std::int32_t i;
     } conv1, conv2;
@@ -968,7 +972,8 @@ static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        union {
+        union
+        {
             std::uint32_t i;
             float         f;
         } conv;

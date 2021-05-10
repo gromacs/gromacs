@@ -151,7 +151,7 @@
 #if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
     /* No combination rule used */
     const real* gmx_restrict nbfp_ptr = nbatParams.nbfp_aligned.data();
-    const int* gmx_restrict type      = nbatParams.type.data();
+    const int* gmx_restrict  type     = nbatParams.type.data();
 #endif
 
     /* Load j-i for the first i */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,7 +157,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const float*       base,
  */
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
+gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
 {
     // Offset list must be aligned for SIMD FINT32
     assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
@@ -286,7 +286,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
  */
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     // Offset list must be aligned for SIMD FINT32
     assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
@@ -342,7 +342,7 @@ static inline void gmx_simdcall
  */
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     // Offset list must be aligned for SIMD FINT32
     assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
@@ -398,7 +398,7 @@ static inline void gmx_simdcall
  */
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     // Offset list must be aligned for SIMD FINT32
     assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
@@ -520,7 +520,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
  */
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     for (std::size_t i = 0; i < v0->simdInternal_.size(); i++)
     {
@@ -555,7 +555,7 @@ static inline void gmx_simdcall
  */
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
     assert(std::size_t(base) % (std::min(GMX_SIMD_FLOAT_WIDTH, 2) * sizeof(float)) == 0);

@@ -93,8 +93,7 @@ private:
      * Private constructor called by public builder functions for PullDimParams and FepLambdaDimParams.
      */
     DimParams(double conversionFactor, std::variant<PullDimParams, FepDimParams> dimParams) :
-        dimParams(std::move(dimParams)),
-        userCoordUnitsToInternal(conversionFactor)
+        dimParams(std::move(dimParams)), userCoordUnitsToInternal(conversionFactor)
     {
     }
 

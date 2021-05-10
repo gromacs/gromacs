@@ -69,8 +69,7 @@ SimulationState::Impl::Impl(const std::vector<Vec3>& coordinates,
                             const std::vector<Vec3>& forces,
                             const Box&               box,
                             Topology                 topology) :
-    box_(box),
-    topology_(std::move(topology))
+    box_(box), topology_(std::move(topology))
 {
     auto numParticles = topology_.numParticles();
 

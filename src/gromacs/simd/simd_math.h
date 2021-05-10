@@ -1030,7 +1030,8 @@ static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
     const int                         isieve = 0xFFFFF000;
     alignas(GMX_SIMD_ALIGNMENT) float mem[GMX_SIMD_FLOAT_WIDTH];
 
-    union {
+    union
+    {
         float f;
         int   i;
     } conv;

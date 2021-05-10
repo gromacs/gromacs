@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,15 +111,11 @@ public:
     typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
 
     CommandLineOptionsModule(const char* name, const char* description, FactoryMethod factory) :
-        name_(name),
-        description_(description),
-        factory_(std::move(factory))
+        name_(name), description_(description), factory_(std::move(factory))
     {
     }
     CommandLineOptionsModule(const char* name, const char* description, ICommandLineOptionsModulePointer module) :
-        name_(name),
-        description_(description),
-        module_(std::move(module))
+        name_(name), description_(description), module_(std::move(module))
     {
     }
     const char* name() const override { return name_; }

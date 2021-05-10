@@ -82,10 +82,7 @@ ResetHandler::ResetHandler(compat::not_null<SimulationSignal*> signal,
                            const MDLogger&                     mdlog,
                            gmx_wallcycle*                      wcycle,
                            gmx_walltime_accounting_t           walltime_accounting) :
-    signal_(*signal),
-    rankCanSetSignal_(false),
-    simulationNeedsReset_(false),
-    maximumHoursToRun_(maximumHoursToRun)
+    signal_(*signal), rankCanSetSignal_(false), simulationNeedsReset_(false), maximumHoursToRun_(maximumHoursToRun)
 {
     if (simulationsShareState)
     {

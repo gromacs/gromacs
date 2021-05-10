@@ -171,8 +171,7 @@ static bool isDeviceFunctional(const cl::sycl::device& syclDevice, std::string* 
                  cgh.parallel_for<class DummyKernel>(range, [=](cl::sycl::id<1> threadId) {
                      d_buffer[threadId] = threadId.get(0);
                  });
-             })
-                .wait_and_throw();
+             }).wait_and_throw();
         const auto h_Buffer = buffer.get_access<cl::sycl::access::mode::read>();
         for (int i = 0; i < numThreads; i++)
         {

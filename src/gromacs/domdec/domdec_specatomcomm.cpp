@@ -378,14 +378,14 @@ int setup_specat_communication(gmx_domdec_t*             dd,
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
         /* Pulse the grid forward and backward */
-        int       dim  = dd->dim[d];
-        bool      bPBC = (dim < dd->unitCellInfo.npbcdim);
-        const int ndir = (dd->numCells[dim] == 2)
-                                 ?
-                                 /* Only 2 cells, so we only need to communicate once */
+        int       dim       = dd->dim[d];
+        bool      bPBC      = (dim < dd->unitCellInfo.npbcdim);
+        const int ndir      = (dd->numCells[dim] == 2)
+                                      ?
+                                      /* Only 2 cells, so we only need to communicate once */
                                  1
-                                 : 2;
-        int* nsend_ptr = nullptr;
+                                      : 2;
+        int*      nsend_ptr = nullptr;
         for (int dir = 0; dir < ndir; dir++)
         {
             if (!bPBC && dd->numCells[dim] > 2

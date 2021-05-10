@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,14 +159,12 @@ public:
     }
     //! Copy constructor
     constexpr MultiDimArray(const MultiDimArray& o) :
-        data_(o.data_),
-        view_(data_.data(), o.view_.extents())
+        data_(o.data_), view_(data_.data(), o.view_.extents())
     {
     }
     //! Move constructor
     MultiDimArray(MultiDimArray&& o) noexcept :
-        data_(std::move(o.data_)),
-        view_(data_.data(), o.view_.extents())
+        data_(std::move(o.data_)), view_(data_.data(), o.view_.extents())
     {
     }
     //! Copy assignment

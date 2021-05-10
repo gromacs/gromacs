@@ -126,8 +126,8 @@ public:
     /*! \libinternal \brief Information about a single numa node */
     struct Numa
     {
-        std::vector<NumaNode> nodes;                     //!< Information about each numa node
-        float                 baseLatency;               //!< Scale factor for relative latencies
+        std::vector<NumaNode>           nodes;       //!< Information about each numa node
+        float                           baseLatency; //!< Scale factor for relative latencies
         std::vector<std::vector<float>> relativeLatency; //!< 2D matrix of relative latencies between nodes
         float                           maxRelativeLatency; //!< Largest relative latency
     };

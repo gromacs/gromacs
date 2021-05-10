@@ -49,7 +49,8 @@
 
 struct gmx_ffparams_t;
 
-typedef union t_iparams {
+typedef union t_iparams
+{
     /* Some parameters have A and B values for free energy calculations.
      * The B values are not used for regular simulations of course.
      * Free Energy for nonbondeds can be computed by changing the atom type.

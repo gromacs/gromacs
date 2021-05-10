@@ -72,9 +72,7 @@ public:
     ForceBuffersView(const ArrayRefWithPadding<RVec>& force,
                      const ArrayRefWithPadding<RVec>& forceMtsCombined,
                      const bool                       useForceMtsCombined) :
-        force_(force),
-        forceMtsCombined_(forceMtsCombined),
-        useForceMtsCombined_(useForceMtsCombined)
+        force_(force), forceMtsCombined_(forceMtsCombined), useForceMtsCombined_(useForceMtsCombined)
     {
     }
 

@@ -49,10 +49,10 @@ static constexpr int c_xStride2xNN = (GMX_SIMD_REAL_WIDTH >= 2 * c_nbnxnCpuIClus
                                              : c_nbnxnCpuIClusterSize;
 
 //! Copies PBC shifted i-cell packed atom coordinates to working array
-static inline void icell_set_x_simd_2xnn(int  ci,
-                                         real shx,
-                                         real shy,
-                                         real shz,
+static inline void icell_set_x_simd_2xnn(int                   ci,
+                                         real                  shx,
+                                         real                  shy,
+                                         real                  shz,
                                          int gmx_unused        stride,
                                          const real*           x,
                                          NbnxnPairlistCpuWork* work)
@@ -91,20 +91,20 @@ static inline void icell_set_x_simd_2xnn(int  ci,
  * \param[in]     rbb2                The squared cut-off for putting cluster-pairs in the list based on bounding box distance only
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
-static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
-                                           NbnxnPairlistCpu* nbl,
-                                           int               icluster,
-                                           int               firstCell,
-                                           int               lastCell,
-                                           bool              excludeSubDiagonal,
+static inline void makeClusterListSimd2xnn(const Grid&              jGrid,
+                                           NbnxnPairlistCpu*        nbl,
+                                           int                      icluster,
+                                           int                      firstCell,
+                                           int                      lastCell,
+                                           bool                     excludeSubDiagonal,
                                            const real* gmx_restrict x_j,
                                            real                     rlist2,
                                            float                    rbb2,
-                                           int* gmx_restrict numDistanceChecks)
+                                           int* gmx_restrict        numDistanceChecks)
 {
     using namespace gmx;
-    const real* gmx_restrict x_ci_simd    = nbl->work->iClusterData.xSimd.data();
-    const BoundingBox* gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
+    const real* gmx_restrict        x_ci_simd = nbl->work->iClusterData.xSimd.data();
+    const BoundingBox* gmx_restrict bb_ci     = nbl->work->iClusterData.bb.data();
 
     SimdReal jx_S, jy_S, jz_S;
 

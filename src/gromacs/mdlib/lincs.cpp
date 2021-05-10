@@ -502,13 +502,13 @@ static inline void gmx_simdcall gatherLoadUTransposeTSANSafe(const real*        
 static void gmx_simdcall calc_dr_x_f_simd(int                           b0,
                                           int                           b1,
                                           gmx::ArrayRef<const AtomPair> atoms,
-                                          const rvec* gmx_restrict x,
-                                          const rvec* gmx_restrict f,
-                                          const real* gmx_restrict blc,
-                                          const real*              pbc_simd,
-                                          rvec* gmx_restrict r,
-                                          real* gmx_restrict rhs,
-                                          real* gmx_restrict sol)
+                                          const rvec* gmx_restrict      x,
+                                          const rvec* gmx_restrict      f,
+                                          const real* gmx_restrict      blc,
+                                          const real*                   pbc_simd,
+                                          rvec* gmx_restrict            r,
+                                          real* gmx_restrict            rhs,
+                                          real* gmx_restrict            sol)
 {
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
@@ -757,14 +757,14 @@ static void do_lincsp(ArrayRefWithPadding<const RVec> xPadded,
 static void gmx_simdcall calc_dr_x_xp_simd(int                           b0,
                                            int                           b1,
                                            gmx::ArrayRef<const AtomPair> atoms,
-                                           const rvec* gmx_restrict x,
-                                           const rvec* gmx_restrict xp,
-                                           const real* gmx_restrict bllen,
-                                           const real* gmx_restrict blc,
-                                           const real*              pbc_simd,
-                                           rvec* gmx_restrict r,
-                                           real* gmx_restrict rhs,
-                                           real* gmx_restrict sol)
+                                           const rvec* gmx_restrict      x,
+                                           const rvec* gmx_restrict      xp,
+                                           const real* gmx_restrict      bllen,
+                                           const real* gmx_restrict      blc,
+                                           const real*                   pbc_simd,
+                                           rvec* gmx_restrict            r,
+                                           real* gmx_restrict            rhs,
+                                           real* gmx_restrict            sol)
 {
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
     alignas(GMX_SIMD_ALIGNMENT) std::int32_t offset2[GMX_SIMD_REAL_WIDTH];
@@ -829,14 +829,14 @@ static void gmx_simdcall calc_dr_x_xp_simd(int                           b0,
 gmx_unused static void calc_dist_iter(int                           b0,
                                       int                           b1,
                                       gmx::ArrayRef<const AtomPair> atoms,
-                                      const rvec* gmx_restrict xp,
-                                      const real* gmx_restrict bllen,
-                                      const real* gmx_restrict blc,
-                                      const t_pbc*             pbc,
-                                      real                     wfac,
-                                      real* gmx_restrict rhs,
-                                      real* gmx_restrict sol,
-                                      bool*              bWarn)
+                                      const rvec* gmx_restrict      xp,
+                                      const real* gmx_restrict      bllen,
+                                      const real* gmx_restrict      blc,
+                                      const t_pbc*                  pbc,
+                                      real                          wfac,
+                                      real* gmx_restrict            rhs,
+                                      real* gmx_restrict            sol,
+                                      bool*                         bWarn)
 {
     for (int b = b0; b < b1; b++)
     {
@@ -876,14 +876,14 @@ gmx_unused static void calc_dist_iter(int                           b0,
 static void gmx_simdcall calc_dist_iter_simd(int                           b0,
                                              int                           b1,
                                              gmx::ArrayRef<const AtomPair> atoms,
-                                             const rvec* gmx_restrict x,
-                                             const real* gmx_restrict bllen,
-                                             const real* gmx_restrict blc,
-                                             const real*              pbc_simd,
-                                             real                     wfac,
-                                             real* gmx_restrict rhs,
-                                             real* gmx_restrict sol,
-                                             bool*              bWarn)
+                                             const rvec* gmx_restrict      x,
+                                             const real* gmx_restrict      bllen,
+                                             const real* gmx_restrict      blc,
+                                             const real*                   pbc_simd,
+                                             real                          wfac,
+                                             real* gmx_restrict            rhs,
+                                             real* gmx_restrict            sol,
+                                             bool*                         bWarn)
 {
     SimdReal min_S(GMX_REAL_MIN);
     SimdReal two_S(2.0);
@@ -968,9 +968,9 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                      bool                            bCalcVir,
                      tensor                          vir_r_m_dr)
 {
-    const rvec* x        = as_rvec_array(xPadded.paddedArrayRef().data());
-    rvec*       xp       = as_rvec_array(xpPadded.paddedArrayRef().data());
-    rvec* gmx_restrict v = as_rvec_array(vRef.data());
+    const rvec*        x  = as_rvec_array(xPadded.paddedArrayRef().data());
+    rvec*              xp = as_rvec_array(xpPadded.paddedArrayRef().data());
+    rvec* gmx_restrict v  = as_rvec_array(vRef.data());
 
     const int b0 = lincsd->task[th].b0;
     const int b1 = lincsd->task[th].b1;

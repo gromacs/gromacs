@@ -59,9 +59,7 @@ namespace gmx
 PmeCoordinateReceiverGpu::Impl::Impl(const DeviceStream&    pmeStream,
                                      MPI_Comm               comm,
                                      gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeStream_(pmeStream),
-    comm_(comm),
-    ppRanks_(ppRanks)
+    pmeStream_(pmeStream), comm_(comm), ppRanks_(ppRanks)
 {
     request_.resize(ppRanks.size());
     ppSync_.resize(ppRanks.size());

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,8 @@ static inline void gmx_simdcall gmx_load_simd_2xnn_interactions(int            e
     *interact_S0 = cvtIB2B(testBits(mask_pr_S & filter_S0));
     *interact_S2 = cvtIB2B(testBits(mask_pr_S & filter_S2));
 #elif GMX_SIMD_HAVE_LOGICAL
-    union {
+    union
+    {
 #    if GMX_DOUBLE
         std::int64_t i;
 #    else

@@ -335,7 +335,7 @@ void StatePropagatorData::copyPosition(int start, int end)
     }
 }
 
-void StatePropagatorData::Element::scheduleTask(Step step,
+void StatePropagatorData::Element::scheduleTask(Step                       step,
                                                 Time gmx_unused            time,
                                                 const RegisterRunFunction& registerRunFunction)
 {

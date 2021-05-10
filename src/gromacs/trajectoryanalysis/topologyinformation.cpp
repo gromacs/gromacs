@@ -61,11 +61,7 @@ namespace gmx
 {
 
 TopologyInformation::TopologyInformation() :
-    hasLoadedMtop_(false),
-    expandedTopology_(nullptr),
-    atoms_(nullptr),
-    bTop_(false),
-    pbcType_(PbcType::Unset)
+    hasLoadedMtop_(false), expandedTopology_(nullptr), atoms_(nullptr), bTop_(false), pbcType_(PbcType::Unset)
 {
 }
 

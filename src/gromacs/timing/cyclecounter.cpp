@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,10 +82,10 @@ double gmx_cycles_calibrate(double sampletime)
          && defined(__x86_64__) && !defined(__ILP32__) && !defined(_CRAYC))
     long gmx_unused tmp;
     int             cpuid1;
-    int gmx_unused cpuid2;
-    const int      l0  = 0x0;
-    const int      l16 = 0x16;
-    gmx_cycles_t   cycles;
+    int gmx_unused  cpuid2;
+    const int       l0  = 0x0;
+    const int       l16 = 0x16;
+    gmx_cycles_t    cycles;
 
     /* cpuid clobbers ebx but it must be restored for -fPIC so save
      * then restore ebx */

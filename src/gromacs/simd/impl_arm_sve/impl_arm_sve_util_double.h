@@ -104,7 +104,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const double*      base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
+gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
     assert(std::size_t(base) % 8 == 0);
@@ -121,7 +121,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v0, SimdDouble* v1)
+gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v0, SimdDouble* v1)
 {
     assert(std::size_t(offset) % 64 == 0);
     assert(std::size_t(base) % 8 == 0);
@@ -183,7 +183,7 @@ static inline void gmx_simdcall transposeScatterStoreU(double*            base,
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
+transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     assert(std::size_t(offset) % 32 == 0);
 
@@ -214,7 +214,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
+transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -284,7 +284,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double* base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
+gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
 {
     svbool_t  pg      = svptrue_b64();
     svint64_t offsets = svmul_n_s64_x(pg, offset.simdInternal_, align * sizeof(double));
@@ -294,7 +294,7 @@ static inline void gmx_simdcall
 }
 
 static inline double gmx_simdcall
-                     reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
+reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
     assert(std::size_t(m) % 16 == 0);
     svbool_t    pg = svptrue_b64();

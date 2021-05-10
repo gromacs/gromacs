@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -200,7 +200,8 @@ static inline Simd4Double gmx_simdcall operator&(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -228,7 +229,8 @@ static inline Simd4Double gmx_simdcall andNot(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -256,7 +258,8 @@ static inline Simd4Double gmx_simdcall operator|(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;
@@ -283,7 +286,8 @@ static inline Simd4Double gmx_simdcall operator^(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union {
+    union
+    {
         double       r;
         std::int64_t i;
     } conv1, conv2;

@@ -72,9 +72,7 @@ struct AwhTestParameters
     explicit AwhTestParameters(ISerializer* serializer);
     //! Move constructor
     AwhTestParameters(AwhTestParameters&& o) noexcept :
-        beta(o.beta),
-        awhParams(std::move(o.awhParams)),
-        dimParams(std::move(o.dimParams))
+        beta(o.beta), awhParams(std::move(o.awhParams)), dimParams(std::move(o.dimParams))
     {
     }
     //! 1/(kB*T).

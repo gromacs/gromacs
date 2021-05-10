@@ -245,7 +245,7 @@ gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
                                          const __global int* gm_cj,
                                          int                 tidxi,
                                          int                 tidxj,
-                                         bool gmx_unused iMaskCond)
+                                         bool gmx_unused     iMaskCond)
 {
     /* Pre-load cj into shared memory */
 #    if defined _AMD_SOURCE_ // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
@@ -291,9 +291,9 @@ typedef __local int* CjType;
  */
 gmx_opencl_inline void preloadCj4(CjType gmx_unused* cjs,
                                   const __global int gmx_unused* gm_cj,
-                                  int gmx_unused tidxi,
-                                  int gmx_unused tidxj,
-                                  bool gmx_unused iMaskCond)
+                                  int gmx_unused                 tidxi,
+                                  int gmx_unused                 tidxj,
+                                  bool gmx_unused                iMaskCond)
 {
 #    if USE_SUBGROUP_PRELOAD
     *cjs = preloadCj4Subgroup(gm_cj);
@@ -739,14 +739,14 @@ gmx_opencl_inline void reduce_force_i_and_shift_shfl(__private fvec  fci_buf[],
  *  array sizes.
  */
 gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_buf,
-                                                     __private fvec  fci_buf[],
-                                                     __global float* fout,
-                                                     bool            bCalcFshift,
-                                                     int             tidxi,
-                                                     int             tidxj,
-                                                     int             sci,
-                                                     int             shift,
-                                                     __global float* fshift)
+                                                     __private fvec          fci_buf[],
+                                                     __global float*         fout,
+                                                     bool                    bCalcFshift,
+                                                     int                     tidxi,
+                                                     int                     tidxj,
+                                                     int                     sci,
+                                                     int                     shift,
+                                                     __global float*         fshift)
 {
     float fshift_buf = 0;
     for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
@@ -818,14 +818,14 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
 /*! Final i-force reduction
  */
 gmx_opencl_inline void reduce_force_i_and_shift(__local float gmx_unused* f_buf,
-                                                __private fvec  fci_buf[],
-                                                __global float* f,
-                                                bool            bCalcFshift,
-                                                int             tidxi,
-                                                int             tidxj,
-                                                int             sci,
-                                                int             shift,
-                                                __global float* fshift)
+                                                __private fvec            fci_buf[],
+                                                __global float*           f,
+                                                bool                      bCalcFshift,
+                                                int                       tidxi,
+                                                int                       tidxj,
+                                                int                       sci,
+                                                int                       shift,
+                                                __global float*           fshift)
 {
 #    if REDUCE_SHUFFLE
     reduce_force_i_and_shift_shfl(fci_buf, f, bCalcFshift, tidxi, tidxj, sci, shift, fshift);

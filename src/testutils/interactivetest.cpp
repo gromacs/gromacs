@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,10 +84,7 @@ class InteractiveTestHelper::Impl
 {
 public:
     explicit Impl(TestReferenceChecker checker) :
-        checker_(std::move(checker)),
-        bLastNewline_(true),
-        currentLine_(0),
-        bHasOutput_(false)
+        checker_(std::move(checker)), bLastNewline_(true), currentLine_(0), bHasOutput_(false)
     {
         using ::testing::_;
         using ::testing::Invoke;

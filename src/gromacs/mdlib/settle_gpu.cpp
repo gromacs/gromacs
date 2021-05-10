@@ -123,8 +123,7 @@ void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
 }
 
 SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream)
+    deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");

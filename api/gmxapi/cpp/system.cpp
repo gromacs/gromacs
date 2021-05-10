@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,8 +117,7 @@ System fromTprFile(const std::string& filename)
 }
 
 System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept :
-    workflow_(std::move(workflow)),
-    spec_(std::make_shared<MDWorkSpec>())
+    workflow_(std::move(workflow)), spec_(std::make_shared<MDWorkSpec>())
 {
     GMX_ASSERT(workflow_, "Class invariant implies non-null workflow_ member");
     GMX_ASSERT(spec_, "Class invariant implies non-null work specification member.");

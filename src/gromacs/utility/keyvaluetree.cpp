@@ -169,9 +169,7 @@ class CompareHelper
 {
 public:
     CompareHelper(TextWriter* writer, real ftol, real abstol) :
-        writer_(writer),
-        ftol_(ftol),
-        abstol_(abstol)
+        writer_(writer), ftol_(ftol), abstol_(abstol)
     {
     }
     void compareObjects(const KeyValueTreeObject& obj1, const KeyValueTreeObject& obj2)

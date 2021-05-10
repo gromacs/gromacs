@@ -737,16 +737,12 @@ HardwareTopology::Machine::Machine()
 
 
 HardwareTopology::HardwareTopology() :
-    supportLevel_(SupportLevel::None),
-    machine_(),
-    isThisSystem_(true)
+    supportLevel_(SupportLevel::None), machine_(), isThisSystem_(true)
 {
 }
 
 HardwareTopology::HardwareTopology(int logicalProcessorCount) :
-    supportLevel_(SupportLevel::None),
-    machine_(),
-    isThisSystem_(true)
+    supportLevel_(SupportLevel::None), machine_(), isThisSystem_(true)
 {
     if (logicalProcessorCount > 0)
     {

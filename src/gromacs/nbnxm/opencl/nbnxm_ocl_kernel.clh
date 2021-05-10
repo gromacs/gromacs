@@ -115,12 +115,12 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifndef LJ_COMB
                 int ntypes, /* IN  */
 #endif
-                cl_nbparam_params_t nbparam_params,       /* IN  */
-                const __global float4* restrict xq,       /* IN  */
-                __global float* restrict f,               /* OUT stores float3 values */
-                __global float* restrict gmx_unused e_lj, /* OUT */
-                __global float* restrict gmx_unused e_el, /* OUT */
-                __global float* restrict fshift,          /* OUT stores float3 values */
+                cl_nbparam_params_t nbparam_params,         /* IN  */
+                const __global float4* restrict     xq,     /* IN  */
+                __global float* restrict            f,      /* OUT stores float3 values */
+                __global float* restrict gmx_unused e_lj,   /* OUT */
+                __global float* restrict gmx_unused e_el,   /* OUT */
+                __global float* restrict            fshift, /* OUT stores float3 values */
 #ifdef LJ_COMB
                 const __global float2* restrict lj_comb, /* IN stores float2 values */
 #else
@@ -128,9 +128,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
                 const __global float* restrict shift_vec,          /* IN stores float3 values */
                 __constant const float2* restrict gmx_unused nbfp, /* IN  */
-                __constant const float2* restrict gmx_unused nbfp_comb,  /* IN  */
-                __constant const float* restrict gmx_unused coulomb_tab, /* IN  */
-                const __global nbnxn_sci_t* pl_sci,                      /* IN  */
+                __constant const float2* restrict gmx_unused nbfp_comb,   /* IN  */
+                __constant const float* restrict gmx_unused  coulomb_tab, /* IN  */
+                const __global nbnxn_sci_t* pl_sci,                       /* IN  */
 #ifndef PRUNE_NBL
                 const
 #endif
@@ -558,7 +558,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 F_invr += qi * qj_f
                                           * (int_bit * inv_r2
                                              - interpolate_coulomb_force_r(
-                                                       coulomb_tab, r2 * inv_r, coulomb_tab_scale))
+                                                     coulomb_tab, r2 * inv_r, coulomb_tab_scale))
                                           * inv_r;
 #endif /* EL_EWALD_ANA/TAB */
 

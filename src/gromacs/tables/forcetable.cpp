@@ -432,9 +432,7 @@ static void copy2table(int                         n,
 }
 
 t_tabledata::t_tabledata(int n, int nx0, double tabscale, bool bAlloc) :
-    nx(n),
-    nx0(nx0),
-    tabscale(tabscale)
+    nx(n), nx0(nx0), tabscale(tabscale)
 {
     if (bAlloc)
     {
@@ -1449,14 +1447,7 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
 }
 
 t_forcetable::t_forcetable(enum gmx_table_interaction interaction, enum gmx_table_format format) :
-    interaction(interaction),
-    format(format),
-    r(0),
-    n(0),
-    scale(0),
-    formatsize(0),
-    ninteractions(0),
-    stride(0)
+    interaction(interaction), format(format), r(0), n(0), scale(0), formatsize(0), ninteractions(0), stride(0)
 {
 }
 

@@ -312,9 +312,7 @@ public:
 CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout_(false) {}
 
 CommandLineProgramContext::Impl::Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env) :
-    executableEnv_(std::move(env)),
-    invokedName_(argc != 0 ? argv[0] : ""),
-    bSourceLayout_(false)
+    executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
     programName_ = Path::getFilename(invokedName_);
     programName_ = stripSuffixIfPresent(programName_, ".exe");

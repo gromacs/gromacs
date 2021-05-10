@@ -96,12 +96,7 @@ public:
                        double               time,
                        const matrix         box,
                        const t_commrec&     cr) :
-        x_(x),
-        homenr_(homenr),
-        chargeA_(chargeA),
-        massT_(massT),
-        t_(time),
-        cr_(cr)
+        x_(x), homenr_(homenr), chargeA_(chargeA), massT_(massT), t_(time), cr_(cr)
     {
         copy_mat(box, box_);
     }
@@ -138,8 +133,7 @@ public:
      * \param[in,out]  enerd            Structure containing energy data
      */
     ForceProviderOutput(ForceWithVirial* forceWithVirial, gmx_enerdata_t* enerd) :
-        forceWithVirial_(makeRefFromPointer(forceWithVirial)),
-        enerd_(makeRefFromPointer(enerd))
+        forceWithVirial_(makeRefFromPointer(forceWithVirial)), enerd_(makeRefFromPointer(enerd))
     {
     }
 

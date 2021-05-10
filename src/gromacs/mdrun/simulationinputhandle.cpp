@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,8 +58,7 @@ class SimulationInput
 {
 public:
     SimulationInput(const char* tprFilename, const char* cpiFilename) :
-        tprFilename_(tprFilename),
-        cpiFilename_(cpiFilename)
+        tprFilename_(tprFilename), cpiFilename_(cpiFilename)
     {
     }
 
@@ -112,11 +111,11 @@ detail::SimulationInputHandleImplDeleter::SimulationInputHandleImplDeleter(
 detail::SimulationInputHandleImplDeleter::SimulationInputHandleImplDeleter(
         SimulationInputHandleImplDeleter&&) noexcept = default;
 
-detail::SimulationInputHandleImplDeleter& detail::SimulationInputHandleImplDeleter::
-                                          operator=(const SimulationInputHandleImplDeleter&) noexcept = default;
+detail::SimulationInputHandleImplDeleter& detail::SimulationInputHandleImplDeleter::operator=(
+        const SimulationInputHandleImplDeleter&) noexcept = default;
 
-detail::SimulationInputHandleImplDeleter& detail::SimulationInputHandleImplDeleter::
-                                          operator=(SimulationInputHandleImplDeleter&&) noexcept = default;
+detail::SimulationInputHandleImplDeleter& detail::SimulationInputHandleImplDeleter::operator=(
+        SimulationInputHandleImplDeleter&&) noexcept = default;
 
 void detail::SimulationInputHandleImplDeleter::operator()(SimulationInputHandleImpl* impl) const
 {

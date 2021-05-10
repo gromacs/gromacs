@@ -504,7 +504,8 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 /* Compare 6*C6 and 12*C12 for geometric cobination rule */
                 bCombGeom =
                         bCombGeom
-                        && gmx_within_tol(c6 * c6, nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
+                        && gmx_within_tol(
+                                c6 * c6, nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
                         && gmx_within_tol(c12 * c12,
                                           nbfp[(i * ntype + i) * 2 + 1] * nbfp[(j * ntype + j) * 2 + 1],
                                           tol);
@@ -512,18 +513,18 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 /* Compare C6 and C12 for Lorentz-Berthelot combination rule */
                 c6 /= 6.0;
                 c12 /= 12.0;
-                bCombLB =
-                        bCombLB
-                        && ((c6 == 0 && c12 == 0
-                             && (params->nbfp_comb[i * 2 + 1] == 0 || params->nbfp_comb[j * 2 + 1] == 0))
-                            || (c6 > 0 && c12 > 0
-                                && gmx_within_tol(gmx::sixthroot(c12 / c6),
-                                                  0.5 * (params->nbfp_comb[i * 2] + params->nbfp_comb[j * 2]),
-                                                  tol)
-                                && gmx_within_tol(0.25 * c6 * c6 / c12,
-                                                  std::sqrt(params->nbfp_comb[i * 2 + 1]
-                                                            * params->nbfp_comb[j * 2 + 1]),
-                                                  tol)));
+                bCombLB = bCombLB
+                          && ((c6 == 0 && c12 == 0
+                               && (params->nbfp_comb[i * 2 + 1] == 0 || params->nbfp_comb[j * 2 + 1] == 0))
+                              || (c6 > 0 && c12 > 0
+                                  && gmx_within_tol(
+                                          gmx::sixthroot(c12 / c6),
+                                          0.5 * (params->nbfp_comb[i * 2] + params->nbfp_comb[j * 2]),
+                                          tol)
+                                  && gmx_within_tol(0.25 * c6 * c6 / c12,
+                                                    std::sqrt(params->nbfp_comb[i * 2 + 1]
+                                                              * params->nbfp_comb[j * 2 + 1]),
+                                                    tol)));
             }
             else
             {
@@ -1052,8 +1053,8 @@ static void nbnxn_atomdata_clear_reals(gmx::ArrayRef<real> dest, int i0, int i1)
     }
 }
 
-gmx_unused static void nbnxn_atomdata_reduce_reals(real* gmx_restrict dest,
-                                                   gmx_bool           bDestSet,
+gmx_unused static void nbnxn_atomdata_reduce_reals(real* gmx_restrict        dest,
+                                                   gmx_bool                  bDestSet,
                                                    const real** gmx_restrict src,
                                                    int                       nsrc,
                                                    int                       i0,
@@ -1085,11 +1086,11 @@ gmx_unused static void nbnxn_atomdata_reduce_reals(real* gmx_restrict dest,
 }
 
 gmx_unused static void nbnxn_atomdata_reduce_reals_simd(real gmx_unused* gmx_restrict dest,
-                                                        gmx_bool gmx_unused bDestSet,
+                                                        gmx_bool gmx_unused           bDestSet,
                                                         const gmx_unused real** gmx_restrict src,
-                                                        int gmx_unused nsrc,
-                                                        int gmx_unused i0,
-                                                        int gmx_unused i1)
+                                                        int gmx_unused                       nsrc,
+                                                        int gmx_unused                       i0,
+                                                        int gmx_unused                       i1)
 {
 #if GMX_SIMD
     /* The SIMD width here is actually independent of that in the kernels,

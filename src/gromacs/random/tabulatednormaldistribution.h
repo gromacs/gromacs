@@ -129,8 +129,7 @@ public:
          *
          */
         explicit param_type(result_type mean = 0.0, result_type stddev = 1.0) :
-            mean_(mean),
-            stddev_(stddev)
+            mean_(mean), stddev_(stddev)
         {
         }
 
@@ -219,9 +218,7 @@ public:
      *  \param stddev  Standard deviation of tabulated normal distribution
      */
     explicit TabulatedNormalDistribution(result_type mean = 0.0, result_type stddev = 1.0) :
-        param_(param_type(mean, stddev)),
-        savedRandomBits_(0),
-        savedRandomBitsLeft_(0)
+        param_(param_type(mean, stddev)), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
 
@@ -230,9 +227,7 @@ public:
      *  \param param Parameter class containing mean and standard deviation.
      */
     explicit TabulatedNormalDistribution(const param_type& param) :
-        param_(param),
-        savedRandomBits_(0),
-        savedRandomBitsLeft_(0)
+        param_(param), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
 

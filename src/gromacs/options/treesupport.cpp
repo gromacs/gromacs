@@ -67,8 +67,7 @@ class TreeAssignHelper
 {
 public:
     TreeAssignHelper(Options* options, IKeyValueTreeErrorHandler* errorHandler) :
-        assigner_(options),
-        errorHandler_(errorHandler)
+        assigner_(options), errorHandler_(errorHandler)
     {
         if (errorHandler_ == nullptr)
         {
@@ -151,8 +150,7 @@ class TreeCheckHelper : private OptionsVisitor
 {
 public:
     TreeCheckHelper(const KeyValueTreeObject& root) :
-        currentObject_(&root),
-        currentKnownNames_(nullptr)
+        currentObject_(&root), currentKnownNames_(nullptr)
     {
     }
 
@@ -214,8 +212,7 @@ class TreeAdjustHelper : private OptionsVisitor
 {
 public:
     TreeAdjustHelper(const KeyValueTreeObject& root, KeyValueTreeBuilder* builder) :
-        currentSourceObject_(&root),
-        currentObjectBuilder_(builder->rootObject())
+        currentSourceObject_(&root), currentObjectBuilder_(builder->rootObject())
     {
     }
 

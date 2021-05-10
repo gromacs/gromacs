@@ -124,8 +124,7 @@ class CommandLineModuleManagerTestBase::Impl
 {
 public:
     Impl(const CommandLine& args, const char* realBinaryName) :
-        programContext_(args.argc(), args.argv()),
-        manager_(realBinaryName, &programContext_)
+        programContext_(args.argc(), args.argv()), manager_(realBinaryName, &programContext_)
     {
         manager_.setQuiet(true);
         manager_.setOutputRedirector(&redirector_);

@@ -211,10 +211,10 @@ private:
     const int64_t numStepsUpdateTarget_; /**< Number of steps per updating the target distribution. */
     const int64_t numStepsCheckCovering_; /**< Number of steps per checking for covering. */
 public:
-    const AwhTargetType eTarget;              /**< Type of target distribution. */
-    const double        freeEnergyCutoffInKT; /**< Free energy cut-off in kT for cut-off target distribution. */
-    const double        temperatureScaleFactor; /**< Temperature scaling factor for temperature scaled targed distributions. */
-    const bool          idealWeighthistUpdate; /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
+    const AwhTargetType eTarget;       /**< Type of target distribution. */
+    const double freeEnergyCutoffInKT; /**< Free energy cut-off in kT for cut-off target distribution. */
+    const double temperatureScaleFactor; /**< Temperature scaling factor for temperature scaled targed distributions. */
+    const bool   idealWeighthistUpdate; /**< Update reference weighthistogram using the target distribution? Otherwise use the realized distribution. */
     const int    numSharedUpdate; /**< The number of (multi-)simulations sharing the bias update */
     const double updateWeight;    /**< The probability weight accumulated for each update. */
     const double localWeightScaling; /**< Scaling factor applied to a sample before adding it to the reference weight histogram (= 1, usually). */
@@ -224,7 +224,7 @@ private:
     awh_ivec coverRadius_; /**< The radius (in points) that needs to be sampled around a point before it is considered covered. */
 public:
     const bool convolveForce; /**< True if we convolve the force, false means use MC between umbrellas. */
-    const int  biasIndex; /**< Index of the bias, used as a second random seed and for priting. */
+    const int biasIndex; /**< Index of the bias, used as a second random seed and for priting. */
 private:
     const bool disableUpdateSkips_; /**< If true, we disallow update skips, even when the method supports it. */
 };

@@ -79,8 +79,7 @@ EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
 
 EnergyComparison::EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare,
                                    MaxNumFrames                maxNumFrames) :
-    energyTermsToCompare_(energyTermsToCompare),
-    maxNumFrames_(maxNumFrames)
+    energyTermsToCompare_(energyTermsToCompare), maxNumFrames_(maxNumFrames)
 {
 }
 

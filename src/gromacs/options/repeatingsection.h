@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,8 +81,7 @@ public:
 
     //! Creates a section with the given name.
     explicit RepeatingOptionSection(const char* name) :
-        AbstractOptionSection(name),
-        values_(nullptr)
+        AbstractOptionSection(name), values_(nullptr)
     {
     }
 
@@ -114,8 +113,7 @@ class RepeatingOptionSectionStorage : public IOptionSectionStorage
 public:
     //! Initializes the storage for given section properties.
     explicit RepeatingOptionSectionStorage(const RepeatingOptionSection<T>& section) :
-        store_(new OptionValueStoreVector<T>(section.values_)),
-        currentData_()
+        store_(new OptionValueStoreVector<T>(section.values_)), currentData_()
     {
     }
 

@@ -105,11 +105,7 @@ protected:
     /*! \cond libapi */
     //! Initializes the name and default values for an option.
     explicit AbstractOption(const char* name) :
-        minValueCount_(1),
-        maxValueCount_(1),
-        name_(name),
-        descr_(nullptr),
-        storeIsSet_(nullptr)
+        minValueCount_(1), maxValueCount_(1), name_(name), descr_(nullptr), storeIsSet_(nullptr)
     {
     }
 

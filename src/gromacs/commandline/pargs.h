@@ -91,7 +91,8 @@ typedef struct
      * changed.  In other words, the initial value for the variable defines the
      * default value.
      */
-    union {
+    union
+    {
         /*! \brief
          * Generic pointer for operations that do not need type information.
          *

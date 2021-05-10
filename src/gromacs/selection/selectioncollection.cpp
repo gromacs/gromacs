@@ -85,9 +85,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl() :
-    debugLevel_(DebugLevel::None),
-    bExternalGroupsSet_(false),
-    grps_(nullptr)
+    debugLevel_(DebugLevel::None), bExternalGroupsSet_(false), grps_(nullptr)
 {
     sc_.nvars   = 0;
     sc_.varstrs = nullptr;

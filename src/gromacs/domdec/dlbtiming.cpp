@@ -50,11 +50,7 @@ struct BalanceRegion
 {
     /*! \brief Constructor */
     BalanceRegion() :
-        isOpen(false),
-        isOpenOnCpu(false),
-        isOpenOnGpu(false),
-        cyclesOpenCpu(0),
-        cyclesLastCpu(0)
+        isOpen(false), isOpenOnCpu(false), isOpenOnGpu(false), cyclesOpenCpu(0), cyclesLastCpu(0)
     {
     }
 

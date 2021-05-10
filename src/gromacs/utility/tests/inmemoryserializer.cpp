@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,12 +53,14 @@ namespace test
 {
 namespace
 {
-union IntAndFloat32 {
+union IntAndFloat32
+{
     std::int32_t int32Value_;
     float        floatValue_;
 };
 
-union IntAndFloat64 {
+union IntAndFloat64
+{
     std::int64_t int64Value_;
     double       doubleValue_;
 };
@@ -88,8 +90,9 @@ constexpr int integerSizeDependentTestingValue()
 //! Return the endianess-swapped integer used for testing, depending on the size of int.
 constexpr int integerSizeDependentTestingValueEndianessSwapped()
 {
-    return sizeof(int) == 4 ? c_int32ValueSwapped
-                            : sizeof(int) == 8 ? c_int64ValueSwapped : c_int16ValueSwapped;
+    return sizeof(int) == 4   ? c_int32ValueSwapped
+           : sizeof(int) == 8 ? c_int64ValueSwapped
+                              : c_int16ValueSwapped;
 }
 
 class InMemorySerializerTest : public ::testing::Test

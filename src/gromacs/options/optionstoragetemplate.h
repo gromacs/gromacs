@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -310,15 +310,13 @@ protected:
     template<class U>
     explicit OptionStorageTemplateSimple(const OptionTemplate<T, U>& settings,
                                          OptionFlags                 staticFlags = OptionFlags()) :
-        OptionStorageTemplate<T>(settings, staticFlags),
-        initialized_(false)
+        OptionStorageTemplate<T>(settings, staticFlags), initialized_(false)
     {
     }
     //! Initializes the storage.
     OptionStorageTemplateSimple(const AbstractOption&                           settings,
                                 typename OptionStorageTemplate<T>::StorePointer store) :
-        OptionStorageTemplate<T>(settings, std::move(store)),
-        initialized_(false)
+        OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
     {
     }
 
@@ -416,8 +414,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U>& sett
 
 template<typename T>
 OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption& settings, StorePointer store) :
-    AbstractOptionStorage(settings, OptionFlags()),
-    store_(std::move(store))
+    AbstractOptionStorage(settings, OptionFlags()), store_(std::move(store))
 {
 }
 

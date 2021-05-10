@@ -313,9 +313,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
 LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
                          const DeviceStream&  deviceStream,
                          const int            numTempScaleValues) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream),
-    numTempScaleValues_(numTempScaleValues)
+    deviceContext_(deviceContext), deviceStream_(deviceStream), numTempScaleValues_(numTempScaleValues)
 {
     numAtoms_ = 0;
 

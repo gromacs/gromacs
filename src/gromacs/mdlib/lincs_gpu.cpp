@@ -128,8 +128,7 @@ LincsGpu::LincsGpu(int                  numIterations,
                    int                  expansionOrder,
                    const DeviceContext& deviceContext,
                    const DeviceStream&  deviceStream) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream)
+    deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
     GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "LINCS GPU is only implemented in CUDA.");
     kernelParams_.numIterations  = numIterations;

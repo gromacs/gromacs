@@ -1195,12 +1195,12 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
     {
         t_oriresdata& orires = *fcd->orires;
         diagonalize_orires_tensors(&orires);
-        nr[enxOR]    = orires.numRestraints;
-        block[enxOR] = orires.orientationsTimeAndEnsembleAv.data();
-        id[enxOR]    = enxOR;
-        nr[enxORI]   = (orires.orientations.data() != orires.orientationsTimeAndEnsembleAv.data())
-                             ? orires.numRestraints
-                             : 0;
+        nr[enxOR]     = orires.numRestraints;
+        block[enxOR]  = orires.orientationsTimeAndEnsembleAv.data();
+        id[enxOR]     = enxOR;
+        nr[enxORI]    = (orires.orientations.data() != orires.orientationsTimeAndEnsembleAv.data())
+                                ? orires.numRestraints
+                                : 0;
         block[enxORI] = orires.orientations.data();
         id[enxORI]    = enxORI;
         nr[enxORT]    = ssize(orires.eigenOutput);

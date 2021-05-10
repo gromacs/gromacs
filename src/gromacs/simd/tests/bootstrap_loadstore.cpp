@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,9 +84,9 @@ namespace
  */
 template<typename T, typename TSimd, int simdWidth>
 void loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem),
-                     void gmx_simdcall storeFn(T* mem, TSimd),
-                     const int         loadOffset,
-                     const int         storeOffset)
+                     void gmx_simdcall  storeFn(T* mem, TSimd),
+                     const int          loadOffset,
+                     const int          storeOffset)
 {
     /* We need simdWidth storage in the first place, another simdWidth elements
      * so we can create (deliberately) offset un-aligned pointers, and finally

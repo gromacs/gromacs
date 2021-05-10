@@ -333,13 +333,13 @@ static void pick_minima(const char* logfile, int* ibox, int ndim, int len, real 
                         this_min.ener  = W[this_min.index];
                         if (is_local_minimum_from_below(&this_min, i, 0, index3(ibox, i - 1, j, k), W)
                             && is_local_minimum_from_above(
-                                       &this_min, i, ibox[0] - 1, index3(ibox, i + 1, j, k), W)
+                                    &this_min, i, ibox[0] - 1, index3(ibox, i + 1, j, k), W)
                             && is_local_minimum_from_below(&this_min, j, 0, index3(ibox, i, j - 1, k), W)
                             && is_local_minimum_from_above(
-                                       &this_min, j, ibox[1] - 1, index3(ibox, i, j + 1, k), W)
+                                    &this_min, j, ibox[1] - 1, index3(ibox, i, j + 1, k), W)
                             && is_local_minimum_from_below(&this_min, k, 0, index3(ibox, i, j, k - 1), W)
                             && is_local_minimum_from_above(
-                                       &this_min, k, ibox[2] - 1, index3(ibox, i, j, k + 1), W))
+                                    &this_min, k, ibox[2] - 1, index3(ibox, i, j, k + 1), W))
                         {
                             add_minimum(fp, nmin, &this_min, mm);
                             nmin++;
@@ -384,11 +384,11 @@ static void pick_minima(const char* logfile, int* ibox, int ndim, int len, real 
                     this_point[i]--;
                     bMin = bMin
                            && is_local_minimum_from_below(
-                                      &this_min, index, 0, indexn(ndim, ibox, this_point), W);
+                                   &this_min, index, 0, indexn(ndim, ibox, this_point), W);
                     this_point[i] += 2;
                     bMin = bMin
                            && is_local_minimum_from_above(
-                                      &this_min, index, ibox[i] - 1, indexn(ndim, ibox, this_point), W);
+                                   &this_min, index, ibox[i] - 1, indexn(ndim, ibox, this_point), W);
                     this_point[i]--;
                 }
                 if (bMin)

@@ -337,9 +337,13 @@ static int check_atoms_present(const t_atoms*                            pdba,
                     nadd--;
                     break;
                 }
-                case MoleculePatchType::Replace: { break;
+                case MoleculePatchType::Replace:
+                {
+                    break;
                 }
-                default: { GMX_THROW(gmx::InternalError("Case not handled"));
+                default:
+                {
+                    GMX_THROW(gmx::InternalError("Case not handled"));
                 }
             }
         }

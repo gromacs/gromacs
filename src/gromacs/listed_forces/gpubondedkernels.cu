@@ -79,7 +79,7 @@
 
 /* Harmonic */
 __device__ __forceinline__ static void
-           harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
+harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
 {
     constexpr float half = 0.5f;
     float           dx, dx2;
@@ -369,7 +369,7 @@ __device__ __forceinline__ static float dih_angle_gpu(const T        xi,
 
 
 __device__ __forceinline__ static void
-           dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, float* v, float* f)
+dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, float* v, float* f)
 {
     float mdphi, sdphi;
 
@@ -380,22 +380,22 @@ __device__ __forceinline__ static void
 }
 
 template<bool calcVir>
-__device__ static void do_dih_fup_gpu(const int      i,
-                                      const int      j,
-                                      const int      k,
-                                      const int      l,
-                                      const float    ddphi,
-                                      const float3   r_ij,
-                                      const float3   r_kj,
-                                      const float3   r_kl,
-                                      const float3   m,
-                                      const float3   n,
-                                      float3         gm_f[],
-                                      float3         sm_fShiftLoc[],
-                                      const PbcAiuc& pbcAiuc,
-                                      const float4   gm_xq[],
-                                      const int      t1,
-                                      const int      t2,
+__device__ static void do_dih_fup_gpu(const int            i,
+                                      const int            j,
+                                      const int            k,
+                                      const int            l,
+                                      const float          ddphi,
+                                      const float3         r_ij,
+                                      const float3         r_kj,
+                                      const float3         r_kl,
+                                      const float3         m,
+                                      const float3         n,
+                                      float3               gm_f[],
+                                      float3               sm_fShiftLoc[],
+                                      const PbcAiuc&       pbcAiuc,
+                                      const float4         gm_xq[],
+                                      const int            t1,
+                                      const int            t2,
                                       const int gmx_unused t3)
 {
     float iprm  = norm2(m);

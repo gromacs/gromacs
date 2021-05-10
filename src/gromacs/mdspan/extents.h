@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -247,16 +247,14 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...>
      */
     template<std::size_t Rank>
     extents_analyse(const std::array<std::ptrdiff_t, Rank>& de, const std::size_t r) :
-        next(de, r + 1),
-        this_extent(de[r])
+        next(de, r + 1), this_extent(de[r])
     {
     }
 
     //! Copy constructor.
     template<std::ptrdiff_t... OtherStaticExtents>
     extents_analyse(extents_analyse<R, OtherStaticExtents...> rhs) :
-        next(rhs.next),
-        this_extent(rhs.extent(R))
+        next(rhs.next), this_extent(rhs.extent(R))
     {
     }
 
@@ -379,7 +377,8 @@ public:
      *
      * \param[in] dynamic_extents array of dynamic rank size containing extents
      */
-    constexpr extents(const std::array<std::ptrdiff_t, extents_analyse_t::rank_dynamic()> dynamic_extents) noexcept :
+    constexpr extents(const std::array<std::ptrdiff_t, extents_analyse_t::rank_dynamic()> dynamic_extents) noexcept
+        :
         impl(dynamic_extents, 0)
     {
     }

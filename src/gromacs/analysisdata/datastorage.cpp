@@ -537,9 +537,7 @@ void AnalysisDataStorageImpl::finishFrameSerial(int index)
  */
 
 AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(AnalysisDataStorageImpl* storageImpl, int index) :
-    storageImpl_(*storageImpl),
-    header_(index, 0.0, 0.0),
-    status_(eMissing)
+    storageImpl_(*storageImpl), header_(index, 0.0, 0.0), status_(eMissing)
 {
     GMX_RELEASE_ASSERT(storageImpl->data_ != nullptr,
                        "Storage frame constructed before data started");

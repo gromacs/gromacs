@@ -1960,7 +1960,7 @@ static void translate_and_rotate(rvec*  x,        /* The positions to be transla
 
 /* Gets the rms deviation of the positions to the structure s */
 /* fit_to_structure has to be called before calling this routine! */
-static real rmsd_from_structure(rvec* x,           /* The positions under consideration */
+static real rmsd_from_structure(rvec*           x, /* The positions under consideration */
                                 struct gmx_edx* s) /* The structure from which the rmsd shall be computed */
 {
     real rmsd = 0.0;

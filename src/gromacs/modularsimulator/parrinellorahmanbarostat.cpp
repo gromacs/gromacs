@@ -106,7 +106,7 @@ void ParrinelloRahmanBarostat::connectWithMatchingPropagator(const PropagatorCon
     }
 }
 
-void ParrinelloRahmanBarostat::scheduleTask(Step step,
+void ParrinelloRahmanBarostat::scheduleTask(Step                       step,
                                             Time gmx_unused            time,
                                             const RegisterRunFunction& registerRunFunction)
 {

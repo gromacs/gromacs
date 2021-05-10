@@ -136,9 +136,7 @@ private:
 };
 
 FileTypeHandler::FileTypeHandler(int fileType) :
-    fileType_(fileType),
-    extensionCount_(0),
-    genericTypes_(nullptr)
+    fileType_(fileType), extensionCount_(0), genericTypes_(nullptr)
 {
     if (fileType_ >= 0)
     {

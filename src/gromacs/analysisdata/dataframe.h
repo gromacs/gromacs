@@ -290,10 +290,7 @@ class AnalysisDataPointSetInfo
 public:
     //! Construct point set data object with the given values.
     AnalysisDataPointSetInfo(int valueOffset, int valueCount, int dataSetIndex, int firstColumn) :
-        valueOffset_(valueOffset),
-        valueCount_(valueCount),
-        dataSetIndex_(dataSetIndex),
-        firstColumn_(firstColumn)
+        valueOffset_(valueOffset), valueCount_(valueCount), dataSetIndex_(dataSetIndex), firstColumn_(firstColumn)
     {
         GMX_ASSERT(valueOffset >= 0, "Negative value offsets are invalid");
         GMX_ASSERT(valueCount >= 0, "Negative value counts are invalid");

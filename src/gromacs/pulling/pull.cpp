@@ -264,8 +264,8 @@ static void apply_forces_cyl_grp(const pull_group_work_t& pgrp,
     /* The cylinder group is always a slab in the system, thus large.
      * Therefore we always thread-parallelize this group.
      */
-    const int numAtomsLocal         = localAtomIndices.size();
-    const int gmx_unused numThreads = pgrp.numThreads();
+    const int            numAtomsLocal = localAtomIndices.size();
+    const int gmx_unused numThreads    = pgrp.numThreads();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
     for (int i = 0; i < numAtomsLocal; i++)
     {

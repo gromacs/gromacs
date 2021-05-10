@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2016, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,9 +330,7 @@ struct SelMethodEvalContext
 {
     //! Initializes the context with given values.
     SelMethodEvalContext(const gmx_mtop_t* top, t_trxframe* fr, const t_pbc* pbc) :
-        top(top),
-        fr(fr),
-        pbc(pbc)
+        top(top), fr(fr), pbc(pbc)
     {
     }
 

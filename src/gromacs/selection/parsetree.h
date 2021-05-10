@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -237,7 +237,8 @@ public:
     //! String value for \a type ::STR_VALUE.
     std::string str;
     //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
-    union {
+    union
+    {
         //! The integer value/range (\a type ::INT_VALUE).
         struct
         {
@@ -295,9 +296,7 @@ public:
     // Default move constructor and assignment. Only needed for old compilers.
     //! \cond
     SelectionParserParameter(SelectionParserParameter&& o) noexcept :
-        name_(std::move(o.name_)),
-        location_(o.location_),
-        values_(std::move(o.values_))
+        name_(std::move(o.name_)), location_(o.location_), values_(std::move(o.values_))
     {
     }
 

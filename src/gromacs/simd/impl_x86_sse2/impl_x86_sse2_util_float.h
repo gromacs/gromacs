@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
+gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
 {
     __m128 t1, t2;
 
@@ -129,7 +129,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m128 t1, t2;
 
@@ -152,7 +152,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     __m128 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
 
@@ -227,7 +227,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     // This implementation is identical to the increment version, apart from using subtraction instead
     __m128 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
@@ -338,7 +338,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     // For present-generation x86 CPUs it appears to be faster to simply
     // store the SIMD integer to memory and then use the normal load operations.
@@ -353,7 +353,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     // For present-generation x86 CPUs it appears to be faster to simply
     // store the SIMD integer to memory and then use the normal load operations.

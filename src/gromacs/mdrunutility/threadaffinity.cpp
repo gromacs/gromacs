@@ -573,8 +573,8 @@ static bool detectDefaultAffinityMask(const int nthreads_hw_avail)
  */
 void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
                                    gmx_hw_opt_t*        hw_opt,
-                                   int gmx_unused nthreads_hw_avail,
-                                   gmx_bool       bAfterOpenmpInit)
+                                   int gmx_unused       nthreads_hw_avail,
+                                   gmx_bool             bAfterOpenmpInit)
 {
     GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
 

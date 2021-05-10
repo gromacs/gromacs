@@ -81,7 +81,8 @@ int SimdBaseTest::s_nPoints = 10000;
     bool                      allOk;
     size_t                    i;
 
-    union {
+    union
+    {
 #if GMX_DOUBLE
         double       r;
         std::int64_t i;

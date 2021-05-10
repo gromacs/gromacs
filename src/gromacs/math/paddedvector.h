@@ -231,8 +231,7 @@ public:
     PaddedVector() : storage_(), unpaddedEnd_(begin()) {}
     /*! \brief Constructor that specifies the initial size. */
     explicit PaddedVector(size_type count, const allocator_type& allocator = Allocator()) :
-        storage_(count, allocator),
-        unpaddedEnd_(begin() + count)
+        storage_(count, allocator), unpaddedEnd_(begin() + count)
     {
         // The count elements have been default inserted, and now
         // the padding elements are added
@@ -240,8 +239,7 @@ public:
     }
     /*! \brief Constructor that specifies the initial size and an element to copy. */
     explicit PaddedVector(size_type count, value_type const& v, const allocator_type& allocator = Allocator()) :
-        storage_(count, v, allocator),
-        unpaddedEnd_(begin() + count)
+        storage_(count, v, allocator), unpaddedEnd_(begin() + count)
     {
         // The count elements have been default inserted, and now
         // the padding elements are added
@@ -249,8 +247,7 @@ public:
     }
     //! Default constructor with allocator
     explicit PaddedVector(allocator_type const& allocator) :
-        storage_(allocator),
-        unpaddedEnd_(begin())
+        storage_(allocator), unpaddedEnd_(begin())
     {
     }
     //! Copy constructor
@@ -260,8 +257,7 @@ public:
      * Leaves \c o in a valid state (ie the destructor can be
      * called). */
     PaddedVector(PaddedVector&& o) noexcept :
-        storage_(std::exchange(o.storage_, {})),
-        unpaddedEnd_(o.unpaddedEnd_)
+        storage_(std::exchange(o.storage_, {})), unpaddedEnd_(o.unpaddedEnd_)
     {
     }
     /*! \brief Move constructor using \c alloc for the new vector.
@@ -274,8 +270,7 @@ public:
      * Leaves \c o in a valid state (ie. the destructor can be
      * called). */
     PaddedVector(PaddedVector&& o, const Allocator& alloc) noexcept :
-        storage_(alloc),
-        unpaddedEnd_(begin())
+        storage_(alloc), unpaddedEnd_(begin())
     {
         if (alloc == o.storage_.get_allocator())
         {
@@ -294,8 +289,7 @@ public:
     }
     //! Construct from an initializer list
     PaddedVector(std::initializer_list<value_type> const& il) :
-        storage_(il),
-        unpaddedEnd_(storage_.end())
+        storage_(il), unpaddedEnd_(storage_.end())
     {
         // We can't choose the padding until we know the size of
         // the normal vector, so we have to make the storage_ and

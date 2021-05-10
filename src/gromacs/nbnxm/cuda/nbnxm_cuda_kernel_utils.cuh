@@ -78,7 +78,7 @@ static const float __device__ c_oneTwelveth = 0.08333333f;
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__ void
-                       convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c6, float* c12)
+convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c6, float* c12)
 {
     float sigma2, sigma6;
 
@@ -90,7 +90,7 @@ static __forceinline__ __device__ void
 
 /*! Apply force switch,  force + energy version. */
 static __forceinline__ __device__ void
-                       calculate_force_switch_F(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
+calculate_force_switch_F(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
 {
     float r, r_switch;
 
@@ -142,7 +142,7 @@ static __forceinline__ __device__ void calculate_force_switch_F_E(const NBParamG
 
 /*! Apply potential switch, force-only version. */
 static __forceinline__ __device__ void
-                       calculate_potential_switch_F(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
+calculate_potential_switch_F(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -170,7 +170,7 @@ static __forceinline__ __device__ void
 
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__ void
-                       calculate_potential_switch_F_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
+calculate_potential_switch_F_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -445,7 +445,7 @@ static __forceinline__ __device__ float pmecorrF(float z2)
  *  arbitrary array sizes.
  */
 static __forceinline__ __device__ void
-                       reduce_force_j_generic(float* f_buf, float3* fout, int tidxi, int tidxj, int aidx)
+reduce_force_j_generic(float* f_buf, float3* fout, int tidxi, int tidxj, int aidx)
 {
     if (tidxi < 3)
     {
@@ -463,7 +463,7 @@ static __forceinline__ __device__ void
  *  array sizes.
  */
 static __forceinline__ __device__ void
-                       reduce_force_j_warp_shfl(float3 f, float3* fout, int tidxi, int aidx, const unsigned int activemask)
+reduce_force_j_warp_shfl(float3 f, float3* fout, int tidxi, int aidx, const unsigned int activemask)
 {
     f.x += __shfl_down_sync(activemask, f.x, 1);
     f.y += __shfl_up_sync(activemask, f.y, 1);
@@ -574,7 +574,7 @@ static __forceinline__ __device__ void reduce_force_i_pow2(volatile float* f_buf
  *  on whether the size of the array to be reduced is power of two or not.
  */
 static __forceinline__ __device__ void
-                       reduce_force_i(float* f_buf, float3* f, float* fshift_buf, bool bCalcFshift, int tidxi, int tidxj, int ai)
+reduce_force_i(float* f_buf, float3* f, float* fshift_buf, bool bCalcFshift, int tidxi, int tidxj, int ai)
 {
     if ((c_clSize & (c_clSize - 1)))
     {
@@ -630,7 +630,7 @@ static __forceinline__ __device__ void reduce_force_i_warp_shfl(float3          
  *  array sizes.
  */
 static __forceinline__ __device__ void
-                       reduce_energy_pow2(volatile float* buf, float* e_lj, float* e_el, unsigned int tidx)
+reduce_energy_pow2(volatile float* buf, float* e_lj, float* e_el, unsigned int tidx)
 {
     float e1, e2;
 
@@ -665,7 +665,7 @@ static __forceinline__ __device__ void
  *  array sizes.
  */
 static __forceinline__ __device__ void
-                       reduce_energy_warp_shfl(float E_lj, float E_el, float* e_lj, float* e_el, int tidx, const unsigned int activemask)
+reduce_energy_warp_shfl(float E_lj, float E_el, float* e_lj, float* e_el, int tidx, const unsigned int activemask)
 {
     int i, sh;
 

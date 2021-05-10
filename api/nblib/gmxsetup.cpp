@@ -176,7 +176,7 @@ void NbvSetupUtil::setAtomProperties(const std::vector<int>&  particleTypeIdOfAl
 void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options)
 {
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
-                                           : gmx::PinningPolicy::CannotBePinned);
+                                            : gmx::PinningPolicy::CannotBePinned);
     const int  numThreads = options.numOpenMPThreads;
     // Note: the options and Nbnxm combination rule enums values should match
     const int combinationRule = static_cast<int>(options.ljCombinationRule);

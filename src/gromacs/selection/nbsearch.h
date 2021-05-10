@@ -111,33 +111,21 @@ public:
      * to methods that accept positions.
      */
     AnalysisNeighborhoodPositions(const rvec& x) :
-        count_(1),
-        index_(-1),
-        x_(&x),
-        exclusionIds_(nullptr),
-        indices_(nullptr)
+        count_(1), index_(-1), x_(&x), exclusionIds_(nullptr), indices_(nullptr)
     {
     }
     /*! \brief
      * Initializes positions from an array of position vectors.
      */
     AnalysisNeighborhoodPositions(const rvec x[], int count) :
-        count_(count),
-        index_(-1),
-        x_(x),
-        exclusionIds_(nullptr),
-        indices_(nullptr)
+        count_(count), index_(-1), x_(x), exclusionIds_(nullptr), indices_(nullptr)
     {
     }
     /*! \brief
      * Initializes positions from a vector of position vectors.
      */
     AnalysisNeighborhoodPositions(const std::vector<RVec>& x) :
-        count_(ssize(x)),
-        index_(-1),
-        x_(as_rvec_array(x.data())),
-        exclusionIds_(nullptr),
-        indices_(nullptr)
+        count_(ssize(x)), index_(-1), x_(as_rvec_array(x.data())), exclusionIds_(nullptr), indices_(nullptr)
     {
     }
 
@@ -335,10 +323,7 @@ public:
     AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0), dx_() {}
     //! Initializes a pair object with the given data.
     AnalysisNeighborhoodPair(int refIndex, int testIndex, real distance2, const rvec dx) :
-        refIndex_(refIndex),
-        testIndex_(testIndex),
-        distance2_(distance2),
-        dx_()
+        refIndex_(refIndex), testIndex_(testIndex), distance2_(distance2), dx_()
     {
         copy_rvec(dx, dx_);
     }

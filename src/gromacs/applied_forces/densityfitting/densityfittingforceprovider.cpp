@@ -233,11 +233,11 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
         Matrix3x3 translationMatrix = transformationMatrixParametersAsArray.has_value()
                                               ? *transformationMatrixParametersAsArray
                                               : identityMatrix<real, 3>();
-        RVec translationVector = translationParametersAsArray.has_value()
-                                         ? RVec((*translationParametersAsArray)[XX],
+        RVec      translationVector = translationParametersAsArray.has_value()
+                                              ? RVec((*translationParametersAsArray)[XX],
                                                 (*translationParametersAsArray)[YY],
                                                 (*translationParametersAsArray)[ZZ])
-                                         : RVec(0, 0, 0);
+                                              : RVec(0, 0, 0);
         affineTransformation_.emplace(translationMatrix.asConstView(), translationVector);
     }
 

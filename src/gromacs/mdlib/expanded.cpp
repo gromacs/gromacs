@@ -1479,7 +1479,7 @@ int ExpandedEnsembleDynamics(FILE*                               log,
             {
                 told              = ir->opts.ref_t[i];
                 ir->opts.ref_t[i] = simtemp->temperatures[lamnew];
-                buf_ngtc[i]       = std::sqrt(ir->opts.ref_t[i] / told); /* using the buffer as temperature scaling */
+                buf_ngtc[i] = std::sqrt(ir->opts.ref_t[i] / told); /* using the buffer as temperature scaling */
             }
         }
 

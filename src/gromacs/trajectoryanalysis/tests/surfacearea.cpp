@@ -72,13 +72,7 @@ class SurfaceAreaTest : public ::testing::Test
 {
 public:
     SurfaceAreaTest() :
-        box_(),
-        rng_(12345),
-        area_(0.0),
-        volume_(0.0),
-        atomArea_(nullptr),
-        dotCount_(0),
-        dots_(nullptr)
+        box_(), rng_(12345), area_(0.0), volume_(0.0), atomArea_(nullptr), dotCount_(0), dots_(nullptr)
     {
     }
     ~SurfaceAreaTest() override

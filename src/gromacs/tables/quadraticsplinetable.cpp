@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -274,8 +274,7 @@ const real QuadraticSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
 QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
                                            const std::pair<real, real>&                      range,
                                            real tolerance) :
-    numFuncInTable_(analyticalInputList.size()),
-    range_(range)
+    numFuncInTable_(analyticalInputList.size()), range_(range)
 {
     // Sanity check on input values
     if (range_.first < 0.0 || (range_.second - range_.first) < 0.001)
@@ -371,8 +370,7 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
 QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
                                            const std::pair<real, real>&                     range,
                                            real tolerance) :
-    numFuncInTable_(numericalInputList.size()),
-    range_(range)
+    numFuncInTable_(numericalInputList.size()), range_(range)
 {
     // Sanity check on input values
     if (range.first < 0.0 || (range.second - range.first) < 0.001)

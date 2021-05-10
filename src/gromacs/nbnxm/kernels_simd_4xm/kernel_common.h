@@ -97,7 +97,7 @@ typedef gmx::SimdInt32 SimdBitMask;
 typedef gmx::SimdReal SimdBitMask;
 #endif
 
-static inline void gmx_simdcall gmx_load_simd_4xn_interactions(int         excl,
+static inline void gmx_simdcall gmx_load_simd_4xn_interactions(int                    excl,
                                                                SimdBitMask gmx_unused filter_S0,
                                                                SimdBitMask gmx_unused filter_S1,
                                                                SimdBitMask gmx_unused filter_S2,
@@ -117,7 +117,8 @@ static inline void gmx_simdcall gmx_load_simd_4xn_interactions(int         excl,
     *interact_S2 = cvtIB2B(testBits(mask_pr_S & filter_S2));
     *interact_S3 = cvtIB2B(testBits(mask_pr_S & filter_S3));
 #elif GMX_SIMD_HAVE_LOGICAL
-    union {
+    union
+    {
 #    if GMX_DOUBLE
         std::int64_t i;
 #    else

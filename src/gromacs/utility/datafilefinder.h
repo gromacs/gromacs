@@ -91,9 +91,7 @@ public:
     }
     //! \copydoc DataFileOptions(const char *)
     DataFileOptions(const std::string& filename) :
-        filename_(filename.c_str()),
-        bCurrentDir_(true),
-        bThrow_(true)
+        filename_(filename.c_str()), bCurrentDir_(true), bThrow_(true)
     {
     }
 
@@ -131,9 +129,7 @@ struct DataFileInfo
 {
     //! Initializes the structure with given values.
     DataFileInfo(const std::string& dir, const std::string& name, bool bDefault) :
-        dir(dir),
-        name(name),
-        bFromDefaultDir(bDefault)
+        dir(dir), name(name), bFromDefaultDir(bDefault)
     {
     }
 

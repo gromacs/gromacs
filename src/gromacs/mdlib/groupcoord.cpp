@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@ void dd_make_local_group_indices(const gmx_ga2la_t* ga2la,
                                  int* nr_loc,     /* OUT: Number of group atoms found locally */
                                  int* anrs_loc[], /* OUT: Local atom numbers of the group  */
                                  int* nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
-                                 int  coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
+                                 int coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
     GMX_ASSERT(ga2la, "We need a valid ga2la object");
 

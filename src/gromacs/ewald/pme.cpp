@@ -323,11 +323,7 @@ PmeAtomComm::PmeAtomComm(MPI_Comm   PmeMpiCommunicator,
                          const int  pmeOrder,
                          const int  dimIndex,
                          const bool doSpread) :
-    dimind(dimIndex),
-    bSpread(doSpread),
-    pme_order(pmeOrder),
-    nthread(numThreads),
-    spline(nthread)
+    dimind(dimIndex), bSpread(doSpread), pme_order(pmeOrder), nthread(numThreads), spline(nthread)
 {
     if (PmeMpiCommunicator != MPI_COMM_NULL)
     {

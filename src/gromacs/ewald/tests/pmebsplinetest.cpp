@@ -103,7 +103,7 @@ public:
         inputRec.nkz         = gridSize[ZZ];
         inputRec.coulombtype = (moduliType == ModuliType::P3M) ? CoulombInteractionType::P3mAD
                                                                : CoulombInteractionType::Pme;
-        inputRec.pme_order = pmeOrder;
+        inputRec.pme_order   = pmeOrder;
 
         /* PME initialization call which checks the inputs and computes the B-spline moduli according to the grid sizes. */
         PmeSafePointer pme = pmeInitEmpty(&inputRec);

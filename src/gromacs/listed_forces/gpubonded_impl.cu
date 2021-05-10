@@ -72,8 +72,7 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
                       const DeviceContext&  deviceContext,
                       const DeviceStream&   deviceStream,
                       gmx_wallcycle*        wcycle) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream)
+    deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
     GMX_RELEASE_ASSERT(deviceStream.isValid(),
                        "Can't run GPU version of bonded forces in stream that is not valid.");

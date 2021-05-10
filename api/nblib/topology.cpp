@@ -138,7 +138,7 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
         std::transform(begin(expansionArrayStage1),
                        end(expansionArrayStage1),
                        begin(expansionArray),
-                       [& S2 = expansionArrayStage2](size_t S1Element) { return S2[S1Element]; });
+                       [&S2 = expansionArrayStage2](size_t S1Element) { return S2[S1Element]; });
 
         // add data about InteractionType instances
         interactionDataElement.parameters = std::move(uniqueInteractionInstances);

@@ -548,10 +548,11 @@ void renumberIndex(std::vector<unsigned int>* v)
     for (std::size_t i = 0; i < uniqueSortedV.size(); i++)
     {
         unsigned int val = uniqueSortedV[i];
-        std::replace_if(v->begin(),
-                        v->end(),
-                        [val](unsigned int& c) -> bool { return c == val; },
-                        static_cast<unsigned int>(i));
+        std::replace_if(
+                v->begin(),
+                v->end(),
+                [val](unsigned int& c) -> bool { return c == val; },
+                static_cast<unsigned int>(i));
     }
 }
 
@@ -1089,11 +1090,7 @@ CpuInfo CpuInfo::detect()
 }
 
 CpuInfo::CpuInfo() :
-    vendor_(CpuInfo::Vendor::Unknown),
-    brandString_("Unknown CPU brand"),
-    family_(0),
-    model_(0),
-    stepping_(0)
+    vendor_(CpuInfo::Vendor::Unknown), brandString_("Unknown CPU brand"), family_(0), model_(0), stepping_(0)
 {
 }
 

@@ -94,8 +94,7 @@ public:
          * \param b   Upper end of range (inclusive)
          */
         explicit param_type(result_type a = 0, result_type b = std::numeric_limits<result_type>::max()) :
-            a_(a),
-            b_(b)
+            a_(a), b_(b)
         {
             GMX_RELEASE_ASSERT(a <= b, "The uniform integer distribution requires a<=b");
         }
@@ -129,9 +128,7 @@ public:
      */
     explicit UniformIntDistribution(result_type a = 0,
                                     result_type b = std::numeric_limits<result_type>::max()) :
-        param_(param_type(a, b)),
-        savedRandomBits_(0),
-        savedRandomBitsLeft_(0)
+        param_(param_type(a, b)), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
 
@@ -140,9 +137,7 @@ public:
      * \param param  Parameter class as defined inside gmx::UniformIntDistribution.
      */
     explicit UniformIntDistribution(const param_type& param) :
-        param_(param),
-        savedRandomBits_(0),
-        savedRandomBitsLeft_(0)
+        param_(param), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
 

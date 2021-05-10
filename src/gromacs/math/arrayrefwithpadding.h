@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,25 +99,19 @@ public:
      * Passed pointers must remain valid for the lifetime of this object.
      */
     ArrayRefWithPadding(pointer begin, pointer end, pointer paddedEnd) :
-        begin_(begin),
-        end_(end),
-        paddedEnd_(paddedEnd)
+        begin_(begin), end_(end), paddedEnd_(paddedEnd)
     {
         GMX_ASSERT(end >= begin, "Invalid range");
         GMX_ASSERT(paddedEnd >= end, "Invalid range");
     }
     //! Copy constructor
     ArrayRefWithPadding(const ArrayRefWithPadding& o) :
-        begin_(o.begin_),
-        end_(o.end_),
-        paddedEnd_(o.paddedEnd_)
+        begin_(o.begin_), end_(o.end_), paddedEnd_(o.paddedEnd_)
     {
     }
     //! Move constructor
     ArrayRefWithPadding(ArrayRefWithPadding&& o) noexcept :
-        begin_(std::move(o.begin_)),
-        end_(std::move(o.end_)),
-        paddedEnd_(std::move(o.paddedEnd_))
+        begin_(std::move(o.begin_)), end_(std::move(o.end_)), paddedEnd_(std::move(o.paddedEnd_))
     {
     }
     /*! \brief Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.

@@ -92,8 +92,7 @@ public:
      * \param[in] elements    Elements for all lists concatenated, is consumed
      */
     ListOfLists(std::vector<int>&& listRanges, std::vector<T>&& elements) :
-        listRanges_(std::move(listRanges)),
-        elements_(std::move(elements))
+        listRanges_(std::move(listRanges)), elements_(std::move(elements))
     {
         if (listRanges_.empty() || listRanges_.at(0) != 0)
         {

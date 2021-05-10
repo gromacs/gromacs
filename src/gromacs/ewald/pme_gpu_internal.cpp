@@ -1133,8 +1133,8 @@ static auto selectSplineAndSpreadKernelPtr(const PmeGpu*  pmeGpu,
  *
  * \return Pointer to CUDA kernel
  */
-static auto selectSplineKernelPtr(const PmeGpu*  pmeGpu,
-                                  ThreadsPerAtom threadsPerAtom,
+static auto selectSplineKernelPtr(const PmeGpu*   pmeGpu,
+                                  ThreadsPerAtom  threadsPerAtom,
                                   bool gmx_unused writeSplinesToGlobal,
                                   const int       numGrids)
 {

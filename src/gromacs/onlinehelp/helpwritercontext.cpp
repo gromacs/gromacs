@@ -277,8 +277,7 @@ public:
     struct LinkItem
     {
         LinkItem(const std::string& linkName, const std::string& replacement) :
-            linkName(linkName),
-            replacement(replacement)
+            linkName(linkName), replacement(replacement)
         {
         }
         std::string linkName;
@@ -343,9 +342,7 @@ public:
     public:
         //! Initializes the state with the given parameters.
         SharedState(TextWriter* writer, HelpOutputFormat format, const HelpLinks* links) :
-            file_(*writer),
-            format_(format),
-            links_(links)
+            file_(*writer), format_(format), links_(links)
         {
         }
 
@@ -389,8 +386,7 @@ public:
     struct ReplaceItem
     {
         ReplaceItem(const std::string& search, const std::string& replace) :
-            search(search),
-            replace(replace)
+            search(search), replace(replace)
         {
         }
         std::string search;

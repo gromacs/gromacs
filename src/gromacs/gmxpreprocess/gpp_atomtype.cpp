@@ -61,11 +61,7 @@ struct AtomTypeData
 {
     //! Explicit constructor.
     AtomTypeData(const t_atom& a, char** name, const InteractionOfType& nb, const int bondAtomType, const int atomNumber) :
-        atom_(a),
-        name_(name),
-        nb_(nb),
-        bondAtomType_(bondAtomType),
-        atomNumber_(atomNumber)
+        atom_(a), name_(name), nb_(nb), bondAtomType_(bondAtomType), atomNumber_(atomNumber)
     {
     }
     //! Actual atom data.

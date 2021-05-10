@@ -101,8 +101,7 @@ constexpr int c_numAtoms = 3;
 struct OutputQuantities
 {
     OutputQuantities(int energyGroup) :
-        energy(energyGroup),
-        dvdLambda(static_cast<int>(FreeEnergyPerturbationCouplingType::Count), 0.0)
+        energy(energyGroup), dvdLambda(static_cast<int>(FreeEnergyPerturbationCouplingType::Count), 0.0)
     {
     }
 

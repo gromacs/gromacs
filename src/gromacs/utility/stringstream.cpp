@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,15 +61,13 @@ void StringOutputStream::close() {}
 StringInputStream::StringInputStream(const std::string& input) : input_(input), pos_(0) {}
 
 StringInputStream::StringInputStream(const std::vector<std::string>& input) :
-    input_(joinStrings(input.begin(), input.end(), "\n")),
-    pos_(0)
+    input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
 {
     input_.append("\n");
 }
 
 StringInputStream::StringInputStream(ArrayRef<const char* const> const& input) :
-    input_(joinStrings(input.begin(), input.end(), "\n")),
-    pos_(0)
+    input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
 {
     input_.append("\n");
 }

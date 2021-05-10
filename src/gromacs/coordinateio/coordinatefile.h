@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,11 +109,7 @@ public:
      *                 than the object created here.
      */
     TrajectoryFileOpener(const std::string& name, int filetype, const Selection& sel, const gmx_mtop_t* mtop) :
-        outputFileName_(name),
-        outputFile_(nullptr),
-        filetype_(filetype),
-        sel_(sel),
-        mtop_(mtop)
+        outputFileName_(name), outputFile_(nullptr), filetype_(filetype), sel_(sel), mtop_(mtop)
     {
     }
 
@@ -201,8 +197,7 @@ private:
                           const Selection&       sel,
                           const gmx_mtop_t*      mtop,
                           OutputAdapterContainer adapters) :
-        file_(name, filetype, sel, mtop),
-        outputAdapters_(std::move(adapters))
+        file_(name, filetype, sel, mtop), outputAdapters_(std::move(adapters))
     {
     }
 

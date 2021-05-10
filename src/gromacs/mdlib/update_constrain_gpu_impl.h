@@ -235,12 +235,7 @@ private:
 struct ScalingMatrix
 {
     ScalingMatrix(const matrix m) :
-        xx(m[XX][XX]),
-        yy(m[YY][YY]),
-        zz(m[ZZ][ZZ]),
-        yx(m[YY][XX]),
-        zx(m[ZZ][XX]),
-        zy(m[ZZ][YY])
+        xx(m[XX][XX]), yy(m[YY][YY]), zz(m[ZZ][ZZ]), yx(m[YY][XX]), zx(m[ZZ][XX]), zy(m[ZZ][YY])
     {
     }
     float xx, yy, zz, yx, zx, zy;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,8 +66,7 @@ class NelderMeadSimplexTest : public ::testing::Test
 public:
     //! Set up a one-d, two-vertices Nelder-Mead simplex
     NelderMeadSimplexTest() :
-        initialGuess_{ 1 },
-        simplex_{ NelderMeadSimplexTest::doubleFirstCoordinateValue, initialGuess_ }
+        initialGuess_{ 1 }, simplex_{ NelderMeadSimplexTest::doubleFirstCoordinateValue, initialGuess_ }
     {
     }
 

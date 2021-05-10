@@ -281,10 +281,7 @@ public:
     MsdCoordinateManager(const int                    numAtoms,
                          ArrayRef<const MoleculeData> molecules,
                          ArrayRef<const int>          moleculeIndexMapping) :
-        current_(numAtoms),
-        previous_(numAtoms),
-        molecules_(molecules),
-        moleculeIndexMapping_(moleculeIndexMapping)
+        current_(numAtoms), previous_(numAtoms), molecules_(molecules), moleculeIndexMapping_(moleculeIndexMapping)
     {
     }
     /*! \brief Prepares coordinates for the current frame.

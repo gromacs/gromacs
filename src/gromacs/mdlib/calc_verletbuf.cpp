@@ -1311,7 +1311,7 @@ static real chanceOfUpdateGroupCrossingCell(const gmx_mtop_t&      mtop,
         const gmx_moltype_t& moltype = mtop.moltype[molblock.type];
         chance += molblock.nmol
                   * chanceOfUpdateGroupCrossingCell(
-                            moltype, mtop.ffparams, updateGrouping[molblock.type], kT_fac, cellSize);
+                          moltype, mtop.ffparams, updateGrouping[molblock.type], kT_fac, cellSize);
     }
 
     return chance;

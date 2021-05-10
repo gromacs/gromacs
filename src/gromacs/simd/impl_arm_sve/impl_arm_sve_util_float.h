@@ -65,7 +65,7 @@ namespace gmx
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
     assert(std::size_t(base) % 8 == 0);
@@ -123,7 +123,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
+gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
 {
     assert(std::size_t(offset) % 64 == 0);
     assert(std::size_t(base) % 8 == 0);
@@ -159,7 +159,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -176,7 +176,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     assert(std::size_t(offset) % 64 == 0);
 
@@ -197,7 +197,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
+transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
@@ -262,7 +262,7 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
 
 template<int align>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
+gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     svbool_t  pg      = svptrue_b32();
     svint32_t offsets = svmul_n_s32_x(pg, offset.simdInternal_, align * 4);

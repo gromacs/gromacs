@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,14 +108,12 @@ public:
  */
 
 LoggerOwner::LoggerOwner(std::unique_ptr<Impl> impl) :
-    impl_(impl.release()),
-    logger_(&impl_->logger_)
+    impl_(impl.release()), logger_(&impl_->logger_)
 {
 }
 
 LoggerOwner::LoggerOwner(LoggerOwner&& other) noexcept :
-    impl_(std::move(other.impl_)),
-    logger_(&impl_->logger_)
+    impl_(std::move(other.impl_)), logger_(&impl_->logger_)
 {
 }
 

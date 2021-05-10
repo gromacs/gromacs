@@ -58,9 +58,7 @@ namespace gmx
 PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
                               MPI_Comm               comm,
                               gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeForcesReady_(pmeForcesReady),
-    comm_(comm),
-    ppRanks_(ppRanks)
+    pmeForcesReady_(pmeForcesReady), comm_(comm), ppRanks_(ppRanks)
 {
 }
 

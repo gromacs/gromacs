@@ -368,13 +368,13 @@ void settle_proj(const SettleData&    settled,
 
 /*! \brief The actual settle code, templated for real/SimdReal and for optimization */
 template<typename T, typename TypeBool, int packSize, typename TypePbc, bool bCorrectVelocity, bool bCalcVirial>
-static void settleTemplate(const SettleData& settled,
-                           int               settleStart,
-                           int               settleEnd,
-                           const TypePbc     pbc,
-                           const real*       x,
-                           real*             xprime,
-                           real              invdt,
+static void settleTemplate(const SettleData&  settled,
+                           int                settleStart,
+                           int                settleEnd,
+                           const TypePbc      pbc,
+                           const real*        x,
+                           real*              xprime,
+                           real               invdt,
                            real* gmx_restrict v,
                            tensor             vir_r_m_dr,
                            bool*              bErrorHasOccurred)

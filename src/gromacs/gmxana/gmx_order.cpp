@@ -436,10 +436,10 @@ static void calc_order(const char*             fn,
             nr_tails,                      /* nr tails, to check if index file is correct    */
             size = 0,                      /* nr. of atoms in group. same as nr_tails        */
             i, j, m, k, teller = 0, slice; /* current slice number                           */
-    real        nr_frames = 0;
-    int*        slCount;      /* nr. of atoms in one slice                      */
-    real        sdbangle = 0; /* sum of these angles                            */
-    gmx_bool    use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
+    real nr_frames = 0;
+    int* slCount;                /* nr. of atoms in one slice                      */
+    real sdbangle           = 0; /* sum of these angles                            */
+    gmx_bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
     rvec        direction, com;
     int         comsize, distsize;
     int *       comidx = nullptr, *distidx = nullptr;

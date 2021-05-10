@@ -251,8 +251,7 @@ const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances{
 
 TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings& matchSettings,
                                            const TrajectoryTolerances&         tolerances) :
-    matchSettings_(matchSettings),
-    tolerances_(tolerances)
+    matchSettings_(matchSettings), tolerances_(tolerances)
 {
 }
 

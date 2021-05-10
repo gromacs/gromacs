@@ -98,11 +98,7 @@ struct VirtualSiteConfiguration
                                       int                nhyd,
                                       const std::string& nextheavy,
                                       const std::string& dummy) :
-        atomtype(type),
-        isplanar(planar),
-        nHydrogens(nhyd),
-        nextHeavyType(nextheavy),
-        dummyMass(dummy)
+        atomtype(type), isplanar(planar), nHydrogens(nhyd), nextHeavyType(nextheavy), dummyMass(dummy)
     {
     }
     //! Type for the XH3/XH2 atom.
@@ -152,9 +148,7 @@ struct VirtualSiteTopology
          * \param[in] v Value for distance.
          */
         VirtualSiteBond(const std::string& a1, const std::string& a2, real v) :
-            atom1(a1),
-            atom2(a2),
-            value(v)
+            atom1(a1), atom2(a2), value(v)
         {
         }
         //! Atom 1 in bond.
@@ -178,10 +172,7 @@ struct VirtualSiteTopology
          * \param[in] v Value for angle.
          */
         VirtualSiteAngle(const std::string& a1, const std::string& a2, const std::string& a3, real v) :
-            atom1(a1),
-            atom2(a2),
-            atom3(a3),
-            value(v)
+            atom1(a1), atom2(a2), atom3(a3), value(v)
         {
         }
         //! Atom 1 in angle.

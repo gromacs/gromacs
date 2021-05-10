@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v, Targs... Fargs)
+gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v, Targs... Fargs)
 {
     if (align > 1)
     {
@@ -118,21 +118,21 @@ static inline void gmx_simdcall
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v, Targs... Fargs)
+gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, offset, v, Fargs...);
 }
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v, Targs... Fargs)
+gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v, Fargs...);
 }
 
 template<int align, typename... Targs>
 static inline void gmx_simdcall
-                   gatherLoadUTranspose(const double* base, const std::int32_t offset[], SimdDouble* v, Targs... Fargs)
+gatherLoadUTranspose(const double* base, const std::int32_t offset[], SimdDouble* v, Targs... Fargs)
 {
     gatherLoadBySimdIntTranspose<align>(base, simdLoad(offset, SimdDInt32Tag()), v, Fargs...);
 }
@@ -159,7 +159,7 @@ static inline void gmx_simdcall transposeScatterStoreU(double*            base,
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
+transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     __m512d                                  t[4], t5, t6, t7, t8;
     alignas(GMX_SIMD_ALIGNMENT) std::int64_t o[8];
@@ -221,7 +221,7 @@ static inline void gmx_simdcall
 
 template<int align>
 static inline void gmx_simdcall
-                   transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
+transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     __m512d                                  t[4], t5, t6, t7, t8;
     alignas(GMX_SIMD_ALIGNMENT) std::int64_t o[8];
@@ -299,7 +299,7 @@ static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
 
 
 static inline double gmx_simdcall
-                     reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
+reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
     __m512d t0, t2;
     __m256d t3, t4;
