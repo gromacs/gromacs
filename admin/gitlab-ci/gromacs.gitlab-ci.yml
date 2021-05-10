@@ -20,7 +20,7 @@ simple-build:
     - .use-clang:base
     - .rules:basic-push
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_CPU_LIMIT: 8

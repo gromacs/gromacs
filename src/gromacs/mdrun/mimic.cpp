@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -386,6 +386,12 @@ void gmx::LegacySimulator::do_mimic()
                           "decomposition, "
                           "use a single rank");
             }
+            if (constructVsites)
+            {
+                wallcycle_start(wcycle, ewcVSITECONSTR);
+                vsite->construct(state->x, ir->delta_t, state->v, state->box);
+                wallcycle_stop(wcycle, ewcVSITECONSTR);
+            }
         }
 
         if (DOMAINDECOMP(cr))
@@ -451,13 +457,6 @@ void gmx::LegacySimulator::do_mimic()
         }
 
         stopHandler->setSignal();
-
-        if (vsite != nullptr)
-        {
-            wallcycle_start(wcycle, ewcVSITECONSTR);
-            vsite->construct(state->x, ir->delta_t, state->v, state->box);
-            wallcycle_stop(wcycle, ewcVSITECONSTR);
-        }
 
         {
             const bool          doInterSimSignal = false;

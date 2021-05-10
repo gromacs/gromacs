@@ -364,6 +364,8 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/2021/2021.2.rst
+        release-notes/2021/2021.1.rst
         release-notes/2021/major/highlights.rst
         release-notes/2021/major/features.rst
         release-notes/2021/major/performance.rst
@@ -444,6 +446,7 @@ if (SPHINX_FOUND)
         user-guide/force-fields.rst
         user-guide/getting-started.rst
         user-guide/index.rst
+        user-guide/known-issues.rst
         user-guide/managing-simulations.rst
         user-guide/mdp-options.rst
         user-guide/mdrun-features.rst

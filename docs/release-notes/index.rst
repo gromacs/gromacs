@@ -25,6 +25,16 @@ can be found on the `issue tracker`_ at that issue number.
 
 .. todolist::
 
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2021/2021.2
+   2021/2021.1
+
+
 Major release
 ^^^^^^^^^^^^^
 

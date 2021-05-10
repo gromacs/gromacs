@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -544,6 +544,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
                                     const bool                     useEssentialDynamics,
                                     const bool                     doOrientationRestraints,
                                     const bool                     useReplicaExchange,
+                                    const bool                     haveFrozenAtoms,
                                     const bool                     doRerun,
                                     const DevelopmentFeatureFlags& devFlags,
                                     const gmx::MDLogger&           mdlog)
@@ -571,11 +572,6 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
                     "are used. This means constraining all bonds is not supported, except for "
                     "small molecules, and box sizes close to half the pair-list cutoff are not "
                     "supported.\n ";
-        }
-
-        if (pmeUsesCpu)
-        {
-            errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
         }
     }
 
@@ -683,6 +679,11 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage +=
                 "The number of coupled constraints is higher than supported in the GPU LINCS "
                 "code.\n";
+    }
+    if (haveFrozenAtoms)
+    {
+        // There is a known bug with frozen atoms and GPU update, see Issue #3920.
+        errorMessage += "Frozen atoms not supported.\n";
     }
 
     if (!errorMessage.empty())

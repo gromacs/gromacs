@@ -21,7 +21,7 @@ gromacs:clang-9-mpi:configure:
    - .use-clang:base
    - .use-mpi
    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -36,7 +36,7 @@ gromacs:clang-9-mpi:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
@@ -46,7 +46,7 @@ gromacs:clang-9-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   tags:
@@ -58,7 +58,7 @@ gromacs:clang-9:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"

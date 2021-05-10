@@ -22,7 +22,7 @@ gromacs:gcc-8-cuda-11.0:release:configure:
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 8
@@ -46,7 +46,7 @@ gromacs:gcc-8-cuda-11.0:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   needs:
     - job: gromacs:gcc-8-cuda-11.0:release:configure
 
@@ -55,7 +55,7 @@ gromacs:gcc-8-cuda-11.0:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"

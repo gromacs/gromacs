@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -697,10 +697,19 @@ bool Constraints::Impl::apply(bool                      bLog,
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
-    if (!v.empty() && cFREEZE_)
+    const bool haveVelocities = (!v.empty() || econq == ConstraintVariable::Velocities);
+    if (haveVelocities && cFREEZE_)
     {
         /* Set the velocities of frozen dimensions to zero */
-        ArrayRef<RVec> vRef = v.unpaddedArrayRef();
+        ArrayRef<RVec> vRef;
+        if (econq == ConstraintVariable::Velocities)
+        {
+            vRef = xprime.unpaddedArrayRef();
+        }
+        else
+        {
+            vRef = v.unpaddedArrayRef();
+        }
 
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 
@@ -1092,6 +1101,15 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
         please_cite(log, "Miyamoto92a");
 
         settled = std::make_unique<SettleData>(mtop);
+
+        // SETTLE with perturbed masses is not implemented. grompp now checks
+        // for this, but old .tpr files that did this might still exist.
+        if (haveFepPerturbedMassesInSettles(mtop))
+        {
+            gmx_fatal(FARGS,
+                      "SETTLE is not implemented for atoms whose mass is perturbed. "
+                      "You might\ninstead use normal constraints.");
+        }
 
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)

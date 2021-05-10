@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,6 +80,21 @@ static int pdbasearch_atom(const char*              name,
     return search_atom(name, i, pdba, searchtype, bAllowMissing, cyclicBondsIndex);
 }
 
+/*! \brief Return the index of the first atom whose residue index
+ * matches and which has a patch with the given name.
+ *
+ * \param[out] ii      Index of the first atom in the residue that matches,
+ *                       -1 if no match occurs.
+ * \param[out] jj      Index of the patch that matches,
+ *                       unchanged if no match occurs.
+ * \param[in]  name    Name of the desired patch to match
+ * \param[in]  patches The patch database to search
+ * \param[in]  resind  The residue index to match
+ * \param[in]  pdba    The atoms to work with
+ *
+ * \todo The short-circuit logic will be simpler if this returned a
+ * std::pair<int, int> as soon as the first double match is found.
+ */
 static void hacksearch_atom(int*                                            ii,
                             int*                                            jj,
                             const char*                                     name,
@@ -105,6 +120,10 @@ static void hacksearch_atom(int*                                            ii,
             {
                 *ii = i;
                 *jj = j;
+                if (*ii >= 0)
+                {
+                    break;
+                }
             }
             j++;
         }
@@ -218,8 +237,11 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                 if (singlePatch.tp == 10 && k == 2)
                 {
                     /* This is a water virtual site, not a hydrogen */
-                    /* Ugly hardcoded name hack */
-                    patch->nname.assign("M");
+                    /* Ugly hardcoded name hack to replace 'H' with 'M' */
+                    GMX_RELEASE_ASSERT(
+                            !patch->nname.empty() && patch->nname[0] == 'H',
+                            "Water virtual site should be named starting with H at this point");
+                    patch->nname[0] = 'M';
                 }
                 else if (singlePatch.tp == 11 && k >= 2)
                 {

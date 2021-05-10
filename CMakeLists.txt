@@ -298,6 +298,7 @@ include(gmxManageOpenMP)
 # These need to be done early (before further tests).
 #####################################################################
 
+include(gmxTestIntelLLVM)
 include(gmxCFlags)
 gmx_c_flags()
 

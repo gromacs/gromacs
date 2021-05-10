@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,31 +47,31 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # Error if compiler doesn't support required C++14 features.
+    # Error if compiler doesn't support required C++17 features.
     # cmake feature detection is currently inconsistent: gitlab.kitware.com/cmake/cmake/issues/18869
-    # When we use C++17 we might want to switch to using feature test macros.
+    # We might want to switch to using feature test macros some time.
     if(CMAKE_COMPILER_IS_GNUCXX)
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
-            set(cxx_required_version "GCC version 5")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7)
+            set(cxx_required_version "GCC version 7")
         endif()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.15)
             set(cxx_required_version "Visual Studio 2017")
         endif()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6) # For feature complete C++14 only 3.4 is needed.
-            set(cxx_required_version "Clang 3.6")        # But prior version have bugs (e.g. debug symbol support)
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
+            set(cxx_required_version "Clang 5")
         endif()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17)
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.1)
             set(cxx_required_version "Intel Compiler 2017")
         endif()
     else()
-        message(WARNING "You are using an unsupported compiler. Please make sure it fully supports C++14.")
+        message(WARNING "You are using an unsupported compiler. Please make sure it fully supports C++17.")
     endif()
     if (cxx_required_version)
         message(FATAL_ERROR "${cxx_required_version} or later required. "
-                            "Earlier versions don't have full C++14 support.")
+                            "Earlier versions don't have full C++17 support.")
     endif()
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -827,10 +827,42 @@ void checkAwhParams(const AwhParams* awhParams, const t_inputrec* ir, warninp_t 
         warning_error(wi, opt + " needs to be an integer > 0");
     }
 
+    bool haveFepLambdaDim = false;
     for (int k = 0; k < awhParams->numBias; k++)
     {
         std::string prefixawh = formatString("awh%d", k + 1);
         checkBiasParams(&awhParams->awhBiasParams[k], prefixawh, ir, wi);
+        /* Check if there is a FEP lambda dimension. */
+        for (int l = 0; l < awhParams->awhBiasParams[k].ndim; l++)
+        {
+            if (awhParams->awhBiasParams[k].dimParams[l].eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+            {
+                haveFepLambdaDim = true;
+                break;
+            }
+        }
+    }
+
+    if (haveFepLambdaDim)
+    {
+        if (awhParams->nstSampleCoord % ir->nstcalcenergy != 0)
+        {
+            opt          = "awh-nstsample";
+            auto message = formatString(
+                    "%s (%d) should be a multiple of nstcalcenergy (%d) when using AWH for "
+                    "sampling an FEP lambda dimension",
+                    opt.c_str(), awhParams->nstSampleCoord, ir->nstcalcenergy);
+            warning_error(wi, message);
+        }
+        if (awhParams->ePotential != eawhpotentialUMBRELLA)
+        {
+            opt          = "awh-potential";
+            auto message = formatString(
+                    "%s (%s) must be set to %s when using AWH for sampling an FEP lambda dimension",
+                    opt.c_str(), eawhpotential_names[awhParams->ePotential],
+                    eawhpotential_names[eawhpotentialUMBRELLA]);
+            warning_error(wi, message);
+        }
     }
 
     /* Do a final consistency check before returning */

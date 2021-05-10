@@ -93,6 +93,8 @@
 #define MAXPTR 254
 #define NOGID 255
 
+using gmx::BasicVector;
+
 /* Resource parameters
  * Do not change any of these until you read the instruction
  * in readinp.h. Some cpp's do not take spaces after the backslash
@@ -1505,6 +1507,12 @@ void check_ir(const char*                   mdparin,
     if (ir->bAdress)
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
+    }
+
+    // cosine acceleration is only supported in leap-frog
+    if (ir->cos_accel != 0.0 && ir->eI != eiMD)
+    {
+        warning_error(wi, "cos-acceleration is only supported by integrator = md");
     }
 }
 
@@ -3989,84 +3997,84 @@ static void check_disre(const gmx_mtop_t* mtop)
     }
 }
 
-static bool absolute_reference(const t_inputrec* ir, const gmx_mtop_t* sys, const bool posres_only, ivec AbsRef)
+//! Returns whether dimensions have an absolute reference due to walls, pbc or freezing
+static BasicVector<bool> haveAbsoluteReference(const t_inputrec& ir)
 {
-    int                  d, g, i;
-    gmx_mtop_ilistloop_t iloop;
-    int                  nmol;
-    const t_iparams*     pr;
+    BasicVector<bool> absRef = { false, false, false };
 
-    clear_ivec(AbsRef);
-
-    if (!posres_only)
+    /* Check the degrees of freedom of the COM (not taking COMM removal into account) */
+    for (int d = 0; d < DIM; d++)
     {
-        /* Check the COM */
-        for (d = 0; d < DIM; d++)
+        absRef[d] = (d >= ndof_com(&ir));
+    }
+    /* Check for freeze groups */
+    for (int g = 0; g < ir.opts.ngfrz; g++)
+    {
+        for (int d = 0; d < DIM; d++)
         {
-            AbsRef[d] = (d < ndof_com(ir) ? 0 : 1);
-        }
-        /* Check for freeze groups */
-        for (g = 0; g < ir->opts.ngfrz; g++)
-        {
-            for (d = 0; d < DIM; d++)
+            if (ir.opts.nFreeze[g][d] != 0)
             {
-                if (ir->opts.nFreeze[g][d] != 0)
-                {
-                    AbsRef[d] = 1;
-                }
+                absRef[d] = true;
             }
         }
     }
 
-    /* Check for position restraints */
-    iloop = gmx_mtop_ilistloop_init(sys);
+    return absRef;
+}
+
+//! Returns whether position restraints are used for dimensions
+static BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
+{
+    BasicVector<bool> havePosres = { false, false, false };
+
+    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(&sys);
+    int                  nmol;
     while (const InteractionLists* ilist = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        if (nmol > 0 && (AbsRef[XX] == 0 || AbsRef[YY] == 0 || AbsRef[ZZ] == 0))
+        if (nmol > 0 && (!havePosres[XX] || !havePosres[YY] || !havePosres[ZZ]))
         {
-            for (i = 0; i < (*ilist)[F_POSRES].size(); i += 2)
+            for (int i = 0; i < (*ilist)[F_POSRES].size(); i += 2)
             {
-                pr = &sys->ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
-                for (d = 0; d < DIM; d++)
+                const t_iparams& pr = sys.ffparams.iparams[(*ilist)[F_POSRES].iatoms[i]];
+                for (int d = 0; d < DIM; d++)
                 {
-                    if (pr->posres.fcA[d] != 0)
+                    if (pr.posres.fcA[d] != 0)
                     {
-                        AbsRef[d] = 1;
+                        havePosres[d] = true;
                     }
                 }
             }
-            for (i = 0; i < (*ilist)[F_FBPOSRES].size(); i += 2)
+            for (int i = 0; i < (*ilist)[F_FBPOSRES].size(); i += 2)
             {
                 /* Check for flat-bottom posres */
-                pr = &sys->ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
-                if (pr->fbposres.k != 0)
+                const t_iparams& pr = sys.ffparams.iparams[(*ilist)[F_FBPOSRES].iatoms[i]];
+                if (pr.fbposres.k != 0)
                 {
-                    switch (pr->fbposres.geom)
+                    switch (pr.fbposres.geom)
                     {
-                        case efbposresSPHERE: AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1; break;
-                        case efbposresCYLINDERX: AbsRef[YY] = AbsRef[ZZ] = 1; break;
-                        case efbposresCYLINDERY: AbsRef[XX] = AbsRef[ZZ] = 1; break;
+                        case efbposresSPHERE: havePosres = { true, true, true }; break;
+                        case efbposresCYLINDERX: havePosres[YY] = havePosres[ZZ] = true; break;
+                        case efbposresCYLINDERY: havePosres[XX] = havePosres[ZZ] = true; break;
                         case efbposresCYLINDER:
                         /* efbposres is a synonym for efbposresCYLINDERZ for backwards compatibility */
-                        case efbposresCYLINDERZ: AbsRef[XX] = AbsRef[YY] = 1; break;
+                        case efbposresCYLINDERZ: havePosres[XX] = havePosres[YY] = true; break;
                         case efbposresX: /* d=XX */
                         case efbposresY: /* d=YY */
                         case efbposresZ: /* d=ZZ */
-                            d         = pr->fbposres.geom - efbposresX;
-                            AbsRef[d] = 1;
+                            havePosres[pr.fbposres.geom - efbposresX] = true;
                             break;
                         default:
                             gmx_fatal(FARGS,
-                                      " Invalid geometry for flat-bottom position restraint.\n"
+                                      "Invalid geometry for flat-bottom position restraint.\n"
                                       "Expected nr between 1 and %d. Found %d\n",
-                                      efbposresNR - 1, pr->fbposres.geom);
+                                      efbposresNR - 1, pr.fbposres.geom);
                     }
                 }
             }
         }
     }
 
-    return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
+    return havePosres;
 }
 
 static void check_combination_rule_differences(const gmx_mtop_t* mtop,
@@ -4199,6 +4207,11 @@ static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t* mtop
     }
 }
 
+static bool allTrue(const BasicVector<bool>& boolVector)
+{
+    return boolVector[0] && boolVector[1] && boolVector[2];
+}
+
 void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_t wi)
 {
     // Not meeting MTS requirements should have resulted in a fatal error, so we can assert here
@@ -4210,12 +4223,11 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     real *                    mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
-    ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
     set_warning_line(wi, mdparin, -1);
 
-    if (absolute_reference(ir, sys, false, AbsRef))
+    if (allTrue(haveAbsoluteReference(*ir)) && allTrue(havePositionRestraints(*sys)))
     {
         warning_note(wi,
                      "Removing center of mass motion in the presence of position restraints might "
@@ -4301,7 +4313,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != eiBD && ir->comm_mode == ecmNO
-        && !(absolute_reference(ir, sys, FALSE, AbsRef) || ir->nsteps <= 10) && !ETC_ANDERSEN(ir->etc))
+        && !(allTrue(haveAbsoluteReference(*ir)) || allTrue(havePositionRestraints(*sys)) || ir->nsteps <= 10)
+        && !ETC_ANDERSEN(ir->etc))
     {
         warning(wi,
                 "You are not using center of mass motion removal (mdp option comm-mode), numerical "
@@ -4329,11 +4342,11 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     /* Check for pressure coupling with absolute position restraints */
     if (ir->epc != epcNO && ir->refcoord_scaling == erscNO)
     {
-        absolute_reference(ir, sys, TRUE, AbsRef);
+        const BasicVector<bool> havePosres = havePositionRestraints(*sys);
         {
             for (m = 0; m < DIM; m++)
             {
-                if (AbsRef[m] && norm2(ir->compress[m]) > 0)
+                if (havePosres[m] && norm2(ir->compress[m]) > 0)
                 {
                     warning(wi,
                             "You are using pressure coupling with absolute position restraints, "
@@ -4460,10 +4473,11 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         {
             if (ir->pull->coord[i].group[0] == 0 || ir->pull->coord[i].group[1] == 0)
             {
-                absolute_reference(ir, sys, FALSE, AbsRef);
+                const auto absRef     = haveAbsoluteReference(*ir);
+                const auto havePosres = havePositionRestraints(*sys);
                 for (m = 0; m < DIM; m++)
                 {
-                    if (ir->pull->coord[i].dim[m] && !AbsRef[m])
+                    if (ir->pull->coord[i].dim[m] && !(absRef[m] || havePosres[m]))
                     {
                         warning(wi,
                                 "You are using an absolute reference for pulling, but the rest of "

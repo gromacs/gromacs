@@ -8,7 +8,7 @@
     - .variables:default
     - .use-clang:base
   stage: test
-  image: ${CI_REGISTRY}/gromacs/gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020:release-2021
   variables:
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2
@@ -78,7 +78,7 @@ gmxapi-0.1:clang-8:py-3.8.2:
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2

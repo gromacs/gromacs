@@ -26,7 +26,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |C6LJ| replace:: :math:`c_6`
 .. |STAR| replace:: :math:`^{(*)}`
 .. |NREX| replace:: :math:`n_{ex}^{(nrexcl)}`
-.. |QEMU| replace:: :math:`q` (e); :math:`m` (u) 
+.. |QEMU| replace:: :math:`q` (e); :math:`m` (u)
 .. |MQM| replace:: :math:`q,m`
 
 .. _tab-topfile1:
@@ -44,7 +44,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         |                   |                           |            generate pairs (no/yes);                        |
         |                   |                           |            fudge LJ (); fudge QQ ()                        |
         +-------------------+---------------------------+------------------------------------------------------------+
-        | *mandatory*       | ``atomtypes``             |            atom type; m (u); q (e); particle type;         | 
+        | *mandatory*       | ``atomtypes``             |            atom type; m (u); q (e); particle type;         |
         |                   |                           |            |VCR| ; |WCR|                                   |
         +-------------------+---------------------------+------------------------------------------------------------+
         |                   | ``bondtypes``             |  (see |TREF|, directive ``bonds``)                         |
@@ -63,7 +63,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         |                   |                           |     |    |  |C6LJ| (|KJN6|)                                |
         +-------------------+---------------------------+-----+----+-------------------------------------------------+
 
-.. table:: 
+.. table::
 
         +------------------------------------------------------------------------------------------------------------+
         | Molecule definition(s)                                                                                     |
@@ -98,16 +98,19 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         | no interactions that generate exclusions, no constraints, use global atom numbers |
         +-----------------------------------------------------------------------------------+
 
-.. parsed-literal::
+-   ``# at`` is the required number of atom type indices for this directive
 
-    '\# at' is the required number of atom type indices for this directive
-    'f. tp' is the value used to select this function type
-    'F. E.' indicates which of the parameters can be interpolated in free energy calculations
-    |CRO| the combination rule determines the type of LJ parameters, see 
-    |STAR| for ``dihedraltypes`` one can specify 4 atoms or the inner (outer for improper) 2 atoms
-    |NREX| exclude neighbors :math:`n_{ex}` bonds away for non-bonded interactions
-    For free energy calculations, type, :math:`q` and :math:`m`  or no parameters should be added
-    for topology 'B' (:math:`\lambda = 1`) on the same line, after the normal parameters.
+-   ``f. tp`` is the value used to select this function type
+
+-   ``F. E.`` indicates which of the parameters can be interpolated in free energy calculations
+
+-   |CRO| the combination rule determines the type of LJ parameters, see :ref:`nbpar`
+
+-   |STAR| for ``dihedraltypes`` one can specify 4 atoms or the inner (outer for improper) 2 atoms
+
+-   |NREX| exclude neighbors :math:`n_{ex}` bonds away for non-bonded interactions
+
+-   For free energy calculations, type, :math:`q` and :math:`m`  or no parameters should be added for topology ``B`` (:math:`\lambda = 1`) on the same line, after the normal parameters.
 
 .. |BZERO| replace:: :math:`b_0`
 .. |KB| replace:: :math:`k_b`
@@ -119,7 +122,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |C23| replace:: :math:`C_{i=2,3}` (kJ mol\ :math:`^{-1}\ nm\ :math:`^{-i}`
 .. |BMM| replace:: :math:`b_m`
 .. |GE0| replace:: :math:`\geq 0`
-.. |KO| replace:: :math:`k` 
+.. |KO| replace:: :math:`k`
 .. |KJM| replace:: kJ mol\ :math:`^{-1}`
 .. |LUU| replace:: low, up\ :math:`_1`,\ :math:`_2`
 .. |MV| replace:: :math:`V`
@@ -149,8 +152,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |A2| replace:: :math:`a_2`
 .. |A3| replace:: :math:`a_3`
 .. |A4| replace:: :math:`a_4`
-.. |DOH| replace:: :math:d_{\mbox{\sc oh}}`
-.. |DHH| replace:: :math:d_{\mbox{\sc hh}}`
+.. |DOH| replace:: :math:`d_{\mbox{\sc oh}}`
+.. |DHH| replace:: :math:`d_{\mbox{\sc hh}}`
 .. |AO| replace:: :math:`a`
 .. |BO| replace:: :math:`b`
 .. |CO| replace:: :math:`c`
@@ -179,134 +182,134 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. table:: Details of ``[ moleculetype ]`` directives
 
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | Name of interaction                | Topology file directive    | num.       | func.     | Order of parameters and their units                                     | use in     | 
+            | Name of interaction                | Topology file directive    | num.       | func.     | Order of parameters and their units                                     | use in     |
             |                                    |                            | atoms [1]_ | type [2]_ |                                                                         | F.E.? [3]_ |
             +====================================+============================+============+===========+=========================================================================+============+
-            | bond                               | ``bonds`` [4]_, [5]_       | 2          | 1         | |BZERO| (nm); |KB| |NM2|                                                | all        | 
+            | bond                               | ``bonds`` [4]_, [5]_       | 2          | 1         | |BZERO| (nm); |KB| |NM2|                                                | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | G96 bond                           | ``bonds`` [4]_, [5]_       | 2          | 2         | |BZERO| (nm); |KB| |NM4|                                                | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | Morse                              | ``bonds`` [4]_, [5]_       | 2          | 3         | |BZERO| (nm); |DKJ|; |BETA|                                             | all        | 
+            | Morse                              | ``bonds`` [4]_, [5]_       | 2          | 3         | |BZERO| (nm); |DKJ|; |BETA|                                             | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | cubic bond                         | ``bonds`` [4]_, [5]_       | 2          | 4         | |BZERO| (nm); |C23|                                                     |            | 
+            | cubic bond                         | ``bonds`` [4]_, [5]_       | 2          | 4         | |BZERO| (nm); |C23|                                                     |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | connection                         | ``bonds`` [4]_             | 2          | 5         |                                                                         |            | 
+            | connection                         | ``bonds`` [4]_             | 2          | 5         |                                                                         |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | harmonic potential                 | ``bonds``                  | 2          | 6         | |BZERO| (nm); |KB| |NM2|                                                | all        | 
+            | harmonic potential                 | ``bonds``                  | 2          | 6         | |BZERO| (nm); |KB| |NM2|                                                | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | FENE bond                          | ``bonds`` [4]_             | 2          | 7         | |BMM|   (nm); |KB| |NM2|                                                |            | 
+            | FENE bond                          | ``bonds`` [4]_             | 2          | 7         | |BMM|   (nm); |KB| |NM2|                                                |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | tabulated bond                     | ``bonds`` [4]_             | 2          | 8         | table number (|GE0|); |KO| |KJM|                                        | |KO|       |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | tabulated bond [6]_                | ``bonds``                  | 2          | 9         | table number (|GE0|); |KO| |KJM|                                        | |KO|       |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | restraint potential                | ``bonds``                  | 2          | 10        | |LUU| (nm); |KDR| (|NM2|)                                               | all        | 
+            | restraint potential                | ``bonds``                  | 2          | 10        | |LUU| (nm); |KDR| (|NM2|)                                               | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | extra LJ or Coulomb                | ``pairs``                  | 2          | 1         | |MV| [7]_; |MW| [7]_                                                    | all        | 
+            | extra LJ or Coulomb                | ``pairs``                  | 2          | 1         | |MV| [7]_; |MW| [7]_                                                    | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | extra LJ or Coulomb                | ``pairs``                  | 2          | 2         | fudge QQ (); |QIJ| (e), |MV| [7]_; |MW| [7]_                            |            | 
+            | extra LJ or Coulomb                | ``pairs``                  | 2          | 2         | fudge QQ (); |QIJ| (e), |MV| [7]_; |MW| [7]_                            |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | extra LJ or Coulomb                | ``pairs_nb``               | 2          | 1         | |QIJ| (e); |MV| [7]_; |MW| [7]_                                         |            | 
+            | extra LJ or Coulomb                | ``pairs_nb``               | 2          | 1         | |QIJ| (e); |MV| [7]_; |MW| [7]_                                         |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | angle                              | ``angles`` [5]_            | 3          | 1         | |THE0| (deg); |KTHE| (|KJR2|)                                           | all        | 
+            | angle                              | ``angles`` [5]_            | 3          | 1         | |THE0| (deg); |KTHE| (|KJR2|)                                           | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | G96 angle                          | ``angles`` [5]_            | 3          | 2         | |THE0| (deg); |KTHE| (|KJM|)                                            | all        | 
+            | G96 angle                          | ``angles`` [5]_            | 3          | 2         | |THE0| (deg); |KTHE| (|KJM|)                                            | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | cross bond-bond                    | ``angles``                 | 3          | 3         | |R1E|, |R2E| (nm); |KRR| (|NM2|)                                        |            | 
+            | cross bond-bond                    | ``angles``                 | 3          | 3         | |R1E|, |R2E| (nm); |KRR| (|NM2|)                                        |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | cross bond-angle                   | ``angles``                 | 3          | 4         | |R1E|, |R2E|, |R3E| (nm); |KRTH| (|NM2|)                                |            | 
+            | cross bond-angle                   | ``angles``                 | 3          | 4         | |R1E|, |R2E|, |R3E| (nm); |KRTH| (|NM2|)                                |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | Urey-Bradley                       | ``angles`` [5]_            | 3          | 5         | |THE0| (deg); |KTHE| (|KJR2|); |RN13| (nm); |KUB| (|NM2|)               | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | quartic angle                      | ``angles`` [5]_            | 3          | 6         | |THE0| (deg); |C024| (|KJRI|)                                           |            | 
+            | quartic angle                      | ``angles`` [5]_            | 3          | 6         | |THE0| (deg); |C024| (|KJRI|)                                           |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | tabulated angle                    | ``angles``                 | 3          | 8         | table number (|GE0|); |KO| (|KJM|)                                      | |KO|       | 
+            | tabulated angle                    | ``angles``                 | 3          | 8         | table number (|GE0|); |KO| (|KJM|)                                      | |KO|       |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             |  |  restricted                     |                            |            |           |                                                                         |            |
-            |  |  bending potential              | ``angles``                 | 3          | 10        | |THE0| (deg); |KTHE| (|KJM|)                                            |            | 
+            |  |  bending potential              | ``angles``                 | 3          | 10        | |THE0| (deg); |KTHE| (|KJM|)                                            |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | proper dihedral                    | ``dihedrals``              | 4          | 1         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     | 
+            | proper dihedral                    | ``dihedrals``              | 4          | 1         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | improper dihedral                  | ``dihedrals``              | 4          | 2         | |XI0| (deg); |KXI| (|KJR2|)                                             | all        | 
+            | improper dihedral                  | ``dihedrals``              | 4          | 2         | |XI0| (deg); |KXI| (|KJR2|)                                             | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | Ryckaert-Bellemans dihedral        | ``dihedrals``              | 4          | 3         | |C0|, |C1|, |C2|, |C3|, |C4|, |C5| (|KJM|)                              | all        | 
+            | Ryckaert-Bellemans dihedral        | ``dihedrals``              | 4          | 3         | |C0|, |C1|, |C2|, |C3|, |C4|, |C5| (|KJM|)                              | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | periodic improper dihedral         | ``dihedrals``              | 4          | 4         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     | 
+            | periodic improper dihedral         | ``dihedrals``              | 4          | 4         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | Fourier dihedral                   | ``dihedrals``              | 4          | 5         | |C1|, |C2|, |C3|, |C4|, |C5| (|KJM|)                                    | all        | 
+            | Fourier dihedral                   | ``dihedrals``              | 4          | 5         | |C1|, |C2|, |C3|, |C4|, |C5| (|KJM|)                                    | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | tabulated dihedral                 | ``dihedrals``              | 4          | 8         | table number (|GE0|); |KO| (|KJM|)                                      | |KO|       |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | proper dihedral (multiple)         | ``dihedrals``              | 4          | 9         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     | 
+            | proper dihedral (multiple)         | ``dihedrals``              | 4          | 9         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | restricted dihedral                | ``dihedrals``              | 4          | 10        | |PHI0| (deg); |KPHI| (|KJM|)                                            |            | 
+            | restricted dihedral                | ``dihedrals``              | 4          | 10        | |PHI0| (deg); |KPHI| (|KJM|)                                            |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | combined bending-torsion potential | ``dihedrals``              | 4          | 11        | |A0|, |A1|, |A2|, |A3|, |A4| (|KJM|)                                    |            | 
+            | combined bending-torsion potential | ``dihedrals``              | 4          | 11        | |A0|, |A1|, |A2|, |A3|, |A4| (|KJM|)                                    |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | exclusions                         | ``exclusions``             | 1          |           | one or more atom indices                                                |            | 
+            | exclusions                         | ``exclusions``             | 1          |           | one or more atom indices                                                |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | constraint                         | ``constraints`` [4]_       | 2          | 1         | |BZERO| (nm)                                                            | all        | 
+            | constraint                         | ``constraints`` [4]_       | 2          | 1         | |BZERO| (nm)                                                            | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | constraint [6]_                    | ``constraints``            | 2          | 2         | |BZERO| (nm)                                                            | all        | 
+            | constraint [6]_                    | ``constraints``            | 2          | 2         | |BZERO| (nm)                                                            | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | SETTLE                             | ``settles``                | 1          | 1         | |DOH|, |DHH| (nm)                                                       |            | 
+            | SETTLE                             | ``settles``                | 1          | 1         | |DOH|, |DHH| (nm)                                                       |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | 1-body virtual site                | ``virtual_sites1``         | 2          | 0         |                                                                         |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 2-body virtual site                | ``virtual_sites2``         | 3          | 1         | |AO| ()                                                                 |            | 
+            | 2-body virtual site                | ``virtual_sites2``         | 3          | 1         | |AO| ()                                                                 |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 2-body virtual site (fd)           | ``virtual_sites2``         | 3          | 2         | |DO| (nm)                                                               |            | 
+            | 2-body virtual site (fd)           | ``virtual_sites2``         | 3          | 2         | |DO| (nm)                                                               |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 3-body virtual site                | ``virtual_sites3``         | 4          | 1         | |AO|, |BO| ()                                                           |            | 
+            | 3-body virtual site                | ``virtual_sites3``         | 4          | 1         | |AO|, |BO| ()                                                           |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 3-body virtual site (fd)           | ``virtual_sites3``         | 4          | 2         | |AO| (); |DO| (nm)                                                      |            | 
+            | 3-body virtual site (fd)           | ``virtual_sites3``         | 4          | 2         | |AO| (); |DO| (nm)                                                      |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 3-body virtual site (fad)          | ``virtual_sites3``         | 4          | 3         | |THET| (deg); |DO| (nm)                                                 |            | 
+            | 3-body virtual site (fad)          | ``virtual_sites3``         | 4          | 3         | |THET| (deg); |DO| (nm)                                                 |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 3-body virtual site (out)          | ``virtual_sites3``         | 4          | 4         | |AO|, |BO| (); |CO| (|NM|)                                              |            | 
+            | 3-body virtual site (out)          | ``virtual_sites3``         | 4          | 4         | |AO|, |BO| (); |CO| (|NM|)                                              |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | 4-body virtual site (fdn)          | ``virtual_sites4``         | 5          | 2         | |AO|, |BO| (); |CO| (nm)                                                |            | 
+            | 4-body virtual site (fdn)          | ``virtual_sites4``         | 5          | 2         | |AO|, |BO| (); |CO| (nm)                                                |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | N-body virtual site (COG)          | ``virtual_sitesn``         | 1          | 1         | one or more constructing atom indices                                   |            | 
+            | N-body virtual site (COG)          | ``virtual_sitesn``         | 1          | 1         | one or more constructing atom indices                                   |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | N-body virtual site (COM)          | ``virtual_sitesn``         | 1          | 2         | one or more constructing atom indices                                   |            | 
+            | N-body virtual site (COM)          | ``virtual_sitesn``         | 1          | 2         | one or more constructing atom indices                                   |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | N-body virtual site (COW)          | ``virtual_sitesn``         | 1          | 3         |  |  one or more pairs consisting of                                     |            |
-            |                                    |                            |            |           |  |  constructing atom index and weight                                  |            | 
+            |                                    |                            |            |           |  |  constructing atom index and weight                                  |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | position restraint                 | ``position_restraints``    | 1          | 1         | |KX|, |KY|, |KZ| (|NM2|)                                                | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | flat-bottomed position restraint   | ``position_restraints``    | 1          | 2         | |GO|, |RO| (nm), |KO| (|NM2|)                                           |            | 
+            | flat-bottomed position restraint   | ``position_restraints``    | 1          | 2         | |GO|, |RO| (nm), |KO| (|NM2|)                                           |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | distance restraint                 | ``distance_restraints``    | 2          | 1         | type; label; |LUU| (nm); weight ()                                      |            | 
+            | distance restraint                 | ``distance_restraints``    | 2          | 1         | type; label; |LUU| (nm); weight ()                                      |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | dihedral restraint                 | ``dihedral_restraints``    | 4          | 1         | |PHI0| (deg); |DPHI| (deg); |DIHR| (|KJR2|)                             | all        | 
+            | dihedral restraint                 | ``dihedral_restraints``    | 4          | 1         | |PHI0| (deg); |DPHI| (deg); |DIHR| (|KJR2|)                             | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | orientation restraint              | ``orientation_restraints`` | 2          | 1         | exp.; label; |ALPH|; obs. (U); weight (|UM1|)                           |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | angle restraint                    | ``angle_restraints``       | 4          | 1         | |THE0| (deg); |KC| (|KJM|); multiplicity                                | |THEK|     | 
+            | angle restraint                    | ``angle_restraints``       | 4          | 1         | |THE0| (deg); |KC| (|KJM|); multiplicity                                | |THEK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | angle restraint (z)                | ``angle_restraints_z``     | 2          | 1         | |THE0| (deg); |KC| (|KJM|); multiplicity                                | |THEK|     | 
+            | angle restraint (z)                | ``angle_restraints_z``     | 2          | 1         | |THE0| (deg); |KC| (|KJM|); multiplicity                                | |THEK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
 
 .. [1]
    The required number of atom indices for this directive
-   
+
 .. [2]
    The index to use to select this function type
-   
+
 .. [3]
    Indicates which of the parameters can be interpolated in free energy calculations
-   
+
 .. [4]
    This interaction type will be used by :ref:`grompp <gmx grompp>` for generating exclusions
-   
+
 .. [5]
    This interaction type can be converted to constraints by :ref:`grompp <gmx grompp>`
-   
+
 .. [7]
-   The combination rule determines the type of LJ parameters, see
-   
+   The combination rule determines the type of LJ parameters, see :ref:`nbpar`
+
 .. [6]
    No connection, and so no exclusions, are generated for this interaction
 
@@ -402,28 +405,28 @@ Here is an example of a topology file, ``urea.top``:
        8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
 
     [ bonds ]
-        1	2
-        1	3	
-        1   6
-        3	4
-        3	5
-        6	7
-        6	8
+        1    2
+        1    3
+        1    6
+        3    4
+        3    5
+        6    7
+        6    8
 
-    [ dihedrals ] 
+    [ dihedrals ]
     ;   ai    aj    ak    al funct  definition
-         2     1     3     4   9     
-         2     1     3     5   9     
-         2     1     6     7   9     
-         2     1     6     8   9     
-         3     1     6     7   9     
-         3     1     6     8   9     
-         6     1     3     4   9     
-         6     1     3     5   9     
+         2     1     3     4   9
+         2     1     3     5   9
+         2     1     6     7   9
+         2     1     6     8   9
+         3     1     6     7   9
+         3     1     6     8   9
+         6     1     3     4   9
+         6     1     3     5   9
 
-    [ dihedrals ] 
-         3     6     1     2   4     
-         1     4     3     5   4	 
+    [ dihedrals ]
+         3     6     1     2   4
+         1     4     3     5   4
          1     7     6     8   4
 
     [ position_restraints ]
@@ -440,7 +443,7 @@ Here is an example of a topology file, ``urea.top``:
         1    4     3    5     1  180     0  10
 
     ; Include TIP3P water topology
-    #include "amber99/tip3p.itp"
+    #include "amber99.ff/tip3p.itp"
 
     [ system ]
     Urea in Water
@@ -542,7 +545,7 @@ in a topology, do the following (in case of *e.g.* decane):
 
     [ dihedrals ]
     ;  ai    aj    ak    al funct       c0       c1       c2
-        1    2     3     4     3 
+        1    2     3     4     3
         2    3     4     5     3
 
 In the original implementation of the potential for
@@ -619,14 +622,14 @@ example ``urea.itp`` follows:
         1	2
     ...
         6	8
-    [ dihedrals ] 
+    [ dihedrals ]
     ;   ai    aj    ak    al funct  definition
-         2     1     3     4   9     
+         2     1     3     4   9
     ...
-         6     1     3     5   9     
-    [ dihedrals ] 
-         3     6     1     2   4     
-         1     4     3     5   4	 
+         6     1     3     5   9
+    [ dihedrals ]
+         3     6     1     2   4
+         1     4     3     5   4
          1     7     6     8   4
 
 Using :ref:`itp` files results in a very short
@@ -689,32 +692,32 @@ follows:
     ; nr     type     resnr    residu     atom      cgnr      charge        mass
     #ifdef DeLoof
     ; Use Charges from DeLoof
-       1        C        1        TFE        C         1        0.74        
-       2        F        1        TFE        F         1       -0.25        
-       3        F        1        TFE        F         1       -0.25        
-       4        F        1        TFE        F         1       -0.25        
-       5      CH2        1        TFE      CH2         1        0.25        
-       6       OA        1        TFE       OA         1       -0.65        
-       7       HO        1        TFE       HO         1        0.41        
+       1        C        1        TFE        C         1        0.74
+       2        F        1        TFE        F         1       -0.25
+       3        F        1        TFE        F         1       -0.25
+       4        F        1        TFE        F         1       -0.25
+       5      CH2        1        TFE      CH2         1        0.25
+       6       OA        1        TFE       OA         1       -0.65
+       7       HO        1        TFE       HO         1        0.41
     #else
     ; Use Charges from VanBuuren
-       1        C        1        TFE        C         1        0.59        
-       2        F        1        TFE        F         1       -0.2         
-       3        F        1        TFE        F         1       -0.2         
-       4        F        1        TFE        F         1       -0.2         
-       5      CH2        1        TFE      CH2         1        0.26        
-       6       OA        1        TFE       OA         1       -0.55        
-       7       HO        1        TFE       HO         1        0.3         
+       1        C        1        TFE        C         1        0.59
+       2        F        1        TFE        F         1       -0.2
+       3        F        1        TFE        F         1       -0.2
+       4        F        1        TFE        F         1       -0.2
+       5      CH2        1        TFE      CH2         1        0.26
+       6       OA        1        TFE       OA         1       -0.55
+       7       HO        1        TFE       HO         1        0.3
     #endif
 
     [ bonds ]
     ;  ai    aj funct           c0           c1
-        6     7     1 1.000000e-01 3.138000e+05 
-        1     2     1 1.360000e-01 4.184000e+05 
-        1     3     1 1.360000e-01 4.184000e+05 
-        1     4     1 1.360000e-01 4.184000e+05 
-        1     5     1 1.530000e-01 3.347000e+05 
-        5     6     1 1.430000e-01 3.347000e+05 
+        6     7     1 1.000000e-01 3.138000e+05
+        1     2     1 1.360000e-01 4.184000e+05
+        1     3     1 1.360000e-01 4.184000e+05
+        1     4     1 1.360000e-01 4.184000e+05
+        1     5     1 1.530000e-01 3.347000e+05
+        5     6     1 1.430000e-01 3.347000e+05
     ...
 
 This mechanism is used by :ref:`pdb2gmx <gmx pdb2gmx>` to implement optional position
@@ -789,7 +792,7 @@ Below is an example of a topology which changes from 200 propanols to
 
 ::
 
-     
+
     ; Include force field parameters
     #include "gromos43a1.ff/forcefield.itp"
 
@@ -806,7 +809,7 @@ Below is an example of a topology which changes from 200 propanols to
       5  CH3    1     PROP   PC3    2   0.000   15.035
 
     [ bonds ]
-    ;  ai    aj funct    par_A  par_B 
+    ;  ai    aj funct    par_A  par_B
         1     2     2    gb_1   gb_26
         2     3     2    gb_17  gb_26
         3     4     2    gb_26  gb_26

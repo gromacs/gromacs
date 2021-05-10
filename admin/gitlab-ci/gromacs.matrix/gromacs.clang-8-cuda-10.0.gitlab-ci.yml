@@ -21,7 +21,7 @@ gromacs:clang-8-cuda-10.0:configure:
     - .use-clang:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
@@ -36,7 +36,7 @@ gromacs:clang-8-cuda-10.0:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -46,7 +46,7 @@ gromacs:clang-8-cuda-10.0:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -60,7 +60,7 @@ gromacs:clang-8-cuda-10.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"

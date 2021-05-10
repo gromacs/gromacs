@@ -1,0 +1,129 @@
+GROMACS 2021.2 release notes
+----------------------------
+
+This version was released on May 5th, 2021. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2021.1 version, to fix known issues. It also incorporates all
+fixes made in version 2020.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Removed a potential race condition with GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed possible (but so far unobserved) race condition in coordinate copy when
+using GPU update with dipole moment calculation.
+
+:issue:`4024`
+
+Avoided issues with global reduction observed with md-vv
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The new implementation for md-vv in the modular simulator could
+produce floating-point exceptions computing values on non-master ranks
+that were never used. This is now fixed by avoiding that
+computation. The other integrators were unaffected because they
+over-wrote the values computed.
+
+:issue:`4031`
+
+Prohibited SETTLE interactions for atoms with perturbed masses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Older implementations produced varying degrees of wrong results because
+this has never been implemented. Now both ``mdrun`` and ``grompp``
+refuse to handle such a system, suggesting using normal constraints.
+
+:issue:`3959`
+
+Rerun now writes pull output correctly
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Refactoring omitted to preserve that pullf.xvg and pullx.xvg files
+should be written during a rerun. All 2019 and 2020 versions were
+affected, as well as 2021 and 2021.1. The pull output files are
+now written as they used to be in 2018 and earlier.
+
+:issue:`4043`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix incorrect behaviour with single residue chains in pdb2gmx
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The code for chcking for cyclic molecules could lead to single residue chains
+incorrectly to be assigned as circular molecules.
+
+:issue:`4029`
+
+Fix grompp check for position restraints with absolute reference
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed that grompp with position restraints would always issue a warning about
+using an absolute reference, even when an absolute reference was not used.
+
+:issue:`3996`
+
+Fix error when using VMD plugin
+"""""""""""""""""""""""""""""""
+
+Tools would crash with a C++ library assertion because the plugin loading
+code incorrectly tried to construct a string from nullptr.
+
+:issue:`3055`
+
+Fix file permissions with ``gmx solvate`` and ``gmx genion``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+These used to write temporary files with Unix permissions 0600. Now
+they respect the umask of the process (typically 0644).
+
+:issue:`4040`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Support for Intel oneAPI compiler 2021.2
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fixed compiler infinity math and MKL flags.
+
+Fix Apple OpenCL build
+""""""""""""""""""""""
+
+:issue:`4008`
+
+Fixed compilation issue with GCC 11
+""""""""""""""""""""""""""""""""""""
+
+:issue:`4039`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Fix bond type in GROMOS force fields
+""""""""""""""""""""""""""""""""""""
+
+The bond type for C and +N in [ACE] was incorrect.
+
+:issue:`3995`
+
+
+Allow PME on CPU in runs with domain decomposition and GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Relaxed a limitation which prevented running parallel runs with domain
+decomposition and GPU update to use the CPU for PME (as long as combined
+PP-PME ranks are used). This allows parallel runs to scale when the CPU
+resources are sufficient for PME.
+
+:issue:`4035`

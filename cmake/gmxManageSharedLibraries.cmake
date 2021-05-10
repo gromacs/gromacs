@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2018,2020, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,7 @@ IF( WIN32)
           gmx_manage_prefer_static_libs_flags("${build_type}")
       endforeach()
   ENDIF()
-  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
+  IF( CMAKE_C_COMPILER_ID STREQUAL "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
         STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
         set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)

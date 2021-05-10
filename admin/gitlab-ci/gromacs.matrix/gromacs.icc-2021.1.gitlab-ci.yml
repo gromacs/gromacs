@@ -21,7 +21,7 @@ gromacs:icc-2021.1:configure:
    - .gromacs:base:configure
    - .use-icc-oneapi:base
    - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -32,7 +32,7 @@ gromacs:icc-2021.1:build:
     - .gromacs:base:build
     - .use-icc-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -43,7 +43,7 @@ gromacs:icc-2021.1:test:
     - .gromacs:base:test
     - .use-icc-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -54,7 +54,7 @@ gromacs:icc-2021.1:regressiontest:
     - .gromacs:base:regressiontest
     - .use-icc-oneapi:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:

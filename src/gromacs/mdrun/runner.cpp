@@ -1240,12 +1240,13 @@ int Mdrunner::mdrunner()
     try
     {
         const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
+        const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
 
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
                 useDomainDecomposition, useUpdateGroups, pmeRunMode, domdecOptions.numPmeRanks > 0,
                 useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop,
                 doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                replExParams.exchangeInterval > 0, doRerun, devFlags, mdlog);
+                replExParams.exchangeInterval > 0, haveFrozenAtoms, doRerun, devFlags, mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -1652,6 +1653,11 @@ int Mdrunner::mdrunner()
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
                              inputrec->fepvals->n_lambda);
+
+        // cos acceleration is only supported by md, but older tpr
+        // files might still combine it with other integrators
+        GMX_RELEASE_ASSERT(inputrec->cos_accel == 0.0 || inputrec->eI == eiMD,
+                           "cos_acceleration is only supported by integrator=md");
 
         /* Kinetic energy data */
         gmx_ekindata_t ekind;

@@ -95,6 +95,12 @@ public:
         section.addOption(RealOption("omega").store(&omega_));
         section.addOption(RealOption("t0").store(&t0_));
         section.addOption(RealOption("sigma").store(&sigma_));
+        if (sigma_ <= 0 && t0_ != 0.0)
+        {
+            GMX_THROW(
+                    InvalidInputError("Non-pulsed field (sigma = 0) ignores the value of t0. "
+                                      "Please, set t0 to 0 to avoid this error."));
+        }
     }
     /*! \brief
      * Creates mdp parameters for this field component.

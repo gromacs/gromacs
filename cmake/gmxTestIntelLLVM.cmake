@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,10 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# CMake detects ICC NextGen (based on LLVM) as Clang
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    include(CheckCXXSourceCompiles)
-    check_cxx_source_compiles(
-        "int main() { return __INTEL_LLVM_COMPILER; }"
-        GMX_ICC_NEXTGEN)
+# CMake detects Intel compiler (based on LLVM) as Clang
+# Was fixed in Cmake 3.20. When we require 3.20 this can be deleted.
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+  try_compile(GMX_INTEL_LLVM "${CMAKE_BINARY_DIR}" SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestIntelLLVM.cpp" OUTPUT_VARIABLE GMX_INTEL_LLVM_VERSION)
+  if (GMX_INTEL_LLVM)
+    if(GMX_INTEL_LLVM_VERSION MATCHES ": ([0-9]+) ")
+      set(GMX_INTEL_LLVM_VERSION ${CMAKE_MATCH_1})
+    else()
+      message(WARNING "Intel LLVM version detection failed. Output: ${GMX_INTEL_LLVM_VERSION}")
+    endif()
+  endif()
 endif()

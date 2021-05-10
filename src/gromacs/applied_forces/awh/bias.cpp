@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,6 +120,10 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
                 "The step number is negative which is not supported by the AWH code."));
     }
 
+    GMX_RELEASE_ASSERT(!(params_.convolveForce && grid_.hasLambdaAxis()),
+                       "When using AWH to sample an FEP lambda dimension the AWH potential cannot "
+                       "be convolved.");
+
     state_.setCoordValue(grid_, coordValue);
 
     std::vector<double, AlignedAllocator<double>>& probWeightNeighbor = alignedTempWorkSpace_;
@@ -148,12 +152,6 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
             updateForceCorrelationGrid(probWeightNeighbor, neighborLambdaDhdl, t);
 
             state_.sampleCoordAndPmf(dimParams_, grid_, probWeightNeighbor, convolvedBias);
-        }
-        /* Set the umbrella grid point (for the lambda axis) to the
-         * current grid point. */
-        if (params_.convolveForce && grid_.hasLambdaAxis())
-        {
-            state_.setUmbrellaGridpointToGridpoint();
         }
     }
 
@@ -190,11 +188,10 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
          */
         if (moveUmbrella)
         {
-            const bool onlySampleUmbrellaGridpoint = false;
-            double     newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor,
-                                                      neighborLambdaDhdl, biasForce_, step, seed,
-                                                      params_.biasIndex, onlySampleUmbrellaGridpoint);
-            *potentialJump          = newPotential - potential;
+            double newPotential =
+                    state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, neighborLambdaDhdl,
+                                        biasForce_, step, seed, params_.biasIndex);
+            *potentialJump = newPotential - potential;
         }
     }
 
@@ -210,14 +207,6 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
             double newPotential = -calcConvolvedBias(coordState.coordValue()) * params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
-    }
-    /* If there is a lambda axis it is still controlled using an umbrella even if the force
-     * is convolved in the other dimensions. */
-    if (moveUmbrella && params_.convolveForce && grid_.hasLambdaAxis())
-    {
-        const bool onlySampleUmbrellaGridpoint = true;
-        state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, neighborLambdaDhdl, biasForce_,
-                            step, seed, params_.biasIndex, onlySampleUmbrellaGridpoint);
     }
 
     /* Return the potential. */

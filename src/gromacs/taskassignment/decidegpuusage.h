@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,6 +278,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
  * \param[in]  useEssentialDynamics         If essential dynamics is active.
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  useReplicaExchange           If this is a REMD simulation.
+ * \param[in]  haveFrozenAtoms              If this simulation has frozen atoms (see Issue #3920).
  * \param[in]  doRerun                      It this is a rerun.
  * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  mdlog                        MD logger.
@@ -298,6 +299,7 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
                                     bool                           useEssentialDynamics,
                                     bool                           doOrientationRestraints,
                                     bool                           useReplicaExchange,
+                                    bool                           haveFrozenAtoms,
                                     bool                           doRerun,
                                     const DevelopmentFeatureFlags& devFlags,
                                     const gmx::MDLogger&           mdlog);

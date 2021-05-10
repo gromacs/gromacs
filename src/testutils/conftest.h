@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,8 @@ class TestReferenceChecker;
 
 struct ConfMatchSettings
 {
-    ConfMatchSettings() : tolerance(defaultRealTolerance()) {}
-
-    FloatingPointTolerance tolerance;
+    FloatingPointTolerance tolerance              = defaultRealTolerance();
+    bool                   matchFullConfiguration = false;
 };
 
 /*! \brief
@@ -94,6 +93,12 @@ public:
     ConfMatch& tolerance(const FloatingPointTolerance& tolerance)
     {
         settings_.tolerance = tolerance;
+        return *this;
+    }
+    //! Sets whether the full file contents should be matched
+    ConfMatch& matchFullConfiguration(const bool flag)
+    {
+        settings_.matchFullConfiguration = flag;
         return *this;
     }
 

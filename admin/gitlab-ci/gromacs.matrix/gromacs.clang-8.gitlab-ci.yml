@@ -18,7 +18,7 @@ gromacs:clang-8:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   variables:
     COMPILER_MAJOR_VERSION: 8
 
@@ -29,7 +29,7 @@ gromacs:clang-8:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   needs:
     - job: gromacs:clang-8:configure
 
@@ -37,7 +37,7 @@ gromacs:clang-8:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   needs:
     - job: gromacs:clang-8:build
 
@@ -45,7 +45,7 @@ gromacs:clang-8:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0:release-2021
   tags:
     - k8s-scilifelab
   needs:

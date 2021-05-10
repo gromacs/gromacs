@@ -20,12 +20,21 @@ jobs:
             name: "Windows Latest MSVC", artifact: "Windows-MSVC.7z",
             os: windows-latest,
             cc: "cl", cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+            gpu_var: "Off"
           }
         - {
             name: "macOS Latest Clang", artifact: "macOS.7z",
             os: macos-latest,
-            cc: "clang", cxx: "clang++"
+            cc: "clang", cxx: "clang++",
+            gpu_var: "Off"
+          }
+        - {
+            name: "macOS Latest gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            os: macos-latest,
+            cc: "gcc-10", cxx: "g++-10",
+            gpu_var: "OpenCL"
+
           }
 
     steps:
@@ -117,6 +126,7 @@ jobs:
         if ("${{ runner.os }}" STREQUAL "Windows")
           set(openmp_use "OFF")
         endif()
+        set(gpu_var ${{ matrix.config.gpu_var }})
 
         execute_process(
           COMMAND cmake
@@ -129,7 +139,7 @@ jobs:
             -D CMAKE_CXX_COMPILER_LAUNCHER=ccache
             -D GMX_COMPILER_WARNINGS=ON
             -D GMX_DEFAULT_SUFFIX=OFF
-            -D GMX_GPU=OFF
+            -D GMX_GPU=${gpu_var}
             -D GMX_SIMD=None
             -D GMX_FFT_LIBRARY=FFTPACK
             -D GMX_OPENMP=${openmp_use}
