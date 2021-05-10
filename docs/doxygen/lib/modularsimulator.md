@@ -672,6 +672,14 @@ arguments (e.g frequency, offset, ...).
 Note that `getElementPointer<Element>` will call `Element::getElementPointerImpl`,
 which needs to be implemented by the different elements.
 
+### Data management
+Modular simulator encourages design localizing data as much as possible. It
+also offers access to generally used data structures (such as the current
+state or energies). To allow for generic data to be shared between elements,
+the simulator algorithm builder also allows to store objects with life time
+guaranteed to be either equal to the simulator algorithm builder or equal to
+the simulator algorithm object (i.e. longer than the life time of the elements).
+
 ## Infrastructure
 ### `DomDecHelper` and `PmeLoadBalanceHelper`
 These infrastructure elements are responsible for domain decomposition and 

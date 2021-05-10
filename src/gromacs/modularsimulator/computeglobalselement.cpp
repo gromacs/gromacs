@@ -160,7 +160,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
-void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
+void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       step,
                                                     Time gmx_unused            time,
                                                     const RegisterRunFunction& registerRunFunction)
 {
@@ -275,11 +275,11 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                                bool                 useLastBox,
                                                bool                 isInit)
 {
-    auto x       = statePropagatorData_->positionsView().unpaddedArrayRef();
-    auto v       = statePropagatorData_->velocitiesView().unpaddedArrayRef();
-    auto box     = statePropagatorData_->constBox();
-    auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
-                              : statePropagatorData_->constBox();
+    auto        x       = statePropagatorData_->positionsView().unpaddedArrayRef();
+    auto        v       = statePropagatorData_->velocitiesView().unpaddedArrayRef();
+    const auto* box     = statePropagatorData_->constBox();
+    const auto* lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
+                                     : statePropagatorData_->constBox();
 
     if (DOMAINDECOMP(cr_) && shouldCheckNumberOfBondedInteractions(*cr_->dd))
     {
@@ -399,7 +399,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
     // actual element built
     static const std::string key("vvComputeGlobalsElement");
 
-    const std::optional<std::any> cachedValue = builderHelper->getStoredValue(key);
+    const std::optional<std::any> cachedValue = builderHelper->builderData(key);
 
     if (cachedValue)
     {
@@ -424,7 +424,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         simulator->fr,
                         simulator->top_global,
                         simulator->constr));
-        builderHelper->storeValue(key, vvComputeGlobalsElement);
+        builderHelper->storeBuilderData(key, vvComputeGlobalsElement);
         return vvComputeGlobalsElement;
     }
 }
