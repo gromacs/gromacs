@@ -244,7 +244,7 @@ public:
     }
 
     void setSoftcoreAlpha(const real scAlpha) { fepVals_.sc_alpha = scAlpha; }
-    void setSoftcoreCoulomb(const real scCoulomb) { fepVals_.bScCoul = scCoulomb; }
+    void setSoftcoreCoulomb(const bool scCoulomb) { fepVals_.bScCoul = scCoulomb; }
 
     //! get forcerec data as wanted by the nonbonded kernel
     void getForcerec(t_forcerec* fr)
