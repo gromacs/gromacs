@@ -323,7 +323,7 @@ if (GMX_GIT_VERSION_INFO)
 endif()
 
 include(gmxCustomCommandUtilities)
-
+include(FindPythonModule)
 # The first two are also for use outside this file, encapsulating the details
 # of how to use the generated VersionInfo.cmake.
 set(VERSION_INFO_CMAKE_FILE   ${PROJECT_BINARY_DIR}/VersionInfo.cmake)
@@ -365,6 +365,20 @@ string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_C
 #          step 1, so they get regenerated only when the static version info
 #          changes.
 
+# Check if we have all necessary python modules available
+if (Python3_Interpreter_FOUND)
+    set(HAVE_FULL_FUNCTIONING_PYTHON Python3_Interpreter_FOUND)
+    foreach(module argparse hashlib hmac os stat re) # add further modules if necessary
+        find_python_module(${module} QUIET)
+        string(TOUPPER ${module} module_upper)
+        if(NOT PYTHONMODULE_${module_upper})
+            message(STATUS
+                "Python module ${module} not found - disabling checksum validation")
+            unset(HAVE_FULL_FUNCTIONING_PYTHON)
+        endif()
+    endforeach()
+endif()
+
 # Configure information known at this time into a partially filled
 # version info file.
 set(VERSION_INFO_CMAKEIN_FILE_PARTIAL
@@ -405,6 +419,7 @@ else()
         OUTPUT ${VERSION_INFO_CMAKE_FILE}
         COMMAND ${CMAKE_COMMAND}
             -D PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+            -D HAVE_FULL_FUNCTIONING_PYTHON=${HAVE_FULL_FUNCTIONING_PYTHON}
             -D PROJECT_VERSION=${GMX_VERSION_STRING}
             -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
             -D DIRECTORIES_TO_CHECKSUM=${DIRECTORIES_TO_CHECKSUM_STRING}
@@ -435,7 +450,7 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (Python3_Interpreter_FOUND)
+if (HAVE_FULL_FUNCTIONING_PYTHON)
     # We need the full path to the directories after passing it through
     set(FULL_PATH_DIRECTORIES "")
     foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})
