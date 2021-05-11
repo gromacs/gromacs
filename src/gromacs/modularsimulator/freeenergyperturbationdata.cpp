@@ -110,7 +110,7 @@ ArrayRef<const real> FreeEnergyPerturbationData::constLambdaView()
     return lambda_;
 }
 
-int FreeEnergyPerturbationData::currentFEPState()
+int FreeEnergyPerturbationData::currentFEPState() const
 {
     return currentFEPState_;
 }

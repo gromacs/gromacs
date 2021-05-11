@@ -192,9 +192,9 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto v  = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
+    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    const auto* v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
 
     int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     int homenr = mdAtoms_->mdatoms()->homenr;
@@ -269,9 +269,9 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -350,11 +350,11 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto v  = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f  = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -435,11 +435,11 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x  = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto v  = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f  = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
+    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]

@@ -84,7 +84,7 @@ public:
     //! Get a const view of the current lambda vector
     ArrayRef<const real> constLambdaView();
     //! Get the current FEP state
-    int currentFEPState();
+    int currentFEPState() const;
     //! Update MDAtoms (public because it's called by DomDec - see #3700)
     void updateMDAtoms();
 

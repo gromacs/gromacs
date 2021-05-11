@@ -96,7 +96,7 @@ public:
     TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
 
     //! Performs final reference data processing when test ends.
-    void onTestEnd(bool testPassed);
+    void onTestEnd(bool testPassed) const;
 
     //! Full path of the reference data file.
     std::string fullFilename_;
@@ -334,7 +334,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfT
     }
 }
 
-void TestReferenceDataImpl::onTestEnd(bool testPassed)
+void TestReferenceDataImpl::onTestEnd(bool testPassed) const
 {
     if (!bInUse_)
     {

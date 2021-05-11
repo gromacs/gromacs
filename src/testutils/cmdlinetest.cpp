@@ -156,7 +156,7 @@ CommandLine::~CommandLine() {}
 
 void CommandLine::initFromArray(const ArrayRef<const char* const>& cmdline)
 {
-    impl_.reset(new Impl(cmdline));
+    impl_ = std::make_unique<Impl>(cmdline);
 }
 
 void CommandLine::append(const char* arg)
