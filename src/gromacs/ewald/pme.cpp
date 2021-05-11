@@ -1781,7 +1781,7 @@ void gmx_pme_reinit_atoms(gmx_pme_t*                pme,
 {
     if (pme->gpu != nullptr)
     {
-        GMX_ASSERT(!(pme->bFEP_q && !chargesB.empty()),
+        GMX_ASSERT(!(pme->bFEP_q && chargesB.empty()),
                    "B state charges must be specified if running Coulomb FEP on the GPU");
         pme_gpu_reinit_atoms(pme->gpu, numAtoms, chargesA.data(), pme->bFEP_q ? chargesB.data() : nullptr);
     }
