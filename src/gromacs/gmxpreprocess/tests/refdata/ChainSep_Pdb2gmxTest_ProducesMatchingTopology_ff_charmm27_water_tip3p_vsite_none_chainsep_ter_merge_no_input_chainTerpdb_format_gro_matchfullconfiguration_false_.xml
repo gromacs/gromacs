@@ -5,7 +5,7 @@
     <File Name="-o">
       <GroFile Name="Header">
         <String Name="Title">Protein (first fragment of regressiontests/complex/aminoacids.gro)</String>
-        <Int Name="Number of atoms">255</Int>
+        <Int Name="Number of atoms">258</Int>
       </GroFile>
     </File>
     <File Name="-p">
@@ -24,8 +24,9 @@
 #include "charmm27.ff/forcefield.itp"
 
 ; Include chain topologies
-#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_7_topol_Protein_chain_A.itp"
-#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_7_topol_Protein_chain_C.itp"
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_ff_charmm27_water_tip3p_vsite_none_chainsep_ter_merge_no_input_chainTerpdb_format_gro_matchfullconfiguration_false__topol_Protein_chain_A.itp"
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_ff_charmm27_water_tip3p_vsite_none_chainsep_ter_merge_no_input_chainTerpdb_format_gro_matchfullconfiguration_false__topol_Protein_chain_B.itp"
+#include "ChainSep_Pdb2gmxTest_ProducesMatchingTopology_ff_charmm27_water_tip3p_vsite_none_chainsep_ter_merge_no_input_chainTerpdb_format_gro_matchfullconfiguration_false__topol_Protein_chain_C.itp"
 
 ; Include water topology
 #include "charmm27.ff/tip3p.itp"
@@ -47,6 +48,7 @@ Protein (first fragment of regressiontests/complex/aminoacids.gro)
 [ molecules ]
 ; Compound        #mols
 Protein_chain_A     1
+Protein_chain_B     1
 Protein_chain_C     1
 ]]></String>
     </File>
