@@ -39,6 +39,7 @@ file(GLOB MDLIB_SOURCES *.cpp)
 # To avoid listing all the necessary files manually, we will remove SYCL-specific files here:
 list(REMOVE_ITEM MDLIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_internal_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lincs_gpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lincs_gpu_internal_sycl.cpp
@@ -66,6 +67,8 @@ endif()
 
 if(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
+        gpuforcereduction_impl.cpp
+        gpuforcereduction_impl_internal_sycl.cpp
         leapfrog_gpu_sycl.cpp
         lincs_gpu.cpp
         lincs_gpu_internal_sycl.cpp
@@ -74,6 +77,8 @@ if(GMX_GPU_SYCL)
     )
 
     _gmx_add_files_to_property(SYCL_SOURCES
+        gpuforcereduction_impl.cpp
+        gpuforcereduction_impl_internal_sycl.cpp
         leapfrog_gpu_sycl.cpp
         lincs_gpu.cpp
         lincs_gpu_internal_sycl.cpp
