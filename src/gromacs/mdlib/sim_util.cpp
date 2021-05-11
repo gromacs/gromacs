@@ -959,14 +959,15 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     const bool computeSlowForces = (mtsLevels.empty() || step % mtsLevels[1].stepFactor == 0);
 
     StepWorkload flags;
-    flags.stateChanged        = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
-    flags.haveDynamicBox      = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
-    flags.doNeighborSearch    = ((legacyFlags & GMX_FORCE_NS) != 0);
-    flags.computeSlowForces   = computeSlowForces;
-    flags.computeVirial       = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
-    flags.computeEnergy       = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
-    flags.computeForces       = ((legacyFlags & GMX_FORCE_FORCES) != 0);
-    flags.computeListedForces = ((legacyFlags & GMX_FORCE_LISTED) != 0);
+    flags.stateChanged                  = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
+    flags.haveDynamicBox                = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
+    flags.doNeighborSearch              = ((legacyFlags & GMX_FORCE_NS) != 0);
+    flags.computeSlowForces             = computeSlowForces;
+    flags.computeVirial                 = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
+    flags.computeEnergy                 = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
+    flags.computeForces                 = ((legacyFlags & GMX_FORCE_FORCES) != 0);
+    flags.useOnlyMtsCombinedForceBuffer = ((legacyFlags & GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE) != 0);
+    flags.computeListedForces           = ((legacyFlags & GMX_FORCE_LISTED) != 0);
     flags.computeNonbondedForces =
             ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && simulationWork.computeNonbonded
             && !(simulationWork.computeNonbondedAtMtsLevel1 && !computeSlowForces);
@@ -2052,8 +2053,7 @@ void do_force(FILE*                               fplog,
      * avoids an extra halo exchange (when DD is used) and post-processing step.
      */
     const bool combineMtsForcesBeforeHaloExchange =
-            (stepWork.computeForces && fr->useMts && stepWork.computeSlowForces
-             && (legacyFlags & GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE) != 0
+            (stepWork.computeForces && fr->useMts && stepWork.computeSlowForces && stepWork.useOnlyMtsCombinedForceBuffer
              && !(stepWork.computeVirial || simulationWork.useGpuNonbonded || stepWork.haveGpuPmeOnThisRank));
     if (combineMtsForcesBeforeHaloExchange)
     {

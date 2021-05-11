@@ -1127,6 +1127,7 @@ void gmx::LegacySimulator::do_md()
                        | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (bDoFEP ? GMX_FORCE_DHDL : 0));
         if (fr->useMts && !do_per_step(step, ir->nstfout))
         {
+            // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
             force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
         }
 
