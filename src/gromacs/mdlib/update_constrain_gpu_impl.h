@@ -228,19 +228,6 @@ private:
     gmx_wallcycle* wcycle_ = nullptr;
 };
 
-/*! \brief Scaling matrix struct.
- *
- * \todo Should be generalized.
- */
-struct ScalingMatrix
-{
-    ScalingMatrix(const matrix m) :
-        xx(m[XX][XX]), yy(m[YY][YY]), zz(m[ZZ][ZZ]), yx(m[YY][XX]), zx(m[ZZ][XX]), zy(m[ZZ][YY])
-    {
-    }
-    float xx, yy, zz, yx, zx, zy;
-};
-
 } // namespace gmx
 
 #endif // GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H

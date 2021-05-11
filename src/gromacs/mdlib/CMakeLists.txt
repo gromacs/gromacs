@@ -44,7 +44,9 @@ list(REMOVE_ITEM MDLIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/lincs_gpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lincs_gpu_internal_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/settle_gpu.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/settle_gpu_internal_sycl.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/settle_gpu_internal_sycl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/update_constrain_gpu_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/update_constrain_gpu_internal_sycl.cpp)
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 if(GMX_GPU_CUDA)
@@ -56,12 +58,14 @@ if(GMX_GPU_CUDA)
        lincs_gpu_internal.cu
        settle_gpu.cpp
        settle_gpu_internal.cu
-       update_constrain_gpu_impl.cu
+       update_constrain_gpu_impl.cpp
+       update_constrain_gpu_internal.cu
        )
     _gmx_add_files_to_property(CUDA_SOURCES
        gpuforcereduction_impl.cpp
        lincs_gpu.cpp
        settle_gpu.cpp
+       update_constrain_gpu_impl.cpp
        )
 endif()
 
@@ -74,6 +78,8 @@ if(GMX_GPU_SYCL)
         lincs_gpu_internal_sycl.cpp
         settle_gpu.cpp
         settle_gpu_internal_sycl.cpp
+        update_constrain_gpu_impl.cpp
+        update_constrain_gpu_internal_sycl.cpp
     )
 
     _gmx_add_files_to_property(SYCL_SOURCES
@@ -84,6 +90,8 @@ if(GMX_GPU_SYCL)
         lincs_gpu_internal_sycl.cpp
         settle_gpu.cpp
         settle_gpu_internal_sycl.cpp
+        update_constrain_gpu_impl.cpp
+        update_constrain_gpu_internal_sycl.cpp
     )
 endif()
 
