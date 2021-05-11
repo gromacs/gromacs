@@ -1526,8 +1526,8 @@ void gmx::LegacySimulator::do_md()
                     // coordinates have been copied already if PME or buffer ops has not needed it this step.
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
                     const bool useGpuPmeOnThisRank = runScheduleWork->simulationWork.useGpuPme
-                        && thisRankHasDuty(cr, DUTY_PME)
-                        && runScheduleWork->stepWork.computeSlowForces;
+                                                     && thisRankHasDuty(cr, DUTY_PME)
+                                                     && runScheduleWork->stepWork.computeSlowForces;
                     if (!useGpuPmeOnThisRank && !runScheduleWork->stepWork.useGpuXBufferOps)
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
