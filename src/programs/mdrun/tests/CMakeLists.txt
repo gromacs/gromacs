@@ -236,7 +236,7 @@ endif()
 # Keeping the FEP tests separate for now to be able to judge runtime more easily
 # Can be included in mdrun tests later
 set(testname "MdrunFEPTests")
-set(exename "mdrunfep-test")
+set(exename "mdrun-fep-test")
 
 gmx_add_gtest_executable(${exename}
         CPP_SOURCE_FILES
