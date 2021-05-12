@@ -1132,7 +1132,7 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
                                                             stateGpu->fReducedOnDevice());
 
     // register forces and add dependencies
-    fr->gpuForceReduction[gmx::AtomLocality::Local]->registerNbnxmForce(nbv->getGpuForces());
+    fr->gpuForceReduction[gmx::AtomLocality::Local]->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
 
     if (runScheduleWork->simulationWork.useGpuPme
         && (thisRankHasDuty(cr, DUTY_PME) || runScheduleWork->simulationWork.useGpuPmePpCommunication))
@@ -1183,7 +1183,8 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
                                                                    accumulate);
 
         // register forces and add dependencies
-        fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->registerNbnxmForce(nbv->getGpuForces());
+        fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->registerNbnxmForce(
+                Nbnxm::gpu_get_f(nbv->gpu_nbv));
         if (runScheduleWork->domainWork.haveCpuBondedWork || runScheduleWork->domainWork.haveFreeEnergyWork)
         {
             fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->addDependency(

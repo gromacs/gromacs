@@ -306,14 +306,5 @@ GPU_FUNC_QUALIFIER
 bool haveGpuShortRangeWork(const NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused interactionLocality)
         GPU_FUNC_TERM_WITH_RETURN(false);
 
-/*! \brief Get the pointer to the GPU nonbonded force buffer
- *
- * \param[in] nb  The nonbonded data GPU structure
- * \returns       A pointer to the force buffer in GPU memory
- */
-GPU_FUNC_QUALIFIER
-DeviceBuffer<gmx::RVec> getGpuForces(NbnxmGpu gmx_unused* nb)
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
-
 } // namespace Nbnxm
 #endif

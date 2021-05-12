@@ -395,12 +395,6 @@ public:
      */
     int getNumAtoms(gmx::AtomLocality locality) const;
 
-    /*! \brief Get the pointer to the GPU nonbonded force buffer
-     *
-     * \returns A pointer to the force buffer in GPU memory
-     */
-    DeviceBuffer<gmx::RVec> getGpuForces() const;
-
     //! Return the kernel setup
     const Nbnxm::KernelSetup& kernelSetup() const { return kernelSetup_; }
 

@@ -62,12 +62,6 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid& /*grid*/,
     GMX_RELEASE_ASSERT(false, "nbnxn_gpu_x_to_nbat_x only supported with CUDA");
 }
 
-DeviceBuffer<gmx::RVec> getGpuForces(NbnxmGpu* /*nb*/)
-{
-    GMX_RELEASE_ASSERT(false, "getGpuForces only supported with CUDA");
-    return DeviceBuffer<gmx::RVec>{};
-}
-
 } // namespace Nbnxm
 
 #endif // !GMX_GPU_CUDA

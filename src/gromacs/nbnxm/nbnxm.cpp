@@ -213,11 +213,6 @@ int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality) const
     return numAtoms;
 }
 
-DeviceBuffer<gmx::RVec> nonbonded_verlet_t::getGpuForces() const
-{
-    return Nbnxm::getGpuForces(gpu_nbv);
-}
-
 real nonbonded_verlet_t::pairlistInnerRadius() const
 {
     return pairlistSets_->params().rlistInner;
