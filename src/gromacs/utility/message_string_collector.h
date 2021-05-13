@@ -40,8 +40,8 @@
  * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_MESSAGESTRINGCOLLECTOR_H
-#define GMX_UTILITY_MESSAGESTRINGCOLLECTOR_H
+#ifndef GMX_UTILITY_MESSAGE_STRING_COLLECTOR_H
+#define GMX_UTILITY_MESSAGE_STRING_COLLECTOR_H
 
 #include <memory>
 #include <string>
@@ -87,6 +87,14 @@ public:
      * Adds a new message.
      */
     void append(const std::string& message);
+    /*! \brief
+     * Adds a new message if the condition is satisfied..
+     */
+    void appendIf(bool condition, const char* message);
+    /*! \brief
+     * Adds a new message if the condition is satisfied.
+     */
+    void appendIf(bool condition, const std::string& message);
     /*! \brief
      * Ends a context started with startContext().
      *
@@ -177,4 +185,4 @@ private:
 
 } // namespace gmx
 
-#endif
+#endif // GMX_UTILITY_MESSAGE_STRING_COLLECTOR_H

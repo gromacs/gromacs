@@ -59,7 +59,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/message_string_collector.h"
 
 namespace gmx
 {

@@ -48,6 +48,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         listoflists.cpp
         logger.cpp
         mdmodulesnotifier.cpp
+        message_string_collector.cpp
         path.cpp
         physicalnodecommunicator.cpp
         range.cpp

@@ -139,7 +139,7 @@
  * Similarly, gmxomp.h removes the need to use conditional compilation for code
  * that needs to include omp.h for OpenMP functions.
  *
- * The header messagestringcollector.h declares a gmx::MessageStringCollector
+ * The header message_string_collector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
  *
  * The header sysinfo.h declares gmx_getpid() for getting the current process
