@@ -103,9 +103,6 @@ enum class DDBondedChecking : bool;
  */
 int ddglatnr(const gmx_domdec_t* dd, int i);
 
-/*! \brief Returns a list of update group partitioning for each molecule type or empty when update groups are not used */
-gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingsPerMoleculeType(const gmx_domdec_t& dd);
-
 /*! \brief Store the global cg indices of the home cgs in state,
  *
  * This means it can be reset, even after a new DD partitioning.
@@ -148,9 +145,6 @@ int dd_pme_maxshift_x(const gmx_domdec_t& dd);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim y */
 int dd_pme_maxshift_y(const gmx_domdec_t& dd);
-
-/*! \brief Return whether constraints, not including settles, may cross domain boundaries */
-bool ddMayHaveSplitConstraints(const gmx_domdec_t& dd);
 
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);

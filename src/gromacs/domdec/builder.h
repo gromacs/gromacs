@@ -60,6 +60,7 @@ namespace gmx
 {
 class MDLogger;
 class LocalAtomSetManager;
+class RangePartitioning;
 struct DomdecOptions;
 struct MdrunOptions;
 
@@ -76,14 +77,17 @@ class DomainDecompositionBuilder
 {
 public:
     //! Constructor
-    DomainDecompositionBuilder(const MDLogger&      mdlog,
-                               t_commrec*           cr,
-                               const DomdecOptions& options,
-                               const MdrunOptions&  mdrunOptions,
-                               const gmx_mtop_t&    mtop,
-                               const t_inputrec&    ir,
-                               const matrix         box,
-                               ArrayRef<const RVec> xGlobal);
+    DomainDecompositionBuilder(const MDLogger&                   mdlog,
+                               t_commrec*                        cr,
+                               const DomdecOptions&              options,
+                               const MdrunOptions&               mdrunOptions,
+                               const gmx_mtop_t&                 mtop,
+                               const t_inputrec&                 ir,
+                               const matrix                      box,
+                               ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+                               bool                              useUpdateGroups,
+                               real                              maxUpdateGroupRadius,
+                               ArrayRef<const RVec>              xGlobal);
     //! Destructor
     ~DomainDecompositionBuilder();
     //! Build the resulting DD manager

@@ -45,14 +45,16 @@
 
 #include <vector>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+enum class PbcType : int;
 struct gmx_mtop_t;
-struct t_inputrec;
 
 namespace gmx
 {
+class MDLogger;
 class RangePartitioning;
 
 /*! \brief Returns a vector with update groups for each moleculetype in \p mtop
@@ -62,12 +64,15 @@ class RangePartitioning;
  * the restrictions of update groups, e.g. more than two constraints in a row.
  *
  * Currently valid update groups are:
- * a single atom which is not a virtual site and does not have constraints;
- * or a group of atoms where all virtual sites are constructed from atoms
- * within the group and at least one non-vsite atom is constrained to
- * all other non-vsite atoms.
+ * - a single atom which is not a virtual site and does not have constraints;
+ * - or a group of atoms where all virtual sites are constructed from atoms
+ *   within the group and at least one non-vsite atom is constrained to
+ *   all other non-vsite atoms.
+ *
  * To have update groups, all virtual sites should be linear 2 or 3 atom
  * constructions with coefficients >= 0 and sum of coefficients <= 1.
+ *
+ * This vector is generally consumed in constructing an UpdateGroups object.
  *
  * \param[in] mtop  The system topology
  */
@@ -75,15 +80,85 @@ std::vector<RangePartitioning> makeUpdateGroupingsPerMoleculeType(const gmx_mtop
 
 /*! \brief Returns the maximum update group radius
  *
- * \note When \p updateGroupingsPerMoleculeType is empty, 0 is returned.
+ * \note When \p updateGroups is empty, 0 is returned.
  *
- * \param[in] mtop          The system topology
- * \param[in] updateGroupingsPerMoleculeType  List of update group, size should match the number of moltypes in \p mtop or be 0
- * \param[in] temperature   The maximum reference temperature, pass -1 when unknown or not applicable
+ * \param[in] mtop                           The system topology
+ * \param[in] updateGroupingPerMoleculeType  List of update group, size should match the
+ *                                           number of moltypes in \p mtop or be 0
+ * \param[in] temperature                    The maximum reference temperature, pass -1
+ *                                           when unknown or not applicable
  */
-real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
-                                 gmx::ArrayRef<const RangePartitioning> updateGroupingsPerMoleculeType,
-                                 real                                   temperature);
+real computeMaxUpdateGroupRadius(const gmx_mtop_t&                 mtop,
+                                 ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+                                 real                              temperature);
+
+/*! \brief Return the margin required for successful domain decomposition
+ *
+ * \param[in] pbcType    The PBC type in use
+ * \param[in] box        The box in use
+ * \param[in] rlist      The list size in use
+ */
+real computeCutoffMargin(PbcType pbcType, matrix box, real rlist);
+
+/*! \brief Returns whether mtop contains any constraints and/or vsites
+ *
+ * When we have constraints and/or vsites, it is beneficial to use
+ * update groups (when possible) to allow independent update of
+ * groups.*/
+bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop);
+
+/*! \libinternal
+ * \brief Owns the update grouping and related data */
+class UpdateGroups
+{
+public:
+    //! Default constructor
+    UpdateGroups() = default;
+    //! Constructor when update groups are active
+    UpdateGroups(std::vector<RangePartitioning>&& updateGroupingPerMoleculeType, real maxUpdateGroupRadius);
+
+    bool                              useUpdateGroups() const { return useUpdateGroups_; }
+    real                              maxUpdateGroupRadius() const { return maxUpdateGroupRadius_; }
+    ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType() const
+    {
+        return updateGroupingPerMoleculeType_;
+    }
+
+private:
+    //! Whether update groups are in use
+    const bool useUpdateGroups_ = false;
+    //! The update groupings within each respective molecule type, empty when not in use
+    const std::vector<RangePartitioning> updateGroupingPerMoleculeType_ = {};
+    //! The maximum radius of any update group, 0 when not in use
+    const real maxUpdateGroupRadius_ = 0.0_real;
+};
+
+/*! \brief Builder for update groups.
+ *
+ * Checks the conditions for using update groups, and logs a message
+ * if they cannot be used, along with the reason why not.
+ *
+ * If PP domain decomposition is not in use, there is no reason to use
+ * update groups.
+ *
+ * All molecule types in the system topology must be conform to the
+ * requirements, such that makeUpdateGroupingsPerMoleculeType()
+ * returns a non-empty vector.
+ *
+ * When we have constraints and/or vsites, it is beneficial to use
+ * update groups (when possible) to allow independent update of
+ * groups. But if there are no constraints or vsites, then there is no
+ * need to use update groups at all.
+ *
+ * To use update groups, the large domain-to-domain cutoff distance
+ * should be compatible with the box size.
+ */
+UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
+                              std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
+                              real                             maxUpdateGroupRadius,
+                              bool                             useDomainDecomposition,
+                              bool                             systemHasConstraintsOrVsites,
+                              real                             cutoffMargin);
 
 } // namespace gmx
 

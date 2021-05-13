@@ -116,9 +116,11 @@
 #include "utility.h"
 
 // TODO remove this when moving domdec into gmx namespace
+using gmx::ArrayRef;
 using gmx::DdRankOrder;
 using gmx::DlbOption;
 using gmx::DomdecOptions;
+using gmx::RangePartitioning;
 
 static const char* enumValueToString(DlbState enumValue)
 {
@@ -204,12 +206,6 @@ int ddglatnr(const gmx_domdec_t* dd, int i)
     }
 
     return atnr;
-}
-
-gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingsPerMoleculeType(const gmx_domdec_t& dd)
-{
-    GMX_RELEASE_ASSERT(dd.comm, "Need a valid dd.comm");
-    return dd.comm->systemInfo.updateGroupingsPerMoleculeType;
 }
 
 void dd_store_state(const gmx_domdec_t& dd, t_state* state)
@@ -980,11 +976,6 @@ int dd_pme_maxshift_y(const gmx_domdec_t& dd)
     {
         return 0;
     }
-}
-
-bool ddMayHaveSplitConstraints(const gmx_domdec_t& dd)
-{
-    return dd.comm->systemInfo.mayHaveSplitConstraints;
 }
 
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd)
@@ -1916,32 +1907,16 @@ static gmx_domdec_comm_t* init_dd_comm()
     return comm;
 }
 
-/* Returns whether mtop contains constraints and/or vsites */
-static bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
+static void setupUpdateGroups(const gmx::MDLogger&              mdlog,
+                              const gmx_mtop_t&                 mtop,
+                              ArrayRef<const RangePartitioning> updateGroupingsPerMoleculeType,
+                              const bool                        useUpdateGroups,
+                              const real                        maxUpdateGroupRadius,
+                              DDSystemInfo*                     systemInfo)
 {
-    return std::any_of(IListRange(mtop).begin(), IListRange(mtop).end(), [](const auto ilist) {
-        return !extractILists(ilist.list(), IF_CONSTRAINT | IF_VSITE).empty();
-    });
-}
-
-static void setupUpdateGroups(const gmx::MDLogger& mdlog,
-                              const gmx_mtop_t&    mtop,
-                              const t_inputrec&    inputrec,
-                              const real           cutoffMargin,
-                              DDSystemInfo*        systemInfo)
-{
-    /* When we have constraints and/or vsites, it is beneficial to use
-     * update groups (when possible) to allow independent update of groups.
-     */
-    if (!systemHasConstraintsOrVsites(mtop))
-    {
-        /* No constraints or vsites, atoms can be updated independently */
-        return;
-    }
-
-    systemInfo->updateGroupingsPerMoleculeType = gmx::makeUpdateGroupingsPerMoleculeType(mtop);
-    systemInfo->useUpdateGroups = (!systemInfo->updateGroupingsPerMoleculeType.empty()
-                                   && getenv("GMX_NO_UPDATEGROUPS") == nullptr);
+    systemInfo->updateGroupingsPerMoleculeType = updateGroupingsPerMoleculeType;
+    systemInfo->useUpdateGroups                = useUpdateGroups;
+    systemInfo->maxUpdateGroupRadius           = maxUpdateGroupRadius;
 
     if (systemInfo->useUpdateGroups)
     {
@@ -1952,32 +1927,13 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
                                * systemInfo->updateGroupingsPerMoleculeType[molblock.type].numBlocks();
         }
 
-        systemInfo->maxUpdateGroupRadius = computeMaxUpdateGroupRadius(
-                mtop, systemInfo->updateGroupingsPerMoleculeType, maxReferenceTemperature(inputrec));
-
-        /* To use update groups, the large domain-to-domain cutoff distance
-         * should be compatible with the box size.
-         */
-        systemInfo->useUpdateGroups = (atomToAtomIntoDomainToDomainCutoff(*systemInfo, 0) < cutoffMargin);
-
-        if (systemInfo->useUpdateGroups)
-        {
-            GMX_LOG(mdlog.info)
-                    .appendTextFormatted(
-                            "Using update groups, nr %d, average size %.1f atoms, max. radius %.3f "
-                            "nm\n",
-                            numUpdateGroups,
-                            mtop.natoms / static_cast<double>(numUpdateGroups),
-                            systemInfo->maxUpdateGroupRadius);
-        }
-        else
-        {
-            GMX_LOG(mdlog.info)
-                    .appendTextFormatted(
-                            "The combination of rlist and box size prohibits the use of update "
-                            "groups\n");
-            systemInfo->updateGroupingsPerMoleculeType.clear();
-        }
+        GMX_LOG(mdlog.info)
+                .appendTextFormatted(
+                        "Using update groups, nr %d, average size %.1f atoms, max. radius %.3f "
+                        "nm\n",
+                        numUpdateGroups,
+                        mtop.natoms / static_cast<double>(numUpdateGroups),
+                        systemInfo->maxUpdateGroupRadius);
     }
 }
 
@@ -2021,26 +1977,24 @@ static bool moleculesAreAlwaysWhole(const gmx_mtop_t&                           
 }
 
 /*! \brief Generate the simulation system information */
-static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
-                                  DDRole                         ddRole,
-                                  MPI_Comm                       communicator,
-                                  const DomdecOptions&           options,
-                                  const gmx_mtop_t&              mtop,
-                                  const t_inputrec&              ir,
-                                  const matrix                   box,
-                                  gmx::ArrayRef<const gmx::RVec> xGlobal)
+static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
+                                  DDRole                            ddRole,
+                                  MPI_Comm                          communicator,
+                                  const DomdecOptions&              options,
+                                  const gmx_mtop_t&                 mtop,
+                                  const t_inputrec&                 ir,
+                                  const matrix                      box,
+                                  ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+                                  const bool                        useUpdateGroups,
+                                  const real                        maxUpdateGroupRadius,
+                                  gmx::ArrayRef<const gmx::RVec>    xGlobal)
 {
     const real tenPercentMargin = 1.1;
 
     DDSystemInfo systemInfo;
 
-    /* We need to decide on update groups early, as this affects communication distances */
-    systemInfo.useUpdateGroups = false;
-    if (ir.cutoff_scheme == CutoffScheme::Verlet)
-    {
-        real cutoffMargin = std::sqrt(max_cutoff2(ir.pbcType, box)) - ir.rlist;
-        setupUpdateGroups(mdlog, mtop, ir, cutoffMargin, &systemInfo);
-    }
+    setupUpdateGroups(
+            mdlog, mtop, updateGroupingPerMoleculeType, useUpdateGroups, maxUpdateGroupRadius, &systemInfo);
 
     systemInfo.moleculesAreAlwaysWhole = moleculesAreAlwaysWhole(
             mtop, systemInfo.useUpdateGroups, systemInfo.updateGroupingsPerMoleculeType);
@@ -2873,14 +2827,17 @@ class DomainDecompositionBuilder::Impl
 {
 public:
     //! Constructor
-    Impl(const MDLogger&      mdlog,
-         t_commrec*           cr,
-         const DomdecOptions& options,
-         const MdrunOptions&  mdrunOptions,
-         const gmx_mtop_t&    mtop,
-         const t_inputrec&    ir,
-         const matrix         box,
-         ArrayRef<const RVec> xGlobal);
+    Impl(const MDLogger&                   mdlog,
+         t_commrec*                        cr,
+         const DomdecOptions&              options,
+         const MdrunOptions&               mdrunOptions,
+         const gmx_mtop_t&                 mtop,
+         const t_inputrec&                 ir,
+         const matrix                      box,
+         ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+         bool                              useUpdateGroups,
+         real                              maxUpdateGroupRadius,
+         ArrayRef<const RVec>              xGlobal);
 
     //! Build the resulting DD manager
     gmx_domdec_t* build(LocalAtomSetManager* atomSets);
@@ -2920,14 +2877,17 @@ public:
     //! }
 };
 
-DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
-                                       t_commrec*           cr,
-                                       const DomdecOptions& options,
-                                       const MdrunOptions&  mdrunOptions,
-                                       const gmx_mtop_t&    mtop,
-                                       const t_inputrec&    ir,
-                                       const matrix         box,
-                                       ArrayRef<const RVec> xGlobal) :
+DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
+                                       t_commrec*                        cr,
+                                       const DomdecOptions&              options,
+                                       const MdrunOptions&               mdrunOptions,
+                                       const gmx_mtop_t&                 mtop,
+                                       const t_inputrec&                 ir,
+                                       const matrix                      box,
+                                       ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+                                       const bool                        useUpdateGroups,
+                                       const real                        maxUpdateGroupRadius,
+                                       ArrayRef<const RVec>              xGlobal) :
     mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
@@ -2947,6 +2907,9 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
                                 mtop_,
                                 ir_,
                                 box,
+                                updateGroupingPerMoleculeType,
+                                useUpdateGroups,
+                                maxUpdateGroupRadius,
                                 xGlobal);
 
     const int  numRanksRequested         = cr_->sizeOfDefaultCommunicator;
@@ -3042,8 +3005,11 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&      mdlo
                                                        const gmx_mtop_t&    mtop,
                                                        const t_inputrec&    ir,
                                                        const matrix         box,
+                                                       ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
+                                                       const bool           useUpdateGroups,
+                                                       const real           maxUpdateGroupRadius,
                                                        ArrayRef<const RVec> xGlobal) :
-    impl_(new Impl(mdlog, cr, options, mdrunOptions, mtop, ir, box, xGlobal))
+    impl_(new Impl(mdlog, cr, options, mdrunOptions, mtop, ir, box, updateGroupingPerMoleculeType, useUpdateGroups, maxUpdateGroupRadius, xGlobal))
 {
 }
 

@@ -423,7 +423,7 @@ struct DDSystemInfo
     //! True when update groups are used
     bool useUpdateGroups = false;
     //! Update atom grouping for each molecule type
-    std::vector<gmx::RangePartitioning> updateGroupingsPerMoleculeType;
+    gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType;
     //! The maximum radius over all update groups
     real maxUpdateGroupRadius;
 

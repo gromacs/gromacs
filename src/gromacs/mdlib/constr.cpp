@@ -1097,7 +1097,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                         pull_t*               pull_work,
                         FILE*                 log_p,
                         const t_commrec*      cr_p,
-                        const bool            mayHaveSplitConstraints,
+                        const bool            useUpdateGroups,
                         const gmx_multisim_t* ms_p,
                         t_nrnb*               nrnb_p,
                         gmx_wallcycle*        wcycle_p,
@@ -1154,8 +1154,11 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
             }
         }
 
-        // When there are multiple PP domains and update groups are not in use,
-        // the constraints might be split across them.
+        // When there are multiple PP domains and update groups are
+        // not in use, the constraints might be split across the
+        // domains, needing particular handling.
+        const bool mayHaveSplitConstraints = DOMAINDECOMP(cr) && !useUpdateGroups;
+
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             lincsd = init_lincs(

@@ -52,11 +52,14 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/messagestringcollector.h"
 
 namespace gmx
 {
@@ -750,5 +753,82 @@ real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
 
     return maxRadius;
 }
+
+real computeCutoffMargin(PbcType pbcType, matrix box, const real rlist)
+{
+    return std::sqrt(max_cutoff2(pbcType, box)) - rlist;
+}
+
+UpdateGroups::UpdateGroups(std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
+                           const real                       maxUpdateGroupRadius) :
+    useUpdateGroups_(true),
+    updateGroupingPerMoleculeType_(std::move(updateGroupingPerMoleculeType)),
+    maxUpdateGroupRadius_(maxUpdateGroupRadius)
+{
+}
+
+bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
+{
+    IListRange ilistRange(mtop);
+    return std::any_of(ilistRange.begin(), ilistRange.end(), [](const auto& ilists) {
+        return !extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty();
+    });
+}
+
+UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
+                              std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
+                              const real                       maxUpdateGroupRadius,
+                              const bool                       useDomainDecomposition,
+                              const bool                       systemHasConstraintsOrVsites,
+                              const real                       cutoffMargin)
+{
+    MessageStringCollector messages;
+
+    messages.startContext("When checking whether update groups are usable:");
+
+    if (!useDomainDecomposition)
+    {
+        messages.append(
+                "Domain decomposition is not active, so there is no need for update groups");
+    }
+
+    if (!systemHasConstraintsOrVsites)
+    {
+        messages.append(
+                "No constraints or virtual sites are in use, so it is best not to use update "
+                "groups");
+    }
+
+    if (updateGroupingPerMoleculeType.empty())
+    {
+        messages.append(
+                "At least one moleculetype does not conform to the requirements for using update "
+                "groups");
+    }
+
+    if (getenv("GMX_NO_UPDATEGROUPS") != nullptr)
+    {
+        messages.append(
+                "Environment variable GMX_NO_UPDATEGROUPS prohibited the use of update groups");
+    }
+
+    // To use update groups, the large domain-to-domain cutoff
+    // distance should be compatible with the box size.
+    if (2 * maxUpdateGroupRadius >= cutoffMargin)
+    {
+        messages.append("The combination of rlist and box size prohibits the use of update groups");
+    }
+
+    if (!messages.isEmpty())
+    {
+        // Log why we can't use update groups
+        GMX_LOG(mdlog.info).appendText(messages.toString());
+        return UpdateGroups();
+    }
+
+    // Success!
+    return UpdateGroups(std::move(updateGroupingPerMoleculeType), maxUpdateGroupRadius);
+}
+
 
 } // namespace gmx

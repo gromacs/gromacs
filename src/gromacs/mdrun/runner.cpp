@@ -1335,6 +1335,19 @@ int Mdrunner::mdrunner()
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo_->cpuInfo);
 
+    // We need to decide on update groups early, as this affects
+    // inter-domain communication distances.
+    auto       updateGroupingsPerMoleculeType = makeUpdateGroupingsPerMoleculeType(mtop);
+    const real maxUpdateGroupRadius           = computeMaxUpdateGroupRadius(
+            mtop, updateGroupingsPerMoleculeType, maxReferenceTemperature(*inputrec));
+    const real   cutoffMargin = std::sqrt(max_cutoff2(inputrec->pbcType, box)) - inputrec->rlist;
+    UpdateGroups updateGroups = makeUpdateGroups(mdlog,
+                                                 std::move(updateGroupingsPerMoleculeType),
+                                                 maxUpdateGroupRadius,
+                                                 useDomainDecomposition,
+                                                 systemHasConstraintsOrVsites(mtop),
+                                                 cutoffMargin);
+
     // This builder is necessary while we have multi-part construction
     // of DD. Before DD is constructed, we use the existence of
     // the builder object to indicate that further construction of DD
@@ -1350,6 +1363,9 @@ int Mdrunner::mdrunner()
                 mtop,
                 *inputrec,
                 box,
+                updateGroups.updateGroupingPerMoleculeType(),
+                updateGroups.useUpdateGroups(),
+                updateGroups.maxUpdateGroupRadius(),
                 positionsFromStatePointer(globalState.get()));
     }
     else
@@ -1427,11 +1443,10 @@ int Mdrunner::mdrunner()
     // update is done so late.
     try
     {
-        const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
 
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
-                                                         useUpdateGroups,
+                                                         updateGroups.useUpdateGroups(),
                                                          pmeRunMode,
                                                          domdecOptions.numPmeRanks > 0,
                                                          useGpuForNonbonded,
@@ -1727,12 +1742,8 @@ int Mdrunner::mdrunner()
         }
 
         /* Initialize the virtual site communication */
-        gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType;
-        if (DOMAINDECOMP(cr))
-        {
-            updateGroupingsPerMoleculeType = getUpdateGroupingsPerMoleculeType(*cr->dd);
-        }
-        vsite = makeVirtualSitesHandler(mtop, cr, fr->pbcType, updateGroupingsPerMoleculeType);
+        vsite = makeVirtualSitesHandler(
+                mtop, cr, fr->pbcType, updateGroups.updateGroupingPerMoleculeType());
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1940,7 +1951,7 @@ int Mdrunner::mdrunner()
                                       doEssentialDynamics,
                                       fplog,
                                       cr,
-                                      DOMAINDECOMP(cr) && ddMayHaveSplitConstraints(*cr->dd),
+                                      updateGroups.useUpdateGroups(),
                                       ms,
                                       &nrnb,
                                       wcycle.get(),

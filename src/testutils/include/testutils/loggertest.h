@@ -77,6 +77,9 @@ public:
      *
      * If not called for a log level, all entries for that level are
      * accepted.
+     *
+     * Note that this expectation should be set up before the logger is
+     * used in the test.
      */
     void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, const char* re);
 
@@ -85,6 +88,9 @@ public:
      *
      * If not called for a log level, all entries for that level are
      * accepted.
+     *
+     * Note that this expectation should be set up before the logger is
+     * used in the test.
      */
     void expectNoEntries(gmx::MDLogger::LogLevel level);
 
