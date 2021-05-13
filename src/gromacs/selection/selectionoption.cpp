@@ -164,10 +164,8 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
     {
         // Should not throw because efOption_DontCheckMinimumCount is set.
         setMinValueCount(count);
-        if (valueCount() > 0 && valueCount() < count)
-        {
-            errors.append("Too few (valid) values provided");
-        }
+        errors.appendIf((valueCount() > 0 && valueCount() < count),
+                        "Too few (valid) values provided");
     }
     try
     {

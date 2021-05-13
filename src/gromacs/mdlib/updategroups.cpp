@@ -786,38 +786,26 @@ UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,
 
     messages.startContext("When checking whether update groups are usable:");
 
-    if (!useDomainDecomposition)
-    {
-        messages.append(
-                "Domain decomposition is not active, so there is no need for update groups");
-    }
+    messages.appendIf(!useDomainDecomposition,
+                      "Domain decomposition is not active, so there is no need for update groups");
 
-    if (!systemHasConstraintsOrVsites)
-    {
-        messages.append(
-                "No constraints or virtual sites are in use, so it is best not to use update "
-                "groups");
-    }
+    messages.appendIf(!systemHasConstraintsOrVsites,
+                      "No constraints or virtual sites are in use, so it is best not to use update "
+                      "groups");
 
-    if (updateGroupingPerMoleculeType.empty())
-    {
-        messages.append(
-                "At least one moleculetype does not conform to the requirements for using update "
-                "groups");
-    }
+    messages.appendIf(
+            updateGroupingPerMoleculeType.empty(),
+            "At least one moleculetype does not conform to the requirements for using update "
+            "groups");
 
-    if (getenv("GMX_NO_UPDATEGROUPS") != nullptr)
-    {
-        messages.append(
-                "Environment variable GMX_NO_UPDATEGROUPS prohibited the use of update groups");
-    }
+    messages.appendIf(
+            getenv("GMX_NO_UPDATEGROUPS") != nullptr,
+            "Environment variable GMX_NO_UPDATEGROUPS prohibited the use of update groups");
 
     // To use update groups, the large domain-to-domain cutoff
     // distance should be compatible with the box size.
-    if (2 * maxUpdateGroupRadius >= cutoffMargin)
-    {
-        messages.append("The combination of rlist and box size prohibits the use of update groups");
-    }
+    messages.appendIf(2 * maxUpdateGroupRadius >= cutoffMargin,
+                      "The combination of rlist and box size prohibits the use of update groups");
 
     if (!messages.isEmpty())
     {
