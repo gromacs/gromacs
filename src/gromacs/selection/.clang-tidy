@@ -2,89 +2,12 @@
 # This have to precede the list because inline comments are not
 # supported by clang-tidy.
 #
-#         -cppcoreguidelines-non-private-member-variables-in-classes,
-#         -misc-non-private-member-variables-in-classes,
-# We intend a gradual transition to conform to this guideline, but it
-# is not practical to implement yet.
-#
-#         -readability-isolate-declaration,
-# Declarations like "int a, b;" are readable. Some forms are not, and
-# those might reasonably be suggested against during code review.
-#
-#         -cppcoreguidelines-avoid-c-arrays,
-# C arrays are still necessary in many places with legacy code
-#
-#         -cppcoreguidelines-avoid-magic-numbers,
-#         -readability-magic-numbers,
-# We have many legitimate use cases for magic numbers
-#
-#         -cppcoreguidelines-macro-usage,
-# We do use too many macros, and we should fix many of them, but there
-# is no reasonable way to suppress the check e.g. in src/config.h and
-# configuring the build is a major legitimate use of macros.
-#
-#         -cppcoreguidelines-narrowing-conversions,
-#         -bugprone-narrowing-conversions
-# We have many cases where int is converted to float and we don't care
-# enough about such potential loss of precision to use explicit casts
-# in large numbers of places.
-#
-#         -google-readability-avoid-underscore-in-googletest-name
-# We need to use underscores for readability for our legacy types
-# and command-line parameter names
-#
-#         -misc-no-recursion
-# We have way too many functions and methods relying on recursion
-#
 #         -bugprone-reserved-identifier
 # Quite a large number of functions use the _FName style for naming
 #
 #         -cppcoreguidelines-avoid-non-const-global-variables
 # The selection code has a large amount of static or exported non-const
 # variables that are out of scope for quick rework
-Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
-         bugprone-*,misc-*,readability-*,performance-*,mpi-*,
-         -readability-inconsistent-declaration-parameter-name,
-         -readability-function-size,-readability-else-after-return,
-         modernize-use-nullptr,modernize-use-emplace,
-         modernize-make-unique,modernize-make-shared,
-         modernize-avoid-bind,
-         modernize-use-override,
-         modernize-redundant-void-arg,modernize-use-bool-literals,
-         cppcoreguidelines-*,-cppcoreguidelines-pro-*,-cppcoreguidelines-owning-memory,
-         -cppcoreguidelines-no-malloc,-cppcoreguidelines-special-member-functions,
-         -cppcoreguidelines-avoid-goto,
-         google-*,-google-build-using-namespace,-google-explicit-constructor,
-         -google-readability-function-size,-google-readability-todo,-google-runtime-int,
-         -cppcoreguidelines-non-private-member-variables-in-classes,
-         -misc-non-private-member-variables-in-classes,
-         -readability-isolate-declaration,
-         -cppcoreguidelines-avoid-c-arrays,
-         -cppcoreguidelines-avoid-magic-numbers,
-         -readability-magic-numbers,
-         -cppcoreguidelines-macro-usage,
-         -cppcoreguidelines-narrowing-conversions,
-         -bugprone-narrowing-conversions,
-         -google-readability-avoid-underscore-in-googletest-name,
-         -cppcoreguidelines-init-variables,
-         -misc-no-recursion, -bugprone-reserved-identifier,
+Checks:  -bugprone-reserved-identifier,
          -cppcoreguidelines-avoid-non-const-global-variables
-HeaderFilterRegex: .*
-CheckOptions:
-  - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
-    value:         1
-  - key:           modernize-make-unique.IncludeStyle
-    value:         google
-  - key:           modernize-make-shared.IncludeStyle
-    value:         google
-  - key:           readability-implicit-bool-conversion.AllowIntegerConditions
-    value:         1
-  - key:           readability-implicit-bool-conversion.AllowPointerConditions
-    value:         1
-  - key:           bugprone-dangling-handle.HandleClasses
-    value:         std::basic_string_view; nonstd::sv_lite::basic_string_view
-# Permit passing shard pointers by value for sink parameters
-  - key:           performance-unnecessary-copy-initialization.AllowedTypes
-    value:         shared_ptr
-  - key:           performance-unnecessary-value-param.AllowedTypes
-    value:         shared_ptr
+InheritParentConfig: true
