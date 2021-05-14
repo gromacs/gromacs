@@ -1,0 +1,167 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2021, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ *
+ * \brief This file makes declarations used for building
+ * the reverse topology
+ *
+ * \inlibraryapi
+ * \ingroup module_domdec
+ */
+
+#ifndef GMX_DOMDEC_REVERSETOPOLOGY_H
+#define GMX_DOMDEC_REVERSETOPOLOGY_H
+
+#include <cstdio>
+
+#include <memory>
+#include <vector>
+
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/listoflists.h"
+
+struct gmx_domdec_t;
+struct gmx_ffparams_t;
+struct gmx_mtop_t;
+struct t_atoms;
+struct t_inputrec;
+struct ReverseTopOptions;
+
+namespace gmx
+{
+class VirtualSitesHandler;
+enum class DDBondedChecking : bool;
+} // namespace gmx
+
+//! Options for linking atoms in make_reverse_ilist
+enum class AtomLinkRule
+{
+    FirstAtom,        //!< Link all interactions to the first atom in the atom list
+    AllAtomsInBondeds //!< Link bonded interactions to all atoms involved, don't link vsites
+};
+
+struct MolblockIndices
+{
+    int a_start;
+    int a_end;
+    int natoms_mol;
+    int type;
+};
+
+struct reverse_ilist_t
+{
+    std::vector<int> index;              /* Index for each atom into il          */
+    std::vector<int> il;                 /* ftype|type|a0|...|an|ftype|...       */
+    int              numAtomsInMolecule; /* The number of atoms in this molecule */
+};
+
+/*! \brief Struct for thread local work data for local topology generation */
+struct thread_work_t
+{
+    /*! \brief Constructor
+     *
+     * \param[in] ffparams  The interaction parameters, the lifetime of the created object should not exceed the lifetime of the passed parameters
+     */
+    thread_work_t(const gmx_ffparams_t& ffparams) : idef(ffparams) {}
+
+    InteractionDefinitions         idef;               /**< Partial local topology */
+    std::unique_ptr<gmx::VsitePbc> vsitePbc = nullptr; /**< vsite PBC structure */
+    int numBondedInteractions               = 0; /**< The number of bonded interactions observed */
+    gmx::ListOfLists<int> excl;                  /**< List of exclusions */
+    int                   excl_count = 0;        /**< The total exclusion count for \p excl */
+};
+
+/*! \brief Options for setting up gmx_reverse_top_t */
+struct ReverseTopOptions
+{
+    //! Constructor, constraints and settles are not including with a single argument
+    ReverseTopOptions(gmx::DDBondedChecking ddBondedChecking,
+                      bool                  includeConstraints = false,
+                      bool                  includeSettles     = false) :
+        ddBondedChecking(ddBondedChecking),
+        includeConstraints(includeConstraints),
+        includeSettles(includeSettles)
+    {
+    }
+
+    //! \brief For which bonded interactions to check assignments
+    const gmx::DDBondedChecking ddBondedChecking;
+    //! \brief Whether constraints are stored in this reverse top
+    const bool includeConstraints;
+    //! \brief Whether settles are stored in this reverse top
+    const bool includeSettles;
+};
+
+//! \internal \brief Reverse topology class
+class gmx_reverse_top_t
+{
+public:
+    //! Constructor
+    gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
+    //! Destructor
+    ~gmx_reverse_top_t();
+
+    //! Gets the options that configured the construction
+    const ReverseTopOptions& options() const;
+
+    //! Gets the interaction list for the given molecule type
+    const reverse_ilist_t& interactionListForMoleculeType(int moleculeType) const;
+
+    //! Returns the total count of bonded interactions, used for checking partitioning
+    int expectedNumGlobalBondedInteractions() const;
+
+    //! Returns the molecule block indices
+    gmx::ArrayRef<const MolblockIndices> molblockIndices() const;
+    //! Returns whether the reverse topology describes intermolecular interactions
+    bool hasIntermolecularInteractions() const;
+    //! Gets the interaction list for any intermolecular interactions
+    const reverse_ilist_t& interactionListForIntermolecularInteractions() const;
+    //! Returns whether the reverse topology describes interatomic interactions
+    bool hasInterAtomicInteractions() const;
+    //! Returns whether there are interactions of type F_POSRES and/or F_FBPOSRES
+    bool hasPositionRestraints() const;
+    //! Returns the per-thread working structures for making the local topology
+    gmx::ArrayRef<thread_work_t> threadWorkObjects() const;
+    //! Returns whether the local topology interactions should be sorted
+    bool doSorting() const;
+
+    //! Private implementation definition
+    struct Impl;
+    //! Private implementation declaration
+    std::unique_ptr<Impl> impl_;
+};
+
+#endif

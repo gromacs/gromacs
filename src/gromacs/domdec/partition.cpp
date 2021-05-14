@@ -3191,16 +3191,17 @@ void dd_partition_system(FILE*                     fplog,
     {
         numPulses[dd->dim[i]] = comm->cd[i].numPulses();
     }
-    dd_make_local_top(dd,
-                      &comm->zones,
-                      dd->unitCellInfo.npbcdim,
-                      state_local->box,
-                      comm->cellsize_min,
-                      numPulses,
-                      fr,
-                      state_local->x,
-                      top_global,
-                      top_local);
+    int numBondedInteractionsToReduce = dd_make_local_top(dd,
+                                                          &comm->zones,
+                                                          dd->unitCellInfo.npbcdim,
+                                                          state_local->box,
+                                                          comm->cellsize_min,
+                                                          numPulses,
+                                                          fr,
+                                                          state_local->x,
+                                                          top_global,
+                                                          top_local);
+    scheduleCheckOfLocalTopology(dd, numBondedInteractionsToReduce);
 
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDMakeTop);
 

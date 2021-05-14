@@ -258,6 +258,10 @@ void dd_make_reverse_top(FILE*                           fplog,
                          const t_inputrec&               inputrec,
                          gmx::DDBondedChecking           ddBondedChecking);
 
+/*! \brief Set that the number of bonded interactions in the local
+ * topology should be checked via observables reduction. */
+void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, int numBondedInteractionsToReduce);
+
 /*! \brief Return whether the total bonded interaction count across
  * domains should be checked this step. */
 bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd);
@@ -287,17 +291,19 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
                                      gmx::ArrayRef<const gmx::RVec> x,
                                      const matrix                   box);
 
-/*! \brief Generate the local topology and virtual site data */
-void dd_make_local_top(struct gmx_domdec_t*           dd,
-                       struct gmx_domdec_zones_t*     zones,
-                       int                            npbcdim,
-                       matrix                         box,
-                       rvec                           cellsize_min,
-                       const ivec                     npulse,
-                       t_forcerec*                    fr,
-                       gmx::ArrayRef<const gmx::RVec> coordinates,
-                       const gmx_mtop_t&              top,
-                       gmx_localtop_t*                ltop);
+/*! \brief Generate the local topology and virtual site data
+ *
+ * \returns Total count of bonded interactions in the local topology on this domain */
+int dd_make_local_top(struct gmx_domdec_t*           dd,
+                      struct gmx_domdec_zones_t*     zones,
+                      int                            npbcdim,
+                      matrix                         box,
+                      rvec                           cellsize_min,
+                      const ivec                     npulse,
+                      t_forcerec*                    fr,
+                      gmx::ArrayRef<const gmx::RVec> coordinates,
+                      const gmx_mtop_t&              top,
+                      gmx_localtop_t*                ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
 void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);

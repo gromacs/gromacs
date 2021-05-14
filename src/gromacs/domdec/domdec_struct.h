@@ -69,7 +69,7 @@ struct gmx_domdec_specat_comm_t;
 class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
 struct t_inputrec;
-struct gmx_reverse_top_t;
+class gmx_reverse_top_t;
 struct gmx_mtop_t;
 struct ReverseTopOptions;
 
@@ -78,6 +78,7 @@ namespace gmx
 template<typename T>
 class HashedMap;
 class LocalAtomSetManager;
+struct LocalTopologyChecker;
 class GpuHaloExchange;
 } // namespace gmx
 
@@ -232,6 +233,9 @@ struct gmx_domdec_t
 
     /* The managed atom sets that are updated in domain decomposition */
     gmx::LocalAtomSetManager* atomSets = nullptr;
+
+    //! The handler for checking whether the local topology is missing interactions
+    std::unique_ptr<gmx::LocalTopologyChecker> localTopologyChecker;
 
     /* gmx_pme_recv_f buffer */
     std::vector<gmx::RVec> pmeForceReceiveBuffer;

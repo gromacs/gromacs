@@ -58,7 +58,9 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/domdec/options.h"
+#include "gromacs/domdec/reversetopology.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -72,14 +74,12 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
@@ -100,57 +100,6 @@ using gmx::RVec;
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
 
-struct reverse_ilist_t
-{
-    std::vector<int> index;              /* Index for each atom into il          */
-    std::vector<int> il;                 /* ftype|type|a0|...|an|ftype|...       */
-    int              numAtomsInMolecule; /* The number of atoms in this molecule */
-};
-
-struct MolblockIndices
-{
-    int a_start;
-    int a_end;
-    int natoms_mol;
-    int type;
-};
-
-/*! \brief Struct for thread local work data for local topology generation */
-struct thread_work_t
-{
-    /*! \brief Constructor
-     *
-     * \param[in] ffparams  The interaction parameters, the lifetime of the created object should not exceed the lifetime of the passed parameters
-     */
-    thread_work_t(const gmx_ffparams_t& ffparams) : idef(ffparams) {}
-
-    InteractionDefinitions         idef;               /**< Partial local topology */
-    std::unique_ptr<gmx::VsitePbc> vsitePbc = nullptr; /**< vsite PBC structure */
-    int              numBondedInteractions  = 0; /**< The number of bonded interactions observed */
-    ListOfLists<int> excl;                       /**< List of exclusions */
-};
-
-/*! \brief Options for setting up gmx_reverse_top_t */
-struct ReverseTopOptions
-{
-    //! Constructor, constraints and settles are not including with a single argument
-    ReverseTopOptions(DDBondedChecking ddBondedChecking,
-                      bool             includeConstraints = false,
-                      bool             includeSettles     = false) :
-        ddBondedChecking(ddBondedChecking),
-        includeConstraints(includeConstraints),
-        includeSettles(includeSettles)
-    {
-    }
-
-    //! \brief For which bonded interactions to check assignments
-    const DDBondedChecking ddBondedChecking;
-    //! \brief Whether constraints are stored in this reverse top
-    const bool includeConstraints;
-    //! \brief Whether settles are stored in this reverse top
-    const bool includeSettles;
-};
-
 /*! \brief Struct for the reverse topology: links bonded interactions to atoms */
 struct gmx_reverse_top_t::Impl
 {
@@ -161,7 +110,7 @@ struct gmx_reverse_top_t::Impl
     //! Options for the setup of this reverse topology
     const ReverseTopOptions options;
     //! Are there interaction of type F_POSRES and/or F_FBPOSRES
-    bool havePositionRestraints;
+    bool hasPositionRestraints;
     //! \brief Are there bondeds/exclusions between atoms?
     bool bInterAtomicInteractions = false;
     //! \brief Reverse ilist for all moltypes
@@ -329,7 +278,7 @@ static std::string printMissingInteractionsMolblock(t_commrec*               cr,
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (dd_check_ftype(ftype, rt.impl_->options))
+        if (dd_check_ftype(ftype, rt.options()))
         {
             flagInteractionsForType(
                     ftype, idef.il[ftype], ril, atomRange, numAtomsPerMolecule, cr->dd->globalAtomIndices, isAssigned);
@@ -409,8 +358,14 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
         a_end                        = a_start + molb.nmol * moltype.atoms.nr;
         const gmx::Range<int> atomRange(a_start, a_end);
 
-        auto warning = printMissingInteractionsMolblock(
-                cr, rt, *(moltype.name), rt.impl_->ril_mt[molb.type], atomRange, moltype.atoms.nr, molb.nmol, idef);
+        auto warning = printMissingInteractionsMolblock(cr,
+                                                        rt,
+                                                        *(moltype.name),
+                                                        rt.interactionListForMoleculeType(molb.type),
+                                                        atomRange,
+                                                        moltype.atoms.nr,
+                                                        molb.nmol,
+                                                        idef);
 
         GMX_LOG(mdlog.warning).appendText(warning);
     }
@@ -433,7 +388,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
                     "decomposition cells");
 
     const int ndiff_tot = numBondedInteractionsOverAllDomains
-                          - dd->reverse_top->impl_->expectedNumGlobalBondedInteractions;
+                          - dd->reverse_top->expectedNumGlobalBondedInteractions();
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -446,7 +401,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
     if (DDMASTER(dd))
     {
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
-        int rest_global = dd->reverse_top->impl_->expectedNumGlobalBondedInteractions;
+        int rest_global = dd->reverse_top->expectedNumGlobalBondedInteractions();
         int rest        = numBondedInteractionsOverAllDomains;
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
@@ -454,7 +409,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
              * and add these constraints when doing F_CONSTR.
              */
-            if (dd_check_ftype(ftype, dd->reverse_top->impl_->options) && ftype != F_CONSTRNC)
+            if (dd_check_ftype(ftype, dd->reverse_top->options()) && ftype != F_CONSTRNC)
             {
                 int n = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
@@ -501,7 +456,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
                 "two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds "
                 "also see option -ddcheck",
                 -ndiff_tot,
-                dd->reverse_top->impl_->expectedNumGlobalBondedInteractions,
+                dd->reverse_top->expectedNumGlobalBondedInteractions(),
                 dd_cutoff_multibody(dd),
                 dd_cutoff_twobody(dd));
     }
@@ -564,13 +519,6 @@ static int getMaxNumExclusionsPerAtom(const ListOfLists<int>& excls)
 
     return maxNumExcls;
 }
-
-//! Options for linking atoms in make_reverse_ilist
-enum class AtomLinkRule
-{
-    FirstAtom,        //!< Link all interactions to the first atom in the atom list
-    AllAtomsInBondeds //!< Link bonded interactions to all atoms involved, don't link vsites
-};
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
 static int low_make_reverse_ilist(const InteractionLists&  il_mt,
@@ -694,13 +642,62 @@ gmx_reverse_top_t::gmx_reverse_top_t(const gmx_mtop_t&        mtop,
 
 gmx_reverse_top_t::~gmx_reverse_top_t() {}
 
+const ReverseTopOptions& gmx_reverse_top_t::options() const
+{
+    return impl_->options;
+}
+
+const reverse_ilist_t& gmx_reverse_top_t::interactionListForMoleculeType(int moleculeType) const
+{
+    return impl_->ril_mt[moleculeType];
+}
+
+int gmx_reverse_top_t::expectedNumGlobalBondedInteractions() const
+{
+    return impl_->expectedNumGlobalBondedInteractions;
+}
+
+ArrayRef<const MolblockIndices> gmx_reverse_top_t::molblockIndices() const
+{
+    return impl_->mbi;
+}
+
+bool gmx_reverse_top_t::hasIntermolecularInteractions() const
+{
+    return impl_->bIntermolecularInteractions;
+}
+
+const reverse_ilist_t& gmx_reverse_top_t::interactionListForIntermolecularInteractions() const
+{
+    return impl_->ril_intermol;
+}
+
+bool gmx_reverse_top_t::hasInterAtomicInteractions() const
+{
+    return impl_->bInterAtomicInteractions;
+}
+
+bool gmx_reverse_top_t::hasPositionRestraints() const
+{
+    return impl_->hasPositionRestraints;
+}
+
+ArrayRef<thread_work_t> gmx_reverse_top_t::threadWorkObjects() const
+{
+    return impl_->th_work;
+}
+
+bool gmx_reverse_top_t::doSorting() const
+{
+    return impl_->ilsort != ilsortNO_FE;
+}
+
 /*! \brief Generate the reverse topology */
 gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
                               const bool               useFreeEnergy,
                               const ReverseTopOptions& reverseTopOptions) :
     options(reverseTopOptions),
-    havePositionRestraints(
-            gmx_mtop_ftype_count(mtop, F_POSRES) + gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0),
+    hasPositionRestraints(gmx_mtop_ftype_count(mtop, F_POSRES) + gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0),
     bInterAtomicInteractions(mtop.bIntermolecularInteractions)
 {
     bInterAtomicInteractions = mtop.bIntermolecularInteractions;
@@ -1388,7 +1385,7 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
     int mol                 = 0;
     int atomIndexInMolecule = 0;
 
-    const auto ddBondedChecking = rt->impl_->options.ddBondedChecking;
+    const auto ddBondedChecking = rt->options().ddBondedChecking;
 
     int numBondedInteractions = 0;
 
@@ -1396,10 +1393,11 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
     {
         /* Get the global atom number */
         const int globalAtomIndex = globalAtomIndices[i];
-        global_atomnr_to_moltype_ind(rt->impl_->mbi, globalAtomIndex, &mb, &mt, &mol, &atomIndexInMolecule);
+        global_atomnr_to_moltype_ind(
+                rt->molblockIndices(), globalAtomIndex, &mb, &mt, &mol, &atomIndexInMolecule);
         /* Check all intramolecular interactions assigned to this atom */
-        gmx::ArrayRef<const int>     index = rt->impl_->ril_mt[mt].index;
-        gmx::ArrayRef<const t_iatom> rtil  = rt->impl_->ril_mt[mt].il;
+        gmx::ArrayRef<const int>     index = rt->interactionListForMoleculeType(mt).index;
+        gmx::ArrayRef<const t_iatom> rtil  = rt->interactionListForMoleculeType(mt).il;
 
         numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intramolecular>(
                 i,
@@ -1422,26 +1420,26 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
                 ddBondedChecking);
 
         // Assign position restraints, when present, for the home zone
-        if (izone == 0 && rt->impl_->havePositionRestraints)
+        if (izone == 0 && rt->hasPositionRestraints())
         {
-            numBondedInteractions +=
-                    assignPositionRestraintsForAtom(i,
-                                                    mol,
-                                                    atomIndexInMolecule,
-                                                    rt->impl_->ril_mt[mt].numAtomsInMolecule,
-                                                    rtil,
-                                                    index[atomIndexInMolecule],
-                                                    index[atomIndexInMolecule + 1],
-                                                    molb[mb],
-                                                    ip_in,
-                                                    idef);
+            numBondedInteractions += assignPositionRestraintsForAtom(
+                    i,
+                    mol,
+                    atomIndexInMolecule,
+                    rt->interactionListForMoleculeType(mt).numAtomsInMolecule,
+                    rtil,
+                    index[atomIndexInMolecule],
+                    index[atomIndexInMolecule + 1],
+                    molb[mb],
+                    ip_in,
+                    idef);
         }
 
-        if (rt->impl_->bIntermolecularInteractions)
+        if (rt->hasIntermolecularInteractions())
         {
             /* Check all intermolecular interactions assigned to this atom */
-            index = rt->impl_->ril_intermol.index;
-            rtil  = rt->impl_->ril_intermol.il;
+            index = rt->interactionListForIntermolecularInteractions().index;
+            rtil  = rt->interactionListForIntermolecularInteractions().il;
 
             numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intermolecular>(
                     i,
@@ -1543,23 +1541,25 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
             "The number of exclusion list should match the number of atoms in the range");
 }
 
-/*! \brief Generate and store all required local bonded interactions in \p idef and local exclusions in \p lexcls */
-static void make_local_bondeds_excls(gmx_domdec_t*           dd,
-                                     gmx_domdec_zones_t*     zones,
-                                     const gmx_mtop_t&       mtop,
-                                     const int*              cginfo,
-                                     const bool              checkDistanceMultiBody,
-                                     const ivec              rcheck,
-                                     const gmx_bool          checkDistanceTwoBody,
-                                     const real              cutoff,
-                                     const t_pbc*            pbc_null,
-                                     ArrayRef<const RVec>    coordinates,
-                                     InteractionDefinitions* idef,
-                                     ListOfLists<int>*       lexcls)
+/*! \brief Generate and store all required local bonded interactions in \p idef and local exclusions in \p lexcls
+ *
+ * \returns Total count of bonded interactions in the local topology on this domain */
+static int make_local_bondeds_excls(gmx_domdec_t*           dd,
+                                    gmx_domdec_zones_t*     zones,
+                                    const gmx_mtop_t&       mtop,
+                                    const int*              cginfo,
+                                    const bool              checkDistanceMultiBody,
+                                    const ivec              rcheck,
+                                    const gmx_bool          checkDistanceTwoBody,
+                                    const real              cutoff,
+                                    const t_pbc*            pbc_null,
+                                    ArrayRef<const RVec>    coordinates,
+                                    InteractionDefinitions* idef,
+                                    ListOfLists<int>*       lexcls)
 {
     int nzone_bondeds = 0;
 
-    if (dd->reverse_top->impl_->bInterAtomicInteractions)
+    if (dd->reverse_top->hasInterAtomicInteractions())
     {
         nzone_bondeds = zones->n;
     }
@@ -1580,7 +1580,7 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
 
     /* Clear the counts */
     idef->clear();
-    dd->reverse_top->impl_->numBondedInteractions = 0;
+    int numBondedInteractions = 0;
 
     lexcls->clear();
 
@@ -1589,7 +1589,8 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
         const int cg0 = zones->cg_range[izone];
         const int cg1 = zones->cg_range[izone + 1];
 
-        const int numThreads = rt->impl_->th_work.size();
+        gmx::ArrayRef<thread_work_t> threadWorkObjects = rt->threadWorkObjects();
+        const int                    numThreads        = threadWorkObjects.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int thread = 0; thread < numThreads; thread++)
         {
@@ -1606,11 +1607,11 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
                 }
                 else
                 {
-                    idef_t = &rt->impl_->th_work[thread].idef;
+                    idef_t = &threadWorkObjects[thread].idef;
                     idef_t->clear();
                 }
 
-                rt->impl_->th_work[thread].numBondedInteractions =
+                threadWorkObjects[thread].numBondedInteractions =
                         make_bondeds_zone(rt,
                                           dd->globalAtomIndices,
                                           *dd->ga2la,
@@ -1638,7 +1639,7 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
                     else
                     {
                         // Threads > 0 store in temporary storage, starting at list index 0
-                        excl_t = &rt->impl_->th_work[thread].excl;
+                        excl_t = &threadWorkObjects[thread].excl;
                         excl_t->clear();
                     }
 
@@ -1646,7 +1647,7 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
                     make_exclusions_zone(dd->globalAtomIndices,
                                          *dd->ga2la,
                                          zones,
-                                         rt->impl_->mbi,
+                                         rt->molblockIndices(),
                                          mtop.moltype,
                                          cginfo,
                                          excl_t,
@@ -1659,55 +1660,61 @@ static void make_local_bondeds_excls(gmx_domdec_t*           dd,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
 
-        if (rt->impl_->th_work.size() > 1)
+        if (threadWorkObjects.size() > 1)
         {
-            combine_idef(idef, rt->impl_->th_work);
+            combine_idef(idef, threadWorkObjects);
         }
 
-        for (const thread_work_t& th_work : rt->impl_->th_work)
+        for (const thread_work_t& th_work : threadWorkObjects)
         {
-            dd->reverse_top->impl_->numBondedInteractions += th_work.numBondedInteractions;
+            numBondedInteractions += th_work.numBondedInteractions;
         }
 
         if (izone < numIZonesForExclusions)
         {
-            for (std::size_t th = 1; th < rt->impl_->th_work.size(); th++)
+            for (std::size_t th = 1; th < threadWorkObjects.size(); th++)
             {
-                lexcls->appendListOfLists(rt->impl_->th_work[th].excl);
+                lexcls->appendListOfLists(threadWorkObjects[th].excl);
             }
         }
     }
-
-    // Note that it's possible for this to still be true from the last
-    // time it was set, e.g. if repartitioning was triggered before
-    // global communication that would have acted on the true
-    // value. This could happen for example when replica exchange took
-    // place soon after a partition.
-    dd->reverse_top->impl_->shouldCheckNumberOfBondedInteractions = true;
-    // Clear the old global value, which is now invalid
-    dd->reverse_top->impl_->numBondedInteractionsOverAllDomains.reset();
 
     if (debug)
     {
         fprintf(debug, "We have %d exclusions\n", lexcls->numElements());
     }
+
+    return numBondedInteractions;
+}
+
+void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, const int numBondedInteractionsToReduce)
+{
+    dd->localTopologyChecker->numBondedInteractionsToReduce = numBondedInteractionsToReduce;
+    // Note that it's possible for this to still be true from the last
+    // time it was set, e.g. if repartitioning was triggered before
+    // global communication that would have acted on the true
+    // value. This could happen for example when replica exchange took
+    // place soon after a partition.
+    dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions = true;
+    // Clear the old global value, which is now invalid
+    dd->localTopologyChecker->numBondedInteractionsOverAllDomains.reset();
 }
 
 bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd)
 {
-    return dd.reverse_top->impl_->shouldCheckNumberOfBondedInteractions;
+    return dd.localTopologyChecker->shouldCheckNumberOfBondedInteractions;
 }
 
 int numBondedInteractions(const gmx_domdec_t& dd)
 {
-    return dd.reverse_top->impl_->numBondedInteractions;
+    return dd.localTopologyChecker->numBondedInteractionsToReduce;
 }
 
 void setNumberOfBondedInteractionsOverAllDomains(const gmx_domdec_t& dd, int newValue)
 {
-    GMX_RELEASE_ASSERT(!dd.reverse_top->impl_->numBondedInteractionsOverAllDomains.has_value(),
+    GMX_RELEASE_ASSERT(!dd.localTopologyChecker->numBondedInteractionsOverAllDomains.has_value(),
                        "Cannot set number of bonded interactions because it is already set");
-    dd.reverse_top->impl_->numBondedInteractionsOverAllDomains.emplace(newValue);
+    dd.localTopologyChecker->numBondedInteractionsOverAllDomains.emplace(newValue);
 }
 
 void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
@@ -1720,18 +1727,18 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
     GMX_RELEASE_ASSERT(
             DOMAINDECOMP(cr),
             "No need to check number of bonded interactions when not using domain decomposition");
-    if (cr->dd->reverse_top->impl_->shouldCheckNumberOfBondedInteractions)
+    if (cr->dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions)
     {
-        GMX_RELEASE_ASSERT(cr->dd->reverse_top->impl_->numBondedInteractionsOverAllDomains.has_value(),
+        GMX_RELEASE_ASSERT(cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.has_value(),
                            "The check for the total number of bonded interactions requires the "
                            "value to have been reduced across all domains");
-        if (cr->dd->reverse_top->impl_->numBondedInteractionsOverAllDomains.value()
-            != cr->dd->reverse_top->impl_->expectedNumGlobalBondedInteractions)
+        if (cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value()
+            != cr->dd->reverse_top->expectedNumGlobalBondedInteractions())
         {
             dd_print_missing_interactions(
                     mdlog,
                     cr,
-                    cr->dd->reverse_top->impl_->numBondedInteractionsOverAllDomains.value(),
+                    cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value(),
                     top_global,
                     top_local,
                     x,
@@ -1740,20 +1747,20 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
         // Now that the value is set and the check complete, future
         // global communication should not compute the value until
         // after the next partitioning.
-        cr->dd->reverse_top->impl_->shouldCheckNumberOfBondedInteractions = false;
+        cr->dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions = false;
     }
 }
 
-void dd_make_local_top(gmx_domdec_t*        dd,
-                       gmx_domdec_zones_t*  zones,
-                       int                  npbcdim,
-                       matrix               box,
-                       rvec                 cellsize_min,
-                       const ivec           npulse,
-                       t_forcerec*          fr,
-                       ArrayRef<const RVec> coordinates,
-                       const gmx_mtop_t&    mtop,
-                       gmx_localtop_t*      ltop)
+int dd_make_local_top(gmx_domdec_t*        dd,
+                      gmx_domdec_zones_t*  zones,
+                      int                  npbcdim,
+                      matrix               box,
+                      rvec                 cellsize_min,
+                      const ivec           npulse,
+                      t_forcerec*          fr,
+                      ArrayRef<const RVec> coordinates,
+                      const gmx_mtop_t&    mtop,
+                      gmx_localtop_t*      ltop)
 {
     real  rc = -1;
     ivec  rcheck;
@@ -1767,7 +1774,7 @@ void dd_make_local_top(gmx_domdec_t*        dd,
     bool checkDistanceMultiBody = false;
     bool checkDistanceTwoBody   = false;
 
-    if (dd->reverse_top->impl_->bInterAtomicInteractions)
+    if (dd->reverse_top->hasInterAtomicInteractions())
     {
         /* We need to check to which cell bondeds should be assigned */
         rc = dd_cutoff_twobody(dd);
@@ -1821,34 +1828,36 @@ void dd_make_local_top(gmx_domdec_t*        dd,
         }
     }
 
-    make_local_bondeds_excls(dd,
-                             zones,
-                             mtop,
-                             fr->cginfo.data(),
-                             checkDistanceMultiBody,
-                             rcheck,
-                             checkDistanceTwoBody,
-                             rc,
-                             pbc_null,
-                             coordinates,
-                             &ltop->idef,
-                             &ltop->excls);
+    int numBondedInteractionsToReduce = make_local_bondeds_excls(dd,
+                                                                 zones,
+                                                                 mtop,
+                                                                 fr->cginfo.data(),
+                                                                 checkDistanceMultiBody,
+                                                                 rcheck,
+                                                                 checkDistanceTwoBody,
+                                                                 rc,
+                                                                 pbc_null,
+                                                                 coordinates,
+                                                                 &ltop->idef,
+                                                                 &ltop->excls);
 
     /* The ilist is not sorted yet,
      * we can only do this when we have the charge arrays.
      */
     ltop->idef.ilsort = ilsortUNKNOWN;
+
+    return numBondedInteractionsToReduce;
 }
 
 void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop)
 {
-    if (dd.reverse_top->impl_->ilsort == ilsortNO_FE)
+    if (dd.reverse_top->doSorting())
     {
-        ltop->idef.ilsort = ilsortNO_FE;
+        gmx_sort_ilist_fe(&ltop->idef, mdatoms->chargeA, mdatoms->chargeB);
     }
     else
     {
-        gmx_sort_ilist_fe(&ltop->idef, mdatoms->chargeA, mdatoms->chargeB);
+        ltop->idef.ilsort = ilsortNO_FE;
     }
 }
 
