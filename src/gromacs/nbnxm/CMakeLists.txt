@@ -76,7 +76,7 @@ endif()
 if(GMX_GPU_OPENCL)
     add_subdirectory(opencl)
     set(NBNXM_OPENCL_KERNELS ${NBNXM_OPENCL_KERNELS} PARENT_SCOPE)
-    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp nbnxm_gpu_buffer_ops_stubs.cpp)
+    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp nbnxm_gpu_buffer_ops.cpp)
 endif()
 
 if(GMX_GPU_SYCL)

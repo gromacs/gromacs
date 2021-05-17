@@ -34,8 +34,7 @@
  */
 
 /*! \internal \file
- *  \brief
- *  Common code for GPU buffer operations, namely the coordinate layout conversion
+ *  \brief Define OpenCL implementation for transforming position coordinates from rvec to nbnxm layout.
  *
  *  \ingroup module_nbnxm
  */
@@ -43,25 +42,22 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
-
-#if !GMX_GPU_CUDA
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 
 namespace Nbnxm
 {
 
-void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid& /*grid*/,
-                           NbnxmGpu* /*nb*/,
-                           DeviceBuffer<gmx::RVec> /*d_x*/,
-                           GpuEventSynchronizer* /*xReadyOnDevice*/,
-                           const gmx::AtomLocality /*locality*/,
-                           int /*gridId*/,
-                           int /*numColumnsMax*/,
-                           bool /*mustInsertNonLocalDependency*/)
+void launchNbnxmKernelTransformXToXq(const Grid& /* grid */,
+                                     NbnxmGpu* /* nb */,
+                                     DeviceBuffer<Float3> /* d_x */,
+                                     const DeviceStream& /* deviceStream */,
+                                     unsigned int /* numColumnsMax */,
+                                     int /* gridId */)
 {
-    GMX_RELEASE_ASSERT(false, "nbnxn_gpu_x_to_nbat_x only supported with CUDA");
+    GMX_RELEASE_ASSERT(false, "NBNXM buffer ops are not supported with OpenCL");
 }
 
 } // namespace Nbnxm
-
-#endif // !GMX_GPU_CUDA
