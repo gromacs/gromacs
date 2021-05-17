@@ -23,7 +23,7 @@ Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Check that necessary python modules are available
-""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""
 
 The source code validation could otherwise fail a build with cryptic errors.
 
