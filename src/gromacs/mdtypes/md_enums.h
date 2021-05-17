@@ -186,14 +186,14 @@ enum
 };
 
 //! Sequenced parts of the trotter decomposition.
-enum
+enum class TrotterSequence : int
 {
-    ettTSEQ0,
-    ettTSEQ1,
-    ettTSEQ2,
-    ettTSEQ3,
-    ettTSEQ4,
-    ettTSEQMAX
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Count
 };
 
 //! Pressure coupling type

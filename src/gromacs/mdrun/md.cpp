@@ -364,8 +364,8 @@ void gmx::LegacySimulator::do_md()
 
     ForceBuffers     f(fr->useMts,
                    ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
-                               ? PinningPolicy::PinnedIfSupported
-                               : PinningPolicy::CannotBePinned);
+                           ? PinningPolicy::PinnedIfSupported
+                           : PinningPolicy::CannotBePinned);
     const t_mdatoms* md = mdAtoms->mdatoms();
     if (DOMAINDECOMP(cr))
     {
@@ -1298,7 +1298,7 @@ void gmx::LegacySimulator::do_md()
                                               state->v.rvec_array(),
                                               md->homenr,
                                               md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                                      : gmx::ArrayRef<const unsigned short>());
+                                                      : gmx::ArrayRef<const unsigned short>());
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
@@ -1440,7 +1440,7 @@ void gmx::LegacySimulator::do_md()
                            gmx::arrayRefFromArray(md->invmass, md->nr),
                            &MassQ,
                            trotter_seq,
-                           ettTSEQ3);
+                           TrotterSequence::Three);
             /* We can only do Berendsen coupling after we have summed
              * the kinetic energy or virial. Since the happens
              * in global_state after update, we should only do it at

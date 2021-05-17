@@ -881,8 +881,8 @@ void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const t_input
                                                                    real              dt,
                                                                    const matrix      pres,
                                                                    const matrix      box,
-                                                                   real scalar_pressure,
-                                                                   real xy_pressure,
+                                                                   real    scalar_pressure,
+                                                                   real    xy_pressure,
                                                                    int64_t gmx_unused step)
 {
     real p_corr_z = 0;
@@ -1310,7 +1310,7 @@ void trotter_update(const t_inputrec*                   ir,
                     gmx::ArrayRef<const real>           invMass,
                     const t_extmass*                    MassQ,
                     gmx::ArrayRef<std::vector<int>>     trotter_seqlist,
-                    int                                 trotter_seqno)
+                    TrotterSequence                     trotter_seqno)
 {
 
     int              n, i, d, ngtc, gc = 0, t;
@@ -1322,7 +1322,7 @@ void trotter_update(const t_inputrec*                   ir,
     rvec             sumv = { 0, 0, 0 };
     bool             bCouple;
 
-    if (trotter_seqno <= ettTSEQ2)
+    if (trotter_seqno <= TrotterSequence::Two)
     {
         step_eff = step - 1; /* the velocity verlet calls are actually out of order -- the first
                                 half step is actually the last half step from the previous step.
@@ -1335,7 +1335,7 @@ void trotter_update(const t_inputrec*                   ir,
 
     bCouple = (ir->nsttcouple == 1 || do_per_step(step_eff + ir->nsttcouple, ir->nsttcouple));
 
-    const gmx::ArrayRef<const int> trotter_seq = trotter_seqlist[trotter_seqno];
+    const gmx::ArrayRef<const int> trotter_seq = trotter_seqlist[static_cast<int>(trotter_seqno)];
 
     if ((trotter_seq[0] == etrtSKIPALL) || (!bCouple))
     {
@@ -1537,7 +1537,7 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
     }
 }
 
-std::array<std::vector<int>, ettTSEQMAX>
+gmx::EnumerationArray<TrotterSequence, std::vector<int>>
 init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrotter)
 {
     int              i, j, nnhpres, nh;
@@ -1556,8 +1556,8 @@ init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bTrot
     init_npt_masses(ir, state, MassQ, TRUE);
 
     /* first, initialize clear all the trotter calls */
-    std::array<std::vector<int>, ettTSEQMAX> trotter_seq;
-    for (i = 0; i < ettTSEQMAX; i++)
+    gmx::EnumerationArray<TrotterSequence, std::vector<int>> trotter_seq;
+    for (i = 0; i < static_cast<int>(TrotterSequence::Count); i++)
     {
         trotter_seq[i].resize(NTROTTERPARTS, etrtNONE);
         trotter_seq[i][0] = etrtSKIPALL;

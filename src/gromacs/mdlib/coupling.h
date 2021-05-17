@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 class gmx_ekindata_t;
@@ -152,9 +153,9 @@ void trotter_update(const t_inputrec*                   ir,
                     gmx::ArrayRef<const real>           invMass,
                     const t_extmass*                    MassQ,
                     gmx::ArrayRef<std::vector<int>>     trotter_seqlist,
-                    int                                 trotter_seqno);
+                    TrotterSequence                     trotter_seqno);
 
-std::array<std::vector<int>, ettTSEQMAX>
+gmx::EnumerationArray<TrotterSequence, std::vector<int>>
 init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* Mass, bool bTrotter);
 
 real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* MassQ);
