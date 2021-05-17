@@ -133,12 +133,11 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM
 CUDA_FUNC_QUALIFIER
 void* gpu_get_xq(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
-/** Returns an opaque pointer to the GPU force array
- *  Note: CUDA only.
+/** Returns forces device buffer.
  */
-CUDA_FUNC_QUALIFIER
+GPU_FUNC_QUALIFIER
 DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu gmx_unused* nb)
-        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 /** Returns an opaque pointer to the GPU shift force array
  *  Note: CUDA only.

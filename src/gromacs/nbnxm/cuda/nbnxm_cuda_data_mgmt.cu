@@ -116,13 +116,6 @@ void* gpu_get_xq(NbnxmGpu* nb)
     return static_cast<void*>(nb->atdat->xq);
 }
 
-DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu* nb)
-{
-    assert(nb);
-
-    return reinterpret_cast<DeviceBuffer<gmx::RVec>>(nb->atdat->f);
-}
-
 DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu* nb)
 {
     assert(nb);
