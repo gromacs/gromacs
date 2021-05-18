@@ -2343,7 +2343,7 @@ int gmx_grompp(int argc, char* argv[])
     {
         /* Calculate the optimal grid dimensions */
         matrix          scaledBox;
-        EwaldBoxZScaler boxScaler(*ir);
+        EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(ir), ir->wall_ewald_zfac);
         boxScaler.scaleBox(state.box, scaledBox);
 
         if (ir->nkx > 0 && ir->nky > 0 && ir->nkz > 0)

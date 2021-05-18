@@ -65,18 +65,22 @@
  * undefined when LJ-PME is not active. This works because
  * bHaveChargeOrTypePerturbed handles the control flow. */
 void ewald_LRcorrection(const int                      numAtomsLocal,
-                        const t_commrec*               cr,
+                        const t_commrec*               commrec,
                         int                            numThreads,
                         int                            thread,
-                        const t_forcerec&              fr,
-                        const t_inputrec&              ir,
+                        const real                     epsilonR,
+                        gmx::ArrayRef<const double>    qsum,
+                        EwaldGeometry                  ewaldGeometry,
+                        const real                     epsilonSurface,
+                        bool                           havePbcXY2Walls,
+                        real                           wallEwaldZfac,
                         gmx::ArrayRef<const real>      chargeA,
                         gmx::ArrayRef<const real>      chargeB,
                         bool                           bHaveChargePerturbed,
-                        gmx::ArrayRef<const gmx::RVec> x,
+                        gmx::ArrayRef<const gmx::RVec> coords,
                         const matrix                   box,
                         gmx::ArrayRef<const gmx::RVec> mu_tot,
-                        gmx::ArrayRef<gmx::RVec>       f,
+                        gmx::ArrayRef<gmx::RVec>       forces,
                         real*                          Vcorr_q,
                         real                           lambda_q,
                         real*                          dvdlambda_q)
@@ -95,10 +99,10 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
 
     /* Scale the Ewald unit cell when dimension z is not periodic */
     matrix          scaledBox;
-    EwaldBoxZScaler boxScaler(ir);
+    EwaldBoxZScaler boxScaler(havePbcXY2Walls, wallEwaldZfac);
     boxScaler.scaleBox(box, scaledBox);
 
-    one_4pi_eps = gmx::c_one4PiEps0 / fr.ic->epsilon_r;
+    one_4pi_eps = gmx::c_one4PiEps0 / epsilonR;
     Vexcl_q     = 0;
     dvdl_excl_q = 0;
     Vdipole[0]  = 0;
@@ -117,13 +121,13 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     dipole_coeff = 0;
 
     real boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
-    switch (ir.ewald_geometry)
+    switch (ewaldGeometry)
     {
         case EwaldGeometry::ThreeD:
-            if (ir.epsilon_surface != 0)
+            if (epsilonSurface != 0)
             {
-                dipole_coeff = 2 * M_PI * gmx::c_one4PiEps0
-                               / ((2 * ir.epsilon_surface + fr.ic->epsilon_r) * boxVolume);
+                dipole_coeff =
+                        2 * M_PI * gmx::c_one4PiEps0 / ((2 * epsilonSurface + epsilonR) * boxVolume);
                 for (i = 0; (i < DIM); i++)
                 {
                     dipcorrA[i] = 2 * dipole_coeff * mutot[0][i];
@@ -138,18 +142,13 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
             for (int q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
             {
                 /* Avoid charge corrections with near-zero net charge */
-                if (fabs(fr.qsum[q]) > 1e-4)
+                if (fabs(qsum[q]) > 1e-4)
                 {
-                    chargecorr[q] = 2 * dipole_coeff * fr.qsum[q];
+                    chargecorr[q] = 2 * dipole_coeff * qsum[q];
                 }
             }
             break;
         default: gmx_incons("Unsupported Ewald geometry");
-    }
-    if (debug)
-    {
-        fprintf(debug, "dipcorr = %8.3f  %8.3f  %8.3f\n", dipcorrA[XX], dipcorrA[YY], dipcorrA[ZZ]);
-        fprintf(debug, "mutot   = %8.3f  %8.3f  %8.3f\n", mutot[0][XX], mutot[0][YY], mutot[0][ZZ]);
     }
     const bool bNeedLongRangeCorrection = (dipole_coeff != 0);
     if (bNeedLongRangeCorrection && !bHaveChargePerturbed)
@@ -158,11 +157,11 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
         {
             for (j = 0; (j < DIM); j++)
             {
-                f[i][j] -= dipcorrA[j] * chargeA[i];
+                forces[i][j] -= dipcorrA[j] * chargeA[i];
             }
             if (chargecorr[0] != 0)
             {
-                f[i][ZZ] += chargecorr[0] * chargeA[i] * x[i][ZZ];
+                forces[i][ZZ] += chargecorr[0] * chargeA[i] * coords[i][ZZ];
             }
         }
     }
@@ -172,11 +171,12 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
         {
             for (j = 0; (j < DIM); j++)
             {
-                f[i][j] -= L1_q * dipcorrA[j] * chargeA[i] + lambda_q * dipcorrB[j] * chargeB[i];
+                forces[i][j] -= L1_q * dipcorrA[j] * chargeA[i] + lambda_q * dipcorrB[j] * chargeB[i];
             }
             if (chargecorr[0] != 0 || chargecorr[1] != 0)
             {
-                f[i][ZZ] += (L1_q * chargecorr[0] * chargeA[i] + lambda_q * chargecorr[1]) * x[i][ZZ];
+                forces[i][ZZ] +=
+                        (L1_q * chargecorr[0] * chargeA[i] + lambda_q * chargecorr[1]) * coords[i][ZZ];
             }
         }
     }
@@ -185,7 +185,7 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     Vself_q[1] = 0;
 
     /* Global corrections only on master process */
-    if (MASTER(cr) && thread == 0)
+    if (MASTER(commrec) && thread == 0)
     {
         for (q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
         {
@@ -195,11 +195,11 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
              */
             if (dipole_coeff != 0)
             {
-                if (ir.ewald_geometry == EwaldGeometry::ThreeD)
+                if (ewaldGeometry == EwaldGeometry::ThreeD)
                 {
                     Vdipole[q] = dipole_coeff * iprod(mutot[q], mutot[q]);
                 }
-                else if (ir.ewald_geometry == EwaldGeometry::ThreeDC)
+                else if (ewaldGeometry == EwaldGeometry::ThreeDC)
                 {
                     Vdipole[q] = dipole_coeff * mutot[q][ZZ] * mutot[q][ZZ];
 
@@ -215,10 +215,10 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
                         real                      sumQZ2 = 0;
                         for (int i = 0; i < numAtomsLocal; i++)
                         {
-                            sumQZ2 += charge[i] * x[i][ZZ] * x[i][ZZ];
+                            sumQZ2 += charge[i] * coords[i][ZZ] * coords[i][ZZ];
                         }
-                        Vdipole[q] -= dipole_coeff * fr.qsum[q]
-                                      * (sumQZ2 + fr.qsum[q] * box[ZZ][ZZ] * box[ZZ][ZZ] / 12);
+                        Vdipole[q] -= dipole_coeff * qsum[q]
+                                      * (sumQZ2 + qsum[q] * box[ZZ][ZZ] * box[ZZ][ZZ] / 12);
                     }
                 }
             }
@@ -232,24 +232,5 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     {
         *Vcorr_q = L1_q * (Vdipole[0] - Vself_q[0]) + lambda_q * (Vdipole[1] - Vself_q[1]) - Vexcl_q;
         *dvdlambda_q += Vdipole[1] - Vself_q[1] - (Vdipole[0] - Vself_q[0]) - dvdl_excl_q;
-    }
-
-    if (debug)
-    {
-        fprintf(debug, "Long Range corrections for Ewald interactions:\n");
-        fprintf(debug,
-                "q2sum = %g, Vself_q=%g\n",
-                L1_q * fr.q2sum[0] + lambda_q * fr.q2sum[1],
-                L1_q * Vself_q[0] + lambda_q * Vself_q[1]);
-        fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
-        if (MASTER(cr) && thread == 0)
-        {
-            if (ir.epsilon_surface > 0 || ir.ewald_geometry == EwaldGeometry::ThreeDC)
-            {
-                fprintf(debug,
-                        "Total dipole correction: Vdipole=%g\n",
-                        L1_q * Vdipole[0] + lambda_q * Vdipole[1]);
-            }
-        }
     }
 }

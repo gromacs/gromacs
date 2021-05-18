@@ -728,7 +728,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     // The box requires scaling with nwalls = 2, we store that condition as well
     // as the scaling factor
     delete pme->boxScaler;
-    pme->boxScaler = new EwaldBoxZScaler(*ir);
+    pme->boxScaler = new EwaldBoxZScaler(inputrecPbcXY2Walls(ir), ir->wall_ewald_zfac);
 
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(

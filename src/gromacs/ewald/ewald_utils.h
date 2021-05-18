@@ -100,12 +100,12 @@ public:
     EwaldBoxZScaler() = delete;
 
     /*! \brief Constructor that takes the input record to initialize Ewald box scaling appropriately. */
-    EwaldBoxZScaler(const t_inputrec& ir)
+    EwaldBoxZScaler(bool havePbcXY2Walls, real wallEwaldZfac)
     {
-        if (inputrecPbcXY2Walls(&ir))
+        if (havePbcXY2Walls)
         {
             scaleWithWalls_ = true;
-            scalingFactor_  = ir.wall_ewald_zfac;
+            scalingFactor_  = wallEwaldZfac;
         }
         else
         {

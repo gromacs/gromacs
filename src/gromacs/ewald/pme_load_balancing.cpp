@@ -251,7 +251,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
      * can't always usedd as it's not available with separate PME ranks.
      */
-    EwaldBoxZScaler boxScaler(ir);
+    EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(&ir), ir.wall_ewald_zfac);
     boxScaler.scaleBox(box, pme_lb->box_start);
 
     pme_lb->setup.resize(1);

@@ -57,6 +57,7 @@
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
+enum class EwaldGeometry : int;
 
 namespace gmx
 {
@@ -69,18 +70,22 @@ class ArrayRef;
  * Calculate correction for electrostatic surface dipole terms.
  */
 void ewald_LRcorrection(int                            numAtomsLocal,
-                        const t_commrec*               cr,
+                        const t_commrec*               commrec,
                         int                            numThreads,
                         int                            thread,
-                        const t_forcerec&              fr,
-                        const t_inputrec&              ir,
+                        real                           epsilonR,
+                        gmx::ArrayRef<const double>    qsum,
+                        EwaldGeometry                  ewaldGeometry,
+                        real                           epsilonSurface,
+                        bool                           havePbcXY2Walls,
+                        real                           wallEwaldZfac,
                         gmx::ArrayRef<const real>      chargeA,
                         gmx::ArrayRef<const real>      chargeB,
                         bool                           bHaveChargePerturbed,
-                        gmx::ArrayRef<const gmx::RVec> x,
+                        gmx::ArrayRef<const gmx::RVec> coords,
                         const matrix                   box,
                         gmx::ArrayRef<const gmx::RVec> mu_tot,
-                        gmx::ArrayRef<gmx::RVec>       f,
+                        gmx::ArrayRef<gmx::RVec>       forces,
                         real*                          Vcorr_q,
                         real                           lambda_q,
                         real*                          dvdlambda_q);

@@ -163,7 +163,7 @@ real do_ewald(const t_inputrec&              ir,
 
     /* Scale box with Ewald wall factor */
     matrix          scaledBox;
-    EwaldBoxZScaler boxScaler(ir);
+    EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(&ir), ir.wall_ewald_zfac);
     boxScaler.scaleBox(box, scaledBox);
 
     rvec boxDiag;
