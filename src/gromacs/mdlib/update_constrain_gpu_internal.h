@@ -54,7 +54,7 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 
-/*! \brief Scaling matrix struct.
+/*! \internal \brief Scaling matrix struct.
  *
  * \todo Should be generalized.
  */

@@ -88,7 +88,7 @@ struct reverse_ilist_t
     int              numAtomsInMolecule; /* The number of atoms in this molecule */
 };
 
-/*! \brief Struct for thread local work data for local topology generation */
+/*! \internal \brief Struct for thread local work data for local topology generation */
 struct thread_work_t
 {
     /*! \brief Constructor
@@ -104,7 +104,7 @@ struct thread_work_t
     int                   excl_count = 0;        /**< The total exclusion count for \p excl */
 };
 
-/*! \brief Options for setting up gmx_reverse_top_t */
+/*! \internal \brief Options for setting up gmx_reverse_top_t */
 struct ReverseTopOptions
 {
     //! Constructor, constraints and settles are not including with a single argument

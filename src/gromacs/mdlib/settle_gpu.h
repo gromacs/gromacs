@@ -62,7 +62,7 @@ class InteractionDefinitions;
 namespace gmx
 {
 
-//! Indices of atoms in a water molecule
+//! \internal \brief Indices of atoms in a water molecule
 struct WaterMolecule
 {
     //! Oxygen atom

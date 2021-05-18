@@ -91,10 +91,10 @@ struct OriresMatEq
     real mat[5][5]; /* The matrix                                 */
 };
 
-/* Orientation restraining stuff */
+//! \brief Orientation restraining stuff
 struct t_oriresdata
 {
-    /*! Constructor
+    /*! \brief Constructor
      *
      * \param[in] fplog  Log file, can be nullptr
      * \param[in] mtop   The global topology
