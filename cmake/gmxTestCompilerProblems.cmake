@@ -62,6 +62,8 @@ macro(gmx_test_compiler_problems)
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
             set(cxx_required_version "Clang 5")
         endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        # All versions of IntelLLVM (a.k.a. DPCPP) compiler so far support C++17
     else()
         message(WARNING "You are using an unsupported compiler. Please make sure it fully supports C++17.")
     endif()
@@ -70,7 +72,7 @@ macro(gmx_test_compiler_problems)
                             "Earlier versions don't have full C++17 support.")
     endif()
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
         message(WARNING "The Intel classic compiler is no longer supported. It may pass the tests, but is not tested by the GROMACS developers. Use the clang-based compiler from oneAPI, or gcc")
     endif()
 
