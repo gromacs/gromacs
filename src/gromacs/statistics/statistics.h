@@ -56,10 +56,6 @@ enum class StatisticsStatus : int
 {
     Ok,
     NoPoints,
-    NoMemory,
-    Error,
-    InvalidInput,
-    NotImplemented,
     Count
 };
 

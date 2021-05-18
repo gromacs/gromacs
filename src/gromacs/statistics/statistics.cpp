@@ -326,8 +326,7 @@ StatisticsStatus gmx_stats_get_ase(gmx_stats_t gstats, real* aver, real* sigma, 
 static const char* enumValueToString(StatisticsStatus enumValue)
 {
     constexpr gmx::EnumerationArray<StatisticsStatus, const char*> statisticsStatusNames = {
-        "All well in STATS land",  "No points",     "Not enough memory",
-        "Invalid histogram input", "Unknown error", "Not implemented yet"
+        "All well in STATS land", "No points"
     };
     return statisticsStatusNames[enumValue];
 }
