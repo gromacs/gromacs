@@ -278,7 +278,6 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
  * \param[in]  mtop                         The global topology.
  * \param[in]  useEssentialDynamics         If essential dynamics is active.
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
- * \param[in]  useReplicaExchange           If this is a REMD simulation.
  * \param[in]  haveFrozenAtoms              If this simulation has frozen atoms (see Issue #3920).
  * \param[in]  doRerun                      It this is a rerun.
  * \param[in]  devFlags                     GPU development / experimental feature flags.
@@ -299,7 +298,6 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
                                     const gmx_mtop_t&              mtop,
                                     bool                           useEssentialDynamics,
                                     bool                           doOrientationRestraints,
-                                    bool                           useReplicaExchange,
                                     bool                           haveFrozenAtoms,
                                     bool                           doRerun,
                                     const DevelopmentFeatureFlags& devFlags,

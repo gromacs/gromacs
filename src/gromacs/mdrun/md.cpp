@@ -1675,7 +1675,7 @@ void gmx::LegacySimulator::do_md()
             if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
             {
                 // Copy coordinates when needed to stop the CM motion.
-                if (useGpuForUpdate && !EI_VV(ir->eI) && bStopCM)
+                if (useGpuForUpdate && (bDoReplEx || (!EI_VV(ir->eI) && bStopCM)))
                 {
                     stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
                     stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);

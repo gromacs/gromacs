@@ -1456,7 +1456,6 @@ int Mdrunner::mdrunner()
                                                          mtop,
                                                          doEssentialDynamics,
                                                          gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                                                         replExParams.exchangeInterval > 0,
                                                          haveFrozenAtoms,
                                                          doRerun,
                                                          devFlags,
