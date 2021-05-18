@@ -118,11 +118,13 @@ real do_ewald(const t_inputrec&              ir,
  * charge.
  *
  * Should only be called on one thread. */
-real ewald_charge_correction(const t_commrec*  cr,
-                             const t_forcerec* fr,
-                             real              lambda,
-                             const matrix      box,
-                             real*             dvdlambda,
-                             tensor            vir);
+real ewald_charge_correction(const t_commrec*            commrec,
+                             real                        epsilonR,
+                             real                        ewaldcoeffQ,
+                             gmx::ArrayRef<const double> qsum,
+                             real                        lambda,
+                             const matrix                box,
+                             real*                       dvdlambda,
+                             tensor                      vir);
 
 #endif

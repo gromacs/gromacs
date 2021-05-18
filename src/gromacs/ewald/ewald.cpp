@@ -314,47 +314,38 @@ real do_ewald(const t_inputrec&              ir,
     return energy;
 }
 
-real ewald_charge_correction(const t_commrec*  cr,
-                             const t_forcerec* fr,
-                             const real        lambda,
-                             const matrix      box,
-                             real*             dvdlambda,
-                             tensor            vir)
+real ewald_charge_correction(const t_commrec*            commrec,
+                             const real                  epsilonR,
+                             const real                  ewaldcoeffQ,
+                             gmx::ArrayRef<const double> qsum,
+                             const real                  lambda,
+                             const matrix                box,
+                             real*                       dvdlambda,
+                             tensor                      vir)
 
 {
-    real vol, fac, qs2A, qs2B, vc, enercorr;
-    int  d;
+    real enercorr = 0;
 
-    if (MASTER(cr))
+    if (MASTER(commrec))
     {
         /* Apply charge correction */
-        vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
+        real vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];
 
-        fac = M_PI * gmx::c_one4PiEps0
-              / (fr->ic->epsilon_r * 2.0 * vol * vol * gmx::square(fr->ic->ewaldcoeff_q));
+        real fac = M_PI * gmx::c_one4PiEps0 / (epsilonR * 2.0 * vol * vol * gmx::square(ewaldcoeffQ));
 
-        qs2A = fr->qsum[0] * fr->qsum[0];
-        qs2B = fr->qsum[1] * fr->qsum[1];
+        real qs2A = qsum[0] * qsum[0];
+        real qs2B = qsum[1] * qsum[1];
 
-        vc = (qs2A * (1 - lambda) + qs2B * lambda) * fac;
+        real vc = (qs2A * (1 - lambda) + qs2B * lambda) * fac;
 
         enercorr = -vol * vc;
 
         *dvdlambda += -vol * (qs2B - qs2A) * fac;
 
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             vir[d][d] += vc;
         }
-
-        if (debug)
-        {
-            fprintf(debug, "Total charge correction: Vcharge=%g\n", enercorr);
-        }
-    }
-    else
-    {
-        enercorr = 0;
     }
 
     return enercorr;

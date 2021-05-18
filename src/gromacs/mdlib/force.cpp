@@ -195,7 +195,9 @@ void calculateLongRangeNonbondeds(t_forcerec*                    fr,
                    negligible and constant-sized amount of time */
                 ewaldOutput.Vcorr_q += ewald_charge_correction(
                         cr,
-                        fr,
+                        fr->ic->epsilon_r,
+                        fr->ic->ewaldcoeff_q,
+                        fr->qsum,
                         lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
                         box,
                         &ewaldOutput.dvdl[FreeEnergyPerturbationCouplingType::Coul],
