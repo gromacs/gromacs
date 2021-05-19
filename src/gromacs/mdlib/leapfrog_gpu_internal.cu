@@ -36,9 +36,7 @@
  *
  * \brief Implements Leap-Frog using CUDA
  *
- * This file contains implementation of basic Leap-Frog integrator
- * using CUDA, including class initialization, data-structures management
- * and GPU kernel.
+ * This file contains CUDA implementation of back-end specific code for Leap-Frog.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
@@ -46,14 +44,7 @@
  */
 #include "gmxpre.h"
 
-#include "leapfrog_gpu.h"
-
-#include <assert.h>
-#include <stdio.h>
-
-#include <cmath>
-
-#include <algorithm>
+#include "leapfrog_gpu_internal.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -100,19 +91,6 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param[in]     gm_tempScaleGroups               Mapping of atoms into groups.
  * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix
  */
-template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
-__launch_bounds__(c_maxThreadsPerBlock) __global__
-        void leapfrog_kernel(const int numAtoms,
-                             float3* __restrict__ gm_x,
-                             float3* __restrict__ gm_xp,
-                             float3* __restrict__ gm_v,
-                             const float3* __restrict__ gm_f,
-                             const float* __restrict__ gm_inverseMasses,
-                             const float dt,
-                             const float* __restrict__ gm_lambdas,
-                             const unsigned short* __restrict__ gm_tempScaleGroups,
-                             const float3 prVelocityScalingMatrixDiagonal);
-
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock) __global__
         void leapfrog_kernel(const int numAtoms,
@@ -176,7 +154,6 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         gm_v[threadIndex] = v;
         gm_x[threadIndex] = x;
     }
-    return;
 }
 
 /*! \brief Select templated kernel.
@@ -238,124 +215,49 @@ inline auto selectLeapFrogKernelPtr(bool                doTemperatureScaling,
     return kernelPtr;
 }
 
-void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
-                            DeviceBuffer<Float3>              d_xp,
-                            DeviceBuffer<Float3>              d_v,
-                            const DeviceBuffer<Float3>        d_f,
-                            const real                        dt,
-                            const bool                        doTemperatureScaling,
-                            gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                            const bool                        doParrinelloRahman,
-                            const float                       dtPressureCouple,
-                            const matrix                      prVelocityScalingMatrix)
+
+void launchLeapFrogKernel(const int                          numAtoms,
+                          DeviceBuffer<Float3>               d_x,
+                          DeviceBuffer<Float3>               d_xp,
+                          DeviceBuffer<Float3>               d_v,
+                          const DeviceBuffer<Float3>         d_f,
+                          const DeviceBuffer<float>          d_inverseMasses,
+                          const float                        dt,
+                          const bool                         doTemperatureScaling,
+                          const int                          numTempScaleValues,
+                          const DeviceBuffer<unsigned short> d_tempScaleGroups,
+                          const DeviceBuffer<float>          d_lambdas,
+                          const VelocityScalingType          prVelocityScalingType,
+                          const Float3                       prVelocityScalingMatrixDiagonal,
+                          const DeviceStream&                deviceStream)
 {
-
-    ensureNoPendingDeviceError("In CUDA version of Leap-Frog integrator");
-
-    auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
-    if (doTemperatureScaling || doParrinelloRahman)
-    {
-        if (doTemperatureScaling)
-        {
-            GMX_ASSERT(numTempScaleValues_ == ssize(h_lambdas_),
-                       "Number of temperature scaling factors changed since it was set for the "
-                       "last time.");
-            for (int i = 0; i < numTempScaleValues_; i++)
-            {
-                h_lambdas_[i] = tcstat[i].lambda;
-            }
-            copyToDeviceBuffer(&d_lambdas_,
-                               h_lambdas_.data(),
-                               0,
-                               numTempScaleValues_,
-                               deviceStream_,
-                               GpuApiCallBehavior::Async,
-                               nullptr);
-        }
-        VelocityScalingType prVelocityScalingType = VelocityScalingType::None;
-        if (doParrinelloRahman)
-        {
-            prVelocityScalingType = VelocityScalingType::Diagonal;
-            GMX_ASSERT(prVelocityScalingMatrix[YY][XX] == 0 && prVelocityScalingMatrix[ZZ][XX] == 0
-                               && prVelocityScalingMatrix[ZZ][YY] == 0
-                               && prVelocityScalingMatrix[XX][YY] == 0
-                               && prVelocityScalingMatrix[XX][ZZ] == 0
-                               && prVelocityScalingMatrix[YY][ZZ] == 0,
-                       "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported "
-                       "in GPU version of Leap-Frog integrator.");
-            prVelocityScalingMatrixDiagonal_ =
-                    Float3{ dtPressureCouple * prVelocityScalingMatrix[XX][XX],
-                            dtPressureCouple * prVelocityScalingMatrix[YY][YY],
-                            dtPressureCouple * prVelocityScalingMatrix[ZZ][ZZ] };
-        }
-        kernelPtr = selectLeapFrogKernelPtr(doTemperatureScaling, numTempScaleValues_, prVelocityScalingType);
-    }
-
     // Checking the buffer types against the kernel argument types
-    static_assert(sizeof(*d_inverseMasses_) == sizeof(float), "Incompatible types");
+    static_assert(sizeof(*d_inverseMasses) == sizeof(float), "Incompatible types");
+
+    KernelLaunchConfig kernelLaunchConfig;
+
+    kernelLaunchConfig.gridSize[0]      = (numAtoms + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.blockSize[0]     = c_threadsPerBlock;
+    kernelLaunchConfig.blockSize[1]     = 1;
+    kernelLaunchConfig.blockSize[2]     = 1;
+    kernelLaunchConfig.sharedMemorySize = 0;
+
+    auto kernelPtr =
+            selectLeapFrogKernelPtr(doTemperatureScaling, numTempScaleValues, prVelocityScalingType);
+
     const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
-                                                      kernelLaunchConfig_,
-                                                      &numAtoms_,
+                                                      kernelLaunchConfig,
+                                                      &numAtoms,
                                                       asFloat3Pointer(&d_x),
                                                       asFloat3Pointer(&d_xp),
                                                       asFloat3Pointer(&d_v),
                                                       asFloat3Pointer(&d_f),
-                                                      &d_inverseMasses_,
+                                                      &d_inverseMasses,
                                                       &dt,
-                                                      &d_lambdas_,
-                                                      &d_tempScaleGroups_,
-                                                      &prVelocityScalingMatrixDiagonal_);
-    launchGpuKernel(kernelPtr, kernelLaunchConfig_, deviceStream_, nullptr, "leapfrog_kernel", kernelArgs);
-
-    return;
-}
-
-LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
-                         const DeviceStream&  deviceStream,
-                         const int            numTempScaleValues) :
-    deviceContext_(deviceContext), deviceStream_(deviceStream), numTempScaleValues_(numTempScaleValues)
-{
-    numAtoms_ = 0;
-
-    changePinningPolicy(&h_lambdas_, gmx::PinningPolicy::PinnedIfSupported);
-
-    kernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
-    kernelLaunchConfig_.blockSize[1]     = 1;
-    kernelLaunchConfig_.blockSize[2]     = 1;
-    kernelLaunchConfig_.sharedMemorySize = 0;
-
-    // If the temperature coupling is enabled, we need to make space for scaling factors
-    if (numTempScaleValues_ > 0)
-    {
-        h_lambdas_.resize(numTempScaleValues_);
-        reallocateDeviceBuffer(
-                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
-    }
-}
-
-LeapFrogGpu::~LeapFrogGpu()
-{
-    freeDeviceBuffer(&d_inverseMasses_);
-}
-
-void LeapFrogGpu::set(const int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups)
-{
-    numAtoms_                       = numAtoms;
-    kernelLaunchConfig_.gridSize[0] = (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
-
-    reallocateDeviceBuffer(
-            &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(
-            &d_inverseMasses_, inverseMasses, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-
-    // Temperature scale group map only used if there are more then one group
-    if (numTempScaleValues_ > 1)
-    {
-        reallocateDeviceBuffer(
-                &d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, deviceContext_);
-        copyToDeviceBuffer(
-                &d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-    }
+                                                      &d_lambdas,
+                                                      &d_tempScaleGroups,
+                                                      &prVelocityScalingMatrixDiagonal);
+    launchGpuKernel(kernelPtr, kernelLaunchConfig, deviceStream, nullptr, "leapfrog_kernel", kernelArgs);
 }
 
 } // namespace gmx

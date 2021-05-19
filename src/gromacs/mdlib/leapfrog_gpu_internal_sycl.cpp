@@ -36,9 +36,7 @@
  *
  * \brief Implements Leap-Frog using SYCL
  *
- * This file contains implementation of basic Leap-Frog integrator
- * using SYCL, including class initialization, data-structures management
- * and GPU kernel.
+ * This file contains SYCL implementation of back-end specific code for Leap-Frog.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \author Andrey Alekseenko <al42and@gmail.com>
@@ -46,6 +44,8 @@
  * \ingroup module_mdlib
  */
 #include "gmxpre.h"
+
+#include "leapfrog_gpu_internal.h"
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
@@ -216,114 +216,38 @@ static inline cl::sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScali
             prVelocityScalingType);
 }
 
-void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
-                            DeviceBuffer<Float3>              d_xp,
-                            DeviceBuffer<Float3>              d_v,
-                            DeviceBuffer<Float3>              d_f,
-                            const real                        dt,
-                            const bool                        doTemperatureScaling,
-                            gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                            const bool                        doParrinelloRahman,
-                            const float                       dtPressureCouple,
-                            const matrix                      prVelocityScalingMatrix)
+void launchLeapFrogKernel(int                                numAtoms,
+                          DeviceBuffer<Float3>               d_x,
+                          DeviceBuffer<Float3>               d_xp,
+                          DeviceBuffer<Float3>               d_v,
+                          const DeviceBuffer<Float3>         d_f,
+                          const DeviceBuffer<float>          d_inverseMasses,
+                          const float                        dt,
+                          const bool                         doTemperatureScaling,
+                          const int                          numTempScaleValues,
+                          const DeviceBuffer<unsigned short> d_tempScaleGroups,
+                          const DeviceBuffer<float>          d_lambdas,
+                          const VelocityScalingType          prVelocityScalingType,
+                          const Float3                       prVelocityScalingMatrixDiagonal,
+                          const DeviceStream&                deviceStream)
 {
-    if (doTemperatureScaling)
-    {
-        GMX_ASSERT(checkDeviceBuffer(d_lambdas_, numTempScaleValues_),
-                   "Number of temperature scaling factors changed since it was set for the "
-                   "last time.");
-        GMX_RELEASE_ASSERT(gmx::ssize(h_lambdas_) == numTempScaleValues_,
-                           "Number of temperature scaling factors changed since it was set for the "
-                           "last time.");
-        /* We could use host accessors here, without h_lambdas_.
-         * According to a quick test, host accessor is slightly faster when using DPC++ and
-         * LevelZero compared to using h_lambdas_ + cgh.copy. But with DPC++ and OpenCL, the host
-         * accessor waits for fReadyOnDevice in UpdateConstrainGpu::Impl::integrate. See #4023. */
-
-        for (int i = 0; i < numTempScaleValues_; i++)
-        {
-            h_lambdas_[i] = tcstat[i].lambda;
-        }
-        copyToDeviceBuffer(&d_lambdas_,
-                           h_lambdas_.data(),
-                           0,
-                           numTempScaleValues_,
-                           deviceStream_,
-                           GpuApiCallBehavior::Async,
-                           nullptr);
-    }
     NumTempScaleValues tempVelocityScalingType =
-            getTempScalingType(doTemperatureScaling, numTempScaleValues_);
+            getTempScalingType(doTemperatureScaling, numTempScaleValues);
 
-    VelocityScalingType prVelocityScalingType = VelocityScalingType::None;
-    if (doParrinelloRahman)
-    {
-        prVelocityScalingType = VelocityScalingType::Diagonal;
-        GMX_ASSERT(prVelocityScalingMatrix[YY][XX] == 0 && prVelocityScalingMatrix[ZZ][XX] == 0
-                           && prVelocityScalingMatrix[ZZ][YY] == 0 && prVelocityScalingMatrix[XX][YY] == 0
-                           && prVelocityScalingMatrix[XX][ZZ] == 0 && prVelocityScalingMatrix[YY][ZZ] == 0,
-                   "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported "
-                   "in GPU version of Leap-Frog integrator.");
-        prVelocityScalingMatrixDiagonal_ = dtPressureCouple
-                                           * Float3{ prVelocityScalingMatrix[XX][XX],
-                                                     prVelocityScalingMatrix[YY][YY],
-                                                     prVelocityScalingMatrix[ZZ][ZZ] };
-    }
 
     launchLeapFrogKernel(tempVelocityScalingType,
                          prVelocityScalingType,
-                         deviceStream_,
-                         numAtoms_,
+                         deviceStream,
+                         numAtoms,
                          d_x,
                          d_xp,
                          d_v,
                          d_f,
-                         d_inverseMasses_,
+                         d_inverseMasses,
                          dt,
-                         d_lambdas_,
-                         d_tempScaleGroups_,
-                         prVelocityScalingMatrixDiagonal_);
-}
-
-LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
-                         const DeviceStream&  deviceStream,
-                         const int            numTempScaleValues) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream),
-    numAtoms_(0),
-    numTempScaleValues_(numTempScaleValues)
-{
-    // If the temperature coupling is enabled, we need to make space for scaling factors
-    if (numTempScaleValues_ > 0)
-    {
-        h_lambdas_.resize(numTempScaleValues_);
-        reallocateDeviceBuffer(
-                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
-    }
-}
-
-LeapFrogGpu::~LeapFrogGpu()
-{
-    freeDeviceBuffer(&d_inverseMasses_);
-}
-
-void LeapFrogGpu::set(const int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups)
-{
-    numAtoms_ = numAtoms;
-
-    reallocateDeviceBuffer(
-            &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(
-            &d_inverseMasses_, inverseMasses, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-
-    // Temperature scale group map only used if there are more then one group
-    if (numTempScaleValues_ > 1)
-    {
-        reallocateDeviceBuffer(
-                &d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, deviceContext_);
-        copyToDeviceBuffer(
-                &d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-    }
+                         d_lambdas,
+                         d_tempScaleGroups,
+                         prVelocityScalingMatrixDiagonal);
 }
 
 } // namespace gmx

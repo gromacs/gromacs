@@ -125,7 +125,7 @@ public:
                    DeviceBuffer<Float3>              d_xp,
                    DeviceBuffer<Float3>              d_v,
                    const DeviceBuffer<Float3>        d_f,
-                   const real                        dt,
+                   const float                       dt,
                    const bool                        doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
                    const bool                        doParrinelloRahman,
@@ -152,8 +152,7 @@ private:
     const DeviceContext& deviceContext_;
     //! GPU stream
     const DeviceStream& deviceStream_;
-    //! GPU kernel launch config
-    KernelLaunchConfig kernelLaunchConfig_;
+
     //! Number of atoms
     int numAtoms_;
 
