@@ -881,8 +881,8 @@ void calculateScalingMatrixImplDetail<PressureCoupling::Berendsen>(const t_input
                                                                    real              dt,
                                                                    const matrix      pres,
                                                                    const matrix      box,
-                                                                   real    scalar_pressure,
-                                                                   real    xy_pressure,
+                                                                   real scalar_pressure,
+                                                                   real xy_pressure,
                                                                    int64_t gmx_unused step)
 {
     real p_corr_z = 0;
