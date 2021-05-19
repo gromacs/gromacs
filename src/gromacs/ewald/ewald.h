@@ -77,6 +77,7 @@ struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_complex;
+enum class FreeEnergyPerturbationType : int;
 
 namespace gmx
 {
@@ -100,13 +101,16 @@ struct gmx_ewald_tab_t
 };
 
 /*! \brief Do the long-ranged part of an Ewald calculation */
-real do_ewald(const t_inputrec&              ir,
-              gmx::ArrayRef<const gmx::RVec> x,
-              gmx::ArrayRef<gmx::RVec>       f,
+real do_ewald(bool                           havePbcXY2Walls,
+              real                           wallEwaldZfac,
+              real                           epsilonR,
+              FreeEnergyPerturbationType     freeEnergyPerturbationType,
+              gmx::ArrayRef<const gmx::RVec> coords,
+              gmx::ArrayRef<gmx::RVec>       forces,
               gmx::ArrayRef<const real>      chargeA,
               gmx::ArrayRef<const real>      chargeB,
               const matrix                   box,
-              const t_commrec*               cr,
+              const t_commrec*               commrec,
               int                            natoms,
               matrix                         lrvir,
               real                           ewaldcoeff,
