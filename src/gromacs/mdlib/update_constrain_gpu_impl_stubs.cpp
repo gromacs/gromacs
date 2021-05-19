@@ -126,6 +126,12 @@ bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* m
     return false;
 }
 
+
+bool UpdateConstrainGpu::areConstraintsSupported()
+{
+    return false;
+}
+
 } // namespace gmx
 
 #endif /* !GMX_GPU_CUDA && !GMX_GPU_SYCL */

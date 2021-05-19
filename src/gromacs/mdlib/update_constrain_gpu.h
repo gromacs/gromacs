@@ -178,6 +178,13 @@ public:
      */
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
+    /*! \brief
+     * Returns whether the constraints are supported by the GPU code.
+     *
+     * Currently true for CUDA, false for others.
+     */
+    static bool areConstraintsSupported();
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;

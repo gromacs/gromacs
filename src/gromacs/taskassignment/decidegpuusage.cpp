@@ -601,7 +601,6 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
     }
-
     if (!gpusWereDetected)
     {
         errorMessage += "Compatible GPUs must have been found.\n";
@@ -681,6 +680,10 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         errorMessage +=
                 "The number of coupled constraints is higher than supported in the GPU LINCS "
                 "code.\n";
+    }
+    if (hasAnyConstraints && !UpdateConstrainGpu::areConstraintsSupported())
+    {
+        errorMessage += "Chosen GPU implementation does not support constraints.\n";
     }
     if (haveFrozenAtoms)
     {
