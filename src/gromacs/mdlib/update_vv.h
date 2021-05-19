@@ -38,10 +38,12 @@
 #ifndef GMX_MDLIB_UPDATE_VV_H
 #define GMX_MDLIB_UPDATE_VV_H
 
+#include <cstdio>
+
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/md_enums.h"
 
 class gmx_ekindata_t;
@@ -68,6 +70,7 @@ class ForceBuffers;
 class MDLogger;
 class SimulationSignaller;
 class Update;
+enum class StartingBehavior : int;
 } // namespace gmx
 
 /*! \brief Make the first step of Velocity Verlet integration

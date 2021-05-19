@@ -54,6 +54,7 @@
 struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
+enum class ComRemovalAlgorithm : int;
 
 namespace gmx
 {

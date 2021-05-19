@@ -312,14 +312,6 @@ const char* enumValueToString(DispersionCorrectionType enumValue)
     return dispersionCorrectionTypeNames[enumValue];
 }
 
-const char* enumValueToString(ComRemovalAlgorithm enumValue)
-{
-    static constexpr gmx::EnumerationArray<ComRemovalAlgorithm, const char*> comRemovalAlgorithmNames = {
-        "Linear", "Angular", "None", "Linear-acceleration-correction"
-    };
-    return comRemovalAlgorithmNames[enumValue];
-}
-
 const char* enumValueToString(SimulatedAnnealing enumValue)
 {
     static constexpr gmx::EnumerationArray<SimulatedAnnealing, const char*> simulatedAnnealingNames = {

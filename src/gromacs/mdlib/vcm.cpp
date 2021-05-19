@@ -55,6 +55,14 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
+const char* enumValueToString(ComRemovalAlgorithm enumValue)
+{
+    static constexpr gmx::EnumerationArray<ComRemovalAlgorithm, const char*> comRemovalAlgorithmNames = {
+        "Linear", "Angular", "None", "Linear-acceleration-correction"
+    };
+    return comRemovalAlgorithmNames[enumValue];
+}
+
 t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
     integratorConservesMomentum(!EI_RANDOM(ir.eI))
 {

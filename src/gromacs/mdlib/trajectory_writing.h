@@ -40,9 +40,7 @@
 
 #include <stdio.h>
 
-#include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/timing/wallcycle.h"
 
 class gmx_ekindata_t;
 struct gmx_mtop_t;

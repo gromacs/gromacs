@@ -634,19 +634,6 @@ enum class DispersionCorrectionType : int
 //! String corresponding to dispersion corrections
 const char* enumValueToString(DispersionCorrectionType enumValue);
 
-//! Center of mass motion removal algorithm.
-enum class ComRemovalAlgorithm : int
-{
-    Linear,
-    Angular,
-    No,
-    LinearAccelerationCorrection,
-    Count,
-    Default = Linear
-};
-//! String corresponding to COM removal
-const char* enumValueToString(ComRemovalAlgorithm enumValue);
-
 //! Algorithm for simulated annealing.
 enum class SimulatedAnnealing : int
 {

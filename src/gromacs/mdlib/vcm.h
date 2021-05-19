@@ -43,8 +43,6 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct SimulationGroups;
@@ -56,6 +54,19 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 }
+
+//! Center of mass motion removal algorithm.
+enum class ComRemovalAlgorithm : int
+{
+    Linear,
+    Angular,
+    No,
+    LinearAccelerationCorrection,
+    Count,
+    Default = Linear
+};
+//! String corresponding to COM removal
+const char* enumValueToString(ComRemovalAlgorithm enumValue);
 
 struct t_vcm_thread
 {

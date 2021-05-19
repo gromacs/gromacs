@@ -40,14 +40,11 @@
 #include "update_vv.h"
 
 #include <cmath>
-#include <cstdio>
 
 #include <algorithm>
-#include <memory>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
@@ -57,6 +54,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
