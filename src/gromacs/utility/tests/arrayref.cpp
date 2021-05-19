@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, The GROMACS development team.
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +47,8 @@
 
 #include <gtest/gtest.h>
 
+#include "testutils/testasserts.h"
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -61,6 +64,15 @@ TEST(EmptyArrayRefTest, IsEmpty)
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), nullptr);
+}
+
+TEST(EmptyArrayRefTest, ConstructFromNullptrIsEmpty)
+{
+    ArrayRef<real> empty(nullptr, nullptr);
+    EXPECT_EQ(0U, empty.size());
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), nullptr);
 }
 
 TEST(EmptyConstArrayRefTest, IsEmpty)
@@ -69,6 +81,40 @@ TEST(EmptyConstArrayRefTest, IsEmpty)
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), nullptr);
+}
+
+TEST(EmptyArrayRefDeathTest, AssertOnBadPointers)
+{
+    real random = 5;
+    GMX_EXPECT_DEATH_IF_SUPPORTED(ArrayRef<real> empty(nullptr, &random),
+                                  "If begin is nullptr, end needs to be nullptr as well");
+}
+
+TEST(EmptyArrayRefDeathTest, AssertOnBadIterators)
+{
+    std::vector<real> random = { 5 };
+    GMX_EXPECT_DEATH_IF_SUPPORTED(ArrayRef<real> empty(gmx::ArrayRefIter<real>{},
+                                                       gmx::ArrayRefIter<real>{ &*random.begin() }),
+                                  "If begin is nullptr, end needs to be nullptr as well");
+}
+
+
+TEST(EmptyArrayRefTest, arrayRefFromArrayIsEmptyForNullptr)
+{
+    ArrayRef<real> empty = arrayRefFromArray<real>(nullptr, 1234);
+    EXPECT_EQ(0U, empty.size());
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), nullptr);
+}
+
+TEST(EmptyArrayRefTest, arrayRefFromArrayIsEmptyForSizeNull)
+{
+    real           random = 5;
+    ArrayRef<real> empty  = arrayRefFromArray<real>(&random, 0);
+    EXPECT_EQ(0U, empty.size());
+    EXPECT_TRUE(empty.empty());
+    EXPECT_EQ(empty.data(), &random);
 }
 
 #ifdef GTEST_HAS_TYPED_TEST
