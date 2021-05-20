@@ -84,6 +84,8 @@ TEST(EmptyConstArrayRefTest, IsEmpty)
     EXPECT_EQ(empty.data(), nullptr);
 }
 
+#if !defined(NDEBUG)
+
 TEST(EmptyArrayRefDeathTest, AssertOnBadPointers)
 {
     real random = 5;
@@ -99,6 +101,14 @@ TEST(EmptyArrayRefDeathTest, AssertOnBadIterators)
                                   "If begin is nullptr, end needs to be nullptr as well");
 }
 
+#else
+
+TEST(DISABLED_ArrayRefDeathTest, GenericTests)
+{
+    ADD_FAILURE() << "Tests for proper assertion triggering only works with assertions enabled.";
+}
+
+#endif
 
 TEST(EmptyArrayRefTest, arrayRefFromArrayIsEmptyForNullptr)
 {
