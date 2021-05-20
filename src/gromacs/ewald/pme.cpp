@@ -1037,21 +1037,16 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     GMX_ASSERT(pme->runMode == PmeRunMode::CPU,
                "gmx_pme_do should not be called on the GPU PME run.");
 
-    int                       d, npme, grid_index, max_grid_index;
     PmeAtomComm&              atc     = pme->atc[0];
     pmegrids_t*               pmegrid = nullptr;
     real*                     grid    = nullptr;
     gmx::ArrayRef<const real> coefficient;
-    PmeOutput                 output[2]; // The second is used for the B state with FEP
-    real                      scale, lambda;
-    gmx_bool                  bClearF;
+    std::array<PmeOutput, 2>  output; // The second is used for the B state with FEP
     gmx_parallel_3dfft_t      pfft_setup;
     real*                     fftgrid;
     t_complex*                cfftgrid;
     int                       thread;
-    gmx_bool                  bFirst, bDoSplines;
-    int                       fep_state;
-    int                       fep_states_lj = pme->bFEP_lj ? 2 : 1;
+    const int                 fep_states_lj = pme->bFEP_lj ? 2 : 1;
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = (stepWork.computeEnergy || stepWork.computeVirial);
 
@@ -1091,7 +1086,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     pme->boxScaler->scaleBox(box, scaledBox);
 
     gmx::invertBoxMatrix(scaledBox, pme->recipbox);
-    bFirst = TRUE;
+    bool bFirst = true;
 
     /* For simplicity, we construct the splines for all particles if
      * more than one PME calculations is needed. Some optimization
@@ -1100,7 +1095,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
      * that don't yet have them.
      */
 
-    bDoSplines = pme->bFEP || (pme->doCoulomb && pme->doLJ);
+    bool bDoSplines = pme->bFEP || (pme->doCoulomb && pme->doLJ);
 
     /* We need a maximum of four separate PME calculations:
      * grid_index=0: Coulomb PME with charges from state A
@@ -1112,9 +1107,9 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
      */
 
     /* If we are doing LJ-PME with LB, we only do Q here */
-    max_grid_index = (pme->ljpme_combination_rule == LongRangeVdW::LB) ? DO_Q : DO_Q_AND_LJ;
-
-    for (grid_index = 0; grid_index < max_grid_index; ++grid_index)
+    const int max_grid_index = (pme->ljpme_combination_rule == LongRangeVdW::LB) ? DO_Q : DO_Q_AND_LJ;
+    bool      bClearF;
+    for (int grid_index = 0; grid_index < max_grid_index; ++grid_index)
     {
         /* Check if we should do calculations at this grid_index
          * If grid_index is odd we should be doing FEP
@@ -1141,16 +1136,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
         grid = pmegrid->grid.grid;
 
-        if (debug)
-        {
-            fprintf(debug, "PME: number of ranks = %d, rank = %d\n", cr->nnodes, cr->nodeid);
-            fprintf(debug, "Grid = %p\n", static_cast<void*>(grid));
-            if (grid == nullptr)
-            {
-                gmx_fatal(FARGS, "No grid!");
-            }
-        }
-
         if (pme->nnodes == 1)
         {
             atc.coefficient = coefficient;
@@ -1161,11 +1146,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             do_redist_pos_coeffs(pme, cr, bFirst, coordinates, coefficient);
 
             wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
-        }
-
-        if (debug)
-        {
-            fprintf(debug, "Rank= %6d, pme local particles=%6d\n", cr->nodeid, atc.numAtoms());
         }
 
         wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
@@ -1268,8 +1248,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
                     if (pme->nodeid == 0)
                     {
-                        real ntot = pme->nkx * pme->nky * pme->nkz;
-                        npme      = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
+                        real      ntot = pme->nkx * pme->nky * pme->nkz;
+                        const int npme = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                         inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                     }
 
@@ -1304,8 +1284,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
              * atc->f is the actual force array, not a buffer,
              * therefore we should not clear it.
              */
-            lambda  = grid_index < DO_Q ? lambda_q : lambda_lj;
-            bClearF = (bFirst && PAR(cr));
+            real lambda = grid_index < DO_Q ? lambda_q : lambda_lj;
+            bClearF     = (bFirst && PAR(cr));
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
             for (thread = 0; thread < pme->nthread; thread++)
             {
@@ -1351,7 +1331,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* Loop over A- and B-state if we are doing FEP */
-        for (fep_state = 0; fep_state < fep_states_lj; ++fep_state)
+        for (int fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
             std::vector<real>         local_c6;
             std::vector<real>         local_sigma;
@@ -1414,7 +1394,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             calc_initial_lb_coeffs(coefficientBuffer, local_c6, local_sigma);
 
             /*Seven terms in LJ-PME with LB, grid_index < 2 reserved for electrostatics*/
-            for (grid_index = 2; grid_index < 9; ++grid_index)
+            for (int grid_index = 2; grid_index < 9; ++grid_index)
             {
                 /* Unpack structure */
                 pmegrid    = &pme->pmegrid[grid_index];
@@ -1508,7 +1488,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
             bFirst = !pme->doCoulomb;
             calc_initial_lb_coeffs(coefficientBuffer, local_c6, local_sigma);
-            for (grid_index = 8; grid_index >= 2; --grid_index)
+            for (int grid_index = 8; grid_index >= 2; --grid_index)
             {
                 /* Unpack structure */
                 pmegrid    = &pme->pmegrid[grid_index];
@@ -1535,8 +1515,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
                             if (pme->nodeid == 0)
                             {
-                                real ntot = pme->nkx * pme->nky * pme->nkz;
-                                npme      = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
+                                real      ntot = pme->nkx * pme->nky * pme->nkz;
+                                const int npme = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                                 inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                             }
                             wallcycle_start(wcycle, WallCycleCounter::PmeGather);
@@ -1558,8 +1538,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 if (stepWork.computeForces)
                 {
                     /* interpolate forces for our local atoms */
-                    bClearF = (bFirst && PAR(cr));
-                    scale   = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
+                    bClearF    = (bFirst && PAR(cr));
+                    real scale = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
                     scale *= lb_scale_factor[grid_index - 2];
 
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
@@ -1588,7 +1568,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
     if (stepWork.computeForces && pme->nnodes > 1)
     {
         wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
-        for (d = 0; d < pme->ndecompdim; d++)
+        for (int d = 0; d < pme->ndecompdim; d++)
         {
             gmx::ArrayRef<gmx::RVec> forcesRef;
             if (d == pme->ndecompdim - 1)
@@ -1632,10 +1612,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     }
                 }
             }
-            if (debug)
-            {
-                fprintf(debug, "Electrostatic PME mesh energy: %g\n", *energy_q);
-            }
         }
         else
         {
@@ -1662,10 +1638,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                                         + lambda_lj * output[1].lennardJonesVirial_[i][j];
                     }
                 }
-            }
-            if (debug)
-            {
-                fprintf(debug, "Lennard-Jones PME mesh energy: %g\n", *energy_lj);
             }
         }
         else
