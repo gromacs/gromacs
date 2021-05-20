@@ -89,36 +89,28 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     const int start = (numAtomsLocal * thread) / numThreads;
     const int end   = (numAtomsLocal * (thread + 1)) / numThreads;
 
-    int    i, j, q;
-    double Vexcl_q, dvdl_excl_q; /* Necessary for precision */
-    real   one_4pi_eps;
-    real   Vself_q[2], Vdipole[2];
-    rvec   mutot[2], dipcorrA, dipcorrB;
-    real   L1_q, dipole_coeff;
-    real   chargecorr[2] = { 0, 0 };
+    std::array<rvec, 2> mutot;
+    gmx::RVec           dipcorrA   = { 0, 0, 0 };
+    gmx::RVec           dipcorrB   = { 0, 0, 0 };
+    std::array<real, 2> chargecorr = { 0 };
+    std::array<real, 2> Vdipole    = { 0 };
 
     /* Scale the Ewald unit cell when dimension z is not periodic */
     matrix          scaledBox;
     EwaldBoxZScaler boxScaler(havePbcXY2Walls, wallEwaldZfac);
     boxScaler.scaleBox(box, scaledBox);
 
-    one_4pi_eps = gmx::c_one4PiEps0 / epsilonR;
-    Vexcl_q     = 0;
-    dvdl_excl_q = 0;
-    Vdipole[0]  = 0;
-    Vdipole[1]  = 0;
-    L1_q        = 1.0 - lambda_q;
+    const real one_4pi_eps = gmx::c_one4PiEps0 / epsilonR;
+    const real L1_q        = 1.0 - lambda_q;
     /* Note that we have to transform back to gromacs units, since
      * mu_tot contains the dipole in debye units (for output).
      */
-    for (i = 0; (i < DIM); i++)
+    for (int i = 0; (i < DIM); i++)
     {
         mutot[0][i] = mu_tot[0][i] * gmx::c_debye2Enm;
         mutot[1][i] = mu_tot[1][i] * gmx::c_debye2Enm;
-        dipcorrA[i] = 0;
-        dipcorrB[i] = 0;
     }
-    dipole_coeff = 0;
+    real dipole_coeff = 0;
 
     real boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
     switch (ewaldGeometry)
@@ -128,7 +120,7 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
             {
                 dipole_coeff =
                         2 * M_PI * gmx::c_one4PiEps0 / ((2 * epsilonSurface + epsilonR) * boxVolume);
-                for (i = 0; (i < DIM); i++)
+                for (int i = 0; (i < DIM); i++)
                 {
                     dipcorrA[i] = 2 * dipole_coeff * mutot[0][i];
                     dipcorrB[i] = 2 * dipole_coeff * mutot[1][i];
@@ -153,9 +145,9 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     const bool bNeedLongRangeCorrection = (dipole_coeff != 0);
     if (bNeedLongRangeCorrection && !bHaveChargePerturbed)
     {
-        for (i = start; (i < end); i++)
+        for (int i = start; (i < end); i++)
         {
-            for (j = 0; (j < DIM); j++)
+            for (int j = 0; (j < DIM); j++)
             {
                 forces[i][j] -= dipcorrA[j] * chargeA[i];
             }
@@ -167,9 +159,9 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     }
     else if (bNeedLongRangeCorrection)
     {
-        for (i = start; (i < end); i++)
+        for (int i = start; (i < end); i++)
         {
-            for (j = 0; (j < DIM); j++)
+            for (int j = 0; (j < DIM); j++)
             {
                 forces[i][j] -= L1_q * dipcorrA[j] * chargeA[i] + lambda_q * dipcorrB[j] * chargeB[i];
             }
@@ -181,13 +173,10 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
         }
     }
 
-    Vself_q[0] = 0;
-    Vself_q[1] = 0;
-
     /* Global corrections only on master process */
     if (MASTER(commrec) && thread == 0)
     {
-        for (q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
+        for (int q = 0; q < (bHaveChargePerturbed ? 2 : 1); q++)
         {
             /* Apply surface and charged surface dipole correction:
              * correction = dipole_coeff * ( (dipole)^2
@@ -226,11 +215,11 @@ void ewald_LRcorrection(const int                      numAtomsLocal,
     }
     if (!bHaveChargePerturbed)
     {
-        *Vcorr_q = Vdipole[0] - Vself_q[0] - Vexcl_q;
+        *Vcorr_q = Vdipole[0];
     }
     else
     {
-        *Vcorr_q = L1_q * (Vdipole[0] - Vself_q[0]) + lambda_q * (Vdipole[1] - Vself_q[1]) - Vexcl_q;
-        *dvdlambda_q += Vdipole[1] - Vself_q[1] - (Vdipole[0] - Vself_q[0]) - dvdl_excl_q;
+        *Vcorr_q = L1_q * Vdipole[0] + lambda_q * Vdipole[1];
+        *dvdlambda_q += Vdipole[1] - Vdipole[0];
     }
 }
