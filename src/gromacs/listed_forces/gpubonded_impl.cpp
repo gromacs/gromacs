@@ -51,7 +51,7 @@
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/message_string_collector.h"
 
 namespace gmx
 {
@@ -93,71 +93,44 @@ static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t& mtop)
     return false;
 }
 
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why bondeds on a GPU are not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(ArrayRef<const std::string> errorReasons, std::string* error)
-{
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error = "Bonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
-}
-
 bool buildSupportsGpuBondeds(std::string* error)
 {
-    std::vector<std::string> errorReasons;
-
-    if (GMX_DOUBLE)
+    MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Bonded interactions on GPU are not supported in:");
+    errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
+    errorReasons.appendIf(GMX_GPU_OPENCL, "OpenCL build of GROMACS");
+    errorReasons.appendIf(GMX_GPU_SYCL, "SYCL build of GROMACS");
+    errorReasons.appendIf(!GMX_GPU, "CPU-only build of GROMACS");
+    errorReasons.finishContext();
+    if (error != nullptr)
     {
-        errorReasons.emplace_back("not supported with double precision");
+        *error = errorReasons.toString();
     }
-    if (GMX_GPU_OPENCL)
-    {
-        errorReasons.emplace_back("not supported with OpenCL build of GROMACS");
-    }
-    if (GMX_GPU_SYCL)
-    {
-        errorReasons.emplace_back("not supported with SYCL build of GROMACS");
-    }
-    else if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("not supported with CPU-only build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error)
 {
-    std::vector<std::string> errorReasons;
+    MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Bonded interactions can not be computed on a GPU:");
 
-    if (!bondedInteractionsCanRunOnGpu(mtop))
+    errorReasons.appendIf(!bondedInteractionsCanRunOnGpu(mtop),
+                          "None of the bonded types are implemented on the GPU.");
+    errorReasons.appendIf(
+            !EI_DYNAMICS(ir.eI),
+            "Cannot compute bonded interactions on a GPU, because GPU implementation requires "
+            "a dynamical integrator (md, sd, etc).");
+    errorReasons.appendIf(EI_MIMIC(ir.eI), "MiMiC");
+    errorReasons.appendIf(ir.useMts, "Cannot run with multiple time stepping");
+    errorReasons.appendIf((ir.opts.ngener > 1), "Cannot run with multiple energy groups");
+    errorReasons.finishContext();
+    if (error != nullptr)
     {
-        errorReasons.emplace_back("No supported bonded interactions are present");
+        *error = errorReasons.toString();
     }
-    if (!EI_DYNAMICS(ir.eI))
-    {
-        errorReasons.emplace_back(
-                "Cannot compute bonded interactions on a GPU, because GPU implementation requires "
-                "a dynamical integrator (md, sd, etc).");
-    }
-    if (EI_MIMIC(ir.eI))
-    {
-        errorReasons.emplace_back("MiMiC");
-    }
-    if (ir.useMts)
-    {
-        errorReasons.emplace_back("Cannot run with multiple time stepping");
-    }
-    if (ir.opts.ngener > 1)
-    {
-        errorReasons.emplace_back("Cannot run with multiple energy groups");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 #if !GMX_GPU_CUDA

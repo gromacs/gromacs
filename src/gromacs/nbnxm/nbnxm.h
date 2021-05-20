@@ -496,4 +496,11 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nb_verlet,
                                 gmx::ArrayRef<const int>         atomInfo,
                                 gmx::ArrayRef<const gmx::RVec>   x);
 
+/*! \brief Check if GROMACS has been built with GPU support.
+ *
+ * \param[in] error Pointer to error string or nullptr.
+ * \todo Move this to NB module once it exists.
+ */
+bool buildSupportsNonbondedOnGpu(std::string* error);
+
 #endif // GMX_NBNXN_NBNXM_H

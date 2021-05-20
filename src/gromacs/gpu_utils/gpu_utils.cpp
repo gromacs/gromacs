@@ -59,32 +59,3 @@ const char* enumValueToString(GpuApiCallBehavior enumValue)
     };
     return s_gpuApiCallBehaviorNames[enumValue];
 }
-
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why nonbondeds on a GPU are not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(gmx::ArrayRef<const std::string> errorReasons, std::string* error)
-{
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error = "Nonbonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
-}
-
-bool buildSupportsNonbondedOnGpu(std::string* error)
-{
-    std::vector<std::string> errorReasons;
-    if (GMX_DOUBLE)
-    {
-        errorReasons.emplace_back("double precision");
-    }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
-}

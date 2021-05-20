@@ -114,7 +114,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "calculate_spline_moduli.h"
@@ -127,84 +127,54 @@
 #include "pme_spline_work.h"
 #include "pme_spread.h"
 
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why PME on GPU is not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(const std::list<std::string>& errorReasons, std::string* error)
-{
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        std::string regressionTestMarker = "PME GPU does not support";
-        // this prefix is tested for in the regression tests script gmxtest.pl
-        *error = regressionTestMarker;
-        if (errorReasons.size() == 1)
-        {
-            *error += " " + errorReasons.back();
-        }
-        else
-        {
-            *error += ": " + gmx::joinStrings(errorReasons, "; ");
-        }
-        *error += ".";
-    }
-    return isSupported;
-}
-
 bool pme_gpu_supports_build(std::string* error)
 {
-    std::list<std::string> errorReasons;
-    if (GMX_DOUBLE)
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("PME GPU does not support:");
+    errorReasons.appendIf(GMX_DOUBLE, "Double-precision build of GROMACS.");
+    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.appendIf(GMX_GPU_SYCL, "SYCL build."); // SYCL-TODO
+    errorReasons.finishContext();
+    if (error != nullptr)
     {
-        errorReasons.emplace_back("a double-precision build");
+        *error = errorReasons.toString();
     }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("a non-GPU build");
-    }
-    if (GMX_GPU_SYCL)
-    {
-        errorReasons.emplace_back("SYCL build"); // SYCL-TODO
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 bool pme_gpu_supports_hardware(const gmx_hw_info_t gmx_unused& hwinfo, std::string* error)
 {
-    std::list<std::string> errorReasons;
-
-    if (GMX_GPU_OPENCL)
-    {
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("PME GPU does not support:");
 #ifdef __APPLE__
-        errorReasons.emplace_back("Apple OS X operating system");
+    errorReasons.appendIf(GMX_GPU_OPENCL, "Apple OS X operating system");
 #endif
+    errorReasons.finishContext();
+    if (error != nullptr)
+    {
+        *error = errorReasons.toString();
     }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error)
 {
-    std::list<std::string> errorReasons;
-    if (!EEL_PME(ir.coulombtype))
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("PME GPU does not support:");
+    errorReasons.appendIf(!EEL_PME(ir.coulombtype),
+                          "Systems that do not use PME for electrostatics.");
+    errorReasons.appendIf((ir.pme_order != 4), "Interpolation orders other than 4.");
+    errorReasons.appendIf(EVDW_PME(ir.vdwtype), "Lennard-Jones PME.");
+    errorReasons.appendIf(!EI_DYNAMICS(ir.eI), "Non-dynamical integrator (use md, sd, etc).");
+    errorReasons.finishContext();
+    if (error != nullptr)
     {
-        errorReasons.emplace_back("systems that do not use PME for electrostatics");
+        *error = errorReasons.toString();
     }
-    if (ir.pme_order != 4)
-    {
-        errorReasons.emplace_back("interpolation orders other than 4");
-    }
-    if (EVDW_PME(ir.vdwtype))
-    {
-        errorReasons.emplace_back("Lennard-Jones PME");
-    }
-    if (!EI_DYNAMICS(ir.eI))
-    {
-        errorReasons.emplace_back(
-                "Cannot compute PME interactions on a GPU, because PME GPU requires a dynamical "
-                "integrator (md, sd, etc).");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 /*! \brief \libinternal
@@ -218,32 +188,21 @@ bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error)
  */
 static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
 {
-    std::list<std::string> errorReasons;
-    if (pme->nnodes != 1)
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("PME GPU does not support:");
+    errorReasons.appendIf((pme->nnodes != 1), "PME decomposition.");
+    errorReasons.appendIf((pme->pme_order != 4), "interpolation orders other than 4.");
+    errorReasons.appendIf(pme->doLJ, "Lennard-Jones PME.");
+    errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS.");
+    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.appendIf(GMX_GPU_SYCL, "SYCL build of GROMACS."); // SYCL-TODO
+    errorReasons.finishContext();
+    if (error != nullptr)
     {
-        errorReasons.emplace_back("PME decomposition");
+        *error = errorReasons.toString();
     }
-    if (pme->pme_order != 4)
-    {
-        errorReasons.emplace_back("interpolation orders other than 4");
-    }
-    if (pme->doLJ)
-    {
-        errorReasons.emplace_back("Lennard-Jones PME");
-    }
-    if (GMX_DOUBLE)
-    {
-        errorReasons.emplace_back("double precision");
-    }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
-    }
-    if (GMX_GPU_SYCL)
-    {
-        errorReasons.emplace_back("SYCL build of GROMACS"); // SYCL-TODO
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    return errorReasons.isEmpty();
 }
 
 PmeRunMode pme_run_mode(const gmx_pme_t* pme)

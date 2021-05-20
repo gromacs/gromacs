@@ -48,6 +48,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/message_string_collector.h"
 
 #include "nbnxm_gpu.h"
 #include "pairlistsets.h"
@@ -241,5 +242,21 @@ void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu() const
 {
     Nbnxm::nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpu_nbv);
 }
+
+bool buildSupportsNonbondedOnGpu(std::string* error)
+{
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Nonbonded interactions on GPUs are not supported in:");
+    errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
+    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    errorReasons.finishContext();
+    if (error != nullptr)
+    {
+        *error = errorReasons.toString();
+    }
+    return errorReasons.isEmpty();
+}
+
 
 /*! \endcond */
