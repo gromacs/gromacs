@@ -70,6 +70,24 @@ int ExpandedEnsembleDynamics(FILE*                               log,
                              int                                 homenr,
                              gmx::ArrayRef<const unsigned short> cTC);
 
+/*!
+ * \brief Return a new lambda state using expanded ensemble
+ *
+ * \param log  File pointer to the log file
+ * \param ir  The input record
+ * \param enerd  Data for energy output.
+ * \param fep_state  The current lambda state
+ * \param dfhist  Free energy sampling history struct
+ * \param step  The current simulation step
+ * \return  The new lambda state
+ */
+int expandedEnsembleUpdateLambdaState(FILE*                 log,
+                                      const t_inputrec*     ir,
+                                      const gmx_enerdata_t* enerd,
+                                      int                   fep_state,
+                                      df_history_t*         dfhist,
+                                      int64_t               step);
+
 void PrintFreeEnergyInfoToFile(FILE*               outfile,
                                const t_lambda*     fep,
                                const t_expanded*   expand,
