@@ -12,6 +12,19 @@ clang-tidy:configure-push:
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+clang-tidy:configure-push-cuda:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:basic-push
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
+  variables:
+    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
+    COMPILER_MAJOR_VERSION: 11
+    BUILD_DIR: build-clang-tidy
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGMX_CLANG_CUDA=ON
+
 clang-tidy:configure-schedule:
   extends:
     - .gromacs:base:configure
@@ -23,6 +36,19 @@ clang-tidy:configure-schedule:
     COMPILER_MAJOR_VERSION: 11
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+
+clang-tidy:configure-schedule-cuda:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:nightly-not-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
+  variables:
+    CMAKE: cmake
+    COMPILER_MAJOR_VERSION: 11
+    BUILD_DIR: build-clang-tidy
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_CLANG_CUDA=ON
 
 clang-tidy:build:
   extends:
@@ -38,6 +64,20 @@ clang-tidy:build:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     BUILD_DIR: build-clang-tidy
 
+clang-tidy:build-cuda:
+  extends:
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
+    - .rules:nightly-not-for-release
+  stage: source-check
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
+  needs:
+    - job: clang-tidy:configure-schedule-cuda
+  variables:
+    CMAKE: cmake
+    BUILD_DIR: build-clang-tidy
+
 clang-tidy:test:
   extends:
     - .gromacs:base:build
@@ -50,6 +90,42 @@ clang-tidy:test:
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     COMPILER_MAJOR_VERSION: 11
+    BUILD_DIR: build-clang-tidy
+    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_REQUEST: 4Gi
+  script:
+    # Make sure that a Python interpreter can be found for `/bin/env python`
+    - test -x /usr/bin/python || update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+    # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
+    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
+    - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
+    - if [[ "$REV" == "$HEAD_REV" ]] ; then
+        REV="HEAD~1" ;
+      fi
+    - echo "Revision used for branch point is $REV"
+    - git show -s $REV
+    - RUN_CLANG_TIDY=run-clang-tidy-$COMPILER_MAJOR_VERSION bash admin/clang-tidy.sh check --parallel=$KUBERNETES_CPU_LIMIT --warnings=clang-tidy.log --rev=$REV -B=$BUILD_DIR
+    - grep -i "found code issues|warnings" clang-tidy.log | tee code-lint.txt || true
+    - if [ -s code-lint.txt ] ; then echo "clang-tidy.sh found issues"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - clang-tidy.log
+      - code-lint.txt
+
+clang-tidy:test-cuda:
+  extends:
+    - .gromacs:base:build
+    - .variables:default
+    - .rules:basic-push
+  stage: source-check
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  needs:
+    - job: clang-tidy:configure-push-cuda
+  variables:
+    COMPILER_MAJOR_VERSION: 8
     BUILD_DIR: build-clang-tidy
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
