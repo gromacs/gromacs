@@ -550,9 +550,6 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
 
     gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
 
-    pme->sum_qgrid_tmp    = nullptr;
-    pme->sum_qgrid_dd_tmp = nullptr;
-
     pme->buf_nalloc = 0;
 
     pme->nnodes  = 1;
@@ -686,8 +683,8 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
 
     // The box requires scaling with nwalls = 2, we store that condition as well
     // as the scaling factor
-    delete pme->boxScaler;
-    pme->boxScaler = new EwaldBoxZScaler(inputrecPbcXY2Walls(ir), ir->wall_ewald_zfac);
+    pme->boxScaler = std::make_unique<EwaldBoxZScaler>(
+            EwaldBoxZScaler(inputrecPbcXY2Walls(ir), ir->wall_ewald_zfac));
 
     /* If we violate restrictions, generate a fatal error here */
     gmx_pme_check_restrictions(
@@ -1655,8 +1652,6 @@ void gmx_pme_destroy(gmx_pme_t* pme)
         return;
     }
 
-    delete pme->boxScaler;
-
     sfree(pme->nnx);
     sfree(pme->nny);
     sfree(pme->nnz);
@@ -1691,9 +1686,6 @@ void gmx_pme_destroy(gmx_pme_t* pme)
     {
         pme_free_all_work(&pme->solve_work, pme->nthread);
     }
-
-    sfree(pme->sum_qgrid_tmp);
-    sfree(pme->sum_qgrid_dd_tmp);
 
     destroy_pme_spline_work(pme->spline_work);
 
