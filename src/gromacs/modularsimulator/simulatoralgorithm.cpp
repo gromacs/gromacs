@@ -77,6 +77,7 @@
 #include "checkpointhelper.h"
 #include "domdechelper.h"
 #include "energydata.h"
+#include "firstorderpressurecoupling.h"
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
 #include "pmeloadbalancehelper.h"

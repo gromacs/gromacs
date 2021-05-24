@@ -67,14 +67,6 @@ enum class UseFullStepKE
     Count
 };
 
-//! Enum describing whether the thermostat is reporting conserved energy from the previous step
-enum class ReportPreviousStepConservedEnergy
-{
-    Yes,
-    No,
-    Count
-};
-
 /*! \internal
  * \ingroup module_modularsimulator
  * \brief Element implementing the a velocity-scaling thermostat

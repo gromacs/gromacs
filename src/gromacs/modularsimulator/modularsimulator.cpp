@@ -78,6 +78,7 @@
 
 #include "computeglobalselement.h"
 #include "constraintelement.h"
+#include "firstorderpressurecoupling.h"
 #include "forceelement.h"
 #include "parrinellorahmanbarostat.h"
 #include "simulatoralgorithm.h"
@@ -131,6 +132,11 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         {
             builder->add<ParrinelloRahmanBarostat>(Offset(-1), PropagatorTag("LeapFrogPropagator"));
         }
+        else if (legacySimulatorData_->inputrec->epc == PressureCoupling::Berendsen
+                 || legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
+        {
+            builder->add<FirstOrderPressureCoupling>(0, ReportPreviousStepConservedEnergy::No);
+        }
     }
     else if (legacySimulatorData_->inputrec->eI == IntegrationAlgorithm::VV)
     {
@@ -164,6 +170,11 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(Offset(-1), PropagatorTag("VelocityHalfStep"));
+        }
+        else if (legacySimulatorData_->inputrec->epc == PressureCoupling::Berendsen
+                 || legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
+        {
+            builder->add<FirstOrderPressureCoupling>(0, ReportPreviousStepConservedEnergy::Yes);
         }
     }
     else
@@ -237,11 +248,13 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                                          && inputrec->eI == IntegrationAlgorithm::MD),
                                              "Only v-rescale, Berendsen and Nose-Hoover "
                                              "thermostats are supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                    inputrec->epc == PressureCoupling::No || inputrec->epc == PressureCoupling::ParrinelloRahman,
-                    "Only Parrinello-Rahman barostat is supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(inputrec->epc == PressureCoupling::No
+                                                     || inputrec->epc == PressureCoupling::ParrinelloRahman
+                                                     || inputrec->epc == PressureCoupling::Berendsen
+                                                     || inputrec->epc == PressureCoupling::CRescale,
+                                             "Only Parrinello-Rahman, Berendsen and C-Rescale "
+                                             "barostats are supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
