@@ -3,7 +3,7 @@
 <ReferenceData>
   <File Name="EnergyFile">
     <Sequence Name="EnergyTerms">
-      <Int Name="Length">98</Int>
+      <Int Name="Length">80</Int>
       <EnergyTerm>
         <String Name="Name">LJ-14</String>
         <String Name="Units">kJ/mol</String>
@@ -95,78 +95,6 @@
       <EnergyTerm>
         <String Name="Name">Constr. rmsd</String>
         <String Name="Units"></String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-XX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-XY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-XZ</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-YX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-YY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-YZ</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-ZX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-ZY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ShakeVir-ZZ</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-XX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-XY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-XZ</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-YX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-YY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-YZ</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-ZX</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-ZY</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">ForceVir-ZZ</String>
-        <String Name="Units">kJ/mol</String>
       </EnergyTerm>
       <EnergyTerm>
         <String Name="Name">Vir-XX</String>
@@ -405,7 +333,7 @@
         <String Name="Step">0</String>
         <String Name="NumSteps">0</String>
         <Sequence Name="EnergyTerms">
-          <Int Name="Length">98</Int>
+          <Int Name="Length">80</Int>
           <EnergyTerm>
             <String Name="Name">LJ-14</String>
             <Real Name="Value">11.499999999999995</Real>
@@ -497,78 +425,6 @@
           <EnergyTerm>
             <String Name="Name">Constr. rmsd</String>
             <Real Name="Value">0</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-XX</String>
-            <Real Name="Value">20.800000000000047</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-XY</String>
-            <Real Name="Value">20.900000000000048</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-XZ</String>
-            <Real Name="Value">21.00000000000005</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-YX</String>
-            <Real Name="Value">21.100000000000051</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-YY</String>
-            <Real Name="Value">21.200000000000053</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-YZ</String>
-            <Real Name="Value">21.300000000000054</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-ZX</String>
-            <Real Name="Value">21.400000000000055</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-ZY</String>
-            <Real Name="Value">21.500000000000057</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ShakeVir-ZZ</String>
-            <Real Name="Value">21.600000000000058</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-XX</String>
-            <Real Name="Value">21.70000000000006</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-XY</String>
-            <Real Name="Value">21.800000000000061</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-XZ</String>
-            <Real Name="Value">21.900000000000063</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-YX</String>
-            <Real Name="Value">22.000000000000064</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-YY</String>
-            <Real Name="Value">22.100000000000065</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-YZ</String>
-            <Real Name="Value">22.200000000000067</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-ZX</String>
-            <Real Name="Value">22.300000000000068</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-ZY</String>
-            <Real Name="Value">22.40000000000007</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">ForceVir-ZZ</String>
-            <Real Name="Value">22.500000000000071</Real>
           </EnergyTerm>
           <EnergyTerm>
             <String Name="Name">Vir-XX</String>
@@ -802,7 +658,7 @@
       </Frame>
     </Sequence>
   </File>
-  <Int Name="Number of Energy Terms">98</Int>
+  <Int Name="Number of Energy Terms">80</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
 
@@ -838,16 +694,6 @@ Current ref_t for group Lipid:     25.8
     1.09000e+01    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01
     dVbonded/dl dVrestraint/dl   Constr. rmsd
     1.21000e+01    1.22000e+01    0.00000e+00
-
-   Constraint Virial (kJ/mol)
-    2.08000e+01    2.09000e+01    2.10000e+01
-    2.11000e+01    2.12000e+01    2.13000e+01
-    2.14000e+01    2.15000e+01    2.16000e+01
-
-   Force Virial (kJ/mol)
-    2.17000e+01    2.18000e+01    2.19000e+01
-    2.20000e+01    2.21000e+01    2.22000e+01
-    2.23000e+01    2.24000e+01    2.25000e+01
 
    Total Virial (kJ/mol)
     2.26000e+01    2.27000e+01    2.28000e+01

@@ -132,7 +132,6 @@ namespace gmx
  * be written out to the .edr file.
  *
  * \todo Use more std containers.
- * \todo Remove GMX_CONSTRAINTVIR
  * \todo Write free-energy output also to energy file (after adding more tests)
  */
 EnergyOutput::EnergyOutput(ener_file*                fp_ene,
@@ -148,12 +147,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     const char*        ener_nm[F_NRE];
     static const char* vir_nm[]   = { "Vir-XX", "Vir-XY", "Vir-XZ", "Vir-YX", "Vir-YY",
                                     "Vir-YZ", "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
-    static const char* sv_nm[]    = { "ShakeVir-XX", "ShakeVir-XY", "ShakeVir-XZ",
-                                   "ShakeVir-YX", "ShakeVir-YY", "ShakeVir-YZ",
-                                   "ShakeVir-ZX", "ShakeVir-ZY", "ShakeVir-ZZ" };
-    static const char* fv_nm[]    = { "ForceVir-XX", "ForceVir-XY", "ForceVir-XZ",
-                                   "ForceVir-YX", "ForceVir-YY", "ForceVir-YZ",
-                                   "ForceVir-ZX", "ForceVir-ZY", "ForceVir-ZZ" };
     static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
                                      "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
     static const char* surft_nm[] = { "#Surf*SurfTen" };
@@ -186,7 +179,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     ncon         = gmx_mtop_ftype_count(mtop, F_CONSTR);
     nset         = gmx_mtop_ftype_count(mtop, F_SETTLE);
     bool bConstr = (ncon > 0 || nset > 0) && !isRerun;
-    bConstrVir_  = false;
     nCrmsd_      = 0;
     if (bConstr)
     {
@@ -194,7 +186,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         {
             nCrmsd_ = 1;
         }
-        bConstrVir_ = (getenv("GMX_CONSTRAINTVIR") != nullptr);
     }
     else
     {
@@ -318,11 +309,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
             ipv_       = get_ebin_space(ebin_, 1, pv_nm, unit_energy);
             ienthalpy_ = get_ebin_space(ebin_, 1, enthalpy_nm, unit_energy);
         }
-    }
-    if (bConstrVir_)
-    {
-        isvir_ = get_ebin_space(ebin_, asize(sv_nm), sv_nm, unit_energy);
-        ifvir_ = get_ebin_space(ebin_, asize(fv_nm), fv_nm, unit_energy);
     }
     if (bPres_)
     {
@@ -852,8 +838,6 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        const matrix            box,
                                        PTCouplingArrays        ptCouplingArrays,
                                        int                     fep_state,
-                                       const tensor            svir,
-                                       const tensor            fvir,
                                        const tensor            vir,
                                        const tensor            pres,
                                        const gmx_ekindata_t*   ekind,
@@ -915,11 +899,6 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             enthalpy = pv + enerd->term[F_ETOT];
             add_ebin(ebin_, ienthalpy_, 1, &enthalpy, bSum);
         }
-    }
-    if (bConstrVir_)
-    {
-        add_ebin(ebin_, isvir_, 9, svir[0], bSum);
-        add_ebin(ebin_, ifvir_, 9, fvir[0], bSum);
     }
     if (bPres_)
     {
@@ -1354,15 +1333,6 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
         if (bDynBox_)
         {
             pr_ebin(log, ebin_, ib_, bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(), 5, eprAVER, true);
-            fprintf(log, "\n");
-        }
-        if (bConstrVir_)
-        {
-            fprintf(log, "   Constraint Virial (%s)\n", unit_energy);
-            pr_ebin(log, ebin_, isvir_, 9, 3, eprAVER, false);
-            fprintf(log, "\n");
-            fprintf(log, "   Force Virial (%s)\n", unit_energy);
-            pr_ebin(log, ebin_, ifvir_, 9, 3, eprAVER, false);
             fprintf(log, "\n");
         }
         if (bPres_)

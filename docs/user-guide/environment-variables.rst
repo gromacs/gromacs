@@ -22,9 +22,6 @@ you should consult your local documentation for details.
 
 Output Control
 --------------
-``GMX_CONSTRAINTVIR``
-        Print constraint virial and force virial energy terms.
-
 ``GMX_DUMP_NL``
         Neighbour list dump level; default 0.
 

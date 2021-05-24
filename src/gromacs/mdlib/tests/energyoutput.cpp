@@ -162,10 +162,6 @@ public:
     t_state state_;
     //! PBC box
     matrix box_;
-    //! Virial from constraints
-    tensor constraintsVirial_;
-    //! Virial from force computation
-    tensor forceVirial_;
     //! Total virial
     tensor totalVirial_;
     //! Pressure
@@ -237,9 +233,6 @@ public:
         // Dipole (mu)
         inputrec_.ewald_geometry = EwaldGeometry::ThreeDC;
 
-        // GMX_CONSTRAINTVIR environment variable should also be
-        // set to print constraints and force virials separately.
-        gmxSetenv("GMX_CONSTRAINTVIR", "true", 1);
         // To print constrain RMSD, constraints algorithm should be set to LINCS.
         inputrec_.eConstrAlg = ConstraintAlgorithm::Lincs;
 
@@ -463,25 +456,9 @@ public:
         box_[ZZ][YY] = (*testValue += 0.1);
         box_[ZZ][ZZ] = (*testValue += 0.1);
 
-        constraintsVirial_[XX][XX] = (*testValue += 0.1);
-        constraintsVirial_[XX][YY] = (*testValue += 0.1);
-        constraintsVirial_[XX][ZZ] = (*testValue += 0.1);
-        constraintsVirial_[YY][XX] = (*testValue += 0.1);
-        constraintsVirial_[YY][YY] = (*testValue += 0.1);
-        constraintsVirial_[YY][ZZ] = (*testValue += 0.1);
-        constraintsVirial_[ZZ][XX] = (*testValue += 0.1);
-        constraintsVirial_[ZZ][YY] = (*testValue += 0.1);
-        constraintsVirial_[ZZ][ZZ] = (*testValue += 0.1);
-
-        forceVirial_[XX][XX] = (*testValue += 0.1);
-        forceVirial_[XX][YY] = (*testValue += 0.1);
-        forceVirial_[XX][ZZ] = (*testValue += 0.1);
-        forceVirial_[YY][XX] = (*testValue += 0.1);
-        forceVirial_[YY][YY] = (*testValue += 0.1);
-        forceVirial_[YY][ZZ] = (*testValue += 0.1);
-        forceVirial_[ZZ][XX] = (*testValue += 0.1);
-        forceVirial_[ZZ][YY] = (*testValue += 0.1);
-        forceVirial_[ZZ][ZZ] = (*testValue += 0.1);
+        // Removing GMX_CONSTRVIR removed a total increment of 1.8
+        // To avoid unnecessary changes in reference data, we keep the increment
+        (*testValue += 1.8);
 
         totalVirial_[XX][XX] = (*testValue += 0.1);
         totalVirial_[XX][YY] = (*testValue += 0.1);
@@ -648,8 +625,6 @@ TEST_P(EnergyOutputTest, CheckOutput)
                                                              state_.nhpres_xi,
                                                              state_.nhpres_vxi }),
                                           state_.fep_state,
-                                          constraintsVirial_,
-                                          forceVirial_,
                                           totalVirial_,
                                           pressure_,
                                           &ekindata_,

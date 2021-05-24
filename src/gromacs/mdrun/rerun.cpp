@@ -797,8 +797,6 @@ void gmx::LegacySimulator::do_rerun()
                                                                 state->nhpres_xi,
                                                                 state->nhpres_vxi }),
                                              state->fep_state,
-                                             shake_vir,
-                                             force_vir,
                                              total_vir,
                                              pres,
                                              ekind,

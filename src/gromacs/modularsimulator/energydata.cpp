@@ -266,8 +266,6 @@ void EnergyData::doStep(Step step, Time time, bool isEnergyCalculationStep, bool
                                {},
                                {} }),
             freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->currentFEPState() : 0,
-            shakeVirial_,
-            forceVirial_,
             totalVirial_,
             pressure_,
             ekind_,
