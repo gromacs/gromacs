@@ -604,9 +604,9 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality      
         kernelLambda = lam_i;
         kernelDvdl   = dvdl_nb;
         gmx::ArrayRef<real> energygrp_elec =
-                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
+                foreignEnergyGroups_->energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR];
         gmx::ArrayRef<real> energygrp_vdw =
-                enerd->foreign_grpp.energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
+                foreignEnergyGroups_->energyGroupPairTerms[NonBondedEnergyTerms::LJSR];
 
         for (gmx::index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
         {
@@ -615,7 +615,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality      
             {
                 lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
             }
-            reset_foreign_enerdata(enerd);
+            foreignEnergyGroups_->clear();
 #pragma omp parallel for schedule(static) num_threads(nbl_fep.ssize())
             for (gmx::index th = 0; th < nbl_fep.ssize(); th++)
             {
@@ -644,11 +644,11 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality      
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
-
-            sum_epot(enerd->foreign_grpp, enerd->foreign_term.data());
+            std::array<real, F_NRE> foreign_term = { 0 };
+            sum_epot(*foreignEnergyGroups_, foreign_term.data());
             enerd->foreignLambdaTerms.accumulate(
                     i,
-                    enerd->foreign_term[F_EPOT],
+                    foreign_term[F_EPOT],
                     dvdl_nb[FreeEnergyPerturbationCouplingType::Vdw]
                             + dvdl_nb[FreeEnergyPerturbationCouplingType::Coul]);
         }

@@ -233,6 +233,8 @@ private:
     std::vector<real> forceBufferLambda_;
     //! Shift force buffer for free-energy forces
     std::vector<gmx::RVec> shiftForceBufferLambda_;
+    //! Temporary array for storing foreign lambda group pair energies
+    std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };

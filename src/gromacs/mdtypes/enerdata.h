@@ -71,6 +71,8 @@ struct gmx_grppairener_t
         }
     }
 
+    void clear();
+
     int nener; /* The number of energy group pairs */
     gmx::EnumerationArray<NonBondedEnergyTerms, std::vector<real>> energyGroupPairTerms; /* Energy terms for each pair of groups */
 };
@@ -210,11 +212,6 @@ struct gmx_enerdata_t
 
     //! Foreign lambda energies and dH/dl
     ForeignLambdaTerms foreignLambdaTerms;
-
-    //! Alternate, temporary array for storing foreign lambda energies
-    std::array<real, F_NRE> foreign_term = { 0 };
-    //! Alternate, temporary  array for storing foreign lambda group pair energies
-    struct gmx_grppairener_t foreign_grpp;
 };
 
 #endif

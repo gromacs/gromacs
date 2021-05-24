@@ -42,11 +42,14 @@
 
 #include "gmxpre.h"
 
+#include <memory>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -220,7 +223,7 @@ const char* lookup_kernel_name(const KernelType kernelType)
         case KernelType::Cpu4xN_Simd_2xNN:
 #if GMX_SIMD
             return "SIMD";
-#else  // GMX_SIMD
+#else // GMX_SIMD
             return "not available";
 #endif // GMX_SIMD
         case KernelType::Gpu8x8x8: return "GPU";
@@ -482,6 +485,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
     nbat(std::move(nbat_in)),
     kernelSetup_(kernelSetup),
     wcycle_(wcycle),
+    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(nbat->params().nenergrp)),
     gpu_nbv(gpu_nbv_ptr)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");

@@ -138,6 +138,7 @@ struct t_lambda;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
+struct gmx_grppairener_t;
 
 class GpuEventSynchronizer;
 
@@ -429,6 +430,8 @@ private:
     Nbnxm::KernelSetup kernelSetup_;
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
+    //! Temporary array for storing foreign lambda group pair energies
+    std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)

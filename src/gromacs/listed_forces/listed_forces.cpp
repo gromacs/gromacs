@@ -91,7 +91,8 @@ ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
                            FILE*                      fplog) :
     idefSelection_(ffparams),
     threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, fplog)),
-    interactionSelection_(interactionSelection)
+    interactionSelection_(interactionSelection),
+    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups))
 {
 }
 
@@ -714,7 +715,7 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
                         gmx::ArrayRef<real>           forceBufferLambda,
                         gmx::ArrayRef<gmx::RVec>      shiftForceBufferLambda,
                         gmx_grppairener_t*            grpp,
-                        real*                         epot,
+                        gmx::ArrayRef<real>           epot,
                         gmx::ArrayRef<real>           dvdl,
                         t_nrnb*                       nrnb,
                         gmx::ArrayRef<const real>     lambda,
@@ -897,8 +898,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
             for (int i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
             {
                 gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lam_i;
-
-                reset_foreign_enerdata(enerd);
+                foreignEnergyGroups_->clear();
+                std::array<real, F_NRE> foreign_term = { 0 };
                 for (auto j : keysOf(lam_i))
                 {
                     lam_i[j] = (i == 0 ? lambda[static_cast<int>(j)] : fepvals->all_lambda[j][i - 1]);
@@ -910,18 +911,18 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                    pbc,
                                    forceBufferLambda_,
                                    shiftForceBufferLambda_,
-                                   &(enerd->foreign_grpp),
-                                   enerd->foreign_term.data(),
+                                   foreignEnergyGroups_.get(),
+                                   foreign_term,
                                    dvdl,
                                    nrnb,
                                    lam_i,
                                    md,
                                    fcdata,
                                    global_atom_index);
-                sum_epot(enerd->foreign_grpp, enerd->foreign_term.data());
+                sum_epot(*foreignEnergyGroups_, foreign_term.data());
                 const double dvdlSum = std::accumulate(std::begin(dvdl), std::end(dvdl), 0.);
                 std::fill(std::begin(dvdl), std::end(dvdl), 0.0);
-                enerd->foreignLambdaTerms.accumulate(i, enerd->foreign_term[F_EPOT], dvdlSum);
+                enerd->foreignLambdaTerms.accumulate(i, foreign_term[F_EPOT], dvdlSum);
             }
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::ListedFep);
         }

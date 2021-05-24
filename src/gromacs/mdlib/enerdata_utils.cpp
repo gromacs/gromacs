@@ -80,7 +80,7 @@ void ForeignLambdaTerms::zeroAllTerms()
 }
 
 gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
-    grpp(numEnergyGroups), foreignLambdaTerms(numFepLambdas), foreign_grpp(numEnergyGroups)
+    grpp(numEnergyGroups), foreignLambdaTerms(numFepLambdas)
 {
 }
 
@@ -311,24 +311,14 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
     enerd->term[F_DVDL_CONSTR] = 0;
 }
 
-void reset_foreign_enerdata(gmx_enerdata_t* enerd)
+void gmx_grppairener_t::clear()
 {
-    int i, j;
-
-    /* First reset all foreign energy components.  Foreign energies always called on
-       neighbor search steps */
-    for (i = 0; (i < static_cast<int>(NonBondedEnergyTerms::Count)); i++)
+    for (int i = 0; (i < static_cast<int>(NonBondedEnergyTerms::Count)); i++)
     {
-        for (j = 0; (j < enerd->grpp.nener); j++)
+        for (int j = 0; (j < nener); j++)
         {
-            enerd->foreign_grpp.energyGroupPairTerms[i][j] = 0.0;
+            energyGroupPairTerms[i][j] = 0.0;
         }
-    }
-
-    /* potential energy components */
-    for (i = 0; (i <= F_EPOT); i++)
-    {
-        enerd->foreign_term[i] = 0.0;
     }
 }
 
@@ -367,7 +357,6 @@ void reset_enerdata(gmx_enerdata_t* enerd)
     enerd->term[F_DVDL_RESTRAINT] = 0.0_real;
     enerd->term[F_DKDL]           = 0.0_real;
     enerd->foreignLambdaTerms.zeroAllTerms();
-    /* reset foreign energy data and dvdl - separate functions since they are also called elsewhere */
-    reset_foreign_enerdata(enerd);
+    /* reset dvdl - separate function since it is also called elsewhere */
     reset_dvdl_enerdata(enerd);
 }

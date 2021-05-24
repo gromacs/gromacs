@@ -1209,8 +1209,8 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[b].sub[0].type = XdrDataType::Float;
             fr.block[b].sub[0].fval = block[b];
 #else
-            fr.block[b].sub[0].type  = XdrDataType::Double;
-            fr.block[b].sub[0].dval  = block[b];
+            fr.block[b].sub[0].type = XdrDataType::Double;
+            fr.block[b].sub[0].dval = block[b];
 #endif
         }
 
