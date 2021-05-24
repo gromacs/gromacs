@@ -67,14 +67,14 @@
 namespace gmx
 {
 
-void LincsGpu::apply(const DeviceBuffer<Float3> d_x,
-                     DeviceBuffer<Float3>       d_xp,
-                     const bool                 updateVelocities,
-                     DeviceBuffer<Float3>       d_v,
-                     const real                 invdt,
-                     const bool                 computeVirial,
-                     tensor                     virialScaled,
-                     const PbcAiuc              pbcAiuc)
+void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
+                     DeviceBuffer<Float3>        d_xp,
+                     const bool                  updateVelocities,
+                     DeviceBuffer<Float3>        d_v,
+                     const real                  invdt,
+                     const bool                  computeVirial,
+                     tensor                      virialScaled,
+                     const PbcAiuc&              pbcAiuc)
 {
     GMX_ASSERT(GMX_GPU_CUDA, "LINCS GPU is only implemented in CUDA.");
 
@@ -120,8 +120,6 @@ void LincsGpu::apply(const DeviceBuffer<Float3> d_x,
         virialScaled[ZZ][YY] += h_virialScaled_[4];
         virialScaled[ZZ][ZZ] += h_virialScaled_[5];
     }
-
-    return;
 }
 
 LincsGpu::LincsGpu(int                  numIterations,
@@ -482,8 +480,8 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
 
                 int center = c1a1;
 
-                float sqrtmu1 = 1.0 / sqrt(invmass[c1a1] + invmass[c1a2]);
-                float sqrtmu2 = 1.0 / sqrt(invmass[c2a1] + invmass[c2a2]);
+                float sqrtmu1 = 1.0 / std::sqrt(invmass[c1a1] + invmass[c1a2]);
+                float sqrtmu2 = 1.0 / std::sqrt(invmass[c2a1] + invmass[c2a2]);
 
                 massFactorsHost.at(index) = -sign * invmass[center] * sqrtmu1 * sqrtmu2;
 
@@ -509,8 +507,8 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
 
                 int center = c1a2;
 
-                float sqrtmu1 = 1.0 / sqrt(invmass[c1a1] + invmass[c1a2]);
-                float sqrtmu2 = 1.0 / sqrt(invmass[c2a1] + invmass[c2a2]);
+                float sqrtmu1 = 1.0 / std::sqrt(invmass[c1a1] + invmass[c1a2]);
+                float sqrtmu2 = 1.0 / std::sqrt(invmass[c2a1] + invmass[c2a2]);
 
                 massFactorsHost.at(index) = sign * invmass[center] * sqrtmu1 * sqrtmu2;
 

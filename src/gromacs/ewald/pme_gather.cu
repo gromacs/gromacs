@@ -63,7 +63,7 @@ __device__ __forceinline__ float read_grid_size(const float* realGridSizeFP, con
         case ZZ: return realGridSizeFP[ZZ];
     }
     assert(false);
-    return 0.0f;
+    return 0.0F;
 }
 
 /*! \brief Reduce the partial force contributions.
@@ -89,9 +89,9 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
                                                    const int    splineIndex,
                                                    const int    lineIndex,
                                                    const float* realGridSizeFP,
-                                                   float&       fx,
-                                                   float&       fy,
-                                                   float&       fz)
+                                                   float& fx, // NOLINT(google-runtime-references)
+                                                   float& fy, // NOLINT(google-runtime-references)
+                                                   float& fz) // NOLINT(google-runtime-references)
 {
     if (gmx::isPowerOfTwo(order)) // Only for orders of power of 2
     {
@@ -135,7 +135,9 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
         if (dimIndex < DIM)
         {
             const float n = read_grid_size(realGridSizeFP, dimIndex);
-            *((float*)(&sm_forces[atomIndexLocal]) + dimIndex) = fx * n;
+            float* __restrict__ sm_forcesAtomIndexOffset =
+                    reinterpret_cast<float*>(&sm_forces[atomIndexLocal]);
+            sm_forcesAtomIndexOffset[dimIndex] = fx * n;
         }
     }
     else
@@ -207,7 +209,9 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
 
             if (sourceIndex == minStride * atomIndex)
             {
-                *((float*)(&sm_forces[atomIndex]) + dimIndex) =
+                float* __restrict__ sm_forcesAtomIndexOffset =
+                        reinterpret_cast<float*>(&sm_forces[atomIndex]);
+                sm_forcesAtomIndexOffset[dimIndex] =
                         (sm_forceTemp[dimIndex][sourceIndex] + sm_forceTemp[dimIndex][sourceIndex + 1]) * n;
             }
         }
@@ -465,9 +469,9 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                 kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, sm_dtheta, sm_gridlineIndices);
         __syncwarp();
     }
-    float fx = 0.0f;
-    float fy = 0.0f;
-    float fz = 0.0f;
+    float fx = 0.0F;
+    float fy = 0.0F;
+    float fz = 0.0F;
 
     const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsA[atomIndexGlobal]);
 
@@ -545,7 +549,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         {
             int   outputIndexLocal       = i * iterThreads + threadLocalId;
             int   outputIndexGlobal      = blockIndex * blockForcesSize + outputIndexLocal;
-            float outputForceComponent   = ((float*)sm_forces)[outputIndexLocal];
+            float outputForceComponent   = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
             gm_forces[outputIndexGlobal] = outputForceComponent;
         }
     }
@@ -554,9 +558,9 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     {
         /* We must sync here since the same shared memory is used as above. */
         __syncthreads();
-        fx                    = 0.0f;
-        fy                    = 0.0f;
-        fz                    = 0.0f;
+        fx                    = 0.0F;
+        fy                    = 0.0F;
+        fz                    = 0.0F;
         const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
         if (chargeCheck)
         {
@@ -605,7 +609,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
             {
                 int   outputIndexLocal     = i * iterThreads + threadLocalId;
                 int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
-                float outputForceComponent = ((float*)sm_forces)[outputIndexLocal];
+                float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
                 gm_forces[outputIndexGlobal] += outputForceComponent;
             }
         }

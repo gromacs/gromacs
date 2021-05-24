@@ -78,8 +78,8 @@ public:
      * \param [in] wcycle        The wallclock counter
      */
     Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream, gmx_wallcycle* wcycle);
-    ~Impl();
 
+    ~Impl() = default;
     /*! \brief Register a nbnxm-format force to be reduced
      *
      * \param [in] forcePtr  Pointer to force to be reduced
@@ -96,7 +96,7 @@ public:
      *
      * \param [in] dependency   Dependency for this reduction
      */
-    void addDependency(GpuEventSynchronizer* const dependency);
+    void addDependency(GpuEventSynchronizer* dependency);
 
     /*! \brief Reinitialize the GPU force reduction
      *
@@ -108,10 +108,10 @@ public:
      * \param [in] completionMarker Event to be marked when launch of reduction is complete
      */
     void reinit(DeviceBuffer<Float3>  baseForcePtr,
-                const int             numAtoms,
+                int                   numAtoms,
                 ArrayRef<const int>   cell,
-                const int             atomStart,
-                const bool            accumulate,
+                int                   atomStart,
+                bool                  accumulate,
                 GpuEventSynchronizer* completionMarker = nullptr);
 
     /*! \brief Execute the force reduction */
@@ -125,7 +125,7 @@ private:
     //! number of atoms
     int numAtoms_ = 0;
     //! whether reduction is accumulated into base force buffer
-    int accumulate_ = true;
+    bool accumulate_ = true;
     //! cell information for any nbat-format forces
     struct cellInfo cellInfo_;
     //! GPU context object

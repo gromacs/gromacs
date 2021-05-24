@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -65,7 +66,7 @@ namespace test
  * \param[in]  float3Output  Output data in float3 format.
  * \param[in]  numElements   Size of the data buffers.
  */
-void inline saveFloat3InRVecFormat(std::vector<gmx::RVec>& rVecOutput, const float3* float3Output, int numElements)
+void inline saveFloat3InRVecFormat(ArrayRef<gmx::RVec> rVecOutput, const float3* float3Output, int numElements)
 {
     for (int i = 0; i < numElements; i++)
     {
@@ -75,7 +76,7 @@ void inline saveFloat3InRVecFormat(std::vector<gmx::RVec>& rVecOutput, const flo
     }
 }
 
-void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& rVecOutput, const std::vector<gmx::RVec>& rVecInput)
+void convertRVecToFloat3OnHost(ArrayRef<gmx::RVec> rVecOutput, ArrayRef<const gmx::RVec> rVecInput)
 {
     const int numElements = rVecInput.size();
 
@@ -105,9 +106,9 @@ static __global__ void convertRVecToFloat3OnDevice_kernel(DeviceBuffer<float3> g
     }
 }
 
-void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>&       h_rVecOutput,
-                                 const std::vector<gmx::RVec>& h_rVecInput,
-                                 const TestDevice*             testDevice)
+void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec>       h_rVecOutput,
+                                 ArrayRef<const gmx::RVec> h_rVecInput,
+                                 const TestDevice*         testDevice)
 {
     const DeviceContext& deviceContext = testDevice->deviceContext();
     const DeviceStream&  deviceStream  = testDevice->deviceStream();

@@ -91,7 +91,6 @@ static __global__ void reduceKernel(const float3* __restrict__ gm_nbnxmForce,
 
         *gm_fDest = temp;
     }
-    return;
 }
 
 void launchForceReductionKernel(int                        numAtoms,

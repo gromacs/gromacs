@@ -63,14 +63,14 @@
 namespace gmx
 {
 
-void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
-                      DeviceBuffer<Float3>       d_xp,
-                      const bool                 updateVelocities,
-                      DeviceBuffer<Float3>       d_v,
-                      const real                 invdt,
-                      const bool                 computeVirial,
-                      tensor                     virialScaled,
-                      const PbcAiuc              pbcAiuc)
+void SettleGpu::apply(const DeviceBuffer<Float3>& d_x,
+                      DeviceBuffer<Float3>        d_xp,
+                      const bool                  updateVelocities,
+                      DeviceBuffer<Float3>        d_v,
+                      const real                  invdt,
+                      const bool                  computeVirial,
+                      tensor                      virialScaled,
+                      const PbcAiuc&              pbcAiuc)
 {
 
     // Early exit if no settles
@@ -118,8 +118,6 @@ void SettleGpu::apply(const DeviceBuffer<Float3> d_x,
         virialScaled[ZZ][YY] += h_virialScaled_[4];
         virialScaled[ZZ][ZZ] += h_virialScaled_[5];
     }
-
-    return;
 }
 
 SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream) :

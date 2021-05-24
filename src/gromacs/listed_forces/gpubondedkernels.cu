@@ -73,7 +73,7 @@
 /*-------------------------------- CUDA kernels-------------------------------- */
 /*------------------------------------------------------------------------------*/
 
-#define CUDA_DEG2RAD_F (CUDART_PI_F / 180.0f)
+#define CUDA_DEG2RAD_F (CUDART_PI_F / 180.0F)
 
 /*---------------- BONDED CUDA kernels--------------*/
 
@@ -81,7 +81,7 @@
 __device__ __forceinline__ static void
 harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
 {
-    constexpr float half = 0.5f;
+    constexpr float half = 0.5F;
     float           dx, dx2;
 
     dx  = x - xA;
@@ -104,10 +104,10 @@ __device__ void bonds_gpu(const int       i,
 {
     if (i < numBonds)
     {
-        int3 bondData = *(int3*)(d_forceatoms + 3 * i);
-        int  type     = bondData.x;
-        int  ai       = bondData.y;
-        int  aj       = bondData.z;
+        const int3 bondData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
+        int        type     = bondData.x;
+        int        ai       = bondData.y;
+        int        aj       = bondData.z;
 
         /* dx = xi - xj, corrected for periodic boundary conditions. */
         float3 dx;
@@ -125,7 +125,7 @@ __device__ void bonds_gpu(const int       i,
             *vtot_loc += vbond;
         }
 
-        if (dr2 != 0.0f)
+        if (dr2 != 0.0F)
         {
             fbond *= rsqrtf(dr2);
 
@@ -175,11 +175,11 @@ __device__ void angles_gpu(const int       i,
 {
     if (i < numBonds)
     {
-        int4 angleData = *(int4*)(d_forceatoms + 4 * i);
-        int  type      = angleData.x;
-        int  ai        = angleData.y;
-        int  aj        = angleData.z;
-        int  ak        = angleData.w;
+        const int4 angleData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
+        int        type      = angleData.x;
+        int        ai        = angleData.y;
+        int        aj        = angleData.z;
+        int        ak        = angleData.w;
 
         float3 r_ij;
         float3 r_kj;
@@ -203,9 +203,9 @@ __device__ void angles_gpu(const int       i,
         }
 
         float cos_theta2 = cos_theta * cos_theta;
-        if (cos_theta2 < 1.0f)
+        if (cos_theta2 < 1.0F)
         {
-            float st    = dVdt * rsqrtf(1.0f - cos_theta2);
+            float st    = dVdt * rsqrtf(1.0F - cos_theta2);
             float sth   = st * cos_theta;
             float nrij2 = norm2(r_ij);
             float nrkj2 = norm2(r_kj);
@@ -248,11 +248,11 @@ __device__ void urey_bradley_gpu(const int       i,
 {
     if (i < numBonds)
     {
-        int4 ubData = *(int4*)(d_forceatoms + 4 * i);
-        int  type   = ubData.x;
-        int  ai     = ubData.y;
-        int  aj     = ubData.z;
-        int  ak     = ubData.w;
+        const int4 ubData = *(reinterpret_cast<const int4*>(d_forceatoms + 4 * i));
+        int        type   = ubData.x;
+        int        ai     = ubData.y;
+        int        aj     = ubData.z;
+        int        ak     = ubData.w;
 
         float th0A = d_forceparams[type].u_b.thetaA * CUDA_DEG2RAD_F;
         float kthA = d_forceparams[type].u_b.kthetaA;
@@ -287,9 +287,9 @@ __device__ void urey_bradley_gpu(const int       i,
         harmonic_gpu(kUBA, r13A, dr, &vbond, &fbond);
 
         float cos_theta2 = cos_theta * cos_theta;
-        if (cos_theta2 < 1.0f)
+        if (cos_theta2 < 1.0F)
         {
-            float st  = dVdt * rsqrtf(1.0f - cos_theta2);
+            float st  = dVdt * rsqrtf(1.0F - cos_theta2);
             float sth = st * cos_theta;
 
             float nrkj2 = norm2(r_kj);
@@ -316,7 +316,7 @@ __device__ void urey_bradley_gpu(const int       i,
         }
 
         /* Time for the bond calculations */
-        if (dr2 != 0.0f)
+        if (dr2 != 0.0F)
         {
             if (calcEner)
             {
@@ -361,7 +361,7 @@ __device__ __forceinline__ static float dih_angle_gpu(const T        xi,
     *n         = cprod(*r_kj, *r_kl);
     float phi  = gmx_angle(*m, *n);
     float ipr  = iprod(*r_ij, *n);
-    float sign = (ipr < 0.0f) ? -1.0f : 1.0f;
+    float sign = (ipr < 0.0F) ? -1.0F : 1.0F;
     phi        = sign * phi;
 
     return phi;
@@ -375,7 +375,7 @@ dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, 
 
     mdphi = mult * phi - phiA * CUDA_DEG2RAD_F;
     sdphi = sinf(mdphi);
-    *v    = cpA * (1.0f + cosf(mdphi));
+    *v    = cpA * (1.0F + cosf(mdphi));
     *f    = -cpA * mult * sdphi;
 }
 
@@ -499,7 +499,7 @@ __device__ void rbdihs_gpu(const int       i,
                            float3          sm_fShiftLoc[],
                            const PbcAiuc   pbcAiuc)
 {
-    constexpr float c0 = 0.0f, c1 = 1.0f, c2 = 2.0f, c3 = 3.0f, c4 = 4.0f, c5 = 5.0f;
+    constexpr float c0 = 0.0F, c1 = 1.0F, c2 = 2.0F, c3 = 3.0F, c4 = 4.0F, c5 = 5.0F;
 
     if (i < numBonds)
     {
@@ -597,11 +597,11 @@ __device__ __forceinline__ static void make_dp_periodic_gpu(float* dp)
     /* dp cannot be outside (-pi,pi) */
     if (*dp >= CUDART_PI_F)
     {
-        *dp -= 2.0f * CUDART_PI_F;
+        *dp -= 2.0F * CUDART_PI_F;
     }
     else if (*dp < -CUDART_PI_F)
     {
-        *dp += 2.0f * CUDART_PI_F;
+        *dp += 2.0F * CUDART_PI_F;
     }
 }
 
@@ -658,7 +658,7 @@ __device__ void idihs_gpu(const int       i,
 
         if (calcEner)
         {
-            *vtot_loc += -0.5f * ddphi * dp;
+            *vtot_loc += -0.5F * ddphi * dp;
         }
     }
 }
@@ -679,10 +679,10 @@ __device__ void pairs_gpu(const int       i,
     if (i < numBonds)
     {
         // TODO this should be made into a separate type, the GPU and CPU sizes should be compared
-        int3 pairData = *(int3*)(d_forceatoms + 3 * i);
-        int  type     = pairData.x;
-        int  ai       = pairData.y;
-        int  aj       = pairData.z;
+        const int3 pairData = *(reinterpret_cast<const int3*>(d_forceatoms + 3 * i));
+        int        type     = pairData.x;
+        int        ai       = pairData.y;
+        int        aj       = pairData.z;
 
         float qq  = gm_xq[ai].w * gm_xq[aj].w;
         float c6  = iparams[type].lj14.c6A;
@@ -701,7 +701,7 @@ __device__ void pairs_gpu(const int       i,
         float velec = scale_factor * qq * rinv;
 
         /* Calculate the LJ force * r and add it to the Coulomb part */
-        float fr = (12.0f * c12 * rinv6 - 6.0f * c6) * rinv6 + velec;
+        float fr = (12.0F * c12 * rinv6 - 6.0F * c6) * rinv6 + velec;
 
         float  finvr = fr * rinv2;
         float3 f     = finvr * dr;
@@ -737,14 +737,14 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
 
     extern __shared__ char sm_dynamicShmem[];
     char*                  sm_nextSlotPtr = sm_dynamicShmem;
-    float3*                sm_fShiftLoc   = (float3*)sm_nextSlotPtr;
+    float3*                sm_fShiftLoc   = reinterpret_cast<float3*>(sm_nextSlotPtr);
     sm_nextSlotPtr += c_numShiftVectors * sizeof(float3);
 
     if (calcVir)
     {
         if (threadIdx.x < c_numShiftVectors)
         {
-            sm_fShiftLoc[threadIdx.x] = make_float3(0.0f, 0.0f, 0.0f);
+            sm_fShiftLoc[threadIdx.x] = make_float3(0.0F, 0.0F, 0.0F);
         }
         __syncthreads();
     }
@@ -865,11 +865,11 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
         int warpId   = threadIdx.x / warpSize;
 
         // Shared memory variables to hold block-local partial sum
-        float* sm_vTot = (float*)sm_nextSlotPtr;
+        float* sm_vTot = reinterpret_cast<float*>(sm_nextSlotPtr);
         sm_nextSlotPtr += numWarps * sizeof(float);
-        float* sm_vTotVdw = (float*)sm_nextSlotPtr;
+        float* sm_vTotVdw = reinterpret_cast<float*>(sm_nextSlotPtr);
         sm_nextSlotPtr += numWarps * sizeof(float);
-        float* sm_vTotElec = (float*)sm_nextSlotPtr;
+        float* sm_vTotElec = reinterpret_cast<float*>(sm_nextSlotPtr);
 
         if (threadIdx.x % warpSize == 0)
         {

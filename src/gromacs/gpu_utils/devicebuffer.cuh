@@ -68,7 +68,8 @@ template<typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& /* deviceContext */)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
-    cudaError_t stat = cudaMalloc((void**)buffer, numValues * sizeof(ValueType));
+    // NOLINTNEXTLINE(google-readability-casting)
+    cudaError_t stat = cudaMalloc((void**)(buffer), numValues * sizeof(ValueType));
     GMX_RELEASE_ASSERT(
             stat == cudaSuccess,
             ("Allocation of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
@@ -130,6 +131,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     {
         case GpuApiCallBehavior::Async:
             GMX_ASSERT(isHostMemoryPinned(hostBuffer), "Source host buffer was not pinned for CUDA");
+            // NOLINTNEXTLINE(google-readability-casting)
             stat = cudaMemcpyAsync(*((ValueType**)buffer) + startingOffset,
                                    hostBuffer,
                                    bytes,
@@ -142,7 +144,11 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
 
         case GpuApiCallBehavior::Sync:
             stat = cudaMemcpy(
-                    *((ValueType**)buffer) + startingOffset, hostBuffer, bytes, cudaMemcpyHostToDevice);
+                    // NOLINTNEXTLINE(google-readability-casting)
+                    *((ValueType**)buffer) + startingOffset,
+                    hostBuffer,
+                    bytes,
+                    cudaMemcpyHostToDevice);
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
@@ -189,6 +195,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
             GMX_ASSERT(isHostMemoryPinned(hostBuffer),
                        "Destination host buffer was not pinned for CUDA");
             stat = cudaMemcpyAsync(hostBuffer,
+                                   // NOLINTNEXTLINE(google-readability-casting)
                                    *((ValueType**)buffer) + startingOffset,
                                    bytes,
                                    cudaMemcpyDeviceToHost,
@@ -199,8 +206,11 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(
-                    hostBuffer, *((ValueType**)buffer) + startingOffset, bytes, cudaMemcpyDeviceToHost);
+            stat = cudaMemcpy(hostBuffer,
+                              // NOLINTNEXTLINE(google-readability-casting)
+                              *((ValueType**)buffer) + startingOffset,
+                              bytes,
+                              cudaMemcpyDeviceToHost);
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
@@ -287,7 +297,11 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     const char   pattern = 0;
 
     cudaError_t stat = cudaMemsetAsync(
-            *((ValueType**)buffer) + startingOffset, pattern, bytes, deviceStream.stream());
+            // NOLINTNEXTLINE(google-readability-casting)
+            *((ValueType**)buffer) + startingOffset,
+            pattern,
+            bytes,
+            deviceStream.stream());
     GMX_RELEASE_ASSERT(stat == cudaSuccess,
                        ("Couldn't clear the device buffer. " + gmx::getDeviceErrorString(stat)).c_str());
 }
@@ -345,6 +359,7 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
     const size_t sizeInBytes = numValues * sizeof(ValueType);
 
     cudaError_t stat =
+            // NOLINTNEXTLINE(google-readability-casting)
             cudaMemcpy(*((ValueType**)deviceBuffer), hostBuffer, sizeInBytes, cudaMemcpyHostToDevice);
 
     GMX_RELEASE_ASSERT(stat == cudaSuccess,
@@ -378,11 +393,11 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
  * \param[in,out]  deviceTexture  Device texture object to unbind.
  */
 template<typename ValueType>
-void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, DeviceTexture& deviceTexture)
+void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const DeviceTexture* deviceTexture)
 {
     if (!c_disableCudaTextures && deviceTexture && deviceBuffer)
     {
-        cudaError_t stat = cudaDestroyTextureObject(deviceTexture);
+        cudaError_t stat = cudaDestroyTextureObject(*deviceTexture);
         GMX_RELEASE_ASSERT(
                 stat == cudaSuccess,
                 ("Destruction of the texture object failed. " + gmx::getDeviceErrorString(stat)).c_str());

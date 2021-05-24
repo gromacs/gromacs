@@ -66,7 +66,7 @@ void pmalloc(void** h_ptr, size_t nbytes)
     gmx::ensureNoPendingDeviceError("Could not allocate page-locked memory.");
 
     stat = cudaMallocHost(h_ptr, nbytes, flag);
-    sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
+    sprintf(strbuf, "cudaMallocHost of size %d bytes failed", static_cast<int>(nbytes));
     CU_RET_ERR(stat, strbuf);
 }
 

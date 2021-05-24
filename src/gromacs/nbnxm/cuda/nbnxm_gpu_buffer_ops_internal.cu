@@ -89,7 +89,7 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
 
         // Destination address where x should be stored in nbnxm layout. We use this cast here to
         // save only x, y and z components, not touching the w (q) component, which is pre-defined.
-        float3* gm_xqDest = (float3*)&gm_xq[threadIndex + offset];
+        float3* gm_xqDest = reinterpret_cast<float3*>(&gm_xq[threadIndex + offset]);
 
         // Perform layout conversion of each element.
         if (threadIndex < numAtoms)

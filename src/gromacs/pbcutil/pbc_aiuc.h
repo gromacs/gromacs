@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,32 +99,32 @@ struct PbcAiuc
 static inline void setPbcAiuc(int numPbcDim, const matrix box, PbcAiuc* pbcAiuc)
 {
 
-    pbcAiuc->invBoxDiagZ = 0.0f;
-    pbcAiuc->boxZX       = 0.0f;
-    pbcAiuc->boxZY       = 0.0f;
-    pbcAiuc->boxZZ       = 0.0f;
-    pbcAiuc->invBoxDiagY = 0.0f;
-    pbcAiuc->boxYX       = 0.0f;
-    pbcAiuc->boxYY       = 0.0f;
-    pbcAiuc->invBoxDiagX = 0.0f;
-    pbcAiuc->boxXX       = 0.0f;
+    pbcAiuc->invBoxDiagZ = 0.0F;
+    pbcAiuc->boxZX       = 0.0F;
+    pbcAiuc->boxZY       = 0.0F;
+    pbcAiuc->boxZZ       = 0.0F;
+    pbcAiuc->invBoxDiagY = 0.0F;
+    pbcAiuc->boxYX       = 0.0F;
+    pbcAiuc->boxYY       = 0.0F;
+    pbcAiuc->invBoxDiagX = 0.0F;
+    pbcAiuc->boxXX       = 0.0F;
 
     if (numPbcDim > ZZ)
     {
-        pbcAiuc->invBoxDiagZ = 1.0f / box[ZZ][ZZ];
+        pbcAiuc->invBoxDiagZ = 1.0F / box[ZZ][ZZ];
         pbcAiuc->boxZX       = box[ZZ][XX];
         pbcAiuc->boxZY       = box[ZZ][YY];
         pbcAiuc->boxZZ       = box[ZZ][ZZ];
     }
     if (numPbcDim > YY)
     {
-        pbcAiuc->invBoxDiagY = 1.0f / box[YY][YY];
+        pbcAiuc->invBoxDiagY = 1.0F / box[YY][YY];
         pbcAiuc->boxYX       = box[YY][XX];
         pbcAiuc->boxYY       = box[YY][YY];
     }
     if (numPbcDim > XX)
     {
-        pbcAiuc->invBoxDiagX = 1.0f / box[XX][XX];
+        pbcAiuc->invBoxDiagX = 1.0F / box[XX][XX];
         pbcAiuc->boxXX       = box[XX][XX];
     }
 }

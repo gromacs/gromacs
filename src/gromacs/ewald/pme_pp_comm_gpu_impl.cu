@@ -89,7 +89,6 @@ void PmePpCommGpu::Impl::reinit(int size)
 
     // Reallocate buffer used for staging PME force on GPU
     reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
-    return;
 }
 
 void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* pmeForcePtr, int recvSize, bool receivePmeForceToGpu)
@@ -98,6 +97,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* pmeForcePtr, int 
     // Receive event from PME task and add to stream, to ensure pull of data doesn't
     // occur before PME force calc is completed
     GpuEventSynchronizer* pmeSync;
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Recv(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
     pmeSync->enqueueWaitEvent(pmePpCommStream_);
 #endif
@@ -166,6 +166,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(float3*               se
     // Record and send event to allow PME task to sync to above transfer before commencing force calculations
     pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
     GpuEventSynchronizer* pmeSync = &pmeCoordinatesSynchronizer_;
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_);
 #endif
 }

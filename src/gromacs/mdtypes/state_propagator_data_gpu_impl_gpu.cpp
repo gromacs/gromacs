@@ -178,7 +178,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality(AtomLocality atomLocality)
+std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const
 {
     int atomsStartAt   = 0;
     int numAtomsToCopy = 0;
@@ -281,7 +281,7 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
 void StatePropagatorDataGpu::Impl::clearOnDevice(DeviceBuffer<RVec>  d_data,
                                                  int                 dataSize,
                                                  AtomLocality        atomLocality,
-                                                 const DeviceStream& deviceStream)
+                                                 const DeviceStream& deviceStream) const
 {
     GMX_UNUSED_VALUE(dataSize);
 
@@ -540,12 +540,12 @@ const DeviceStream* StatePropagatorDataGpu::Impl::getUpdateStream()
     return updateStream_;
 }
 
-int StatePropagatorDataGpu::Impl::numAtomsLocal()
+int StatePropagatorDataGpu::Impl::numAtomsLocal() const
 {
     return numAtomsLocal_;
 }
 
-int StatePropagatorDataGpu::Impl::numAtomsAll()
+int StatePropagatorDataGpu::Impl::numAtomsAll() const
 {
     return numAtomsAll_;
 }
@@ -580,7 +580,7 @@ void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll)
     return impl_->reinit(numAtomsLocal, numAtomsAll);
 }
 
-std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality atomLocality)
+std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const
 {
     return impl_->getAtomRangesFromAtomLocality(atomLocality);
 }
@@ -695,12 +695,12 @@ const DeviceStream* StatePropagatorDataGpu::getUpdateStream()
     return impl_->getUpdateStream();
 }
 
-int StatePropagatorDataGpu::numAtomsLocal()
+int StatePropagatorDataGpu::numAtomsLocal() const
 {
     return impl_->numAtomsLocal();
 }
 
-int StatePropagatorDataGpu::numAtomsAll()
+int StatePropagatorDataGpu::numAtomsAll() const
 {
     return impl_->numAtomsAll();
 }

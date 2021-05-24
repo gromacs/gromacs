@@ -152,7 +152,6 @@ private:
                                      int                   sendSize,
                                      GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
-private:
     //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
     //! Handle for CUDA stream used for the communication operations in this class

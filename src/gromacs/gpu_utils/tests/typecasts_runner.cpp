@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "testutils/testasserts.h"
 
 #if !GMX_GPU_CUDA
@@ -56,14 +58,14 @@ namespace gmx
 namespace test
 {
 
-void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& /* rVecOutput */,
-                               const std::vector<gmx::RVec>& /* rVecInput */)
+void convertRVecToFloat3OnHost(ArrayRef<gmx::RVec> /* rVecOutput */,
+                               ArrayRef<const gmx::RVec> /* rVecInput */)
 {
     FAIL() << "Can't test float3 and RVec compatibility without CUDA.";
 }
 
-void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& /* rVecOutput */,
-                                 const std::vector<gmx::RVec>& /* rVecInput */,
+void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec> /* rVecOutput */,
+                                 ArrayRef<const gmx::RVec> /* rVecInput */,
                                  const TestDevice* /* testDevice */)
 {
     FAIL() << "Can't test float3 and RVec compatibility without CUDA.";

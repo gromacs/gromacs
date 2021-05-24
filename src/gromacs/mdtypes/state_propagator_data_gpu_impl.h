@@ -153,7 +153,7 @@ public:
      *
      * \returns Tuple, containing the index of the first atom in the range and the total number of atoms in the range.
      */
-    std::tuple<int, int> getAtomRangesFromAtomLocality(AtomLocality atomLocality);
+    std::tuple<int, int> getAtomRangesFromAtomLocality(AtomLocality atomLocality) const;
 
 
     /*! \brief Get the positions buffer on the GPU.
@@ -318,13 +318,13 @@ public:
      *
      *  \returns The number of local atoms.
      */
-    int numAtomsLocal();
+    int numAtomsLocal() const;
 
     /*! \brief Getter for the total number of atoms.
      *
      *  \returns The total number of atoms.
      */
-    int numAtomsAll();
+    int numAtomsAll() const;
 
 private:
     //! GPU PME stream.
@@ -443,7 +443,7 @@ private:
     void clearOnDevice(DeviceBuffer<RVec>  d_data,
                        int                 dataSize,
                        AtomLocality        atomLocality,
-                       const DeviceStream& deviceStream);
+                       const DeviceStream& deviceStream) const;
 };
 
 } // namespace gmx

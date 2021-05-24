@@ -107,7 +107,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     const float* __restrict__ gm_inverseMasses         = kernelParams.d_inverseMasses;
     float* __restrict__ gm_virialScaled                = kernelParams.d_virialScaled;
 
-    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+    const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
     // numConstraintsThreads should be a integer multiple of blockSize (numConstraintsThreads = numBlocks*blockSize).
     // This is to ensure proper synchronizations and reduction. All array are padded to the required size.
@@ -122,7 +122,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     int      j    = pair.j;
 
     // Mass-scaled Lagrange multiplier
-    float lagrangeScaled = 0.0f;
+    float lagrangeScaled = 0.0F;
 
     float targetLength;
     float inverseMassi;
@@ -139,14 +139,14 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     // Everything computed for these dummies will be equal to zero
     if (isDummyThread)
     {
-        targetLength    = 0.0f;
-        inverseMassi    = 0.0f;
-        inverseMassj    = 0.0f;
-        sqrtReducedMass = 0.0f;
+        targetLength    = 0.0F;
+        inverseMassi    = 0.0F;
+        inverseMassj    = 0.0F;
+        sqrtReducedMass = 0.0F;
 
-        xi = make_float3(0.0f, 0.0f, 0.0f);
-        xj = make_float3(0.0f, 0.0f, 0.0f);
-        rc = make_float3(0.0f, 0.0f, 0.0f);
+        xi = make_float3(0.0F, 0.0F, 0.0F);
+        xj = make_float3(0.0F, 0.0F, 0.0F);
+        rc = make_float3(0.0F, 0.0F, 0.0F);
     }
     else
     {
@@ -209,7 +209,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     {
         // Making sure that all sm_rhs are saved before they are accessed in a loop below
         __syncthreads();
-        float mvb = 0.0f;
+        float mvb = 0.0F;
 
         for (int n = 0; n < coupledConstraintsCount; n++)
         {
@@ -256,12 +256,12 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
         float len2  = targetLength * targetLength;
-        float dlen2 = 2.0f * len2 - norm2(dx);
+        float dlen2 = 2.0F * len2 - norm2(dx);
 
         // TODO A little bit more effective but slightly less readable version of the below would be:
         //      float proj = sqrtReducedMass*(targetLength - (dlen2 > 0.0f ? 1.0f : 0.0f)*dlen2*rsqrt(dlen2));
         float proj;
-        if (dlen2 > 0.0f)
+        if (dlen2 > 0.0F)
         {
             proj = sqrtReducedMass * (targetLength - dlen2 * rsqrt(dlen2));
         }
@@ -373,8 +373,6 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
             atomicAdd(&(gm_virialScaled[threadIdx.x]), sm_threadVirial[threadIdx.x * blockDim.x]);
         }
     }
-
-    return;
 }
 
 /*! \brief Select templated kernel.
@@ -409,14 +407,14 @@ inline auto getLincsKernelPtr(const bool updateVelocities, const bool computeVir
     return kernelPtr;
 }
 
-void launchLincsGpuKernel(LincsGpuKernelParameters&  kernelParams,
-                          const DeviceBuffer<Float3> d_x,
-                          DeviceBuffer<Float3>       d_xp,
-                          const bool                 updateVelocities,
-                          DeviceBuffer<Float3>       d_v,
-                          const real                 invdt,
-                          const bool                 computeVirial,
-                          const DeviceStream&        deviceStream)
+void launchLincsGpuKernel(const LincsGpuKernelParameters& kernelParams,
+                          const DeviceBuffer<Float3>&     d_x,
+                          DeviceBuffer<Float3>            d_xp,
+                          const bool                      updateVelocities,
+                          DeviceBuffer<Float3>            d_v,
+                          const real                      invdt,
+                          const bool                      computeVirial,
+                          const DeviceStream&             deviceStream)
 {
 
     auto kernelPtr = getLincsKernelPtr(updateVelocities, computeVirial);
@@ -459,8 +457,6 @@ void launchLincsGpuKernel(LincsGpuKernelParameters&  kernelParams,
                     nullptr,
                     "lincs_kernel<updateVelocities, computeVirial>",
                     kernelArgs);
-
-    return;
 }
 
 } // namespace gmx

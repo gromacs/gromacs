@@ -89,7 +89,7 @@ namespace Nbnxm
  * there is a bit of fluctuations in the generated block counts, we use
  * a target of 44 instead of the ideal value of 48.
  */
-static unsigned int gpu_min_ci_balanced_factor = 44;
+static const unsigned int gpu_min_ci_balanced_factor = 44;
 
 void gpu_init_platform_specific(NbnxmGpu* /* nb */)
 {

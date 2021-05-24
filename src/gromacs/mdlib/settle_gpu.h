@@ -114,14 +114,14 @@ public:
      * \param[in,out] virialScaled      Scaled virial tensor to be updated.
      * \param[in]     pbcAiuc           PBC data.
      */
-    void apply(const DeviceBuffer<Float3> d_x,
-               DeviceBuffer<Float3>       d_xp,
-               const bool                 updateVelocities,
-               DeviceBuffer<Float3>       d_v,
-               const real                 invdt,
-               const bool                 computeVirial,
-               tensor                     virialScaled,
-               const PbcAiuc              pbcAiuc);
+    void apply(const DeviceBuffer<Float3>& d_x,
+               DeviceBuffer<Float3>        d_xp,
+               bool                        updateVelocities,
+               DeviceBuffer<Float3>        d_v,
+               real                        invdt,
+               bool                        computeVirial,
+               tensor                      virialScaled,
+               const PbcAiuc&              pbcAiuc);
 
     /*! \brief
      * Update data-structures (e.g. after NB search step).

@@ -65,6 +65,7 @@ public:
      * \param[in] ppRanks         List of PP ranks
      */
     Impl(GpuEventSynchronizer* pmeForcesReady, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    // NOLINTNEXTLINE(performance-trivially-destructible)
     ~Impl();
 
     /*! \brief

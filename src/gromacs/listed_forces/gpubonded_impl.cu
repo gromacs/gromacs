@@ -156,7 +156,7 @@ static void convertIlistToNbnxnOrder(const InteractionList& src,
                                      int                    numAtomsPerInteraction,
                                      ArrayRef<const int>    nbnxnAtomOrder)
 {
-    GMX_ASSERT(src.size() == 0 || !nbnxnAtomOrder.empty(), "We need the nbnxn atom order");
+    GMX_ASSERT(src.empty() || !nbnxnAtomOrder.empty(), "We need the nbnxn atom order");
 
     dest->iatoms.resize(src.size());
 

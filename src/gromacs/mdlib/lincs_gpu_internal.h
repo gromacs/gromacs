@@ -57,14 +57,14 @@ struct LincsGpuKernelParameters;
 //! Number of threads in a GPU block
 constexpr static int c_threadsPerBlock = 256;
 
-void launchLincsGpuKernel(LincsGpuKernelParameters&  kernelParams,
-                          const DeviceBuffer<Float3> d_x,
-                          DeviceBuffer<Float3>       d_xp,
-                          const bool                 updateVelocities,
-                          DeviceBuffer<Float3>       d_v,
-                          const real                 invdt,
-                          const bool                 computeVirial,
-                          const DeviceStream&        deviceStream);
+void launchLincsGpuKernel(const LincsGpuKernelParameters& kernelParams,
+                          const DeviceBuffer<Float3>&     d_x,
+                          DeviceBuffer<Float3>            d_xp,
+                          bool                            updateVelocities,
+                          DeviceBuffer<Float3>            d_v,
+                          real                            invdt,
+                          bool                            computeVirial,
+                          const DeviceStream&             deviceStream);
 
 } // namespace gmx
 

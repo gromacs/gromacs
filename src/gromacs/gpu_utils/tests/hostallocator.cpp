@@ -331,7 +331,7 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
         EXPECT_TRUE(input.empty());
         resizeAndFillInput(&input, 3, 1);
         // realloc and copy).
-        auto oldInputData = input.data();
+        auto* oldInputData = input.data();
         changePinningPolicy(&input, PinningPolicy::CannotBePinned);
         EXPECT_FALSE(isPinned(input));
         // These cannot be equal as both had to be allocated at the same

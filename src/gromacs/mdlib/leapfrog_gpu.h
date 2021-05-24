@@ -124,12 +124,12 @@ public:
     void integrate(DeviceBuffer<Float3>              d_x,
                    DeviceBuffer<Float3>              d_xp,
                    DeviceBuffer<Float3>              d_v,
-                   const DeviceBuffer<Float3>        d_f,
-                   const float                       dt,
-                   const bool                        doTemperatureScaling,
+                   DeviceBuffer<Float3>              d_f,
+                   float                             dt,
+                   bool                              doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                   const bool                        doParrinelloRahman,
-                   const float                       dtPressureCouple,
+                   bool                              doParrinelloRahman,
+                   float                             dtPressureCouple,
                    const matrix                      prVelocityScalingMatrix);
 
     /*! \brief Set the integrator
@@ -142,7 +142,7 @@ public:
      * \param[in] inverseMasses   Inverse masses of atoms.
      * \param[in] tempScaleGroups Maps the atom index to temperature scale value.
      */
-    void set(const int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups);
+    void set(int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups);
 
     /*! \brief Class with hardware-specific interfaces and implementations.*/
     class Impl;

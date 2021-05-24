@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,7 @@ template<typename T>
 static __forceinline__ __device__ T fetchFromTexture(const cudaTextureObject_t texObj, int index)
 {
     assert(index >= 0);
+    // NOLINTNEXTLINE(misc-static-assert)
     assert(!c_disableCudaTextures);
     return tex1Dfetch<T>(texObj, index);
 }

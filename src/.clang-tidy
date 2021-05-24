@@ -35,6 +35,12 @@
 #
 #         -misc-no-recursion
 # We have way too many functions and methods relying on recursion
+#
+#         -readability-static-accessed-through-instance
+# Especially the GPU code uses this in many places.
+#
+#         -performance-type-promotion-in-math-fn
+# Those warnings are in the gpu code and we shouldn't to worry about them.
 Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
@@ -60,7 +66,9 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureA
          -bugprone-narrowing-conversions,
          -google-readability-avoid-underscore-in-googletest-name,
          -cppcoreguidelines-init-variables,
-         -misc-no-recursion
+         -misc-no-recursion,
+         -readability-static-accessed-through-instance,
+         -performance-type-promotion-in-math-fn
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

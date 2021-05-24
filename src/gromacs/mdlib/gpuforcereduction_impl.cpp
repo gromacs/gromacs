@@ -81,7 +81,7 @@ void GpuForceReduction::Impl::reinit(DeviceBuffer<Float3>  baseForcePtr,
     baseForce_        = baseForcePtr;
     numAtoms_         = numAtoms;
     atomStart_        = atomStart;
-    accumulate_       = static_cast<int>(accumulate);
+    accumulate_       = accumulate;
     completionMarker_ = completionMarker;
     cellInfo_.cell    = cell.data();
 
@@ -112,7 +112,7 @@ void GpuForceReduction::Impl::registerRvecForce(DeviceBuffer<RVec> forcePtr)
     rvecForceToAdd_ = forcePtr;
 };
 
-void GpuForceReduction::Impl::addDependency(GpuEventSynchronizer* const dependency)
+void GpuForceReduction::Impl::addDependency(GpuEventSynchronizer* dependency)
 {
     dependencyList_.push_back(dependency);
 }
@@ -157,8 +157,6 @@ void GpuForceReduction::Impl::execute()
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-GpuForceReduction::Impl::~Impl() = default;
-
 GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,
                                      const DeviceStream&  deviceStream,
                                      gmx_wallcycle*       wcycle) :
@@ -176,7 +174,7 @@ void GpuForceReduction::registerRvecForce(DeviceBuffer<RVec> forcePtr)
     impl_->registerRvecForce(forcePtr);
 }
 
-void GpuForceReduction::addDependency(GpuEventSynchronizer* const dependency)
+void GpuForceReduction::addDependency(GpuEventSynchronizer* dependency)
 {
     impl_->addDependency(dependency);
 }

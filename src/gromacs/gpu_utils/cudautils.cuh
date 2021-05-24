@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ namespace
  *
  * \returns A description of the API error. Returns '(CUDA error #0 (cudaSuccess): no error)' in case deviceError is cudaSuccess.
  */
-static inline std::string getDeviceErrorString(const cudaError_t deviceError)
+inline std::string getDeviceErrorString(const cudaError_t deviceError)
 {
     return formatString("CUDA error #%d (%s): %s.",
                         deviceError,
@@ -76,7 +76,7 @@ static inline std::string getDeviceErrorString(const cudaError_t deviceError)
  *
  *  \throws InternalError if deviceError is not a success.
  */
-static inline void checkDeviceError(const cudaError_t deviceError, const std::string& errorMessage)
+inline void checkDeviceError(const cudaError_t deviceError, const std::string& errorMessage)
 {
     if (deviceError != cudaSuccess)
     {
@@ -92,7 +92,7 @@ static inline void checkDeviceError(const cudaError_t deviceError, const std::st
  *
  * \param[in]  errorMessage  Undecorated error message.
  */
-static inline void ensureNoPendingDeviceError(const std::string& errorMessage)
+inline void ensureNoPendingDeviceError(const std::string& errorMessage)
 {
     // Ensure there is no pending error that would otherwise affect
     // the behaviour of future error handling.
@@ -135,13 +135,13 @@ enum class GpuApiCallBehavior;
 #ifdef CHECK_CUDA_ERRORS
 
 /*! Check for CUDA error on the return status of a CUDA RT API call. */
-#    define CU_RET_ERR(deviceError, msg)                                                          \
-        do                                                                                        \
-        {                                                                                         \
-            if (deviceError != cudaSuccess)                                                       \
-            {                                                                                     \
-                gmx_fatal(FARGS, "%s\n", (msg + gmx::getDeviceErrorString(deviceError)).c_str()); \
-            }                                                                                     \
+#    define CU_RET_ERR(deviceError, msg)                                                            \
+        do                                                                                          \
+        {                                                                                           \
+            if ((deviceError) != cudaSuccess)                                                       \
+            {                                                                                       \
+                gmx_fatal(FARGS, "%s\n", ((msg) + gmx::getDeviceErrorString(deviceError)).c_str()); \
+            }                                                                                       \
         } while (0)
 
 #else /* CHECK_CUDA_ERRORS */
@@ -239,6 +239,7 @@ void prepareGpuKernelArgument(KernelPtr                          kernel,
                               const CurrentArg*                  argPtr,
                               const RemainingArgs*... otherArgsPtrs)
 {
+    // NOLINTNEXTLINE(google-readability-casting)
     (*kernelArgsPtr)[argIndex] = (void*)argPtr;
     prepareGpuKernelArgument(kernel, kernelArgsPtr, argIndex + 1, otherArgsPtrs...);
 }
@@ -283,6 +284,7 @@ void launchGpuKernel(void (*kernel)(Args...),
 {
     dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
     dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
+    // NOLINTNEXTLINE(google-readability-casting)
     cudaLaunchKernel((void*)kernel,
                      gridSize,
                      blockSize,

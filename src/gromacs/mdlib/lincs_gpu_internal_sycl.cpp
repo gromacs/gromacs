@@ -49,8 +49,8 @@
 namespace gmx
 {
 
-void launchLincsGpuKernel(LincsGpuKernelParameters& /* kernelParams */,
-                          const DeviceBuffer<Float3> /* d_x */,
+void launchLincsGpuKernel(const LincsGpuKernelParameters& /* kernelParams */,
+                          const DeviceBuffer<Float3>& /* d_x */,
                           DeviceBuffer<Float3> /* d_xp */,
                           const bool /* updateVelocities */,
                           DeviceBuffer<Float3> /* d_v */,

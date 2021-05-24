@@ -73,18 +73,18 @@ namespace gmx
  * \param[in]     pbcAiuc           PBC data.
  * \param[in]     deviceStream      Device stream to launch kernel in.
  */
-void launchSettleGpuKernel(int                               numSettles,
-                           const DeviceBuffer<WaterMolecule> d_atomIds,
-                           const SettleParameters            settleParameters,
-                           const DeviceBuffer<Float3>        d_x,
-                           DeviceBuffer<Float3>              d_xp,
-                           const bool                        updateVelocities,
-                           DeviceBuffer<Float3>              d_v,
-                           const real                        invdt,
-                           const bool                        computeVirial,
-                           DeviceBuffer<float>               virialScaled,
-                           const PbcAiuc                     pbcAiuc,
-                           const DeviceStream&               deviceStream);
+void launchSettleGpuKernel(int                                numSettles,
+                           const DeviceBuffer<WaterMolecule>& d_atomIds,
+                           const SettleParameters&            settleParameters,
+                           const DeviceBuffer<Float3>&        d_x,
+                           DeviceBuffer<Float3>               d_xp,
+                           bool                               updateVelocities,
+                           DeviceBuffer<Float3>               d_v,
+                           real                               invdt,
+                           bool                               computeVirial,
+                           DeviceBuffer<float>                virialScaled,
+                           const PbcAiuc&                     pbcAiuc,
+                           const DeviceStream&                deviceStream);
 
 } // namespace gmx
 

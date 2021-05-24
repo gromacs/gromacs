@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,9 @@
 namespace gmx
 {
 
+template<typename>
+class ArrayRef;
+
 namespace test
 {
 
@@ -62,7 +65,7 @@ namespace test
  * \param[out] rVecOutput  Data in RVec format for the output.
  * \param[in]  rVecInput   Data in RVec format with the input.
  */
-void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& rVecOutput, const std::vector<gmx::RVec>& rVecInput);
+void convertRVecToFloat3OnHost(ArrayRef<gmx::RVec> rVecOutput, ArrayRef<const gmx::RVec> rVecInput);
 
 /*! \brief Tests the compatibility of RVec and float3 using the conversion on device.
  *
@@ -70,9 +73,9 @@ void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& rVecOutput, const std::ve
  * \param[in]  rVecInput   Data in RVec format with the input.
  * \param[in]  testDevice  Test herdware environment to get DeviceContext and DeviceStream from.
  */
-void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>&       rVecOutput,
-                                 const std::vector<gmx::RVec>& rVecInput,
-                                 const TestDevice*             testDevice);
+void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec>       rVecOutput,
+                                 ArrayRef<const gmx::RVec> rVecInput,
+                                 const TestDevice*         testDevice);
 
 
 } // namespace test

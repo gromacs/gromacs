@@ -76,7 +76,7 @@ struct ScalingMatrix
  */
 void launchScaleCoordinatesKernel(int                  numAtoms,
                                   DeviceBuffer<Float3> d_coordinates,
-                                  const ScalingMatrix  mu,
+                                  const ScalingMatrix& mu,
                                   const DeviceStream&  deviceStream);
 
 } // namespace gmx

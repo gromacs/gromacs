@@ -94,6 +94,7 @@ static inline __device__ int int3ToShiftIndex(int3 iv)
  */
 template<bool returnShift>
 static __forceinline__ __device__ int
+// NOLINTNEXTLINE(google-runtime-references)
 pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& dr)
 {
     dr.x = r1.x - r2.x;

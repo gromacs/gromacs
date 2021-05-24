@@ -104,11 +104,11 @@
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(const NBAtomDataGpu    atdat,
-                                     const NBParamGpu       nbparam,
-                                     const Nbnxm::gpu_plist plist,
-                                     int                    numParts,
-                                     int                    part)
+        void nbnxn_kernel_prune_cuda(NBAtomDataGpu    atdat,
+                                     NBParamGpu       nbparam,
+                                     Nbnxm::gpu_plist plist,
+                                     int              numParts,
+                                     int              part)
 #ifdef FUNCTION_DECLARATION_ONLY
                 ; /* Only do function declaration, omit the function body. */
 
@@ -152,11 +152,11 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
                   "The shared memory offset calculation assumes that char is 1 byte");
 
     /* shmem buffer for i x+q pre-loading */
-    float4* xib = (float4*)sm_nextSlotPtr;
+    float4* xib = reinterpret_cast<float4*>(sm_nextSlotPtr);
     sm_nextSlotPtr += (c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(*xib));
 
     /* shmem buffer for cj, for each warp separately */
-    int* cjs = (int*)(sm_nextSlotPtr);
+    int* cjs = reinterpret_cast<int*>(sm_nextSlotPtr);
     /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
     cjs += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
     sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));

@@ -97,8 +97,6 @@ __global__ void packSendBufKernel(float3* __restrict__ dataPacked,
             *gm_dataDest = *gm_dataSrc;
         }
     }
-
-    return;
 }
 
 /*! \brief unpack non-local force data buffer on the GPU using pre-populated "map" containing index
@@ -128,8 +126,6 @@ __global__ void unpackRecvBufKernel(float3* __restrict__ data,
             *gm_dataDest = *gm_dataSrc;
         }
     }
-
-    return;
 }
 
 void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_forcesBuffer)
@@ -251,8 +247,6 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::DDGpu);
     wallcycle_stop(wcycle_, WallCycleCounter::Domdec);
-
-    return;
 }
 
 void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
@@ -265,12 +259,12 @@ void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynch
     // Similarly send event to task that will push data to this task.
     GpuEventSynchronizer* remoteCoordinatesReadyOnDeviceEvent;
     MPI_Sendrecv(&coordinatesReadyOnDeviceEvent,
-                 sizeof(GpuEventSynchronizer*),
+                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  recvRankX_,
                  0,
                  &remoteCoordinatesReadyOnDeviceEvent,
-                 sizeof(GpuEventSynchronizer*),
+                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  sendRankX_,
                  0,
@@ -346,8 +340,6 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
     communicateHaloData(d_sendBuf_, xSendSize_, sendRankX_, recvPtr, xRecvSize_, recvRankX_);
 
     wallcycle_stop(wcycle_, WallCycleCounter::MoveX);
-
-    return;
 }
 
 // The following method should be called after non-local buffer operations,
@@ -517,12 +509,12 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(float3* sendPtr,
     haloDataTransferLaunched_->markEvent(nonLocalStream_);
 
     MPI_Sendrecv(&haloDataTransferLaunched_,
-                 sizeof(GpuEventSynchronizer*),
+                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  sendRank,
                  0,
                  &haloDataTransferRemote,
-                 sizeof(GpuEventSynchronizer*),
+                 sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                  MPI_BYTE,
                  recvRank,
                  0,

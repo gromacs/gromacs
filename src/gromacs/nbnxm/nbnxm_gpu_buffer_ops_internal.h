@@ -43,11 +43,12 @@
 #include "gromacs/gpu_utils/gputraits.h"
 
 class DeviceStream;
-class Grid;
 struct NbnxmGpu;
 
 namespace Nbnxm
 {
+
+class Grid;
 
 /*! \brief Launch coordinate layout conversion kernel
  *

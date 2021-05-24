@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,10 +104,10 @@ int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, int dimIn
  *
  * This is called from the spline_and_spread and gather PME kernels.
  */
-int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
+bool __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
 {
     assert(isfinite(coefficient));
-    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
+    return c_skipNeutralAtoms ? (coefficient != 0.0F) : true;
 }
 
 //! Controls if the atom and charge data is prefeched into shared memory or loaded per thread from global
@@ -126,15 +126,15 @@ __device__ inline void assertIsFinite(T arg);
 template<>
 __device__ inline void assertIsFinite(float3 gmx_unused arg)
 {
-    assert(isfinite(float(arg.x)));
-    assert(isfinite(float(arg.y)));
-    assert(isfinite(float(arg.z)));
+    assert(isfinite(static_cast<float>(arg.x)));
+    assert(isfinite(static_cast<float>(arg.y)));
+    assert(isfinite(static_cast<float>(arg.z)));
 }
 
 template<typename T>
 __device__ inline void assertIsFinite(T gmx_unused arg)
 {
-    assert(isfinite(float(arg)));
+    assert(isfinite(static_cast<float>(arg)));
 }
 
 /*! \brief
@@ -268,7 +268,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
             const float shift = c_pmeMaxUnitcellShift;
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
             t    = (t + shift) * n;
-            tInt = (int)t;
+            tInt = static_cast<int>(t);
             assert(sharedMemoryIndex < atomsPerBlock * DIM);
             sm_fractCoords[sharedMemoryIndex] = t - tInt;
             tableIndex += tInt;
@@ -302,14 +302,14 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
             assert(isfinite(dr));
 
             /* dr is relative offset from lower cell limit */
-            splineData[order - 1] = 0.0f;
+            splineData[order - 1] = 0.0F;
             splineData[1]         = dr;
-            splineData[0]         = 1.0f - dr;
+            splineData[0]         = 1.0F - dr;
 
 #pragma unroll
             for (int k = 3; k < order; k++)
             {
-                div               = 1.0f / (k - 1.0f);
+                div               = 1.0F / (k - 1.0F);
                 splineData[k - 1] = div * dr * splineData[k - 2];
 #pragma unroll
                 for (int l = 1; l < (k - 1); l++)
@@ -317,7 +317,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
                     splineData[k - l - 1] =
                             div * ((dr + l) * splineData[k - l - 2] + (k - l - dr) * splineData[k - l - 1]);
                 }
-                splineData[0] = div * (1.0f - dr) * splineData[0];
+                splineData[0] = div * (1.0F - dr) * splineData[0];
             }
 
             const int thetaIndexBase =
@@ -333,7 +333,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
                     const int thetaIndex =
                             getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
 
-                    const float dtheta = ((o > 0) ? splineData[o - 1] : 0.0f) - splineData[o];
+                    const float dtheta = ((o > 0) ? splineData[o - 1] : 0.0F) - splineData[o];
                     assert(isfinite(dtheta));
                     assert(thetaIndex < order * DIM * atomsPerBlock);
                     if (writeSmDtheta)
@@ -348,7 +348,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
                 }
             }
 
-            div                   = 1.0f / (order - 1.0f);
+            div                   = 1.0F / (order - 1.0F);
             splineData[order - 1] = div * dr * splineData[order - 2];
 #pragma unroll
             for (int k = 1; k < (order - 1); k++)
@@ -357,7 +357,7 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
                                             * ((dr + k) * splineData[order - k - 2]
                                                + (order - k - dr) * splineData[order - k - 1]);
             }
-            splineData[0] = div * (1.0f - dr) * splineData[0];
+            splineData[0] = div * (1.0F - dr) * splineData[0];
 
             /* Storing the spline values (theta) */
 #pragma unroll

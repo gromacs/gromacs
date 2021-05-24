@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,10 +66,10 @@
  *
  * In reality it is 16 with CUDA <=v5.0, but let's stay on the safe side.
  */
-static int c_cudaMaxDeviceCount = 32;
+static const int c_cudaMaxDeviceCount = 32;
 
 /** Dummy kernel used for sanity checking. */
-static __global__ void dummy_kernel(void) {}
+static __global__ void dummy_kernel() {}
 
 static cudaError_t checkCompiledTargetCompatibility(int deviceId, const cudaDeviceProp& deviceProp)
 {
@@ -338,7 +338,7 @@ void setActiveDevice(const DeviceInformation& deviceInfo)
     if (stat != cudaSuccess)
     {
         auto message = gmx::formatString("Failed to initialize GPU #%d", deviceId);
-        CU_RET_ERR(stat, message.c_str());
+        CU_RET_ERR(stat, message);
     }
 
     if (debug)

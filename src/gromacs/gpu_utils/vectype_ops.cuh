@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2015,2016,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2015,2016,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ __forceinline__ __host__ __device__ float3 make_float3(float4 a)
 {
     return make_float3(a.x, a.y, a.z);
 }
-__forceinline__ __host__ __device__ float3 operator-(float3& a)
+__forceinline__ __host__ __device__ float3 operator-(const float3& a)
 {
     return make_float3(-a.x, -a.y, -a.z);
 }
@@ -65,18 +65,21 @@ __forceinline__ __host__ __device__ float3 operator*(float k, float3 a)
 {
     return make_float3(k * a.x, k * a.y, k * a.z);
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator+=(float3& a, float3 b)
 {
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator+=(float3& a, float4 b)
 {
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator-=(float3& a, float3 b)
 {
     a.x -= b.x;
@@ -99,12 +102,14 @@ __forceinline__ __host__ __device__ float3 operator*(float3 a, float3 b)
 {
     return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator*=(float3& a, float3 b)
 {
     a.x *= b.x;
     a.y *= b.y;
     a.z *= b.z;
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator*=(float3& a, float b)
 {
     a.x *= b;
@@ -126,7 +131,7 @@ __forceinline__ __host__ __device__ float4 make_float4(float s)
 }
 __forceinline__ __host__ __device__ float4 make_float4(float3 a)
 {
-    return make_float4(a.x, a.y, a.z, 0.0f);
+    return make_float4(a.x, a.y, a.z, 0.0F);
 }
 __forceinline__ __host__ __device__ float4 operator+(float4 a, float4 b)
 {
@@ -151,12 +156,14 @@ __forceinline__ __host__ __device__ void operator+=(float4& a, float4 b)
     a.z += b.z;
     a.w += b.w;
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator+=(float4& a, float3 b)
 {
     a.x += b.x;
     a.y += b.y;
     a.z += b.z;
 }
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __host__ __device__ void operator-=(float4& a, float3 b)
 {
     a.x -= b.x;
@@ -223,21 +230,21 @@ __forceinline__ __device__ float cos_angle(const float3 a, const float3 b)
     float ipb  = norm2(b);
     float ip   = iprod(a, b);
     float ipab = ipa * ipb;
-    if (ipab > 0.0f)
+    if (ipab > 0.0F)
     {
         cosval = ip * rsqrt(ipab);
     }
     else
     {
-        cosval = 1.0f;
+        cosval = 1.0F;
     }
-    if (cosval > 1.0f)
+    if (cosval > 1.0F)
     {
-        return 1.0f;
+        return 1.0F;
     }
-    if (cosval < -1.0f)
+    if (cosval < -1.0F)
     {
-        return -1.0f;
+        return -1.0F;
     }
 
     return cosval;
@@ -267,8 +274,8 @@ __forceinline__ __device__ float gmx_angle(const float3 a, const float3 b)
  *
  * \param[in] a  First vector.
  * \param[in] b  Second vector.
- * \returns Angle between vectors.
  */
+// NOLINTNEXTLINE(google-runtime-references)
 __forceinline__ __device__ void atomicAdd(float3& a, const float3 b)
 {
     atomicAdd(&a.x, b.x);

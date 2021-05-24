@@ -60,7 +60,7 @@ constexpr int c_stateB = 1;
 
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int mode, bool writeGlobal, ThreadsPerAtom threadsPerAtom>
-__global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_spline_and_spread_kernel(PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
@@ -99,7 +99,7 @@ extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
 
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex> /* It is significantly slower to pass gridIndex as a kernel parameter */
-__global__ void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_solve_kernel(PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
@@ -115,7 +115,7 @@ extern template __global__ void pme_solve_kernel<GridOrdering::YZX, true, c_stat
 // clang-format on
 
 template<int order, bool wrapX, bool wrapY, int nGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom>
-__global__ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_gather_kernel(PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.

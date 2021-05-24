@@ -205,7 +205,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
 
 
         float sinphi = a1d_z * rsqrt(pars.ra * pars.ra);
-        float tmp2   = 1.0f - sinphi * sinphi;
+        float tmp2   = 1.0F - sinphi * sinphi;
 
         if (almost_zero > tmp2)
         {
@@ -215,7 +215,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
         float tmp    = rsqrt(tmp2);
         float cosphi = tmp2 * tmp;
         float sinpsi = (b1d.z - c1d.z) * pars.irc2 * tmp;
-        tmp2         = 1.0f - sinpsi * sinpsi;
+        tmp2         = 1.0F - sinpsi * sinpsi;
 
         float cospsi = tmp2 * rsqrt(tmp2);
 
@@ -235,7 +235,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
         float sinthe = (alpha * gamma - beta * tmp2 * rsqrt(tmp2)) * rsqrt(al2be2 * al2be2);
 
         /*  --- Step4  A3' --- */
-        tmp2         = 1.0f - sinthe * sinthe;
+        tmp2         = 1.0F - sinthe * sinthe;
         float costhe = tmp2 * rsqrt(tmp2);
 
         float3 a3d, b3d, c3d;
@@ -318,7 +318,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
         {
             for (int d = 0; d < 6; d++)
             {
-                sm_threadVirial[d * blockDim.x + threadIdx.x] = 0.0f;
+                sm_threadVirial[d * blockDim.x + threadIdx.x] = 0.0F;
             }
         }
     }
@@ -358,8 +358,6 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
             atomicAdd(&(gm_virialScaled[tib]), sm_threadVirial[tib * blockSize]);
         }
     }
-
-    return;
 }
 
 /*! \brief Select templated kernel.
@@ -394,18 +392,18 @@ inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVi
     return kernelPtr;
 }
 
-void launchSettleGpuKernel(const int                         numSettles,
-                           const DeviceBuffer<WaterMolecule> d_atomIds,
-                           const SettleParameters            settleParameters,
-                           const DeviceBuffer<Float3>        d_x,
-                           DeviceBuffer<Float3>              d_xp,
-                           const bool                        updateVelocities,
-                           DeviceBuffer<Float3>              d_v,
-                           const real                        invdt,
-                           const bool                        computeVirial,
-                           DeviceBuffer<float>               virialScaled,
-                           const PbcAiuc                     pbcAiuc,
-                           const DeviceStream&               deviceStream)
+void launchSettleGpuKernel(const int                          numSettles,
+                           const DeviceBuffer<WaterMolecule>& d_atomIds,
+                           const SettleParameters&            settleParameters,
+                           const DeviceBuffer<Float3>&        d_x,
+                           DeviceBuffer<Float3>               d_xp,
+                           const bool                         updateVelocities,
+                           DeviceBuffer<Float3>               d_v,
+                           const real                         invdt,
+                           const bool                         computeVirial,
+                           DeviceBuffer<float>                virialScaled,
+                           const PbcAiuc&                     pbcAiuc,
+                           const DeviceStream&                deviceStream)
 {
     static_assert(
             gmx::isPowerOfTwo(sc_threadsPerBlock),
@@ -449,8 +447,6 @@ void launchSettleGpuKernel(const int                         numSettles,
                     nullptr,
                     "settle_kernel<updateVelocities, computeVirial>",
                     kernelArgs);
-
-    return;
 }
 
 } // namespace gmx

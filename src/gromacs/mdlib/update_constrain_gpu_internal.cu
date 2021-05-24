@@ -77,7 +77,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
 
 void launchScaleCoordinatesKernel(const int            numAtoms,
                                   DeviceBuffer<Float3> d_coordinates,
-                                  const ScalingMatrix  mu,
+                                  const ScalingMatrix& mu,
                                   const DeviceStream&  deviceStream)
 {
     KernelLaunchConfig kernelLaunchConfig;

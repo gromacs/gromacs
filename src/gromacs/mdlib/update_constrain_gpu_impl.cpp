@@ -72,7 +72,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 
-static constexpr bool sc_haveGpuConstraintSupport = (GMX_GPU_CUDA);
+static constexpr bool sc_haveGpuConstraintSupport = GMX_GPU_CUDA;
 
 namespace gmx
 {
@@ -125,8 +125,6 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
-
-    return;
 }
 
 void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)

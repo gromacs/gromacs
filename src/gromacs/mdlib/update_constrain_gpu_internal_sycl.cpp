@@ -69,7 +69,7 @@ static auto scaleKernel(cl::sycl::handler&                                      
 
 void launchScaleCoordinatesKernel(const int            numAtoms,
                                   DeviceBuffer<Float3> d_coordinates,
-                                  const ScalingMatrix  mu,
+                                  const ScalingMatrix& mu,
                                   const DeviceStream&  deviceStream)
 {
     const cl::sycl::range<1> rangeAllAtoms(numAtoms);

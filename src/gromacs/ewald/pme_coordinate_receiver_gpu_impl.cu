@@ -101,6 +101,7 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDir
 
 #if GMX_MPI
     // Receive event from PP task
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Irecv(&ppSync_[recvCount_], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_, &request_[recvCount_]);
     recvCount_++;
 #else

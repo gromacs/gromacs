@@ -107,7 +107,7 @@ static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& t
 {
     if (nbp->coulomb_tab)
     {
-        destroyParamLookupTable(&nbp->coulomb_tab, nbp->coulomb_tab_texobj);
+        destroyParamLookupTable(&nbp->coulomb_tab, &nbp->coulomb_tab_texobj);
     }
 
     nbp->coulomb_tab_scale = tables.scale;
@@ -1132,17 +1132,17 @@ void gpu_free(NbnxmGpu* nb)
     /* Free nbparam */
     if (nbparam->elecType == ElecType::EwaldTab || nbparam->elecType == ElecType::EwaldTabTwin)
     {
-        destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
+        destroyParamLookupTable(&nbparam->coulomb_tab, &nbparam->coulomb_tab_texobj);
     }
 
     if (!useLjCombRule(nb->nbparam->vdwType))
     {
-        destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
+        destroyParamLookupTable(&nbparam->nbfp, &nbparam->nbfp_texobj);
     }
 
     if (nbparam->vdwType == VdwType::EwaldGeom || nbparam->vdwType == VdwType::EwaldLB)
     {
-        destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
+        destroyParamLookupTable(&nbparam->nbfp_comb, &nbparam->nbfp_comb_texobj);
     }
 
     /* Free plist */

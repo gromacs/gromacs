@@ -49,16 +49,16 @@ namespace gmx
 {
 
 void launchSettleGpuKernel(const int /* numSettles */,
-                           const DeviceBuffer<WaterMolecule> /* d_atomIds */,
-                           const SettleParameters /* settleParameters */,
-                           const DeviceBuffer<Float3> /* d_x */,
+                           const DeviceBuffer<WaterMolecule>& /* d_atomIds */,
+                           const SettleParameters& /* settleParameters */,
+                           const DeviceBuffer<Float3>& /* d_x */,
                            DeviceBuffer<Float3> /* d_xp */,
                            const bool /* updateVelocities */,
                            DeviceBuffer<Float3> /* d_v */,
                            const real /* invdt */,
                            const bool /* computeVirial */,
                            DeviceBuffer<float> /* virialScaled */,
-                           const PbcAiuc /* pbcAiuc */,
+                           const PbcAiuc& /* pbcAiuc */,
                            const DeviceStream& /* deviceStream */)
 {
     // SYCL_TODO

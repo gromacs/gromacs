@@ -84,7 +84,7 @@ void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll 
                "GPU implementation.");
 }
 
-std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality /* atomLocality */)
+std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality /* atomLocality */) const
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "
@@ -254,7 +254,7 @@ const DeviceStream* StatePropagatorDataGpu::getUpdateStream()
     return nullptr;
 }
 
-int StatePropagatorDataGpu::numAtomsLocal()
+int StatePropagatorDataGpu::numAtomsLocal() const
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "
@@ -262,7 +262,7 @@ int StatePropagatorDataGpu::numAtomsLocal()
     return 0;
 }
 
-int StatePropagatorDataGpu::numAtomsAll()
+int StatePropagatorDataGpu::numAtomsAll() const
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "

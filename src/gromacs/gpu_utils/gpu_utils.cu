@@ -65,6 +65,7 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static bool cudaProfilerRun = ((getenv("NVPROF_ID") != nullptr));
 
 bool isHostMemoryPinned(const void* h_ptr)
@@ -102,7 +103,7 @@ bool isHostMemoryPinned(const void* h_ptr)
     return isPinned;
 }
 
-void startGpuProfiler(void)
+void startGpuProfiler()
 {
     /* The NVPROF_ID environment variable is set by nvprof and indicates that
        mdrun is executed in the CUDA profiler.
@@ -118,7 +119,7 @@ void startGpuProfiler(void)
     }
 }
 
-void stopGpuProfiler(void)
+void stopGpuProfiler()
 {
     /* Stopping the nvidia here allows us to eliminate the subsequent
        API calls from the trace, e.g. uninitialization and cleanup. */
@@ -130,7 +131,7 @@ void stopGpuProfiler(void)
     }
 }
 
-void resetGpuProfiler(void)
+void resetGpuProfiler()
 {
     /* With CUDA <=7.5 the profiler can't be properly reset; we can only start
      *  the profiling here (can't stop it) which will achieve the desired effect if
@@ -180,7 +181,7 @@ static void peerAccessCheckStat(const cudaError_t    stat,
     {
         std::string errorString =
                 gmx::formatString("%s from GPU %d to GPU %d failed", cudaCallName, gpuA, gpuB);
-        CU_RET_ERR(stat, errorString.c_str());
+        CU_RET_ERR(stat, errorString);
     }
     if (stat != cudaSuccess)
     {
