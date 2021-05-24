@@ -32,3 +32,11 @@ The source code validation could otherwise fail a build with cryptic errors.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Removed performance loss in the mdrun domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With 16 or more so-called PP MPI ranks, the domain decomposition
+repartitioning could incur large performance overheads due to a sub-optimally
+sized hash table. This has now been fixed.
+
+:issue:`4054`

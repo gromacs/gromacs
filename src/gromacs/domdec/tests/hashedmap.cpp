@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -192,18 +192,18 @@ TEST(HashedMap, ResizesTable)
     EXPECT_LT(map.bucket_count(), 128);
 
     // Check that the table size is double #elements after clear()
-    map.clear();
+    map.clearAndResizeHashTable();
     EXPECT_EQ(map.bucket_count(), 128);
 
     // Check that calling clear() a second time does not resize
-    map.clear();
+    map.clearAndResizeHashTable();
     EXPECT_EQ(map.bucket_count(), 128);
 
     map.insert(2, 'b');
     EXPECT_EQ(map.bucket_count(), 128);
 
     // Check that calling clear with 1 elements sizes down
-    map.clear();
+    map.clearAndResizeHashTable();
     EXPECT_LT(map.bucket_count(), 128);
 }
 

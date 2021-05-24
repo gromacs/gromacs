@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -285,15 +285,9 @@ public:
         return nullptr;
     }
 
-    /*! \brief Clear all the entries in the list
-     *
-     * Also optimizes the size of the table based on the current
-     * number of elements stored.
-     */
+    //! Clear all the entries in the list
     void clear()
     {
-        const int oldNumElements = numElements_;
-
         for (hashEntry& entry : table_)
         {
             entry.key  = -1;
@@ -301,6 +295,18 @@ public:
         }
         startIndexForSpaceForListEntry_ = bucket_count();
         numElements_                    = 0;
+    }
+
+    /*! \brief Clear all the entries in the list and resizes the hash table
+     *
+     * Optimizes the size of the hash table based on the current
+     * number of elements stored.
+     */
+    void clearAndResizeHashTable()
+    {
+        const int oldNumElements = numElements_;
+
+        clear();
 
         /* Resize the hash table when the occupation is far from optimal.
          * Do not resize with 0 elements to avoid minimal size when clear()
