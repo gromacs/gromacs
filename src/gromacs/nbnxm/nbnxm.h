@@ -369,9 +369,15 @@ public:
 
     //! Executes the non-bonded free-energy kernel, always runs on the CPU
     void dispatchFreeEnergyKernel(gmx::InteractionLocality       iLocality,
-                                  const t_forcerec&              fr,
                                   gmx::ArrayRef<const gmx::RVec> coords,
                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
+                                  bool                           useSimd,
+                                  int                            ntype,
+                                  real                           rlist,
+                                  const interaction_const_t&     ic,
+                                  gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                  gmx::ArrayRef<const real>      nbfp,
+                                  gmx::ArrayRef<const real>      nbfp_grid,
                                   gmx::ArrayRef<const real>      chargeA,
                                   gmx::ArrayRef<const real>      chargeB,
                                   gmx::ArrayRef<const int>       typeA,

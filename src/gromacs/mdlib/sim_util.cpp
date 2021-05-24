@@ -1764,9 +1764,15 @@ void do_force(FILE*                               fplog,
          */
         nbv->dispatchFreeEnergyKernel(
                 InteractionLocality::Local,
-                *fr,
                 x.unpaddedArrayRef(),
                 &forceOutNonbonded->forceWithShiftForces(),
+                fr->use_simd_kernels,
+                fr->ntype,
+                fr->rlist,
+                *fr->ic,
+                fr->shift_vec,
+                fr->nbfp,
+                fr->ljpme_c6grid,
                 mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
                                  : gmx::ArrayRef<real>{},
                 mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
@@ -1785,9 +1791,15 @@ void do_force(FILE*                               fplog,
         {
             nbv->dispatchFreeEnergyKernel(
                     InteractionLocality::NonLocal,
-                    *fr,
                     x.unpaddedArrayRef(),
                     &forceOutNonbonded->forceWithShiftForces(),
+                    fr->use_simd_kernels,
+                    fr->ntype,
+                    fr->rlist,
+                    *fr->ic,
+                    fr->shift_vec,
+                    fr->nbfp,
+                    fr->ljpme_c6grid,
                     mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
                                      : gmx::ArrayRef<real>{},
                     mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
