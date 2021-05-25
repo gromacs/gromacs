@@ -238,9 +238,8 @@ public:
                       InteractionModifiers   vdwMod)
     {
         icHelper_.initInteractionConst(coulType, vdwType, vdwMod);
-        nbfp_ = makeNonBondedParameterLists(idef, false);
-        t_forcerec frTmp;
-        ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(idef, frTmp);
+        nbfp_        = makeNonBondedParameterLists(idef.atnr, idef.iparams, false);
+        ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(idef.atnr, idef.iparams, LongRangeVdW::Geom);
     }
 
     void setSoftcoreAlpha(const real scAlpha) { fepVals_.sc_alpha = scAlpha; }

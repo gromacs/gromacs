@@ -85,6 +85,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -112,38 +113,38 @@ void ForceHelperBuffers::resize(int numAtoms)
     }
 }
 
-std::vector<real> makeNonBondedParameterLists(const gmx_ffparams_t& forceFieldParams, bool useBuckinghamPotential)
+std::vector<real> makeNonBondedParameterLists(const int                      numAtomTypes,
+                                              gmx::ArrayRef<const t_iparams> iparams,
+                                              bool                           useBuckinghamPotential)
 {
     std::vector<real> nbfp;
-    int               atnr;
 
-    atnr = forceFieldParams.atnr;
     if (useBuckinghamPotential)
     {
-        nbfp.resize(3 * atnr * atnr);
+        nbfp.resize(3 * numAtomTypes * numAtomTypes);
         int k = 0;
-        for (int i = 0; (i < atnr); i++)
+        for (int i = 0; (i < numAtomTypes); i++)
         {
-            for (int j = 0; (j < atnr); j++, k++)
+            for (int j = 0; (j < numAtomTypes); j++, k++)
             {
-                BHAMA(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.a;
-                BHAMB(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.b;
+                BHAMA(nbfp, numAtomTypes, i, j) = iparams[k].bham.a;
+                BHAMB(nbfp, numAtomTypes, i, j) = iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-                BHAMC(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.c * 6.0;
+                BHAMC(nbfp, numAtomTypes, i, j) = iparams[k].bham.c * 6.0;
             }
         }
     }
     else
     {
-        nbfp.resize(2 * atnr * atnr);
+        nbfp.resize(2 * numAtomTypes * numAtomTypes);
         int k = 0;
-        for (int i = 0; (i < atnr); i++)
+        for (int i = 0; (i < numAtomTypes); i++)
         {
-            for (int j = 0; (j < atnr); j++, k++)
+            for (int j = 0; (j < numAtomTypes); j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, atnr, i, j)  = forceFieldParams.iparams[k].lj.c6 * 6.0;
-                C12(nbfp, atnr, i, j) = forceFieldParams.iparams[k].lj.c12 * 12.0;
+                C6(nbfp, numAtomTypes, i, j)  = iparams[k].lj.c6 * 6.0;
+                C12(nbfp, numAtomTypes, i, j) = iparams[k].lj.c12 * 12.0;
             }
         }
     }
@@ -151,41 +152,39 @@ std::vector<real> makeNonBondedParameterLists(const gmx_ffparams_t& forceFieldPa
     return nbfp;
 }
 
-std::vector<real> makeLJPmeC6GridCorrectionParameters(const gmx_ffparams_t& forceFieldParams,
-                                                      const t_forcerec&     forceRec)
+std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                      numAtomTypes,
+                                                      gmx::ArrayRef<const t_iparams> iparams,
+                                                      LongRangeVdW ljpme_combination_rule)
 {
-    int  i, j, k, atnr;
-    real c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
      * access to the C6-values used on the reciprocal grid in pme.c
      */
 
-    atnr = forceFieldParams.atnr;
-    std::vector<real> grid(2 * atnr * atnr, 0.0);
-    for (i = k = 0; (i < atnr); i++)
+    std::vector<real> grid(2 * numAtomTypes * numAtomTypes, 0.0);
+    int               k = 0;
+    for (int i = 0; (i < numAtomTypes); i++)
     {
-        for (j = 0; (j < atnr); j++, k++)
+        for (int j = 0; (j < numAtomTypes); j++, k++)
         {
-            c6i  = forceFieldParams.iparams[i * (atnr + 1)].lj.c6;
-            c12i = forceFieldParams.iparams[i * (atnr + 1)].lj.c12;
-            c6j  = forceFieldParams.iparams[j * (atnr + 1)].lj.c6;
-            c12j = forceFieldParams.iparams[j * (atnr + 1)].lj.c12;
-            c6   = std::sqrt(c6i * c6j);
-            if (forceRec.ljpme_combination_rule == LongRangeVdW::LB && !gmx_numzero(c6)
-                && !gmx_numzero(c12i) && !gmx_numzero(c12j))
+            real c6i  = iparams[i * (numAtomTypes + 1)].lj.c6;
+            real c12i = iparams[i * (numAtomTypes + 1)].lj.c12;
+            real c6j  = iparams[j * (numAtomTypes + 1)].lj.c6;
+            real c12j = iparams[j * (numAtomTypes + 1)].lj.c12;
+            real c6   = std::sqrt(c6i * c6j);
+            if (ljpme_combination_rule == LongRangeVdW::LB && !gmx_numzero(c6) && !gmx_numzero(c12i)
+                && !gmx_numzero(c12j))
             {
-                sigmai = gmx::sixthroot(c12i / c6i);
-                sigmaj = gmx::sixthroot(c12j / c6j);
-                epsi   = c6i * c6i / c12i;
-                epsj   = c6j * c6j / c12j;
-                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
+                real sigmai = gmx::sixthroot(c12i / c6i);
+                real sigmaj = gmx::sixthroot(c12j / c6j);
+                real epsi   = c6i * c6i / c12i;
+                real epsj   = c6j * c6j / c12j;
+                c6          = std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
             }
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
              */
-            grid[2 * (atnr * i + j)] = c6 * 6.0;
+            grid[2 * (numAtomTypes * i + j)] = c6 * 6.0;
         }
     }
     return grid;
@@ -891,14 +890,14 @@ void init_forcerec(FILE*                            fplog,
         forcerec->shift_vec.resize(gmx::c_numShiftVectors);
     }
 
-    if (forcerec->nbfp.empty())
+    GMX_ASSERT(forcerec->nbfp.empty(), "The nonbonded force parameters should not be set up yet.");
+    forcerec->ntype = mtop.ffparams.atnr;
+    forcerec->nbfp  = makeNonBondedParameterLists(
+            mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->haveBuckingham);
+    if (EVDW_PME(interactionConst->vdwtype))
     {
-        forcerec->ntype = mtop.ffparams.atnr;
-        forcerec->nbfp  = makeNonBondedParameterLists(mtop.ffparams, forcerec->haveBuckingham);
-        if (EVDW_PME(interactionConst->vdwtype))
-        {
-            forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(mtop.ffparams, *forcerec);
-        }
+        forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(
+                mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
     }
 
     /* Copy the energy group exclusions */
