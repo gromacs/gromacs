@@ -63,6 +63,7 @@
 #include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/partition.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -77,6 +78,7 @@
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -100,6 +102,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
@@ -2836,11 +2839,14 @@ public:
          const MdrunOptions&               mdrunOptions,
          const gmx_mtop_t&                 mtop,
          const t_inputrec&                 ir,
+         const MDModulesNotifiers&         notifiers,
          const matrix                      box,
          ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
          bool                              useUpdateGroups,
          real                              maxUpdateGroupRadius,
-         ArrayRef<const RVec>              xGlobal);
+         ArrayRef<const RVec>              xGlobal,
+         bool                              useGpuForNonbonded,
+         bool                              useGpuForPme);
 
     //! Build the resulting DD manager
     gmx_domdec_t* build(LocalAtomSetManager* atomSets);
@@ -2857,6 +2863,8 @@ public:
     const gmx_mtop_t& mtop_;
     //! User input values from the tpr file
     const t_inputrec& ir_;
+    //! MdModules object
+    const MDModulesNotifiers& notifiers_;
     //! }
 
     //! Internal objects used in constructing DD
@@ -2886,12 +2894,15 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
                                        const MdrunOptions&               mdrunOptions,
                                        const gmx_mtop_t&                 mtop,
                                        const t_inputrec&                 ir,
+                                       const MDModulesNotifiers&         notifiers,
                                        const matrix                      box,
                                        ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
                                        const bool                        useUpdateGroups,
                                        const real                        maxUpdateGroupRadius,
-                                       ArrayRef<const RVec>              xGlobal) :
-    mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir)
+                                       ArrayRef<const RVec>              xGlobal,
+                                       bool                              useGpuForNonbonded,
+                                       bool                              useGpuForPme) :
+    mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir), notifiers_(notifiers)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
 
@@ -2917,8 +2928,18 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
 
     const int  numRanksRequested         = cr_->sizeOfDefaultCommunicator;
     const bool checkForLargePrimeFactors = (options_.numCells[0] <= 0);
-    checkForValidRankCountRequests(
-            numRanksRequested, EEL_PME(ir_.coulombtype), options_.numPmeRanks, checkForLargePrimeFactors);
+
+
+    /* Checks for ability to use PME-only ranks */
+    auto separatePmeRanksPermitted = checkForSeparatePmeRanks(
+            notifiers_, options_, numRanksRequested, useGpuForNonbonded, useGpuForPme);
+
+    /* Checks for validity of requested Ranks setup */
+    checkForValidRankCountRequests(numRanksRequested,
+                                   EEL_PME(ir_.coulombtype) | EVDW_PME(ir_.vdwtype),
+                                   options_.numPmeRanks,
+                                   separatePmeRanksPermitted,
+                                   checkForLargePrimeFactors);
 
     // DD grid setup uses a more different cell size limit for
     // automated setup than the one in systemInfo_. The latter is used
@@ -2939,6 +2960,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
                                   gridSetupCellsizeLimit,
                                   mtop_,
                                   ir_,
+                                  separatePmeRanksPermitted,
                                   box,
                                   xGlobal,
                                   &ddbox_);
@@ -3003,18 +3025,34 @@ gmx_domdec_t* DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomS
     return dd;
 }
 
-DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&      mdlog,
-                                                       t_commrec*           cr,
-                                                       const DomdecOptions& options,
-                                                       const MdrunOptions&  mdrunOptions,
-                                                       const gmx_mtop_t&    mtop,
-                                                       const t_inputrec&    ir,
-                                                       const matrix         box,
+DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&           mdlog,
+                                                       t_commrec*                cr,
+                                                       const DomdecOptions&      options,
+                                                       const MdrunOptions&       mdrunOptions,
+                                                       const gmx_mtop_t&         mtop,
+                                                       const t_inputrec&         ir,
+                                                       const MDModulesNotifiers& notifiers,
+                                                       const matrix              box,
                                                        ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
                                                        const bool           useUpdateGroups,
                                                        const real           maxUpdateGroupRadius,
-                                                       ArrayRef<const RVec> xGlobal) :
-    impl_(new Impl(mdlog, cr, options, mdrunOptions, mtop, ir, box, updateGroupingPerMoleculeType, useUpdateGroups, maxUpdateGroupRadius, xGlobal))
+                                                       ArrayRef<const RVec> xGlobal,
+                                                       const bool           useGpuForNonbonded,
+                                                       const bool           useGpuForPme) :
+    impl_(new Impl(mdlog,
+                   cr,
+                   options,
+                   mdrunOptions,
+                   mtop,
+                   ir,
+                   notifiers,
+                   box,
+                   updateGroupingPerMoleculeType,
+                   useUpdateGroups,
+                   maxUpdateGroupRadius,
+                   xGlobal,
+                   useGpuForNonbonded,
+                   useGpuForPme))
 {
 }
 

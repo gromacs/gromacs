@@ -63,6 +63,7 @@ class LocalAtomSetManager;
 class RangePartitioning;
 struct DomdecOptions;
 struct MdrunOptions;
+struct MDModulesNotifiers;
 
 template<typename T>
 class ArrayRef;
@@ -83,11 +84,14 @@ public:
                                const MdrunOptions&               mdrunOptions,
                                const gmx_mtop_t&                 mtop,
                                const t_inputrec&                 ir,
+                               const MDModulesNotifiers&         notifiers,
                                const matrix                      box,
                                ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
                                bool                              useUpdateGroups,
                                real                              maxUpdateGroupRadius,
-                               ArrayRef<const RVec>              xGlobal);
+                               ArrayRef<const RVec>              xGlobal,
+                               bool                              useGpuForNonbonded,
+                               bool                              useGpuForPme);
     //! Destructor
     ~DomainDecompositionBuilder();
     //! Build the resulting DD manager

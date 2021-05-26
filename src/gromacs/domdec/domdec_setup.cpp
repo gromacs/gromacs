@@ -71,6 +71,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mdmodulesnotifiers.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "box.h"
@@ -738,10 +739,61 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
 
     return cellSizeLimit;
 }
-void checkForValidRankCountRequests(const int  numRanksRequested,
-                                    const bool usingPme,
-                                    const int  numPmeRanksRequested,
-                                    const bool checkForLargePrimeFactors)
+
+gmx::SeparatePmeRanksPermitted checkForSeparatePmeRanks(const gmx::MDModulesNotifiers& notifiers,
+                                                        const DomdecOptions&           options,
+                                                        int  numRanksRequested,
+                                                        bool useGpuForNonbonded,
+                                                        bool useGpuForPme)
+{
+    gmx::SeparatePmeRanksPermitted separatePmeRanksPermitted;
+
+    /* Permit MDModules to notify whether they want to use PME-only ranks */
+    notifiers.simulationSetupNotifier_.notify(&separatePmeRanksPermitted);
+
+    /* With NB GPUs we don't automatically use PME-only CPU ranks. PME ranks can
+     * improve performance with many threads per GPU, since our OpenMP
+     * scaling is bad, but it's difficult to automate the setup.
+     */
+    if (useGpuForNonbonded && options.numPmeRanks < 0)
+    {
+        separatePmeRanksPermitted.disablePmeRanks(
+                "PME-only CPU ranks are not automatically used when "
+                "non-bonded interactions are computed on GPUs");
+    }
+
+    /* If GPU is used for PME then only 1 PME rank is permitted */
+    if (useGpuForPme && (options.numPmeRanks < 0 || options.numPmeRanks > 1))
+    {
+        separatePmeRanksPermitted.disablePmeRanks(
+                "PME GPU decomposition is not supported, only one separate PME-only GPU rank "
+                "can be used");
+    }
+
+    // With explicit DD grid setup we do not automatically use PME-only ranks
+    if (options.numCells[XX] > 0 && options.numPmeRanks < 0)
+    {
+        separatePmeRanksPermitted.disablePmeRanks("explicit DD grid requested");
+    }
+
+    // Controls the automated choice of when to use separate PME-only ranks.
+    const int minRankCountToDefaultToSeparatePmeRanks = 19;
+
+    // Check if we have enough total ranks to use PME-only ranks
+    if (numRanksRequested < minRankCountToDefaultToSeparatePmeRanks && options.numPmeRanks < 0)
+    {
+        separatePmeRanksPermitted.disablePmeRanks(
+                "there are too few total ranks for efficient splitting");
+    }
+
+    return separatePmeRanksPermitted;
+}
+
+void checkForValidRankCountRequests(const int                             numRanksRequested,
+                                    const bool                            usingPme,
+                                    const int                             numPmeRanksRequested,
+                                    const gmx::SeparatePmeRanksPermitted& separatePmeRanksPermitted,
+                                    const bool                            checkForLargePrimeFactors)
 {
     int numPPRanksRequested = numRanksRequested;
     if (usingPme && numPmeRanksRequested > 0)
@@ -755,6 +807,25 @@ void checkForValidRankCountRequests(const int  numRanksRequested,
                       numPmeRanksRequested,
                       numPPRanksRequested);
         }
+    }
+
+    /* If simulation is not using PME but -npme > 0 then inform user and throw an error */
+    if (!usingPme && numPmeRanksRequested > 0)
+    {
+        gmx_fatal(FARGS,
+                  "The system does not use PME for electrostatics or LJ. Requested "
+                  "-npme %d option is not viable.",
+                  numPmeRanksRequested);
+    }
+
+    /* If some parts of the code could not use PME-only ranks and
+     * user explicitly used mdrun -npme > 0 option then throw an error */
+    if (!separatePmeRanksPermitted.permitSeparatePmeRanks() && numPmeRanksRequested > 0)
+    {
+        gmx_fatal(FARGS,
+                  "Cannot have %d separate PME ranks because: %s",
+                  numPmeRanksRequested,
+                  separatePmeRanksPermitted.reasonsWhyDisabled().c_str());
     }
 
     // Once the rank count is large enough, it becomes worth
@@ -780,69 +851,53 @@ void checkForValidRankCountRequests(const int  numRanksRequested,
 /*! \brief Return the number of PME-only ranks used by the simulation
  *
  * If the user did not choose a number, then decide for them. */
-static int getNumPmeOnlyRanksToUse(const gmx::MDLogger& mdlog,
-                                   const DomdecOptions& options,
-                                   const gmx_mtop_t&    mtop,
-                                   const t_inputrec&    ir,
-                                   const matrix         box,
-                                   const int            numRanksRequested)
+static int getNumPmeOnlyRanksToUse(const gmx::MDLogger&                  mdlog,
+                                   const gmx::DomdecOptions&             options,
+                                   const gmx_mtop_t&                     mtop,
+                                   const t_inputrec&                     ir,
+                                   const gmx::SeparatePmeRanksPermitted& separatePmeRanksPermitted,
+                                   const matrix                          box,
+                                   const int                             numRanksRequested)
 {
-    int         numPmeOnlyRanks = 0;
-    const char* extraMessage    = "";
+    int numPmeOnlyRanks = 0;
 
-    if (options.numCells[XX] > 0)
+    if (!(EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype)))
     {
-        if (options.numPmeRanks >= 0)
-        {
-            // TODO mdrun should give a fatal error with a non-PME input file and -npme > 0
-            numPmeOnlyRanks = options.numPmeRanks;
-        }
-        else
-        {
-            // When the DD grid is set explicitly and -npme is set to auto,
-            // don't use PME ranks. We check later if the DD grid is
-            // compatible with the total number of ranks.
-            numPmeOnlyRanks = 0;
-        }
+        // System does not use PME for Electrostatics or LJ
+        numPmeOnlyRanks = 0;
+        GMX_LOG(mdlog.info)
+                .appendTextFormatted("The system does not use PME for electrostatics or LJ");
     }
     else
     {
-        if (!EEL_PME(ir.coulombtype))
+        std::string extraMessage;
+
+        if (options.numPmeRanks >= 0)
         {
-            // TODO mdrun should give a fatal error with a non-PME input file and -npme > 0
-            numPmeOnlyRanks = 0;
+            numPmeOnlyRanks = options.numPmeRanks;
+            extraMessage += ", as requested with -npme option";
         }
         else
         {
-            if (options.numPmeRanks >= 0)
+            /* Disable PME-only ranks if some parts of the code requested so and it's up to GROMACS to decide */
+            if (!separatePmeRanksPermitted.permitSeparatePmeRanks())
             {
-                numPmeOnlyRanks = options.numPmeRanks;
+                numPmeOnlyRanks = 0;
+                extraMessage += " because: " + separatePmeRanksPermitted.reasonsWhyDisabled();
             }
             else
             {
-                // Controls the automated choice of when to use separate PME-only ranks.
-                const int minRankCountToDefaultToSeparatePmeRanks = 19;
-
-                if (numRanksRequested < minRankCountToDefaultToSeparatePmeRanks)
-                {
-                    numPmeOnlyRanks = 0;
-                    extraMessage =
-                            ", as there are too few total\n"
-                            " ranks for efficient splitting";
-                }
-                else
-                {
-                    numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, numRanksRequested);
-                    extraMessage    = ", as guessed by mdrun";
-                }
+                numPmeOnlyRanks = guess_npme(mdlog, mtop, ir, box, numRanksRequested);
+                extraMessage += ", as guessed by mdrun";
             }
         }
-    }
-    GMX_RELEASE_ASSERT(numPmeOnlyRanks <= numRanksRequested,
-                       "Cannot have more PME ranks than total ranks");
-    if (EEL_PME(ir.coulombtype))
-    {
-        GMX_LOG(mdlog.info).appendTextFormatted("Using %d separate PME ranks%s", numPmeOnlyRanks, extraMessage);
+
+        GMX_RELEASE_ASSERT(numPmeOnlyRanks <= numRanksRequested,
+                           "Cannot have more PME ranks than total ranks");
+
+        GMX_LOG(mdlog.info)
+                .appendTextFormatted(
+                        "Using %d separate PME ranks%s", numPmeOnlyRanks, extraMessage.c_str());
     }
 
     return numPmeOnlyRanks;
@@ -884,21 +939,23 @@ static int set_dd_dim(const gmx::IVec& numDDCells, const DDSettings& ddSettings,
     return ndim;
 }
 
-DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
-                           DDRole                         ddRole,
-                           MPI_Comm                       communicator,
-                           const int                      numRanksRequested,
-                           const DomdecOptions&           options,
-                           const DDSettings&              ddSettings,
-                           const DDSystemInfo&            systemInfo,
-                           const real                     cellSizeLimit,
-                           const gmx_mtop_t&              mtop,
-                           const t_inputrec&              ir,
-                           const matrix                   box,
-                           gmx::ArrayRef<const gmx::RVec> xGlobal,
-                           gmx_ddbox_t*                   ddbox)
+DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
+                           DDRole                                ddRole,
+                           MPI_Comm                              communicator,
+                           const int                             numRanksRequested,
+                           const DomdecOptions&                  options,
+                           const DDSettings&                     ddSettings,
+                           const DDSystemInfo&                   systemInfo,
+                           const real                            cellSizeLimit,
+                           const gmx_mtop_t&                     mtop,
+                           const t_inputrec&                     ir,
+                           const gmx::SeparatePmeRanksPermitted& separatePmeRanksPermitted,
+                           const matrix                          box,
+                           gmx::ArrayRef<const gmx::RVec>        xGlobal,
+                           gmx_ddbox_t*                          ddbox)
 {
-    int numPmeOnlyRanks = getNumPmeOnlyRanksToUse(mdlog, options, mtop, ir, box, numRanksRequested);
+    int numPmeOnlyRanks = getNumPmeOnlyRanksToUse(
+            mdlog, options, mtop, ir, separatePmeRanksPermitted, box, numRanksRequested);
 
     gmx::IVec numDomains;
     if (options.numCells[XX] > 0)

@@ -1130,61 +1130,6 @@ int Mdrunner::mdrunner()
                   "these are not compatible with mdrun -rerun");
     }
 
-    /* Object for collecting reasons for not using PME-only ranks */
-    SeparatePmeRanksPermitted separatePmeRanksPermitted;
-
-    /* Permit MDModules to notify whether they want to use PME-only ranks */
-    setupNotifier.notify(&separatePmeRanksPermitted);
-
-    /* If simulation is not using PME then disable PME-only ranks */
-    if (!(EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype)))
-    {
-        separatePmeRanksPermitted.disablePmeRanks(
-                "PME-only ranks are requested, but the system does not use PME "
-                "for electrostatics or LJ");
-    }
-
-    /* With NB GPUs we don't automatically use PME-only CPU ranks. PME ranks can
-     * improve performance with many threads per GPU, since our OpenMP
-     * scaling is bad, but it's difficult to automate the setup.
-     */
-    if (useGpuForNonbonded && domdecOptions.numPmeRanks < 0)
-    {
-        separatePmeRanksPermitted.disablePmeRanks(
-                "PME-only CPU ranks are not automatically used when "
-                "non-bonded interactions are computed on GPUs");
-    }
-
-    /* If GPU is used for PME then only 1 PME rank is permitted */
-    if (useGpuForPme && (domdecOptions.numPmeRanks < 0 || domdecOptions.numPmeRanks > 1))
-    {
-        separatePmeRanksPermitted.disablePmeRanks(
-                "PME GPU decomposition is not supported. Only one separate PME-only GPU rank "
-                "can be used.");
-    }
-
-    /* Disable PME-only ranks if some parts of the code requested so and it's up to GROMACS to decide */
-    if (!separatePmeRanksPermitted.permitSeparatePmeRanks() && domdecOptions.numPmeRanks < 0)
-    {
-        domdecOptions.numPmeRanks = 0;
-        GMX_LOG(mdlog.info)
-                .asParagraph()
-                .appendText("Simulation will not use PME-only ranks because: "
-                            + separatePmeRanksPermitted.reasonsWhyDisabled());
-    }
-
-    /* If some parts of the code could not use PME-only ranks and
-     * user explicitly used mdrun -npme option then throw an error */
-    if (!separatePmeRanksPermitted.permitSeparatePmeRanks() && domdecOptions.numPmeRanks > 0)
-    {
-        gmx_fatal_collective(FARGS,
-                             cr->mpiDefaultCommunicator,
-                             MASTER(cr),
-                             "Requested -npme %d option is not viable because: %s",
-                             domdecOptions.numPmeRanks,
-                             separatePmeRanksPermitted.reasonsWhyDisabled().c_str());
-    }
-
     /* NMR restraints must be initialized before load_checkpoint,
      * since with time averaging the history is added to t_state.
      * For proper consistency check we therefore need to extend
@@ -1362,11 +1307,14 @@ int Mdrunner::mdrunner()
                 mdrunOptions,
                 mtop,
                 *inputrec,
+                mdModules_->notifiers(),
                 box,
                 updateGroups.updateGroupingPerMoleculeType(),
                 updateGroups.useUpdateGroups(),
                 updateGroups.maxUpdateGroupRadius(),
-                positionsFromStatePointer(globalState.get()));
+                positionsFromStatePointer(globalState.get()),
+                useGpuForNonbonded,
+                useGpuForPme);
     }
     else
     {
