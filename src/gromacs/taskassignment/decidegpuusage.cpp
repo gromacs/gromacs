@@ -57,7 +57,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -476,7 +476,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
 
     std::string errorMessage;
 
-    if (!buildSupportsGpuBondeds(&errorMessage))
+    if (!buildSupportsListedForcesGpu(&errorMessage))
     {
         if (bondedTarget == TaskTarget::Gpu)
         {
@@ -486,7 +486,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
         return false;
     }
 
-    if (!inputSupportsGpuBondeds(inputrec, mtop, &errorMessage))
+    if (!inputSupportsListedForcesGpu(inputrec, mtop, &errorMessage))
     {
         if (bondedTarget == TaskTarget::Gpu)
         {

@@ -146,7 +146,7 @@ namespace gmx
 {
 class DeviceStreamManager;
 class ForceWithShiftForces;
-class GpuBonded;
+class ListedForcesGpu;
 template<typename>
 class ListOfLists;
 class MDLogger;
@@ -415,7 +415,8 @@ public:
     void changePairlistRadii(real rlistOuter, real rlistInner) const;
 
     //! Set up internal flags that indicate what type of short-range work there is.
-    void setupGpuShortRangeWork(const gmx::GpuBonded* gpuBonded, gmx::InteractionLocality iLocality) const;
+    void setupGpuShortRangeWork(const gmx::ListedForcesGpu* listedForcesGpu,
+                                gmx::InteractionLocality    iLocality) const;
 
     // TODO: Make all data members private
     //! All data related to the pair lists

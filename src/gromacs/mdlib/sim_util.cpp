@@ -63,7 +63,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/disre.h"
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -925,7 +925,8 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
             domainWork.haveCpuBondedWork = true;
         }
     }
-    domainWork.haveGpuBondedWork = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
+    domainWork.haveGpuBondedWork =
+            ((fr.listedForcesGpu != nullptr) && fr.listedForcesGpu->haveInteractions());
     // Note that haveFreeEnergyWork is constant over the whole run
     domainWork.haveFreeEnergyWork =
             (fr.efep != FreeEnergyPerturbationType::No && mdatoms.nPerturbed != 0);
@@ -995,7 +996,7 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
  *
  */
 static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
-                                    gmx::GpuBonded*                   gpuBonded,
+                                    gmx::ListedForcesGpu*             listedForcesGpu,
                                     gmx_pme_t*                        pmedata,
                                     gmx_enerdata_t*                   enerd,
                                     const gmx::MdrunScheduleWorkload& runScheduleWork,
@@ -1031,9 +1032,9 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
         // in principle this should be included in the DD balancing region,
         // but generally it is infrequent so we'll omit it for the sake of
         // simpler code
-        gpuBonded->waitAccumulateEnergyTerms(enerd);
+        listedForcesGpu->waitAccumulateEnergyTerms(enerd);
 
-        gpuBonded->clearEnergies();
+        listedForcesGpu->clearEnergies();
     }
 }
 
@@ -1414,14 +1415,14 @@ void do_force(FILE*                               fplog,
         /* initialize the GPU nbnxm atom data and bonded data structures */
         if (simulationWork.useGpuNonbonded)
         {
-            // Note: cycle counting only nononbondeds, gpuBonded counts internally
+            // Note: cycle counting only nononbondeds, GPU listed forces counts internally
             wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
             wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
             Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat.get());
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
 
-            if (fr->gpuBonded)
+            if (fr->listedForcesGpu)
             {
                 /* Now we put all atoms on the grid, we can assign bonded
                  * interactions to the GPU, where the grid order is
@@ -1431,11 +1432,12 @@ void do_force(FILE*                               fplog,
                 // TODO the xq, f, and fshift buffers are now shared
                 // resources, so they should be maintained by a
                 // higher-level object than the nb module.
-                fr->gpuBonded->updateInteractionListsAndDeviceBuffers(nbv->getGridIndices(),
-                                                                      top->idef,
-                                                                      Nbnxm::gpu_get_xq(nbv->gpu_nbv),
-                                                                      Nbnxm::gpu_get_f(nbv->gpu_nbv),
-                                                                      Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
+                fr->listedForcesGpu->updateInteractionListsAndDeviceBuffers(
+                        nbv->getGridIndices(),
+                        top->idef,
+                        Nbnxm::gpu_get_xq(nbv->gpu_nbv),
+                        Nbnxm::gpu_get_f(nbv->gpu_nbv),
+                        Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
             }
         }
 
@@ -1449,7 +1451,7 @@ void do_force(FILE*                               fplog,
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
         nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 
-        nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::Local);
+        nbv->setupGpuShortRangeWork(fr->listedForcesGpu, InteractionLocality::Local);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
@@ -1503,7 +1505,7 @@ void do_force(FILE*                               fplog,
         // we can only launch the kernel after non-local coordinates have been received.
         if (domainWork.haveGpuBondedWork && !havePPDomainDecomposition(cr))
         {
-            fr->gpuBonded->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
+            fr->listedForcesGpu->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
         }
 
         /* launch local nonbonded work on GPU */
@@ -1538,7 +1540,7 @@ void do_force(FILE*                               fplog,
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
             nbv->constructPairlist(InteractionLocality::NonLocal, top->excls, step, nrnb);
 
-            nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::NonLocal);
+            nbv->setupGpuShortRangeWork(fr->listedForcesGpu, InteractionLocality::NonLocal);
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
             wallcycle_stop(wcycle, WallCycleCounter::NS);
             // TODO refactor this GPU halo exchange re-initialisation
@@ -1606,7 +1608,7 @@ void do_force(FILE*                               fplog,
 
             if (domainWork.haveGpuBondedWork)
             {
-                fr->gpuBonded->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
+                fr->listedForcesGpu->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
             }
 
             /* launch non-local nonbonded tasks on GPU */
@@ -1633,7 +1635,7 @@ void do_force(FILE*                               fplog,
 
         if (domainWork.haveGpuBondedWork && stepWork.computeEnergy)
         {
-            fr->gpuBonded->launchEnergyTransfer();
+            fr->listedForcesGpu->launchEnergyTransfer();
         }
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
     }
@@ -2279,7 +2281,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd, *runScheduleWork, step, wcycle);
+    launchGpuEndOfStepTasks(nbv, fr->listedForcesGpu, fr->pmedata, enerd, *runScheduleWork, step, wcycle);
 
     if (DOMAINDECOMP(cr))
     {

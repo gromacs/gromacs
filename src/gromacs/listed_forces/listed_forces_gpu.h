@@ -46,8 +46,8 @@
  * \inlibraryapi
  * \ingroup module_listed_forces
  */
-#ifndef GMX_LISTED_FORCES_GPUBONDED_H
-#define GMX_LISTED_FORCES_GPUBONDED_H
+#ifndef GMX_LISTED_FORCES_LISTED_FORCES_GPU_H
+#define GMX_LISTED_FORCES_LISTED_FORCES_GPU_H
 
 #include <memory>
 
@@ -95,7 +95,7 @@ constexpr std::array<int, numFTypesOnGpu> fTypesOnGpu = { F_BONDS,  F_ANGLES, F_
  *
  * \throws std::bad_alloc when out of memory.
  */
-bool buildSupportsGpuBondeds(std::string* error);
+bool buildSupportsListedForcesGpu(std::string* error);
 
 /*! \brief Checks whether the input system allows to compute bonded interactions on a GPU.
  *
@@ -105,9 +105,9 @@ bool buildSupportsGpuBondeds(std::string* error);
  *
  * \returns true if PME can run on GPU with this input, false otherwise.
  */
-bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error);
+bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error);
 
-class GpuBonded
+class ListedForcesGpu
 {
 public:
     /*! \brief Construct the manager with constant data and the stream to use.
@@ -120,13 +120,13 @@ public:
      * \param[in] wcycle                     The wallclock counter.
      *
      */
-    GpuBonded(const gmx_ffparams_t& ffparams,
-              float                 electrostaticsScaleFactor,
-              const DeviceContext&  deviceContext,
-              const DeviceStream&   deviceStream,
-              gmx_wallcycle*        wcycle);
+    ListedForcesGpu(const gmx_ffparams_t& ffparams,
+                    float                 electrostaticsScaleFactor,
+                    const DeviceContext&  deviceContext,
+                    const DeviceStream&   deviceStream,
+                    gmx_wallcycle*        wcycle);
     //! Destructor
-    ~GpuBonded();
+    ~ListedForcesGpu();
 
     /*! \brief Update lists of interactions from idef suitable for the GPU,
      * using the data structures prepared for PP work.
@@ -204,4 +204,4 @@ private:
 
 } // namespace gmx
 
-#endif
+#endif // GMX_LISTED_FORCES_LISTED_FORCES_GPU_H

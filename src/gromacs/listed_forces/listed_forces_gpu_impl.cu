@@ -46,7 +46,7 @@
 
 #include "gmxpre.h"
 
-#include "gpubonded_impl.h"
+#include "listed_forces_gpu_impl.h"
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
@@ -65,13 +65,13 @@ namespace gmx
 // Number of CUDA threads in a block
 constexpr static int c_threadsPerBlock = 256;
 
-// ---- GpuBonded::Impl
+// ---- ListedForcesGpu::Impl
 
-GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
-                      const float           electrostaticsScaleFactor,
-                      const DeviceContext&  deviceContext,
-                      const DeviceStream&   deviceStream,
-                      gmx_wallcycle*        wcycle) :
+ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
+                            const float           electrostaticsScaleFactor,
+                            const DeviceContext&  deviceContext,
+                            const DeviceStream&   deviceStream,
+                            gmx_wallcycle*        wcycle) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
     GMX_RELEASE_ASSERT(deviceStream.isValid(),
@@ -124,7 +124,7 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
             c_numShiftVectors * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
 }
 
-GpuBonded::Impl::~Impl()
+ListedForcesGpu::Impl::~Impl()
 {
     for (int fType : fTypesOnGpu)
     {
@@ -188,7 +188,7 @@ static inline int roundUpToFactor(const int input, const int factor)
 // TODO Consider whether this function should be a factory method that
 // makes an object that is the only one capable of the device
 // operations needed for the lifetime of an interaction list. This
-// would be harder to misuse than GpuBonded, and exchange the problem
+// would be harder to misuse than ListedForcesGpu, and exchange the problem
 // of naming this method for the problem of what to name the
 // BondedDeviceInteractionListHandler type.
 
@@ -200,11 +200,11 @@ static inline int roundUpToFactor(const int input, const int factor)
  *
  * \todo Use DeviceBuffer for the d_xqPtr.
  */
-void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
-                                                             const InteractionDefinitions& idef,
-                                                             void*                         d_xqPtr,
-                                                             DeviceBuffer<RVec>            d_fPtr,
-                                                             DeviceBuffer<RVec> d_fShiftPtr)
+void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
+                                                                   const InteractionDefinitions& idef,
+                                                                   void*              d_xqPtr,
+                                                                   DeviceBuffer<RVec> d_fPtr,
+                                                                   DeviceBuffer<RVec> d_fShiftPtr)
 {
     // TODO wallcycle sub start
     haveInteractions_ = false;
@@ -293,19 +293,19 @@ void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>
     // TODO wallcycle sub stop
 }
 
-void GpuBonded::Impl::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)
+void ListedForcesGpu::Impl::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)
 {
     PbcAiuc pbcAiuc;
     setPbcAiuc(canMoleculeSpanPbc ? numPbcDimensions(pbcType) : 0, box, &pbcAiuc);
     kernelParams_.pbcAiuc = pbcAiuc;
 }
 
-bool GpuBonded::Impl::haveInteractions() const
+bool ListedForcesGpu::Impl::haveInteractions() const
 {
     return haveInteractions_;
 }
 
-void GpuBonded::Impl::launchEnergyTransfer()
+void ListedForcesGpu::Impl::launchEnergyTransfer()
 {
     GMX_ASSERT(haveInteractions_,
                "No GPU bonded interactions, so no energies will be computed, so transfer should "
@@ -317,7 +317,7 @@ void GpuBonded::Impl::launchEnergyTransfer()
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
 }
 
-void GpuBonded::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
+void ListedForcesGpu::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
 {
     GMX_ASSERT(haveInteractions_,
                "No GPU bonded interactions, so no energies will be computed or transferred, so "
@@ -343,7 +343,7 @@ void GpuBonded::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
     grppener->energyGroupPairTerms[NonBondedEnergyTerms::Coulomb14][0] += vTot_[F_COUL14];
 }
 
-void GpuBonded::Impl::clearEnergies()
+void ListedForcesGpu::Impl::clearEnergies()
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
@@ -352,58 +352,58 @@ void GpuBonded::Impl::clearEnergies()
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-// ---- GpuBonded
+// ---- ListedForcesGpu
 
-GpuBonded::GpuBonded(const gmx_ffparams_t& ffparams,
-                     const float           electrostaticsScaleFactor,
-                     const DeviceContext&  deviceContext,
-                     const DeviceStream&   deviceStream,
-                     gmx_wallcycle*        wcycle) :
+ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t& ffparams,
+                                 const float           electrostaticsScaleFactor,
+                                 const DeviceContext&  deviceContext,
+                                 const DeviceStream&   deviceStream,
+                                 gmx_wallcycle*        wcycle) :
     impl_(new Impl(ffparams, electrostaticsScaleFactor, deviceContext, deviceStream, wcycle))
 {
 }
 
-GpuBonded::~GpuBonded() = default;
+ListedForcesGpu::~ListedForcesGpu() = default;
 
-void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
-                                                       const InteractionDefinitions& idef,
-                                                       void*                         d_xq,
-                                                       DeviceBuffer<RVec>            d_f,
-                                                       DeviceBuffer<RVec>            d_fShift)
+void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
+                                                             const InteractionDefinitions& idef,
+                                                             void*                         d_xq,
+                                                             DeviceBuffer<RVec>            d_f,
+                                                             DeviceBuffer<RVec>            d_fShift)
 {
     impl_->updateInteractionListsAndDeviceBuffers(nbnxnAtomOrder, idef, d_xq, d_f, d_fShift);
 }
 
-void GpuBonded::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)
+void ListedForcesGpu::setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc)
 {
     impl_->setPbc(pbcType, box, canMoleculeSpanPbc);
 }
 
-bool GpuBonded::haveInteractions() const
+bool ListedForcesGpu::haveInteractions() const
 {
     return impl_->haveInteractions();
 }
 
-void GpuBonded::setPbcAndlaunchKernel(PbcType                  pbcType,
-                                      const matrix             box,
-                                      bool                     canMoleculeSpanPbc,
-                                      const gmx::StepWorkload& stepWork)
+void ListedForcesGpu::setPbcAndlaunchKernel(PbcType                  pbcType,
+                                            const matrix             box,
+                                            bool                     canMoleculeSpanPbc,
+                                            const gmx::StepWorkload& stepWork)
 {
     setPbc(pbcType, box, canMoleculeSpanPbc);
     launchKernel(stepWork);
 }
 
-void GpuBonded::launchEnergyTransfer()
+void ListedForcesGpu::launchEnergyTransfer()
 {
     impl_->launchEnergyTransfer();
 }
 
-void GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
+void ListedForcesGpu::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
 {
     impl_->waitAccumulateEnergyTerms(enerd);
 }
 
-void GpuBonded::clearEnergies()
+void ListedForcesGpu::clearEnergies()
 {
     impl_->clearEnergies();
 }

@@ -42,7 +42,7 @@
 #ifndef GMX_NBNXM_GPU_COMMON_UTILS_H
 #define GMX_NBNXM_GPU_COMMON_UTILS_H
 
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/utility/exceptions.h"

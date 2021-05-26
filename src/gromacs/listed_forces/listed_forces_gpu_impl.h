@@ -45,13 +45,13 @@
  *
  * \ingroup module_listed_forces
  */
-#ifndef GMX_LISTED_FORCES_GPUBONDED_IMPL_H
-#define GMX_LISTED_FORCES_GPUBONDED_IMPL_H
+#ifndef GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
+#define GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
 struct gmx_ffparams_t;
@@ -122,7 +122,7 @@ struct BondedCudaKernelParameters
 };
 
 /*! \internal \brief Implements GPU bondeds */
-class GpuBonded::Impl
+class ListedForcesGpu::Impl
 {
 public:
     //! Constructor
@@ -211,4 +211,4 @@ private:
 
 } // namespace gmx
 
-#endif
+#endif // GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H

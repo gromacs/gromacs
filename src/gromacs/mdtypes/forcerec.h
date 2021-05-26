@@ -65,7 +65,7 @@ struct interaction_const_t;
 namespace gmx
 {
 class DeviceStreamManager;
-class GpuBonded;
+class ListedForcesGpu;
 class GpuForceReduction;
 class ForceProviders;
 class StatePropagatorDataGpu;
@@ -297,7 +297,7 @@ struct t_forcerec
     std::vector<ListedForces> listedForces;
 
     /* TODO: Replace the pointer by an object once we got rid of C */
-    gmx::GpuBonded* gpuBonded = nullptr;
+    gmx::ListedForcesGpu* listedForcesGpu = nullptr;
 
     /* Ewald correction thread local virial and energy data */
     int                              nthread_ewc = 0;

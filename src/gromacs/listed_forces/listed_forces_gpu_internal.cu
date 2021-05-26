@@ -55,7 +55,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -64,7 +64,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "gpubonded_impl.h"
+#include "listed_forces_gpu_impl.h"
 
 #if defined(_MSVC)
 #    include <limits>
@@ -909,7 +909,7 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
 
 
 template<bool calcVir, bool calcEner>
-void GpuBonded::Impl::launchKernel()
+void ListedForcesGpu::Impl::launchKernel()
 {
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
@@ -939,7 +939,7 @@ void GpuBonded::Impl::launchKernel()
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-void GpuBonded::launchKernel(const gmx::StepWorkload& stepWork)
+void ListedForcesGpu::launchKernel(const gmx::StepWorkload& stepWork)
 {
     if (stepWork.computeEnergy)
     {

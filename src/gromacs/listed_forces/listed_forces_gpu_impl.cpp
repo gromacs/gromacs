@@ -48,7 +48,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/message_string_collector.h"
@@ -93,7 +93,7 @@ static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t& mtop)
     return false;
 }
 
-bool buildSupportsGpuBondeds(std::string* error)
+bool buildSupportsListedForcesGpu(std::string* error)
 {
     MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
@@ -110,7 +110,7 @@ bool buildSupportsGpuBondeds(std::string* error)
     return errorReasons.isEmpty();
 }
 
-bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error)
+bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error)
 {
     MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
@@ -135,52 +135,52 @@ bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::
 
 #if !GMX_GPU_CUDA
 
-class GpuBonded::Impl
+class ListedForcesGpu::Impl
 {
 };
 
-GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */,
-                     const float /* electrostaticsScaleFactor */,
-                     const DeviceContext& /* deviceContext */,
-                     const DeviceStream& /* deviceStream */,
-                     gmx_wallcycle* /* wcycle */) :
+ListedForcesGpu::ListedForcesGpu(const gmx_ffparams_t& /* ffparams */,
+                                 const float /* electrostaticsScaleFactor */,
+                                 const DeviceContext& /* deviceContext */,
+                                 const DeviceStream& /* deviceStream */,
+                                 gmx_wallcycle* /* wcycle */) :
     impl_(nullptr)
 {
 }
 
-GpuBonded::~GpuBonded() = default;
+ListedForcesGpu::~ListedForcesGpu() = default;
 
-void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
-                                                       const InteractionDefinitions& /* idef */,
-                                                       void* /* xqDevice */,
-                                                       DeviceBuffer<RVec> /* forceDevice */,
-                                                       DeviceBuffer<RVec> /* fshiftDevice */)
+void ListedForcesGpu::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
+                                                             const InteractionDefinitions& /* idef */,
+                                                             void* /* xqDevice */,
+                                                             DeviceBuffer<RVec> /* forceDevice */,
+                                                             DeviceBuffer<RVec> /* fshiftDevice */)
 {
 }
 
-void GpuBonded::setPbc(PbcType /* pbcType */, const matrix /* box */, bool /* canMoleculeSpanPbc */)
+void ListedForcesGpu::setPbc(PbcType /* pbcType */, const matrix /* box */, bool /* canMoleculeSpanPbc */)
 {
 }
 
-bool GpuBonded::haveInteractions() const
+bool ListedForcesGpu::haveInteractions() const
 {
     return !impl_;
 }
 
-void GpuBonded::launchKernel(const gmx::StepWorkload& /* stepWork */) {}
+void ListedForcesGpu::launchKernel(const gmx::StepWorkload& /* stepWork */) {}
 
-void GpuBonded::setPbcAndlaunchKernel(PbcType /* pbcType */,
-                                      const matrix /* box */,
-                                      bool /* canMoleculeSpanPbc */,
-                                      const gmx::StepWorkload& /* stepWork */)
+void ListedForcesGpu::setPbcAndlaunchKernel(PbcType /* pbcType */,
+                                            const matrix /* box */,
+                                            bool /* canMoleculeSpanPbc */,
+                                            const gmx::StepWorkload& /* stepWork */)
 {
 }
 
-void GpuBonded::launchEnergyTransfer() {}
+void ListedForcesGpu::launchEnergyTransfer() {}
 
-void GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t* /* enerd */) {}
+void ListedForcesGpu::waitAccumulateEnergyTerms(gmx_enerdata_t* /* enerd */) {}
 
-void GpuBonded::clearEnergies() {}
+void ListedForcesGpu::clearEnergies() {}
 
 #endif // !GMX_GPU_CUDA
 

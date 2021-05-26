@@ -229,12 +229,12 @@ void nonbonded_verlet_t::changePairlistRadii(real rlistOuter, real rlistInner) c
     pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
-void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::GpuBonded*          gpuBonded,
+void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::ListedForcesGpu*    listedForcesGpu,
                                                 const gmx::InteractionLocality iLocality) const
 {
     if (useGpu() && !emulateGpu())
     {
-        Nbnxm::setupGpuShortRangeWork(gpu_nbv, gpuBonded, iLocality);
+        Nbnxm::setupGpuShortRangeWork(gpu_nbv, listedForcesGpu, iLocality);
     }
 }
 

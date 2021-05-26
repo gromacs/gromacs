@@ -60,7 +60,7 @@ enum class GpuTaskCompletion;
 
 namespace gmx
 {
-class GpuBonded;
+class ListedForcesGpu;
 class StepWorkload;
 } // namespace gmx
 
@@ -282,14 +282,14 @@ void nbnxnInsertNonlocalGpuDependency(NbnxmGpu gmx_unused*                nb,
  * This function is expected to be called every time the work-distribution
  * can change (i.e. at search/domain decomposition steps).
  *
- * \param[inout]  nb         Pointer to the nonbonded GPU data structure
- * \param[in]     gpuBonded  Pointer to the GPU bonded data structure
- * \param[in]     iLocality  Interaction locality identifier
+ * \param[inout]  nb               Pointer to the nonbonded GPU data structure
+ * \param[in]     listedForcesGpu  Pointer to the GPU bonded data structure
+ * \param[in]     iLocality        Interaction locality identifier
  */
 GPU_FUNC_QUALIFIER
-void setupGpuShortRangeWork(NbnxmGpu gmx_unused* nb,
-                            const gmx::GpuBonded gmx_unused*    gpuBonded,
-                            gmx::InteractionLocality gmx_unused iLocality) GPU_FUNC_TERM;
+void setupGpuShortRangeWork(NbnxmGpu gmx_unused*       nb,
+                            const gmx::ListedForcesGpu gmx_unused* listedForcesGpu,
+                            gmx::InteractionLocality gmx_unused    iLocality) GPU_FUNC_TERM;
 
 /*! \brief Returns true if there is GPU short-range work for the given interaction locality.
  *

@@ -445,7 +445,7 @@ real calc_one_bond(int                           thread,
     const int nat1   = interaction_function[ftype].nratoms + 1;
     const int nbonds = iatoms.ssize() / nat1;
 
-    GMX_ASSERT(fr->gpuBonded != nullptr || workDivision.end(ftype) == iatoms.ssize(),
+    GMX_ASSERT(fr->listedForcesGpu != nullptr || workDivision.end(ftype) == iatoms.ssize(),
                "The thread division should match the topology");
 
     const int nb0 = workDivision.bound(ftype, thread);

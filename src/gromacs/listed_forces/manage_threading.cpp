@@ -57,7 +57,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"

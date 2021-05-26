@@ -73,7 +73,7 @@
 
 namespace gmx
 {
-class GpuBonded;
+class ListedForcesGpu;
 }
 
 namespace Nbnxm

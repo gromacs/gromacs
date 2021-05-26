@@ -746,7 +746,9 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
             || (nb->nbparam->elecType == ElecType::EwaldAnaTwin));
 }
 
-void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)
+void setupGpuShortRangeWork(NbnxmGpu*                      nb,
+                            const gmx::ListedForcesGpu*    listedForcesGpu,
+                            const gmx::InteractionLocality iLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -754,7 +756,7 @@ void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const
     // interaction locality contains entries or if there is any
     // bonded work (as this is not split into local/nonlocal).
     nb->haveWork[iLocality] = ((nb->plist[iLocality]->nsci != 0)
-                               || (gpuBonded != nullptr && gpuBonded->haveInteractions()));
+                               || (listedForcesGpu != nullptr && listedForcesGpu->haveInteractions()));
 }
 
 bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::InteractionLocality interactionLocality)
