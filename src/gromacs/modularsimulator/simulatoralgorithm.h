@@ -493,6 +493,8 @@ private:
     TopologyHolder::Builder topologyHolderBuilder_;
     //! Builder for the CheckpointHelper
     CheckpointHelperBuilder checkpointHelperBuilder_;
+    //! Builder for the DomDecHelper
+    DomDecHelperBuilder domDecHelperBuilder_;
 
     /*! \brief List of clients for the CheckpointHelper
      *
@@ -636,6 +638,8 @@ void ModularSimulatorAlgorithmBuilder::registerWithInfrastructureAndSignallers(E
     topologyHolderBuilder_.registerClient(castOrNull<ITopologyHolderClient, Element>(element));
     // Register element to checkpoint client (if applicable)
     checkpointHelperBuilder_.registerClient(castOrNull<ICheckpointHelperClient, Element>(element));
+    // Register element to DomDecHelper builder (if applicable)
+    domDecHelperBuilder_.registerClient(castOrNull<IDomDecHelperClient, Element>(element));
 }
 
 template<typename ValueType>

@@ -56,30 +56,30 @@
 
 namespace gmx
 {
-DomDecHelper::DomDecHelper(bool                        isVerbose,
-                           int                         verbosePrintInterval,
-                           StatePropagatorData*        statePropagatorData,
-                           FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                           TopologyHolder*             topologyHolder,
-                           int                         nstglobalcomm,
-                           FILE*                       fplog,
-                           t_commrec*                  cr,
-                           const MDLogger&             mdlog,
-                           Constraints*                constr,
-                           const t_inputrec*           inputrec,
-                           MDAtoms*                    mdAtoms,
-                           t_nrnb*                     nrnb,
-                           gmx_wallcycle*              wcycle,
-                           t_forcerec*                 fr,
-                           VirtualSitesHandler*        vsite,
-                           ImdSession*                 imdSession,
-                           pull_t*                     pull_work) :
+DomDecHelper::DomDecHelper(bool                          isVerbose,
+                           int                           verbosePrintInterval,
+                           StatePropagatorData*          statePropagatorData,
+                           TopologyHolder*               topologyHolder,
+                           int                           nstglobalcomm,
+                           FILE*                         fplog,
+                           t_commrec*                    cr,
+                           const MDLogger&               mdlog,
+                           Constraints*                  constr,
+                           const t_inputrec*             inputrec,
+                           MDAtoms*                      mdAtoms,
+                           t_nrnb*                       nrnb,
+                           gmx_wallcycle*                wcycle,
+                           t_forcerec*                   fr,
+                           VirtualSitesHandler*          vsite,
+                           ImdSession*                   imdSession,
+                           pull_t*                       pull_work,
+                           std::vector<DomDecCallback>&& domdecCallbacks) :
     nextNSStep_(-1),
     isVerbose_(isVerbose),
     verbosePrintInterval_(verbosePrintInterval),
     nstglobalcomm_(nstglobalcomm),
+    domdecCallbacks_(std::move(domdecCallbacks)),
     statePropagatorData_(statePropagatorData),
-    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     topologyHolder_(topologyHolder),
     fplog_(fplog),
     cr_(cr),
@@ -177,17 +177,30 @@ void DomDecHelper::partitionSystem(bool                     verbose,
                         nrnb_,
                         wcycle,
                         verbose);
-    topologyHolder_->updateLocalTopology();
     statePropagatorData_->setLocalState(std::move(localState));
-    if (freeEnergyPerturbationData_)
+    for (const auto& callback : domdecCallbacks_)
     {
-        freeEnergyPerturbationData_->updateMDAtoms();
+        callback();
     }
 }
 
 std::optional<SignallerCallback> DomDecHelper::registerNSCallback()
 {
     return [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; };
+}
+
+void DomDecHelperBuilder::registerClient(IDomDecHelperClient* client)
+{
+    if (!client)
+    {
+        return;
+    }
+    if (state_ == ModularSimulatorBuilderState::NotAcceptingClientRegistrations)
+    {
+        GMX_THROW(SimulationAlgorithmSetupError(
+                "Tried to register to DomDecHelper after it was built."));
+    }
+    clients_.emplace_back(client);
 }
 
 } // namespace gmx

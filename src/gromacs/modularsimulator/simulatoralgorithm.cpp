@@ -518,6 +518,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                              legacySimulatorData_->mdAtoms,
                                                              legacySimulatorData_->constr,
                                                              legacySimulatorData_->vsite);
+    registerWithInfrastructureAndSignallers(algorithm.topologyHolder_.get());
 
     // Build PME load balance helper
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions,
@@ -534,30 +535,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                        legacySimulatorData_->wcycle,
                                                        legacySimulatorData_->fr);
         registerWithInfrastructureAndSignallers(algorithm.pmeLoadBalanceHelper_.get());
-    }
-    // Build domdec helper
-    if (DOMAINDECOMP(legacySimulatorData_->cr))
-    {
-        algorithm.domDecHelper_ = std::make_unique<DomDecHelper>(
-                legacySimulatorData_->mdrunOptions.verbose,
-                legacySimulatorData_->mdrunOptions.verboseStepPrintInterval,
-                algorithm.statePropagatorData_.get(),
-                algorithm.freeEnergyPerturbationData_.get(),
-                algorithm.topologyHolder_.get(),
-                globalCommunicationHelper_.nstglobalcomm(),
-                legacySimulatorData_->fplog,
-                legacySimulatorData_->cr,
-                legacySimulatorData_->mdlog,
-                legacySimulatorData_->constr,
-                legacySimulatorData_->inputrec,
-                legacySimulatorData_->mdAtoms,
-                legacySimulatorData_->nrnb,
-                legacySimulatorData_->wcycle,
-                legacySimulatorData_->fr,
-                legacySimulatorData_->vsite,
-                legacySimulatorData_->imdSession,
-                legacySimulatorData_->pull_work);
-        registerWithInfrastructureAndSignallers(algorithm.domDecHelper_.get());
     }
 
     // Build trajectory element
@@ -586,6 +563,29 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         registerWithInfrastructureAndSignallers(freeEnergyPerturbationElement.get());
     }
 
+    // Build domdec helper (free energy element is a client, so keep this after it is built)
+    if (DOMAINDECOMP(legacySimulatorData_->cr))
+    {
+        algorithm.domDecHelper_ =
+                domDecHelperBuilder_.build(legacySimulatorData_->mdrunOptions.verbose,
+                                           legacySimulatorData_->mdrunOptions.verboseStepPrintInterval,
+                                           algorithm.statePropagatorData_.get(),
+                                           algorithm.topologyHolder_.get(),
+                                           globalCommunicationHelper_.nstglobalcomm(),
+                                           legacySimulatorData_->fplog,
+                                           legacySimulatorData_->cr,
+                                           legacySimulatorData_->mdlog,
+                                           legacySimulatorData_->constr,
+                                           legacySimulatorData_->inputrec,
+                                           legacySimulatorData_->mdAtoms,
+                                           legacySimulatorData_->nrnb,
+                                           legacySimulatorData_->wcycle,
+                                           legacySimulatorData_->fr,
+                                           legacySimulatorData_->vsite,
+                                           legacySimulatorData_->imdSession,
+                                           legacySimulatorData_->pull_work);
+        registerWithInfrastructureAndSignallers(algorithm.domDecHelper_.get());
+    }
     // Build checkpoint helper (do this last so everyone else can be a checkpoint client!)
     {
         checkpointHelperBuilder_.setCheckpointHandler(std::make_unique<CheckpointHandler>(

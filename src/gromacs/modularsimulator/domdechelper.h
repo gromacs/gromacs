@@ -85,24 +85,24 @@ class DomDecHelper final : public INeighborSearchSignallerClient
 {
 public:
     //! Constructor
-    DomDecHelper(bool                        isVerbose,
-                 int                         verbosePrintInterval,
-                 StatePropagatorData*        statePropagatorData,
-                 FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                 TopologyHolder*             topologyHolder,
-                 int                         nstglobalcomm,
-                 FILE*                       fplog,
-                 t_commrec*                  cr,
-                 const MDLogger&             mdlog,
-                 Constraints*                constr,
-                 const t_inputrec*           inputrec,
-                 MDAtoms*                    mdAtoms,
-                 t_nrnb*                     nrnb,
-                 gmx_wallcycle*              wcycle,
-                 t_forcerec*                 fr,
-                 VirtualSitesHandler*        vsite,
-                 ImdSession*                 imdSession,
-                 pull_t*                     pull_work);
+    DomDecHelper(bool                          isVerbose,
+                 int                           verbosePrintInterval,
+                 StatePropagatorData*          statePropagatorData,
+                 TopologyHolder*               topologyHolder,
+                 int                           nstglobalcomm,
+                 FILE*                         fplog,
+                 t_commrec*                    cr,
+                 const MDLogger&               mdlog,
+                 Constraints*                  constr,
+                 const t_inputrec*             inputrec,
+                 MDAtoms*                      mdAtoms,
+                 t_nrnb*                       nrnb,
+                 gmx_wallcycle*                wcycle,
+                 t_forcerec*                   fr,
+                 VirtualSitesHandler*          vsite,
+                 ImdSession*                   imdSession,
+                 pull_t*                       pull_work,
+                 std::vector<DomDecCallback>&& domdecCallbacks);
 
     /*! \brief Run domain decomposition
      *
@@ -131,11 +131,12 @@ private:
     //! The global communication frequency
     const int nstglobalcomm_;
 
+    //! List of callbacks to inform clients that DD happened
+    std::vector<DomDecCallback> domdecCallbacks_;
+
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the free energy data
-    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
     //! Pointer to the topology
     TopologyHolder* topologyHolder_;
 
@@ -172,6 +173,38 @@ private:
     ImdSession* imdSession_;
     //! The pull work object.
     pull_t* pull_work_;
+};
+
+/*! \internal
+ * \brief Builder for DomDecHelper
+ *
+ * This builder allows clients to register to the DomDecHelper in order to get
+ * informed whenever system re-partitioning is performed.
+ */
+class DomDecHelperBuilder
+{
+public:
+    //! Register DomDecHelper client
+    void registerClient(IDomDecHelperClient* client);
+
+    //! Return DomDecHelper instance
+    template<typename... Args>
+    std::unique_ptr<DomDecHelper> build(Args&&... args)
+    {
+        state_ = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
+        std::vector<DomDecCallback> callbacks;
+        for (const auto& client : clients_)
+        {
+            callbacks.template emplace_back(client->registerDomDecCallback());
+        }
+        return std::make_unique<DomDecHelper>(std::forward<Args>(args)..., std::move(callbacks));
+    }
+
+private:
+    //! List of clients to be updated after system partition
+    std::vector<IDomDecHelperClient*> clients_;
+    //! The state of the builder
+    ModularSimulatorBuilderState state_ = ModularSimulatorBuilderState::AcceptingClientRegistrations;
 };
 
 //! \}

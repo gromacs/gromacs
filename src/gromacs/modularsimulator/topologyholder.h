@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ class VirtualSitesHandler;
  * Clients can register to get an updated local topology whenever there
  * is a change (infrequent, only due to domdec currently).
  */
-class TopologyHolder final
+class TopologyHolder final : public IDomDecHelperClient
 {
 public:
     //! Constructor
@@ -86,7 +86,10 @@ public:
     //! Get global topology
     const gmx_mtop_t& globalTopology() const;
 
-    //! Allow domdec to update local topology
+    //! Callback on domain decomposition repartitioning
+    DomDecCallback registerDomDecCallback() override;
+
+    //! Allow domdec to access local topology directly
     friend class DomDecHelper;
 
     //! The builder

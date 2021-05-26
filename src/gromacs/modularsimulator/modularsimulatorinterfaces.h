@@ -561,6 +561,29 @@ enum class ReportPreviousStepConservedEnergy
     Count
 };
 
+//! Callback used by the DomDecHelper object to inform clients about system re-partitioning
+typedef std::function<void()> DomDecCallback;
+
+/*! \internal
+ * \brief Client interface of the DomDecHelper class
+ *
+ * Classes implementing this interface will register with the DomDecHelper
+ * builder object.
+ * Before the simulation, the DomDecHelper builder will call the clients'
+ * registerDomDecCallback() function and build a list of callbacks to be
+ * passed to the DomDecHelper. After every time the DomDecHelper object
+ * performed system partitioning, it will use the callbacks to inform the
+ * clients that a re-partitioning has happened.
+ */
+class IDomDecHelperClient
+{
+public:
+    //! Standard virtual destructor
+    virtual ~IDomDecHelperClient() = default;
+    //! Register function to be informed about system re-partitioning
+    virtual DomDecCallback registerDomDecCallback() = 0;
+};
+
 //! /}
 } // namespace gmx
 

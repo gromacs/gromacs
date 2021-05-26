@@ -85,8 +85,6 @@ public:
     ArrayRef<const real> constLambdaView();
     //! Get the current FEP state
     int currentFEPState() const;
-    //! Update MDAtoms (public because it's called by DomDec - see #3700)
-    void updateMDAtoms();
 
     //! The element taking part in the simulator loop
     class Element;
@@ -105,6 +103,8 @@ private:
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
+    //! Update MDAtoms
+    void updateMDAtoms();
 
     //! The element
     std::unique_ptr<Element> element_;
@@ -132,7 +132,10 @@ private:
  * implement the checkpointing client interface to save its current
  * state for restart.
  */
-class FreeEnergyPerturbationData::Element final : public ISimulatorElement, public ICheckpointHelperClient
+class FreeEnergyPerturbationData::Element final :
+    public ISimulatorElement,
+    public ICheckpointHelperClient,
+    public IDomDecHelperClient
 {
 public:
     //! Constructor
@@ -153,6 +156,9 @@ public:
     void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
+
+    //! Callback on domain decomposition repartitioning
+    DomDecCallback registerDomDecCallback() override;
 
     /*! \brief Factory method implementation
      *

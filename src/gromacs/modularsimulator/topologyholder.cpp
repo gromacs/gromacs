@@ -89,6 +89,10 @@ void TopologyHolder::updateLocalTopology()
         client->setTopology(localTopology_.get());
     }
 }
+DomDecCallback TopologyHolder::registerDomDecCallback()
+{
+    return [this]() { updateLocalTopology(); };
+}
 
 void TopologyHolder::Builder::registerClient(ITopologyHolderClient* client)
 {

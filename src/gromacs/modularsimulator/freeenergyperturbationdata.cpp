@@ -177,6 +177,11 @@ const std::string& FreeEnergyPerturbationData::Element::clientID()
     return FreeEnergyPerturbationData::checkpointID();
 }
 
+DomDecCallback FreeEnergyPerturbationData::Element::registerDomDecCallback()
+{
+    return [this]() { freeEnergyPerturbationData_->updateMDAtoms(); };
+}
+
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
                                              double                      deltaLambda) :
     freeEnergyPerturbationData_(freeEnergyPerturbationElement), lambdasChange_(deltaLambda != 0)
