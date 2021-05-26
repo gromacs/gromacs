@@ -7,3 +7,7 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Replica-exchange molecular dynamics simulations with GPU update
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Replica-exchange molecular dynamics now works with GPU update.
