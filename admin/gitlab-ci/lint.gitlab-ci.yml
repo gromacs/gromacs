@@ -121,11 +121,11 @@ clang-tidy:test-cuda:
     - .variables:default
     - .rules:basic-push
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.1-hipsycl-2bc21b677a
   needs:
     - job: clang-tidy:configure-push-cuda
   variables:
-    COMPILER_MAJOR_VERSION: 8
+    COMPILER_MAJOR_VERSION: 11
     BUILD_DIR: build-clang-tidy
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
