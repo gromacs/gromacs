@@ -41,8 +41,6 @@
 
 #include <cmath>
 
-#include <algorithm>
-
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/multidimarray.h"
@@ -51,8 +49,6 @@
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -105,7 +101,7 @@ static const t_tab_props tprops[etabNR] = {
 struct t_tabledata
 {
     t_tabledata() = default;
-    t_tabledata(int n, int nx0, double tabscale, bool bAlloc);
+    t_tabledata(int n, int firstTableNum, double scale, bool bAlloc);
     int                 nx;
     int                 nx0;
     double              tabscale;
@@ -431,8 +427,8 @@ static void copy2table(int                         n,
     }
 }
 
-t_tabledata::t_tabledata(int n, int nx0, double tabscale, bool bAlloc) :
-    nx(n), nx0(nx0), tabscale(tabscale)
+t_tabledata::t_tabledata(int n, int firstTableNum, double scale, bool bAlloc) :
+    nx(n), nx0(firstTableNum), tabscale(scale)
 {
     if (bAlloc)
     {
@@ -1261,8 +1257,8 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
     int      nx0, tabsel[etiNR];
     real     scalefactor;
 
-    auto table = std::make_unique<t_forcetable>(GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
-                                                GMX_TABLE_FORMAT_CUBICSPLINE_YFGH);
+    auto table = std::make_unique<t_forcetable>(
+            TableInteraction::ElectrostaticVdwRepulsionVdwDispersion, TableFormat::CubicsplineYfgh);
 
     b14only = ((flags & GMX_MAKETABLES_14ONLY) != 0);
 
@@ -1277,13 +1273,12 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
         set_table_type(tabsel, ic, b14only);
     }
     std::vector<t_tabledata> td;
-    table->r     = rtab;
-    table->scale = 0;
-    table->n     = 0;
+    table->interactionRange = rtab;
+    table->scale            = 0;
+    table->numTablePoints   = 0;
 
-    table->formatsize    = 4;
-    table->ninteractions = etiNR;
-    table->stride        = table->formatsize * table->ninteractions;
+    table->numInteractions = etiNR;
+    table->stride          = table->formatsize * table->numInteractions;
 
     /* Check whether we have to read or generate */
     useUserTable = FALSE;
@@ -1299,7 +1294,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
         td = read_tables(fp, fn, etiNR, 0);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
-            table->n = td[0].nx;
+            table->numTablePoints = td[0].nx;
         }
         else
         {
@@ -1311,7 +1306,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
                           fn,
                           rtab);
             }
-            table->n = gmx::roundToInt(rtab * td[0].tabscale);
+            table->numTablePoints = gmx::roundToInt(rtab * td[0].tabscale);
         }
         table->scale = td[0].tabscale;
         nx0          = td[0].nx0;
@@ -1325,15 +1320,15 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
 #else
         table->scale = 500.0;
 #endif
-        table->n = static_cast<int>(rtab * table->scale);
-        nx0      = 10;
+        table->numTablePoints = static_cast<int>(rtab * table->scale);
+        nx0                   = 10;
     }
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
-     * numbers per table->n+1 data points. For performance reasons we want
+     * numbers per table->numTablePoints+1 data points. For performance reasons we want
      * the table data to be aligned to (at least) a 32-byte boundary.
      */
-    table->data.resize(table->stride * (table->n + 1) * sizeof(real));
+    table->data.resize(table->stride * (table->numTablePoints + 1) * sizeof(real));
 
     for (int k = 0; (k < etiNR); k++)
     {
@@ -1347,7 +1342,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
             {
                 scale /= ic->buckinghamBMax;
             }
-            td[k] = t_tabledata(table->n, nx0, scale, !useUserTable);
+            td[k] = t_tabledata(table->numTablePoints, nx0, scale, !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], ic, b14only);
             if (fp)
@@ -1381,7 +1376,14 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
             scalefactor = 1.0;
         }
 
-        copy2table(table->n, k * table->formatsize, table->stride, td[k].x, td[k].v, td[k].f, scalefactor, table->data);
+        copy2table(table->numTablePoints,
+                   k * table->formatsize,
+                   table->stride,
+                   td[k].x,
+                   td[k].v,
+                   td[k].f,
+                   scalefactor,
+                   table->data);
     }
 
     return table;
@@ -1423,19 +1425,18 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
      * and repulsion, to improve cache performance. We want the table
      * data to be aligned to 32-byte boundaries.
      */
-    std::unique_ptr<t_forcetable> dispersionCorrectionTable =
-            std::make_unique<t_forcetable>(GMX_TABLE_INTERACTION_VDWREP_VDWDISP, fullTable->format);
-    dispersionCorrectionTable->r             = fullTable->r;
-    dispersionCorrectionTable->n             = fullTable->n;
-    dispersionCorrectionTable->scale         = fullTable->scale;
-    dispersionCorrectionTable->formatsize    = fullTable->formatsize;
-    dispersionCorrectionTable->ninteractions = 2;
+    std::unique_ptr<t_forcetable> dispersionCorrectionTable = std::make_unique<t_forcetable>(
+            TableInteraction::VdwRepulsionVdwDispersion, fullTable->format);
+    dispersionCorrectionTable->interactionRange = fullTable->interactionRange;
+    dispersionCorrectionTable->numTablePoints   = fullTable->numTablePoints;
+    dispersionCorrectionTable->scale            = fullTable->scale;
+    dispersionCorrectionTable->numInteractions  = 2;
     dispersionCorrectionTable->stride =
-            dispersionCorrectionTable->formatsize * dispersionCorrectionTable->ninteractions;
+            dispersionCorrectionTable->formatsize * dispersionCorrectionTable->numInteractions;
     dispersionCorrectionTable->data.resize(dispersionCorrectionTable->stride
-                                           * (dispersionCorrectionTable->n + 1));
+                                           * (dispersionCorrectionTable->numTablePoints + 1));
 
-    for (int i = 0; i <= fullTable->n; i++)
+    for (int i = 0; i <= fullTable->numTablePoints; i++)
     {
         for (int j = 0; j < 8; j++)
         {
@@ -1446,8 +1447,14 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
     return dispersionCorrectionTable;
 }
 
-t_forcetable::t_forcetable(enum gmx_table_interaction interaction, enum gmx_table_format format) :
-    interaction(interaction), format(format), r(0), n(0), scale(0), formatsize(0), ninteractions(0), stride(0)
+t_forcetable::t_forcetable(enum TableInteraction interaction, enum TableFormat format) :
+    interaction(interaction),
+    format(format),
+    interactionRange(0),
+    numTablePoints(0),
+    scale(0),
+    numInteractions(0),
+    stride(0)
 {
 }
 

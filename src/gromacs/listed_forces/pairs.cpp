@@ -425,7 +425,7 @@ static real do_pairs_general(int                           ftype,
             etiNR == 3,
             "Pair-interaction code that uses GROMACS interaction tables supports exactly 3 tables");
     GMX_ASSERT(
-            fr->pairsTable->interaction == GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+            fr->pairsTable->interaction == TableInteraction::ElectrostaticVdwRepulsionVdwDispersion,
             "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
 
     const real epsfac = fr->ic->epsfac;
@@ -488,13 +488,13 @@ static real do_pairs_general(int                           ftype,
         }
         r2 = norm2(dx);
 
-        if (r2 >= fr->pairsTable->r * fr->pairsTable->r)
+        if (r2 >= fr->pairsTable->interactionRange * fr->pairsTable->interactionRange)
         {
             /* This check isn't race free. But it doesn't matter because if a race occurs the only
              * disadvantage is that the warning is printed twice */
             if (!warned_rlimit)
             {
-                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->pairsTable->r);
+                warning_rlimit(x, ai, aj, global_atom_index, sqrt(r2), fr->pairsTable->interactionRange);
                 warned_rlimit = TRUE;
             }
             continue;

@@ -97,7 +97,7 @@ void make_wall_tables(FILE*                   fplog,
                 fr->wall_tab[w][egp] = make_tables(fplog, fr->ic.get(), buf, 0, GMX_MAKETABLES_FORCEUSER);
 
                 /* Since wall have no charge, we can compress the table */
-                for (int i = 0; i <= fr->wall_tab[w][egp]->n; i++)
+                for (int i = 0; i <= fr->wall_tab[w][egp]->numTablePoints; i++)
                 {
                     for (int j = 0; j < 8; j++)
                     {
@@ -128,7 +128,7 @@ static void tableForce(real r, const t_forcetable& tab, real Cd, real Cr, real* 
 
     real rt = r * tabscale;
     int  n0 = static_cast<int>(rt);
-    if (n0 >= tab.n)
+    if (n0 >= tab.numTablePoints)
     {
         /* Beyond the table range, set V and F to zero */
         *V = 0;

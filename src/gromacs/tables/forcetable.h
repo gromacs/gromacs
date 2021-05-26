@@ -48,18 +48,75 @@
 #include <cstdio>
 
 #include <memory>
+#include <vector>
 
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/real.h"
 
 struct EwaldCorrectionTables;
 struct bondedtable_t;
 struct interaction_const_t;
-struct t_forcetable;
 
 /*! \brief Flag to select user tables for make_tables */
 #define GMX_MAKETABLES_FORCEUSER (1 << 0)
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
 #define GMX_MAKETABLES_14ONLY (1 << 1)
+
+//! \brief The types of interactions contained in the table
+enum class TableInteraction : int
+{
+    VdwRepulsionVdwDispersion,
+    ElectrostaticVdwRepulsionVdwDispersion,
+    Count
+};
+
+/* Different formats for table data. Cubic spline tables are typically stored
+ * with the four Y,F,G,H intermediate values (check tables.c for format), which
+ * makes it easy to load with a single 4-way SIMD instruction too.
+ * Linear tables only need one value per table point, or two if both V and F
+ * are calculated. However, with SIMD instructions this makes the loads unaligned,
+ * and in that case we store the data as F, D=F(i+1)-F(i), V, and then a blank value,
+ * which again makes it possible to load as a single instruction.
+ */
+enum class TableFormat : int
+{
+    CubicsplineYfgh,
+    Count
+};
+
+//! \internal \brief Structure describing the data in a single table
+struct t_forcetable
+{
+    t_forcetable(TableInteraction interaction, TableFormat format);
+
+    ~t_forcetable();
+
+    //! Types of interactions stored in this table
+    TableInteraction interaction;
+    //! Interpolation type and data format
+    TableFormat format;
+    //! range of the table
+    real interactionRange;
+    //! n+1 is the number of table points
+    int numTablePoints;
+    //! distance (nm) between two table points
+    real scale;
+    //! The actual table data
+    std::vector<real, gmx::AlignedAllocator<real>> data;
+
+    /* Some information about the table layout. This can also be derived from the interpolation
+     * type and the table interactions, but it is convenient to have here for sanity checks, and it
+     * makes it much easier to access the tables in the nonbonded kernels when we can set the data
+     * from variables. It is always true that stride = formatsize*ninteractions
+     */
+
+    //! Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.), only YFGH is implemented
+    static constexpr int formatsize = 4;
+    //! Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp.
+    int numInteractions;
+    //! Distance to next table point (number of fp variables per table point in total)
+    int stride;
+};
 
 /*! \brief Enumerated type to describe the interaction types in a table */
 enum
