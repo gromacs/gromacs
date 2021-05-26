@@ -354,10 +354,10 @@ static inline void reduceForceJGeneric(cl::sycl::accessor<float, 1, mode::read_w
                                        DeviceAccessor<float, mode_atomic> a_f)
 {
     static constexpr int sc_fBufferStride = c_clSizeSq;
-    int                  tidx            = tidxi + tidxj * c_clSize;
-    sm_buf[0 * sc_fBufferStride + tidx]  = f[0];
-    sm_buf[1 * sc_fBufferStride + tidx]  = f[1];
-    sm_buf[2 * sc_fBufferStride + tidx]  = f[2];
+    int                  tidx             = tidxi + tidxj * c_clSize;
+    sm_buf[0 * sc_fBufferStride + tidx]   = f[0];
+    sm_buf[1 * sc_fBufferStride + tidx]   = f[1];
+    sm_buf[2 * sc_fBufferStride + tidx]   = f[2];
 
     subGroupBarrier(itemIdx);
 
