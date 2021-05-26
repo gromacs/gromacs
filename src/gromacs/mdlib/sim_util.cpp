@@ -1155,13 +1155,15 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
         }
     }
 
-    if ((runScheduleWork->domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr))
-        && !runScheduleWork->simulationWork.useGpuHaloExchange)
+    if (runScheduleWork->domainWork.haveCpuLocalForceWork && !runScheduleWork->simulationWork.useGpuHaloExchange)
     {
-        auto forcesReadyLocality = havePPDomainDecomposition(cr) ? AtomLocality::Local : AtomLocality::All;
-        const bool useGpuForceBufferOps = true;
-        fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
-                stateGpu->getForcesReadyOnDeviceEvent(forcesReadyLocality, useGpuForceBufferOps));
+        // in the DD case we use the same stream for H2D and reduction, hence no explicit dependency needed
+        if (!havePPDomainDecomposition(cr))
+        {
+            const bool useGpuForceBufferOps = true;
+            fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
+                    stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::All, useGpuForceBufferOps));
+        }
     }
 
     if (runScheduleWork->simulationWork.useGpuHaloExchange)
@@ -1183,13 +1185,9 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
                                                                    accumulate);
 
         // register forces and add dependencies
+        // in the DD case we use the same stream for H2D and reduction, hence no explicit dependency needed
         fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->registerNbnxmForce(
                 Nbnxm::gpu_get_f(nbv->gpu_nbv));
-        if (runScheduleWork->domainWork.haveCpuBondedWork || runScheduleWork->domainWork.haveFreeEnergyWork)
-        {
-            fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->addDependency(
-                    stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::NonLocal, true));
-        }
     }
 }
 
