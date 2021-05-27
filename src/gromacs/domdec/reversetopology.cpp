@@ -97,34 +97,8 @@ struct gmx_reverse_top_t::Impl
     //! \brief Intermolecular reverse ilist
     reverse_ilist_t ril_intermol;
 
-    /*! \brief Data to help check reverse topology construction
-     *
-     * Partitioning could incorrectly miss a bonded interaction.
-     * However, checking for that requires a global communication
-     * stage, which does not otherwise happen during partitioning. So,
-     * for performance, we do that alongside the first global energy
-     * reduction after a new DD is made. These variables handle
-     * whether the check happens, its input for this domain, output
-     * across all domains, and the expected value it should match. */
-    /*! \{ */
-    /*! \brief Number of bonded interactions found in the reverse
-     * topology for this domain. */
-    int numBondedInteractions = 0;
-    /*! \brief Whether to check at the next global communication
-     * stage the total number of bonded interactions found.
-     *
-     * Cleared after that number is found. */
-    bool shouldCheckNumberOfBondedInteractions = false;
-    /*! \brief The total number of bonded interactions found in
-     * the reverse topology across all domains.
-     *
-     * Only has a value after reduction across all ranks, which is
-     * removed when it is again time to check after a new
-     * partition. */
-    std::optional<int> numBondedInteractionsOverAllDomains;
     //! The number of bonded interactions computed from the full topology
     int expectedNumGlobalBondedInteractions = 0;
-    /*! \} */
 
     /* Work data structures for multi-threading */
     //! \brief Thread work array for local topology generation
