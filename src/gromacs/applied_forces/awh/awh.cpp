@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,17 +107,18 @@ struct BiasCoupledToSystem
     /* Here AWH can be extended to work on other coordinates than pull. */
 };
 
-/*! \brief Checks whether any dimension uses pulling as a coordinate provider.
+/*! \brief Checks whether any dimension uses the given coordinate provider type.
  *
  * \param[in] awhBiasParams The bias params to check.
- * \returns true if any dimension of the bias is linked to pulling.
+ * \param[in] awhCoordProvider The type of coordinate provider
+ * \returns true if any dimension of the bias is linked to the given provider
  */
-static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
+static bool anyDimUsesProvider(const AwhBiasParams& awhBiasParams, const int awhCoordProvider)
 {
     for (int d = 0; d < awhBiasParams.ndim; d++)
     {
         const AwhDimParams& awhDimParams = awhBiasParams.dimParams[d];
-        if (awhDimParams.eCoordProvider == eawhcoordproviderPULL)
+        if (awhDimParams.eCoordProvider == awhCoordProvider)
         {
             return true;
         }
@@ -125,17 +126,18 @@ static bool anyDimUsesPull(const AwhBiasParams& awhBiasParams)
     return false;
 }
 
-/*! \brief Checks whether any dimension uses pulling as a coordinate provider.
+/*! \brief Checks whether any dimension uses the given coordinate provider type.
  *
  * \param[in] awhParams The AWH params to check.
- * \returns true if any dimension of awh is linked to pulling.
+ * \param[in] awhCoordProvider The type of coordinate provider
+ * \returns true if any dimension of awh is linked to the given provider type.
  */
-static bool anyDimUsesPull(const AwhParams& awhParams)
+static bool anyDimUsesProvider(const AwhParams& awhParams, const int awhCoordProvider)
 {
     for (int k = 0; k < awhParams.numBias; k++)
     {
         const AwhBiasParams& awhBiasParams = awhParams.awhBiasParams[k];
-        if (anyDimUsesPull(awhBiasParams))
+        if (anyDimUsesProvider(awhBiasParams, awhCoordProvider))
         {
             return true;
         }
@@ -188,7 +190,7 @@ Awh::Awh(FILE*                 fplog,
     numFepLambdaStates_(numFepLambdaStates),
     fepLambdaState_(fepLambdaState)
 {
-    if (anyDimUsesPull(awhParams))
+    if (anyDimUsesProvider(awhParams, eawhcoordproviderPULL))
     {
         GMX_RELEASE_ASSERT(inputRecord.pull != nullptr, "With AWH we should have pull parameters");
         GMX_RELEASE_ASSERT(pull_work != nullptr,
@@ -198,6 +200,11 @@ Awh::Awh(FILE*                 fplog,
     if (fplog != nullptr)
     {
         please_cite(fplog, "Lindahl2014");
+
+        if (anyDimUsesProvider(awhParams, eawhcoordproviderFREE_ENERGY_LAMBDA))
+        {
+            please_cite(fplog, "Lundborg2021");
+        }
     }
 
     if (haveBiasSharingWithinSimulation(awhParams))
@@ -461,7 +468,8 @@ const char* Awh::externalPotentialString()
 
 void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 {
-    GMX_RELEASE_ASSERT(!anyDimUsesPull(awhParams) || pull_work, "Need a valid pull object");
+    GMX_RELEASE_ASSERT(!anyDimUsesProvider(awhParams, eawhcoordproviderPULL) || pull_work,
+                       "Need a valid pull object");
 
     for (int k = 0; k < awhParams.numBias; k++)
     {

@@ -119,7 +119,7 @@ force. Each method has its limitations, which are listed below.
    molecules.
 
 -  **AWH code:** currently acts on coordinates provided by the pull
-   code.
+   code or the free-energy lambda parameter.
 
 -  **free-energy code with harmonic bonds or constraints:** between
    single atoms.
