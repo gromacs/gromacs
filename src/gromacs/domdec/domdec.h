@@ -241,14 +241,6 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 
 /* In domdec_top.c */
 
-/*! \brief Generate and store the reverse topology */
-void dd_make_reverse_top(FILE*                           fplog,
-                         gmx_domdec_t*                   dd,
-                         const gmx_mtop_t&               mtop,
-                         const gmx::VirtualSitesHandler* vsite,
-                         const t_inputrec&               inputrec,
-                         gmx::DDBondedChecking           ddBondedChecking);
-
 /*! \brief Generate the local topology and virtual site data
  *
  * \returns Total count of bonded interactions in the local topology on this domain */

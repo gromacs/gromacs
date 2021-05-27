@@ -170,4 +170,27 @@ int nral_rt(int ftype);
 /*! \brief Return whether interactions of type \p ftype need to be assigned exactly once */
 bool dd_check_ftype(int ftype, const ReverseTopOptions& rtOptions);
 
+/*! \brief Return global topology molecule information for global atom index \p i_gl */
+void global_atomnr_to_moltype_ind(gmx::ArrayRef<const MolblockIndices> molblockIndices,
+                                  int                                  i_gl,
+                                  int*                                 mb,
+                                  int*                                 mt,
+                                  int*                                 mol,
+                                  int*                                 i_mol);
+
+/*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
+int make_reverse_ilist(const InteractionLists&  ilist,
+                       const t_atoms*           atoms,
+                       const ReverseTopOptions& rtOptions,
+                       AtomLinkRule             atomLinkRule,
+                       reverse_ilist_t*         ril_mt);
+
+/*! \brief Generate and store the reverse topology */
+void dd_make_reverse_top(FILE*                           fplog,
+                         gmx_domdec_t*                   dd,
+                         const gmx_mtop_t&               mtop,
+                         const gmx::VirtualSitesHandler* vsite,
+                         const t_inputrec&               inputrec,
+                         gmx::DDBondedChecking           ddBondedChecking);
+
 #endif

@@ -63,6 +63,7 @@
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/domdec/partition.h"
+#include "gromacs/domdec/reversetopology.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
