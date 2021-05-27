@@ -128,7 +128,7 @@ void ModularSimulatorAlgorithm::setup()
         domDecHelper_->setup();
     }
 
-    for (auto& element : elementsOwnershipList_)
+    for (auto& element : elementSetupTeardownList_)
     {
         element->elementSetup();
     }
@@ -169,7 +169,7 @@ void ModularSimulatorAlgorithm::updateTaskQueue()
 
 void ModularSimulatorAlgorithm::teardown()
 {
-    for (auto& element : elementsOwnershipList_)
+    for (auto& element : elementSetupTeardownList_)
     {
         element->elementTeardown();
     }
@@ -407,6 +407,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     {
         freeEnergyPerturbationData_ = std::make_unique<FreeEnergyPerturbationData>(
                 legacySimulatorData->fplog, *legacySimulatorData->inputrec, legacySimulatorData->mdAtoms);
+        registerExistingElement(freeEnergyPerturbationData_->element());
     }
 
     statePropagatorData_ = std::make_unique<StatePropagatorData>(
@@ -421,6 +422,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
             legacySimulatorData->inputrec,
             legacySimulatorData->mdAtoms->mdatoms(),
             legacySimulatorData->top_global);
+    registerExistingElement(statePropagatorData_->element());
 
     // Multi sim is turned off
     const bool simulationsShareState = false;
@@ -440,14 +442,15 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                legacySimulatorData->observablesHistory,
                                                legacySimulatorData->startingBehavior,
                                                simulationsShareState);
+    registerExistingElement(energyData_->element());
 }
 
 ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 {
     if (algorithmHasBeenBuilt_)
     {
-        throw SimulationAlgorithmSetupError(
-                "Tried to build ModularSimulationAlgorithm more than once.");
+        GMX_THROW(SimulationAlgorithmSetupError(
+                "Tried to build ModularSimulationAlgorithm more than once."));
     }
     algorithmHasBeenBuilt_ = true;
 
@@ -553,17 +556,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                              simulationsShareState);
     registerWithInfrastructureAndSignallers(trajectoryElement.get());
 
-    // Build free energy element
-    std::unique_ptr<FreeEnergyPerturbationData::Element> freeEnergyPerturbationElement = nullptr;
-    if (algorithm.freeEnergyPerturbationData_)
-    {
-        freeEnergyPerturbationElement = std::make_unique<FreeEnergyPerturbationData::Element>(
-                algorithm.freeEnergyPerturbationData_.get(),
-                legacySimulatorData_->inputrec->fepvals->delta_lambda);
-        registerWithInfrastructureAndSignallers(freeEnergyPerturbationElement.get());
-    }
-
-    // Build domdec helper (free energy element is a client, so keep this after it is built)
+    // Build domdec helper
     if (DOMAINDECOMP(legacySimulatorData_->cr))
     {
         algorithm.domDecHelper_ =
@@ -660,14 +653,16 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 inputrec->nstlist, inputrec->init_step, inputrec->init_t));
     }
 
+    // Move setup / teardown list
+    algorithm.elementSetupTeardownList_ = std::move(setupAndTeardownList_);
+
     // Create element list
     // Checkpoint helper needs to be in the call list (as first element!) to react to last step
     algorithm.elementCallList_.emplace_back(algorithm.checkpointHelper_.get());
     // Next, update the free energy lambda vector if needed
-    if (freeEnergyPerturbationElement)
+    if (algorithm.freeEnergyPerturbationData_)
     {
-        algorithm.elementsOwnershipList_.emplace_back(std::move(freeEnergyPerturbationElement));
-        algorithm.elementCallList_.emplace_back(algorithm.elementsOwnershipList_.back().get());
+        algorithm.elementCallList_.emplace_back(algorithm.freeEnergyPerturbationData_->element());
     }
     // Then, move the built algorithm
     algorithm.elementsOwnershipList_.insert(algorithm.elementsOwnershipList_.end(),
@@ -680,16 +675,10 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
     // (relevant data was stored by elements through energy signaller)
     algorithm.elementsOwnershipList_.emplace_back(std::move(trajectoryElement));
     algorithm.elementCallList_.emplace_back(algorithm.elementsOwnershipList_.back().get());
+    algorithm.elementSetupTeardownList_.emplace_back(algorithm.elementsOwnershipList_.back().get());
 
     algorithm.setup();
     return algorithm;
-}
-
-ISimulatorElement* ModularSimulatorAlgorithmBuilder::addElementToSimulatorAlgorithm(
-        std::unique_ptr<ISimulatorElement> element)
-{
-    elements_.emplace_back(std::move(element));
-    return elements_.back().get();
 }
 
 bool ModularSimulatorAlgorithmBuilder::elementExists(const ISimulatorElement* element) const
@@ -702,18 +691,9 @@ bool ModularSimulatorAlgorithmBuilder::elementExists(const ISimulatorElement* el
         return true;
     }
     // Check whether element exists in other places controlled by *this
-    return (statePropagatorData_->element() == element || energyData_->element() == element
+    return ((statePropagatorData_ && statePropagatorData_->element() == element)
+            || (energyData_ && energyData_->element() == element)
             || (freeEnergyPerturbationData_ && freeEnergyPerturbationData_->element() == element));
-}
-
-void ModularSimulatorAlgorithmBuilder::addElementToSetupTeardownList(ISimulatorElement* element)
-{
-    // Add element if it's not already in the list
-    if (std::find(setupAndTeardownList_.begin(), setupAndTeardownList_.end(), element)
-        == setupAndTeardownList_.end())
-    {
-        setupAndTeardownList_.emplace_back(element);
-    }
 }
 
 std::optional<SignallerCallback> ModularSimulatorAlgorithm::SignalHelper::registerLastStepCallback()
@@ -745,11 +725,6 @@ ModularSimulatorAlgorithmBuilderHelper::ModularSimulatorAlgorithmBuilderHelper(
         ModularSimulatorAlgorithmBuilder* builder) :
     builder_(builder)
 {
-}
-
-ISimulatorElement* ModularSimulatorAlgorithmBuilderHelper::storeElement(std::unique_ptr<ISimulatorElement> element)
-{
-    return builder_->addElementToSimulatorAlgorithm(std::move(element));
 }
 
 bool ModularSimulatorAlgorithmBuilderHelper::elementIsStored(const ISimulatorElement* element) const
