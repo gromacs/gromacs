@@ -34,6 +34,14 @@ The tool now reports correct values.
 
 :issue:`4080`
 
+Make sure gmx convert-tpr -until works
+""""""""""""""""""""""""""""""""""""""
+
+This got broken during reworking the internals of the tool and didn't
+calculate the number of remaining steps correctly.
+
+:issue:`4056`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
