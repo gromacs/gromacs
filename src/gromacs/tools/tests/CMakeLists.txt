@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,5 +38,6 @@ gmx_add_gtest_executable(tool-test
         helpwriting.cpp
         report_methods.cpp
         trjconv.cpp
+        convert-tpr.cpp
         )
 gmx_register_gtest_test(ToolUnitTests tool-test SLOW_TEST)

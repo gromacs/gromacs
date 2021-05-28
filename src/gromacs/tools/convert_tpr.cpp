@@ -283,6 +283,19 @@ static void zeroq(const int index[], gmx_mtop_t* mtop)
     }
 }
 
+static void print_runtime_info(t_inputrec* ir)
+{
+    char buf[STEPSTRSIZE];
+
+    printf("  Run start step                %22s     \n", gmx_step_str(ir->init_step, buf));
+    printf("  Run start time                %22g ps  \n", ir->init_step * ir->delta_t + ir->init_t);
+    printf("  Step to be made during run    %22s     \n", gmx_step_str(ir->nsteps, buf));
+    printf("  Runtime for the run           %22g ps  \n", ir->nsteps * ir->delta_t);
+    printf("  Run end step                  %22s     \n", gmx_step_str(ir->init_step + ir->nsteps, buf));
+    printf("  Run end time                  %22g ps  \n\n",
+           (ir->init_step + ir->nsteps) * ir->delta_t + ir->init_t);
+}
+
 namespace gmx
 {
 
@@ -376,8 +389,10 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
                                .storeIsSet(&runToMaxTimeIsSet_)
                                .timeValue()
                                .description("Extend runtime until this ending time (ps)"));
-    options->addOption(
-            Int64Option("nsteps").store(&maxSteps_).storeIsSet(&maxStepsIsSet_).description("Change the number of steps"));
+    options->addOption(Int64Option("nsteps")
+                               .store(&maxSteps_)
+                               .storeIsSet(&maxStepsIsSet_)
+                               .description("Change the number of steps remaining to be made"));
     options->addOption(
             BooleanOption("zeroq").store(&zeroQIsSet_).description("Set the charges of a group (from the index) to zero"));
 }
@@ -389,118 +404,123 @@ int ConvertTpr::run()
     gmx_mtop_t mtop;
     t_atoms    atoms;
     t_state    state;
-    char       buf[200], buf2[200];
+    char       buf[STEPSTRSIZE];
 
-    fprintf(stderr, "Reading toplogy and stuff from %s\n", inputTprFileName_.c_str());
+    if (static_cast<int>(extendTimeIsSet_) + static_cast<int>(maxStepsIsSet_) + static_cast<int>(runToMaxTimeIsSet_)
+        > 1)
+    {
+        printf("Multiple runtime modification operations cannot be done in a single call.\n");
+        return 1;
+    }
+
+    if ((extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_) && (zeroQIsSet_ || haveReadIndexFile_))
+    {
+        printf("Cannot do both runtime modification and charge-zeroing/index group extraction in a "
+               "single call.\n");
+        return 1;
+    }
+
+    if (zeroQIsSet_ && !haveReadIndexFile_)
+    {
+        printf("Charge zeroing need an index file.\n");
+        return 1;
+    }
+
 
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
     read_tpx_state(inputTprFileName_.c_str(), ir, &state, &mtop);
-    int64_t currentMaxStep    = ir->init_step;
-    double  currentRunTime    = ir->init_step * ir->delta_t + ir->init_t;
-    real    currentMaxRunTime = 0.0;
 
-    if (maxStepsIsSet_)
+
+    if (extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_)
     {
-        fprintf(stderr, "Setting nsteps to %s\n", gmx_step_str(maxSteps_, buf));
-        ir->nsteps = maxSteps_;
-    }
-    else
-    {
-        /* Determine total number of steps remaining */
-        if (extendTimeIsSet_)
+        // Doing runtime modification
+
+        const double  inputTimeAtStartOfRun = ir->init_step * ir->delta_t + ir->init_t;
+        const int64_t inputStepAtEndOfRun   = ir->init_step + ir->nsteps;
+        const double  inputTimeAtEndOfRun   = inputStepAtEndOfRun * ir->delta_t + ir->init_t;
+
+        printf("Input file:\n");
+        print_runtime_info(ir);
+
+        if (maxStepsIsSet_)
         {
-            ir->nsteps = ir->nsteps - (currentMaxStep - ir->init_step)
-                         + gmx::roundToInt64(extendTime_ / ir->delta_t);
-            printf("Extending remaining runtime of by %g ps (now %s steps)\n",
-                   extendTime_,
-                   gmx_step_str(ir->nsteps, buf));
+            fprintf(stderr, "Setting nsteps to %s\n", gmx_step_str(maxSteps_, buf));
+            ir->nsteps = maxSteps_;
+        }
+        else if (extendTimeIsSet_)
+        {
+            printf("Extending remaining runtime by %g ps\n", extendTime_);
+            ir->nsteps += gmx::roundToInt64(extendTime_ / ir->delta_t);
         }
         else if (runToMaxTimeIsSet_)
         {
-            printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
-                   gmx_step_str(ir->nsteps, buf),
-                   gmx_step_str(currentMaxStep, buf2),
-                   currentRunTime,
-                   runToMaxTime_);
-            ir->nsteps = gmx::roundToInt64((currentMaxRunTime - currentRunTime) / ir->delta_t);
-            printf("Extending remaining runtime until %g ps (now %s steps)\n",
-                   currentMaxRunTime,
-                   gmx_step_str(ir->nsteps, buf));
-        }
-        else
-        {
-            ir->nsteps -= currentMaxStep - ir->init_step;
-            /* Print message */
-            printf("%s steps (%g ps) remaining from first run.\n",
-                   gmx_step_str(ir->nsteps, buf),
-                   ir->nsteps * ir->delta_t);
-        }
-    }
-
-    if (maxStepsIsSet_ || zeroQIsSet_ || (ir->nsteps > 0))
-    {
-        ir->init_step = currentMaxStep;
-
-        if (haveReadIndexFile_ || !(maxStepsIsSet_ || extendTimeIsSet_ || runToMaxTimeIsSet_))
-        {
-            atoms         = gmx_mtop_global_atoms(mtop);
-            int   gnx     = 0;
-            int*  index   = nullptr;
-            char* grpname = nullptr;
-            get_index(&atoms, inputIndexFileName_.c_str(), 1, &gnx, &index, &grpname);
-            bool bSel = false;
-            if (!zeroQIsSet_)
+            if (runToMaxTime_ <= inputTimeAtStartOfRun)
             {
-                bSel = (gnx != state.natoms);
-                for (int i = 0; ((i < gnx) && (!bSel)); i++)
-                {
-                    bSel = (i != index[i]);
-                }
+                printf("The requested run end time is at/before the run start time.\n");
+                return 1;
+            }
+            if (runToMaxTime_ < inputTimeAtEndOfRun)
+            {
+                printf("The requested run end time is before the original run end time.\n");
+                printf("Reducing remaining runtime to %g ps\n", runToMaxTime_);
             }
             else
             {
-                bSel = false;
+                printf("Extending remaining runtime to %g ps\n", runToMaxTime_);
             }
-            if (bSel)
-            {
-                fprintf(stderr,
-                        "Will write subset %s of original tpx containing %d "
-                        "atoms\n",
-                        grpname,
-                        gnx);
-                reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
-                state.natoms = gnx;
-            }
-            else if (zeroQIsSet_)
-            {
-                zeroq(index, &mtop);
-                fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
-            }
-            else
-            {
-                fprintf(stderr, "Will write full tpx file (no selection)\n");
-            }
+            ir->nsteps = gmx::roundToInt64((runToMaxTime_ - inputTimeAtStartOfRun) / ir->delta_t);
         }
 
-        double stateTime = ir->init_t + ir->init_step * ir->delta_t;
-        sprintf(buf,
-                "Writing statusfile with starting step %s%s and length %s%s steps...\n",
-                "%10",
-                PRId64,
-                "%10",
-                PRId64);
-        fprintf(stderr, buf, ir->init_step, ir->nsteps);
-        fprintf(stderr,
-                "                                 time %10.3f and length %10.3f ps\n",
-                stateTime,
-                ir->nsteps * ir->delta_t);
-        write_tpx_state(outputTprFileName_.c_str(), ir, &state, mtop);
+        printf("\nOutput file:\n");
+        print_runtime_info(ir);
     }
     else
     {
-        printf("You've simulated long enough. Not writing tpr file\n");
+        // If zeroQIsSet_, then we are doing charge zero-ing; otherwise index group extraction
+        // In both cases an index filename has been provided
+
+        atoms         = gmx_mtop_global_atoms(mtop);
+        int   gnx     = 0;
+        int*  index   = nullptr;
+        char* grpname = nullptr;
+        get_index(&atoms, inputIndexFileName_.c_str(), 1, &gnx, &index, &grpname);
+        bool bSel = false;
+        if (!zeroQIsSet_)
+        {
+            bSel = (gnx != state.natoms);
+            for (int i = 0; ((i < gnx) && (!bSel)); i++)
+            {
+                bSel = (i != index[i]);
+            }
+        }
+        else
+        {
+            bSel = false;
+        }
+        if (bSel)
+        {
+            fprintf(stderr,
+                    "Will write subset %s of original tpx containing %d "
+                    "atoms\n",
+                    grpname,
+                    gnx);
+            reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
+            state.natoms = gnx;
+        }
+        else if (zeroQIsSet_)
+        {
+            zeroq(index, &mtop);
+            fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
+        }
+        else
+        {
+            fprintf(stderr, "Will write full tpx file (no selection)\n");
+        }
     }
+
+    // Writing output tpx regardless of the operation performed
+    write_tpx_state(outputTprFileName_.c_str(), ir, &state, mtop);
 
     return 0;
 }
