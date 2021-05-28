@@ -188,20 +188,17 @@ static int getMaxNumExclusionsPerAtom(const ListOfLists<int>& excls)
 }
 
 /*! \brief Run the reverse ilist generation and store it in r_il when \p bAssign = TRUE */
-static int low_make_reverse_ilist(const InteractionLists&  il_mt,
-                                  const t_atom*            atom,
-                                  int*                     count,
-                                  const ReverseTopOptions& rtOptions,
-                                  gmx::ArrayRef<const int> r_index,
-                                  gmx::ArrayRef<int>       r_il,
-                                  const AtomLinkRule       atomLinkRule,
-                                  const bool               assignReverseIlist)
+static void low_make_reverse_ilist(const InteractionLists&  il_mt,
+                                   const t_atom*            atom,
+                                   int*                     count,
+                                   const ReverseTopOptions& rtOptions,
+                                   gmx::ArrayRef<const int> r_index,
+                                   gmx::ArrayRef<int>       r_il,
+                                   const AtomLinkRule       atomLinkRule,
+                                   const bool               assignReverseIlist)
 {
-    const bool             includeConstraints = rtOptions.includeConstraints;
-    const bool             includeSettles     = rtOptions.includeSettles;
-    const DDBondedChecking ddBondedChecking   = rtOptions.ddBondedChecking;
-
-    int nint = 0;
+    const bool includeConstraints = rtOptions.includeConstraints;
+    const bool includeSettles     = rtOptions.includeSettles;
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -250,32 +247,18 @@ static int low_make_reverse_ilist(const InteractionLists&  il_mt,
                             }
                         }
                     }
-                    else
-                    {
-                        /* We do not count vsites since they are always
-                         * uniquely assigned and can be assigned
-                         * to multiple nodes with recursive vsites.
-                         */
-                        if (ddBondedChecking == DDBondedChecking::All
-                            || !(interaction_function[ftype].flags & IF_LIMZERO))
-                        {
-                            nint++;
-                        }
-                    }
                     count[a] += 2 + nral_rt(ftype);
                 }
             }
         }
     }
-
-    return nint;
 }
 
-int make_reverse_ilist(const InteractionLists&  ilist,
-                       const t_atoms*           atoms,
-                       const ReverseTopOptions& rtOptions,
-                       const AtomLinkRule       atomLinkRule,
-                       reverse_ilist_t*         ril_mt)
+void make_reverse_ilist(const InteractionLists&  ilist,
+                        const t_atoms*           atoms,
+                        const ReverseTopOptions& rtOptions,
+                        const AtomLinkRule       atomLinkRule,
+                        reverse_ilist_t*         ril_mt)
 {
     /* Count the interactions */
     const int        nat_mt = atoms->nr;
@@ -291,12 +274,10 @@ int make_reverse_ilist(const InteractionLists&  ilist,
     ril_mt->il.resize(ril_mt->index[nat_mt]);
 
     /* Store the interactions */
-    int nint_mt = low_make_reverse_ilist(
+    low_make_reverse_ilist(
             ilist, atoms->atom, count.data(), rtOptions, ril_mt->index, ril_mt->il, atomLinkRule, TRUE);
 
     ril_mt->numAtomsInMolecule = atoms->nr;
-
-    return nint_mt;
 }
 
 gmx_reverse_top_t::gmx_reverse_top_t(const gmx_mtop_t&        mtop,
@@ -358,18 +339,49 @@ bool gmx_reverse_top_t::doSorting() const
     return impl_->ilsort != ilsortNO_FE;
 }
 
+/*! \brief Compute the total bonded interaction count
+ *
+ * \param[in] mtop                The global system topology
+ * \param[in] includeConstraints  Whether constraint interactions are included in the count
+ * \param[in] includeSettles      Whether settle interactions are included in the count
+ *
+ * When using domain decomposition without update groups,
+ * constraint-type interactions can be split across domains, and so we
+ * do not consider them in this correctness check. Otherwise, we
+ * include them.
+ */
+static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop,
+                                                      const bool        includeConstraints,
+                                                      const bool        includeSettles)
+{
+    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BOND);
+    if (includeConstraints)
+    {
+        expectedNumGlobalBondedInteractions +=
+                gmx_mtop_ftype_count(mtop, F_CONSTR) + gmx_mtop_ftype_count(mtop, F_CONSTRNC);
+    }
+    if (includeSettles)
+    {
+        expectedNumGlobalBondedInteractions += gmx_mtop_ftype_count(mtop, F_SETTLE);
+    }
+    return expectedNumGlobalBondedInteractions;
+}
+
 /*! \brief Generate the reverse topology */
 gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
                               const bool               useFreeEnergy,
                               const ReverseTopOptions& reverseTopOptions) :
     options(reverseTopOptions),
     hasPositionRestraints(gmx_mtop_ftype_count(mtop, F_POSRES) + gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0),
-    bInterAtomicInteractions(mtop.bIntermolecularInteractions)
+    bInterAtomicInteractions(mtop.bIntermolecularInteractions),
+    expectedNumGlobalBondedInteractions(
+            computeExpectedNumGlobalBondedInteractions(mtop,
+                                                       reverseTopOptions.includeConstraints,
+                                                       reverseTopOptions.includeSettles))
 {
     bInterAtomicInteractions = mtop.bIntermolecularInteractions;
     ril_mt.resize(mtop.moltype.size());
     ril_mt_tot_size = 0;
-    std::vector<int> nint_mt;
     for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
     {
         const gmx_moltype_t& molt = mtop.moltype[mt];
@@ -379,21 +391,13 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
         }
 
         /* Make the atom to interaction list for this molecule type */
-        int numberOfInteractions = make_reverse_ilist(
-                molt.ilist, &molt.atoms, options, AtomLinkRule::FirstAtom, &ril_mt[mt]);
-        nint_mt.push_back(numberOfInteractions);
+        make_reverse_ilist(molt.ilist, &molt.atoms, options, AtomLinkRule::FirstAtom, &ril_mt[mt]);
 
         ril_mt_tot_size += ril_mt[mt].index[molt.atoms.nr];
     }
     if (debug)
     {
         fprintf(debug, "The total size of the atom to interaction index is %d integers\n", ril_mt_tot_size);
-    }
-
-    expectedNumGlobalBondedInteractions = 0;
-    for (const gmx_molblock_t& molblock : mtop.molblock)
-    {
-        expectedNumGlobalBondedInteractions += molblock.nmol * nint_mt[molblock.type];
     }
 
     /* Make an intermolecular reverse top, if necessary */
@@ -408,7 +412,7 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
         GMX_RELEASE_ASSERT(mtop.intermolecular_ilist,
                            "We should have an ilist when intermolecular interactions are on");
 
-        expectedNumGlobalBondedInteractions += make_reverse_ilist(
+        make_reverse_ilist(
                 *mtop.intermolecular_ilist, &atoms_global, options, AtomLinkRule::FirstAtom, &ril_intermol);
     }
 

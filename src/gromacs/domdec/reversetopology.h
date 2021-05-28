@@ -179,11 +179,11 @@ void global_atomnr_to_moltype_ind(gmx::ArrayRef<const MolblockIndices> molblockI
                                   int*                                 i_mol);
 
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
-int make_reverse_ilist(const InteractionLists&  ilist,
-                       const t_atoms*           atoms,
-                       const ReverseTopOptions& rtOptions,
-                       AtomLinkRule             atomLinkRule,
-                       reverse_ilist_t*         ril_mt);
+void make_reverse_ilist(const InteractionLists&  ilist,
+                        const t_atoms*           atoms,
+                        const ReverseTopOptions& rtOptions,
+                        AtomLinkRule             atomLinkRule,
+                        reverse_ilist_t*         ril_mt);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE*                           fplog,
