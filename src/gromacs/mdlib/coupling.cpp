@@ -1106,6 +1106,8 @@ void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   
                                             t_nrnb*                             nrnb,
                                             const bool                          scaleCoordinates)
 {
+    // If the support here increases, we need to also add the template declarations
+    // for new cases below.
     static_assert(pressureCouplingType == PressureCoupling::Berendsen
                           || pressureCouplingType == PressureCoupling::CRescale,
                   "pressureCouplingScaleBoxAndCoordinates is only implemented for Berendsen and "
@@ -1174,6 +1176,33 @@ void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   
      */
     inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
+
+template void
+pressureCouplingScaleBoxAndCoordinates<PressureCoupling::Berendsen>(const t_inputrec*,
+                                                                    const matrix,
+                                                                    matrix,
+                                                                    matrix,
+                                                                    int,
+                                                                    int,
+                                                                    gmx::ArrayRef<gmx::RVec>,
+                                                                    gmx::ArrayRef<gmx::RVec>,
+                                                                    gmx::ArrayRef<const unsigned short>,
+                                                                    t_nrnb*,
+                                                                    const bool);
+
+
+template void
+pressureCouplingScaleBoxAndCoordinates<PressureCoupling::CRescale>(const t_inputrec*,
+                                                                   const matrix,
+                                                                   matrix,
+                                                                   matrix,
+                                                                   int,
+                                                                   int,
+                                                                   gmx::ArrayRef<gmx::RVec>,
+                                                                   gmx::ArrayRef<gmx::RVec>,
+                                                                   gmx::ArrayRef<const unsigned short>,
+                                                                   t_nrnb*,
+                                                                   const bool);
 
 void berendsen_tcoupl(const t_inputrec* ir, gmx_ekindata_t* ekind, real dt, std::vector<double>& therm_integral)
 {
