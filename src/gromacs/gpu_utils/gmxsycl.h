@@ -54,23 +54,6 @@
 
 #include "config.h"
 
-/* Some versions of Intel ICPX compiler (at least 2021.1.1 and 2021.1.2) fail to unroll a loop
- * in sycl::accessor::__init, and emit -Wpass-failed=transform-warning. This is a useful
- * warning, but mostly noise right now. Probably related to using shared memory accessors.
- * The unroll directive was introduced in https://github.com/intel/llvm/pull/2449. */
-#if GMX_SYCL_DPCPP
-#    include <CL/sycl/version.hpp>
-#    define DISABLE_UNROLL_WARNINGS \
-        ((__SYCL_COMPILER_VERSION >= 20201113) && (__SYCL_COMPILER_VERSION <= 20201214))
-#else
-#    define DISABLE_UNROLL_WARNINGS 0
-#endif
-
-#if DISABLE_UNROLL_WARNINGS
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wpass-failed"
-#endif
-
 // For hipSYCL, we need to activate floating-point atomics
 #if GMX_SYCL_HIPSYCL
 #    define HIPSYCL_EXT_FP_ATOMICS
@@ -106,15 +89,9 @@
 #    include <CL/sycl.hpp>
 #endif
 
-#if DISABLE_UNROLL_WARNINGS
-#    pragma clang diagnostic pop
-#endif
-
 #if GMX_SYCL_HIPSYCL
 #    pragma clang diagnostic pop
 #endif
-
-#undef DISABLE_UNROLL_WARNINGS
 
 /* Exposing Intel-specific extensions in a manner compatible with SYCL2020 provisional spec.
  * Despite ICPX (up to 2021.1.2 at the least) having SYCL_LANGUAGE_VERSION=202001,
