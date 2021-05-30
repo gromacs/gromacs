@@ -1031,6 +1031,8 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
                                             matrix            mu,
                                             double*           baros_integral)
 {
+    // If the support here increases, we need to also add the template declarations
+    // for new cases below.
     static_assert(pressureCouplingType == PressureCoupling::Berendsen
                           || pressureCouplingType == PressureCoupling::CRescale,
                   "pressureCouplingCalculateScalingMatrix is only implemented for Berendsen and "
@@ -1092,6 +1094,28 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
         fprintf(stderr, "%s", buf);
     }
 }
+
+template void pressureCouplingCalculateScalingMatrix<PressureCoupling::CRescale>(FILE*,
+                                                                                 int64_t,
+                                                                                 const t_inputrec*,
+                                                                                 real,
+                                                                                 const tensor,
+                                                                                 const matrix,
+                                                                                 const matrix,
+                                                                                 const matrix,
+                                                                                 matrix,
+                                                                                 double*);
+
+template void pressureCouplingCalculateScalingMatrix<PressureCoupling::Berendsen>(FILE*,
+                                                                                  int64_t,
+                                                                                  const t_inputrec*,
+                                                                                  real,
+                                                                                  const tensor,
+                                                                                  const matrix,
+                                                                                  const matrix,
+                                                                                  const matrix,
+                                                                                  matrix,
+                                                                                  double*);
 
 template<PressureCoupling pressureCouplingType>
 void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   ir,
