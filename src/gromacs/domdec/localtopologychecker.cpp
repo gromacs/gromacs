@@ -253,7 +253,8 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
 /*! \brief Print error output when interactions are missing */
 [[noreturn]] static void dd_print_missing_interactions(const gmx::MDLogger& mdlog,
                                                        t_commrec*           cr,
-                                                       int numBondedInteractionsOverAllDomains,
+                                                       const int numBondedInteractionsOverAllDomains,
+                                                       const int expectedNumGlobalBondedInteractions,
                                                        const gmx_mtop_t&     top_global,
                                                        const gmx_localtop_t* top_local,
                                                        ArrayRef<const RVec>  x,
@@ -267,8 +268,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
                     "Not all bonded interactions have been properly assigned to the domain "
                     "decomposition cells");
 
-    const int ndiff_tot = numBondedInteractionsOverAllDomains
-                          - dd->reverse_top->expectedNumGlobalBondedInteractions();
+    const int ndiff_tot = numBondedInteractionsOverAllDomains - expectedNumGlobalBondedInteractions;
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -281,7 +281,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
     if (DDMASTER(dd))
     {
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
-        int rest_global = dd->reverse_top->expectedNumGlobalBondedInteractions();
+        int rest_global = expectedNumGlobalBondedInteractions;
         int rest        = numBondedInteractionsOverAllDomains;
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
@@ -336,13 +336,42 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
                 "two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds "
                 "also see option -ddcheck",
                 -ndiff_tot,
-                dd->reverse_top->expectedNumGlobalBondedInteractions(),
+                expectedNumGlobalBondedInteractions,
                 dd_cutoff_multibody(dd),
                 dd_cutoff_twobody(dd));
     }
     gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), "%s", errorMessage.c_str());
 }
 
+namespace gmx
+{
+
+/*! \brief Compute the total bonded interaction count
+ *
+ * \param[in] mtop              The global system topology
+ * \param[in] useUpdateGroups   Whether update groups are in use
+ *
+ * When using domain decomposition without update groups,
+ * constraint-type interactions can be split across domains, and so we
+ * do not consider them in this correctness check. Otherwise, we
+ * include them.
+ */
+static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop, const bool useUpdateGroups)
+{
+    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BOND);
+    if (useUpdateGroups)
+    {
+        expectedNumGlobalBondedInteractions += gmx_mtop_interaction_count(mtop, IF_CONSTRAINT);
+    }
+    return expectedNumGlobalBondedInteractions;
+}
+
+LocalTopologyChecker::LocalTopologyChecker(const gmx_mtop_t& mtop, const bool useUpdateGroups) :
+    expectedNumGlobalBondedInteractions(computeExpectedNumGlobalBondedInteractions(mtop, useUpdateGroups))
+{
+}
+
+} // namespace gmx
 
 void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, const int numBondedInteractionsToReduce)
 {
@@ -390,12 +419,13 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&  mdlog,
                            "The check for the total number of bonded interactions requires the "
                            "value to have been reduced across all domains");
         if (cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value()
-            != cr->dd->reverse_top->expectedNumGlobalBondedInteractions())
+            != cr->dd->localTopologyChecker->expectedNumGlobalBondedInteractions)
         {
             dd_print_missing_interactions(
                     mdlog,
                     cr,
                     cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value(),
+                    cr->dd->localTopologyChecker->expectedNumGlobalBondedInteractions,
                     top_global,
                     top_local,
                     x,

@@ -3020,7 +3020,8 @@ gmx_domdec_t* DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomS
 
     dd->atomSets = atomSets;
 
-    dd->localTopologyChecker = std::make_unique<LocalTopologyChecker>();
+    dd->localTopologyChecker =
+            std::make_unique<LocalTopologyChecker>(mtop_, dd->comm->systemInfo.useUpdateGroups);
 
     return dd;
 }

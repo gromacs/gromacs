@@ -68,6 +68,8 @@ namespace gmx
 struct LocalTopologyChecker
 {
 public:
+    //! Constructor
+    LocalTopologyChecker(const gmx_mtop_t& mtop, bool useUpdateGroups);
     /*! \brief Data to help check local topology construction
      *
      * Partitioning could incorrectly miss a bonded interaction.
@@ -93,6 +95,8 @@ public:
      * removed when it is again time to check after a new
      * partition. */
     std::optional<int> numBondedInteractionsOverAllDomains;
+    //! The number of bonded interactions computed from the full system topology
+    int expectedNumGlobalBondedInteractions = 0;
     /*! \} */
 };
 

@@ -140,9 +140,6 @@ public:
     //! Gets the interaction list for the given molecule type
     const reverse_ilist_t& interactionListForMoleculeType(int moleculeType) const;
 
-    //! Returns the total count of bonded interactions, used for checking partitioning
-    int expectedNumGlobalBondedInteractions() const;
-
     //! Returns the molecule block indices
     gmx::ArrayRef<const MolblockIndices> molblockIndices() const;
     //! Returns whether the reverse topology describes intermolecular interactions

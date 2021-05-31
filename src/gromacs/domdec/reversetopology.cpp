@@ -97,9 +97,6 @@ struct gmx_reverse_top_t::Impl
     //! \brief Intermolecular reverse ilist
     reverse_ilist_t ril_intermol;
 
-    //! The number of bonded interactions computed from the full topology
-    int expectedNumGlobalBondedInteractions = 0;
-
     /* Work data structures for multi-threading */
     //! \brief Thread work array for local topology generation
     std::vector<thread_work_t> th_work;
@@ -299,11 +296,6 @@ const reverse_ilist_t& gmx_reverse_top_t::interactionListForMoleculeType(int mol
     return impl_->ril_mt[moleculeType];
 }
 
-int gmx_reverse_top_t::expectedNumGlobalBondedInteractions() const
-{
-    return impl_->expectedNumGlobalBondedInteractions;
-}
-
 ArrayRef<const MolblockIndices> gmx_reverse_top_t::molblockIndices() const
 {
     return impl_->mbi;
@@ -339,45 +331,13 @@ bool gmx_reverse_top_t::doSorting() const
     return impl_->ilsort != ilsortNO_FE;
 }
 
-/*! \brief Compute the total bonded interaction count
- *
- * \param[in] mtop                The global system topology
- * \param[in] includeConstraints  Whether constraint interactions are included in the count
- * \param[in] includeSettles      Whether settle interactions are included in the count
- *
- * When using domain decomposition without update groups,
- * constraint-type interactions can be split across domains, and so we
- * do not consider them in this correctness check. Otherwise, we
- * include them.
- */
-static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop,
-                                                      const bool        includeConstraints,
-                                                      const bool        includeSettles)
-{
-    int expectedNumGlobalBondedInteractions = gmx_mtop_interaction_count(mtop, IF_BOND);
-    if (includeConstraints)
-    {
-        expectedNumGlobalBondedInteractions +=
-                gmx_mtop_ftype_count(mtop, F_CONSTR) + gmx_mtop_ftype_count(mtop, F_CONSTRNC);
-    }
-    if (includeSettles)
-    {
-        expectedNumGlobalBondedInteractions += gmx_mtop_ftype_count(mtop, F_SETTLE);
-    }
-    return expectedNumGlobalBondedInteractions;
-}
-
 /*! \brief Generate the reverse topology */
 gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
                               const bool               useFreeEnergy,
                               const ReverseTopOptions& reverseTopOptions) :
     options(reverseTopOptions),
     hasPositionRestraints(gmx_mtop_ftype_count(mtop, F_POSRES) + gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0),
-    bInterAtomicInteractions(mtop.bIntermolecularInteractions),
-    expectedNumGlobalBondedInteractions(
-            computeExpectedNumGlobalBondedInteractions(mtop,
-                                                       reverseTopOptions.includeConstraints,
-                                                       reverseTopOptions.includeSettles))
+    bInterAtomicInteractions(mtop.bIntermolecularInteractions)
 {
     bInterAtomicInteractions = mtop.bIntermolecularInteractions;
     ril_mt.resize(mtop.moltype.size());
