@@ -76,6 +76,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/int64_to_int.h"
 
+#include "andersentemperaturecoupling.h"
 #include "computeglobalselement.h"
 #include "constraintelement.h"
 #include "firstorderpressurecoupling.h"
@@ -158,6 +159,10 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                     UseFullStepKE::Yes,
                     ReportPreviousStepConservedEnergy::Yes,
                     PropagatorTag("VelocityHalfAndPositionFullStep"));
+        }
+        else if (ETC_ANDERSEN(legacySimulatorData_->inputrec->etc))
+        {
+            builder->add<AndersenTemperatureCoupling>();
         }
         builder->add<Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>>(
                 PropagatorTag("VelocityHalfAndPositionFullStep"),
@@ -245,8 +250,10 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                                      || inputrec->etc == TemperatureCoupling::VRescale
                                                      || inputrec->etc == TemperatureCoupling::Berendsen
                                                      || (inputrec->etc == TemperatureCoupling::NoseHoover
-                                                         && inputrec->eI == IntegrationAlgorithm::MD),
-                                             "Only v-rescale, Berendsen and Nose-Hoover "
+                                                         && inputrec->eI == IntegrationAlgorithm::MD)
+                                                     || ETC_ANDERSEN(inputrec->etc),
+                                             "Only v-rescale, Berendsen, Nose-Hoover, "
+                                             "and Andersen / Andersen-massive "
                                              "thermostats are supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(inputrec->epc == PressureCoupling::No

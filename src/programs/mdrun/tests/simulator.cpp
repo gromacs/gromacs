@@ -92,6 +92,9 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 
     int maxNumWarnings = 0;
 
+    const bool isAndersen     = (tcoupling == "andersen-massive" || tcoupling == "andersen");
+    const bool hasConstraints = (simulationName != "argon12");
+
     // TODO At some point we should also test PME-only ranks.
     const int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
@@ -109,6 +112,17 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     {
         // do_md calls this MTTK, requires Nose-Hoover, and
         // does not work with constraints or anisotropically
+        return;
+    }
+
+    if (isAndersen && pcoupling == "berendsen")
+    {
+        // "Using Berendsen pressure coupling invalidates the true ensemble for the thermostat"
+        maxNumWarnings++;
+    }
+    if (tcoupling == "andersen" && hasConstraints)
+    {
+        // Constraints are not allowed with non-massive Andersen
         return;
     }
 
@@ -134,7 +148,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             ("Expected tested environment variable to be " + envVariableModSimOn + " or " + envVariableModSimOff)
                     .c_str());
 
-    const auto hasConservedField = !(tcoupling == "no" && pcoupling == "no");
+    const auto hasConservedField = !(tcoupling == "no" && pcoupling == "no")
+                                   && !(tcoupling == "andersen-massive" || tcoupling == "andersen");
 
     SCOPED_TRACE(formatString(
             "Comparing two simulations of '%s' "
@@ -146,8 +161,15 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             pcoupling.c_str(),
             environmentVariable.c_str()));
 
-    const auto mdpFieldValues = prepareMdpFieldValues(
+    auto mdpFieldValues = prepareMdpFieldValues(
             simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), pcoupling.c_str());
+    if (tcoupling == "andersen")
+    {
+        // Fixes error "nstcomm must be 1, not 4 for Andersen, as velocities of
+        //              atoms in coupled groups are randomized every time step"
+        mdpFieldValues["nstcomm"]       = "1";
+        mdpFieldValues["nstcalcenergy"] = "1";
+    }
 
     EnergyTermsToCompare energyTermsToCompare{ {
             { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
@@ -257,7 +279,11 @@ INSTANTIATE_TEST_CASE_P(
         SimulatorComparisonTest,
         ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
                                               ::testing::Values("md-vv"),
-                                              ::testing::Values("no", "v-rescale", "berendsen"),
+                                              ::testing::Values("no",
+                                                                "v-rescale",
+                                                                "berendsen",
+                                                                "andersen-massive",
+                                                                "andersen"),
                                               ::testing::Values("no", "berendsen", "c-rescale")),
                            ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
 INSTANTIATE_TEST_CASE_P(
@@ -276,7 +302,11 @@ INSTANTIATE_TEST_CASE_P(
         SimulatorComparisonTest,
         ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
                                               ::testing::Values("md-vv"),
-                                              ::testing::Values("no", "v-rescale", "berendsen"),
+                                              ::testing::Values("no",
+                                                                "v-rescale",
+                                                                "berendsen",
+                                                                "andersen-massive",
+                                                                "andersen"),
                                               ::testing::Values("no", "berendsen", "c-rescale")),
                            ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
 INSTANTIATE_TEST_CASE_P(
