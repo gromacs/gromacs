@@ -62,6 +62,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/domdec/localatomsetmanager.h"
+#include "gromacs/domdec/makebondedlinks.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/ewald/ewald_utils.h"

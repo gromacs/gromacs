@@ -244,24 +244,6 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 /*! \brief Construct local state */
 void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_state* local_state);
 
-/*! \brief Generate a list of links between atoms that are linked by bonded interactions
- *
- * Also stores whether atoms are linked in \p atomInfoForEachMoleculeBlock.
- */
-void makeBondedLinks(gmx_domdec_t*                              dd,
-                     const gmx_mtop_t&                          mtop,
-                     gmx::ArrayRef<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock);
-
-/*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
-void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
-                           const gmx_mtop_t&              mtop,
-                           const t_inputrec&              ir,
-                           gmx::ArrayRef<const gmx::RVec> x,
-                           const matrix                   box,
-                           gmx::DDBondedChecking          ddBondedChecking,
-                           real*                          r_2b,
-                           real*                          r_mb);
-
 /*! \brief Construct the GPU halo exchange object(s).
  *
  * \param[in] mdlog               The logger object.
