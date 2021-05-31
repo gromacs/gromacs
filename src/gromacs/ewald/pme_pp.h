@@ -46,7 +46,6 @@
 #define GMX_EWALD_PME_PP_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_wallcycle;
 struct interaction_const_t;
@@ -66,31 +65,31 @@ class ArrayRef;
 /*! \brief Send the charges and maxshift to out PME-only node. */
 void gmx_pme_send_parameters(const t_commrec*           cr,
                              const interaction_const_t& interactionConst,
-                             gmx_bool                   bFreeEnergy_q,
-                             gmx_bool                   bFreeEnergy_lj,
-                             gmx::ArrayRef<real>        chargeA,
-                             gmx::ArrayRef<real>        chargeB,
-                             gmx::ArrayRef<real>        sqrt_c6A,
-                             gmx::ArrayRef<real>        sqrt_c6B,
-                             gmx::ArrayRef<real>        sigmaA,
-                             gmx::ArrayRef<real>        sigmaB,
+                             bool                       bFreeEnergy_q,
+                             bool                       bFreeEnergy_lj,
+                             gmx::ArrayRef<const real>  chargeA,
+                             gmx::ArrayRef<const real>  chargeB,
+                             gmx::ArrayRef<const real>  sqrt_c6A,
+                             gmx::ArrayRef<const real>  sqrt_c6B,
+                             gmx::ArrayRef<const real>  sigmaA,
+                             gmx::ArrayRef<const real>  sigmaB,
                              int                        maxshift_x,
                              int                        maxshift_y);
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
-void gmx_pme_send_coordinates(t_forcerec*           fr,
-                              const t_commrec*      cr,
-                              const matrix          box,
-                              const rvec*           x,
-                              real                  lambda_q,
-                              real                  lambda_lj,
-                              bool                  computeEnergyAndVirial,
-                              int64_t               step,
-                              bool                  useGpuPmePpComms,
-                              bool                  reinitGpuPmePpComms,
-                              bool                  sendCoordinatesFromGpu,
-                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                              gmx_wallcycle*        wcycle);
+void gmx_pme_send_coordinates(t_forcerec*                    fr,
+                              const t_commrec*               cr,
+                              const matrix                   box,
+                              gmx::ArrayRef<const gmx::RVec> x,
+                              real                           lambda_q,
+                              real                           lambda_lj,
+                              bool                           computeEnergyAndVirial,
+                              int64_t                        step,
+                              bool                           useGpuPmePpComms,
+                              bool                           reinitGpuPmePpComms,
+                              bool                           sendCoordinatesFromGpu,
+                              GpuEventSynchronizer*          coordinatesReadyOnDeviceEvent,
+                              gmx_wallcycle*                 wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec* cr);
