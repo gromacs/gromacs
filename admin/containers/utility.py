@@ -123,6 +123,9 @@ parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
 parser.add_argument('--hipsycl', type=str, nargs='?', default=None,
                     help='Select hipSYCL repository tag/commit/branch.')
 
+parser.add_argument('--intel-compute-runtime', type=str, nargs='?', default=None,
+                    help='Select Intel Compute Runtime version.')
+
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
                     help='Add external clFFT libraries to the build image')
 
@@ -166,6 +169,8 @@ def image_name(configuration: argparse.Namespace) -> str:
             elements.append(gpusdk + '-' + version)
     if configuration.oneapi is not None:
         elements.append('oneapi-' + configuration.oneapi)
+    if configuration.intel_compute_runtime is not None:
+        elements.append('intel-' + configuration.intel_compute_runtime)
 
     # Check for special cases
     # The following attribute keys indicate the image is built for the named

@@ -116,6 +116,20 @@ _opencl_extra_packages = [
     'clinfo'
 ]
 
+# Extra packages needed to build Intel Compute Runtime
+_intel_compute_runtime_extra_packages = ['pkg-config',
+                                         'libxml2',
+                                         'libxml2-dev',
+                                         'libigc',
+                                         'libigc-dev',
+                                         'libigdgmm11',
+                                         'libigdgmm-dev',
+                                         'libze-loader',
+                                         'libze-loader-dev',
+                                         'ocl-icd-libopencl1',
+                                         'ocl-icd-opencl-dev',
+                                         'opencl-headers']
+
 # Extra packages needed to build Python installations from source.
 _python_extra_packages = ['build-essential',
                           'ca-certificates',
@@ -313,6 +327,24 @@ def get_hipsycl(args):
         prefix='/usr/local', recursive=True, commit=args.hipsycl,
         cmake_opts=['-DCMAKE_BUILD_TYPE=Release', *cmake_opts],
         postinstall=postinstall)
+
+def get_intel_compute_runtime(args):
+    # The only reason we need to build Compute Runtime ourselves is because Intel packages have no DG1 support
+    # Otherwise, we could have just installed DEB packages from GitHub or Intel PPA
+    if args.intel_compute_runtime is None:
+        return None
+
+    cmake_opts = ['-DCMAKE_BUILD_TYPE=Release',
+                  '-DSKIP_UNIT_TESTS=TRUE',
+                  '-DSUPPORT_GEN8=0', '-DSUPPORT_GEN9=1', '-DSUPPORT_GEN11=1', '-DSUPPORT_GEN12LP=1', '-DSUPPORT_DG1=1',
+                  '-DBUILD_WITH_L0=1']
+
+    return hpccm.building_blocks.generic_cmake(
+        repository='https://github.com/intel/compute-runtime.git',
+        directory='compute-runtime',
+        prefix='/usr/local', recursive=True, branch=args.intel_compute_runtime,
+        cmake_opts=cmake_opts,
+        postinstall=['ldconfig'])
 
 def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
     """Isolate the expensive TSAN preparation stage.
@@ -575,6 +607,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         os_packages += ['lsb-release']
     if args.hipsycl is not None:
         os_packages += ['libboost-fiber-dev']
+    if args.intel_compute_runtime is not None:
+        os_packages += _intel_compute_runtime_extra_packages
     building_blocks['extra_packages'] = hpccm.building_blocks.packages(
         ospackages=os_packages,
         apt_ppas=['ppa:intel-opencl/intel-opencl'],
@@ -599,6 +633,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     building_blocks['clfft'] = get_clfft(args)
 
     building_blocks['hipSYCL'] = get_hipsycl(args)
+
+    building_blocks['intel-compute-runtime'] = get_intel_compute_runtime(args)
 
     # Add Python environments to MPI images, only, so we don't have to worry
     # about whether to install mpi4py.

@@ -203,6 +203,9 @@
     - if grep -qF 'nvidia.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
       nvidia-smi || true;
       fi
+    - if grep -qF 'intel.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
+      sycl-ls || true;
+      fi
     - ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
     - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
       ctestLog.log | tee ctestErrors.log
@@ -275,4 +278,5 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-opencl.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-opencl-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.1.1-sycl.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2021.2.0-sycl-nightly.gitlab-ci.yml'
 
