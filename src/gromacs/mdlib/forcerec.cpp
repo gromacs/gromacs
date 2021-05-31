@@ -190,72 +190,80 @@ std::vector<real> makeLJPmeC6GridCorrectionParameters(const int                 
     return grid;
 }
 
-enum
+//! What kind of constraint affects an atom
+enum class ConstraintTypeForAtom : int
 {
-    acNONE = 0,
-    acCONSTRAINT,
-    acSETTLE
+    None,       //!< No constraint active
+    Constraint, //!< F_CONSTR or F_CONSTRNC active
+    Settle,     //! F_SETTLE active
 };
 
-static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_forcerec* fr)
+static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop,
+                                                                                 const t_forcerec* fr)
 {
-    gmx_bool* type_VDW;
-    int*      a_con;
-
-    snew(type_VDW, fr->ntype);
+    std::vector<bool> atomUsesVdw(fr->ntype, false);
     for (int ai = 0; ai < fr->ntype; ai++)
     {
-        type_VDW[ai] = FALSE;
         for (int j = 0; j < fr->ntype; j++)
         {
-            type_VDW[ai] = type_VDW[ai] || fr->haveBuckingham || C6(fr->nbfp, fr->ntype, ai, j) != 0
-                           || C12(fr->nbfp, fr->ntype, ai, j) != 0;
+            atomUsesVdw[ai] = atomUsesVdw[ai] || fr->haveBuckingham || C6(fr->nbfp, fr->ntype, ai, j) != 0
+                              || C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
 
-    std::vector<cginfo_mb_t> cginfoPerMolblock;
-    int                      a_offset = 0;
+    std::vector<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
+    int                                      indexOfFirstAtomInMoleculeBlock = 0;
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
         const gmx_molblock_t& molb = mtop.molblock[mb];
         const gmx_moltype_t&  molt = mtop.moltype[molb.type];
         const auto&           excl = molt.excls;
 
-        /* Check if the cginfo is identical for all molecules in this block.
+        /* Check if all molecules in this block have identical
+         * atominfo. (That's true unless some kind of group- or
+         * distance-based algorithm is involved, e.g. QM/MM groups
+         * affecting multiple molecules within a block differently.)
          * If so, we only need an array of the size of one molecule.
-         * Otherwise we make an array of #mol times #cgs per molecule.
+         * Otherwise we make an array of #mol times #atoms per
+         * molecule.
          */
-        gmx_bool bId = TRUE;
+        bool allMoleculesWithinBlockAreIdentical = true;
         for (int m = 0; m < molb.nmol; m++)
         {
-            const int am = m * molt.atoms.nr;
+            const int numAtomsInAllMolecules = m * molt.atoms.nr;
             for (int a = 0; a < molt.atoms.nr; a++)
             {
-                if (getGroupType(mtop.groups, SimulationAtomGroupType::QuantumMechanics, a_offset + am + a)
-                    != getGroupType(mtop.groups, SimulationAtomGroupType::QuantumMechanics, a_offset + a))
+                if (getGroupType(mtop.groups,
+                                 SimulationAtomGroupType::QuantumMechanics,
+                                 indexOfFirstAtomInMoleculeBlock + numAtomsInAllMolecules + a)
+                    != getGroupType(mtop.groups,
+                                    SimulationAtomGroupType::QuantumMechanics,
+                                    indexOfFirstAtomInMoleculeBlock + a))
                 {
-                    bId = FALSE;
+                    allMoleculesWithinBlockAreIdentical = false;
                 }
                 if (!mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty())
                 {
-                    if (mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][a_offset + am + a]
-                        != mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][a_offset + a])
+                    if (mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics]
+                                                [indexOfFirstAtomInMoleculeBlock + numAtomsInAllMolecules + a]
+                        != mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics]
+                                                   [indexOfFirstAtomInMoleculeBlock + a])
                     {
-                        bId = FALSE;
+                        allMoleculesWithinBlockAreIdentical = false;
                     }
                 }
             }
         }
 
-        cginfo_mb_t cginfo_mb;
-        cginfo_mb.cg_start = a_offset;
-        cginfo_mb.cg_end   = a_offset + molb.nmol * molt.atoms.nr;
-        cginfo_mb.cg_mod   = (bId ? 1 : molb.nmol) * molt.atoms.nr;
-        cginfo_mb.cginfo.resize(cginfo_mb.cg_mod);
-        gmx::ArrayRef<int> cginfo = cginfo_mb.cginfo;
+        AtomInfoWithinMoleculeBlock atomInfoOfMoleculeBlock;
+        atomInfoOfMoleculeBlock.indexOfFirstAtomInMoleculeBlock = indexOfFirstAtomInMoleculeBlock;
+        atomInfoOfMoleculeBlock.indexOfLastAtomInMoleculeBlock =
+                indexOfFirstAtomInMoleculeBlock + molb.nmol * molt.atoms.nr;
+        int atomInfoSize = (allMoleculesWithinBlockAreIdentical ? 1 : molb.nmol) * molt.atoms.nr;
+        atomInfoOfMoleculeBlock.atomInfo.resize(atomInfoSize);
 
         /* Set constraints flags for constrained atoms */
-        snew(a_con, molt.atoms.nr);
+        std::vector<ConstraintTypeForAtom> constraintTypeOfAtom(molt.atoms.nr, ConstraintTypeForAtom::None);
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
             if (interaction_function[ftype].flags & IF_CONSTRAINT)
@@ -263,32 +271,31 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_f
                 const int nral = NRAL(ftype);
                 for (int ia = 0; ia < molt.ilist[ftype].size(); ia += 1 + nral)
                 {
-                    int a;
-
-                    for (a = 0; a < nral; a++)
+                    for (int a = 0; a < nral; a++)
                     {
-                        a_con[molt.ilist[ftype].iatoms[ia + 1 + a]] =
-                                (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
+                        constraintTypeOfAtom[molt.ilist[ftype].iatoms[ia + 1 + a]] =
+                                (ftype == F_SETTLE ? ConstraintTypeForAtom::Settle
+                                                   : ConstraintTypeForAtom::Constraint);
                     }
                 }
             }
         }
 
-        for (int m = 0; m < (bId ? 1 : molb.nmol); m++)
+        for (int m = 0; m < (allMoleculesWithinBlockAreIdentical ? 1 : molb.nmol); m++)
         {
-            const int molculeOffsetInBlock = m * molt.atoms.nr;
+            const int moleculeOffsetInBlock = m * molt.atoms.nr;
             for (int a = 0; a < molt.atoms.nr; a++)
             {
-                const t_atom& atom     = molt.atoms.atom[a];
-                int&          atomInfo = cginfo[molculeOffsetInBlock + a];
+                const t_atom& atom = molt.atoms.atom[a];
+                int& atomInfo      = atomInfoOfMoleculeBlock.atomInfo[moleculeOffsetInBlock + a];
 
-                /* Store the energy group in cginfo */
+                /* Store the energy group in atomInfo */
                 int gid = getGroupType(mtop.groups,
                                        SimulationAtomGroupType::EnergyOutput,
-                                       a_offset + molculeOffsetInBlock + a);
+                                       indexOfFirstAtomInMoleculeBlock + moleculeOffsetInBlock + a);
                 SET_CGINFO_GID(atomInfo, gid);
 
-                bool bHaveVDW = (type_VDW[atom.type] || type_VDW[atom.typeB]);
+                bool bHaveVDW = (atomUsesVdw[atom.type] || atomUsesVdw[atom.typeB]);
                 bool bHaveQ   = (atom.q != 0 || atom.qB != 0);
 
                 bool haveExclusions = false;
@@ -302,10 +309,10 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_f
                     }
                 }
 
-                switch (a_con[a])
+                switch (constraintTypeOfAtom[a])
                 {
-                    case acCONSTRAINT: SET_CGINFO_CONSTR(atomInfo); break;
-                    case acSETTLE: SET_CGINFO_SETTLE(atomInfo); break;
+                    case ConstraintTypeForAtom::Constraint: SET_CGINFO_CONSTR(atomInfo); break;
+                    case ConstraintTypeForAtom::Settle: SET_CGINFO_SETTLE(atomInfo); break;
                     default: break;
                 }
                 if (haveExclusions)
@@ -327,34 +334,34 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t& mtop, const t_f
             }
         }
 
-        sfree(a_con);
+        atomInfoForEachMoleculeBlock.push_back(atomInfoOfMoleculeBlock);
 
-        cginfoPerMolblock.push_back(cginfo_mb);
-
-        a_offset += molb.nmol * molt.atoms.nr;
+        indexOfFirstAtomInMoleculeBlock += molb.nmol * molt.atoms.nr;
     }
-    sfree(type_VDW);
 
-    return cginfoPerMolblock;
+    return atomInfoForEachMoleculeBlock;
 }
 
-static std::vector<int> cginfo_expand(const int nmb, gmx::ArrayRef<const cginfo_mb_t> cgi_mb)
+static std::vector<int> expandAtomInfo(const int                                        nmb,
+                                       gmx::ArrayRef<const AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
-    const int ncg = cgi_mb[nmb - 1].cg_end;
+    const int numAtoms = atomInfoForEachMoleculeBlock[nmb - 1].indexOfLastAtomInMoleculeBlock;
 
-    std::vector<int> cginfo(ncg);
+    std::vector<int> atomInfo(numAtoms);
 
     int mb = 0;
-    for (int cg = 0; cg < ncg; cg++)
+    for (int a = 0; a < numAtoms; a++)
     {
-        while (cg >= cgi_mb[mb].cg_end)
+        while (a >= atomInfoForEachMoleculeBlock[mb].indexOfLastAtomInMoleculeBlock)
         {
             mb++;
         }
-        cginfo[cg] = cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
+        atomInfo[a] = atomInfoForEachMoleculeBlock[mb]
+                              .atomInfo[(a - atomInfoForEachMoleculeBlock[mb].indexOfFirstAtomInMoleculeBlock)
+                                        % atomInfoForEachMoleculeBlock[mb].atomInfo.size()];
     }
 
-    return cginfo;
+    return atomInfo;
 }
 
 /* Sets the sum of charges (squared) and C6 in the system in fr.
@@ -1047,10 +1054,10 @@ void init_forcerec(FILE*                            fplog,
     }
 
     /* Set all the static charge group info */
-    forcerec->cginfo_mb = init_cginfo_mb(mtop, forcerec);
+    forcerec->atomInfoForEachMoleculeBlock = makeAtomInfoForEachMoleculeBlock(mtop, forcerec);
     if (!DOMAINDECOMP(commrec))
     {
-        forcerec->cginfo = cginfo_expand(mtop.molblock.size(), forcerec->cginfo_mb);
+        forcerec->atomInfo = expandAtomInfo(mtop.molblock.size(), forcerec->atomInfoForEachMoleculeBlock);
     }
 
     if (!DOMAINDECOMP(commrec))

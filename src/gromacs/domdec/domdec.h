@@ -66,7 +66,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-struct cginfo_mb_t;
+struct AtomInfoWithinMoleculeBlock;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
@@ -263,9 +263,11 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
 
 /*! \brief Generate a list of links between atoms that are linked by bonded interactions
  *
- * Also stores whether atoms are linked in \p cginfo_mb.
+ * Also stores whether atoms are linked in \p atomInfoForEachMoleculeBlock.
  */
-void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb);
+void makeBondedLinks(gmx_domdec_t*                              dd,
+                     const gmx_mtop_t&                          mtop,
+                     gmx::ArrayRef<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,

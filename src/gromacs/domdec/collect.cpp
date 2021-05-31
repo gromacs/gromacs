@@ -73,7 +73,7 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
     if (ddpCount == dd->ddp_count)
     {
         /* The local state and DD are in sync, use the DD indices */
-        atomGroups = gmx::constArrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->ncg_home);
+        atomGroups = gmx::constArrayRefFromArray(dd->globalAtomGroupIndices.data(), dd->numHomeAtoms);
         nat_home   = dd->comm->atomRanges.numHomeAtoms();
     }
     else if (ddpCountCgGl == ddpCount)

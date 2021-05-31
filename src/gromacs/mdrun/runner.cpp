@@ -1938,9 +1938,9 @@ int Mdrunner::mdrunner()
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
             /* This call is not included in init_domain_decomposition
-             * because fr->cginfo_mb is set later.
+             * because fr->atomInfoForEachMoleculeBlock is set later.
              */
-            makeBondedLinks(cr->dd, mtop, fr->cginfo_mb);
+            makeBondedLinks(cr->dd, mtop, fr->atomInfoForEachMoleculeBlock);
         }
 
         if (runScheduleWork.simulationWork.useGpuBufferOps)

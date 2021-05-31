@@ -444,10 +444,10 @@ void LegacySimulator::do_tpi()
     fr->nbv->changePairlistRadii(inputrec->rlist, inputrec->rlist);
 
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    gid_tp = GET_CGINFO_GID(fr->cginfo[a_tp0]);
+    gid_tp = GET_CGINFO_GID(fr->atomInfo[a_tp0]);
     for (int a = a_tp0 + 1; a < a_tp1; a++)
     {
-        if (GET_CGINFO_GID(fr->cginfo[a]) != gid_tp)
+        if (GET_CGINFO_GID(fr->atomInfo[a]) != gid_tp)
         {
             fprintf(fplog,
                     "NOTE: Atoms in the molecule to insert belong to different energy groups.\n"
@@ -619,7 +619,7 @@ void LegacySimulator::do_tpi()
         rvec vzero       = { 0, 0, 0 };
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         nbnxn_put_on_grid(
-                fr->nbv.get(), box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr->cginfo, x, 0, nullptr);
+                fr->nbv.get(), box, 0, vzero, boxDiagonal, nullptr, { 0, a_tp0 }, -1, fr->atomInfo, x, 0, nullptr);
 
         step = cr->nodeid * stepblocksize;
         while (step < nsteps)
@@ -691,12 +691,12 @@ void LegacySimulator::do_tpi()
 
                 /* Put the inserted molecule on it's own search grid */
                 nbnxn_put_on_grid(
-                        fr->nbv.get(), box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr->cginfo, x, 0, nullptr);
+                        fr->nbv.get(), box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr->atomInfo, x, 0, nullptr);
 
                 /* TODO: Avoid updating all atoms at every bNS step */
                 fr->nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
                                            gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                           fr->cginfo);
+                                           fr->atomInfo);
 
                 fr->nbv->constructPairlist(InteractionLocality::Local, top.excls, step, nrnb);
 

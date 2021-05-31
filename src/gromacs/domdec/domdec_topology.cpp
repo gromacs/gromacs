@@ -733,7 +733,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
                                  gmx_domdec_zones_t*               zones,
                                  ArrayRef<const MolblockIndices>   molblockIndices,
                                  const std::vector<gmx_moltype_t>& moltype,
-                                 const int*                        cginfo,
+                                 const int*                        atomInfo,
                                  ListOfLists<int>*                 lexcls,
                                  int                               iz,
                                  int                               at_start,
@@ -749,7 +749,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
     {
         exclusionsForAtom.clear();
 
-        if (GET_CGINFO_EXCL_INTER(cginfo[at]))
+        if (GET_CGINFO_EXCL_INTER(atomInfo[at]))
         {
             int mb    = 0;
             int mt    = 0;
@@ -808,7 +808,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                     gmx_domdec_zones_t*     zones,
                                     const gmx_mtop_t&       mtop,
-                                    const int*              cginfo,
+                                    const int*              atomInfo,
                                     const bool              checkDistanceMultiBody,
                                     const ivec              rcheck,
                                     const gmx_bool          checkDistanceTwoBody,
@@ -910,7 +910,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                          zones,
                                          rt->molblockIndices(),
                                          mtop.moltype,
-                                         cginfo,
+                                         atomInfo,
                                          excl_t,
                                          izone,
                                          cg0t,
@@ -1028,7 +1028,7 @@ int dd_make_local_top(gmx_domdec_t*        dd,
     int numBondedInteractionsToReduce = make_local_bondeds_excls(dd,
                                                                  zones,
                                                                  mtop,
-                                                                 fr->cginfo.data(),
+                                                                 fr->atomInfo.data(),
                                                                  checkDistanceMultiBody,
                                                                  rcheck,
                                                                  checkDistanceTwoBody,
@@ -1104,7 +1104,9 @@ static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
     }
 }
 
-void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
+void makeBondedLinks(gmx_domdec_t*                              dd,
+                     const gmx_mtop_t&                          mtop,
+                     gmx::ArrayRef<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
 
     if (!dd->comm->systemInfo.filterBondedCommunication)
@@ -1142,9 +1144,9 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
     link->nalloc_a = 0;
     link->a        = nullptr;
 
-    link->index[0] = 0;
-    int cg_offset  = 0;
-    int ncgi       = 0;
+    link->index[0]                 = 0;
+    int indexOfFirstAtomInMolecule = 0;
+    int numLinkedAtoms             = 0;
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
         const gmx_molblock_t& molb = mtop.molblock[mb];
@@ -1161,16 +1163,16 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
         reverse_ilist_t   ril;
         make_reverse_ilist(molt.ilist, &molt.atoms, rtOptions, AtomLinkRule::AllAtomsInBondeds, &ril);
 
-        cginfo_mb_t* cgi_mb = &cginfo_mb[mb];
+        AtomInfoWithinMoleculeBlock* atomInfoOfMoleculeBlock = &atomInfoForEachMoleculeBlock[mb];
 
         int mol = 0;
         for (mol = 0; mol < (mtop.bIntermolecularInteractions ? molb.nmol : 1); mol++)
         {
             for (int a = 0; a < molt.atoms.nr; a++)
             {
-                int cg_gl              = cg_offset + a;
-                link->index[cg_gl + 1] = link->index[cg_gl];
-                int i                  = ril.index[a];
+                int atomIndex              = indexOfFirstAtomInMolecule + a;
+                link->index[atomIndex + 1] = link->index[atomIndex];
+                int i                      = ril.index[a];
                 while (i < ril.index[a + 1])
                 {
                     int ftype = ril.il[i++];
@@ -1182,7 +1184,7 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
                         int aj = ril.il[i + j];
                         if (aj != a)
                         {
-                            check_link(link, cg_gl, cg_offset + aj);
+                            check_link(link, atomIndex, indexOfFirstAtomInMolecule + aj);
                         }
                     }
                     i += nral_rt(ftype);
@@ -1190,8 +1192,8 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
 
                 if (mtop.bIntermolecularInteractions)
                 {
-                    int i = ril_intermol.index[cg_gl];
-                    while (i < ril_intermol.index[cg_gl + 1])
+                    int i = ril_intermol.index[atomIndex];
+                    while (i < ril_intermol.index[atomIndex + 1])
                     {
                         int ftype = ril_intermol.il[i++];
                         int nral  = NRAL(ftype);
@@ -1203,21 +1205,22 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
                              * this has been checked above.
                              */
                             int aj = ril_intermol.il[i + j];
-                            check_link(link, cg_gl, aj);
+                            check_link(link, atomIndex, aj);
                         }
                         i += nral_rt(ftype);
                     }
                 }
-                if (link->index[cg_gl + 1] - link->index[cg_gl] > 0)
+                if (link->index[atomIndex + 1] - link->index[atomIndex] > 0)
                 {
-                    SET_CGINFO_BOND_INTER(cgi_mb->cginfo[a]);
-                    ncgi++;
+                    SET_CGINFO_BOND_INTER(atomInfoOfMoleculeBlock->atomInfo[a]);
+                    numLinkedAtoms++;
                 }
             }
 
-            cg_offset += molt.atoms.nr;
+            indexOfFirstAtomInMolecule += molt.atoms.nr;
         }
-        int nlink_mol = link->index[cg_offset] - link->index[cg_offset - molt.atoms.nr];
+        int nlink_mol = link->index[indexOfFirstAtomInMolecule]
+                        - link->index[indexOfFirstAtomInMolecule - molt.atoms.nr];
 
         if (debug)
         {
@@ -1237,27 +1240,30 @@ void makeBondedLinks(gmx_domdec_t* dd, const gmx_mtop_t& mtop, gmx::ArrayRef<cgi
             {
                 for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    int cg_gl              = cg_offset + a;
-                    link->index[cg_gl + 1] = link->index[cg_gl + 1 - molt.atoms.nr] + nlink_mol;
-                    for (int j = link->index[cg_gl]; j < link->index[cg_gl + 1]; j++)
+                    int atomIndex              = indexOfFirstAtomInMolecule + a;
+                    link->index[atomIndex + 1] = link->index[atomIndex + 1 - molt.atoms.nr] + nlink_mol;
+                    for (int j = link->index[atomIndex]; j < link->index[atomIndex + 1]; j++)
                     {
                         link->a[j] = link->a[j - nlink_mol] + molt.atoms.nr;
                     }
-                    if (link->index[cg_gl + 1] - link->index[cg_gl] > 0
-                        && cg_gl - cgi_mb->cg_start < cgi_mb->cg_mod)
+                    if (link->index[atomIndex + 1] - link->index[atomIndex] > 0
+                        && atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock
+                                   < gmx::ssize(atomInfoOfMoleculeBlock->atomInfo))
                     {
-                        SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg_gl - cgi_mb->cg_start]);
-                        ncgi++;
+                        SET_CGINFO_BOND_INTER(
+                                atomInfoOfMoleculeBlock
+                                        ->atomInfo[atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock]);
+                        numLinkedAtoms++;
                     }
                 }
-                cg_offset += molt.atoms.nr;
+                indexOfFirstAtomInMolecule += molt.atoms.nr;
             }
         }
     }
 
     if (debug)
     {
-        fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop.natoms, ncgi);
+        fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop.natoms, numLinkedAtoms);
     }
 
     dd->comm->bondedLinks = link;

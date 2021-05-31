@@ -214,8 +214,8 @@ struct gmx_domdec_t
     gmx_domdec_constraints_t* constraints     = nullptr;
     gmx_domdec_specat_comm_t* constraint_comm = nullptr;
 
-    /* The number of home atom groups */
-    int ncg_home = 0;
+    /* The number of home atoms */
+    int numHomeAtoms = 0;
     /* Global atom group indices for the home and all non-home groups */
     std::vector<int> globalAtomGroupIndices;
 

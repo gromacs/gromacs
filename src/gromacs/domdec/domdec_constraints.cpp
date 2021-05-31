@@ -223,7 +223,7 @@ static void walk_out(int                       con,
 /*! \brief Looks up SETTLE constraints for a range of charge-groups */
 static void atoms_to_settles(gmx_domdec_t*                         dd,
                              const gmx_mtop_t&                     mtop,
-                             const int*                            cginfo,
+                             const int*                            atomInfo,
                              gmx::ArrayRef<const std::vector<int>> at2settle_mt,
                              int                                   cg_start,
                              int                                   cg_end,
@@ -236,7 +236,7 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
     int mb = 0;
     for (int a = cg_start; a < cg_end; a++)
     {
-        if (GET_CGINFO_SETTLE(cginfo[a]))
+        if (GET_CGINFO_SETTLE(atomInfo[a]))
         {
             int a_gl  = dd->globalAtomIndices[a];
             int a_mol = 0;
@@ -298,7 +298,7 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
 /*! \brief Looks up constraint for the local atoms */
 static void atoms_to_constraints(gmx_domdec_t*                         dd,
                                  const gmx_mtop_t&                     mtop,
-                                 const int*                            cginfo,
+                                 const int*                            atomInfo,
                                  gmx::ArrayRef<const ListOfLists<int>> at2con_mt,
                                  int                                   nrec,
                                  InteractionList*                      ilc_local,
@@ -314,9 +314,9 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
 
     int mb    = 0;
     int nhome = 0;
-    for (int a = 0; a < dd->ncg_home; a++)
+    for (int a = 0; a < dd->numHomeAtoms; a++)
     {
-        if (GET_CGINFO_CONSTR(cginfo[a]))
+        if (GET_CGINFO_CONSTR(atomInfo[a]))
         {
             int a_gl  = dd->globalAtomIndices[a];
             int molnr = 0;
@@ -399,7 +399,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
 int dd_make_local_constraints(gmx_domdec_t*                  dd,
                               int                            at_start,
                               const struct gmx_mtop_t&       mtop,
-                              const int*                     cginfo,
+                              const int*                     atomInfo,
                               gmx::Constraints*              constr,
                               int                            nrec,
                               gmx::ArrayRef<InteractionList> il_local)
@@ -449,7 +449,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
 
     if (at2settle_mt.empty())
     {
-        atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec, ilc_local, ireq);
+        atoms_to_constraints(dd, mtop, atomInfo, at2con_mt, nrec, ilc_local, ireq);
     }
     else
     {
@@ -465,7 +465,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
             {
                 if (!at2con_mt.empty() && thread == 0)
                 {
-                    atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec, ilc_local, ireq);
+                    atoms_to_constraints(dd, mtop, atomInfo, at2con_mt, nrec, ilc_local, ireq);
                 }
 
                 if (thread >= t0_set)
@@ -473,8 +473,8 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
                     /* Distribute the settle check+assignments over
                      * dc->nthread or dc->nthread-1 threads.
                      */
-                    const int cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
-                    const int cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
+                    const int cg0 = (dd->numHomeAtoms * (thread - t0_set)) / (dc->nthread - t0_set);
+                    const int cg1 = (dd->numHomeAtoms * (thread - t0_set + 1)) / (dc->nthread - t0_set);
 
                     InteractionList* ilst = (thread == t0_set) ? ils_local : &dc->ils[thread];
                     ilst->clear();
@@ -485,7 +485,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
                         ireqt.clear();
                     }
 
-                    atoms_to_settles(dd, mtop, cginfo, at2settle_mt, cg0, cg1, ilst, &ireqt);
+                    atoms_to_settles(dd, mtop, atomInfo, at2settle_mt, cg0, cg1, ilst, &ireqt);
                 }
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

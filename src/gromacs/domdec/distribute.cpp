@@ -513,9 +513,9 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
     dd_scatter(dd, 2 * sizeof(int), ibuf, buf2);
 
-    dd->ncg_home = buf2[0];
+    dd->numHomeAtoms = buf2[0];
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, buf2[1]);
-    dd->globalAtomGroupIndices.resize(dd->ncg_home);
+    dd->globalAtomGroupIndices.resize(dd->numHomeAtoms);
     dd->globalAtomIndices.resize(dd->comm->atomRanges.numHomeAtoms());
 
     if (bMaster)
@@ -542,13 +542,13 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
                 bMaster ? ma->intBuffer.data() : nullptr,
                 bMaster ? ma->intBuffer.data() + dd->nnodes : nullptr,
                 bMaster ? ma->atomGroups.data() : nullptr,
-                dd->ncg_home * sizeof(int),
+                dd->numHomeAtoms * sizeof(int),
                 dd->globalAtomGroupIndices.data());
 
     if (debug)
     {
         fprintf(debug, "Home charge groups:\n");
-        for (int i = 0; i < dd->ncg_home; i++)
+        for (int i = 0; i < dd->numHomeAtoms; i++)
         {
             fprintf(debug, " %d", dd->globalAtomGroupIndices[i]);
             if (i % 10 == 9)

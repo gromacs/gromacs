@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ void check_screw_box(const matrix box)
 
 void dd_resize_atominfo_and_state(t_forcerec* fr, t_state* state, const int numAtoms)
 {
-    fr->cginfo.resize(numAtoms);
+    fr->atomInfo.resize(numAtoms);
 
     /* We use x during the setup of the atom communication */
     state_change_natoms(state, numAtoms);

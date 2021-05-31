@@ -1393,7 +1393,7 @@ void do_force(FILE*                               fplog,
                               nullptr,
                               { 0, mdatoms->homenr },
                               -1,
-                              fr->cginfo,
+                              fr->atomInfo,
                               x.unpaddedArrayRef(),
                               0,
                               nullptr);
@@ -1402,13 +1402,13 @@ void do_force(FILE*                               fplog,
         else
         {
             wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
-            nbnxn_put_on_grid_nonlocal(nbv, domdec_zones(cr->dd), fr->cginfo, x.unpaddedArrayRef());
+            nbnxn_put_on_grid_nonlocal(nbv, domdec_zones(cr->dd), fr->atomInfo, x.unpaddedArrayRef());
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
         }
 
         nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
                                gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                               fr->cginfo);
+                               fr->atomInfo);
 
         wallcycle_stop(wcycle, WallCycleCounter::NS);
 

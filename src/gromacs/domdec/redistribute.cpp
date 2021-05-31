@@ -573,7 +573,7 @@ void dd_redistribute_cg(FILE*         fplog,
     bool bV   = (state->flags & enumValueToBitMask(StateEntry::V)) != 0;
     bool bCGP = (state->flags & enumValueToBitMask(StateEntry::Cgp)) != 0;
 
-    DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->ncg_home);
+    DDBufferAccess<int> moveBuffer(comm->intBuffer, dd->numHomeAtoms);
     gmx::ArrayRef<int>  move = moveBuffer.buffer;
 
     const int npbcdim = dd->unitCellInfo.npbcdim;
@@ -669,8 +669,8 @@ void dd_redistribute_cg(FILE*         fplog,
                              cell_x0,
                              cell_x1,
                              moveLimits,
-                             (thread * dd->ncg_home) / nthread,
-                             ((thread + 1) * dd->ncg_home) / nthread,
+                             (thread * dd->numHomeAtoms) / nthread,
+                             ((thread + 1) * dd->numHomeAtoms) / nthread,
                              move);
             }
         }
@@ -679,7 +679,7 @@ void dd_redistribute_cg(FILE*         fplog,
 
     int ncg[DIM * 2] = { 0 };
     int nat[DIM * 2] = { 0 };
-    for (int cg = 0; cg < dd->ncg_home; cg++)
+    for (int cg = 0; cg < dd->numHomeAtoms; cg++)
     {
         if (move[cg] >= 0)
         {
@@ -709,7 +709,7 @@ void dd_redistribute_cg(FILE*         fplog,
     }
 
     inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
-    inc_nrnb(nrnb, eNR_RESETX, dd->ncg_home);
+    inc_nrnb(nrnb, eNR_RESETX, dd->numHomeAtoms);
 
     *ncg_moved = 0;
     for (int i = 0; i < dd->ndim * 2; i++)
@@ -755,21 +755,22 @@ void dd_redistribute_cg(FILE*         fplog,
         copyMovedAtomsToBufferPerAtom(move, nvec, vectorIndex++, state->cg_p.rvec_array(), comm);
     }
 
-    int* moved = getMovedBuffer(comm, 0, dd->ncg_home);
+    int* moved = getMovedBuffer(comm, 0, dd->numHomeAtoms);
 
     clear_and_mark_ind(move, dd->globalAtomIndices, dd->ga2la, moved);
 
     /* Now we can remove the excess global atom-group indices from the list */
-    dd->globalAtomGroupIndices.resize(dd->ncg_home);
+    dd->globalAtomGroupIndices.resize(dd->numHomeAtoms);
 
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int>& flagBuffer = moveBuffer;
 
-    gmx::ArrayRef<const cginfo_mb_t> cginfo_mb = fr->cginfo_mb;
+    gmx::ArrayRef<const AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock =
+            fr->atomInfoForEachMoleculeBlock;
 
     /* Temporarily store atoms passed to our rank at the end of the range */
-    int home_pos_cg = dd->ncg_home;
-    int home_pos_at = dd->ncg_home;
+    int home_pos_cg = dd->numHomeAtoms;
+    int home_pos_at = dd->numHomeAtoms;
     for (int d = 0; d < dd->ndim; d++)
     {
         DDBufferAccess<gmx::RVec> rvecBuffer(comm->rvecBuffer, 0);
@@ -924,7 +925,8 @@ void dd_redistribute_cg(FILE*         fplog,
                 buf_pos++;
 
                 /* Set the cginfo */
-                fr->cginfo[home_pos_cg] = ddcginfo(cginfo_mb, globalAtomGroupIndex);
+                fr->atomInfo[home_pos_cg] =
+                        ddGetAtomInfo(atomInfoForEachMoleculeBlock, globalAtomGroupIndex);
 
                 auto  x       = makeArrayRef(state->x);
                 auto  v       = makeArrayRef(state->v);
@@ -978,21 +980,21 @@ void dd_redistribute_cg(FILE*         fplog,
     }
 
     /* Note that the indices are now only partially up to date
-     * and ncg_home and nat_home are not the real count, since there are
+     * and numHomeAtoms and nat_home are not the real count, since there are
      * "holes" in the arrays for the charge groups that moved to neighbors.
      */
 
     /* We need to clear the moved flags for the received atoms,
      * because the moved buffer will be passed to the nbnxm gridding call.
      */
-    moved = getMovedBuffer(comm, dd->ncg_home, home_pos_cg);
+    moved = getMovedBuffer(comm, dd->numHomeAtoms, home_pos_cg);
 
-    for (int i = dd->ncg_home; i < home_pos_cg; i++)
+    for (int i = dd->numHomeAtoms; i < home_pos_cg; i++)
     {
         moved[i] = 0;
     }
 
-    dd->ncg_home = home_pos_cg;
+    dd->numHomeAtoms = home_pos_cg;
     comm->atomRanges.setEnd(DDAtomRanges::Type::Home, home_pos_at);
 
     if (debug)
@@ -1000,6 +1002,6 @@ void dd_redistribute_cg(FILE*         fplog,
         fprintf(debug,
                 "Finished repartitioning: cgs moved out %d, new home %d\n",
                 *ncg_moved,
-                dd->ncg_home - *ncg_moved);
+                dd->numHomeAtoms - *ncg_moved);
     }
 }

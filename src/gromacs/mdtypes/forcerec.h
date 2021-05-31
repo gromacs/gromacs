@@ -73,14 +73,10 @@ class PmePpCommGpu;
 class WholeMoleculeTransform;
 } // namespace gmx
 
-/* macros for the cginfo data in forcerec
+/* macros for the atom info data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
  * Note that we thus have bits 8-14 still unused.
- *
- * The maximum cg size in cginfo is 63
- * because we only have space for 6 bits in cginfo,
- * this cg size entry is actually only read with domain decomposition.
  */
 #define SET_CGINFO_GID(cgi, gid) (cgi) = (((cgi) & ~255) | (gid))
 #define GET_CGINFO_GID(cgi) ((cgi)&255)
@@ -109,12 +105,30 @@ class WholeMoleculeTransform;
 //! Check the cuttoff
 real cutoff_inf(real cutoff);
 
-struct cginfo_mb_t
+/*! \brief Contains information about each atom in a molecule block of
+ * the global topology. */
+struct AtomInfoWithinMoleculeBlock
 {
-    int              cg_start = 0;
-    int              cg_end   = 0;
-    int              cg_mod   = 0;
-    std::vector<int> cginfo;
+    //! Index within the system of the first atom in the molecule block
+    int indexOfFirstAtomInMoleculeBlock = 0;
+    //! Index within the system of the last atom in the molecule block
+    int indexOfLastAtomInMoleculeBlock = 0;
+    /*! \brief Atom info for each atom in the block.
+     *
+     * The typical case is that all atoms are identical for each
+     * molecule of the block, and if so this vector has size equal to
+     * the number of atoms in the molecule.
+     *
+     * An example of an atypical case is QM/MM, where multiple
+     * molecules might be present and different molecules have
+     * different atoms within any one QM group or region. Now there are
+     * multiple kinds of molecules with the same connectivity, so we simply
+     * write out the atom info for the entire molecule block. Then the
+     * size equals the product of the number of atoms in the
+     * molecule and the number of molecules.
+     *
+     * The vector needs to be indexed accordingly. */
+    std::vector<int> atomInfo;
 };
 
 
@@ -224,10 +238,10 @@ struct t_forcerec
     /* Free energy */
     FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::No;
 
-    /* Information about atom properties for the molecule blocks in the system */
-    std::vector<cginfo_mb_t> cginfo_mb;
+    /* Information about atom properties for the molecule blocks in the global topology */
+    std::vector<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
     /* Information about atom properties for local and non-local atoms */
-    std::vector<int> cginfo;
+    std::vector<int> atomInfo;
 
     std::vector<gmx::RVec> shift_vec;
 
