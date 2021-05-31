@@ -468,6 +468,11 @@ int gmx_nmr(int argc, char* argv[])
     }
     nset = 0;
 
+    if (bDisRe && (bORIRE || bOTEN))
+    {
+        gmx_fatal(FARGS, "Cannot do sum of violation (-viol) and other analysis in a single call.");
+    }
+
     fp = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
     do_enxnms(fp, &nre, &enm);
     free_enxnms(nre, enm);
@@ -623,7 +628,7 @@ int gmx_nmr(int argc, char* argv[])
         }
         nbounds = get_bounds(&bounds, &index, &pair, &npairs, top->idef);
         snew(violaver, npairs);
-        out_disre = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations", "Time (ps)", "nm", oenv);
+        out_disre = xvgropen(opt2fn("-viol", NFILE, fnm), "Sum of Violations", "Time (ps)", "nm", oenv);
         xvgr_legend(out_disre, 2, drleg, oenv);
         if (bDRAll)
         {
