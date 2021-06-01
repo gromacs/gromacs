@@ -293,6 +293,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
     GMX_UNUSED_VALUE(c6B);
     GMX_UNUSED_VALUE(sigmaA);
     GMX_UNUSED_VALUE(sigmaB);
+    GMX_UNUSED_VALUE(x);
     GMX_UNUSED_VALUE(reinitGpuPmePpComms);
     GMX_UNUSED_VALUE(sendCoordinatesFromGpu);
     GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
