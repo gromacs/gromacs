@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix gmx nmr -viol option
+""""""""""""""""""""""""
+
+The tool would previously fail with a cryptic error.
+Also enforces that this option is exclusive with other analysis modes.
+
+:issue:`4060`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
