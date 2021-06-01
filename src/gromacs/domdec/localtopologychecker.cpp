@@ -44,10 +44,11 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/domdec/localtopologychecker.h"
+
+#include <optional>
 #include <string>
 #include <vector>
-
-#include "gromacs/domdec/localtopologychecker.h"
 
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/reversetopology.h"
@@ -64,8 +65,8 @@
 
 #include "dump.h"
 
-using gmx::ArrayRef;
-using gmx::RVec;
+namespace gmx
+{
 
 /*! \brief Checks whether interactions have been assigned for one function type
  *
@@ -76,7 +77,7 @@ using gmx::RVec;
 static void flagInteractionsForType(const int              ftype,
                                     const InteractionList& il,
                                     const reverse_ilist_t& ril,
-                                    const gmx::Range<int>& atomRange,
+                                    const Range<int>&      atomRange,
                                     const int              numAtomsPerMolecule,
                                     ArrayRef<const int>    globalAtomIndices,
                                     ArrayRef<int>          isAssigned)
@@ -140,19 +141,19 @@ static void flagInteractionsForType(const int              ftype,
  *
  * \note This function needs to be called on all ranks (contains a global summation)
  */
-static std::string printMissingInteractionsMolblock(t_commrec*               cr,
+static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
                                                     const gmx_reverse_top_t& rt,
                                                     const char*              moltypename,
                                                     const reverse_ilist_t&   ril,
-                                                    const gmx::Range<int>&   atomRange,
+                                                    const Range<int>&        atomRange,
                                                     const int                numAtomsPerMolecule,
                                                     const int                numMolecules,
                                                     const InteractionDefinitions& idef)
 {
-    const int               nril_mol = ril.index[numAtomsPerMolecule];
-    std::vector<int>        isAssigned(numMolecules * nril_mol, 0);
-    gmx::StringOutputStream stream;
-    gmx::TextWriter         log(&stream);
+    const int          nril_mol = ril.index[numAtomsPerMolecule];
+    std::vector<int>   isAssigned(numMolecules * nril_mol, 0);
+    StringOutputStream stream;
+    TextWriter         log(&stream);
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -220,8 +221,8 @@ static std::string printMissingInteractionsMolblock(t_commrec*               cr,
 }
 
 /*! \brief Help print error output when interactions are missing */
-static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
-                                          t_commrec*                    cr,
+static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
+                                          const t_commrec*              cr,
                                           const gmx_mtop_t&             mtop,
                                           const InteractionDefinitions& idef)
 {
@@ -234,7 +235,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
         const gmx_moltype_t& moltype = mtop.moltype[molb.type];
         const int            a_start = a_end;
         a_end                        = a_start + molb.nmol * moltype.atoms.nr;
-        const gmx::Range<int> atomRange(a_start, a_end);
+        const Range<int> atomRange(a_start, a_end);
 
         auto warning = printMissingInteractionsMolblock(
                 cr,
@@ -251,8 +252,8 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
 }
 
 /*! \brief Print error output when interactions are missing */
-[[noreturn]] static void dd_print_missing_interactions(const gmx::MDLogger& mdlog,
-                                                       t_commrec*           cr,
+[[noreturn]] static void dd_print_missing_interactions(const MDLogger&  mdlog,
+                                                       const t_commrec* cr,
                                                        const int numBondedInteractionsOverAllDomains,
                                                        const int expectedNumGlobalBondedInteractions,
                                                        const gmx_mtop_t&     top_global,
@@ -330,7 +331,7 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
     }
     else
     {
-        errorMessage = gmx::formatString(
+        errorMessage = formatString(
                 "%d of the %d bonded interactions could not be calculated because some atoms "
                 "involved moved further apart than the multi-body cut-off distance (%g nm) or the "
                 "two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds "
@@ -343,8 +344,50 @@ static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
     gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MASTER(cr), "%s", errorMessage.c_str());
 }
 
-namespace gmx
+/*! \brief Data to help check local topology construction
+ *
+ * Partitioning could incorrectly miss a bonded interaction.
+ * However, checking for that requires a global communication
+ * stage, which does not otherwise happen during partitioning. So,
+ * for performance, we do that alongside the first global energy
+ * reduction after a new DD is made. These variables handle
+ * whether the check happens, its input for this domain, output
+ * across all domains, and the expected value it should match. */
+class LocalTopologyChecker::Impl
 {
+public:
+    //! Constructor
+    Impl(const MDLogger& mdlog, const t_commrec* cr, const gmx_mtop_t& mtop, bool useUpdateGroups);
+
+    //! Objects used when reporting that interactions are missing
+    //! {
+    //! Logger
+    const MDLogger& mdlog_;
+    //! Communication record
+    const t_commrec* cr_;
+    //! Global system topology
+    const gmx_mtop_t& mtop_;
+    //! }
+
+    /*! \brief Number of bonded interactions found in the local
+     * topology for this domain. */
+    int numBondedInteractionsToReduce_ = 0;
+    /*! \brief Whether to check at the next global communication
+     * stage the total number of bonded interactions found.
+     *
+     * Cleared after that number is found. */
+    bool shouldCheckNumberOfBondedInteractions_ = false;
+    /*! \brief The total number of bonded interactions found in
+     * the local topology across all domains.
+     *
+     * Only has a value after reduction across all ranks, which is
+     * removed when it is again time to check after a new
+     * partition. */
+    std::optional<int> numBondedInteractionsOverAllDomains_;
+    //! The number of bonded interactions computed from the full system topology
+    int expectedNumGlobalBondedInteractions_ = 0;
+};
+
 
 /*! \brief Compute the total bonded interaction count
  *
@@ -366,74 +409,90 @@ static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t& mtop, co
     return expectedNumGlobalBondedInteractions;
 }
 
-LocalTopologyChecker::LocalTopologyChecker(const gmx_mtop_t& mtop, const bool useUpdateGroups) :
-    expectedNumGlobalBondedInteractions(computeExpectedNumGlobalBondedInteractions(mtop, useUpdateGroups))
+LocalTopologyChecker::Impl::Impl(const MDLogger&   mdlog,
+                                 const t_commrec*  cr,
+                                 const gmx_mtop_t& mtop,
+                                 const bool        useUpdateGroups) :
+    mdlog_(mdlog),
+    cr_(cr),
+    mtop_(mtop),
+    expectedNumGlobalBondedInteractions_(computeExpectedNumGlobalBondedInteractions(mtop, useUpdateGroups))
 {
 }
 
-} // namespace gmx
-
-void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, const int numBondedInteractionsToReduce)
+LocalTopologyChecker::LocalTopologyChecker(const MDLogger&   mdlog,
+                                           const t_commrec*  cr,
+                                           const gmx_mtop_t& mtop,
+                                           const bool        useUpdateGroups) :
+    impl_(std::make_unique<Impl>(mdlog, cr, mtop, useUpdateGroups))
 {
-    dd->localTopologyChecker->numBondedInteractionsToReduce = numBondedInteractionsToReduce;
+}
+
+LocalTopologyChecker::~LocalTopologyChecker() = default;
+
+LocalTopologyChecker::LocalTopologyChecker(LocalTopologyChecker&&) noexcept = default;
+
+LocalTopologyChecker& LocalTopologyChecker::operator=(LocalTopologyChecker&& other) noexcept
+{
+    impl_ = std::move(other.impl_);
+    return *this;
+}
+
+void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInteractionsToReduce)
+{
+    impl_->numBondedInteractionsToReduce_ = numBondedInteractionsToReduce;
     // Note that it's possible for this to still be true from the last
     // time it was set, e.g. if repartitioning was triggered before
     // global communication that would have acted on the true
     // value. This could happen for example when replica exchange took
     // place soon after a partition.
-    dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions = true;
+    impl_->shouldCheckNumberOfBondedInteractions_ = true;
     // Clear the old global value, which is now invalid
-    dd->localTopologyChecker->numBondedInteractionsOverAllDomains.reset();
+    impl_->numBondedInteractionsOverAllDomains_.reset();
 }
 
-bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd)
+bool LocalTopologyChecker::shouldCheckNumberOfBondedInteractions() const
 {
-    return dd.localTopologyChecker->shouldCheckNumberOfBondedInteractions;
+    return impl_->shouldCheckNumberOfBondedInteractions_;
 }
 
-int numBondedInteractions(const gmx_domdec_t& dd)
+int LocalTopologyChecker::numBondedInteractions() const
 {
-    return dd.localTopologyChecker->numBondedInteractionsToReduce;
+    return impl_->numBondedInteractionsToReduce_;
 }
 
-void setNumberOfBondedInteractionsOverAllDomains(gmx_domdec_t* dd, int newValue)
+void LocalTopologyChecker::setNumberOfBondedInteractionsOverAllDomains(const int newValue)
 {
-    GMX_RELEASE_ASSERT(!dd->localTopologyChecker->numBondedInteractionsOverAllDomains.has_value(),
+    GMX_RELEASE_ASSERT(!impl_->numBondedInteractionsOverAllDomains_.has_value(),
                        "Cannot set number of bonded interactions because it is already set");
-    dd->localTopologyChecker->numBondedInteractionsOverAllDomains.emplace(newValue);
+    impl_->numBondedInteractionsOverAllDomains_.emplace(newValue);
 }
 
-void checkNumberOfBondedInteractions(const gmx::MDLogger&  mdlog,
-                                     t_commrec*            cr,
-                                     const gmx_mtop_t&     top_global,
-                                     const gmx_localtop_t* top_local,
-                                     ArrayRef<const RVec>  x,
-                                     const matrix          box)
+void LocalTopologyChecker::checkNumberOfBondedInteractions(const gmx_localtop_t* top_local,
+                                                           ArrayRef<const RVec>  x,
+                                                           const matrix          box)
 {
-    GMX_RELEASE_ASSERT(
-            DOMAINDECOMP(cr),
-            "No need to check number of bonded interactions when not using domain decomposition");
-    if (cr->dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions)
+    if (impl_->shouldCheckNumberOfBondedInteractions_)
     {
-        GMX_RELEASE_ASSERT(cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.has_value(),
+        GMX_RELEASE_ASSERT(impl_->numBondedInteractionsOverAllDomains_.has_value(),
                            "The check for the total number of bonded interactions requires the "
                            "value to have been reduced across all domains");
-        if (cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value()
-            != cr->dd->localTopologyChecker->expectedNumGlobalBondedInteractions)
+        if (impl_->numBondedInteractionsOverAllDomains_.value() != impl_->expectedNumGlobalBondedInteractions_)
         {
-            dd_print_missing_interactions(
-                    mdlog,
-                    cr,
-                    cr->dd->localTopologyChecker->numBondedInteractionsOverAllDomains.value(),
-                    cr->dd->localTopologyChecker->expectedNumGlobalBondedInteractions,
-                    top_global,
-                    top_local,
-                    x,
-                    box); // Does not return
+            dd_print_missing_interactions(impl_->mdlog_,
+                                          impl_->cr_,
+                                          impl_->numBondedInteractionsOverAllDomains_.value(),
+                                          impl_->expectedNumGlobalBondedInteractions_,
+                                          impl_->mtop_,
+                                          top_local,
+                                          x,
+                                          box); // Does not return
         }
         // Now that the value is set and the check complete, future
         // global communication should not compute the value until
         // after the next partitioning.
-        cr->dd->localTopologyChecker->shouldCheckNumberOfBondedInteractions = false;
+        impl_->shouldCheckNumberOfBondedInteractions_ = false;
     }
 }
+
+} // namespace gmx

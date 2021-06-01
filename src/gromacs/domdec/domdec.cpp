@@ -3022,8 +3022,8 @@ gmx_domdec_t* DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomS
 
     dd->atomSets = atomSets;
 
-    dd->localTopologyChecker =
-            std::make_unique<LocalTopologyChecker>(mtop_, dd->comm->systemInfo.useUpdateGroups);
+    dd->localTopologyChecker = std::make_unique<LocalTopologyChecker>(
+            mdlog_, cr_, mtop_, dd->comm->systemInfo.useUpdateGroups);
 
     return dd;
 }
@@ -3218,6 +3218,16 @@ void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces)
             cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces);
         }
     }
+}
+
+const gmx::LocalTopologyChecker& dd_localTopologyChecker(const gmx_domdec_t& dd)
+{
+    return *dd.localTopologyChecker;
+}
+
+gmx::LocalTopologyChecker* dd_localTopologyChecker(gmx_domdec_t* dd)
+{
+    return dd->localTopologyChecker.get();
 }
 
 void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_state* state_local)

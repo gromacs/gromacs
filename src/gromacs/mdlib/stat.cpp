@@ -276,7 +276,7 @@ void global_stat(const gmx_global_stat& gs,
         GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
                            "No need to check number of bonded interactions when not using domain "
                            "decomposition");
-        nb  = numBondedInteractions(*cr->dd);
+        nb  = cr->dd->localTopologyChecker->numBondedInteractions();
         inb = add_bind(rb, 1, &nb);
     }
     if (!sig.empty())
@@ -374,7 +374,7 @@ void global_stat(const gmx_global_stat& gs,
         GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
                            "No need to check number of bonded interactions when not using domain "
                            "decomposition");
-        setNumberOfBondedInteractionsOverAllDomains(cr->dd, gmx::roundToInt(nb));
+        cr->dd->localTopologyChecker->setNumberOfBondedInteractionsOverAllDomains(gmx::roundToInt(nb));
     }
 
     if (!sig.empty())

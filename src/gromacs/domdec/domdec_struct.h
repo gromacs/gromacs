@@ -78,7 +78,7 @@ namespace gmx
 template<typename T>
 class HashedMap;
 class LocalAtomSetManager;
-struct LocalTopologyChecker;
+class LocalTopologyChecker;
 class GpuHaloExchange;
 } // namespace gmx
 

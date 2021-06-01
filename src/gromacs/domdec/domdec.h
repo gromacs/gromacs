@@ -87,12 +87,12 @@ namespace gmx
 struct AtomInfoWithinMoleculeBlock;
 class DeviceStreamManager;
 class ForceWithShiftForces;
+class LocalTopologyChecker;
 class MDLogger;
 class RangePartitioning;
 class VirtualSitesHandler;
 template<typename>
 class ArrayRef;
-enum class DDBondedChecking : bool;
 } // namespace gmx
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -239,7 +239,15 @@ void dd_move_x_and_v_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x, r
  */
 gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 
-/* In domdec_top.c */
+/*! Const getter for the local topology checker
+ *
+ * \returns Const handle to local topology checker */
+const gmx::LocalTopologyChecker& dd_localTopologyChecker(const gmx_domdec_t& dd);
+
+/*! Getter for the local topology checker
+ *
+ * \returns Handle to local topology checker */
+gmx::LocalTopologyChecker* dd_localTopologyChecker(gmx_domdec_t* dd);
 
 /*! \brief Construct local state */
 void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_state* local_state);

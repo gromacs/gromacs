@@ -3208,7 +3208,7 @@ void dd_partition_system(FILE*                     fplog,
                                                           state_local->x,
                                                           top_global,
                                                           top_local);
-    scheduleCheckOfLocalTopology(dd, numBondedInteractionsToReduce);
+    dd->localTopologyChecker->scheduleCheckOfLocalTopology(numBondedInteractionsToReduce);
 
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDMakeTop);
 

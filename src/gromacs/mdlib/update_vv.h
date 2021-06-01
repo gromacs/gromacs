@@ -89,7 +89,6 @@ enum class StartingBehavior : int;
  * \param[in]  fcdata            Force calculation data.
  * \param[in]  MassQ             Mass/pressure data.
  * \param[in]  vcm               Center of mass motion removal.
- * \param[in]  top_global        Global topology.
  * \param[in]  top               Local topology.
  * \param[in]  enerd             Energy data.
  * \param[in]  ekind             Kinetic energy data.
@@ -116,7 +115,6 @@ enum class StartingBehavior : int;
  * \param[in]  nullSignaller     Simulation signaller.
  * \param[in]  trotter_seq       NPT variables.
  * \param[in]  nrnb              Cycle counters.
- * \param[in]  mdlog             Logger.
  * \param[in]  fplog             Another logger.
  * \param[in]  wcycle            Wall-clock cycle counter.
  */
@@ -133,7 +131,6 @@ void integrateVVFirstStep(int64_t                   step,
                           const t_fcdata&           fcdata,
                           t_extmass*                MassQ,
                           t_vcm*                    vcm,
-                          const gmx_mtop_t&         top_global,
                           const gmx_localtop_t&     top,
                           gmx_enerdata_t*           enerd,
                           gmx_ekindata_t*           ekind,
@@ -160,7 +157,6 @@ void integrateVVFirstStep(int64_t                   step,
                           gmx::SimulationSignaller* nullSignaller,
                           gmx::EnumerationArray<TrotterSequence, std::vector<int>> trotter_seq,
                           t_nrnb*                                                  nrnb,
-                          const gmx::MDLogger&                                     mdlog,
                           FILE*                                                    fplog,
                           gmx_wallcycle*                                           wcycle);
 

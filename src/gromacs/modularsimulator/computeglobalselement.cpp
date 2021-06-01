@@ -282,7 +282,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
     const auto* lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                                      : statePropagatorData_->constBox();
 
-    if (DOMAINDECOMP(cr_) && shouldCheckNumberOfBondedInteractions(*cr_->dd))
+    if (DOMAINDECOMP(cr_) && dd_localTopologyChecker(*cr_->dd).shouldCheckNumberOfBondedInteractions())
     {
         flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
     }
@@ -311,7 +311,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     flags);
     if (DOMAINDECOMP(cr_))
     {
-        checkNumberOfBondedInteractions(mdlog_, cr_, top_global_, localTopology_, x, box);
+        dd_localTopologyChecker(cr_->dd)->checkNumberOfBondedInteractions(localTopology_, x, box);
     }
     if (flags & CGLO_STOPCM && !isInit)
     {

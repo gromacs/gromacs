@@ -44,11 +44,10 @@
 #ifndef GMX_DOMDEC_LOCALTOPOLOGYCHECKER_H
 #define GMX_DOMDEC_LOCALTOPOLOGYCHECKER_H
 
-#include <optional>
+#include <memory>
 
 #include "gromacs/math/vectypes.h"
 
-struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_commrec;
@@ -59,79 +58,70 @@ namespace gmx
 class MDLogger;
 template<typename>
 class ArrayRef;
-enum class DDBondedChecking : bool;
 } // namespace gmx
 
 namespace gmx
 {
 
-struct LocalTopologyChecker
+/*! \brief Has responsibility for checking that the local topology
+ * distributed across domains describes a total number of bonded
+ * interactions that matches the system topology
+ *
+ * Because this check is not urgent, the communication that it
+ * requires is done at the next opportunity, rather than requiring
+ * extra communication. If the check fails, a fatal error stops
+ * execution. In principle, if there was a bug, GROMACS might crash in
+ * the meantime because of the wrong forces. However as a bug is
+ * unlikely, we optimize by avoiding creating extra overhead from
+ * communication.
+ */
+class LocalTopologyChecker
 {
 public:
-    //! Constructor
-    LocalTopologyChecker(const gmx_mtop_t& mtop, bool useUpdateGroups);
-    /*! \brief Data to help check local topology construction
+    /*! \brief Constructor
+     * \param[in]    mdlog            Logger
+     * \param[in]    cr               Communication object
+     * \param[in]    mtop             Global system topology
+     * \param[in]    useUpdateGroups  Whether update groups are in use
+     */
+    LocalTopologyChecker(const MDLogger& mdlog, const t_commrec* cr, const gmx_mtop_t& mtop, bool useUpdateGroups);
+    //! Destructor
+    ~LocalTopologyChecker();
+    //! Move constructor
+    LocalTopologyChecker(LocalTopologyChecker&& other) noexcept;
+    //! Move assignment
+    LocalTopologyChecker& operator=(LocalTopologyChecker&& other) noexcept;
+
+    /*! \brief Set that the local topology should be checked via
+     * observables reduction whenever that reduction is required by
+     * another module. */
+    void scheduleCheckOfLocalTopology(int numBondedInteractionsToReduce);
+
+    /*! \brief Return whether the total bonded interaction count across
+     * domains should be checked in observables reduction this step. */
+    bool shouldCheckNumberOfBondedInteractions() const;
+
+    //! Return the number of bonded interactions in this domain.
+    int numBondedInteractions() const;
+
+    /*! \brief Set total bonded interaction count across domains. */
+    void setNumberOfBondedInteractionsOverAllDomains(int newValue);
+
+    /*! \brief Check whether bonded interactions are missing from the reverse topology
+     * produced by domain decomposition.
      *
-     * Partitioning could incorrectly miss a bonded interaction.
-     * However, checking for that requires a global communication
-     * stage, which does not otherwise happen during partitioning. So,
-     * for performance, we do that alongside the first global energy
-     * reduction after a new DD is made. These variables handle
-     * whether the check happens, its input for this domain, output
-     * across all domains, and the expected value it should match. */
-    /*! \{ */
-    /*! \brief Number of bonded interactions found in the local
-     * topology for this domain. */
-    int numBondedInteractionsToReduce = 0;
-    /*! \brief Whether to check at the next global communication
-     * stage the total number of bonded interactions found.
-     *
-     * Cleared after that number is found. */
-    bool shouldCheckNumberOfBondedInteractions = false;
-    /*! \brief The total number of bonded interactions found in
-     * the local topology across all domains.
-     *
-     * Only has a value after reduction across all ranks, which is
-     * removed when it is again time to check after a new
-     * partition. */
-    std::optional<int> numBondedInteractionsOverAllDomains;
-    //! The number of bonded interactions computed from the full system topology
-    int expectedNumGlobalBondedInteractions = 0;
-    /*! \} */
+     * \param[in]    top_local  Local topology for the error message
+     * \param[in]    x          Position vector for the error message
+     * \param[in]    box        Box matrix for the error message
+     */
+    void checkNumberOfBondedInteractions(const gmx_localtop_t* top_local,
+                                         ArrayRef<const RVec>  x,
+                                         const matrix          box);
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace gmx
-
-//! Set that the local topology should be checked via observables reduction
-void scheduleCheckOfLocalTopology(gmx_domdec_t* dd, int numBondedInteractionsToReduce);
-
-/*! \brief Return whether the total bonded interaction count across
- * domains should be checked in observables reduction. */
-bool shouldCheckNumberOfBondedInteractions(const gmx_domdec_t& dd);
-
-//! Return the number of bonded interactions in this domain.
-int numBondedInteractions(const gmx_domdec_t& dd);
-
-/*! \brief Set total bonded interaction count across domains. */
-void setNumberOfBondedInteractionsOverAllDomains(gmx_domdec_t* dd, int newValue);
-
-/*! \brief Check whether bonded interactions are missing from the reverse topology
- * produced by domain decomposition.
- *
- * Must only be called when DD is active.
- *
- * \param[in]    mdlog                                  Logger
- * \param[in]    cr                                     Communication object
- * \param[in]    top_global                             Global topology for the error message
- * \param[in]    top_local                              Local topology for the error message
- * \param[in]    x                                      Position vector for the error message
- * \param[in]    box                                    Box matrix for the error message
- */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
-                                     t_commrec*                     cr,
-                                     const gmx_mtop_t&              top_global,
-                                     const gmx_localtop_t*          top_local,
-                                     gmx::ArrayRef<const gmx::RVec> x,
-                                     const matrix                   box);
-
 #endif

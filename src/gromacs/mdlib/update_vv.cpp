@@ -82,7 +82,6 @@ void integrateVVFirstStep(int64_t                   step,
                           const t_fcdata&           fcdata,
                           t_extmass*                MassQ,
                           t_vcm*                    vcm,
-                          const gmx_mtop_t&         top_global,
                           const gmx_localtop_t&     top,
                           gmx_enerdata_t*           enerd,
                           gmx_ekindata_t*           ekind,
@@ -109,7 +108,6 @@ void integrateVVFirstStep(int64_t                   step,
                           gmx::SimulationSignaller* nullSignaller,
                           gmx::EnumerationArray<TrotterSequence, std::vector<int>> trotter_seq,
                           t_nrnb*                                                  nrnb,
-                          const gmx::MDLogger&                                     mdlog,
                           FILE*                                                    fplog,
                           gmx_wallcycle*                                           wcycle)
 {
@@ -192,7 +190,7 @@ void integrateVVFirstStep(int64_t                   step,
                     ((bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
                      | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
                      | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN);
-            if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+            if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
             {
                 cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
             }
@@ -227,8 +225,8 @@ void integrateVVFirstStep(int64_t                   step,
                 EkinAveVel because it's needed for the pressure */
             if (DOMAINDECOMP(cr))
             {
-                checkNumberOfBondedInteractions(
-                        mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+                dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
+                        &top, makeConstArrayRef(state->x), state->box);
             }
             if (bStopCM)
             {

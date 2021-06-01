@@ -342,7 +342,7 @@ void gmx::LegacySimulator::do_mimic()
 
     {
         int cglo_flags = CGLO_GSTAT;
-        if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+        if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
         {
             cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
         }
@@ -372,8 +372,8 @@ void gmx::LegacySimulator::do_mimic()
                         cglo_flags);
         if (DOMAINDECOMP(cr))
         {
-            checkNumberOfBondedInteractions(
-                    mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+            dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
+                    &top, makeConstArrayRef(state->x), state->box);
         }
     }
 
@@ -631,7 +631,7 @@ void gmx::LegacySimulator::do_mimic()
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
-            if (DOMAINDECOMP(cr) && shouldCheckNumberOfBondedInteractions(*cr->dd))
+            if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
             {
                 cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
             }
@@ -659,8 +659,8 @@ void gmx::LegacySimulator::do_mimic()
                             cglo_flags);
             if (DOMAINDECOMP(cr))
             {
-                checkNumberOfBondedInteractions(
-                        mdlog, cr, top_global, &top, makeConstArrayRef(state->x), state->box);
+                dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
+                        &top, makeConstArrayRef(state->x), state->box);
             }
         }
 
