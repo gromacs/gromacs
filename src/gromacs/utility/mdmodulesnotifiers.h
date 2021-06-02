@@ -47,6 +47,8 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/math/arrayrefwithpadding.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/mdmodulesnotifier.h"
 
 struct t_commrec;
@@ -59,6 +61,7 @@ namespace gmx
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
+class MDLogger;
 class IndexGroupsAndNames;
 class SeparatePmeRanksPermitted;
 struct MDModulesCheckpointReadingDataOnMaster;
@@ -116,6 +119,23 @@ struct SimulationTimeStep
 {
     //! Time step (ps)
     const double delta_t;
+};
+
+/*! \libinternal \brief Provides coordinates and simulation box.
+ */
+struct CoordinatesAndBoxPreprocessed
+{
+    ArrayRefWithPadding<RVec> coordinates_;
+    matrix                    box_;
+    PbcType                   pbc_;
+};
+
+/*! \libinternal \brief Mdrun input filename.
+ */
+struct MdRunInputFilename
+{
+    //! The name of the run input file (.tpr) as output by grompp
+    std::string mdRunFilename_;
 };
 
 /*! \libinternal
@@ -210,17 +230,25 @@ notifier =>> moduleC [label="returns"];
  */
 struct MDModulesNotifiers
 {
-    /*! \brief Handles subscribing and calling pre-processing callback functions.
-     *
+    /*! \brief Pre-processing callback functions.
+     * const CoordinatesAndBoxPreprocessed Allows modules to access coordinates,
+     *                                box and pbc during grompp
+     * const MDLogger& Allows MdModule to use standard logging class for messages output
      * EnergyCalculationFrequencyErrors* allows modules to check if they match
      *                                   their required calculation frequency
      *                                   and add their error message if needed
      *                                   to the collected error messages
+     * gmx_mtop_t * Allows modules to modify the topology during pre-processing
      * IndexGroupsAndNames provides modules with atom indices and their names
      * KeyValueTreeObjectBuilder enables writing of module internal data to
      *                           .tpr files.
      */
-    BuildMDModulesNotifier<EnergyCalculationFrequencyErrors*, const IndexGroupsAndNames&, KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
+    BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed,
+                           const MDLogger&,
+                           EnergyCalculationFrequencyErrors*,
+                           gmx_mtop_t*,
+                           const IndexGroupsAndNames&,
+                           KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *
@@ -243,6 +271,7 @@ struct MDModulesNotifiers
      *                           wrote to .tpr files
      * LocalAtomSetManager* enables modules to add atom indices to local atom sets
      *                      to be managed
+     * const MDLogger& Allows MdModule to use standard logging class for messages output
      * const gmx_mtop_t& provides the topology of the system to the modules
      * MDModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
      *                      report if they want to write their energy output
@@ -256,15 +285,18 @@ struct MDModulesNotifiers
      *                           time information
      * const t_commrec& provides a communicator to the modules during simulation
      *                  setup
+     * MdRunInputFilename Allows modules to know .tpr filename during mdrun
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
+                           const MDLogger&,
                            const gmx_mtop_t&,
                            MDModulesEnergyOutputToDensityFittingRequestChecker*,
                            SeparatePmeRanksPermitted*,
                            const PbcType&,
                            const SimulationTimeStep&,
-                           const t_commrec&>::type simulationSetupNotifier_;
+                           const t_commrec&,
+                           MdRunInputFilename>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

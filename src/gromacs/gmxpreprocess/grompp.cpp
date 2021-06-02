@@ -1930,6 +1930,8 @@ int gmx_grompp(int argc, char* argv[])
     // to eventual notifications during pre-processing their data
     mdModules.subscribeToPreProcessingNotifications();
 
+    // And notify MdModules of existing logger
+    mdModules.notifiers().preProcessingNotifier_.notify(logger);
 
     if (bVerbose)
     {
@@ -2210,6 +2212,9 @@ int gmx_grompp(int argc, char* argv[])
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, wi);
 
+    // Notify topology to MdModules for pre-processing after all indexes were built
+    mdModules.notifiers().preProcessingNotifier_.notify(&sys);
+
     if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0)
     {
         if (EI_DYNAMICS(ir->eI) && inputrec2nboundeddim(ir) == 3)
@@ -2487,6 +2492,15 @@ int gmx_grompp(int argc, char* argv[])
         {
             GMX_LOG(logger.info).asParagraph().appendText(warningMessage);
         }
+    }
+
+    // Hand over box and coordiantes to MdModules before they evaluate their final parameters
+    {
+        gmx::CoordinatesAndBoxPreprocessed coordinatesAndBoxPreprocessed;
+        coordinatesAndBoxPreprocessed.coordinates_ = state.x.arrayRefWithPadding();
+        copy_mat(state.box, coordinatesAndBoxPreprocessed.box_);
+        coordinatesAndBoxPreprocessed.pbc_ = ir->pbcType;
+        mdModules.notifiers().preProcessingNotifier_.notify(coordinatesAndBoxPreprocessed);
     }
 
     // Add the md modules internal parameters that are not mdp options

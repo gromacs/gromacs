@@ -1059,9 +1059,19 @@ int Mdrunner::mdrunner()
     mdModules_->subscribeToSimulationSetupNotifications();
     const auto& setupNotifier = mdModules_->notifiers().simulationSetupNotifier_;
 
+    // Notify MdModules of existing logger
+    setupNotifier.notify(mdlog);
+
+    // Notify MdModules of internal parameters, saved into KVT
     if (inputrec->internalParameters != nullptr)
     {
         setupNotifier.notify(*inputrec->internalParameters);
+    }
+
+    // Let MdModules know the .tpr filename
+    {
+        gmx::MdRunInputFilename mdRunInputFilename = { ftp2fn(efTPR, filenames.size(), filenames.data()) };
+        setupNotifier.notify(mdRunInputFilename);
     }
 
     if (fplog != nullptr)
