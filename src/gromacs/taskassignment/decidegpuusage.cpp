@@ -96,11 +96,14 @@ const char* const g_specifyEverythingFormatString =
         // OpenCL standard, but the only current relevant case for GROMACS
         // is AMD OpenCL, which offers this variable.
         "GPU_DEVICE_ORDINAL"
-#    elif GMX_GPU_SYCL
-        // As with OpenCL, there are no portable way to do it.
-        // Intel reference: https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md
-        // While SYCL_DEVICE_FILTER is a better option, as of 2021.1-beta10 it is not yet supported.
-        "SYCL_DEVICE_ALLOWLIST"
+#    elif GMX_GPU_SYCL && GMX_SYCL_DPCPP
+        // https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md
+        "SYCL_DEVICE_FILTER"
+#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL
+        // Not true if we use hipSYCL over CUDA or IntelLLVM, but in that case the user probably
+        // knows what they are doing.
+        // https://rocmdocs.amd.com/en/latest/Other_Solutions/Other-Solutions.html#hip-environment-variables
+        "HIP_VISIBLE_DEVICES"
 #    else
 #        error "Unreachable branch"
 #    endif
