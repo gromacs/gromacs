@@ -1,4 +1,4 @@
-# Test goal: old Clang with old CUDA
+# Test goal: old Clang as host compiler with old CUDA
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
 #   GPU: CUDA oldest supported
