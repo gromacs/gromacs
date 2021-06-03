@@ -195,7 +195,7 @@ public:
         std::vector<DomDecCallback> callbacks;
         for (const auto& client : clients_)
         {
-            callbacks.template emplace_back(client->registerDomDecCallback());
+            callbacks.emplace_back(client->registerDomDecCallback());
         }
         return std::make_unique<DomDecHelper>(std::forward<Args>(args)..., std::move(callbacks));
     }
