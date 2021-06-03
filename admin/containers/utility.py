@@ -111,7 +111,7 @@ linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default
 linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
                          help='Select Centos Linux base image.')
 
-parser.add_argument('--cuda', type=str, nargs='?', const='10.2', default=None,
+parser.add_argument('--cuda', type=str, nargs='?', const='11.0', default=None,
                     help='Select a CUDA version for a base Linux image from NVIDIA.')
 
 parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,

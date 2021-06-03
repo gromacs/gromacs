@@ -1,53 +1,53 @@
 # Test goal: CUDA GPU communications with OpenMPI
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
-#   GPU: CUDA newest supported
+#   GPU: CUDA newest supported with its newest supported gcc
 #   HW: dual NVIDIA GPU
 #   MPI: OpenMPI
 #   Features: GPU direct communications + update (regression tests with dual GPU)
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 18.04
+#   OS: Ubuntu 20.04
 #   Build type: RelWithDebInfo
-#   Compiler: GCC 8
-#   GPU: CUDA 11.0
+#   Compiler: GCC 10.2
+#   GPU: CUDA 11.3
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-8-cuda-11.0:configureMPI:
+gromacs:gcc-10-cuda-11.2:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
     - .use-mpi
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    COMPILER_MAJOR_VERSION: 8
+    COMPILER_MAJOR_VERSION: 10
 
-gromacs:gcc-8-cuda-11.0:buildMPI:
+gromacs:gcc-10-cuda-11.2:buildMPI:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:gcc-8-cuda-11.0:configureMPI
+    - job: gromacs:gcc-10-cuda-11.2:configureMPI
 
-gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
+gromacs:gcc-10-cuda-11.2:regressiontest-gpucommupd-MPI:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -62,7 +62,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-8-cuda-11.0:buildMPI
+    - job: gromacs:gcc-10-cuda-11.2:buildMPI
     - job: regressiontests:prepare
   artifacts:
     paths:

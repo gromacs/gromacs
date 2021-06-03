@@ -1,31 +1,30 @@
 # Test goal: GCC with newest CUDA
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
-#   GPU: CUDA newest supported
+#   GPU: CUDA newest supported with its newest supported gcc
 #   HW: NVIDIA GPU
 #   CMake: oldest supported
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 18.04
-#   Build type: RelWithAssert
-#   Compiler: GCC 8
-#   MPI: thread_MPI
-#   GPU: CUDA 11.0
+#   OS: Ubuntu 20.04
+#   Build type: RelWithDebInfo
+#   Compiler: GCC 10.2
+#   GPU: CUDA 11.3
 #   SIMD: AVX2_256
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 
-gromacs:gcc-8-cuda-11.0:release:configure:
+gromacs:gcc-10-cuda-11.2:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
-    COMPILER_MAJOR_VERSION: 8
+    COMPILER_MAJOR_VERSION: 10
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_REGRESSIONTEST_OPTIONS: ""
@@ -34,7 +33,7 @@ gromacs:gcc-8-cuda-11.0:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:gcc-8-cuda-11.0:release:build:
+gromacs:gcc-10-cuda-11.2:release:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -45,16 +44,16 @@ gromacs:gcc-8-cuda-11.0:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   needs:
-    - job: gromacs:gcc-8-cuda-11.0:release:configure
+    - job: gromacs:gcc-10-cuda-11.2:release:configure
 
-gromacs:gcc-8-cuda-11.0:release:test:
+gromacs:gcc-10-cuda-11.2:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -63,6 +62,6 @@ gromacs:gcc-8-cuda-11.0:release:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-8-cuda-11.0:release:configure
-    - job: gromacs:gcc-8-cuda-11.0:release:build
+    - job: gromacs:gcc-10-cuda-11.2:release:configure
+    - job: gromacs:gcc-10-cuda-11.2:release:build
 
