@@ -174,7 +174,7 @@ static void pull_set_pbcatoms(const t_commrec* cr, struct pull_t* pull, ArrayRef
 static void make_cyl_refgrps(const t_commrec*     cr,
                              pull_t*              pull,
                              ArrayRef<const real> masses,
-                             t_pbc*               pbc,
+                             const t_pbc&         pbc,
                              double               t,
                              ArrayRef<const RVec> x)
 {
@@ -238,7 +238,7 @@ static void make_cyl_refgrps(const t_commrec*     cr,
             {
                 int  atomIndex = localAtomIndices[indexInSet];
                 rvec dx;
-                pbc_dx_aiuc(pbc, x[atomIndex], reference, dx);
+                pbc_dx_aiuc(&pbc, x[atomIndex], reference, dx);
                 double axialLocation = iprod(direction, dx);
                 dvec   radialLocation;
                 double dr2 = 0;
@@ -391,7 +391,7 @@ static void sum_com_part(const pull_group_work_t* pgrp,
                          ArrayRef<const RVec>     x,
                          ArrayRef<const RVec>     xp,
                          ArrayRef<const real>     mass,
-                         const t_pbc*             pbc,
+                         const t_pbc&             pbc,
                          const rvec               x_pbc,
                          ComSums*                 sum_com)
 {
@@ -439,7 +439,7 @@ static void sum_com_part(const pull_group_work_t* pgrp,
             rvec dx;
 
             /* Sum the difference with the reference atom */
-            pbc_dx(pbc, x[ii], x_pbc, dx);
+            pbc_dx(&pbc, x[ii], x_pbc, dx);
             for (int d = 0; d < DIM; d++)
             {
                 sum_wmx[d] += wm * dx[d];
@@ -523,7 +523,7 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 void pull_calc_coms(const t_commrec*     cr,
                     pull_t*              pull,
                     ArrayRef<const real> masses,
-                    t_pbc*               pbc,
+                    const t_pbc&         pbc,
                     double               t,
                     ArrayRef<const RVec> x,
                     ArrayRef<RVec>       xp)
@@ -563,12 +563,12 @@ void pull_calc_coms(const t_commrec*     cr,
 
         for (m = pull->cosdim + 1; m < pull->npbcdim; m++)
         {
-            if (pbc->box[m][pull->cosdim] != 0)
+            if (pbc.box[m][pull->cosdim] != 0)
             {
                 gmx_fatal(FARGS, "Can not do cosine weighting for trilinic dimensions");
             }
         }
-        twopi_box = 2.0 * M_PI / pbc->box[pull->cosdim][pull->cosdim];
+        twopi_box = 2.0 * M_PI / pbc.box[pull->cosdim][pull->cosdim];
     }
 
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -1031,7 +1031,7 @@ void allocStatePrevStepPullCom(t_state* state, const pull_t* pull)
 void initPullComFromPrevStep(const t_commrec*     cr,
                              pull_t*              pull,
                              ArrayRef<const real> masses,
-                             t_pbc*               pbc,
+                             const t_pbc&         pbc,
                              ArrayRef<const RVec> x)
 {
     pull_comm_t* comm   = &pull->comm;

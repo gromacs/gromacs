@@ -101,12 +101,12 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord& pcrd);
 
 /*! \brief Get the value for pull coord coord_ind.
  *
- * \param[in,out] pull      The pull struct.
- * \param[in]     coord_ind Number of the pull coordinate.
- * \param[in]     pbc       Information structure about periodicity.
+ * \param[in,out] pull        The pull struct.
+ * \param[in]     coordIndex  Index of the pull coordinate in the list of coordinates
+ * \param[in]     pbc         Information structure about periodicity.
  * \returns the value of the pull coordinate.
  */
-double get_pull_coord_value(struct pull_t* pull, int coord_ind, const struct t_pbc* pbc);
+double get_pull_coord_value(pull_t* pull, int coordIndex, const t_pbc& pbc);
 
 /*! \brief Registers the provider of an external potential for a coordinate.
  *
@@ -160,7 +160,7 @@ void apply_external_pull_coord_force(struct pull_t*            pull,
  *
  * \param pull              The pull group.
  */
-void clear_pull_forces(struct pull_t* pull);
+void clear_pull_forces(pull_t* pull);
 
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
@@ -177,9 +177,9 @@ void clear_pull_forces(struct pull_t* pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(struct pull_t*                 pull,
+real pull_potential(pull_t*                        pull,
                     gmx::ArrayRef<const real>      masses,
-                    struct t_pbc*                  pbc,
+                    const t_pbc&                   pbc,
                     const t_commrec*               cr,
                     double                         t,
                     real                           lambda,
@@ -204,7 +204,7 @@ real pull_potential(struct pull_t*                 pull,
  */
 void pull_constraint(struct pull_t*            pull,
                      gmx::ArrayRef<const real> masses,
-                     struct t_pbc*             pbc,
+                     const t_pbc&              pbc,
                      const t_commrec*          cr,
                      double                    dt,
                      double                    t,
@@ -220,7 +220,7 @@ void pull_constraint(struct pull_t*            pull,
  * \param cr             Structure for communication info.
  * \param pull           The pull group.
  */
-void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull);
+void dd_make_local_pull_groups(const t_commrec* cr, pull_t* pull);
 
 
 /*! \brief Allocate, initialize and return a pull work struct.
@@ -263,7 +263,7 @@ void finish_pull(struct pull_t* pull);
 void pull_calc_coms(const t_commrec*               cr,
                     pull_t*                        pull,
                     gmx::ArrayRef<const real>      masses,
-                    t_pbc*                         pbc,
+                    const t_pbc&                   pbc,
                     double                         t,
                     gmx::ArrayRef<const gmx::RVec> x,
                     gmx::ArrayRef<gmx::RVec>       xp);
@@ -349,14 +349,14 @@ bool pull_have_constraint(const pull_params_t& pullParameters);
  * \param[in] pbc  Information on periodic boundary conditions
  * \returns The maximume distance
  */
-real max_pull_distance2(const pull_coord_work_t* pcrd, const t_pbc* pbc);
+real max_pull_distance2(const pull_coord_work_t& pcrd, const t_pbc& pbc);
 
 /*! \brief Sets the previous step COM in pull to the current COM and updates the pull_com_prev_step in the state
  *
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The local (to this rank) state.
  */
-void updatePrevStepPullCom(struct pull_t* pull, t_state* state);
+void updatePrevStepPullCom(pull_t* pull, t_state* state);
 
 /*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
@@ -389,7 +389,7 @@ void preparePrevStepPullCom(const t_inputrec*         ir,
 void initPullComFromPrevStep(const t_commrec*               cr,
                              pull_t*                        pull,
                              gmx::ArrayRef<const real>      masses,
-                             t_pbc*                         pbc,
+                             const t_pbc&                   pbc,
                              gmx::ArrayRef<const gmx::RVec> x);
 
 #endif

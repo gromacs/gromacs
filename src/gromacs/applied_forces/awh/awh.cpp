@@ -311,7 +311,7 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
             if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
                 coordValue[d] = get_pull_coord_value(
-                        pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted], &pbc);
+                        pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted], pbc);
             }
             else
             {

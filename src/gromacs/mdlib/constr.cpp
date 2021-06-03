@@ -767,7 +767,7 @@ bool Constraints::Impl::apply(bool                      bLog,
             set_pbc(&pbc, ir.pbcType, box);
             pull_constraint(pull_work,
                             masses_,
-                            &pbc,
+                            pbc,
                             cr,
                             ir.delta_t,
                             t,

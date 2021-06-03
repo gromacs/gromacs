@@ -106,8 +106,7 @@ protected:
             {
                 minBoxSize2 = std::min(minBoxSize2, norm2(box[d]));
             }
-            EXPECT_REAL_EQ_TOL(
-                    0.25 * minBoxSize2, max_pull_distance2(&pcrd, &pbc), defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(0.25 * minBoxSize2, max_pull_distance2(pcrd, pbc), defaultRealTolerance());
         }
 
         {
@@ -121,7 +120,7 @@ protected:
             pull_coord_work_t pcrd(params);
             clear_dvec(pcrd.spatialData.vec);
             EXPECT_REAL_EQ_TOL(
-                    0.25 * boxSizeZSquared, max_pull_distance2(&pcrd, &pbc), defaultRealTolerance());
+                    0.25 * boxSizeZSquared, max_pull_distance2(pcrd, pbc), defaultRealTolerance());
         }
 
         {
@@ -136,7 +135,7 @@ protected:
             clear_dvec(pcrd.spatialData.vec);
             pcrd.spatialData.vec[ZZ] = 1;
             EXPECT_REAL_EQ_TOL(
-                    0.25 * boxSizeZSquared, max_pull_distance2(&pcrd, &pbc), defaultRealTolerance());
+                    0.25 * boxSizeZSquared, max_pull_distance2(pcrd, pbc), defaultRealTolerance());
         }
 
         {
@@ -156,7 +155,7 @@ protected:
             {
                 minDist2 -= square(box[d][XX]);
             }
-            EXPECT_REAL_EQ_TOL(0.25 * minDist2, max_pull_distance2(&pcrd, &pbc), defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(0.25 * minDist2, max_pull_distance2(pcrd, pbc), defaultRealTolerance());
         }
     }
 };

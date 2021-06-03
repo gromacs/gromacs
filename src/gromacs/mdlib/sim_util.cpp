@@ -207,7 +207,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
     enerd->term[F_COM_PULL] +=
             pull_potential(pull_work,
                            gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
-                           &pbc,
+                           pbc,
                            cr,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
