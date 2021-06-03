@@ -48,19 +48,11 @@
 
 #include "leapfrogtestrunners.h"
 
-#if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/devicebuffer.cuh"
+#if GPU_LEAPFROG_SUPPORTED
+#    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
-#if GMX_GPU_SYCL
-#    include "gromacs/gpu_utils/devicebuffer_sycl.h"
-#endif
-
-#if HAVE_GPU_LEAPFROG
-#    include "gromacs/mdlib/leapfrog_gpu.h"
-#endif
-
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/hardware/device_information.h"
+#include "gromacs/mdlib/leapfrog_gpu.h"
 #include "gromacs/mdlib/stat.h"
 
 namespace gmx
@@ -68,7 +60,8 @@ namespace gmx
 namespace test
 {
 
-#if HAVE_GPU_LEAPFROG
+#if GPU_LEAPFROG_SUPPORTED
+
 void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 {
     const DeviceContext& deviceContext = testDevice_.deviceContext();
@@ -127,7 +120,7 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
     freeDeviceBuffer(&d_f);
 }
 
-#else // HAVE_GPU_LEAPFROG
+#else // GPU_LEAPFROG_SUPPORTED
 
 void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* /* testData */, int /* numSteps */)
 {
@@ -135,7 +128,7 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* /* testData */, int /
     FAIL() << "Dummy Leap-Frog GPU function was called instead of the real one.";
 }
 
-#endif // HAVE_GPU_LEAPFROG
+#endif // GPU_LEAPFROG_SUPPORTED
 
 } // namespace test
 } // namespace gmx

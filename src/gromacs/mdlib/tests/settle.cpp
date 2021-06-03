@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,8 +312,9 @@ TEST_P(SettleTest, SatisfiesConstraints)
     std::vector<std::unique_ptr<ISettleTestRunner>> runners;
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<SettleHostTestRunner>());
-    // If using CUDA, add runners for the GPU version for each available GPU
-    if (GMX_GPU_CUDA)
+    // If supported, add runners for the GPU version for each available GPU
+    const bool addGpuRunners = GPU_SETTLE_SUPPORTED;
+    if (addGpuRunners)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {

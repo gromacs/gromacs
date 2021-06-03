@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -209,8 +209,8 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     std::vector<std::unique_ptr<ILeapFrogTestRunner>> runners;
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<LeapFrogHostTestRunner>());
-    // If using CUDA, add runners for the GPU version for each available GPU
-    const bool addGpuRunners = HAVE_GPU_LEAPFROG;
+    // If supported, add runners for the GPU version for each available GPU
+    const bool addGpuRunners = GPU_LEAPFROG_SUPPORTED;
     if (addGpuRunners)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())

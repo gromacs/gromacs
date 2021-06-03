@@ -85,18 +85,5 @@ void SettleHostTestRunner::applySettle(SettleTestData*    testData,
     EXPECT_FALSE(errorOccured) << testDescription;
 }
 
-#if !GMX_GPU_CUDA
-
-void SettleDeviceTestRunner::applySettle(SettleTestData* /* testData */,
-                                         const t_pbc /* pbc */,
-                                         const bool /* updateVelocities */,
-                                         const bool /* calcVirial */,
-                                         const std::string& /* testDescription */)
-{
-    GMX_UNUSED_VALUE(testDevice_);
-    FAIL() << "Dummy SETTLE GPU function was called instead of the real one in the SETTLE test.";
-}
-
-#endif
 } // namespace test
 } // namespace gmx

@@ -40,29 +40,24 @@
  */
 #include "gmxpre.h"
 
-#include "settletestrunners.h"
-
 #include "config.h"
 
-#include <assert.h>
+#include <gtest/gtest.h>
 
-#include <cmath>
+#include "settletestrunners.h"
 
-#include <algorithm>
-#include <vector>
-
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#if GPU_SETTLE_SUPPORTED
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#endif
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdlib/settle_gpu.h"
-#include "gromacs/utility/unique_cptr.h"
-
-#include "testutils/test_device.h"
 
 namespace gmx
 {
 namespace test
 {
+
+#if GPU_SETTLE_SUPPORTED
 
 void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
                                          const t_pbc     pbc,
@@ -70,10 +65,6 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
                                          const bool      calcVirial,
                                          const std::string& /* testDescription */)
 {
-    // These should never fail since this function should only be called if CUDA is enabled and
-    // there is a CUDA-capable device available.
-    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "CUDA version of SETTLE was called from non-CUDA build.");
-
     const DeviceContext& deviceContext = testDevice_.deviceContext();
     const DeviceStream&  deviceStream  = testDevice_.deviceStream();
     setActiveDevice(testDevice_.deviceInfo());
@@ -115,6 +106,20 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
     freeDeviceBuffer(&d_xp);
     freeDeviceBuffer(&d_v);
 }
+
+#else // GPU_SETTLE_SUPPORTED
+
+void SettleDeviceTestRunner::applySettle(SettleTestData* /* testData */,
+                                         const t_pbc /* pbc */,
+                                         const bool /* updateVelocities */,
+                                         const bool /* calcVirial */,
+                                         const std::string& /* testDescription */)
+{
+    GMX_UNUSED_VALUE(testDevice_);
+    FAIL() << "Dummy SETTLE GPU function was called instead of the real one in the SETTLE test.";
+}
+
+#endif // GPU_SETTLE_SUPPORTED
 
 } // namespace test
 } // namespace gmx

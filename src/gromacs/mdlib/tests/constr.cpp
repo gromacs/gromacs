@@ -530,8 +530,9 @@ public:
         // Add runners for CPU versions of SHAKE and LINCS
         runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
         runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
-        // If using CUDA, add runners for the GPU version of LINCS for each available GPU
-        if (GMX_GPU_CUDA)
+        // If supported, add runners for the GPU version of LINCS for each available GPU
+        const bool addGpuRunners = GPU_CONSTRAINTS_SUPPORTED;
+        if (addGpuRunners)
         {
             for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
             {

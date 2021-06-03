@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,11 @@
 #include "testutils/test_device.h"
 
 #include "constrtestdata.h"
+
+/*
+ * GPU version of constraints is only available with CUDA.
+ */
+#define GPU_CONSTRAINTS_SUPPORTED (GMX_GPU_CUDA)
 
 struct t_pbc;
 

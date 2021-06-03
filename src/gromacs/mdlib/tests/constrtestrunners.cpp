@@ -176,13 +176,5 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
     done_lincs(lincsd);
 }
 
-#if !GMX_GPU_CUDA
-void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* /* testData */, t_pbc /* pbc */)
-{
-    GMX_UNUSED_VALUE(testDevice_);
-    FAIL() << "Dummy LINCS CUDA function was called instead of the real one.";
-}
-#endif // !GMX_GPU_CUDA
-
 } // namespace test
 } // namespace gmx

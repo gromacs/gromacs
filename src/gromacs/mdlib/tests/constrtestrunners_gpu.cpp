@@ -42,26 +42,25 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
+#include <gtest/gtest.h>
+
 #include "constrtestrunners.h"
 
-#include <assert.h>
-
-#include <cmath>
-
-#include <algorithm>
-#include <vector>
-
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#if GPU_CONSTRAINTS_SUPPORTED
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#endif
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
 {
 namespace test
 {
+
+#if GPU_CONSTRAINTS_SUPPORTED
 
 void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_pbc pbc)
 {
@@ -108,6 +107,16 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testDat
     freeDeviceBuffer(&d_xp);
     freeDeviceBuffer(&d_v);
 }
+
+#else // GPU_CONSTRAINTS_SUPPORTED
+
+void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* /* testData */, t_pbc /* pbc */)
+{
+    GMX_UNUSED_VALUE(testDevice_);
+    FAIL() << "Dummy LINCS GPU function was called instead of the real one.";
+}
+
+#endif // GPU_CONSTRAINTS_SUPPORTED
 
 } // namespace test
 } // namespace gmx
