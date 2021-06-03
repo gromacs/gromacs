@@ -62,6 +62,7 @@ enum class OptionFileType : int
     Plot,
     GenericData,
     Csv,
+    QMInput,
     Count
 };
 

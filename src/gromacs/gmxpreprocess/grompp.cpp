@@ -1858,7 +1858,9 @@ int gmx_grompp(int argc, char* argv[])
                        { efEDR, "-e", nullptr, ffOPTRD },
                        /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
                        { efGRO, "-imd", "imdgroup", ffOPTWR },
-                       { efTRN, "-ref", "rotref", ffOPTRW | ffALLOW_MISSING } };
+                       { efTRN, "-ref", "rotref", ffOPTRW | ffALLOW_MISSING },
+                       /* This group is needed by the QMMM MDModule: */
+                       { efQMI, "-qmi", nullptr, ffOPTRD } };
 #define NFILE asize(fnm)
 
     /* Command line options */
@@ -1930,8 +1932,14 @@ int gmx_grompp(int argc, char* argv[])
     // to eventual notifications during pre-processing their data
     mdModules.subscribeToPreProcessingNotifications();
 
-    // And notify MdModules of existing logger
+    // Notify MDModules of existing logger
     mdModules.notifiers().preProcessingNotifier_.notify(logger);
+
+    // Notify QMMM MDModule of external QM input file command-line option
+    {
+        gmx::QMInputFileName qmInputFileName = { ftp2bSet(efQMI, NFILE, fnm), ftp2fn(efQMI, NFILE, fnm) };
+        mdModules.notifiers().preProcessingNotifier_.notify(qmInputFileName);
+    }
 
     if (bVerbose)
     {

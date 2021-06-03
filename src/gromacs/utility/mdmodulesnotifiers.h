@@ -138,6 +138,17 @@ struct MdRunInputFilename
     std::string mdRunFilename_;
 };
 
+/*! \libinternal \brief Notification for QM program input filename
+ *  provided by user as command-line argument for grompp
+ */
+struct QMInputFileName
+{
+    //! Flag if QM Input File has been provided by user
+    bool hasQMInputFileName_ = false;
+    //! The name of the QM Input file (.inp)
+    std::string qmInputFileName_;
+};
+
 /*! \libinternal
  * \brief Group of notifers to organize that MDModules
  * can receive callbacks they subscribe to.
@@ -242,13 +253,15 @@ struct MDModulesNotifiers
      * IndexGroupsAndNames provides modules with atom indices and their names
      * KeyValueTreeObjectBuilder enables writing of module internal data to
      *                           .tpr files.
+     * QMInputFileName Allows QMMM module to know if user provided external QM input file
      */
     BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed,
                            const MDLogger&,
                            EnergyCalculationFrequencyErrors*,
                            gmx_mtop_t*,
                            const IndexGroupsAndNames&,
-                           KeyValueTreeObjectBuilder>::type preProcessingNotifier_;
+                           KeyValueTreeObjectBuilder,
+                           QMInputFileName>::type preProcessingNotifier_;
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *

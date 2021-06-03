@@ -81,9 +81,9 @@ struct FileTypeMapping
 };
 
 //! Mappings from OptionFileType to file types in filetypes.h.
-constexpr EnumerationArray<OptionFileType, int> sc_fileTypeMapping = { efTPS, efTPR, efTRX,
-                                                                       efEDR, efPDB, efNDX,
-                                                                       efXVG, efDAT, efCSV };
+constexpr EnumerationArray<OptionFileType, int> sc_fileTypeMapping = { efTPS, efTPR, efTRX, efEDR,
+                                                                       efPDB, efNDX, efXVG, efDAT,
+                                                                       efCSV, efQMI };
 
 /********************************************************************
  * FileTypeHandler
