@@ -765,7 +765,7 @@ void dd_redistribute_cg(FILE*         fplog,
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int>& flagBuffer = moveBuffer;
 
-    gmx::ArrayRef<const AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock =
+    gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock =
             fr->atomInfoForEachMoleculeBlock;
 
     /* Temporarily store atoms passed to our rank at the end of the range */

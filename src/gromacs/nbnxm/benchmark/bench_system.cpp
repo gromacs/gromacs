@@ -50,6 +50,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -179,18 +180,18 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor, const std::stri
             // Oxgygen
             atomTypes[a] = typeOxygen;
             charges[a]   = chargeOxygen;
-            SET_CGINFO_HAS_VDW(atomInfoAllVdw[a]);
-            SET_CGINFO_HAS_VDW(atomInfoOxygenVdw[a]);
+            atomInfoAllVdw[a] |= gmx::sc_atomInfo_HasVdw;
+            atomInfoOxygenVdw[a] |= gmx::sc_atomInfo_HasVdw;
         }
         else
         {
             // Hydrogen
             atomTypes[a] = typeHydrogen;
             charges[a]   = chargeHydrogen;
-            SET_CGINFO_HAS_VDW(atomInfoAllVdw[a]);
+            atomInfoAllVdw[a] |= gmx::sc_atomInfo_HasVdw;
         }
-        SET_CGINFO_HAS_Q(atomInfoAllVdw[a]);
-        SET_CGINFO_HAS_Q(atomInfoOxygenVdw[a]);
+        atomInfoAllVdw[a] |= gmx::sc_atomInfo_HasCharge;
+        atomInfoOxygenVdw[a] |= gmx::sc_atomInfo_HasCharge;
 
         excls.pushBackListOfSize(numAtomsInMolecule);
         gmx::ArrayRef<int> exclusionsForAtom   = excls.back();

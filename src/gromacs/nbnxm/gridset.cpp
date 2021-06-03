@@ -230,7 +230,7 @@ void GridSet::putOnGrid(const matrix                   box,
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(
-            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo.data(), x, numAtomsMoved, nbat);
+            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, numAtomsMoved, nbat);
 
     if (gridIndex == 0)
     {

@@ -44,7 +44,6 @@
 #ifndef GMX_DOMDEC_MAKEBONDEDLINKS_H
 #define GMX_DOMDEC_MAKEBONDEDLINKS_H
 
-struct AtomInfoWithinMoleculeBlock;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 
@@ -52,14 +51,15 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+struct AtomInfoWithinMoleculeBlock;
+} // namespace gmx
 
 /*! \brief Generate a list of links between atoms that are linked by bonded interactions
  *
  * Also stores whether atoms are linked in \p atomInfoForEachMoleculeBlock.
  */
-void makeBondedLinks(gmx_domdec_t*                              dd,
-                     const gmx_mtop_t&                          mtop,
-                     gmx::ArrayRef<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock);
+void makeBondedLinks(gmx_domdec_t*                                   dd,
+                     const gmx_mtop_t&                               mtop,
+                     gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock);
 
 #endif

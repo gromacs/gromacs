@@ -66,7 +66,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-struct AtomInfoWithinMoleculeBlock;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
@@ -85,6 +84,7 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+struct AtomInfoWithinMoleculeBlock;
 class DeviceStreamManager;
 class ForceWithShiftForces;
 class MDLogger;

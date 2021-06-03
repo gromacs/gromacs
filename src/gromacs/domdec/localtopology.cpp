@@ -55,6 +55,7 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -721,7 +722,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
     {
         exclusionsForAtom.clear();
 
-        if (GET_CGINFO_EXCL_INTER(atomInfo[at]))
+        if (atomInfo[at] & gmx::sc_atomInfo_Exclusion)
         {
             int mb    = 0;
             int mt    = 0;

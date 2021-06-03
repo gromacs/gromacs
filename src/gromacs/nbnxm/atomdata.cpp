@@ -861,8 +861,13 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet
 }
 
 /* Copies the energy group indices to a reordered and packed array */
-static void
-copy_egp_to_nbat_egps(const int* a, int na, int na_round, int na_c, int bit_shift, const int* in, int* innb)
+static void copy_egp_to_nbat_egps(const int*          a,
+                                  int                 na,
+                                  int                 na_round,
+                                  int                 na_c,
+                                  int                 bit_shift,
+                                  ArrayRef<const int> atomInfo,
+                                  int*                atomInfoNb)
 {
     int i = 0, j = 0;
     for (; i < na; i += na_c)
@@ -874,15 +879,15 @@ copy_egp_to_nbat_egps(const int* a, int na, int na_round, int na_c, int bit_shif
             int at = a[i + sa];
             if (at >= 0)
             {
-                comb |= (GET_CGINFO_GID(in[at]) << (sa * bit_shift));
+                comb |= (atomInfo[at] & sc_atomInfo_EnergyGroupIdMask) << (sa * bit_shift);
             }
         }
-        innb[j++] = comb;
+        atomInfoNb[j++] = comb;
     }
     /* Complete the partially filled last cell with fill */
     for (; i < na_round; i += na_c)
     {
-        innb[j++] = 0;
+        atomInfoNb[j++] = 0;
     }
 }
 
@@ -911,7 +916,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
                                   numAtoms,
                                   c_nbnxnCpuIClusterSize,
                                   params->neg_2log,
-                                  atomInfo.data(),
+                                  atomInfo,
                                   params->energrp.data() + grid.atomToCluster(atomOffset));
         }
     }

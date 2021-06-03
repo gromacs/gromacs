@@ -444,10 +444,10 @@ void LegacySimulator::do_tpi()
     fr->nbv->changePairlistRadii(inputrec->rlist, inputrec->rlist);
 
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    gid_tp = GET_CGINFO_GID(fr->atomInfo[a_tp0]);
+    gid_tp = fr->atomInfo[a_tp0] & gmx::sc_atomInfo_EnergyGroupIdMask;
     for (int a = a_tp0 + 1; a < a_tp1; a++)
     {
-        if (GET_CGINFO_GID(fr->atomInfo[a]) != gid_tp)
+        if ((fr->atomInfo[a] & gmx::sc_atomInfo_EnergyGroupIdMask) != gid_tp)
         {
             fprintf(fplog,
                     "NOTE: Atoms in the molecule to insert belong to different energy groups.\n"

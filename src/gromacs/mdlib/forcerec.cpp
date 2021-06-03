@@ -198,8 +198,8 @@ enum class ConstraintTypeForAtom : int
     Settle,     //! F_SETTLE active
 };
 
-static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop,
-                                                                                 const t_forcerec* fr)
+static std::vector<gmx::AtomInfoWithinMoleculeBlock>
+makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
 {
     std::vector<bool> atomUsesVdw(fr->ntype, false);
     for (int ai = 0; ai < fr->ntype; ai++)
@@ -211,8 +211,8 @@ static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock
         }
     }
 
-    std::vector<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
-    int                                      indexOfFirstAtomInMoleculeBlock = 0;
+    std::vector<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
+    int                                           indexOfFirstAtomInMoleculeBlock = 0;
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
         const gmx_molblock_t& molb = mtop.molblock[mb];
@@ -255,7 +255,7 @@ static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock
             }
         }
 
-        AtomInfoWithinMoleculeBlock atomInfoOfMoleculeBlock;
+        gmx::AtomInfoWithinMoleculeBlock atomInfoOfMoleculeBlock;
         atomInfoOfMoleculeBlock.indexOfFirstAtomInMoleculeBlock = indexOfFirstAtomInMoleculeBlock;
         atomInfoOfMoleculeBlock.indexOfLastAtomInMoleculeBlock =
                 indexOfFirstAtomInMoleculeBlock + molb.nmol * molt.atoms.nr;
@@ -290,10 +290,10 @@ static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock
                 int& atomInfo      = atomInfoOfMoleculeBlock.atomInfo[moleculeOffsetInBlock + a];
 
                 /* Store the energy group in atomInfo */
-                int gid = getGroupType(mtop.groups,
+                int gid  = getGroupType(mtop.groups,
                                        SimulationAtomGroupType::EnergyOutput,
                                        indexOfFirstAtomInMoleculeBlock + moleculeOffsetInBlock + a);
-                SET_CGINFO_GID(atomInfo, gid);
+                atomInfo = (atomInfo & ~gmx::sc_atomInfo_EnergyGroupIdMask) | gid;
 
                 bool bHaveVDW = (atomUsesVdw[atom.type] || atomUsesVdw[atom.typeB]);
                 bool bHaveQ   = (atom.q != 0 || atom.qB != 0);
@@ -311,25 +311,27 @@ static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock
 
                 switch (constraintTypeOfAtom[a])
                 {
-                    case ConstraintTypeForAtom::Constraint: SET_CGINFO_CONSTR(atomInfo); break;
-                    case ConstraintTypeForAtom::Settle: SET_CGINFO_SETTLE(atomInfo); break;
+                    case ConstraintTypeForAtom::Constraint:
+                        atomInfo |= gmx::sc_atomInfo_Constraint;
+                        break;
+                    case ConstraintTypeForAtom::Settle: atomInfo |= gmx::sc_atomInfo_Settle; break;
                     default: break;
                 }
                 if (haveExclusions)
                 {
-                    SET_CGINFO_EXCL_INTER(atomInfo);
+                    atomInfo |= gmx::sc_atomInfo_Exclusion;
                 }
                 if (bHaveVDW)
                 {
-                    SET_CGINFO_HAS_VDW(atomInfo);
+                    atomInfo |= gmx::sc_atomInfo_HasVdw;
                 }
                 if (bHaveQ)
                 {
-                    SET_CGINFO_HAS_Q(atomInfo);
+                    atomInfo |= gmx::sc_atomInfo_HasCharge;
                 }
                 if (fr->efep != FreeEnergyPerturbationType::No && PERTURBED(atom))
                 {
-                    SET_CGINFO_FEP(atomInfo);
+                    atomInfo |= gmx::sc_atomInfo_FreeEnergyPerturbation;
                 }
             }
         }
@@ -342,8 +344,8 @@ static std::vector<AtomInfoWithinMoleculeBlock> makeAtomInfoForEachMoleculeBlock
     return atomInfoForEachMoleculeBlock;
 }
 
-static std::vector<int> expandAtomInfo(const int                                        nmb,
-                                       gmx::ArrayRef<const AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
+static std::vector<int> expandAtomInfo(const int                                             nmb,
+                                       gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
     const int numAtoms = atomInfoForEachMoleculeBlock[nmb - 1].indexOfLastAtomInMoleculeBlock;
 

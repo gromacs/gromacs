@@ -43,7 +43,7 @@
 #define GMX_DOMDEC_DOMDEC_UTILITY_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/atominfo.h"
 
 #include "domdec_internal.h"
 
@@ -83,15 +83,15 @@ void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm);
 void check_screw_box(const matrix box);
 
 /*! \brief Return the atom information flags for atom a */
-static inline int ddGetAtomInfo(gmx::ArrayRef<const AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
-                                int                                              a)
+static inline int ddGetAtomInfo(gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
+                                int                                                   a)
 {
     size_t index = 0;
     while (a >= atomInfoForEachMoleculeBlock[index].indexOfLastAtomInMoleculeBlock)
     {
         index++;
     }
-    const AtomInfoWithinMoleculeBlock& atomInfoOfMoleculeBlock = atomInfoForEachMoleculeBlock[index];
+    const gmx::AtomInfoWithinMoleculeBlock& atomInfoOfMoleculeBlock = atomInfoForEachMoleculeBlock[index];
 
     return atomInfoOfMoleculeBlock.atomInfo[(a - atomInfoOfMoleculeBlock.indexOfFirstAtomInMoleculeBlock)
                                             % atomInfoOfMoleculeBlock.atomInfo.size()];

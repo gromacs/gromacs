@@ -49,7 +49,7 @@
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/topology/block.h"
@@ -85,9 +85,9 @@ static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
     }
 }
 
-void makeBondedLinks(gmx_domdec_t*                              dd,
-                     const gmx_mtop_t&                          mtop,
-                     gmx::ArrayRef<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
+void makeBondedLinks(gmx_domdec_t*                                   dd,
+                     const gmx_mtop_t&                               mtop,
+                     gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
 
     if (!dd->comm->systemInfo.filterBondedCommunication)
@@ -144,7 +144,7 @@ void makeBondedLinks(gmx_domdec_t*                              dd,
         reverse_ilist_t   ril;
         make_reverse_ilist(molt.ilist, &molt.atoms, rtOptions, AtomLinkRule::AllAtomsInBondeds, &ril);
 
-        AtomInfoWithinMoleculeBlock* atomInfoOfMoleculeBlock = &atomInfoForEachMoleculeBlock[mb];
+        gmx::AtomInfoWithinMoleculeBlock* atomInfoOfMoleculeBlock = &atomInfoForEachMoleculeBlock[mb];
 
         int mol = 0;
         for (mol = 0; mol < (mtop.bIntermolecularInteractions ? molb.nmol : 1); mol++)
@@ -193,7 +193,7 @@ void makeBondedLinks(gmx_domdec_t*                              dd,
                 }
                 if (link->index[atomIndex + 1] - link->index[atomIndex] > 0)
                 {
-                    SET_CGINFO_BOND_INTER(atomInfoOfMoleculeBlock->atomInfo[a]);
+                    atomInfoOfMoleculeBlock->atomInfo[a] |= gmx::sc_atomInfo_BondCommunication;
                     numLinkedAtoms++;
                 }
             }
@@ -231,9 +231,8 @@ void makeBondedLinks(gmx_domdec_t*                              dd,
                         && atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock
                                    < gmx::ssize(atomInfoOfMoleculeBlock->atomInfo))
                     {
-                        SET_CGINFO_BOND_INTER(
-                                atomInfoOfMoleculeBlock
-                                        ->atomInfo[atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock]);
+                        atomInfoOfMoleculeBlock->atomInfo[atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock] |=
+                                gmx::sc_atomInfo_BondCommunication;
                         numLinkedAtoms++;
                     }
                 }

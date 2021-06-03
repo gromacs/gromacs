@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -73,30 +74,6 @@ class PmePpCommGpu;
 class WholeMoleculeTransform;
 } // namespace gmx
 
-/* macros for the atom info data in forcerec
- *
- * Since the tpx format support max 256 energy groups, we do the same here.
- * Note that we thus have bits 8-14 still unused.
- */
-#define SET_CGINFO_GID(cgi, gid) (cgi) = (((cgi) & ~255) | (gid))
-#define GET_CGINFO_GID(cgi) ((cgi)&255)
-#define SET_CGINFO_FEP(cgi) (cgi) = ((cgi) | (1 << 15))
-#define GET_CGINFO_FEP(cgi) ((cgi) & (1 << 15))
-#define SET_CGINFO_EXCL_INTER(cgi) (cgi) = ((cgi) | (1 << 17))
-#define GET_CGINFO_EXCL_INTER(cgi) ((cgi) & (1 << 17))
-#define SET_CGINFO_CONSTR(cgi) (cgi) = ((cgi) | (1 << 20))
-#define GET_CGINFO_CONSTR(cgi) ((cgi) & (1 << 20))
-#define SET_CGINFO_SETTLE(cgi) (cgi) = ((cgi) | (1 << 21))
-#define GET_CGINFO_SETTLE(cgi) ((cgi) & (1 << 21))
-/* This bit is only used with bBondComm in the domain decomposition */
-#define SET_CGINFO_BOND_INTER(cgi) (cgi) = ((cgi) | (1 << 22))
-#define GET_CGINFO_BOND_INTER(cgi) ((cgi) & (1 << 22))
-#define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
-#define GET_CGINFO_HAS_VDW(cgi) ((cgi) & (1 << 23))
-#define SET_CGINFO_HAS_Q(cgi) (cgi) = ((cgi) | (1 << 24))
-#define GET_CGINFO_HAS_Q(cgi) ((cgi) & (1 << 24))
-
-
 /* Value to be used in mdrun for an infinite cut-off.
  * Since we need to compare with the cut-off squared,
  * this value should be slighlty smaller than sqrt(GMX_FLOAT_MAX).
@@ -104,33 +81,6 @@ class WholeMoleculeTransform;
 #define GMX_CUTOFF_INF 1E+18
 //! Check the cuttoff
 real cutoff_inf(real cutoff);
-
-/*! \brief Contains information about each atom in a molecule block of
- * the global topology. */
-struct AtomInfoWithinMoleculeBlock
-{
-    //! Index within the system of the first atom in the molecule block
-    int indexOfFirstAtomInMoleculeBlock = 0;
-    //! Index within the system of the last atom in the molecule block
-    int indexOfLastAtomInMoleculeBlock = 0;
-    /*! \brief Atom info for each atom in the block.
-     *
-     * The typical case is that all atoms are identical for each
-     * molecule of the block, and if so this vector has size equal to
-     * the number of atoms in the molecule.
-     *
-     * An example of an atypical case is QM/MM, where multiple
-     * molecules might be present and different molecules have
-     * different atoms within any one QM group or region. Now there are
-     * multiple kinds of molecules with the same connectivity, so we simply
-     * write out the atom info for the entire molecule block. Then the
-     * size equals the product of the number of atoms in the
-     * molecule and the number of molecules.
-     *
-     * The vector needs to be indexed accordingly. */
-    std::vector<int> atomInfo;
-};
-
 
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
@@ -239,7 +189,7 @@ struct t_forcerec
     FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::No;
 
     /* Information about atom properties for the molecule blocks in the global topology */
-    std::vector<AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
+    std::vector<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
     /* Information about atom properties for local and non-local atoms */
     std::vector<int> atomInfo;
 

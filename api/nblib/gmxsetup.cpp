@@ -46,6 +46,7 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/rf_util.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -136,8 +137,8 @@ void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
     particleInfoAllVdw_.resize(numParticles);
     for (size_t particleI = 0; particleI < numParticles; particleI++)
     {
-        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
-        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
+        particleInfoAllVdw_[particleI] |= gmx::sc_atomInfo_HasVdw;
+        particleInfoAllVdw_[particleI] |= gmx::sc_atomInfo_HasCharge;
     }
 }
 
