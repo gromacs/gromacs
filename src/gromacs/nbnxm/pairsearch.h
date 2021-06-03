@@ -185,7 +185,7 @@ public:
                    const gmx::UpdateGroupsCog*    updateGroupsCog,
                    gmx::Range<int>                atomRange,
                    real                           atomDensity,
-                   gmx::ArrayRef<const int>       atomInfo,
+                   gmx::ArrayRef<const int64_t>   atomInfo,
                    gmx::ArrayRef<const gmx::RVec> x,
                    int                            numAtomsMoved,
                    const int*                     move,

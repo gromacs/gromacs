@@ -87,7 +87,7 @@ void GmxForceCalculator::compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, forceOutput);
 }
 
-void GmxForceCalculator::setParticlesOnGrid(gmx::ArrayRef<const int>       particleInfoAllVdw,
+void GmxForceCalculator::setParticlesOnGrid(gmx::ArrayRef<const int64_t>   particleInfoAllVdw,
                                             gmx::ArrayRef<const gmx::RVec> coordinates,
                                             const Box&                     box)
 {

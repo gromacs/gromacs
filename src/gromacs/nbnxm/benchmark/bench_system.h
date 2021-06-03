@@ -78,9 +78,9 @@ struct BenchmarkSystem
     //! Storage for atom partial charges.
     std::vector<real> charges;
     //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw;
+    std::vector<int64_t> atomInfoAllVdw;
     //! Atom info where only oxygen atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoOxygenVdw;
+    std::vector<int64_t> atomInfoOxygenVdw;
     //! Information about exclusions.
     ListOfLists<int> excls;
     //! Storage for atom positions.

@@ -220,7 +220,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
     const rvec lowerCorner = { 0, 0, 0 };
     const rvec upperCorner = { system.box[XX][XX], system.box[YY][YY], system.box[ZZ][ZZ] };
 
-    gmx::ArrayRef<const int> atomInfo;
+    gmx::ArrayRef<const int64_t> atomInfo;
     if (options.useHalfLJOptimization)
     {
         atomInfo = system.atomInfoOxygenVdw;

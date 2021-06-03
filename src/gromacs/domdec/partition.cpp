@@ -481,7 +481,7 @@ static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1,
     {
         gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock =
                 fr->atomInfoForEachMoleculeBlock;
-        gmx::ArrayRef<int> atomInfo = fr->atomInfo;
+        gmx::ArrayRef<int64_t> atomInfo = fr->atomInfo;
 
         for (int cg = cg0; cg < cg1; cg++)
         {
@@ -1344,7 +1344,7 @@ static void merge_cg_buffers(int                                             nce
                              gmx::ArrayRef<gmx::RVec>                        x,
                              gmx::ArrayRef<const gmx::RVec>                  recv_vr,
                              gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
-                             gmx::ArrayRef<int>                              atomInfo)
+                             gmx::ArrayRef<int64_t>                          atomInfo)
 {
     gmx_domdec_ind_t *ind, *ind_p;
     int               p, cell, c, cg, cg0, cg1, cg_gl;
@@ -1580,7 +1580,7 @@ static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
                                   gmx_bool                       bDist2B,
                                   gmx_bool                       bDistMB,
                                   gmx::ArrayRef<const gmx::RVec> coordinates,
-                                  gmx::ArrayRef<const int>       atomInfo,
+                                  gmx::ArrayRef<const int64_t>   atomInfo,
                                   std::vector<int>*              localAtomGroups,
                                   dd_comm_setup_work_t*          work)
 {
@@ -2599,7 +2599,7 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     /* Reorder the global cg index */
     orderVector<int>(cgsort, dd->globalAtomGroupIndices, &sort->intBuffer);
     /* Reorder the atom info */
-    orderVector<int>(cgsort, fr->atomInfo, &sort->intBuffer);
+    orderVector<int64_t>(cgsort, fr->atomInfo, &sort->int64Buffer);
     /* Set the home atom number */
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->numHomeAtoms);
 
@@ -3236,7 +3236,7 @@ void dd_partition_system(FILE*                     fplog,
                     n = dd_make_local_constraints(dd,
                                                   n,
                                                   top_global,
-                                                  fr->atomInfo.data(),
+                                                  fr->atomInfo,
                                                   constr,
                                                   inputrec.nProjOrder,
                                                   top_local->idef.il);

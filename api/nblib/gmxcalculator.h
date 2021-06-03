@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ public:
     void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput, gmx::ArrayRef<gmx::RVec> forceOutput);
 
     //! Puts particles on a grid based on bounds specified by the box (for every NS step)
-    void setParticlesOnGrid(gmx::ArrayRef<const int>       particleInfoAllVdw,
+    void setParticlesOnGrid(gmx::ArrayRef<const int64_t>   particleInfoAllVdw,
                             gmx::ArrayRef<const gmx::RVec> coordinates,
                             const Box&                     box);
 

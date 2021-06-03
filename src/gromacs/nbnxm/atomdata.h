@@ -328,11 +328,11 @@ enum
 };
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t*         nbat,
-                        const Nbnxm::GridSet&     gridSet,
-                        gmx::ArrayRef<const int>  atomTypes,
-                        gmx::ArrayRef<const real> atomCharges,
-                        gmx::ArrayRef<const int>  atomInfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t*            nbat,
+                        const Nbnxm::GridSet&        gridSet,
+                        gmx::ArrayRef<const int>     atomTypes,
+                        gmx::ArrayRef<const real>    atomCharges,
+                        gmx::ArrayRef<const int64_t> atomInfo);
 
 //! Copy the shift vectors to nbat
 void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, gmx::ArrayRef<gmx::RVec> shift_vec, nbnxn_atomdata_t* nbat);

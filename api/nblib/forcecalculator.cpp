@@ -70,9 +70,9 @@ void ForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates, gmx::ArrayR
     gmxForceCalculator_->compute(coordinates, forces);
 }
 
-void ForceCalculator::updatePairList(gmx::ArrayRef<const int> particleInfoAllVdW,
-                                     gmx::ArrayRef<Vec3>      coordinates,
-                                     const Box&               box)
+void ForceCalculator::updatePairList(gmx::ArrayRef<const int64_t> particleInfoAllVdW,
+                                     gmx::ArrayRef<Vec3>          coordinates,
+                                     const Box&                   box)
 {
     gmxForceCalculator_->setParticlesOnGrid(particleInfoAllVdW, coordinates, box);
 }
