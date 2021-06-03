@@ -900,11 +900,12 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
 
 /*! \brief Set up flags that have the lifetime of the domain indicating what type of work is there to compute.
  */
-static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
-                                                          const t_forcerec&         fr,
-                                                          const pull_t*             pull_work,
-                                                          const gmx_edsam*          ed,
-                                                          const t_mdatoms&          mdatoms,
+static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec& inputrec,
+                                                          const t_forcerec& fr,
+                                                          const pull_t*     pull_work,
+                                                          const gmx_edsam*  ed,
+                                                          const t_mdatoms&  mdatoms,
+                                                          bool havePPDomainDecomposition,
                                                           const SimulationWorkload& simulationWork,
                                                           const StepWorkload&       stepWork)
 {
@@ -936,6 +937,10 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
             domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
             || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
             || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0;
+    domainWork.haveLocalForceContribInCpuBuffer =
+            domainWork.haveCpuLocalForceWork || havePPDomainDecomposition;
+    domainWork.haveNonLocalForceContribInCpuBuffer =
+            domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
 
     return domainWork;
 }
@@ -1452,7 +1457,7 @@ void do_force(FILE*                               fplog,
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
         runScheduleWork->domainWork = setupDomainLifetimeWorkload(
-                inputrec, *fr, pull_work, ed, *mdatoms, simulationWork, stepWork);
+                inputrec, *fr, pull_work, ed, *mdatoms, havePPDomainDecomposition(cr), simulationWork, stepWork);
 
         wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchLocal);
@@ -2036,13 +2041,7 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.useGpuFBufferOps)
             {
-                // TODO: move this into DomainLifetimeWorkload, including the second part of the
-                // condition The bonded and free energy CPU tasks can have non-local force
-                // contributions which are a dependency for the GPU force reduction.
-                bool haveNonLocalForceContribInCpuBuffer =
-                        domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
-
-                if (haveNonLocalForceContribInCpuBuffer)
+                if (domainWork.haveNonLocalForceContribInCpuBuffer)
                 {
                     stateGpu->copyForcesToGpu(forceOutMtsLevel0.forceWithShiftForces().force(),
                                               AtomLocality::NonLocal);
@@ -2237,13 +2236,6 @@ void do_force(FILE*                               fplog,
         {
             ArrayRef<gmx::RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
 
-            // Flag to specify whether the CPU force buffer has contributions to
-            // local atoms. This depends on whether there are CPU-based force tasks
-            // or when DD is active the halo exchange has resulted in contributions
-            // from the non-local part.
-            const bool haveLocalForceContribInCpuBuffer =
-                    (domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr));
-
             // TODO: move these steps as early as possible:
             // - CPU f H2D should be as soon as all CPU-side forces are done
             // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
@@ -2251,7 +2243,7 @@ void do_force(FILE*                               fplog,
             // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
             //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
             //   These should be unified.
-            if (haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)
+            if (domainWork.haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)
             {
                 // Note: AtomLocality::All is used for the non-DD case because, as in this
                 // case copyForcesToGpu() uses a separate stream, it allows overlap of

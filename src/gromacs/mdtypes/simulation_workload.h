@@ -132,6 +132,13 @@ public:
 
     //! Whether the current nstlist step-range Free energy work on the CPU.
     bool haveFreeEnergyWork = false;
+    //! Whether the CPU force buffer has contributions to local atoms that need to be reduced on the GPU (with DD).
+    // This depends on whether there are CPU-based force tasks
+    // or when DD is active the halo exchange has resulted in contributions
+    // from the non-local part.
+    bool haveLocalForceContribInCpuBuffer = false;
+    //! Whether the CPU force buffer has contributions to nonlocal atoms that need to be reduced on the GPU (with DD).
+    bool haveNonLocalForceContribInCpuBuffer = false;
 };
 
 /*! \libinternal
