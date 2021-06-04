@@ -363,7 +363,7 @@ void gmx::LegacySimulator::do_md()
 
     gmx_localtop_t top(top_global.ffparams);
 
-    ForceBuffers     f(fr->useMts,
+    ForceBuffers     f(simulationWork.useMts,
                    ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
                                ? PinningPolicy::PinnedIfSupported
                                : PinningPolicy::CannotBePinned);
@@ -1126,7 +1126,7 @@ void gmx::LegacySimulator::do_md()
         force_flags = (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
                        | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                        | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (bDoFEP ? GMX_FORCE_DHDL : 0));
-        if (fr->useMts && !do_per_step(step, ir->nstfout))
+        if (simulationWork.useMts && !do_per_step(step, ir->nstfout))
         {
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
             force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
@@ -1584,7 +1584,7 @@ void gmx::LegacySimulator::do_md()
                  * Using that acceleration would result in a virial with the slow
                  * force contribution would be a factor mtsFactor too large.
                  */
-                if (fr->useMts && bCalcVir && constr != nullptr)
+                if (simulationWork.useMts && bCalcVir && constr != nullptr)
                 {
                     upd.update_for_constraint_virial(*ir,
                                                      md->homenr,
@@ -1607,7 +1607,7 @@ void gmx::LegacySimulator::do_md()
                 }
 
                 ArrayRefWithPadding<const RVec> forceCombined =
-                        (fr->useMts && step % ir->mtsLevels[1].stepFactor == 0)
+                        (simulationWork.useMts && step % ir->mtsLevels[1].stepFactor == 0)
                                 ? f.view().forceMtsCombinedWithPadding()
                                 : f.view().forceWithPadding();
                 upd.update_coords(*ir,
@@ -1635,7 +1635,7 @@ void gmx::LegacySimulator::do_md()
                                       state,
                                       upd.xp()->arrayRefWithPadding(),
                                       &dvdl_constr,
-                                      bCalcVir && !fr->useMts,
+                                      bCalcVir && !simulationWork.useMts,
                                       shake_vir);
 
                 upd.update_sd_second_half(*ir,

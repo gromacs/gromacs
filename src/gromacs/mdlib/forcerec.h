@@ -58,6 +58,7 @@ namespace gmx
 {
 class MDLogger;
 class PhysicalNodeCommunicator;
+class SimulationWorkload;
 } // namespace gmx
 
 /*! \brief Create nonbonded parameter lists
@@ -107,6 +108,7 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  * \param[in]  fplog              File for printing
  * \param[in]  mdlog              File for printing
  * \param[out] forcerec                 The forcerec
+ * \param[in]  simulationWork           Simulation workload flags
  * \param[in]  inputrec                 Inputrec structure
  * \param[in]  mtop               Molecular topology
  * \param[in]  commrec                 Communication structures
@@ -118,6 +120,7 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  */
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
+                   const gmx::SimulationWorkload&   simulationWork,
                    t_forcerec*                      forcerec,
                    const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,

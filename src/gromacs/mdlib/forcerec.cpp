@@ -80,6 +80,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/nblist.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -647,6 +648,7 @@ real cutoff_inf(real cutoff)
 
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
+                   const gmx::SimulationWorkload&   simulationWork,
                    t_forcerec*                      forcerec,
                    const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,
@@ -871,10 +873,7 @@ void init_forcerec(FILE*                            fplog,
     /* 1-4 interaction electrostatics */
     forcerec->fudgeQQ = mtop.ffparams.fudgeQQ;
 
-    // Multiple time stepping
-    forcerec->useMts = inputrec.useMts;
-
-    if (forcerec->useMts)
+    if (simulationWork.useMts)
     {
         GMX_ASSERT(gmx::checkMtsRequirements(inputrec).empty(),
                    "All MTS requirements should be met here");
@@ -886,11 +885,11 @@ void init_forcerec(FILE*                            fplog,
             || inputrec.bRot || inputrec.bIMD;
     const bool haveDirectVirialContributionsSlow =
             EEL_FULL(interactionConst->eeltype) || EVDW_PME(interactionConst->vdwtype);
-    for (int i = 0; i < (forcerec->useMts ? 2 : 1); i++)
+    for (int i = 0; i < (simulationWork.useMts ? 2 : 1); i++)
     {
         bool haveDirectVirialContributions =
-                (((!forcerec->useMts || i == 0) && haveDirectVirialContributionsFast)
-                 || ((!forcerec->useMts || i == 1) && haveDirectVirialContributionsSlow));
+                (((!simulationWork.useMts || i == 0) && haveDirectVirialContributionsFast)
+                 || ((!simulationWork.useMts || i == 1) && haveDirectVirialContributionsSlow));
         forcerec->forceHelperBuffers.emplace_back(haveDirectVirialContributions);
     }
 
@@ -1005,7 +1004,7 @@ void init_forcerec(FILE*                            fplog,
     }
 
     /* Initialize the thread working data for bonded interactions */
-    if (forcerec->useMts)
+    if (simulationWork.useMts)
     {
         // Add one ListedForces object for each MTS level
         bool isFirstLevel = true;

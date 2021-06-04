@@ -251,9 +251,6 @@ struct t_forcerec
     real userreal3 = 0;
     real userreal4 = 0;
 
-    /* Tells whether we use multiple time stepping, computing some forces less frequently */
-    bool useMts = false;
-
     /* Data for special listed force calculations */
     std::unique_ptr<t_fcdata> fcdata;
 

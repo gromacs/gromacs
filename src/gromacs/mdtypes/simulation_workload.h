@@ -101,6 +101,8 @@ public:
     bool useGpuFHalo = false;
     //! Whether GPU PME work is compute this step (can be false also on fast steps with MTS)
     bool haveGpuPmeOnThisRank = false;
+    //! Whether to combine the forces for multiple time stepping before the halo exchange
+    bool combineMtsForcesBeforeHaloExchange = false;
 };
 
 /*! \libinternal
@@ -186,6 +188,8 @@ public:
     bool useGpuDirectCommunication = false;
     //! If there is an Ewald surface (dipole) term to compute
     bool haveEwaldSurfaceContribution = false;
+    //! Whether to use multiple time stepping
+    bool useMts = false;
 };
 
 class MdrunScheduleWorkload

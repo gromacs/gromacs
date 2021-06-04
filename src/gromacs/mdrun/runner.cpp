@@ -1626,6 +1626,7 @@ int Mdrunner::mdrunner()
         fr->forceProviders = mdModules_->initForceProviders();
         init_forcerec(fplog,
                       mdlog,
+                      runScheduleWork.simulationWork,
                       fr.get(),
                       *inputrec,
                       mtop,
