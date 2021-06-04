@@ -332,7 +332,7 @@ void runTest(TestFileManager*            fileManager,
  * \todo Add FEP case. */
 class MdrunNoAppendContinuationIsExact :
     public MdrunTestFixture,
-    public ::testing::WithParamInterface<std::tuple<std::string, std::string, std::string, std::string>>
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string, std::string, std::string, MdpParameterDatabase>>
 {
 public:
     //! Constructor
@@ -350,11 +350,12 @@ public:
 
 TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 {
-    auto params              = GetParam();
-    auto simulationName      = std::get<0>(params);
-    auto integrator          = std::get<1>(params);
-    auto temperatureCoupling = std::get<2>(params);
-    auto pressureCoupling    = std::get<3>(params);
+    auto params                  = GetParam();
+    auto simulationName          = std::get<0>(params);
+    auto integrator              = std::get<1>(params);
+    auto temperatureCoupling     = std::get<2>(params);
+    auto pressureCoupling        = std::get<3>(params);
+    auto additionalMdpParameters = std::get<4>(params);
 
     // Check for unimplemented functionality
     // TODO: Update this as modular simulator gains functionality
@@ -387,7 +388,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
                                                 integrator.c_str(),
                                                 temperatureCoupling.c_str(),
-                                                pressureCoupling.c_str());
+                                                pressureCoupling.c_str(),
+                                                additionalMdpParameters);
     // The exact lambda state choice is unimportant, so long as there
     // is one when using an FEP input.
     mdpFieldValues["init-lambda-state"] = "3";
@@ -417,9 +419,19 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 
     if (temperatureCoupling != "no" || pressureCoupling != "no")
     {
-        energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        if (simulationName == "alanine_vacuo")
+        {
+            // This is slightly less reproducible
+            energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
+                                          relativeToleranceAsPrecisionDependentUlp(
+                                                  10.0, ulpToleranceInMixed * 2, ulpToleranceInDouble) });
+        }
+        else
+        {
+            energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
+                                          relativeToleranceAsPrecisionDependentUlp(
+                                                  10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        }
     }
 
     if (pressureCoupling == "parrinello-rahman")
@@ -450,14 +462,16 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("argon12", "spc2", "alanine_vsite_vacuo"),
                            ::testing::Values("md", "md-vv", "bd", "sd"),
                            ::testing::Values("no"),
-                           ::testing::Values("no")));
+                           ::testing::Values("no"),
+                           ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_CASE_P(NormalIntegratorsWithFEP,
                         MdrunNoAppendContinuationIsExact,
                         ::testing::Combine(::testing::Values("nonanol_vacuo"),
                                            ::testing::Values("md", "md-vv", "bd", "sd"),
                                            ::testing::Values("no"),
-                                           ::testing::Values("no")));
+                                           ::testing::Values("no"),
+                                           ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_CASE_P(
         NVT,
@@ -465,7 +479,8 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("argon12"),
                            ::testing::Values("md", "md-vv"),
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
-                           ::testing::Values("no")));
+                           ::testing::Values("no"),
+                           ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_CASE_P(
         NPH,
@@ -473,7 +488,8 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("argon12"),
                            ::testing::Values("md", "md-vv"),
                            ::testing::Values("no"),
-                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale")));
+                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
+                           ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_CASE_P(
         NPT,
@@ -481,14 +497,32 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("argon12"),
                            ::testing::Values("md", "md-vv"),
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
-                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale")));
+                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
+                           ::testing::Values(MdpParameterDatabase::Default)));
 
 INSTANTIATE_TEST_CASE_P(MTTK,
                         MdrunNoAppendContinuationIsExact,
                         ::testing::Combine(::testing::Values("argon12"),
                                            ::testing::Values("md-vv"),
                                            ::testing::Values("nose-hoover"),
-                                           ::testing::Values("mttk")));
+                                           ::testing::Values("mttk"),
+                                           ::testing::Values(MdpParameterDatabase::Default)));
+
+INSTANTIATE_TEST_CASE_P(Pull,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("spc2"),
+                                           ::testing::Values("md", "md-vv"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values(MdpParameterDatabase::Pull)));
+
+INSTANTIATE_TEST_CASE_P(Awh,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("alanine_vacuo"),
+                                           ::testing::Values("md", "md-vv"),
+                                           ::testing::Values("v-rescale"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values(MdpParameterDatabase::Awh)));
 
 #endif
 

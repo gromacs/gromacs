@@ -181,6 +181,65 @@ const MdpFileValues mdpFileValueDatabase_g{
     { "vsite_test", { {}, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
 };
 
+//! Helper typedef for mdp database
+using MdpDatabase = std::map<MdpParameterDatabase, MdpFieldValues>;
+//! Database of additional mdp options used for specific algorithms
+const MdpDatabase c_additionalMdpOptions{ { MdpParameterDatabase::Default, {} },
+                                          { MdpParameterDatabase::Pull,
+                                            { { "coulombtype", "reaction-field" },
+                                              { "pull", "yes" },
+                                              // Prev step reference is checkpointed - rest of pull is not cpt-dependent
+                                              { "pull-pbc-ref-prev-step-com", "yes" },
+                                              { "pull-ngroups", "2" },
+                                              { "pull-group1-name", "FirstWaterMolecule" },
+                                              { "pull-group2-name", "SecondWaterMolecule" },
+                                              { "pull-ncoords", "1" },
+                                              { "pull-coord1-type", "umbrella" },
+                                              { "pull-coord1-geometry", "distance" },
+                                              { "pull-coord1-groups", "1 2" },
+                                              { "pull-coord1-init", "1" },
+                                              { "pull-coord1-k", "10000" } } },
+                                          { MdpParameterDatabase::Awh,
+                                            { { "pull", "yes" },
+                                              { "pull-ngroups", "5" },
+                                              { "pull-ncoords", "2" },
+                                              { "pull-group1-name", "C_&_r_1" },
+                                              { "pull-group2-name", "N_&_r_2" },
+                                              { "pull-group3-name", "CA" },
+                                              { "pull-group4-name", "C_&_r_2" },
+                                              { "pull-group5-name", "N_&_r_3" },
+                                              { "pull-coord1-geometry", "dihedral" },
+                                              { "pull-coord1-groups", "1 2 2 3 3 4" },
+                                              { "pull-coord1-k", "4000" },
+                                              { "pull-coord1-kB", "1000" },
+                                              { "pull-coord2-geometry", "dihedral" },
+                                              { "pull-coord2-groups", "2 3 3 4 4 5" },
+                                              { "pull-coord2-k", "4000" },
+                                              { "pull-coord2-kB", "1000" },
+                                              { "pull-coord1-type", "external-potential" },
+                                              { "pull-coord1-potential-provider", "awh" },
+                                              { "pull-coord2-type", "external-potential" },
+                                              { "pull-coord2-potential-provider", "awh" },
+                                              { "awh", "yes" },
+                                              { "awh-potential", "convolved" },
+                                              { "awh-nstout", "4" },
+                                              { "awh-nstsample", "4" },
+                                              { "awh-nsamples-update", "1" },
+                                              { "awh-share-multisim", "no" },
+                                              { "awh-nbias", "2" },
+                                              { "awh1-ndim", "1" },
+                                              { "awh1-dim1-coord-index", "2" },
+                                              { "awh1-dim1-start", "150" },
+                                              { "awh1-dim1-end", "180" },
+                                              { "awh1-dim1-force-constant", "4000" },
+                                              { "awh1-dim1-diffusion", "0.1" },
+                                              { "awh2-ndim", "1" },
+                                              { "awh2-dim1-coord-index", "1" },
+                                              { "awh2-dim1-start", "178" },
+                                              { "awh2-dim1-end", "-178" },
+                                              { "awh2-dim1-force-constant", "4000" },
+                                              { "awh2-dim1-diffusion", "0.1" } } } };
+
 /*! \brief Prepare default .mdp values
  *
  * Insert suitable .mdp defaults, so that \c mdpFileValueDatabase_g
@@ -251,10 +310,11 @@ std::string reportNumbersOfPpRanksSupported(const std::string& simulationName)
             std::begin(possibleNumbers), std::end(possibleNumbers), ",", StringFormatter("%d"));
 }
 
-MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
-                                     const std::string& integrator,
-                                     const std::string& tcoupl,
-                                     const std::string& pcoupl)
+MdpFieldValues prepareMdpFieldValues(const std::string&   simulationName,
+                                     const std::string&   integrator,
+                                     const std::string&   tcoupl,
+                                     const std::string&   pcoupl,
+                                     MdpParameterDatabase additionalMdpParameters)
 {
     using MdpField = MdpFieldValues::value_type;
 
@@ -262,15 +322,22 @@ MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
     mdpFieldValues.insert(MdpField("integrator", integrator));
     mdpFieldValues.insert(MdpField("tcoupl", tcoupl));
     mdpFieldValues.insert(MdpField("pcoupl", pcoupl));
+    for (const auto& mdpField : c_additionalMdpOptions.at(additionalMdpParameters))
+    {
+        mdpFieldValues.insert(mdpField);
+    }
+
     return mdpFieldValues;
 }
 
-MdpFieldValues prepareMdpFieldValues(const char* simulationName,
-                                     const char* integrator,
-                                     const char* tcoupl,
-                                     const char* pcoupl)
+MdpFieldValues prepareMdpFieldValues(const char*          simulationName,
+                                     const char*          integrator,
+                                     const char*          tcoupl,
+                                     const char*          pcoupl,
+                                     MdpParameterDatabase additionalMdpParameters)
 {
-    return prepareMdpFieldValues(std::string(simulationName), integrator, tcoupl, pcoupl);
+    return prepareMdpFieldValues(
+            std::string(simulationName), integrator, tcoupl, pcoupl, additionalMdpParameters);
 }
 std::string prepareMdpFileContents(const MdpFieldValues& mdpFieldValues)
 {

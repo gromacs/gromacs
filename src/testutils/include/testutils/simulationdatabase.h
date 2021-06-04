@@ -66,6 +66,15 @@ std::string reportNumbersOfPpRanksSupported(const std::string& simulationName);
 //! Helper typedef
 using MdpFieldValues = std::map<std::string, std::string>;
 
+//! Strong type denoting mdp parameters needed to test specific algorithms
+enum class MdpParameterDatabase
+{
+    Default,
+    Pull,
+    Awh,
+    Count
+};
+
 /*! \brief Set up values for an .mdp file that permits a highly
  * reproducible simulation.
  *
@@ -92,24 +101,27 @@ using MdpFieldValues = std::map<std::string, std::string>;
  * volume over the handful of MD steps that will be run. A
  * single temperature-coupling group is used.
  *
- * \param[in]    simulationName   The name of the simulation, which indexes the database
- * \param[in]    integrator       The integrator to use
- * \param[in]    tcoupl           The temperature-coupling algorithm to use
- * \param[in]    pcoupl           The pressure-coupling algorithm to use
- * \return                        Mdp file values
+ * \param[in]  simulationName           The name of the simulation, which indexes the database
+ * \param[in]  integrator               The integrator to use
+ * \param[in]  tcoupl                   The temperature-coupling algorithm to use
+ * \param[in]  pcoupl                   The pressure-coupling algorithm to use
+ * \param[in]  additionalMdpParameters  Additional mdp parameters to be added
+ * \return                              Mdp file values
  *
  * \throws  std::bad_alloc     if out of memory
  *          std::out_of_range  if \c simulationName is not in the database */
 MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
                                      const std::string& integrator,
                                      const std::string& tcoupl,
-                                     const std::string& pcoupl);
+                                     const std::string& pcoupl,
+                                     MdpParameterDatabase additionalMdpParameters = MdpParameterDatabase::Default);
 
 //! \copydoc prepareMdpFieldValues()
 MdpFieldValues prepareMdpFieldValues(const char* simulationName,
                                      const char* integrator,
                                      const char* tcoupl,
-                                     const char* pcoupl);
+                                     const char* pcoupl,
+                                     MdpParameterDatabase additionalMdpParameters = MdpParameterDatabase::Default);
 
 /*! \brief Make a string containing an .mdp file from the \c mdpFieldValues.
  *
