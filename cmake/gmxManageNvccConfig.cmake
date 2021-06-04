@@ -100,17 +100,10 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
     endforeach()
 else()
     # Set the CUDA GPU architectures to compile for:
-    # - with CUDA >=9.0         CC 7.0 is supported and CC 2.0 is no longer supported
-    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_35, compute_70 PTX
-    # - with CUDA >=10.0        CC 7.5 is supported
-    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75 SASS, and compute_35, compute_75 PTX
     # - with CUDA >=11.0        CC 8.0 is supported
     #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_35, compute_80 PTX
 
     # First add flags that trigger SASS (binary) code generation for physical arch
-    if(CUDA_VERSION VERSION_LESS "11.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
-    endif()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
@@ -118,32 +111,21 @@ else()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
-    if(NOT CUDA_VERSION VERSION_LESS "10.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=sm_75")
-    endif()
-    if(NOT CUDA_VERSION VERSION_LESS "11.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=sm_80")
-        # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
-        # nvcc 11.0, which we need to suppress for use in CI
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-Wno-deprecated-gpu-targets")
-    endif()
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=sm_75")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=sm_80")
     if(NOT CUDA_VERSION VERSION_LESS "11.1")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_86,code=sm_86")
     endif()
+    # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
+    # nvcc 11.0, which we need to suppress for use in CI
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-Wno-deprecated-gpu-targets")
 
     # Next add flags that trigger PTX code generation for the
     # newest supported virtual arch that's useful to JIT to future architectures
     # as well as an older one suitable for JIT-ing to any rare intermediate arch
     # (like that of Jetson / Drive PX devices)
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
-    if(CUDA_VERSION VERSION_LESS "11.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_32,code=compute_32")
-    else()
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_53,code=compute_53")
-    endif()
-    if(NOT CUDA_VERSION VERSION_LESS "11.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=compute_80")
-    endif()
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_53,code=compute_53")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=compute_80")
 endif()
 
 if (GMX_CUDA_TARGET_SM)
@@ -158,22 +140,15 @@ endif()
 # FindCUDA.cmake is unaware of the mechanism used by cmake to embed
 # the compiler flag for the required C++ standard in the generated
 # build files, so we have to pass it ourselves
-if (CUDA_VERSION VERSION_LESS 11.0)
-    # CUDA doesn't formally support C++17 until version 11.0, so for
-    # now host-side code that compiles with CUDA is restricted to
-    # C++14. This needs to be expressed formally for older CUDA
-    # version.
+
+# gcc-7 pre-dated C++17, so uses the -std=c++1z compiler flag for it,
+# which modern nvcc does not recognize. So we work around that by
+# compiling in C++14 mode. Clang doesn't have this problem because nvcc
+# only supports version of clang that already understood -std=c++17
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
     list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
 else()
-    # gcc-7 pre-dated C++17, so uses the -std=c++1z compiler flag for it,
-    # which modern nvcc does not recognize. So we work around that by
-    # compiling in C++14 mode. Clang doesn't have this problem because nvcc
-    # only supports version of clang that already understood -std=c++17
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
-        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
-    else()
-        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
-    endif()
+    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
 endif()
 
 # assemble the CUDA flags
