@@ -47,12 +47,17 @@
 #ifndef GMX_MDTYPES_AWHHISTORY_H
 #define GMX_MDTYPES_AWHHISTORY_H
 
+#include <cstdint>
+
 #include <vector>
 
 #include "gromacs/mdtypes/awh_correlation_history.h"
 
 namespace gmx
 {
+enum class CheckpointDataOperation;
+template<CheckpointDataOperation operation>
+class CheckpointData;
 
 /*! \cond INTERNAL */
 
@@ -117,6 +122,14 @@ struct AwhHistory
 
     /*! \brief Constructor. */
     AwhHistory() : potentialOffset(0) {}
+
+    /*! \brief Allows to read and write checkpoint within modular simulator
+     *
+     * \tparam operation  Whether we're reading or writing
+     * \param checkpointData  The CheckpointData object
+     */
+    template<CheckpointDataOperation operation>
+    void doCheckpoint(CheckpointData<operation> checkpointData);
 };
 
 /*! \endcond */
