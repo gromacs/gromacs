@@ -59,25 +59,29 @@ public:
         ParticleType H(ParticleTypeName("H"), Mass(1.008));
         ParticleType OMet(ParticleTypeName("OMet"), Mass(15.999));
         ParticleType CMet(ParticleTypeName("CMet"), Mass(15.035));
-        ParticleType Ar(ParticleTypeName("Ar"), Mass(39.94800));
+        ParticleType Ar_gromos(ParticleTypeName("Ar_gromos"), Mass(39.94800));
+        ParticleType Ar_opls(ParticleTypeName("Ar_opls"), Mass(39.94800));
 
         particles_.insert(std::make_pair(Ow.name(), Ow));
         particles_.insert(std::make_pair(H.name(), H));
         particles_.insert(std::make_pair(OMet.name(), OMet));
         particles_.insert(std::make_pair(CMet.name(), CMet));
-        particles_.insert(std::make_pair(Ar.name(), Ar));
+        particles_.insert(std::make_pair(Ar_gromos.name(), Ar_gromos));
+        particles_.insert(std::make_pair(Ar_opls.name(), Ar_opls));
 
-        c6_[Ow.name()]   = 0.0026173456;
-        c6_[H.name()]    = 0;
-        c6_[OMet.name()] = 0.0022619536;
-        c6_[CMet.name()] = 0.0088755241;
-        c6_[Ar.name()]   = 0.0062647225;
+        c6_[Ow.name()]        = 0.0026173456;
+        c6_[H.name()]         = 0;
+        c6_[OMet.name()]      = 0.0022619536;
+        c6_[CMet.name()]      = 0.0088755241;
+        c6_[Ar_gromos.name()] = 0.0062647225;
+        c6_[Ar_opls.name()]   = 0.0058560692;
 
-        c12_[Ow.name()]   = 2.634129e-06;
-        c12_[H.name()]    = 0;
-        c12_[OMet.name()] = 1.505529e-06;
-        c12_[CMet.name()] = 2.0852922e-05;
-        c12_[Ar.name()]   = 9.847044e-06;
+        c12_[Ow.name()]        = 2.634129e-06;
+        c12_[H.name()]         = 0;
+        c12_[OMet.name()]      = 1.505529e-06;
+        c12_[CMet.name()]      = 2.0852922e-05;
+        c12_[Ar_gromos.name()] = 9.847044e-06;
+        c12_[Ar_opls.name()]   = 8.203193e-06;
     }
 
     //! Get particle type using the string identifier
@@ -234,16 +238,29 @@ Molecule SpcMethanolTopologyBuilder::water()
     return waterMolecule_.waterMolecule();
 }
 
-ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numParticles)
+ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numParticles, const fftypes forceField)
 {
     ParticleLibrary library;
 
     ParticleTypesInteractions nbinteractions;
-    nbinteractions.add(
-            ParticleTypeName("Ar"), library.c6(ParticleName("Ar")), library.c12(ParticleName("Ar")));
 
     Molecule argonMolecule(MoleculeName("AR"));
-    argonMolecule.addParticle(ParticleName("AR"), library.type("Ar"));
+
+    std::string particleName;
+
+    if (forceField == fftypes::GROMOS43A1)
+    {
+        particleName = "Ar_gromos";
+    }
+    else if (forceField == fftypes::OPLSA)
+    {
+        particleName = "Ar_opls";
+    }
+
+    nbinteractions.add(ParticleTypeName(particleName),
+                       library.c6(ParticleName(particleName)),
+                       library.c12(ParticleName(particleName)));
+    argonMolecule.addParticle(ParticleName("AR"), library.type(particleName));
 
     topologyBuilder_.addMolecule(argonMolecule, numParticles);
     topologyBuilder_.addParticleTypesInteractions((nbinteractions));
@@ -254,8 +271,8 @@ Topology ArgonTopologyBuilder::argonTopology()
     return topologyBuilder_.buildTopology();
 }
 
-ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
-    box_(6.05449), topology_(ArgonTopologyBuilder(12).argonTopology())
+ArgonSimulationStateBuilder::ArgonSimulationStateBuilder(const fftypes forceField) :
+    box_(6.05449), topology_(ArgonTopologyBuilder(12, forceField).argonTopology())
 {
 
     coordinates_ = {

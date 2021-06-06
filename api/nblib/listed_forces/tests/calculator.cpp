@@ -137,8 +137,8 @@ TEST_F(ListedExampleData, ComputeHarmonicBondForces)
     auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
     computeForces(indices, bonds, x, &forces, *pbc);
 
-    Vector3DTest vector3DTest(1e-3);
-    vector3DTest.testVectors(forces, "Bond forces");
+    RefDataChecker vector3DTest(1e-3);
+    vector3DTest.testArrays<Vec3>(forces, "Bond forces");
 }
 
 TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
@@ -147,7 +147,7 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
     auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
     real energy  = computeForces(indices, bonds, x, &forces, *pbc);
 
-    Vector3DTest vector3DTest(1e-4);
+    RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(energy, "Bond energy");
 }
 
@@ -157,16 +157,16 @@ TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
     auto angles  = pickType<HarmonicAngleType>(interactions).parameters;
     computeForces(indices, angles, x, &forces, *pbc);
 
-    Vector3DTest vector3DTest(1e-4);
-    vector3DTest.testVectors(forces, "Angle forces");
+    RefDataChecker vector3DTest(1e-4);
+    vector3DTest.testArrays<Vec3>(forces, "Angle forces");
 }
 
 TEST_F(ListedExampleData, CanReduceForces)
 {
     reduceListedForces(interactions, x, &forces, *pbc);
 
-    Vector3DTest vector3DTest(1e-2);
-    vector3DTest.testVectors(forces, "Reduced forces");
+    RefDataChecker vector3DTest(1e-2);
+    vector3DTest.testArrays<Vec3>(forces, "Reduced forces");
 }
 
 TEST_F(ListedExampleData, CanReduceEnergies)
@@ -174,7 +174,7 @@ TEST_F(ListedExampleData, CanReduceEnergies)
     auto energies    = reduceListedForces(interactions, x, &forces, *pbc);
     real totalEnergy = std::accumulate(begin(energies), end(energies), 0.0);
 
-    Vector3DTest vector3DTest(1e-4);
+    RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(totalEnergy, "Reduced energy");
 }
 

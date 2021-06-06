@@ -72,6 +72,10 @@ public:
     [[nodiscard]] LegacyMatrix const& legacyMatrix() const { return legacyMatrix_; }
 
 private:
+    //! \brief check two boxes for equality
+    friend bool operator==(const Box& rhs, const Box& lhs);
+
+    //! Stores data in the GROMACS legacy data type
     LegacyMatrix legacyMatrix_;
 };
 

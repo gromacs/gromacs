@@ -57,7 +57,7 @@ namespace
 {
 TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
-    ArgonSimulationStateBuilder argonSystemBuilder;
+    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSystemBuilder.setupSimulationState();
     NBKernelOptions             options  = NBKernelOptions();
     options.nbnxmSimd                    = SimdKernels::SimdNo;

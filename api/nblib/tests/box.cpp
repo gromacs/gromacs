@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,26 @@ TEST(NBlibTest, CubicBoxWorks)
         {
             EXPECT_REAL_EQ_TOL(ref[i][j], test.legacyMatrix()[i][j], defaultRealTolerance());
         }
+    }
+}
+
+TEST(NBlibTest, BoxEqual)
+{
+    {
+        Box a(0), b(0);
+        EXPECT_TRUE(a == b);
+    }
+    {
+        Box a(1), b(1);
+        EXPECT_TRUE(a == b);
+    }
+    {
+        Box a(1, 2, 3), b(1, 2, 3);
+        EXPECT_TRUE(a == b);
+    }
+    {
+        Box a(0, 2, 3), b(1, 2, 3);
+        EXPECT_FALSE(a == b);
     }
 }
 

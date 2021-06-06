@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,55 +74,55 @@ void compareValues(const std::vector<Vec3>& ref, const std::vector<Vec3>& test)
 
 TEST(NBlibTest, CanConstructSimulationState)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     EXPECT_NO_THROW(argonSimulationStateBuilder.setupSimulationState());
 }
 
 TEST(NBlibTest, SimulationStateThrowsCoordinateNAN)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     argonSimulationStateBuilder.setCoordinate(2, 0, NAN);
     EXPECT_THROW(argonSimulationStateBuilder.setupSimulationState(), InputException);
 }
 
 TEST(NBlibTest, SimulationStateThrowsCoordinateINF)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     argonSimulationStateBuilder.setCoordinate(2, 0, INFINITY);
     EXPECT_THROW(argonSimulationStateBuilder.setupSimulationState(), InputException);
 }
 
 TEST(NBlibTest, SimulationStateThrowsVelocityNAN)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     argonSimulationStateBuilder.setVelocity(2, 0, NAN);
     EXPECT_THROW(argonSimulationStateBuilder.setupSimulationState(), InputException);
 }
 
 TEST(NBlibTest, SimulationStateThrowsVelocityINF)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     argonSimulationStateBuilder.setVelocity(2, 0, INFINITY);
     EXPECT_THROW(argonSimulationStateBuilder.setupSimulationState(), InputException);
 }
 
 TEST(NBlibTest, SimulationStateCanMove)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
     EXPECT_NO_THROW(SimulationState movedSimState = std::move(simState));
 }
 
 TEST(NBlibTest, SimulationStateCanAssign)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
     EXPECT_NO_THROW(const SimulationState& gmx_unused AssignedSimState = simState);
 }
 
 TEST(NBlibTest, SimulationStateHasBox)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
     const Box&                  testBox  = simState.box();
     const Box&                  refBox   = argonSimulationStateBuilder.box();
@@ -133,7 +133,7 @@ TEST(NBlibTest, SimulationStateHasBox)
 
 TEST(NBlibTest, SimulationStateHasCorrectCoordinates)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
     std::vector<Vec3>           test     = simState.coordinates();
     std::vector<Vec3>           ref      = argonSimulationStateBuilder.coordinates();
@@ -142,7 +142,7 @@ TEST(NBlibTest, SimulationStateHasCorrectCoordinates)
 
 TEST(NBlibTest, SimulationStateHasCorrectVelocities)
 {
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    ArgonSimulationStateBuilder argonSimulationStateBuilder(fftypes::GROMOS43A1);
     SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
     std::vector<Vec3>           test     = simState.velocities();
     std::vector<Vec3>           ref      = argonSimulationStateBuilder.velocities();

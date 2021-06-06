@@ -81,8 +81,8 @@ TEST(NBlibTest, SpcMethanolForcesAreCorrect)
     gmx::ArrayRef<Vec3> forces(simState.forces());
     ASSERT_NO_THROW(forceCalculator.compute(simState.coordinates(), forces));
 
-    Vector3DTest forcesOutputTest(5e-5);
-    forcesOutputTest.testVectors(forces, "SPC-methanol forces");
+    RefDataChecker forcesOutputTest(5e-5);
+    forcesOutputTest.testArrays<Vec3>(forces, "SPC-methanol forces");
 }
 
 TEST(NBlibTest, ExpectedNumberOfForces)
@@ -192,13 +192,13 @@ TEST(NBlibTest, UpdateChangesForces)
     }
 }
 
-TEST(NBlibTest, ArgonForcesAreCorrect)
+TEST(NBlibTest, ArgonOplsaForcesAreCorrect)
 {
     auto options        = NBKernelOptions();
     options.nbnxmSimd   = SimdKernels::SimdNo;
     options.coulombType = CoulombType::Cutoff;
 
-    ArgonSimulationStateBuilder argonSystemBuilder;
+    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::OPLSA);
 
     auto simState        = argonSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
@@ -206,8 +206,26 @@ TEST(NBlibTest, ArgonForcesAreCorrect)
     gmx::ArrayRef<Vec3> testForces(simState.forces());
     forceCalculator.compute(simState.coordinates(), simState.forces());
 
-    Vector3DTest forcesOutputTest;
-    forcesOutputTest.testVectors(testForces, "Argon forces");
+    RefDataChecker forcesOutputTest(1e-7);
+    forcesOutputTest.testArrays<Vec3>(testForces, "Argon forces");
+}
+
+TEST(NBlibTest, ArgonGromos43A1ForcesAreCorrect)
+{
+    auto options        = NBKernelOptions();
+    options.nbnxmSimd   = SimdKernels::SimdNo;
+    options.coulombType = CoulombType::Cutoff;
+
+    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::GROMOS43A1);
+
+    auto simState        = argonSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::ArrayRef<Vec3> testForces(simState.forces());
+    forceCalculator.compute(simState.coordinates(), simState.forces());
+
+    RefDataChecker forcesOutputTest(1e-7);
+    forcesOutputTest.testArrays<Vec3>(testForces, "Argon forces");
 }
 
 } // namespace

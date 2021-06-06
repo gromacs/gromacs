@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,13 @@
 
 namespace nblib
 {
+
+//! \internal \brief Force field types to select parameter sets
+enum class fftypes : int
+{
+    GROMOS43A1,
+    OPLSA
+};
 
 //! \internal \brief Parameters from gromos43A1
 struct ArAtom
@@ -149,7 +156,7 @@ class ArgonTopologyBuilder
 {
 public:
     //! Build a topology with specified argon molecules
-    ArgonTopologyBuilder(const int& numParticles);
+    ArgonTopologyBuilder(const int& numParticles, const fftypes forceField);
 
     //! Get the topology with specified argon molecules
     Topology argonTopology();
@@ -162,7 +169,7 @@ private:
 class ArgonSimulationStateBuilder
 {
 public:
-    ArgonSimulationStateBuilder();
+    ArgonSimulationStateBuilder(const fftypes forceField);
 
     //! Set coordinates of particles in the defined system
     void setCoordinate(int particleNum, int dimension, real value);

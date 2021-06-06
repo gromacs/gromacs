@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,14 @@ Box::Box(real x, real y, real z) : legacyMatrix_{ { 0 } }
     legacyMatrix_[dimX][dimX] = x;
     legacyMatrix_[dimY][dimY] = y;
     legacyMatrix_[dimZ][dimZ] = z;
+}
+
+bool operator==(const Box& rhs, const Box& lhs)
+{
+    using real_ptr = const real*;
+    return std::equal(real_ptr(rhs.legacyMatrix()),
+                      real_ptr(rhs.legacyMatrix()) + dimSize * dimSize,
+                      real_ptr(lhs.legacyMatrix()));
 }
 
 } // namespace nblib

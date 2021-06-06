@@ -366,7 +366,7 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     Molecule water    = WaterMoleculeBuilder{}.waterMolecule();
     Molecule methanol = MethanolMoleculeBuilder{}.methanolMolecule();
 
-    CubicBondType     testBond(1., 1., 1.);
+    CubicBondType testBond(1., 1., 1.);
     HarmonicAngleType testAngle(Degrees(1), 1);
 
     water.addInteraction(ParticleName("H1"), ParticleName("H2"), testBond);

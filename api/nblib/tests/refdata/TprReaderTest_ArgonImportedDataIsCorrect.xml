@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+    <Sequence Name="coordinates">
+        <Int Name="Length">12</Int>
+        <Vector>
+            <Real Name="X">0.794</Real>
+            <Real Name="Y">1.439</Real>
+            <Real Name="Z">0.61</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">1.397</Real>
+            <Real Name="Y">0.673</Real>
+            <Real Name="Z">1.916</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.659</Real>
+            <Real Name="Y">1.08</Real>
+            <Real Name="Z">0.573</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">1.105</Real>
+            <Real Name="Y">0.09</Real>
+            <Real Name="Z">3.431</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">1.741</Real>
+            <Real Name="Y">1.291</Real>
+            <Real Name="Z">3.432</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">1.936</Real>
+            <Real Name="Y">1.441</Real>
+            <Real Name="Z">5.873</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.96</Real>
+            <Real Name="Y">2.246</Real>
+            <Real Name="Z">1.659</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.382</Real>
+            <Real Name="Y">3.023</Real>
+            <Real Name="Z">2.793</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.053</Real>
+            <Real Name="Y">4.857</Real>
+            <Real Name="Z">4.242</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">2.655</Real>
+            <Real Name="Y">5.057</Real>
+            <Real Name="Z">2.211</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">4.114</Real>
+            <Real Name="Y">0.737</Real>
+            <Real Name="Z">0.614</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">5.977</Real>
+            <Real Name="Y">5.104</Real>
+            <Real Name="Z">5.217</Real>
+        </Vector>
+    </Sequence>
+
+    <Sequence Name="velocities">
+        <Int Name="Length">12</Int>
+        <Vector>
+            <Real Name="X">0.0055</Real>
+            <Real Name="Y">-0.14</Real>
+            <Real Name="Z">0.2127</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.093</Real>
+            <Real Name="Y">-0.016</Real>
+            <Real Name="Z">-0.0086</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.1678</Real>
+            <Real Name="Y">0.2476</Real>
+            <Real Name="Z">-0.066</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.1591</Real>
+            <Real Name="Y">-0.0934</Real>
+            <Real Name="Z">-0.0835</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">-0.0317</Real>
+            <Real Name="Y">0.0573</Real>
+            <Real Name="Z">0.1453</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.0597</Real>
+            <Real Name="Y">0.0013</Real>
+            <Real Name="Z">-0.0462</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.0484</Real>
+            <Real Name="Y">-0.0357</Real>
+            <Real Name="Z">0.0168</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.053</Real>
+            <Real Name="Y">0.0295</Real>
+            <Real Name="Z">-0.2694</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">-0.055</Real>
+            <Real Name="Y">-0.0896</Real>
+            <Real Name="Z">0.0494</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">-0.0799</Real>
+            <Real Name="Y">-0.2534</Real>
+            <Real Name="Z">-0.0079</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">0.0436</Real>
+            <Real Name="Y">-0.1557</Real>
+            <Real Name="Z">0.1849</Real>
+        </Vector>
+        <Vector>
+            <Real Name="X">-0.0214</Real>
+            <Real Name="Y">0.0446</Real>
+            <Real Name="Z">0.0758</Real>
+        </Vector>
+    </Sequence>
+
+    <Sequence Name="nbparams">
+        <Int Name="Length">2</Int>
+        <Real>0.0351364166</Real>
+        <Real>9.8438366e-05</Real>
+    </Sequence>
+
+    <Sequence Name="exclusion elements">
+        <Int Name="Length">12</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+    </Sequence>
+
+    <Sequence Name="exclusion ranges">
+        <Int Name="Length">13</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+        <Int>12</Int>
+    </Sequence>
+</ReferenceData>

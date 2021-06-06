@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="SPC-methanol forces on GPU">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">-0.38183594</Real>
+      <Real Name="Y">0.87922907</Real>
+      <Real Name="Z">-6.1406441</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">8.3033295</Real>
+      <Real Name="Y">-7.338829</Real>
+      <Real Name="Z">27.783722</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-9.4221649</Real>
+      <Real Name="Y">6.2920837</Real>
+      <Real Name="Z">-33.986099</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">27.494339</Real>
+      <Real Name="Y">8.3915062</Real>
+      <Real Name="Z">39.693787</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-19.009857</Real>
+      <Real Name="Y">-5.3975139</Real>
+      <Real Name="Z">-15.545643</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-6.9838257</Real>
+      <Real Name="Y">-2.8264766</Real>
+      <Real Name="Z">-11.805126</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

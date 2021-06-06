@@ -98,8 +98,8 @@ TEST(NBlibTest, GeneratedVelocitiesAreCorrect)
     std::vector<Vec3> velocities;
     velocities = generateVelocity(300.0, 1, masses);
 
-    Vector3DTest velocitiesTest;
-    velocitiesTest.testVectors(velocities, "generated-velocities");
+    RefDataChecker velocitiesTest;
+    velocitiesTest.testArrays<Vec3>(velocities, "generated-velocities");
 }
 TEST(NBlibTest, generateVelocitySize)
 {

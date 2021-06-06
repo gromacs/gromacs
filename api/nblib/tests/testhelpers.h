@@ -46,11 +46,12 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+
 #include "nblib/box.h"
 #include "nblib/vector.h"
 
+#include "testutils/conftest.h"
 #include "testutils/refdata.h"
-#include "testutils/testasserts.h"
 
 namespace nblib
 {
@@ -58,35 +59,33 @@ namespace nblib
 namespace test
 {
 
-//! Compare between two instances of the Box object
-bool operator==(const Box& a, const Box& b);
-
 /*! \internal \brief
  *  Simple test harness for checking 3D vectors like coordinates, velocities,
  *  forces against reference data
  *
  */
-class Vector3DTest
+class RefDataChecker
 {
 public:
-    Vector3DTest() : checker_(refData_.rootChecker())
+    RefDataChecker() : checker_(refData_.rootChecker())
     {
         gmx::test::FloatingPointTolerance tolerance(
                 gmx::test::FloatingPointTolerance(1e-8, 1.0e-12, 1e-8, 1.0e-12, 200, 100, true));
         checker_.setDefaultTolerance(tolerance);
     }
 
-    Vector3DTest(real relativeFloatingPointTolerance) : checker_(refData_.rootChecker())
+    RefDataChecker(real relativeFloatingPointTolerance) : checker_(refData_.rootChecker())
     {
         gmx::test::FloatingPointTolerance tolerance(gmx::test::FloatingPointTolerance(
-                1e-8, 1.0e-12, relativeFloatingPointTolerance, 1.0e-12, 200, 100, true));
+                1e-6, 1.0e-9, relativeFloatingPointTolerance, relativeFloatingPointTolerance, 200, 100, true));
         checker_.setDefaultTolerance(tolerance);
     }
 
-    //! Compare a given input vector of cartesians with the reference data
-    void testVectors(gmx::ArrayRef<Vec3> forces, const std::string& testName)
+    //! Compare a given input array of cartesians, reals, integers, etc with the reference data
+    template<class T>
+    void testArrays(gmx::ArrayRef<T> tArray, const std::string& testString)
     {
-        checker_.checkSequence(forces.begin(), forces.end(), testName.c_str());
+        checker_.checkSequence(tArray.begin(), tArray.end(), testString.c_str());
     }
 
     void testReal(real value, const std::string& testName)
