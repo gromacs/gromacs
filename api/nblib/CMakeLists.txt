@@ -99,6 +99,16 @@ set_target_properties(nblib PROPERTIES
         LINKER_LANGUAGE CXX
         OUTPUT_NAME "nblib")
 
+if (GMX_GPU_CUDA)
+    if(${CMAKE_VERSION} VERSION_LESS "3.17.0")
+        find_package(CUDA)
+        target_include_directories(nblib PRIVATE "${CUDA_INCLUDE_DIRS}")
+    else()
+        find_package(CUDAToolkit)
+        target_link_libraries(nblib PRIVATE CUDA::cudart)
+    endif()
+endif()
+
 target_sources(nblib
         PRIVATE
         box.cpp
@@ -118,6 +128,7 @@ target_sources(nblib
 gmx_target_compile_options(nblib)
 
 target_link_libraries(nblib PRIVATE libgromacs)
+target_include_directories(nblib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 target_include_directories(nblib PRIVATE ${PROJECT_SOURCE_DIR}/api)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/api)
 target_link_libraries(nblib PRIVATE common)
