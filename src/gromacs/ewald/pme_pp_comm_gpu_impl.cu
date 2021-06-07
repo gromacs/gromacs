@@ -82,7 +82,6 @@ void PmePpCommGpu::Impl::reinit(int size)
     {
         // receive device buffer address from PME rank
         MPI_Recv(&remotePmeXBuffer_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
-        MPI_Recv(&remotePmeFBuffer_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
     }
 
 #endif
@@ -91,24 +90,26 @@ void PmePpCommGpu::Impl::reinit(int size)
     reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
 }
 
-void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* pmeForcePtr, int recvSize, bool receivePmeForceToGpu)
+// TODO make this asynchronous by splitting into this into
+// launchRecvForceFromPmeCudaDirect() and sycnRecvForceFromPmeCudaDirect()
+void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* recvPtr, bool receivePmeForceToGpu)
 {
 #if GMX_MPI
-    // Receive event from PME task and add to stream, to ensure pull of data doesn't
-    // occur before PME force calc is completed
-    GpuEventSynchronizer* pmeSync;
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Recv(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
-    pmeSync->enqueueWaitEvent(pmePpCommStream_);
-#endif
+    // Remote PME task pushes GPU data directly data to this PP task.
 
-    // Pull force data from remote GPU
-    cudaError_t stat = cudaMemcpyAsync(pmeForcePtr,
-                                       remotePmeFBuffer_,
-                                       recvSize * DIM * sizeof(float),
-                                       cudaMemcpyDefault,
-                                       pmePpCommStream_.stream());
-    CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
+    void* localForcePtr = receivePmeForceToGpu ? static_cast<void*>(d_pmeForces_) : recvPtr;
+
+    // Send destination pointer to PME task. Do this every step since
+    // PME task is agostic as to whether destination is PP CPU or
+    // GPU.
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
+    MPI_Send(&localForcePtr, sizeof(void*), MPI_BYTE, pmeRank_, 0, comm_);
+
+    // Recieve event from PME task after PME->PP force data push has
+    // been scheduled and enqueue this to PP stream.
+    GpuEventSynchronizer* eventptr;
+    MPI_Recv(&eventptr, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+    eventptr->enqueueWaitEvent(pmePpCommStream_);
 
     if (receivePmeForceToGpu)
     {
@@ -123,6 +124,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* pmeForcePtr, int 
         // them with other forces on the CPU
         pmePpCommStream_.synchronize();
     }
+#endif
 }
 
 void PmePpCommGpu::Impl::receiveForceFromPmeCudaMpi(float3* pmeForcePtr, int recvSize)
@@ -140,7 +142,7 @@ void PmePpCommGpu::Impl::receiveForceFromPme(float3* recvPtr, int recvSize, bool
     float3* pmeForcePtr = receivePmeForceToGpu ? asFloat3(d_pmeForces_) : recvPtr;
     if (GMX_THREAD_MPI)
     {
-        receiveForceFromPmeCudaDirect(pmeForcePtr, recvSize, receivePmeForceToGpu);
+        receiveForceFromPmeCudaDirect(pmeForcePtr, receivePmeForceToGpu);
     }
     else
     {

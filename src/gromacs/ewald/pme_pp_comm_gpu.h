@@ -82,7 +82,7 @@ public:
     /*! \brief
      * Pull data from PME GPU directly using CUDA Memory copy.
      * \param[out] recvPtr  Buffer to receive PME force data
-     * \param[in]  recvSize Number of elements to receive
+     * \param[in] recvSize Number of elements to receive
      * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
     void receiveForceFromPme(RVec* recvPtr, int recvSize, bool recvPmeForceToGpu);

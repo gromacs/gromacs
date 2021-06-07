@@ -441,7 +441,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
                     pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(
                             stateGpu->getCoordinates());
-                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(pme_gpu_get_device_f(pme));
+                    pme_pp->pmeForceSenderGpu->setForceSendBuffer(pme_gpu_get_device_f(pme));
                 }
             }
 
@@ -562,7 +562,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
 
             if (GMX_THREAD_MPI)
             {
-                pme_pp->pmeForceSenderGpu->sendFSynchronizerToPpCudaDirect(receiver.rankId);
+                pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(receiver.rankId, receiver.numAtoms);
             }
             else
             {
@@ -667,8 +667,11 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
                     deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
                     pme_pp->mpi_comm_mysim,
                     pme_pp->ppRanks);
-            pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    pme_gpu_get_f_ready_synchronizer(pme), pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
+            pme_pp->pmeForceSenderGpu =
+                    std::make_unique<gmx::PmeForceSenderGpu>(pme_gpu_get_f_ready_synchronizer(pme),
+                                                             pme_pp->mpi_comm_mysim,
+                                                             deviceStreamManager->context(),
+                                                             pme_pp->ppRanks);
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.

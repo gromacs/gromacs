@@ -57,54 +57,85 @@ namespace gmx
 /*! \brief Create PME-PP GPU communication object */
 PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
                               MPI_Comm               comm,
+                              const DeviceContext&   deviceContext,
                               gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeForcesReady_(pmeForcesReady), comm_(comm), ppRanks_(ppRanks)
+    pmeForcesReady_(pmeForcesReady), comm_(comm), ppRanks_(ppRanks), deviceContext_(deviceContext)
 {
+    // Create streams and events to manage pushing of force buffers to remote PP ranks
+    std::unique_ptr<DeviceStream>         stream;
+    std::unique_ptr<GpuEventSynchronizer> event;
+    size_t                                i = 0;
+    ppCommStream_.resize(ppRanks_.size());
+    ppCommEvent_.resize(ppRanks_.size());
+    for (i = 0; i < ppRanks_.size(); i++)
+    {
+        stream = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false);
+        ppCommStream_[i] = std::move(stream);
+        event            = std::make_unique<GpuEventSynchronizer>();
+        ppCommEvent_[i]  = std::move(event);
+    }
 }
 
 PmeForceSenderGpu::Impl::~Impl() = default;
 
-/*! \brief  sends force buffer address to PP ranks */
-void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(DeviceBuffer<Float3> d_f)
+/*! \brief Sets location of force to be sent to each PP rank  */
+void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 {
+
     // Need to send address to PP rank only for thread-MPI as PP rank pulls
     // data using cudamemcpy
     if (!GMX_THREAD_MPI)
     {
         return;
     }
+
 #if GMX_MPI
+
+    if (localForcePtr_.size() == 0)
+    {
+        localForcePtr_.resize(ppRanks_.size());
+    }
     int ind_start = 0;
     int ind_end   = 0;
+    int i         = 0;
     for (const auto& receiver : ppRanks_)
     {
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
 
-        // Data will be transferred directly from GPU.
-        Float3* sendBuf = &d_f[ind_start];
-
-        MPI_Send(&sendBuf, sizeof(Float3*), MPI_BYTE, receiver.rankId, 0, comm_);
+        localForcePtr_[i++] = &d_f[ind_start];
     }
 #else
     GMX_UNUSED_VALUE(d_f);
 #endif
 }
 
-/*! \brief Send PME synchronizer directly using CUDA memory copy */
-void PmeForceSenderGpu::Impl::sendFSynchronizerToPpCudaDirect(int ppRank)
-{
-    GMX_ASSERT(GMX_THREAD_MPI,
-               "sendFSynchronizerToPpCudaDirect is expected to be called only for Thread-MPI");
 
-    // Data will be pulled directly from PP task
+/*! \brief Send PME synchronizer directly using CUDA memory copy */
+void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms)
+{
+
+    GMX_ASSERT(GMX_THREAD_MPI, "sendFToPpCudaDirect is expected to be called only for Thread-MPI");
+
+
 #if GMX_MPI
-    // TODO Using MPI_Isend would be more efficient, particularly when
-    // sending to multiple PP ranks
+    void* pmeRemoteForcePtr;
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&pmeForcesReady_, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
+    MPI_Recv(&pmeRemoteForcePtr, sizeof(void*), MPI_BYTE, ppRank, 0, comm_, MPI_STATUS_IGNORE);
+
+    pmeForcesReady_->enqueueWaitEvent(*ppCommStream_[ppRank]);
+
+    cudaError_t stat = cudaMemcpyAsync(pmeRemoteForcePtr,
+                                       localForcePtr_[ppRank],
+                                       numAtoms * sizeof(rvec),
+                                       cudaMemcpyDefault,
+                                       ppCommStream_[ppRank]->stream());
+    CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
+    ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
+    MPI_Send(&ppCommEvent_[ppRank], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
 #else
     GMX_UNUSED_VALUE(ppRank);
+    GMX_UNUSED_VALUE(numAtoms);
 #endif
 }
 
@@ -135,21 +166,18 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
 
 PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer*  pmeForcesReady,
                                      MPI_Comm               comm,
+                                     const DeviceContext&   deviceContext,
                                      gmx::ArrayRef<PpRanks> ppRanks) :
-    impl_(new Impl(pmeForcesReady, comm, ppRanks))
+    impl_(new Impl(pmeForcesReady, comm, deviceContext, ppRanks))
 {
 }
 
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f)
-{
-    impl_->sendForceBufferAddressToPpRanks(d_f);
-}
 
-void PmeForceSenderGpu::sendFSynchronizerToPpCudaDirect(int ppRank)
+void PmeForceSenderGpu::setForceSendBuffer(DeviceBuffer<RVec> d_f)
 {
-    impl_->sendFSynchronizerToPpCudaDirect(ppRank);
+    impl_->setForceSendBuffer(d_f);
 }
 
 void PmeForceSenderGpu::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
@@ -159,6 +187,11 @@ void PmeForceSenderGpu::sendFToPpCudaMpi(DeviceBuffer<RVec> sendbuf,
                                          MPI_Request*       request)
 {
     impl_->sendFToPpCudaMpi(sendbuf, offset, numBytes, ppRank, request);
+}
+
+void PmeForceSenderGpu::sendFToPpCudaDirect(int ppRank, int numAtoms)
+{
+    impl_->sendFToPpCudaDirect(ppRank, numAtoms);
 }
 
 

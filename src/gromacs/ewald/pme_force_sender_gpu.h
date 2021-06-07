@@ -49,6 +49,8 @@
 #include "gromacs/utility/gmxmpi.h"
 
 class GpuEventSynchronizer;
+class DeviceContext;
+class DeviceStream;
 
 /*! \libinternal
  * \brief Contains information about the PP ranks that partner this PME rank. */
@@ -75,22 +77,27 @@ public:
     /*! \brief Creates PME GPU Force sender object
      * \param[in] pmeForcesReady  Event synchronizer marked when PME forces are ready on the GPU
      * \param[in] comm            Communicator used for simulation
+     * \param[in] deviceContext   GPU context
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeForceSenderGpu(GpuEventSynchronizer* pmeForcesReady, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeForceSenderGpu(GpuEventSynchronizer*  pmeForcesReady,
+                      MPI_Comm               comm,
+                      const DeviceContext&   deviceContext,
+                      gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeForceSenderGpu();
 
     /*! \brief
-     * Initialization of GPU PME Force sender
+     * Sets location of force to be sent to each PP rank
      * \param[in] d_f   force buffer in GPU memory
      */
-    void sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> d_f);
+    void setForceSendBuffer(DeviceBuffer<RVec> d_f);
 
     /*! \brief
-     * Send force synchronizer to PP rank (used with Thread-MPI)
+     * Send force to PP rank (used with Thread-MPI)
      * \param[in] ppRank           PP rank to receive data
+     * \param[in] numAtoms         number of atoms to send
      */
-    void sendFSynchronizerToPpCudaDirect(int ppRank);
+    void sendFToPpCudaDirect(int ppRank, int numAtoms);
 
     /*! \brief
      * Send force to PP rank (used with Lib-MPI)

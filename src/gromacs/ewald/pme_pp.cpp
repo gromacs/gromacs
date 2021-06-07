@@ -522,6 +522,7 @@ static void recvFFromPme(gmx::PmePpCommGpu* pmePpCommGpu,
         MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
 #else
         GMX_UNUSED_VALUE(cr);
+        GMX_UNUSED_VALUE(n);
 #endif
     }
 }

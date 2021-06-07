@@ -89,7 +89,6 @@ public:
      */
     void receiveForceFromPme(float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
-
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using CUDA
      * Memory copy or CUDA-aware MPI. If sending from GPU, this method should
@@ -117,10 +116,9 @@ private:
      * rank to either GPU or CPU memory on PP task using CUDA
      * Memory copy. This method is used with Thread-MPI.
      * \param[out] recvPtr CPU buffer to receive PME force data
-     * \param[in] recvSize Number of elements to receive
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeCudaDirect(float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
+    void receiveForceFromPmeCudaDirect(float3* recvPtr, bool receivePmeForceToGpu);
 
     /*! \brief Pull force buffer directly from GPU memory on PME
      * rank to either GPU or CPU memory on PP task using CUDA-aware
@@ -158,8 +156,6 @@ private:
     const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
     float3* remotePmeXBuffer_ = nullptr;
-    //! Remote location of PME force data buffer
-    float3* remotePmeFBuffer_ = nullptr;
     //! communicator for simulation
     MPI_Comm comm_;
     //! Rank of PME task

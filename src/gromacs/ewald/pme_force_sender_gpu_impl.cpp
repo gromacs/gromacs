@@ -65,6 +65,7 @@ class PmeForceSenderGpu::Impl
 /*!\brief Constructor stub. */
 PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer* /*pmeForcesReady */,
                                      MPI_Comm /* comm     */,
+                                     const DeviceContext& /* deviceContext */,
                                      gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
 {
@@ -76,14 +77,14 @@ PmeForceSenderGpu::PmeForceSenderGpu(GpuEventSynchronizer* /*pmeForcesReady */,
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(DeviceBuffer<RVec> /* d_f */)
+void PmeForceSenderGpu::setForceSendBuffer(DeviceBuffer<RVec> /* d_f */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
 
-void PmeForceSenderGpu::sendFSynchronizerToPpCudaDirect(int /* ppRank */)
+void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */, int /* numAtoms */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

@@ -62,23 +62,28 @@ public:
     /*! \brief Creates PME GPU Force sender object
      * \param[in] pmeForcesReady  Event synchronizer marked when PME forces are ready on the GPU
      * \param[in] comm            Communicator used for simulation
+     * \param[in] deviceContext   GPU context
      * \param[in] ppRanks         List of PP ranks
      */
-    Impl(GpuEventSynchronizer* pmeForcesReady, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    Impl(GpuEventSynchronizer*  pmeForcesReady,
+         MPI_Comm               comm,
+         const DeviceContext&   deviceContext,
+         gmx::ArrayRef<PpRanks> ppRanks);
     // NOLINTNEXTLINE(performance-trivially-destructible)
     ~Impl();
 
     /*! \brief
-     * sends force buffer address to PP rank
+     * Sets location of force to be sent to each PP rank
      * \param[in] d_f   force buffer in GPU memory
      */
-    void sendForceBufferAddressToPpRanks(DeviceBuffer<Float3> d_f);
+    void setForceSendBuffer(DeviceBuffer<Float3> d_f);
 
     /*! \brief
-     * Send force synchronizer to PP rank (used with Thread-MPI)
+     * Send force to PP rank (used with Thread-MPI)
      * \param[in] ppRank           PP rank to receive data
+     * \param[in] numAtoms         number of atoms to send
      */
-    void sendFSynchronizerToPpCudaDirect(int ppRank);
+    void sendFToPpCudaDirect(int ppRank, int numAtoms);
 
     /*! \brief
      * Send force to PP rank (used with Lib-MPI)
@@ -97,6 +102,14 @@ private:
     MPI_Comm comm_;
     //! list of PP ranks
     gmx::ArrayRef<PpRanks> ppRanks_;
+    //! Streams used for pushing force to remote PP ranks
+    std::vector<std::unique_ptr<DeviceStream>> ppCommStream_;
+    //! Events used for manging sync with remote PP ranks
+    std::vector<std::unique_ptr<GpuEventSynchronizer>> ppCommEvent_;
+    //! Addresses of local force buffers to send to remote PP ranks
+    std::vector<DeviceBuffer<RVec>> localForcePtr_;
+    //! GPU context handle (not used in CUDA)
+    const DeviceContext& deviceContext_;
 };
 
 } // namespace gmx
