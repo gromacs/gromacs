@@ -101,9 +101,6 @@ ListedForcesGpu::Impl::Impl(const gmx_ffparams_t& ffparams,
 
     kernelParams_.electrostaticsScaleFactor = electrostaticsScaleFactor;
     kernelParams_.d_forceParams             = d_forceParams_;
-    kernelParams_.d_xq                      = d_xq_;
-    kernelParams_.d_f                       = d_f_;
-    kernelParams_.d_fShift                  = d_fShift_;
     kernelParams_.d_vTot                    = d_vTot_;
     for (int i = 0; i < numFTypesOnGpu; i++)
     {
@@ -284,9 +281,6 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
     d_f_      = asFloat3(d_fPtr);
     d_fShift_ = asFloat3(d_fShiftPtr);
 
-    kernelParams_.d_xq          = d_xq_;
-    kernelParams_.d_f           = d_f_;
-    kernelParams_.d_fShift      = d_fShift_;
     kernelParams_.d_forceParams = d_forceParams_;
     kernelParams_.d_vTot        = d_vTot_;
 

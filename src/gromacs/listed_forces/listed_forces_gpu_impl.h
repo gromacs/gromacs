@@ -95,12 +95,6 @@ struct BondedCudaKernelParameters
 
     //! Force parameters (on GPU)
     t_iparams* d_forceParams;
-    //! Coordinates before the timestep (on GPU)
-    const float4* d_xq;
-    //! Forces on atoms (on GPU)
-    float3* d_f;
-    //! Force shifts on atoms (on GPU)
-    float3* d_fShift;
     //! Total Energy (on GPU)
     float* d_vTot;
     //! Interaction list atoms (on GPU)
@@ -114,9 +108,6 @@ struct BondedCudaKernelParameters
 
         electrostaticsScaleFactor = 1.0;
         d_forceParams             = nullptr;
-        d_xq                      = nullptr;
-        d_f                       = nullptr;
-        d_fShift                  = nullptr;
         d_vTot                    = nullptr;
     }
 };
