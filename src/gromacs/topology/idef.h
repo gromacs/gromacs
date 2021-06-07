@@ -360,7 +360,6 @@ enum
 {
     ilsortUNKNOWN,
     ilsortNO_FE,
-    ilsortFE_UNSORTED,
     ilsortFE_SORTED
 };
 

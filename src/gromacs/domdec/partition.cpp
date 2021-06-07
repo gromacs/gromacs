@@ -3207,6 +3207,7 @@ void dd_partition_system(FILE*                     fplog,
                                                           fr,
                                                           state_local->x,
                                                           top_global,
+                                                          fr->atomInfo,
                                                           top_local);
     dd->localTopologyChecker->scheduleCheckOfLocalTopology(numBondedInteractionsToReduce);
 

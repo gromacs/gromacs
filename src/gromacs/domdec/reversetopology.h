@@ -152,8 +152,8 @@ public:
     bool hasPositionRestraints() const;
     //! Returns the per-thread working structures for making the local topology
     gmx::ArrayRef<thread_work_t> threadWorkObjects() const;
-    //! Returns whether the local topology interactions should be sorted
-    bool doSorting() const;
+    //! Returns whether the local topology listed-forces interactions should be sorted
+    bool doListedForcesSorting() const;
 
     //! Private implementation definition
     struct Impl;

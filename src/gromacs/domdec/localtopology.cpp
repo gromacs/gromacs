@@ -921,16 +921,17 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
     return numBondedInteractions;
 }
 
-int dd_make_local_top(gmx_domdec_t*        dd,
-                      gmx_domdec_zones_t*  zones,
-                      int                  npbcdim,
-                      matrix               box,
-                      rvec                 cellsize_min,
-                      const ivec           npulse,
-                      t_forcerec*          fr,
-                      ArrayRef<const RVec> coordinates,
-                      const gmx_mtop_t&    mtop,
-                      gmx_localtop_t*      ltop)
+int dd_make_local_top(gmx_domdec_t*                dd,
+                      gmx_domdec_zones_t*          zones,
+                      int                          npbcdim,
+                      matrix                       box,
+                      rvec                         cellsize_min,
+                      const ivec                   npulse,
+                      t_forcerec*                  fr,
+                      ArrayRef<const RVec>         coordinates,
+                      const gmx_mtop_t&            mtop,
+                      gmx::ArrayRef<const int64_t> atomInfo,
+                      gmx_localtop_t*              ltop)
 {
     real  rc = -1;
     ivec  rcheck;
@@ -1011,17 +1012,7 @@ int dd_make_local_top(gmx_domdec_t*        dd,
                                                                  &ltop->idef,
                                                                  &ltop->excls);
 
-    /* The ilist is not sorted yet,
-     * we can only do this when we have the charge arrays.
-     */
-    ltop->idef.ilsort = ilsortUNKNOWN;
-
-    return numBondedInteractionsToReduce;
-}
-
-void dd_sort_local_top(const gmx_domdec_t& dd, gmx::ArrayRef<const int64_t> atomInfo, gmx_localtop_t* ltop)
-{
-    if (dd.reverse_top->doSorting())
+    if (dd->reverse_top->doListedForcesSorting())
     {
         gmx_sort_ilist_fe(&ltop->idef, atomInfo);
     }
@@ -1029,4 +1020,6 @@ void dd_sort_local_top(const gmx_domdec_t& dd, gmx::ArrayRef<const int64_t> atom
     {
         ltop->idef.ilsort = ilsortNO_FE;
     }
+
+    return numBondedInteractionsToReduce;
 }

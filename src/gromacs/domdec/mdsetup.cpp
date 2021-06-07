@@ -108,11 +108,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
              mdAtoms);
 
     t_mdatoms* mdatoms = mdAtoms->mdatoms();
-    if (usingDomDec)
-    {
-        dd_sort_local_top(*cr->dd, fr->atomInfo, top);
-    }
-    else
+    if (!usingDomDec)
     {
         gmx_mtop_generate_local_top(top_global, top, inputrec.efep != FreeEnergyPerturbationType::No);
     }

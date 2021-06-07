@@ -87,8 +87,8 @@ struct gmx_reverse_top_t::Impl
     std::vector<reverse_ilist_t> ril_mt;
     //! \brief The size of ril_mt[?].index summed over all entries
     int ril_mt_tot_size = 0;
-    //! \brief The sorting state of bondeds for free energy
-    int ilsort = ilsortUNKNOWN;
+    //! \brief Whether listed-force interaction lists should be sorted for free energy
+    bool doListedForcesSorting;
     //! \brief molblock to global atom index for quick lookup of molblocks on atom index
     std::vector<MolblockIndices> mbi;
 
@@ -326,9 +326,9 @@ ArrayRef<thread_work_t> gmx_reverse_top_t::threadWorkObjects() const
     return impl_->th_work;
 }
 
-bool gmx_reverse_top_t::doSorting() const
+bool gmx_reverse_top_t::doListedForcesSorting() const
 {
-    return impl_->ilsort != ilsortNO_FE;
+    return impl_->doListedForcesSorting;
 }
 
 /*! \brief Generate the reverse topology */
@@ -376,14 +376,7 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
                 *mtop.intermolecular_ilist, &atoms_global, options, AtomLinkRule::FirstAtom, &ril_intermol);
     }
 
-    if (useFreeEnergy && gmx_mtop_bondeds_free_energy(&mtop))
-    {
-        ilsort = ilsortFE_UNSORTED;
-    }
-    else
-    {
-        ilsort = ilsortNO_FE;
-    }
+    doListedForcesSorting = useFreeEnergy && gmx_mtop_bondeds_free_energy(&mtop);
 
     /* Make a molblock index for fast searching */
     int i = 0;
