@@ -108,8 +108,8 @@ _opencl_extra_packages = [
     'ocl-icd-opencl-dev',
     'opencl-headers',
     # The following require
-    #             apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
-    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main']
+    #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
+    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/4.0.1/ xenial main']
     'libelf1',
     'rocm-opencl',
     'rocm-dev',
@@ -162,7 +162,6 @@ _docs_extra_packages = ['autoconf',
                         'help2man',
                         'imagemagick',
                         'libtool',
-                        'linkchecker',
                         'mscgen',
                         'm4',
                         'openssh-client',
@@ -532,6 +531,8 @@ def add_documentation_dependencies(input_args,
     """Add appropriate layers according to doxygen input arguments."""
     if input_args.doxygen is None:
         return
+    # Always clone the same version of linkchecker (latest release at June 1, 2021)
+    output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['git+https://github.com/linkchecker/linkchecker.git@v10.0.1'])
     output_stages['main'] += hpccm.primitives.shell(
         commands=['sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
     if input_args.doxygen == '1.8.5':
@@ -612,8 +613,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     building_blocks['extra_packages'] = hpccm.building_blocks.packages(
         ospackages=os_packages,
         apt_ppas=['ppa:intel-opencl/intel-opencl'],
-        apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
-        apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main']
+        apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
+        apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/4.0.1/ xenial main']
     )
 
     if args.cuda is not None and args.llvm is not None:

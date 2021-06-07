@@ -41,7 +41,7 @@ CI pipeline jobs.
 Example::
 
     $ python3 -m utility --llvm --doxygen
-    gromacs/ci-ubuntu-18.04-llvm-7-docs
+    gromacs/ci-ubuntu-20.04-llvm-7-docs
 
 See Also:
     :file:`buildall.sh`
@@ -105,9 +105,8 @@ compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2021.1.1", d
                             help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()
-# Ubuntu 20+ is not yet tested. See issue #3680
-linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='18.04',
-                         help='Select Ubuntu Linux base image. (default: ubuntu 18.04)')
+linux_group.add_argument('--ubuntu', type=str, nargs='?', const='20.04', default='20.04',
+                         help='Select Ubuntu Linux base image. (default: ubuntu 20.04)')
 linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
                          help='Select Centos Linux base image.')
 
