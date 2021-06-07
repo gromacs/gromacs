@@ -366,8 +366,8 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     Molecule water    = WaterMoleculeBuilder{}.waterMolecule();
     Molecule methanol = MethanolMoleculeBuilder{}.methanolMolecule();
 
-    CubicBondType     testBond(1., 1., 1.);
-    HarmonicAngleType testAngle(Degrees(1), 1);
+    CubicBondType testBond(1., 1., 1.);
+    HarmonicAngle testAngle(Degrees(1), 1);
 
     water.addInteraction(ParticleName("H1"), ParticleName("H2"), testBond);
     water.addInteraction(ParticleName("H1"), ParticleName("Oxygen"), ParticleName("H2"), testAngle);
@@ -389,7 +389,7 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     auto  interactionData   = topology.getInteractionData();
     auto& harmonicBonds     = pickType<HarmonicBondType>(interactionData);
     auto& cubicBonds        = pickType<CubicBondType>(interactionData);
-    auto& angleInteractions = pickType<HarmonicAngleType>(interactionData);
+    auto& angleInteractions = pickType<HarmonicAngle>(interactionData);
 
     HarmonicBondType              ohBond(1., 1.);
     HarmonicBondType              ohBondMethanol(1.01, 1.02);
@@ -413,9 +413,9 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     EXPECT_EQ(cubicBondsReference, cubicBonds.parameters);
     EXPECT_EQ(cubicIndicesReference, cubicBonds.indices);
 
-    HarmonicAngleType                                methanolAngle(Degrees(108.52), 397.5);
-    std::vector<HarmonicAngleType>                   angleReference{ testAngle, methanolAngle };
-    std::vector<InteractionIndex<HarmonicAngleType>> angleIndicesReference{
+    HarmonicAngle                                methanolAngle(Degrees(108.52), 397.5);
+    std::vector<HarmonicAngle>                   angleReference{ testAngle, methanolAngle };
+    std::vector<InteractionIndex<HarmonicAngle>> angleIndicesReference{
         { std::min(H1, H2), Ow, std::max(H1, H2), 0 }, { std::min(MeH1, MeO1), Me1, std::max(MeO1, MeH1), 1 }
     };
     EXPECT_EQ(angleReference, angleInteractions.parameters);

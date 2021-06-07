@@ -63,9 +63,9 @@ public:
         std::vector<HarmonicBondType> bonds{ bond1, bond2 };
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        HarmonicAngleType              angle(Degrees(179.9), 397.5);
-        std::vector<HarmonicAngleType> angles{ angle };
-        pickType<HarmonicAngleType>(interactions).parameters = angles;
+        HarmonicAngle              angle(Degrees(179.9), 397.5);
+        std::vector<HarmonicAngle> angles{ angle };
+        pickType<HarmonicAngle>(interactions).parameters = angles;
 
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices;
         for (int i = 0; i < nParticles - 1; ++i)
@@ -75,12 +75,12 @@ public:
         }
         pickType<HarmonicBondType>(interactions).indices = bondIndices;
 
-        std::vector<InteractionIndex<HarmonicAngleType>> angleIndices;
+        std::vector<InteractionIndex<HarmonicAngle>> angleIndices;
         for (int i = 0; i < nParticles - 2; ++i)
         {
-            angleIndices.push_back(InteractionIndex<HarmonicAngleType>{ i, i + 1, i + 2, 0 });
+            angleIndices.push_back(InteractionIndex<HarmonicAngle>{ i, i + 1, i + 2, 0 });
         }
-        pickType<HarmonicAngleType>(interactions).indices = angleIndices;
+        pickType<HarmonicAngle>(interactions).indices = angleIndices;
 
         // initialize coordinates
         x.resize(nParticles);

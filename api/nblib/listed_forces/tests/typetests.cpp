@@ -63,9 +63,8 @@ std::vector<InteractionIndex<HarmonicBondType>> c_HarmonicBondIndices{ { 0, 1, 0
 std::vector<std::vector<HarmonicBondType>> c_InputHarmonicBond = { { HarmonicBondType(500, 0.15) } };
 
 // Parameters for harmonic angles
-std::vector<InteractionIndex<HarmonicAngleType>> c_HarmonicAngleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 0 } };
-std::vector<std::vector<HarmonicAngleType>> c_InputHarmonicAngle = { { HarmonicAngleType(Degrees(100),
-                                                                                         50.0) } };
+std::vector<InteractionIndex<HarmonicAngle>> c_HarmonicAngleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 0 } };
+std::vector<std::vector<HarmonicAngle>> c_InputHarmonicAngle = { { HarmonicAngle(Degrees(100), 50.0) } };
 
 //! Function types for testing dihedrals. Add new terms at the end.
 std::vector<std::vector<ProperDihedral>> c_InputDihs = { { { ProperDihedral(Degrees(-105.0), 15.0, 2) } } /*, { ImproperDihedral(100.0, 50.0) }*/ };
@@ -167,10 +166,10 @@ INSTANTIATE_TEST_CASE_P(TwoCenter,
                                            ::testing::ValuesIn(c_coordinatesForTests)));
 
 class HarmonicAngleTest :
-    public ListedForcesBase<HarmonicAngleType>,
-    public testing::TestWithParam<std::tuple<std::vector<HarmonicAngleType>, std::vector<gmx::RVec>>>
+    public ListedForcesBase<HarmonicAngle>,
+    public testing::TestWithParam<std::tuple<std::vector<HarmonicAngle>, std::vector<gmx::RVec>>>
 {
-    using Base = ListedForcesBase<HarmonicAngleType>;
+    using Base = ListedForcesBase<HarmonicAngle>;
 
 public:
     HarmonicAngleTest() :

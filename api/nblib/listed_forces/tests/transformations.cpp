@@ -65,8 +65,8 @@ ListedInteractionData unsortedInteractions()
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 2, 0 }, { 0, 1, 0 } };
     pickType<HarmonicBondType>(interactions).indices = std::move(bondIndices);
 
-    std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 }, { 1, 0, 2, 0 } };
-    pickType<HarmonicAngleType>(interactions).indices = std::move(angleIndices);
+    std::vector<InteractionIndex<HarmonicAngle>> angleIndices{ { 0, 1, 2, 0 }, { 1, 0, 2, 0 } };
+    pickType<HarmonicAngle>(interactions).indices = std::move(angleIndices);
 
     std::vector<InteractionIndex<ProperDihedral>> dihedralIndices{ { 0, 2, 1, 3, 0 }, { 0, 1, 2, 3, 0 } };
     pickType<ProperDihedral>(interactions).indices = std::move(dihedralIndices);
@@ -80,12 +80,12 @@ TEST(ListedTransformations, SortInteractionIndices)
     sortInteractions(interactions);
 
     std::vector<InteractionIndex<HarmonicBondType>> refBondIndices{ { 0, 1, 0 }, { 0, 2, 0 } };
-    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices{ { 1, 0, 2, 0 }, { 0, 1, 2, 0 } };
-    std::vector<InteractionIndex<ProperDihedral>>    refDihedralIndices{ { 0, 1, 2, 3, 0 },
+    std::vector<InteractionIndex<HarmonicAngle>>  refAngleIndices{ { 1, 0, 2, 0 }, { 0, 1, 2, 0 } };
+    std::vector<InteractionIndex<ProperDihedral>> refDihedralIndices{ { 0, 1, 2, 3, 0 },
                                                                       { 0, 2, 1, 3, 0 } };
 
     EXPECT_EQ(pickType<HarmonicBondType>(interactions).indices, refBondIndices);
-    EXPECT_EQ(pickType<HarmonicAngleType>(interactions).indices, refAngleIndices);
+    EXPECT_EQ(pickType<HarmonicAngle>(interactions).indices, refAngleIndices);
     EXPECT_EQ(pickType<ProperDihedral>(interactions).indices, refDihedralIndices);
 }
 

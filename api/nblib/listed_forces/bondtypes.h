@@ -61,13 +61,13 @@ namespace nblib
 {
 using Name          = std::string;
 using ForceConstant = real;
-using EquilDistance = real;
+using EquilConstant = real;
 using Exponent      = real;
 
 using Degrees = StrongType<real, struct DegreeParameter>;
 using Radians = StrongType<real, struct RadianParameter>;
 
-/*! \brief Basic template for interactions with 2 parameters named forceConstant and equilDistance
+/*! \brief Basic template for interactions with 2 parameters named forceConstant and equilConstant
  *
  * \tparam Phantom unused template parameter for type distinction
  *
@@ -81,36 +81,36 @@ class TwoParameterInteraction
 {
 public:
     TwoParameterInteraction() = default;
-    TwoParameterInteraction(ForceConstant f, EquilDistance d) : forceConstant_(f), equilDistance_(d)
+    TwoParameterInteraction(ForceConstant f, EquilConstant d) : forceConstant_(f), equilConstant_(d)
     {
     }
 
     [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
-    [[nodiscard]] const EquilDistance& equilDistance() const { return equilDistance_; }
+    [[nodiscard]] const EquilConstant& equilConstant() const { return equilConstant_; }
 
 private:
     ForceConstant forceConstant_;
-    EquilDistance equilDistance_;
+    EquilConstant equilConstant_;
 };
 
 template<class Phantom>
 inline bool operator<(const TwoParameterInteraction<Phantom>& a, const TwoParameterInteraction<Phantom>& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistance())
-           < std::tie(b.forceConstant(), b.equilDistance());
+    return std::tie(a.forceConstant(), a.equilConstant())
+           < std::tie(b.forceConstant(), b.equilConstant());
 }
 
 template<class Phantom>
 inline bool operator==(const TwoParameterInteraction<Phantom>& a, const TwoParameterInteraction<Phantom>& b)
 {
-    return std::tie(a.forceConstant(), a.equilDistance())
-           == std::tie(b.forceConstant(), b.equilDistance());
+    return std::tie(a.forceConstant(), a.equilConstant())
+           == std::tie(b.forceConstant(), b.equilConstant());
 }
 
 /*! \brief harmonic bond type
  *
  *  It represents the interaction of the form
- *  V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
+ *  V(r, forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilConstant)^2
  */
 using HarmonicBondType = TwoParameterInteraction<struct HarmonicBondTypeParameter>;
 
@@ -118,7 +118,7 @@ using HarmonicBondType = TwoParameterInteraction<struct HarmonicBondTypeParamete
 /*! \brief GROMOS bond type
  *
  * It represents the interaction of the form
- * V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
+ * V(r, forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilConstant^2)^2
  */
 using G96BondType = TwoParameterInteraction<struct G96BondTypeParameter>;
 
@@ -126,7 +126,7 @@ using G96BondType = TwoParameterInteraction<struct G96BondTypeParameter>;
 /*! \brief FENE bond type
  *
  * It represents the interaction of the form
- * V(r; forceConstant, equilDistance) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilDistance)^2)
+ * V(r, forceConstant, equilConstant) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilConstant)^2)
  */
 using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 
@@ -134,7 +134,7 @@ using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 /*! \brief Half-attractive quartic bond type
  *
  * It represents the interaction of the form
- * V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
+ * V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilConstant)^4
  */
 using HalfAttractiveQuarticBondType =
         TwoParameterInteraction<struct HalfAttractiveQuarticBondTypeParameter>;
@@ -143,13 +143,13 @@ using HalfAttractiveQuarticBondType =
 /*! \brief Cubic bond type
  *
  * It represents the interaction of the form
- * V(r; quadraticForceConstant, cubicForceConstant, equilDistance) = quadraticForceConstant * (r -
- * equilDistance)^2 + quadraticForceConstant * cubicForceConstant * (r - equilDistance)
+ * V(r, quadraticForceConstant, cubicForceConstant, equilConstant) = quadraticForceConstant * (r -
+ * equilConstant)^2 + quadraticForceConstant * cubicForceConstant * (r - equilDistance)
  */
 struct CubicBondType
 {
     CubicBondType() = default;
-    CubicBondType(ForceConstant fq, ForceConstant fc, EquilDistance d) :
+    CubicBondType(ForceConstant fq, ForceConstant fc, EquilConstant d) :
         quadraticForceConstant_(fq), cubicForceConstant_(fc), equilDistance_(d)
     {
     }
@@ -159,12 +159,12 @@ struct CubicBondType
         return quadraticForceConstant_;
     }
     [[nodiscard]] const ForceConstant& cubicForceConstant() const { return cubicForceConstant_; }
-    [[nodiscard]] const EquilDistance& equilDistance() const { return equilDistance_; }
+    [[nodiscard]] const EquilConstant& equilDistance() const { return equilDistance_; }
 
 private:
     ForceConstant quadraticForceConstant_;
     ForceConstant cubicForceConstant_;
-    EquilDistance equilDistance_;
+    EquilConstant equilDistance_;
 };
 
 inline bool operator<(const CubicBondType& a, const CubicBondType& b)
@@ -182,25 +182,25 @@ inline bool operator==(const CubicBondType& a, const CubicBondType& b)
 /*! \brief Morse bond type
  *
  * It represents the interaction of the form
- * V(r; forceConstant, exponent, equilDistance) = forceConstant * ( 1 - exp( -exponent * (r - equilDistance))
+ * V(r, forceConstant, exponent, equilDistance) = forceConstant * ( 1 - exp( -exponent * (r - equilConstant))
  */
 class MorseBondType
 {
 public:
     MorseBondType() = default;
-    MorseBondType(ForceConstant f, Exponent e, EquilDistance d) :
+    MorseBondType(ForceConstant f, Exponent e, EquilConstant d) :
         forceConstant_(f), exponent_(e), equilDistance_(d)
     {
     }
 
     [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
     [[nodiscard]] const Exponent&      exponent() const { return exponent_; }
-    [[nodiscard]] const EquilDistance& equilDistance() const { return equilDistance_; }
+    [[nodiscard]] const EquilConstant& equilDistance() const { return equilDistance_; }
 
 private:
     ForceConstant forceConstant_;
     Exponent      exponent_;
-    EquilDistance equilDistance_;
+    EquilConstant equilDistance_;
 };
 
 inline bool operator<(const MorseBondType& a, const MorseBondType& b)
@@ -220,17 +220,17 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
  *
  * Note: the angle is always stored as radians internally
  */
-struct HarmonicAngleType : public TwoParameterInteraction<struct HarmonicAngleTypeParameter>
+struct HarmonicAngle : public TwoParameterInteraction<struct HarmonicAngleTypeParameter>
 {
-    HarmonicAngleType() = default;
+    HarmonicAngle() = default;
     //! \brief construct from angle given in radians
-    HarmonicAngleType(Radians angle, ForceConstant f) :
+    HarmonicAngle(Radians angle, ForceConstant f) :
         TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle }
     {
     }
 
     //! \brief construct from angle given in degrees
-    HarmonicAngleType(Degrees angle, ForceConstant f) :
+    HarmonicAngle(Degrees angle, ForceConstant f) :
         TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle * DEG2RAD }
     {
     }
@@ -253,12 +253,12 @@ public:
     {
     }
 
-    [[nodiscard]] const EquilDistance& equilDistance() const { return phi_; }
+    [[nodiscard]] const EquilConstant& equilDistance() const { return phi_; }
     [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
     [[nodiscard]] const Multiplicity&  multiplicity() const { return multiplicity_; }
 
 private:
-    EquilDistance phi_;
+    EquilConstant phi_;
     ForceConstant forceConstant_;
     Multiplicity  multiplicity_;
 };

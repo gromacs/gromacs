@@ -65,16 +65,16 @@ ListedInteractionData someBondsAndAngles()
     std::vector<HarmonicBondType> bonds{ bond1, bond2 };
     pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-    HarmonicAngleType              angle1(Degrees(100), 100);
-    HarmonicAngleType              angle2(Degrees(101), 200);
-    std::vector<HarmonicAngleType> angles{ angle1, angle2 };
-    pickType<HarmonicAngleType>(interactions).parameters = angles;
+    HarmonicAngle              angle1(Degrees(100), 100);
+    HarmonicAngle              angle2(Degrees(101), 200);
+    std::vector<HarmonicAngle> angles{ angle1, angle2 };
+    pickType<HarmonicAngle>(interactions).parameters = angles;
 
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 0 }, { 2, 3, 1 } };
     pickType<HarmonicBondType>(interactions).indices = std::move(bondIndices);
 
-    std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 1 } };
-    pickType<HarmonicAngleType>(interactions).indices = std::move(angleIndices);
+    std::vector<InteractionIndex<HarmonicAngle>> angleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 1 } };
+    pickType<HarmonicAngle>(interactions).indices = std::move(angleIndices);
 
     return interactions;
 }
@@ -87,9 +87,9 @@ TEST(ListedShims, ParameterConversion)
 
     EXPECT_EQ(gmx_params->iparams.size(), 4);
     EXPECT_EQ(gmx_params->iparams[0].harmonic.rA,
-              pickType<HarmonicBondType>(interactions).parameters[0].equilDistance());
+              pickType<HarmonicBondType>(interactions).parameters[0].equilConstant());
     EXPECT_REAL_EQ_TOL(gmx_params->iparams[2].harmonic.rA,
-                       pickType<HarmonicAngleType>(interactions).parameters[0].equilDistance() / DEG2RAD,
+                       pickType<HarmonicAngle>(interactions).parameters[0].equilConstant() / DEG2RAD,
                        gmx::test::defaultRealTolerance());
 
     EXPECT_EQ(idef->il[F_BONDS].iatoms.size(), 9);

@@ -114,7 +114,7 @@ inline std::tuple<T, T, T> harmonicScalarForce(T kA, T kB, T xA, T xB, T x, T la
 template <class T>
 inline auto bondKernel(T dr, const HarmonicBondType& bond)
 {
-    return harmonicScalarForce(bond.forceConstant(), bond.equilDistance(), dr);
+    return harmonicScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
 }
 
 
@@ -177,8 +177,8 @@ inline std::tuple<T, T, T> g96ScalarForce(T kA, T kB, T xA, T xB, T x, T lambda)
 template <class T>
 inline auto bondKernel(T dr, const G96BondType& bond)
 {
-    // NOTE: Not assuming GROMACS' convention of storing squared bond.equilDistance() for this type
-    return g96ScalarForce(bond.forceConstant(), bond.equilDistance() * bond.equilDistance(), dr * dr);
+    // NOTE: Not assuming GROMACS' convention of storing squared bond.equilConstant() for this type
+    return g96ScalarForce(bond.forceConstant(), bond.equilConstant() * bond.equilConstant(), dr * dr);
 }
 
 
@@ -284,7 +284,7 @@ inline std::tuple<T, T> FENEScalarForce(T k, T x0, T x)
 template <class T>
 inline auto bondKernel(T dr, const FENEBondType& bond)
 {
-    return FENEScalarForce(bond.forceConstant(), bond.equilDistance(), dr);
+    return FENEScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
 }
 
 
@@ -384,7 +384,7 @@ inline std::tuple<T, T, T> halfAttractiveScalarForce(T kA, T kB, T xA, T xB, T x
 template <class T>
 inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 {
-    return halfAttractiveScalarForce(bond.forceConstant(), bond.equilDistance(), dr);
+    return halfAttractiveScalarForce(bond.forceConstant(), bond.equilConstant(), dr);
 }
 
 
@@ -396,9 +396,9 @@ inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 //! Three-center interaction type dispatch
 
 template <class T>
-inline auto threeCenterKernel(T dr, const HarmonicAngleType& angle)
+inline auto threeCenterKernel(T dr, const HarmonicAngle& angle)
 {
-    return harmonicScalarForce(angle.forceConstant(), angle.equilDistance(), dr);
+    return harmonicScalarForce(angle.forceConstant(), angle.equilConstant(), dr);
 }
 
 
@@ -442,7 +442,7 @@ static inline real dihedralPhi(rvec dxIJ, rvec dxKJ, rvec dxKL, rvec m, rvec n)
 template <class T>
 inline auto fourCenterKernel(T phi, const ImproperDihedral& improperDihedral)
 {
-    T deltaPhi = phi - improperDihedral.equilDistance();
+    T deltaPhi = phi - improperDihedral.equilConstant();
     /* deltaPhi cannot be outside (-pi,pi) */
     makeAnglePeriodic(deltaPhi);
     const T force = -improperDihedral.forceConstant()  * deltaPhi;

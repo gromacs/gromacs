@@ -67,7 +67,7 @@ namespace nblib
 
 using SupportedTwoCenterTypes =
         TypeList<HarmonicBondType, G96BondType, CubicBondType, FENEBondType, HalfAttractiveQuarticBondType>;
-using SupportedThreeCenterTypes = TypeList<HarmonicAngleType>;
+using SupportedThreeCenterTypes = TypeList<HarmonicAngle>;
 using SupportedFourCenterTypes = TypeList<ProperDihedral, ImproperDihedral, RyckaertBellemanDihedral>;
 using SupportedFiveCenterTypes = TypeList<Default5Center>;
 

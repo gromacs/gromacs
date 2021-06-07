@@ -104,15 +104,15 @@ protected:
         // one bond between atoms 0-1 with bond1 parameters and another between atoms 1-2 with bond2 parameters
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 1 } };
 
-        HarmonicAngleType                                angle(Degrees(108.53), 397.5);
-        std::vector<HarmonicAngleType>                   angles{ angle };
-        std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 } };
+        HarmonicAngle                                angle(Degrees(108.53), 397.5);
+        std::vector<HarmonicAngle>                   angles{ angle };
+        std::vector<InteractionIndex<HarmonicAngle>> angleIndices{ { 0, 1, 2, 0 } };
 
         pickType<HarmonicBondType>(interactions).indices    = bondIndices;
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        pickType<HarmonicAngleType>(interactions).indices    = angleIndices;
-        pickType<HarmonicAngleType>(interactions).parameters = angles;
+        pickType<HarmonicAngle>(interactions).indices    = angleIndices;
+        pickType<HarmonicAngle>(interactions).parameters = angles;
 
         // initial position for the methanol atoms from the spc-water example
         x = std::vector<gmx::RVec>{ { 1.97, 1.46, 1.209 }, { 1.978, 1.415, 1.082 }, { 1.905, 1.46, 1.03 } };
@@ -153,8 +153,8 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
 
 TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 {
-    auto indices = pickType<HarmonicAngleType>(interactions).indices;
-    auto angles  = pickType<HarmonicAngleType>(interactions).parameters;
+    auto indices = pickType<HarmonicAngle>(interactions).indices;
+    auto angles  = pickType<HarmonicAngle>(interactions).parameters;
     computeForces(indices, angles, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);

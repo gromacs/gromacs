@@ -193,9 +193,9 @@ TEST(NBlibTest, CanAddInteractions)
     molecule.addParticle(ParticleName("H1"), H);
     molecule.addParticle(ParticleName("H2"), H);
 
-    HarmonicBondType  hb(1, 2);
-    CubicBondType     cub(1, 2, 3);
-    HarmonicAngleType ang(Degrees(1), 1);
+    HarmonicBondType hb(1, 2);
+    CubicBondType    cub(1, 2, 3);
+    HarmonicAngle    ang(Degrees(1), 1);
 
     molecule.addInteraction(ParticleName("O"), ParticleName("H1"), hb);
     molecule.addInteraction(ParticleName("O"), ParticleName("H2"), hb);
@@ -209,7 +209,7 @@ TEST(NBlibTest, CanAddInteractions)
     //! cubic bonds
     EXPECT_EQ(pickType<CubicBondType>(interactionData).interactions_.size(), 1);
     //! angular interactions
-    EXPECT_EQ(pickType<HarmonicAngleType>(interactionData).interactions_.size(), 1);
+    EXPECT_EQ(pickType<HarmonicAngle>(interactionData).interactions_.size(), 1);
 }
 
 } // namespace

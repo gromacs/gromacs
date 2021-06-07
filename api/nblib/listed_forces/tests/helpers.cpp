@@ -62,8 +62,8 @@ TEST(NBlibTest, CanSplitListedWork)
 {
     ListedInteractionData interactions;
 
-    HarmonicAngleType angle(Degrees(1), 1);
-    HarmonicBondType  bond(1, 1);
+    HarmonicAngle    angle(Degrees(1), 1);
+    HarmonicBondType bond(1, 1);
 
     int largestIndex = 20;
     int nSplits      = 3; // split ranges: [0,5], [6,11], [12, 19]
@@ -71,30 +71,30 @@ TEST(NBlibTest, CanSplitListedWork)
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{
         { 0, 1, 0 }, { 0, 6, 0 }, { 11, 12, 0 }, { 18, 19, 0 }
     };
-    std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{
+    std::vector<InteractionIndex<HarmonicAngle>> angleIndices{
         { 0, 1, 2, 0 }, { 0, 6, 7, 0 }, { 11, 12, 13, 0 }, { 17, 19, 18, 0 }
     };
 
-    pickType<HarmonicBondType>(interactions).indices  = bondIndices;
-    pickType<HarmonicAngleType>(interactions).indices = angleIndices;
+    pickType<HarmonicBondType>(interactions).indices = bondIndices;
+    pickType<HarmonicAngle>(interactions).indices    = angleIndices;
 
     std::vector<ListedInteractionData> splitInteractions =
             splitListedWork(interactions, largestIndex, nSplits);
 
     std::vector<InteractionIndex<HarmonicBondType>> refBondIndices0{ { 0, 1, 0 }, { 0, 6, 0 } };
-    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices0{ { 0, 1, 2, 0 }, { 0, 6, 7, 0 } };
-    std::vector<InteractionIndex<HarmonicBondType>>  refBondIndices1{ { 11, 12, 0 } };
-    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices1{ { 11, 12, 13, 0 } };
-    std::vector<InteractionIndex<HarmonicBondType>>  refBondIndices2{ { 18, 19, 0 } };
-    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices2{ { 17, 19, 18, 0 } };
+    std::vector<InteractionIndex<HarmonicAngle>> refAngleIndices0{ { 0, 1, 2, 0 }, { 0, 6, 7, 0 } };
+    std::vector<InteractionIndex<HarmonicBondType>> refBondIndices1{ { 11, 12, 0 } };
+    std::vector<InteractionIndex<HarmonicAngle>>    refAngleIndices1{ { 11, 12, 13, 0 } };
+    std::vector<InteractionIndex<HarmonicBondType>> refBondIndices2{ { 18, 19, 0 } };
+    std::vector<InteractionIndex<HarmonicAngle>>    refAngleIndices2{ { 17, 19, 18, 0 } };
 
     EXPECT_EQ(refBondIndices0, pickType<HarmonicBondType>(splitInteractions[0]).indices);
     EXPECT_EQ(refBondIndices1, pickType<HarmonicBondType>(splitInteractions[1]).indices);
     EXPECT_EQ(refBondIndices2, pickType<HarmonicBondType>(splitInteractions[2]).indices);
 
-    EXPECT_EQ(refAngleIndices0, pickType<HarmonicAngleType>(splitInteractions[0]).indices);
-    EXPECT_EQ(refAngleIndices1, pickType<HarmonicAngleType>(splitInteractions[1]).indices);
-    EXPECT_EQ(refAngleIndices2, pickType<HarmonicAngleType>(splitInteractions[2]).indices);
+    EXPECT_EQ(refAngleIndices0, pickType<HarmonicAngle>(splitInteractions[0]).indices);
+    EXPECT_EQ(refAngleIndices1, pickType<HarmonicAngle>(splitInteractions[1]).indices);
+    EXPECT_EQ(refAngleIndices2, pickType<HarmonicAngle>(splitInteractions[2]).indices);
 }
 
 
