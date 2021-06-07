@@ -167,7 +167,9 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
 {
     const bool needComReduction    = doStopCM_ && do_per_step(step, nstcomm_);
     const bool needGlobalReduction = step == energyReductionStep_ || step == virialReductionStep_
-                                     || needComReduction || do_per_step(step, nstglobalcomm_);
+                                     || needComReduction || do_per_step(step, nstglobalcomm_)
+                                     || (EI_VV(inputrec_->eI) && inputrecNvtTrotter(inputrec_)
+                                         && do_per_step(step - 1, nstglobalcomm_));
 
     // TODO: CGLO_GSTAT is only used for needToSumEkinhOld_, i.e. to signal that we do or do not
     //       sum the previous kinetic energy. We should simplify / clarify this.

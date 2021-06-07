@@ -155,6 +155,9 @@ void DomDecHelper::partitionSystem(bool                     verbose,
 {
     ForceBuffers* forcePointer = statePropagatorData_->forcePointer();
 
+    // Work-around to keep dd_partition_system from failing -
+    // we're not actually using the information related to Nose-Hoover chains
+    localState->nhchainlength = inputrec_->opts.nhchainlength;
     // Distribute the charge groups over the nodes from the master node
     dd_partition_system(fplog_,
                         mdlog_,

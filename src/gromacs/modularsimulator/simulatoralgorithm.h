@@ -335,7 +335,7 @@ public:
     std::optional<std::any> builderData(const std::string& key) const;
     //! \copydoc ModularSimulatorAlgorithmBuilder::storeSimulationData()
     template<typename ValueType>
-    void storeSimulationData(const std::string& key, std::unique_ptr<ValueType> value);
+    void storeSimulationData(const std::string& key, ValueType&& value);
     //! \copydoc ModularSimulatorAlgorithmBuilder::simulationData()
     template<typename ValueType>
     std::optional<ValueType*> simulationData(const std::string& key);
@@ -423,7 +423,7 @@ private:
      * Functionality allows elements to share arbitrary data.
      */
     template<typename ValueType>
-    void storeSimulationData(const std::string& key, std::unique_ptr<ValueType> value);
+    void storeSimulationData(const std::string& key, ValueType&& value);
 
     /*! \brief Get previously stored simulation data.
      *
@@ -696,10 +696,9 @@ void ModularSimulatorAlgorithmBuilderHelper::storeBuilderData(const std::string&
 }
 
 template<typename ValueType>
-void ModularSimulatorAlgorithmBuilderHelper::storeSimulationData(const std::string&         key,
-                                                                 std::unique_ptr<ValueType> value)
+void ModularSimulatorAlgorithmBuilderHelper::storeSimulationData(const std::string& key, ValueType&& value)
 {
-    builder_->storeSimulationData(key, std::move(value));
+    builder_->storeSimulationData(key, std::forward<ValueType>(value));
 }
 
 template<typename ValueType>
@@ -709,13 +708,13 @@ std::optional<ValueType*> ModularSimulatorAlgorithmBuilderHelper::simulationData
 }
 
 template<typename ValueType>
-void ModularSimulatorAlgorithmBuilder::storeSimulationData(const std::string&         key,
-                                                           std::unique_ptr<ValueType> value)
+void ModularSimulatorAlgorithmBuilder::storeSimulationData(const std::string& key, ValueType&& value)
 {
     GMX_RELEASE_ASSERT(simulationData_.count(key) == 0,
-                       "Key " + key + " was already stored in simulation data.");
-    registerWithInfrastructureAndSignallers(value.get());
-    simulationData_[key] = std::make_unique<std::any>(value.release());
+                       formatString("Key %s was already stored in simulation data.", key.c_str()).c_str());
+    simulationData_[key] = std::make_unique<std::any>(std::forward<ValueType>(value));
+    auto* ptrToData      = simulationData<ValueType>(key).value();
+    registerWithInfrastructureAndSignallers(ptrToData);
 }
 
 template<typename ValueType>
@@ -726,9 +725,13 @@ std::optional<ValueType*> ModularSimulatorAlgorithmBuilder::simulationData(const
     {
         return std::nullopt;
     }
-    ValueType** data = std::any_cast<ValueType*>(iter->second.get());
-    GMX_RELEASE_ASSERT(data != nullptr, "Key " + key + " does not have the expected type.");
-    return *data;
+    ValueType* data = std::any_cast<ValueType>(iter->second.get());
+    GMX_RELEASE_ASSERT(data != nullptr,
+                       formatString("Object stored in simulation data under key %s does not have "
+                                    "the expected type.",
+                                    key.c_str())
+                               .c_str());
+    return data;
 }
 
 
