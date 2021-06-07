@@ -359,6 +359,14 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif
+#if GMX_SYCL_DPCPP
+    writer->writeLine(formatString("SYCL DPCPP flags:   %s", SYCL_DPCPP_COMPILER_FLAGS));
+#endif
+#if GMX_SYCL_HIPSYCL
+    writer->writeLine(formatString("hipSYCL launcher:   %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
+    writer->writeLine(formatString("hipSYCL flags:      %s", SYCL_HIPSYCL_COMPILER_FLAGS));
+    writer->writeLine(formatString("hipSYCL platforms:  %s", SYCL_HIPSYCL_PLATFORMS));
+#endif
 }
 
 //! \endcond
