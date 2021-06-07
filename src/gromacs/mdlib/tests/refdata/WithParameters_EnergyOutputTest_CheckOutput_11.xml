@@ -3,7 +3,7 @@
 <ReferenceData>
   <File Name="EnergyFile">
     <Sequence Name="EnergyTerms">
-      <Int Name="Length">114</Int>
+      <Int Name="Length">113</Int>
       <EnergyTerm>
         <String Name="Name">LJ-14</String>
         <String Name="Units">kJ/mol</String>
@@ -34,10 +34,6 @@
       </EnergyTerm>
       <EnergyTerm>
         <String Name="Name">COM Pull En.</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Quantum En.</String>
         <String Name="Units">kJ/mol</String>
       </EnergyTerm>
       <EnergyTerm>
@@ -469,7 +465,7 @@
         <String Name="Step">0</String>
         <String Name="NumSteps">0</String>
         <Sequence Name="EnergyTerms">
-          <Int Name="Length">114</Int>
+          <Int Name="Length">113</Int>
           <EnergyTerm>
             <String Name="Name">LJ-14</String>
             <Real Name="Value">11.499999999999995</Real>
@@ -501,10 +497,6 @@
           <EnergyTerm>
             <String Name="Name">COM Pull En.</String>
             <Real Name="Value">12.89999999999999</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Quantum En.</String>
-            <Real Name="Value">11.099999999999996</Real>
           </EnergyTerm>
           <EnergyTerm>
             <String Name="Name">Potential</String>
@@ -930,23 +922,25 @@
       </Frame>
     </Sequence>
   </File>
-  <Int Name="Number of Energy Terms">114</Int>
+  <Int Name="Number of Energy Terms">113</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
+
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
-   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
-    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
-    Kinetic En.   Total Energy  Conserved En.    Temperature Pres. DC (bar)
-    1.06000e+01    1.07000e+01    1.30000e+01    1.08000e+01    1.26000e+01
- Pressure (bar)    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl
-    1.09000e+01    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01
-    dVbonded/dl dVrestraint/dl   Constr. rmsd
-    1.21000e+01    1.22000e+01    0.00000e+00
+   Coul. recip.      LJ recip.   COM Pull En.      Potential    Kinetic En.
+    1.13000e+01    1.14000e+01    1.29000e+01    1.05000e+01    1.06000e+01
+   Total Energy  Conserved En.    Temperature Pres. DC (bar) Pressure (bar)
+    1.07000e+01    1.30000e+01    1.08000e+01    1.26000e+01    1.09000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
+ dVrestraint/dl   Constr. rmsd
+    1.22000e+01    0.00000e+00
 
 Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
+
 	&lt;======  ###############  ==&gt;
 	&lt;====  A V E R A G E S  ====&gt;
 	&lt;==  ###############  ======&gt;
@@ -956,14 +950,14 @@ Current ref_t for group Lipid:     25.8
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
-   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
-    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
-    Kinetic En.   Total Energy  Conserved En.    Temperature Pres. DC (bar)
-    1.06000e+01    1.07000e+01    1.30000e+01    1.08000e+01    1.26000e+01
- Pressure (bar)    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl
-    1.09000e+01    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01
-    dVbonded/dl dVrestraint/dl   Constr. rmsd
-    1.21000e+01    1.22000e+01    0.00000e+00
+   Coul. recip.      LJ recip.   COM Pull En.      Potential    Kinetic En.
+    1.13000e+01    1.14000e+01    1.29000e+01    1.05000e+01    1.06000e+01
+   Total Energy  Conserved En.    Temperature Pres. DC (bar) Pressure (bar)
+    1.07000e+01    1.30000e+01    1.08000e+01    1.26000e+01    1.09000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
+ dVrestraint/dl   Constr. rmsd
+    1.22000e+01    0.00000e+00
 
           Box-X          Box-Y          Box-Z
     1.99000e+01    2.03000e+01    2.07000e+01

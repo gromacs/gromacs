@@ -219,7 +219,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 
     bEner_[F_LJ]   = !bBHAM;
     bEner_[F_BHAM] = bBHAM;
-    bEner_[F_EQM]  = inputrec.bQMMM;
     bEner_[F_RF_EXCL] = (EEL_RF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
     bEner_[F_COUL_RECIP]   = EEL_FULL(inputrec.coulombtype);
     bEner_[F_LJ_RECIP]     = EVDW_PME(inputrec.vdwtype);
@@ -255,11 +254,16 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
 
+    // Check MDModules for any energy output
     MDModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
     mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
 
     bEner_[F_DENSITYFITTING] = mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
 
+    MDModulesEnergyOutputToQMMMRequestChecker mdModulesAddOutputToQMMMFieldRequest;
+    mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToQMMMFieldRequest);
+
+    bEner_[F_EQM] = mdModulesAddOutputToQMMMFieldRequest.energyOutputToQMMM_;
 
     // Counting the energy terms that will be printed and saving their names
     f_nre_ = 0;
@@ -1209,8 +1213,8 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[b].sub[0].type = XdrDataType::Float;
             fr.block[b].sub[0].fval = block[b];
 #else
-            fr.block[b].sub[0].type = XdrDataType::Double;
-            fr.block[b].sub[0].dval = block[b];
+            fr.block[b].sub[0].type  = XdrDataType::Double;
+            fr.block[b].sub[0].dval  = block[b];
 #endif
         }
 

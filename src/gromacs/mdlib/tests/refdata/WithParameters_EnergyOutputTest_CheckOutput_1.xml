@@ -3,7 +3,7 @@
 <ReferenceData>
   <File Name="EnergyFile">
     <Sequence Name="EnergyTerms">
-      <Int Name="Length">45</Int>
+      <Int Name="Length">44</Int>
       <EnergyTerm>
         <String Name="Name">LJ-14</String>
         <String Name="Units">kJ/mol</String>
@@ -36,10 +36,7 @@
         <String Name="Name">COM Pull En.</String>
         <String Name="Units">kJ/mol</String>
       </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Quantum En.</String>
-        <String Name="Units">kJ/mol</String>
-      </EnergyTerm>
+
       <EnergyTerm>
         <String Name="Name">Potential</String>
         <String Name="Units">kJ/mol</String>
@@ -193,7 +190,7 @@
         <String Name="Step">0</String>
         <String Name="NumSteps">0</String>
         <Sequence Name="EnergyTerms">
-          <Int Name="Length">45</Int>
+          <Int Name="Length">44</Int>
           <EnergyTerm>
             <String Name="Name">LJ-14</String>
             <Real Name="Value">11.499999999999995</Real>
@@ -225,10 +222,6 @@
           <EnergyTerm>
             <String Name="Name">COM Pull En.</String>
             <Real Name="Value">12.89999999999999</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Quantum En.</String>
-            <Real Name="Value">11.099999999999996</Real>
           </EnergyTerm>
           <EnergyTerm>
             <String Name="Name">Potential</String>
@@ -378,19 +371,17 @@
       </Frame>
     </Sequence>
   </File>
-  <Int Name="Number of Energy Terms">45</Int>
+  <Int Name="Number of Energy Terms">44</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
 
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
-   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
-    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
-    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
-    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
- dVrestraint/dl
-    1.22000e+01
+   Coul. recip.      LJ recip.   COM Pull En.      Potential    dVremain/dl
+    1.13000e+01    1.14000e+01    1.29000e+01    1.05000e+01    1.24000e+01
+       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl dVrestraint/dl
+    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01    1.22000e+01
 
 Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
@@ -404,12 +395,10 @@ Current ref_t for group Lipid:     25.8
    Energies (kJ/mol)
           LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
     1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
-   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
-    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
-    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
-    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
- dVrestraint/dl
-    1.22000e+01
+   Coul. recip.      LJ recip.   COM Pull En.      Potential    dVremain/dl
+    1.13000e+01    1.14000e+01    1.29000e+01    1.05000e+01    1.24000e+01
+       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl dVrestraint/dl
+    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01    1.22000e+01
 
    Total Dipole (D)
     2.44000e+01    2.45000e+01    2.46000e+01

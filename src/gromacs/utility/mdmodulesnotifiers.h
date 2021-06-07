@@ -78,6 +78,16 @@ struct MDModulesEnergyOutputToDensityFittingRequestChecker
     bool energyOutputToDensityFitting_ = false;
 };
 
+/*! \libinternal \brief Check if QMMM module outputs energy to a specific field.
+ *
+ * Ensures that energy is output for QMMM module.
+ */
+struct MDModulesEnergyOutputToQMMMRequestChecker
+{
+    //! Trigger output to density fitting energy field
+    bool energyOutputToQMMM_ = false;
+};
+
 /*! \libinternal
  * \brief Collect errors for the energy calculation frequency.
  *
@@ -289,6 +299,9 @@ struct MDModulesNotifiers
      * MDModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
      *                      report if they want to write their energy output
      *                      to the density fitting field in the energy files
+     * MDModulesEnergyOutputToQMMMRequestChecker* enables QMMM module to
+     *                      report if it want to write their energy output
+     *                      to the "Quantum En." field in the energy files
      * SeparatePmeRanksPermitted* enables modules to report if they want
      *                      to disable dedicated PME ranks
      * const PbcType& provides modules with the periodic boundary condition type
@@ -305,6 +318,7 @@ struct MDModulesNotifiers
                            const MDLogger&,
                            const gmx_mtop_t&,
                            MDModulesEnergyOutputToDensityFittingRequestChecker*,
+                           MDModulesEnergyOutputToQMMMRequestChecker*,
                            SeparatePmeRanksPermitted*,
                            const PbcType&,
                            const SimulationTimeStep&,
