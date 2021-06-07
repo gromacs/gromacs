@@ -143,26 +143,6 @@ template void writeKvtCheckpointValue(const real&               value,
 
 } // namespace gmx
 
-/*! \brief Enum of values that describe the contents of a cpt file
- * whose format matches a version number
- *
- * The enum helps the code be more self-documenting and ensure merges
- * do not silently resolve when two patches make the same bump. When
- * adding new functionality, add a new element just above cptv_Count
- * in this enumeration, and write code below that does the right thing
- * according to the value of file_version.
- */
-enum cptv
-{
-    cptv_Unknown = 17,                  /**< Version before numbering scheme */
-    cptv_RemoveBuildMachineInformation, /**< remove functionality that makes mdrun builds non-reproducible */
-    cptv_ComPrevStepAsPullGroupReference, /**< Allow using COM of previous step as pull group PBC reference */
-    cptv_PullAverage,      /**< Added possibility to output average pull force and position */
-    cptv_MDModules,        /**< Added checkpointing for MDModules */
-    cptv_ModularSimulator, /**< Added checkpointing for modular simulator */
-    cptv_Count             /**< the total number of cptv versions */
-};
-
 /*! \brief Version number of the file format written to checkpoint
  * files by this version of the code.
  *
@@ -174,11 +154,12 @@ enum cptv
  * (but can read a new format when new entries are not present).
  *
  * The cpt_version increases whenever the file format in the main
- * development branch changes, due to an extension of the cptv enum above.
+ * development branch changes, due to an extension of the CheckPointVersion
+ * enum (see src/gromacs/fileio/checkpoint.h).
  * Backward compatibility for reading old run input files is maintained
  * by checking this version number against that of the file and then using
  * the correct code path. */
-static const int cpt_version = cptv_Count - 1;
+static constexpr CheckPointVersion cpt_version = CheckPointVersion::CurrentVersion;
 
 const char* enumValueToString(StateEntry enumValue)
 {
@@ -1157,15 +1138,15 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     do_cpt_string_err(xd, "generating program", contents->fprog, list);
     do_cpt_string_err(xd, "generation time", contents->ftime, list);
     contents->file_version = cpt_version;
-    do_cpt_int_err(xd, "checkpoint file version", &contents->file_version, list);
+    do_cpt_enum_as_int<CheckPointVersion>(xd, "checkpoint file version", &contents->file_version, list);
     if (contents->file_version > cpt_version)
     {
         gmx_fatal(FARGS,
                   "Attempting to read a checkpoint file of version %d with code of version %d\n",
-                  contents->file_version,
-                  cpt_version);
+                  static_cast<int>(contents->file_version),
+                  static_cast<int>(cpt_version));
     }
-    if (contents->file_version >= 13)
+    if (contents->file_version >= CheckPointVersion::DoublePrecisionBuild)
     {
         do_cpt_int_err(xd, "GROMACS double precision", &contents->double_prec, list);
     }
@@ -1173,13 +1154,13 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         contents->double_prec = -1;
     }
-    if (contents->file_version >= 12)
+    if (contents->file_version >= CheckPointVersion::HostInformation)
     {
         do_cpt_string_err(xd, "generating host", fhost, list);
     }
     do_cpt_int_err(xd, "#atoms", &contents->natoms, list);
     do_cpt_int_err(xd, "#T-coupling groups", &contents->ngtc, list);
-    if (contents->file_version >= 10)
+    if (contents->file_version >= CheckPointVersion::NoseHooverThermostat)
     {
         do_cpt_int_err(xd, "#Nose-Hoover T-chains", &contents->nhchainlength, list);
     }
@@ -1187,7 +1168,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         contents->nhchainlength = 1;
     }
-    if (contents->file_version >= 11)
+    if (contents->file_version >= CheckPointVersion::NoseHooverBarostat)
     {
         do_cpt_int_err(xd, "#Nose-Hoover T-chains for barostat ", &contents->nnhpres, list);
     }
@@ -1195,7 +1176,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         contents->nnhpres = 0;
     }
-    if (contents->file_version >= 14)
+    if (contents->file_version >= CheckPointVersion::LambdaStateAndHistory)
     {
         do_cpt_int_err(xd, "# of total lambda states ", &contents->nlambda, list);
     }
@@ -1211,7 +1192,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
             contents->eIntegrator = static_cast<IntegrationAlgorithm>(integrator);
         }
     }
-    if (contents->file_version >= 3)
+    if (contents->file_version >= CheckPointVersion::SafeSimulationPart)
     {
         do_cpt_int_err(xd, "simulation part #", &contents->simulation_part, list);
     }
@@ -1219,7 +1200,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         contents->simulation_part = 1;
     }
-    if (contents->file_version >= 5)
+    if (contents->file_version >= CheckPointVersion::SafeSteps)
     {
         do_cpt_step_err(xd, "step", &contents->step, list);
     }
@@ -1236,7 +1217,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     do_cpt_int_err(xd, "dd_nc[z]", &contents->dd_nc[ZZ], list);
     do_cpt_int_err(xd, "#PME-only ranks", &contents->npme, list);
     do_cpt_int_err(xd, "state flags", &contents->flags_state, list);
-    if (contents->file_version >= 4)
+    if (contents->file_version >= CheckPointVersion::EkinDataAndFlags)
     {
         do_cpt_int_err(xd, "ekin data flags", &contents->flags_eks, list);
         do_cpt_int_err(xd, "energy history flags", &contents->flags_enh, list);
@@ -1250,7 +1231,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
                                      | (1 << (static_cast<int>(StateEntry::OrireDtav) + 2))
                                      | (1 << (static_cast<int>(StateEntry::OrireDtav) + 3))));
     }
-    if (contents->file_version >= 14)
+    if (contents->file_version >= CheckPointVersion::LambdaStateAndHistory)
     {
         do_cpt_int_err(xd, "df history flags", &contents->flags_dfh, list);
     }
@@ -1259,7 +1240,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         contents->flags_dfh = 0;
     }
 
-    if (contents->file_version >= 15)
+    if (contents->file_version >= CheckPointVersion::EssentialDynamics)
     {
         do_cpt_int_err(xd, "ED data sets", &contents->nED, list);
     }
@@ -1268,7 +1249,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         contents->nED = 0;
     }
 
-    if (contents->file_version >= 16)
+    if (contents->file_version >= CheckPointVersion::SwapState)
     {
         int swapState = static_cast<int>(contents->eSwapCoords);
         do_cpt_int_err(xd, "swap", &swapState, list);
@@ -1282,7 +1263,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         contents->eSwapCoords = SwapType::No;
     }
 
-    if (contents->file_version >= 17)
+    if (contents->file_version >= CheckPointVersion::AwhHistoryFlags)
     {
         do_cpt_int_err(xd, "AWH history flags", &contents->flags_awhh, list);
     }
@@ -1291,7 +1272,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         contents->flags_awhh = 0;
     }
 
-    if (contents->file_version >= 18)
+    if (contents->file_version >= CheckPointVersion::RemoveBuildMachineInformation)
     {
         do_cpt_int_err(xd, "pull history flags", &contents->flagsPullHistory, list);
     }
@@ -1300,7 +1281,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         contents->flagsPullHistory = 0;
     }
 
-    if (contents->file_version >= cptv_ModularSimulator)
+    if (contents->file_version >= CheckPointVersion::ModularSimulator)
     {
         do_cpt_bool_err(
                 xd, "Is modular simulator checkpoint", &contents->isModularSimulatorCheckpoint, list);
@@ -1311,12 +1292,12 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
 }
 
-static int do_cpt_footer(XDR* xd, int file_version)
+static int do_cpt_footer(XDR* xd, CheckPointVersion file_version)
 {
     bool_t res = 0;
     int    magic;
 
-    if (file_version >= 2)
+    if (file_version >= CheckPointVersion::AddMagicNumber)
     {
         magic = CPT_MAGIC2;
         res   = xdr_int(xd, &magic);
@@ -2221,12 +2202,12 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
     return ret;
 }
 
-static void do_cpt_mdmodules(int                            fileVersion,
+static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
                              t_fileio*                      checkpointFileHandle,
                              const gmx::MDModulesNotifiers& mdModulesNotifiers,
                              FILE*                          outputFile)
 {
-    if (fileVersion >= cptv_MDModules)
+    if (fileVersion >= CheckPointVersion::MDModules)
     {
         gmx::FileIOXdrSerializer serializer(checkpointFileHandle);
         gmx::KeyValueTreeObject  mdModuleCheckpointParameterTree =
@@ -2243,7 +2224,11 @@ static void do_cpt_mdmodules(int                            fileVersion,
     }
 }
 
-static int do_cpt_files(XDR* xd, gmx_bool bRead, std::vector<gmx_file_position_t>* outputfiles, FILE* list, int file_version)
+static int do_cpt_files(XDR*                              xd,
+                        gmx_bool                          bRead,
+                        std::vector<gmx_file_position_t>* outputfiles,
+                        FILE*                             list,
+                        CheckPointVersion                 file_version)
 {
     gmx_off_t                   offset;
     gmx_off_t                   mask = 0xFFFFFFFFL;
@@ -2306,7 +2291,7 @@ static int do_cpt_files(XDR* xd, gmx_bool bRead, std::vector<gmx_file_position_t
                 return -1;
             }
         }
-        if (file_version >= 8)
+        if (file_version >= CheckPointVersion::FileChecksumAndSize)
         {
             if (do_cpt_int(xd, "file_checksum_size", &outputfile.checksumSize, list) != 0)
             {
@@ -2794,7 +2779,7 @@ static void read_checkpoint(const char*                    fn,
         }
     }
 
-    if (headerContents->file_version < 6)
+    if (headerContents->file_version < CheckPointVersion::Version45)
     {
         gmx_fatal(FARGS,
                   "Continuing from checkpoint files written before GROMACS 4.5 is not supported");
@@ -2846,7 +2831,7 @@ static void read_checkpoint(const char*                    fn,
         cp_error();
     }
     do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifiers, nullptr);
-    if (headerContents->file_version >= cptv_ModularSimulator)
+    if (headerContents->file_version >= CheckPointVersion::ModularSimulator)
     {
         gmx::FileIOXdrSerializer serializer(fp);
         modularSimulatorCheckpointData->deserialize(&serializer);
@@ -3022,7 +3007,7 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
     }
     gmx::MDModulesNotifiers mdModuleNotifiers;
     do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifiers, nullptr);
-    if (headerContents.file_version >= cptv_ModularSimulator)
+    if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
         // Store modular checkpoint data into modularSimulatorCheckpointData
         gmx::FileIOXdrSerializer serializer(fp);
@@ -3141,7 +3126,7 @@ void list_checkpoint(const char* fn, FILE* out)
     }
     gmx::MDModulesNotifiers mdModuleNotifiers;
     do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifiers, out);
-    if (headerContents.file_version >= cptv_ModularSimulator)
+    if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
         gmx::FileIOXdrSerializer      serializer(fp);
         gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;

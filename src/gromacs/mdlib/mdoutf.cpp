@@ -355,7 +355,7 @@ static void write_checkpoint(const char*                     fn,
     swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
     SwapType       eSwapCoords = (swaphist ? swaphist->eSwapCoords : SwapType::No);
 
-    CheckpointHeaderContents headerContents = { 0,
+    CheckpointHeaderContents headerContents = { CheckPointVersion::UnknownVersion0,
                                                 { 0 },
                                                 { 0 },
                                                 { 0 },

@@ -347,7 +347,8 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
         // If the precision does not match, we cannot continue with
         // appending, and will switch to not appending unless
         // instructed otherwise.
-        if (headerContents.file_version >= 13 && headerContents.double_prec != GMX_DOUBLE)
+        if (headerContents.file_version >= CheckPointVersion::DoublePrecisionBuild
+            && headerContents.double_prec != GMX_DOUBLE)
         {
             if (appendingBehavior == AppendingBehavior::Appending)
             {
