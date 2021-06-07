@@ -110,7 +110,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     t_mdatoms* mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
     {
-        dd_sort_local_top(*cr->dd, mdatoms, top);
+        dd_sort_local_top(*cr->dd, fr->atomInfo, top);
     }
     else
     {

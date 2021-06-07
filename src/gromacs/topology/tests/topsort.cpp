@@ -63,12 +63,11 @@ using testing::Pointwise;
 
 TEST(TopSortTest, WorksOnEmptyIdef)
 {
-    gmx_ffparams_t         forcefieldParams;
-    InteractionDefinitions idef(forcefieldParams);
-    real*                  emptyChargeA = nullptr;
-    real*                  emptyChargeB = nullptr;
+    gmx_ffparams_t          forcefieldParams;
+    InteractionDefinitions  idef(forcefieldParams);
+    ArrayRef<const int64_t> emptyAtomInfo;
 
-    gmx_sort_ilist_fe(&idef, emptyChargeA, emptyChargeB);
+    gmx_sort_ilist_fe(&idef, emptyAtomInfo);
 
     EXPECT_EQ(0, idef.numNonperturbedInteractions[F_BONDS]) << "empty idef has no perturbed bonds";
     EXPECT_THAT(idef.il[F_BONDS].iatoms, IsEmpty());
@@ -120,10 +119,9 @@ TEST(TopSortTest, WorksOnIdefWithNoPerturbedInteraction)
     // F_LJ14
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
-    std::vector<real> chargeA{ -1, 2 };
-    std::vector<real> chargeB{ -1, 2 };
+    std::vector<int64_t> atomInfo{ 0, 0 };
 
-    gmx_sort_ilist_fe(&idef, chargeA.data(), chargeB.data());
+    gmx_sort_ilist_fe(&idef, atomInfo);
 
     EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
             << "idef with no perturbed bonds has no perturbed bonds";
@@ -155,10 +153,9 @@ TEST(TopSortTest, WorksOnIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makePerturbedLJ14Params(100, 10000, 200, 20000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, perturbedBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<real> chargeA{ -1, 2, -2, 0 };
-    std::vector<real> chargeB{ -1, 2, 4, 0 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0 };
 
-    gmx_sort_ilist_fe(&idef, chargeA.data(), chargeB.data());
+    gmx_sort_ilist_fe(&idef, atomInfo);
 
     EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
             << "idef with a perturbed bond has a perturbed bond";
@@ -191,10 +188,9 @@ TEST(TopSortTest, SortsIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, bondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<real> chargeA{ -1, 2, -2, 0 };
-    std::vector<real> chargeB{ -1, 2, 4, 0 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0 };
 
-    gmx_sort_ilist_fe(&idef, chargeA.data(), chargeB.data());
+    gmx_sort_ilist_fe(&idef, atomInfo);
 
     EXPECT_EQ(1, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
             << "idef with a perturbed bond has a perturbed bond";
@@ -236,10 +232,10 @@ TEST(TopSortTest, SortsMoreComplexIdefWithPerturbedInteractions)
     forcefieldParams.iparams.push_back(makeUnperturbedLJ14Params(100, 10000));
     idef.il[F_LJ14].push_back(forcefieldParams.iparams.size() - 1, moreBondAtoms);
     // Perturb the charge of atom 2, affecting the non-perturbed LJ14 above
-    std::vector<real> chargeA{ -1, 2, -2, 0, 1, -2, 3, -3 };
-    std::vector<real> chargeB{ -1, 2, 4, 0, 1, -2, 3, -3 };
+    std::vector<int64_t> atomInfo{ 0, 0, sc_atomInfo_HasPerturbedChargeIn14Interaction, 0, 0, 0,
+                                   0, 0 };
 
-    gmx_sort_ilist_fe(&idef, chargeA.data(), chargeB.data());
+    gmx_sort_ilist_fe(&idef, atomInfo);
 
     EXPECT_EQ(2, idef.numNonperturbedInteractions[F_BONDS] / (NRAL(F_BONDS) + 1))
             << "idef with some perturbed bonds has some perturbed bonds";

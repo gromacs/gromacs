@@ -330,9 +330,16 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
                 {
                     atomInfo |= gmx::sc_atomInfo_HasCharge;
                 }
-                if (fr->efep != FreeEnergyPerturbationType::No && PERTURBED(atom))
+                if (fr->efep != FreeEnergyPerturbationType::No)
                 {
-                    atomInfo |= gmx::sc_atomInfo_FreeEnergyPerturbation;
+                    if (PERTURBED(atom))
+                    {
+                        atomInfo |= gmx::sc_atomInfo_FreeEnergyPerturbation;
+                    }
+                    if (atomHasPerturbedChargeIn14Interaction(a, molt))
+                    {
+                        atomInfo |= gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction;
+                    }
                 }
             }
         }

@@ -262,6 +262,20 @@ gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_m
 /* Returns a single t_atoms struct for the whole system */
 t_atoms gmx_mtop_global_atoms(const gmx_mtop_t& mtop);
 
+/*! \brief Return whether the atom with the given index is within a
+ * 1-4 interaction within the given molecule type and its charge is
+ * perturbed.
+ *
+ * Some 1-4 interactions like F_COUL14 have the charges stored in the
+ * iparams list, but others do not. The commonly used F_LJ14 gets its
+ * charges from the topology, so we need more detailed checks for it,
+ * when FEP is active.
+ *
+ * \param[in] atomIndex  Index within range [0, molt.nr)
+ * \param[in] molt       Moleculetype to consider
+ * \return               Whether this atom is in a 1-4 interaction and charge is perturbed
+ * */
+bool atomHasPerturbedChargeIn14Interaction(int atomIndex, const gmx_moltype_t& molt);
 
 /*! \brief
  * Populate a 'local' topology for the whole system.

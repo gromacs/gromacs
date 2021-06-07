@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,15 +36,16 @@
  * \brief
  * Implements test of mtop routines
  *
- * \author Roland Schulz <roland.schulz@intel.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_topology
  */
 #include "gmxpre.h"
 
+#include "gromacs/topology/mtop_util.h"
+
 #include <gtest/gtest.h>
 
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/topology/ifunc.h"
 
 namespace gmx
 {
@@ -160,6 +161,71 @@ TEST(MtopTest, CanFindResidueStartAndEndAtoms)
             referenceRangeIt++;
         }
         rangeIndex++;
+    }
+}
+
+TEST(MtopTest, AtomHasPerturbedChargeIn14Interaction)
+{
+    gmx_moltype_t molt;
+    molt.atoms.nr   = 0;
+    molt.atoms.atom = nullptr;
+    EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt)) << "empty moltype has none";
+
+    {
+        SCOPED_TRACE("Use a moltype that has no perturbed charges at all");
+        const int numAtoms = 4;
+        init_t_atoms(&molt.atoms, numAtoms, false);
+        for (int i = 0; i != numAtoms; ++i)
+        {
+            molt.atoms.atom[i].q  = 1.0;
+            molt.atoms.atom[i].qB = 1.0;
+        }
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(1, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
+    }
+
+    {
+        SCOPED_TRACE("Use a moltype that has a perturbed charge, but no interactions");
+        molt.atoms.atom[1].q  = 1.0;
+        molt.atoms.atom[1].qB = -1.0;
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(1, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
+    }
+
+    {
+        SCOPED_TRACE("Use a moltype that has a perturbed charge but no 1-4 interactions");
+        std::array<int, 2> bondAtoms = { 0, 1 };
+        molt.ilist[F_BONDS].push_back(0, bondAtoms);
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(1, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
+    }
+
+    {
+        SCOPED_TRACE(
+                "Use a moltype that has a perturbed charge, but not on an atom with a 1-4 "
+                "interaction");
+        std::array<int, 2> pairAtoms = { 2, 3 };
+        molt.ilist[F_LJ14].push_back(0, pairAtoms);
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(1, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
+    }
+
+    {
+        SCOPED_TRACE("Use a moltype that has a perturbed charge on an atom with a 1-4 interaction");
+        std::array<int, 2> perturbedPairAtoms = { 1, 2 };
+        molt.ilist[F_LJ14].push_back(0, perturbedPairAtoms);
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(0, molt));
+        EXPECT_TRUE(atomHasPerturbedChargeIn14Interaction(1, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
+        EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
     }
 }
 

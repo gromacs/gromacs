@@ -41,6 +41,7 @@
 
 #include <cstdio>
 
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -131,13 +132,12 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
     return bPert;
 }
 
-static gmx_bool ip_q_pert(int ftype, const t_iatom* ia, const t_iparams* ip, const real* qA, const real* qB)
+
+//! Return whether the two atom indices in a 1-4 interaction have perturbed charges per \c atomInfo
+static bool hasPerturbedChargeIn14Interaction(int atom0, int atom1, gmx::ArrayRef<const int64_t> atomInfo)
 {
-    /* 1-4 interactions do not have the charges stored in the iparams list,
-     * so we need a separate check for those.
-     */
-    return (ip_pert(ftype, ip + ia[0])
-            || (ftype == F_LJ14 && (qA[ia[1]] != qB[ia[1]] || qA[ia[2]] != qB[ia[2]])));
+    return (bool(atomInfo[atom0] & gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction)
+            || bool(atomInfo[atom1] & gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction));
 }
 
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
@@ -176,13 +176,8 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     return bPert;
 }
 
-void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real* qB)
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int64_t> atomInfo)
 {
-    if (qB == nullptr)
-    {
-        qB = qA;
-    }
-
     bool havePerturbedInteractions = false;
 
     int      iabuf_nalloc = 0;
@@ -201,7 +196,9 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
             while (i < ilist->size())
             {
                 /* Check if this interaction is perturbed */
-                if (ip_q_pert(ftype, iatoms + i, idef->iparams.data(), qA, qB))
+                if (ip_pert(ftype, idef->iparams.data() + iatoms[i])
+                    || (ftype == F_LJ14
+                        && hasPerturbedChargeIn14Interaction(iatoms[i + 1], iatoms[i + 2], atomInfo)))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)

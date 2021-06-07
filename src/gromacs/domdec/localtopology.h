@@ -74,6 +74,6 @@ int dd_make_local_top(struct gmx_domdec_t*           dd,
                       gmx_localtop_t*                ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
-void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
+void dd_sort_local_top(const gmx_domdec_t& dd, gmx::ArrayRef<const int64_t> atomInfo, gmx_localtop_t* ltop);
 
 #endif

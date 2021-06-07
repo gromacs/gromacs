@@ -1019,11 +1019,11 @@ int dd_make_local_top(gmx_domdec_t*        dd,
     return numBondedInteractionsToReduce;
 }
 
-void dd_sort_local_top(const gmx_domdec_t& dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop)
+void dd_sort_local_top(const gmx_domdec_t& dd, gmx::ArrayRef<const int64_t> atomInfo, gmx_localtop_t* ltop)
 {
     if (dd.reverse_top->doSorting())
     {
-        gmx_sort_ilist_fe(&ltop->idef, mdatoms->chargeA, mdatoms->chargeB);
+        gmx_sort_ilist_fe(&ltop->idef, atomInfo);
     }
     else
     {

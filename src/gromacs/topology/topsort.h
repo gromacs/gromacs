@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2008,2009,2010,2013,2014 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,12 +42,18 @@
 struct gmx_mtop_t;
 class InteractionDefinitions;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
+
 /* Returns if there are perturbed bonded interactions */
 gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t* mtop);
 
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
  * and set nr_nr_nonperturbed in ilist.
  */
-void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real* qB);
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, gmx::ArrayRef<const int64_t> atomInfo);
 
 #endif

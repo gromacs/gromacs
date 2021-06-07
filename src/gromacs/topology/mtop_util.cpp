@@ -45,6 +45,7 @@
 #include <cstring>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/exclusionblocks.h"
@@ -828,18 +829,52 @@ static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef
     gmx::mergeExclusions(excls, qmexcl2);
 }
 
+bool atomHasPerturbedChargeIn14Interaction(const int atomIndex, const gmx_moltype_t& molt)
+{
+    if (molt.atoms.nr > 0)
+    {
+        // Is the charge perturbed at all?
+        const t_atom& atom = molt.atoms.atom[atomIndex];
+        if (atom.q != atom.qB)
+        {
+            // Loop over 1-4 interactions
+            const InteractionList&   ilist  = molt.ilist[F_LJ14];
+            gmx::ArrayRef<const int> iatoms = ilist.iatoms;
+            const int                nral   = NRAL(F_LJ14);
+            for (int i = 0; i < ilist.size(); i += nral + 1)
+            {
+                // Compare the atom indices in this 1-4 interaction to
+                // atomIndex.
+                int ia1 = iatoms[i + 1];
+                int ia2 = iatoms[i + 2];
+                if ((atomIndex == ia1) || (atomIndex == ia2))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionDefinitions* idef)
 {
-    std::vector<real> qA(mtop.natoms);
-    std::vector<real> qB(mtop.natoms);
-    for (const AtomProxy atomP : AtomRange(mtop))
+    std::vector<int64_t> atomInfo(mtop.natoms, 0);
+
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const t_atom& local = atomP.atom();
-        int           index = atomP.globalAtomNumber();
-        qA[index]           = local.q;
-        qB[index]           = local.qB;
+        const gmx_molblock_t& molb = mtop.molblock[mb];
+        const gmx_moltype_t&  molt = mtop.moltype[molb.type];
+        for (int a = 0; a < molt.atoms.nr; a++)
+        {
+            if (atomHasPerturbedChargeIn14Interaction(a, molt))
+            {
+                atomInfo[a] |= gmx::sc_atomInfo_HasPerturbedChargeIn14Interaction;
+                break;
+            }
+        }
     }
-    gmx_sort_ilist_fe(idef, qA.data(), qB.data());
+    gmx_sort_ilist_fe(idef, atomInfo);
 }
 
 static void gen_local_top(const gmx_mtop_t& mtop,
