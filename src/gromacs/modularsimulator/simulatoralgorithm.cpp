@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrun/replicaexchange.h"
 #include "gromacs/mdrun/shellfc.h"
+#include "gromacs/mdrunutility/freeenergy.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -635,7 +636,10 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             }
         }
         addSignaller(energySignallerBuilder_.build(
-                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple, virialMode));
+                inputrec->nstcalcenergy,
+                computeFepPeriod(*inputrec, legacySimulatorData_->replExParams),
+                inputrec->nstpcouple,
+                virialMode));
         addSignaller(trajectorySignallerBuilder_.build(inputrec->nstxout,
                                                        inputrec->nstvout,
                                                        inputrec->nstfout,
