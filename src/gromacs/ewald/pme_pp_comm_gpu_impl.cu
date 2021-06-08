@@ -108,6 +108,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* recvPtr, bool rec
     // Recieve event from PME task after PME->PP force data push has
     // been scheduled and enqueue this to PP stream.
     GpuEventSynchronizer* eventptr;
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Recv(&eventptr, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
     eventptr->enqueueWaitEvent(pmePpCommStream_);
 

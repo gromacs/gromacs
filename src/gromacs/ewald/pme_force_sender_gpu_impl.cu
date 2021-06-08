@@ -91,7 +91,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 
 #if GMX_MPI
 
-    if (localForcePtr_.size() == 0)
+    if (localForcePtr_.empty())
     {
         localForcePtr_.resize(ppRanks_.size());
     }
@@ -132,6 +132,7 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms)
                                        ppCommStream_[ppRank]->stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
     ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Send(&ppCommEvent_[ppRank], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
 #else
     GMX_UNUSED_VALUE(ppRank);
