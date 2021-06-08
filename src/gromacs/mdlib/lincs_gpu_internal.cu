@@ -101,11 +101,11 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     const AtomPair* __restrict__ gm_constraints           = kernelParams.d_constraints;
     const float* __restrict__ gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
     const int* __restrict__ gm_coupledConstraintsCounts   = kernelParams.d_coupledConstraintsCounts;
-    const int* __restrict__ gm_coupledConstraintsIdxes = kernelParams.d_coupledConstraintsIndices;
-    const float* __restrict__ gm_massFactors           = kernelParams.d_massFactors;
-    float* __restrict__ gm_matrixA                     = kernelParams.d_matrixA;
-    const float* __restrict__ gm_inverseMasses         = kernelParams.d_inverseMasses;
-    float* __restrict__ gm_virialScaled                = kernelParams.d_virialScaled;
+    const int* __restrict__ gm_coupledConstraintsIndices = kernelParams.d_coupledConstraintsIndices;
+    const float* __restrict__ gm_massFactors             = kernelParams.d_massFactors;
+    float* __restrict__ gm_matrixA                       = kernelParams.d_matrixA;
+    const float* __restrict__ gm_inverseMasses           = kernelParams.d_inverseMasses;
+    float* __restrict__ gm_virialScaled                  = kernelParams.d_virialScaled;
 
     const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -179,9 +179,9 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     for (int n = 0; n < coupledConstraintsCount; n++)
     {
         int index = n * numConstraintsThreads + threadIndex;
-        int c1    = gm_coupledConstraintsIdxes[index];
+        int c1    = gm_coupledConstraintsIndices[index];
 
-        float3 rc1        = sm_r[c1 - blockIdx.x * blockDim.x];
+        float3 rc1        = sm_r[c1];
         gm_matrixA[index] = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
     }
 
@@ -214,10 +214,10 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         for (int n = 0; n < coupledConstraintsCount; n++)
         {
             int index = n * numConstraintsThreads + threadIndex;
-            int c1    = gm_coupledConstraintsIdxes[index];
+            int c1    = gm_coupledConstraintsIndices[index];
             // Convolute current right-hand-side with A
             // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
-            mvb = mvb + gm_matrixA[index] * sm_rhs[c1 - blockIdx.x * blockDim.x + blockDim.x * (rec % 2)];
+            mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + blockDim.x * (rec % 2)];
         }
         // 'Switch' rhs vectors, save current result
         // These values will be accessed in the loop above during the next iteration.
@@ -285,9 +285,9 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
             for (int n = 0; n < coupledConstraintsCount; n++)
             {
                 int index = n * numConstraintsThreads + threadIndex;
-                int c1    = gm_coupledConstraintsIdxes[index];
+                int c1    = gm_coupledConstraintsIndices[index];
 
-                mvb = mvb + gm_matrixA[index] * sm_rhs[c1 - blockIdx.x * blockDim.x + blockDim.x * (rec % 2)];
+                mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + blockDim.x * (rec % 2)];
             }
             sm_rhs[threadIdx.x + blockDim.x * ((rec + 1) % 2)] = mvb;
             sol                                                = sol + mvb;

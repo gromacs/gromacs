@@ -475,8 +475,9 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                 int index = kernelParams_.numConstraintsThreads
                                     * coupledConstraintsCountsHost.at(splitMap.at(c1))
                             + splitMap.at(c1);
+                int threadBlockStarts = splitMap.at(c1) - splitMap.at(c1) % c_threadsPerBlock;
 
-                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
+                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2) - threadBlockStarts;
 
                 int center = c1a1;
 
@@ -502,8 +503,9 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                 int index = kernelParams_.numConstraintsThreads
                                     * coupledConstraintsCountsHost.at(splitMap.at(c1))
                             + splitMap.at(c1);
+                int threadBlockStarts = splitMap.at(c1) - splitMap.at(c1) % c_threadsPerBlock;
 
-                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
+                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2) - threadBlockStarts;
 
                 int center = c1a2;
 
