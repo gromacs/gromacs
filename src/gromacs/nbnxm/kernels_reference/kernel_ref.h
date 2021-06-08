@@ -107,7 +107,7 @@ nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
  * advantage in using combination rules, so we (re-)use the same kernel.
  */
 //! \{
-static const p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_noener nbnxn_kernel_noener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
@@ -145,7 +145,7 @@ static const p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = 
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref }
 };
 
-static const p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_ener nbnxn_kernel_ener_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
@@ -183,7 +183,7 @@ static const p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref }
 };
 
-static const p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_ener nbnxn_kernel_energrp_ref[static_cast<int>(CoulombKernelType::Count)][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,

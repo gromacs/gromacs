@@ -111,3 +111,7 @@ target_link_libraries(nbnxm INTERFACE
 target_link_libraries(nbnxm INTERFACE
         utility
         )
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,24 +32,58 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Tests for Setup of kernels.
+ *
+ * \author Joe Jordan <ejjordan@kth.se>
+ * \ingroup module_nbnxm
+ */
+#include "gmxpre.h"
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/kernel_common.h"
+#include "gromacs/nbnxm/nbnxm.h"
 
-/* Declare all the different kernel functions.
- */
-{0}
+#include "testutils/testasserts.h"
 
-#ifdef INCLUDE_KERNELFUNCTION_TABLES
+namespace gmx
+{
 
-/* Declare and define the kernel function pointer lookup tables.
- * The minor index of the array goes over both the LJ combination rules,
- * which is only supported by plain cut-off, and the LJ switch/PME functions.
- */
-static p_nbk_func_noener nbnxm_kernel_noener_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{2}
-static p_nbk_func_ener nbnxm_kernel_ener_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{3}
-static p_nbk_func_ener nbnxm_kernel_energrp_simd_{1}[static_cast<int>(CoulombKernelType::Count)][vdwktNR] =
-{4}
+TEST(KernelSetupTest, getCoulombKernelTypeRF)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::NotSet, CoulombInteractionType::RF, false),
+              CoulombKernelType::ReactionField);
+}
 
-#endif /* INCLUDE_KERNELFUNCTION_TABLES */
+TEST(KernelSetupTest, getCoulombKernelTypeCut)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::NotSet, CoulombInteractionType::Cut, false),
+              CoulombKernelType::ReactionField);
+}
+
+TEST(KernelSetupTest, getCoulombKernelTypeTable)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::Table, CoulombInteractionType::Count, true),
+              CoulombKernelType::Table);
+}
+
+TEST(KernelSetupTest, getCoulombKernelTypeTableTwin)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::Table, CoulombInteractionType::Count, false),
+              CoulombKernelType::TableTwin);
+}
+
+TEST(KernelSetupTest, getCoulombKernelTypeEwald)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::NotSet, CoulombInteractionType::Count, true),
+              CoulombKernelType::Ewald);
+}
+
+TEST(KernelSetupTest, getCoulombKernelTypeEwaldTwin)
+{
+    EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::NotSet, CoulombInteractionType::Count, false),
+              CoulombKernelType::EwaldTwin);
+}
+
+} // namespace gmx

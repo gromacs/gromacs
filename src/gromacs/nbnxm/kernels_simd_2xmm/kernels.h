@@ -143,7 +143,7 @@ nbk_func_ener nbnxm_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VgrpF_2xmm;
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-static const p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_F_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_F_2xmm,
@@ -186,7 +186,7 @@ static const p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[coulktNR][vdwktNR] 
     },
 };
 
-static const p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_VF_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_VF_2xmm,
@@ -229,7 +229,7 @@ static const p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[coulktNR][vdwktNR] = {
     },
 };
 
-static const p_nbk_func_ener nbnxm_kernel_energrp_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_ener nbnxm_kernel_energrp_simd_2xmm[static_cast<int>(CoulombKernelType::Count)][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_VgrpF_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_VgrpF_2xmm,

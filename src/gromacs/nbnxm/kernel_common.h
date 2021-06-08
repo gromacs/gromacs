@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,12 @@
 #include "pairlist.h"
 
 struct interaction_const_t;
+enum class CoulombInteractionType : int;
+
+namespace Nbnxm
+{
+enum class EwaldExclusionType : int;
+}
 
 // TODO: Consider using one nbk_func type now ener and noener are identical
 
@@ -83,15 +89,20 @@ typedef nbk_func_noener* p_nbk_func_noener;
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
-enum
+enum class CoulombKernelType : int
 {
-    coulktRF,
-    coulktTAB,
-    coulktTAB_TWIN,
-    coulktEWALD,
-    coulktEWALD_TWIN,
-    coulktNR
+    ReactionField,
+    Table,
+    TableTwin,
+    Ewald,
+    EwaldTwin,
+    Count
 };
+
+//! \brief Lookup function for Coulomb kernel type
+CoulombKernelType getCoulombKernelType(Nbnxm::EwaldExclusionType ewaldExclusionType,
+                                       CoulombInteractionType    coulombInteractionType,
+                                       bool                      haveEqualCoulombVwdRadii);
 
 /*! \brief Kinds of Van der Waals treatments in SIMD Verlet kernels
  *

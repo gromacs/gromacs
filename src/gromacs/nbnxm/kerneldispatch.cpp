@@ -135,35 +135,37 @@ static void reduceGroupEnergySimdBuffers(int numGroups, int numGroups_2log, nbnx
     }
 }
 
-static int getCoulombKernelType(const Nbnxm::KernelSetup& kernelSetup, const interaction_const_t& ic)
+CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExclusionType,
+                                       const CoulombInteractionType    coulombInteractionType,
+                                       const bool                      haveEqualCoulombVwdRadii)
 {
 
-    if (EEL_RF(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut)
+    if (EEL_RF(coulombInteractionType) || coulombInteractionType == CoulombInteractionType::Cut)
     {
-        return coulktRF;
+        return CoulombKernelType::ReactionField;
     }
     else
     {
-        if (kernelSetup.ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
+        if (ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
         {
-            if (ic.rcoulomb == ic.rvdw)
+            if (haveEqualCoulombVwdRadii)
             {
-                return coulktTAB;
+                return CoulombKernelType::Table;
             }
             else
             {
-                return coulktTAB_TWIN;
+                return CoulombKernelType::TableTwin;
             }
         }
         else
         {
-            if (ic.rcoulomb == ic.rvdw)
+            if (haveEqualCoulombVwdRadii)
             {
-                return coulktEWALD;
+                return CoulombKernelType::Ewald;
             }
             else
             {
-                return coulktEWALD_TWIN;
+                return CoulombKernelType::EwaldTwin;
             }
         }
     }
@@ -251,7 +253,8 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-    const int coulkt = getCoulombKernelType(kernelSetup, ic);
+    const int coulkt = static_cast<int>(getCoulombKernelType(
+            kernelSetup.ewaldExclusionType, ic.eeltype, (ic.rcoulomb == ic.rvdw)));
     const int vdwkt  = getVdwKernelType(kernelSetup, nbatParams, ic);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
