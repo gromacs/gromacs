@@ -122,6 +122,9 @@ parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
 parser.add_argument('--hipsycl', type=str, nargs='?', default=None,
                     help='Select hipSYCL repository tag/commit/branch.')
 
+parser.add_argument('--rocm', type=str, nargs='?', const='debian', default=None,
+                    help='Select AMD compute engine version.')
+
 parser.add_argument('--intel-compute-runtime', type=str, nargs='?', default=None,
                     help='Select Intel Compute Runtime version.')
 
@@ -170,6 +173,8 @@ def image_name(configuration: argparse.Namespace) -> str:
         elements.append('oneapi-' + configuration.oneapi)
     if configuration.intel_compute_runtime is not None:
         elements.append('intel-' + configuration.intel_compute_runtime)
+    if configuration.rocm is not None:
+        elements.append('rocm-' + configuration.rocm)
 
     # Check for special cases
     # The following attribute keys indicate the image is built for the named
