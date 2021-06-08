@@ -456,9 +456,11 @@ inline cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<Float3, 1>& buffe
     }
     else // When not using hipSYCL, reinterpret as a flat float array
     {
+#ifndef __HIPSYCL__
         cl::sycl::buffer<float, 1> bufferAsFloat = buffer.reinterpret<float, 1>(buffer.get_count() * DIM);
         return fillSyclBufferWithNull<float>(
                 bufferAsFloat, startingOffset * DIM, numValues * DIM, std::move(queue));
+#endif
     }
 }
 
