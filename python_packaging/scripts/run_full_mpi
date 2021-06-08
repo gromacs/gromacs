@@ -11,4 +11,3 @@ source /usr/local/gromacs/bin/GMXRC
 
 mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/gmxapi/test
 mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/sample_restraint/tests
-mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/test

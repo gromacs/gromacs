@@ -10,5 +10,4 @@ set -ev
 source /usr/local/gromacs/bin/GMXRC
 
 pytest $HOME/gmxapi/test
-pytest $HOME/test
 pytest $HOME/sample_restraint/tests
