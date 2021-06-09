@@ -380,7 +380,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
     for (int c = 0; c < numConstraints; c++)
     {
         // Check if coupled constraints all fit in one block
-        if (numCoupledConstraints.at(c) > c_threadsPerBlock)
+        if (numCoupledConstraints[c] > c_threadsPerBlock)
         {
             gmx_fatal(FARGS,
                       "Maximum number of coupled constraints (%d) exceeds the size of the CUDA "
@@ -388,11 +388,10 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                       "LINCS with constraints on all-bonds, which is not supported for large "
                       "molecules. When compatible with the force field and integration settings, "
                       "using constraints on H-bonds only.",
-                      numCoupledConstraints.at(c),
+                      numCoupledConstraints[c],
                       c_threadsPerBlock);
         }
-        if (currentMapIndex / c_threadsPerBlock
-            != (currentMapIndex + numCoupledConstraints.at(c)) / c_threadsPerBlock)
+        if (currentMapIndex / c_threadsPerBlock != (currentMapIndex + numCoupledConstraints[c]) / c_threadsPerBlock)
         {
             currentMapIndex = ((currentMapIndex / c_threadsPerBlock) + 1) * c_threadsPerBlock;
         }
@@ -419,10 +418,10 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
         int type = iatoms[stride * c];
 
         AtomPair pair;
-        pair.i                                          = a1;
-        pair.j                                          = a2;
-        constraintsHost.at(splitMap.at(c))              = pair;
-        constraintsTargetLengthsHost.at(splitMap.at(c)) = idef.iparams[type].constr.dA;
+        pair.i                                    = a1;
+        pair.j                                    = a2;
+        constraintsHost[splitMap[c]]              = pair;
+        constraintsTargetLengthsHost[splitMap[c]] = idef.iparams[type].constr.dA;
     }
 
     // The adjacency list of constraints (i.e. the list of coupled constraints for each constraint).
@@ -443,7 +442,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
         int a2 = iatoms[stride * c + 2];
 
         // Constraint 'c' is counted twice, but it should be excluded altogether. Hence '-2'.
-        int nCoupledConstraints = atomsAdjacencyList.at(a1).size() + atomsAdjacencyList.at(a2).size() - 2;
+        int nCoupledConstraints = atomsAdjacencyList[a1].size() + atomsAdjacencyList[a2].size() - 2;
 
         if (nCoupledConstraints > maxCoupledConstraints)
         {
@@ -458,9 +457,9 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
 
     for (int c1 = 0; c1 < numConstraints; c1++)
     {
-        coupledConstraintsCountsHost.at(splitMap.at(c1)) = 0;
-        int c1a1                                         = iatoms[stride * c1 + 1];
-        int c1a2                                         = iatoms[stride * c1 + 2];
+        coupledConstraintsCountsHost[splitMap[c1]] = 0;
+        int c1a1                                   = iatoms[stride * c1 + 1];
+        int c1a2                                   = iatoms[stride * c1 + 2];
 
         // Constraints, coupled through the first atom.
         int c2a1 = c1a1;
@@ -473,20 +472,20 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                 int c2a2  = atomAdjacencyList.indexOfSecondConstrainedAtom_;
                 int sign  = atomAdjacencyList.signFactor_;
                 int index = kernelParams_.numConstraintsThreads
-                                    * coupledConstraintsCountsHost.at(splitMap.at(c1))
-                            + splitMap.at(c1);
-                int threadBlockStarts = splitMap.at(c1) - splitMap.at(c1) % c_threadsPerBlock;
+                                    * coupledConstraintsCountsHost[splitMap[c1]]
+                            + splitMap[c1];
+                int threadBlockStarts = splitMap[c1] - splitMap[c1] % c_threadsPerBlock;
 
-                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2) - threadBlockStarts;
+                coupledConstraintsIndicesHost[index] = splitMap[c2] - threadBlockStarts;
 
                 int center = c1a1;
 
                 float sqrtmu1 = 1.0 / std::sqrt(invmass[c1a1] + invmass[c1a2]);
                 float sqrtmu2 = 1.0 / std::sqrt(invmass[c2a1] + invmass[c2a2]);
 
-                massFactorsHost.at(index) = -sign * invmass[center] * sqrtmu1 * sqrtmu2;
+                massFactorsHost[index] = -sign * invmass[center] * sqrtmu1 * sqrtmu2;
 
-                coupledConstraintsCountsHost.at(splitMap.at(c1))++;
+                coupledConstraintsCountsHost[splitMap[c1]]++;
             }
         }
 
@@ -501,20 +500,20 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                 int c2a2  = atomAdjacencyList.indexOfSecondConstrainedAtom_;
                 int sign  = atomAdjacencyList.signFactor_;
                 int index = kernelParams_.numConstraintsThreads
-                                    * coupledConstraintsCountsHost.at(splitMap.at(c1))
-                            + splitMap.at(c1);
-                int threadBlockStarts = splitMap.at(c1) - splitMap.at(c1) % c_threadsPerBlock;
+                                    * coupledConstraintsCountsHost[splitMap[c1]]
+                            + splitMap[c1];
+                int threadBlockStarts = splitMap[c1] - splitMap[c1] % c_threadsPerBlock;
 
-                coupledConstraintsIndicesHost.at(index) = splitMap.at(c2) - threadBlockStarts;
+                coupledConstraintsIndicesHost[index] = splitMap[c2] - threadBlockStarts;
 
                 int center = c1a2;
 
                 float sqrtmu1 = 1.0 / std::sqrt(invmass[c1a1] + invmass[c1a2]);
                 float sqrtmu2 = 1.0 / std::sqrt(invmass[c2a1] + invmass[c2a2]);
 
-                massFactorsHost.at(index) = sign * invmass[center] * sqrtmu1 * sqrtmu2;
+                massFactorsHost[index] = sign * invmass[center] * sqrtmu1 * sqrtmu2;
 
-                coupledConstraintsCountsHost.at(splitMap.at(c1))++;
+                coupledConstraintsCountsHost[splitMap[c1]]++;
             }
         }
     }
