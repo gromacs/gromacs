@@ -332,7 +332,6 @@
 
     const nbnxn_cj_t* l_cj = nbl->cj.data();
 
-    int ninner = 0;
     for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
         const int ish    = (ciEntry.shift & NBNXN_CI_SHIFT);
@@ -587,8 +586,6 @@
             }
         }
 #undef CALC_LJ
-        ninner += cjind1 - cjind0;
-
         /* Add accumulated i-forces to the force array */
         real fShiftX = reduceIncr4ReturnSumHsimd(f + scix, fix_S0, fix_S2);
         real fShiftY = reduceIncr4ReturnSumHsimd(f + sciy, fiy_S0, fiy_S2);

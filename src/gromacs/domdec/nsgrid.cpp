@@ -125,7 +125,7 @@ void get_nsgrid_boundaries(int           nboundeddim,
                            rvec          grid_x1)
 {
     rvec av, stddev;
-    real vol, bdens0, bdens1;
+    real bdens0, bdens1;
     int  d;
 
     if (nboundeddim < DIM)
@@ -133,14 +133,12 @@ void get_nsgrid_boundaries(int           nboundeddim,
         calc_x_av_stddev(ncg, cgcm, av, stddev);
     }
 
-    vol = 1;
     for (d = 0; d < DIM; d++)
     {
         if (d < nboundeddim)
         {
             grid_x0[d] = (gr0 != nullptr ? (*gr0)[d] : 0);
             grid_x1[d] = (gr1 != nullptr ? (*gr1)[d] : box[d][d]);
-            vol *= (grid_x1[d] - grid_x0[d]);
         }
         else
         {
@@ -171,7 +169,6 @@ void get_nsgrid_boundaries(int           nboundeddim,
                 grid_x1[d] = (*gr1)[d];
                 bdens1     = (*gr1)[d];
             }
-            vol *= (bdens1 - bdens0);
         }
 
         if (debug)

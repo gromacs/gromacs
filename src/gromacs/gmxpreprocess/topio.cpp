@@ -1379,8 +1379,7 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logge
     int             mol, nat_mol, nr_mol_with_qm_atoms = 0;
     gmx_molblock_t* molb;
     bool            bQMMM;
-    int             index_offset = 0;
-    int             qm_nr        = 0;
+    int             qm_nr = 0;
 
     grpnr = sys->groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data();
 
@@ -1453,7 +1452,6 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logge
             {
                 grpnr += nat_mol;
             }
-            index_offset += nat_mol;
         }
     }
 }

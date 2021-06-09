@@ -260,9 +260,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     int nat    = 0;
 
 #if GMX_MPI
-    unsigned int flags          = 0;
-    int          messages       = 0;
-    bool         atomSetChanged = false;
+    int  messages       = 0;
+    bool atomSetChanged = false;
 
     do
     {
@@ -271,9 +270,6 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 
         /* Receive the send count, box and time step from the peer PP node */
         MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE, pme_pp->peerRankId, eCommType_CNB, pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
-
-        /* We accumulate all received flags */
-        flags |= cnb.flags;
 
         *step = cnb.step;
 
