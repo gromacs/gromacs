@@ -60,7 +60,7 @@ ListedForceCalculator::ListedForceCalculator(const ListedInteractionData& intera
                                              const Box&                   box) :
     numThreads(nthr),
     masterForceBuffer_(bufferSize, Vec3{ 0, 0, 0 }),
-    pbcHolder_(std::make_unique<PbcHolder>(box))
+    pbcHolder_(std::make_unique<PbcHolder>(PbcType::Xyz, box))
 {
     // split up the work
     threadedInteractions_ = splitListedWork(interactions, bufferSize, numThreads);

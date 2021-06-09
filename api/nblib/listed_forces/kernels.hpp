@@ -426,6 +426,33 @@ static inline void makeAnglePeriodic(real& angle)
     }
 }
 
+/*! \brief calculate the cosine of the angle between a and b
+ *
+ * \tparam T  float or double
+ * \param a   a 3D vector
+ * \param b   another 3D vector
+ * \return    the cosine of the angle between a and b
+ *
+ *                  ax*bx + ay*by + az*bz
+ * cos-vec (a,b) =  ---------------------
+ *                      ||a|| * ||b||
+ */
+template<class T>
+inline T basicVectorCosAngle(gmx::BasicVector<T> a, gmx::BasicVector<T> b)
+{
+    gmx::BasicVector<double> a_double(a[0], a[1], a[2]);
+    gmx::BasicVector<double> b_double(b[0], b[1], b[2]);
+
+    double numerator     = dot(a_double, b_double);
+    double denominatorSq = dot(a_double, a_double) * dot(b_double, b_double);
+
+    T cosval = (denominatorSq > 0) ? static_cast<T>(numerator * gmx::invsqrt(denominatorSq)) : 1;
+    cosval   = std::min(cosval, T(1.0));
+
+    /* 25 TOTAL */
+    return std::max(cosval, T(-1.0));
+}
+
 //! \brief Computes and returns a dihedral phi angle
 static inline real dihedralPhi(rvec dxIJ, rvec dxKJ, rvec dxKL, rvec m, rvec n)
 {

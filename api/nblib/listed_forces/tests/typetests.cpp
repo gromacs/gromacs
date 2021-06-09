@@ -90,11 +90,15 @@ public:
         input_(std::move(input)),
         x_(std::move(coordinates)),
         indices_(std::move(indices)),
-        pbcHolder_(Box(1.5)),
+        pbcHolder_(PbcType::Xyz, Box(1.5)),
         checker_(refData_.rootChecker()),
         forces_(c_numAtoms, gmx::RVec{ 0, 0, 0 })
     {
-        energy_ = computeForces(indices_, input_, x_, &forces_, pbcHolder_);
+        energy_ = computeForces(gmx::ArrayRef<const InteractionIndex<Interaction>>(indices_),
+                                gmx::ArrayRef<const Interaction>(input_),
+                                x_,
+                                &forces_,
+                                pbcHolder_);
     }
 
     void checkForcesAndEnergies()

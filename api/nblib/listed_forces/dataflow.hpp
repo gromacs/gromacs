@@ -57,7 +57,6 @@
 #include "nblib/util/util.hpp"
 #include "nblib/pbc.hpp"
 #include "nblib/vector.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/arrayref.h"
 
 #define NBLIB_ALWAYS_INLINE __attribute((always_inline))
@@ -101,8 +100,8 @@ auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, Ba
 template <class Buffer, class TwoCenterType, class BasicVector, class Pbc,
           std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const InteractionIndex<TwoCenterType>& index,
-                         const std::vector<TwoCenterType>& bondInstances,
+auto dispatchInteraction(InteractionIndex<TwoCenterType> index,
+                         gmx::ArrayRef<const TwoCenterType> bondInstances,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
                          const Pbc& pbc)
@@ -111,11 +110,11 @@ auto dispatchInteraction(const InteractionIndex<TwoCenterType>& index,
 
     int i = std::get<0>(index);
     int j = std::get<1>(index);
-    const gmx::RVec& x1 = x[i];
-    const gmx::RVec& x2 = x[j];
-    const TwoCenterType& bond = bondInstances[std::get<2>(index)];
+    BasicVector x1 = x[i];
+    BasicVector x2 = x[j];
+    TwoCenterType bond = bondInstances[std::get<2>(index)];
 
-    gmx::RVec dx;
+    BasicVector dx;
     // calculate x1 - x2 modulo pbc
     pbc.dxAiuc(x1, x2, dx);
 
@@ -161,13 +160,13 @@ addTwoCenterAggregate([[maybe_unused]] const ThreeCenterType& parameters,
 template<class ThreeCenterType, class BasicVector>
 inline NBLIB_ALWAYS_INLINE
 auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& rij, const BasicVector& rkj,
-                        BasicVector* fi, BasicVector* fj, BasicVector* fk)
+                        [[maybe_unused]] const BasicVector& rik, BasicVector* fi, BasicVector* fj, BasicVector* fk)
 {
     using ValueType = BasicVectorValueType_t<BasicVector>;
     // calculate 3-center common quantities: angle between x1-x2 and x2-x3
     // Todo: after sufficient evaluation, switch over to atan2 based algorithm
-    ValueType costh = cos_angle(rij, rkj); /* 25             */
-    ValueType theta = std::acos(costh);    /* 10             */
+    ValueType costh = basicVectorCosAngle(rij, rkj); /* 25 */
+    ValueType theta = std::acos(costh);    /* 10 */
 
     // call type-specific angle kernel, e.g. harmonic, linear, quartic,  etc.
     auto [force, energy] = threeCenterKernel(theta, parameters);
@@ -193,8 +192,8 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
 template <class Buffer, class ThreeCenterType, class BasicVector, class Pbc,
           std::enable_if_t<Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const InteractionIndex<ThreeCenterType>& index,
-                         const std::vector<ThreeCenterType>& parameters,
+auto dispatchInteraction(InteractionIndex<ThreeCenterType> index,
+                         gmx::ArrayRef<const ThreeCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
                          const Pbc& pbc)
@@ -205,18 +204,19 @@ auto dispatchInteraction(const InteractionIndex<ThreeCenterType>& index,
     int i = std::get<0>(index);
     int j = std::get<1>(index);
     int k = std::get<2>(index);
-    const gmx::RVec& xi = x[i];
-    const gmx::RVec& xj = x[j];
-    const gmx::RVec& xk = x[k];
-    const ThreeCenterType& threeCenterParameters = parameters[std::get<3>(index)];
+    BasicVector xi = x[i];
+    BasicVector xj = x[j];
+    BasicVector xk = x[k];
+    ThreeCenterType threeCenterParameters = parameters[std::get<3>(index)];
 
-    gmx::RVec fi{0,0,0}, fj{0,0,0}, fk{0,0,0};
+    BasicVector fi{0,0,0}, fj{0,0,0}, fk{0,0,0};
 
-    gmx::RVec rij, rkj;
-    pbc.dxAiuc(xi, xj, rij); /*  3              */
-    pbc.dxAiuc(xk, xj, rkj); /*  3              */
+    BasicVector rij, rkj, rik;
+    pbc.dxAiuc(xi, xj, rij); /* 3 */
+    pbc.dxAiuc(xk, xj, rkj); /* 3 */
+    pbc.dxAiuc(xi, xk, rik); /* 3 */
 
-    energy.carrier()            = computeThreeCenter(threeCenterParameters, rij, rkj, &fi, &fj, &fk);
+    energy.carrier()            = computeThreeCenter(threeCenterParameters, rij, rkj, rik, &fi, &fj, &fk);
     energy.twoCenterAggregate() = addTwoCenterAggregate(threeCenterParameters, rij, rkj, &fi, &fj, &fk);
 
     (*forces)[i] += fi;
@@ -279,35 +279,36 @@ addThreeCenterAggregate([[maybe_unused]] const FourCenterType& parameters,
 template <class Buffer, class FourCenterType, class BasicVector, class Pbc,
           std::enable_if_t<Contains<FourCenterType, SupportedFourCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const InteractionIndex<FourCenterType>& index,
-                         const std::vector<FourCenterType>& parameters,
+auto dispatchInteraction(InteractionIndex<FourCenterType> index,
+                         gmx::ArrayRef<const FourCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
                          const Pbc& pbc)
 {
-    KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
+    using RealScalar = BasicVectorValueType_t<BasicVector>;
+    KernelEnergy<RealScalar> energy;
 
     int i = std::get<0>(index);
     int j = std::get<1>(index);
     int k = std::get<2>(index);
     int l = std::get<3>(index);
 
-    const gmx::RVec& xi = x[i];
-    const gmx::RVec& xj = x[j];
-    const gmx::RVec& xk = x[k];
-    const gmx::RVec& xl = x[l];
+    BasicVector xi = x[i];
+    BasicVector xj = x[j];
+    BasicVector xk = x[k];
+    BasicVector xl = x[l];
 
-    gmx::RVec fi{0,0,0}, fj{0,0,0}, fk{0,0,0}, fl{0,0,0};
+    BasicVector fi{0,0,0}, fj{0,0,0}, fk{0,0,0}, fl{0,0,0};
 
-    gmx::RVec dxIJ, dxKJ, dxKL;
+    BasicVector dxIJ, dxKJ, dxKL;
     pbc.dxAiuc(xi, xj, dxIJ);
     pbc.dxAiuc(xk, xj, dxKJ);
     pbc.dxAiuc(xk, xl, dxKL);
 
-    const FourCenterType& fourCenterTypeParams = parameters[std::get<4>(index)];
+    FourCenterType fourCenterTypeParams = parameters[std::get<4>(index)];
 
-    rvec m, n;
-    real phi = dihedralPhi(dxIJ, dxKJ, dxKL, m, n);
+    BasicVector m, n;
+    RealScalar phi = dihedralPhi(dxIJ, dxKJ, dxKL, m, n);
 
     auto [force, kernelEnergy] = fourCenterKernel(phi, fourCenterTypeParams);
 
@@ -340,8 +341,8 @@ auto dispatchInteraction(const InteractionIndex<FourCenterType>& index,
 template <class Buffer, class FiveCenterType, class BasicVector, class Pbc,
           std::enable_if_t<Contains<FiveCenterType, SupportedFiveCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const InteractionIndex<FiveCenterType>& index,
-                         const std::vector<FiveCenterType>& parameters,
+auto dispatchInteraction(InteractionIndex<FiveCenterType> index,
+                         gmx::ArrayRef<const FiveCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
                          const Pbc& pbc)
@@ -354,19 +355,19 @@ auto dispatchInteraction(const InteractionIndex<FiveCenterType>& index,
     int l = std::get<3>(index);
     int m = std::get<4>(index);
 
-    const gmx::RVec& xi = x[i];
-    const gmx::RVec& xj = x[j];
-    const gmx::RVec& xk = x[k];
-    const gmx::RVec& xl = x[l];
-    const gmx::RVec& xm = x[m];
+    BasicVector xi = x[i];
+    BasicVector xj = x[j];
+    BasicVector xk = x[k];
+    BasicVector xl = x[l];
+    BasicVector xm = x[m];
 
-    gmx::RVec dxIJ, dxJK, dxKL, dxLM;
+    BasicVector dxIJ, dxJK, dxKL, dxLM;
     pbc.dxAiuc(xi, xj, dxIJ);
     pbc.dxAiuc(xj, xk, dxJK);
     pbc.dxAiuc(xk, xl, dxKL);
     pbc.dxAiuc(xl, xm, dxLM);
 
-    const FiveCenterType& fiveCenterTypeParams = parameters[std::get<5>(index)];
+    FiveCenterType fiveCenterTypeParams = parameters[std::get<5>(index)];
 
     // this dispatch function is not in use yet, because CMap is not yet implemented
     // we don't want to add [[maybe_unused]] in the signature
@@ -389,8 +390,8 @@ auto dispatchInteraction(const InteractionIndex<FiveCenterType>& index,
  * \return Computed kernel energies
  */
 template <class Index, class InteractionType, class Buffer, class Pbc>
-auto computeForces(const std::vector<Index>& indices,
-                   const std::vector<InteractionType>& interactionParameters,
+auto computeForces(gmx::ArrayRef<const Index> indices,
+                   gmx::ArrayRef<const InteractionType> parameters,
                    gmx::ArrayRef<const Vec3> x,
                    Buffer* forces,
                    const Pbc& pbc)
@@ -399,7 +400,7 @@ auto computeForces(const std::vector<Index>& indices,
 
     for (const auto& index : indices)
     {
-        energy += dispatchInteraction(index, interactionParameters, x, forces, pbc);
+        energy += dispatchInteraction(index, parameters, x, forces, pbc);
     }
 
     return energy;
@@ -427,7 +428,9 @@ auto reduceListedForces(const ListedInteractionData& interactions,
     auto computeForceType = [forces, &x, &energies, &pbc](const auto& interactionElement) {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
 
-        KernelEnergy<ValueType> energy = computeForces(interactionElement.indices, interactionElement.parameters, x, forces, pbc);
+        gmx::ArrayRef<const InteractionIndex<InteractionType>> indices(interactionElement.indices);
+        gmx::ArrayRef<const InteractionType>                   parameters(interactionElement.parameters);
+        KernelEnergy<ValueType> energy = computeForces(indices, parameters, x, forces, pbc);
 
         energies[CarrierIndex<InteractionType>{}] += energy.carrier();
         energies[TwoCenterAggregateIndex<InteractionType>{}] += energy.twoCenterAggregate();

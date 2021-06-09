@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,17 +57,17 @@ TEST(NBlibTest, PbcHolderWorks)
 {
     Box box(10, 10, 10);
 
-    PbcHolder pbcHolder(box);
+    PbcHolder pbcHolder(PbcType::Xyz, box);
 
-    rvec x1{ 1, 1, 1 }, x2{ 9, 9, 9 };
-    rvec dx;
+    gmx::RVec x1{ 1.0, 1.1, 0.9 }, x2{ 9, 8.9, 9.1 };
+    gmx::RVec dx;
 
     pbcHolder.dxAiuc(x1, x2, dx);
-    rvec ref{ 2, 2, 2 };
+    gmx::RVec ref{ 2, 2.2, 1.8 };
 
-    EXPECT_REAL_EQ_TOL(ref[0], dx[0], gmx::test::defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(ref[1], dx[1], gmx::test::defaultRealTolerance());
-    EXPECT_REAL_EQ_TOL(ref[2], dx[2], gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(ref[0], dx[0], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
+    EXPECT_REAL_EQ_TOL(ref[1], dx[1], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
+    EXPECT_REAL_EQ_TOL(ref[2], dx[2], gmx::test::relativeToleranceAsFloatingPoint(ref[0], 1e-6));
 }
 
 } // namespace nblib

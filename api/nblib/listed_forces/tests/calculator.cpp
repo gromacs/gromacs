@@ -119,7 +119,7 @@ protected:
         forces = std::vector<gmx::RVec>(3, gmx::RVec{ 0, 0, 0 });
 
         box.reset(new Box(3, 3, 3));
-        pbc.reset(new PbcHolder(*box));
+        pbc.reset(new PbcHolder(PbcType::Xyz, *box));
     }
 
     std::vector<gmx::RVec> x;
@@ -133,8 +133,9 @@ protected:
 
 TEST_F(ListedExampleData, ComputeHarmonicBondForces)
 {
-    auto indices = pickType<HarmonicBondType>(interactions).indices;
-    auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
+    gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
+            pickType<HarmonicBondType>(interactions).indices;
+    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
     computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-3);
@@ -143,9 +144,10 @@ TEST_F(ListedExampleData, ComputeHarmonicBondForces)
 
 TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
 {
-    auto indices = pickType<HarmonicBondType>(interactions).indices;
-    auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
-    real energy  = computeForces(indices, bonds, x, &forces, *pbc);
+    gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
+            pickType<HarmonicBondType>(interactions).indices;
+    gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
+    real                                  energy = computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(energy, "Bond energy");
@@ -153,8 +155,9 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
 
 TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 {
-    auto indices = pickType<HarmonicAngle>(interactions).indices;
-    auto angles  = pickType<HarmonicAngle>(interactions).parameters;
+    gmx::ArrayRef<const InteractionIndex<HarmonicAngle>> indices =
+            pickType<HarmonicAngle>(interactions).indices;
+    gmx::ArrayRef<const HarmonicAngle> angles = pickType<HarmonicAngle>(interactions).parameters;
     computeForces(indices, angles, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
