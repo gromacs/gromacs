@@ -50,6 +50,12 @@
 namespace gmx
 {
 
+namespace test
+{
+
+namespace
+{
+
 TEST(KernelSetupTest, getCoulombKernelTypeRF)
 {
     EXPECT_EQ(getCoulombKernelType(Nbnxm::EwaldExclusionType::NotSet, CoulombInteractionType::RF, false),
@@ -86,4 +92,6 @@ TEST(KernelSetupTest, getCoulombKernelTypeEwaldTwin)
               CoulombKernelType::EwaldTwin);
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx
