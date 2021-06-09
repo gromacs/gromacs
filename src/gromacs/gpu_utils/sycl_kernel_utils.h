@@ -77,7 +77,11 @@ static inline void atomicFetchAdd(DeviceAccessor<float, mode_atomic> acc, const 
     /* While there is support for float atomics on device, the host implementation uses
      * Clang's __atomic_fetch_add intrinsic, that, at least in Clang 11, does not support
      * floats. Luckily, we don't want to run on host. */
+    // The pragmas below can be removed once we switch to sycl::atomic
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wdeprecated-declarations"
     acc[idx].fetch_add(val);
+#        pragma clang diagnostic push
 #    else
     GMX_ASSERT(false, "hipSYCL host codepath not supported");
     GMX_UNUSED_VALUE(val);
