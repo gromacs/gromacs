@@ -62,109 +62,35 @@
 #include "gromacs/utility/smalloc.h"
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
+#include "nblib/nbnxmsetuphelpers.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
 
 namespace nblib
 {
 
-//! Helper to translate between the different enumeration values.
-static Nbnxm::KernelType translateBenchmarkEnum(const SimdKernels& kernel)
-{
-    int kernelInt = static_cast<int>(kernel);
-    return static_cast<Nbnxm::KernelType>(kernelInt);
-}
-
-/*! \brief Checks the kernel setup
- *
- * Returns an error string when the kernel is not available.
- */
-static void checkKernelSetup(const NBKernelOptions& options)
-{
-    if (options.nbnxmSimd >= SimdKernels::Count || options.nbnxmSimd == SimdKernels::SimdAuto)
-    {
-        throw InputException("Need a valid kernel SIMD type");
-    }
-    // Check SIMD support
-    if ((options.nbnxmSimd != SimdKernels::SimdNo && !GMX_SIMD)
-#ifndef GMX_NBNXN_SIMD_4XN
-        || options.nbnxmSimd == SimdKernels::Simd4XM
-#endif
-#ifndef GMX_NBNXN_SIMD_2XNN
-        || options.nbnxmSimd == SimdKernels::Simd2XMM
-#endif
-    )
-    {
-        throw InputException("The requested SIMD kernel was not set up at configuration time");
-    }
-}
-
 NbvSetupUtil::NbvSetupUtil() : gmxForceCalculator_(std::make_unique<GmxForceCalculator>()) {}
 
 void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
 {
-    // Todo: find a more general way to initialize hardware
-    gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, options.numOpenMPThreads);
-    gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, options.numOpenMPThreads);
+    setGmxNonBondedNThreads(options.numOpenMPThreads);
 }
 
 Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
 {
-    checkKernelSetup(options);
-
-    Nbnxm::KernelSetup kernelSetup;
-
-    // The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
-    kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
-    // The plain-C kernel does not support analytical ewald correction
-    if (kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC)
-    {
-        kernelSetup.ewaldExclusionType = Nbnxm::EwaldExclusionType::Table;
-    }
-    else
-    {
-        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr
-                                                 ? Nbnxm::EwaldExclusionType::Table
-                                                 : Nbnxm::EwaldExclusionType::Analytical;
-    }
-
-    return kernelSetup;
+    return createKernelSetupCPU(options);
 }
 
 void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
 
 {
-    particleInfoAllVdw_.resize(numParticles);
-    for (size_t particleI = 0; particleI < numParticles; particleI++)
-    {
-        particleInfoAllVdw_[particleI] |= gmx::sc_atomInfo_HasVdw;
-        particleInfoAllVdw_[particleI] |= gmx::sc_atomInfo_HasCharge;
-    }
+    particleInfoAllVdw_ = createParticleInfoAllVdv(numParticles);
 }
 
 void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& particleTypes,
                                           const NonBondedInteractionMap&   nonBondedInteractionMap)
 {
-    /* Todo: Refactor nbnxm to take nonbondedParameters_ directly
-     *
-     * initial self-handling of combination rules
-     * size: 2*(numParticleTypes^2)
-     */
-    nonbondedParameters_.reserve(2 * particleTypes.size() * particleTypes.size());
-
-    constexpr real c6factor  = 6.0;
-    constexpr real c12factor = 12.0;
-
-    for (const ParticleType& particleType1 : particleTypes)
-    {
-        for (const ParticleType& particleType2 : particleTypes)
-        {
-            nonbondedParameters_.push_back(
-                    nonBondedInteractionMap.getC6(particleType1.name(), particleType2.name()) * c6factor);
-            nonbondedParameters_.push_back(
-                    nonBondedInteractionMap.getC12(particleType1.name(), particleType2.name()) * c12factor);
-        }
-    }
+    nonbondedParameters_ = createNonBondedParameters(particleTypes, nonBondedInteractionMap);
 }
 
 void NbvSetupUtil::setAtomProperties(const std::vector<int>&  particleTypeIdOfAllParticles,
@@ -182,7 +108,7 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
     // Note: the options and Nbnxm combination rule enums values should match
     const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    checkKernelSetup(options); // throws exception is setup is invalid
+    checkKernelSetup(options.nbnxmSimd); // throws exception is setup is invalid
 
     Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
 
@@ -209,95 +135,20 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
     gmxForceCalculator_->nbv_ = std::move(nbv);
 }
 
-//! Computes the Ewald splitting coefficient for Coulomb
-static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
-{
-    return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
-}
-
 void NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)
 {
-    gmxForceCalculator_->stepWork_->computeForces          = true;
-    gmxForceCalculator_->stepWork_->computeNonbondedForces = true;
-
-    if (options.computeVirialAndEnergy)
-    {
-        gmxForceCalculator_->stepWork_->computeVirial = true;
-        gmxForceCalculator_->stepWork_->computeEnergy = true;
-    }
+    gmxForceCalculator_->stepWork_ = std::make_unique<gmx::StepWorkload>(createStepWorkload(options));
 }
 
 void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
 {
-    gmxForceCalculator_->interactionConst_->vdwtype      = VanDerWaalsType::Cut;
-    gmxForceCalculator_->interactionConst_->vdw_modifier = InteractionModifiers::PotShift;
-    gmxForceCalculator_->interactionConst_->rvdw         = options.pairlistCutoff;
-
-    switch (options.coulombType)
-    {
-        case CoulombType::Pme:
-            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::Pme;
-            break;
-        case CoulombType::Cutoff:
-            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::Cut;
-            break;
-        case CoulombType::ReactionField:
-            gmxForceCalculator_->interactionConst_->eeltype = CoulombInteractionType::RF;
-            break;
-        case CoulombType::Count: throw InputException("Unsupported electrostatic interaction");
-    }
-    gmxForceCalculator_->interactionConst_->coulomb_modifier = InteractionModifiers::PotShift;
-    gmxForceCalculator_->interactionConst_->rcoulomb         = options.pairlistCutoff;
-    // Note: values correspond to ic->coulomb_modifier = InteractionModifiers::PotShift
-    gmxForceCalculator_->interactionConst_->dispersion_shift.cpot =
-            -1.0 / gmx::power6(gmxForceCalculator_->interactionConst_->rvdw);
-    gmxForceCalculator_->interactionConst_->repulsion_shift.cpot =
-            -1.0 / gmx::power12(gmxForceCalculator_->interactionConst_->rvdw);
-
-    // These are the initialized values but we leave them here so that later
-    // these can become options.
-    gmxForceCalculator_->interactionConst_->epsilon_r                = 1.0;
-    gmxForceCalculator_->interactionConst_->reactionFieldPermitivity = 1.0;
-
-    /* Set the Coulomb energy conversion factor */
-    if (gmxForceCalculator_->interactionConst_->epsilon_r != 0)
-    {
-        gmxForceCalculator_->interactionConst_->epsfac =
-                ONE_4PI_EPS0 / gmxForceCalculator_->interactionConst_->epsilon_r;
-    }
-    else
-    {
-        /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        gmxForceCalculator_->interactionConst_->epsfac = 0;
-    }
-
-    calc_rffac(nullptr,
-               gmxForceCalculator_->interactionConst_->epsilon_r,
-               gmxForceCalculator_->interactionConst_->reactionFieldPermitivity,
-               gmxForceCalculator_->interactionConst_->rcoulomb,
-               &gmxForceCalculator_->interactionConst_->reactionFieldCoefficient,
-               &gmxForceCalculator_->interactionConst_->reactionFieldShift);
-
-    if (EEL_PME_EWALD(gmxForceCalculator_->interactionConst_->eeltype))
-    {
-        // Ewald coefficients, we ignore the potential shift
-        gmxForceCalculator_->interactionConst_->ewaldcoeff_q = ewaldCoeff(1e-5, options.pairlistCutoff);
-        if (gmxForceCalculator_->interactionConst_->ewaldcoeff_q <= 0)
-        {
-            throw InputException("Ewald coefficient should be > 0");
-        }
-        gmxForceCalculator_->interactionConst_->coulombEwaldTables =
-                std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, gmxForceCalculator_->interactionConst_.get(), 0, 0);
-    }
+    gmxForceCalculator_->interactionConst_ =
+            std::make_unique<interaction_const_t>(createInteractionConst(options));
 }
 
 void NbvSetupUtil::setupForceRec(const matrix& box)
 {
-    assert((gmxForceCalculator_->forcerec_ && "Forcerec not initialized"));
-    gmxForceCalculator_->forcerec_->nbfp = nonbondedParameters_;
-    gmxForceCalculator_->forcerec_->shift_vec.resize(numShiftVectors);
-    calc_shifts(box, gmxForceCalculator_->forcerec_->shift_vec);
+    updateForcerec(gmxForceCalculator_->forcerec_.get(), box);
 }
 
 void NbvSetupUtil::setParticlesOnGrid(const std::vector<Vec3>& coordinates, const Box& box)

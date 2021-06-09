@@ -59,6 +59,7 @@ gmx_add_gtest_executable(
         particletype.cpp
         pbcholder.cpp
         molecules.cpp
+        nbnxmsetup.cpp
         topology.cpp
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)

@@ -118,6 +118,7 @@ target_sources(nblib
         integrator.cpp
         interactions.cpp
         molecules.cpp
+        nbnxmsetuphelpers.cpp
         particlesequencer.cpp
         particletype.cpp
         simulationstate.cpp
