@@ -55,6 +55,9 @@
 
 struct interaction_const_t;
 enum class CoulombInteractionType : int;
+enum class VanDerWaalsType : int;
+enum class InteractionModifiers : int;
+enum class LongRangeVdW : int;
 
 namespace Nbnxm
 {
@@ -125,6 +128,13 @@ enum
     vdwktNR = vdwktLJEWALDCOMBLB,
     vdwktNR_ref
 };
+
+//! \brief Lookup function for Vdw kernel type
+int getVdwKernelType(Nbnxm::KernelType    kernelType,
+                     LJCombinationRule    ljCombinationRule,
+                     VanDerWaalsType      vanDerWaalsType,
+                     InteractionModifiers interactionModifiers,
+                     LongRangeVdW         longRangeVdW);
 
 /*! \brief Clears the force buffer.
  *

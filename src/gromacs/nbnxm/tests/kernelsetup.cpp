@@ -92,6 +92,126 @@ TEST(KernelSetupTest, getCoulombKernelTypeEwaldTwin)
               CoulombKernelType::EwaldTwin);
 }
 
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombGeomNone)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::Geometric,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::None,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBGEOM);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombGeomPotShift)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::Geometric,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::PotShift,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBGEOM);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombLBNone)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::LorentzBerthelot,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::None,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBLB);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombLBPotShift)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::LorentzBerthelot,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::PotShift,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBLB);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombNoneNone)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::None,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBNONE);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutCombNonePotShift)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::PotShift,
+                               LongRangeVdW::Count),
+              vdwktLJCUT_COMBNONE);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutThrows)
+{
+    EXPECT_ANY_THROW(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                                      LJCombinationRule::Count,
+                                      VanDerWaalsType::Cut,
+                                      InteractionModifiers::PotShift,
+                                      LongRangeVdW::Count));
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutForceSwitch)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::ForceSwitch,
+                               LongRangeVdW::Count),
+              vdwktLJFORCESWITCH);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypePmeGeom)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::Cpu4x4_PlainC,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Pme,
+                               InteractionModifiers::Count,
+                               LongRangeVdW::Geom),
+              vdwktLJEWALDCOMBGEOM);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypePmeNone)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::Cpu4x4_PlainC,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Pme,
+                               InteractionModifiers::Count,
+                               LongRangeVdW::Count),
+              vdwktLJEWALDCOMBLB);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeLjCutPotSwitch)
+{
+    EXPECT_EQ(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                               LJCombinationRule::None,
+                               VanDerWaalsType::Cut,
+                               InteractionModifiers::PotSwitch,
+                               LongRangeVdW::Count),
+              vdwktLJPOTSWITCH);
+}
+
+TEST(KernelSetupTest, getVdwKernelTypeAllCountThrows)
+{
+    // Count cannot be used for VanDerWaalsType or InteractionModifiers because of calls to
+    // enumValueToString(), which require a valid choice to have been made.
+    EXPECT_ANY_THROW(getVdwKernelType(Nbnxm::KernelType::NotSet,
+                                      LJCombinationRule::Count,
+                                      VanDerWaalsType::Cut,
+                                      InteractionModifiers::None,
+                                      LongRangeVdW::Count));
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx

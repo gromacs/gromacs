@@ -171,43 +171,45 @@ CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExcl
     }
 }
 
-static int getVdwKernelType(const Nbnxm::KernelSetup&       kernelSetup,
-                            const nbnxn_atomdata_t::Params& nbatParams,
-                            const interaction_const_t&      ic)
+int getVdwKernelType(const Nbnxm::KernelType    kernelType,
+                     const LJCombinationRule    ljCombinationRule,
+                     const VanDerWaalsType      vanDerWaalsType,
+                     const InteractionModifiers interactionModifiers,
+                     const LongRangeVdW         longRangeVdW)
 {
-    if (ic.vdwtype == VanDerWaalsType::Cut)
+    if (vanDerWaalsType == VanDerWaalsType::Cut)
     {
-        switch (ic.vdw_modifier)
+        switch (interactionModifiers)
         {
             case InteractionModifiers::None:
             case InteractionModifiers::PotShift:
-                switch (nbatParams.ljCombinationRule)
+                switch (ljCombinationRule)
                 {
                     case LJCombinationRule::Geometric: return vdwktLJCUT_COMBGEOM;
                     case LJCombinationRule::LorentzBerthelot: return vdwktLJCUT_COMBLB;
                     case LJCombinationRule::None: return vdwktLJCUT_COMBNONE;
-                    default: gmx_incons("Unknown combination rule");
+                    default: GMX_THROW(gmx::InvalidInputError("Unknown combination rule"));
                 }
             case InteractionModifiers::ForceSwitch: return vdwktLJFORCESWITCH;
             case InteractionModifiers::PotSwitch: return vdwktLJPOTSWITCH;
             default:
                 std::string errorMsg =
                         gmx::formatString("Unsupported VdW interaction modifier %s (%d)",
-                                          enumValueToString(ic.vdw_modifier),
-                                          static_cast<int>(ic.vdw_modifier));
-                gmx_incons(errorMsg);
+                                          enumValueToString(interactionModifiers),
+                                          static_cast<int>(interactionModifiers));
+                GMX_THROW(gmx::InvalidInputError(errorMsg));
         }
     }
-    else if (ic.vdwtype == VanDerWaalsType::Pme)
+    else if (vanDerWaalsType == VanDerWaalsType::Pme)
     {
-        if (ic.ljpme_comb_rule == LongRangeVdW::Geom)
+        if (longRangeVdW == LongRangeVdW::Geom)
         {
             return vdwktLJEWALDCOMBGEOM;
         }
         else
         {
             /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC,
+            GMX_RELEASE_ASSERT(kernelType == Nbnxm::KernelType::Cpu4x4_PlainC,
                                "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB "
                                "combination rules");
             return vdwktLJEWALDCOMBLB;
@@ -216,9 +218,9 @@ static int getVdwKernelType(const Nbnxm::KernelSetup&       kernelSetup,
     else
     {
         std::string errorMsg = gmx::formatString("Unsupported VdW interaction type %s (%d)",
-                                                 enumValueToString(ic.vdwtype),
-                                                 static_cast<int>(ic.vdwtype));
-        gmx_incons(errorMsg);
+                                                 enumValueToString(vanDerWaalsType),
+                                                 static_cast<int>(vanDerWaalsType));
+        GMX_THROW(gmx::InvalidInputError(errorMsg));
     }
 }
 
@@ -255,7 +257,8 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
     const int coulkt = static_cast<int>(getCoulombKernelType(
             kernelSetup.ewaldExclusionType, ic.eeltype, (ic.rcoulomb == ic.rvdw)));
-    const int vdwkt  = getVdwKernelType(kernelSetup, nbatParams, ic);
+    const int vdwkt  = getVdwKernelType(
+            kernelSetup.kernelType, nbatParams.ljCombinationRule, ic.vdwtype, ic.vdw_modifier, ic.ljpme_comb_rule);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
 
