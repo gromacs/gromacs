@@ -3081,6 +3081,91 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* i
     return ip;
 }
 
+using CmapForceStructure = std::array<real, 4>;
+
+gmx::RVec processCmapForceComponent(const gmx::RVec a,
+                                    const gmx::RVec b,
+                                    const real      df,
+                                    const real      gaa,
+                                    const real      fga,
+                                    const real      gbb,
+                                    const real      hgb,
+                                    const int       dim)
+{
+    gmx::RVec result; // mapping XX <-> f, YY <-> g, ZZ <-> h
+    result[XX] = gaa * a[dim];
+    result[YY] = fga * a[dim] - hgb * b[dim];
+    result[ZZ] = gbb * b[dim];
+    return result * df;
+}
+
+CmapForceStructure applyCmapForceComponent(const gmx::RVec forceComponent)
+{
+    // forceComponent mapping is XX <-> f, YY <-> g, ZZ <-> h
+    CmapForceStructure forces;
+    forces[0] = forceComponent[XX];
+    forces[1] = -forceComponent[XX] - forceComponent[YY];
+    forces[2] = forceComponent[ZZ] + forceComponent[YY];
+    forces[3] = -forceComponent[ZZ];
+    return forces;
+}
+
+void accumulateCmapForces(const rvec      x[],
+                          rvec4           f[],
+                          rvec            fshift[],
+                          const t_pbc*    pbc,
+                          const gmx::RVec r_ij,
+                          const gmx::RVec r_kj,
+                          const gmx::RVec r_kl,
+                          const gmx::RVec a,
+                          const gmx::RVec b,
+                          gmx::RVec       h,
+                          const real      ra2r,
+                          const real      rb2r,
+                          const real      rgr,
+                          const real      rg,
+                          const int       ai,
+                          const int       aj,
+                          const int       ak,
+                          const int       al,
+                          const real      df,
+                          const int       t1,
+                          const int       t2)
+{
+    const real fg  = iprod(r_ij, r_kj);
+    const real hg  = iprod(r_kl, r_kj);
+    const real fga = fg * ra2r * rgr;
+    const real hgb = hg * rb2r * rgr;
+    const real gaa = -ra2r * rg;
+    const real gbb = rb2r * rg;
+
+    gmx::RVec f_i, f_j, f_k, f_l;
+    for (int i = 0; i < DIM; i++)
+    {
+        CmapForceStructure forces =
+                applyCmapForceComponent(processCmapForceComponent(a, b, df, gaa, fga, gbb, hgb, i));
+        f_i[i] = forces[0];
+        f_j[i] = forces[1];
+        f_k[i] = forces[2];
+        f_l[i] = forces[3];
+    }
+    rvec_inc(f[ai], f_i);
+    rvec_inc(f[aj], f_j);
+    rvec_inc(f[ak], f_k);
+    rvec_inc(f[al], f_l);
+
+    /* Shift forces */
+    if (fshift != nullptr)
+    {
+        const int t3 = pbc ? pbc_rvec_sub(pbc, x[al], x[aj], h) : c_centralShiftIndex;
+        rvec_inc(fshift[t1], f_i);
+        rvec_inc(fshift[c_centralShiftIndex], f_j);
+        rvec_inc(fshift[t2], f_k);
+        rvec_inc(fshift[t3], f_l);
+    }
+}
+
+
 } // namespace
 
 real cmap_dihs(int                 nbonds,
@@ -3099,85 +3184,63 @@ real cmap_dihs(int                 nbonds,
                t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
-    int i, n;
-    int ai, aj, ak, al, am;
-    int a1i, a1j, a1k, a1l, a2i, a2j, a2k, a2l;
-    int type;
     int t11, t21, t31, t12, t22, t32;
-    int iphi1, ip1m1, ip1p1, ip1p2;
-    int iphi2, ip2m1, ip2p1, ip2p2;
+    int ip1m1, ip1p1, ip1p2;
+    int ip2m1, ip2p1, ip2p2;
     int l1, l2, l3;
-    int pos1, pos2, pos3, pos4;
 
     real ty[4], ty1[4], ty2[4], ty12[4], tx[16];
-    real phi1, cos_phi1, sin_phi1, xphi1;
-    real phi2, cos_phi2, sin_phi2, xphi2;
-    real dx, tt, tu, e, df1, df2, vtot;
-    real ra21, rb21, rg21, rg1, rgr1, ra2r1, rb2r1, rabr1;
-    real ra22, rb22, rg22, rg2, rgr2, ra2r2, rb2r2, rabr2;
-    real fg1, hg1, fga1, hgb1, gaa1, gbb1;
-    real fg2, hg2, fga2, hgb2, gaa2, gbb2;
-    real fac;
 
     rvec r1_ij, r1_kj, r1_kl, m1, n1;
     rvec r2_ij, r2_kj, r2_kl, m2, n2;
-    rvec f1_i, f1_j, f1_k, f1_l;
-    rvec f2_i, f2_j, f2_k, f2_l;
-    rvec a1, b1, a2, b2;
-    rvec f1, g1, h1, f2, g2, h2;
-    rvec dtf1, dtg1, dth1, dtf2, dtg2, dth2;
 
     int loop_index[4][4] = { { 0, 4, 8, 12 }, { 1, 5, 9, 13 }, { 2, 6, 10, 14 }, { 3, 7, 11, 15 } };
 
     /* Total CMAP energy */
-    vtot = 0;
+    real vtot = 0;
 
-    for (n = 0; n < nbonds;)
+    for (int n = 0; n < nbonds;)
     {
         /* Five atoms are involved in the two torsions */
-        type = forceatoms[n++];
-        ai   = forceatoms[n++];
-        aj   = forceatoms[n++];
-        ak   = forceatoms[n++];
-        al   = forceatoms[n++];
-        am   = forceatoms[n++];
+        const int type = forceatoms[n++];
+        const int ai   = forceatoms[n++];
+        const int aj   = forceatoms[n++];
+        const int ak   = forceatoms[n++];
+        const int al   = forceatoms[n++];
+        const int am   = forceatoms[n++];
 
         /* Which CMAP type is this */
-        const int   cmapA = forceparams[type].cmap.cmapA;
-        const real* cmapd = cmap_grid->cmapdata[cmapA].cmap.data();
+        const int                 cmapA = forceparams[type].cmap.cmapA;
+        gmx::ArrayRef<const real> cmapd = cmap_grid->cmapdata[cmapA].cmap;
 
         /* First torsion */
-        a1i = ai;
-        a1j = aj;
-        a1k = ak;
-        a1l = al;
+        const int a1i = ai;
+        const int a1j = aj;
+        const int a1k = ak;
+        const int a1l = al;
 
-        phi1 = dih_angle(
+        real phi1 = dih_angle(
                 x[a1i], x[a1j], x[a1k], x[a1l], pbc, r1_ij, r1_kj, r1_kl, m1, n1, &t11, &t21, &t31); /* 84 */
 
-        cos_phi1 = std::cos(phi1);
+        const real cos_phi1 = std::cos(phi1);
 
-        a1[0] = r1_ij[1] * r1_kj[2] - r1_ij[2] * r1_kj[1];
-        a1[1] = r1_ij[2] * r1_kj[0] - r1_ij[0] * r1_kj[2];
-        a1[2] = r1_ij[0] * r1_kj[1] - r1_ij[1] * r1_kj[0]; /* 9 */
-
-        b1[0] = r1_kl[1] * r1_kj[2] - r1_kl[2] * r1_kj[1];
-        b1[1] = r1_kl[2] * r1_kj[0] - r1_kl[0] * r1_kj[2];
-        b1[2] = r1_kl[0] * r1_kj[1] - r1_kl[1] * r1_kj[0]; /* 9 */
+        gmx::RVec a1, b1, h1;
+        cprod(r1_ij, r1_kj, a1); /* 9 */
+        cprod(r1_kl, r1_kj, b1); /* 9 */
 
         pbc_rvec_sub(pbc, x[a1l], x[a1k], h1);
 
-        ra21 = iprod(a1, a1);       /* 5 */
-        rb21 = iprod(b1, b1);       /* 5 */
-        rg21 = iprod(r1_kj, r1_kj); /* 5 */
-        rg1  = sqrt(rg21);
+        const real ra21 = iprod(a1, a1);       /* 5 */
+        const real rb21 = iprod(b1, b1);       /* 5 */
+        const real rg21 = iprod(r1_kj, r1_kj); /* 5 */
+        const real rg1  = sqrt(rg21);
 
-        rgr1  = 1.0 / rg1;
-        ra2r1 = 1.0 / ra21;
-        rb2r1 = 1.0 / rb21;
-        rabr1 = sqrt(ra2r1 * rb2r1);
+        const real rgr1  = 1.0 / rg1;
+        const real ra2r1 = 1.0 / ra21;
+        const real rb2r1 = 1.0 / rb21;
+        const real rabr1 = sqrt(ra2r1 * rb2r1);
 
-        sin_phi1 = rg1 * rabr1 * iprod(a1, h1) * (-1);
+        const real sin_phi1 = rg1 * rabr1 * iprod(a1, h1) * (-1);
 
         if (cos_phi1 < -0.5 || cos_phi1 > 0.5)
         {
@@ -3205,40 +3268,36 @@ real cmap_dihs(int                 nbonds,
             }
         }
 
-        xphi1 = phi1 + M_PI; /* 1 */
+        real xphi1 = phi1 + M_PI; /* 1 */
 
         /* Second torsion */
-        a2i = aj;
-        a2j = ak;
-        a2k = al;
-        a2l = am;
+        const int a2i = aj;
+        const int a2j = ak;
+        const int a2k = al;
+        const int a2l = am;
 
-        phi2 = dih_angle(
+        real phi2 = dih_angle(
                 x[a2i], x[a2j], x[a2k], x[a2l], pbc, r2_ij, r2_kj, r2_kl, m2, n2, &t12, &t22, &t32); /* 84 */
 
-        cos_phi2 = std::cos(phi2);
+        const real cos_phi2 = std::cos(phi2);
 
-        a2[0] = r2_ij[1] * r2_kj[2] - r2_ij[2] * r2_kj[1];
-        a2[1] = r2_ij[2] * r2_kj[0] - r2_ij[0] * r2_kj[2];
-        a2[2] = r2_ij[0] * r2_kj[1] - r2_ij[1] * r2_kj[0]; /* 9 */
-
-        b2[0] = r2_kl[1] * r2_kj[2] - r2_kl[2] * r2_kj[1];
-        b2[1] = r2_kl[2] * r2_kj[0] - r2_kl[0] * r2_kj[2];
-        b2[2] = r2_kl[0] * r2_kj[1] - r2_kl[1] * r2_kj[0]; /* 9 */
+        gmx::RVec a2, b2, h2;
+        cprod(r2_ij, r2_kj, a2); /* 9 */
+        cprod(r2_kl, r2_kj, b2); /* 9 */
 
         pbc_rvec_sub(pbc, x[a2l], x[a2k], h2);
 
-        ra22 = iprod(a2, a2);       /* 5 */
-        rb22 = iprod(b2, b2);       /* 5 */
-        rg22 = iprod(r2_kj, r2_kj); /* 5 */
-        rg2  = sqrt(rg22);
+        const real ra22 = iprod(a2, a2);       /* 5 */
+        const real rb22 = iprod(b2, b2);       /* 5 */
+        const real rg22 = iprod(r2_kj, r2_kj); /* 5 */
+        const real rg2  = sqrt(rg22);
 
-        rgr2  = 1.0 / rg2;
-        ra2r2 = 1.0 / ra22;
-        rb2r2 = 1.0 / rb22;
-        rabr2 = sqrt(ra2r2 * rb2r2);
+        const real rgr2  = 1.0 / rg2;
+        const real ra2r2 = 1.0 / ra22;
+        const real rb2r2 = 1.0 / rb22;
+        const real rabr2 = sqrt(ra2r2 * rb2r2);
 
-        sin_phi2 = rg2 * rabr2 * iprod(a2, h2) * (-1);
+        const real sin_phi2 = rg2 * rabr2 * iprod(a2, h2) * (-1);
 
         if (cos_phi2 < -0.5 || cos_phi2 > 0.5)
         {
@@ -3266,7 +3325,7 @@ real cmap_dihs(int                 nbonds,
             }
         }
 
-        xphi2 = phi2 + M_PI; /* 1 */
+        real xphi2 = phi2 + M_PI; /* 1 */
 
         /* Range mangling */
         if (xphi1 < 0)
@@ -3288,19 +3347,19 @@ real cmap_dihs(int                 nbonds,
         }
 
         /* Number of grid points */
-        dx = 2 * M_PI / cmap_grid->grid_spacing;
+        real dx = 2 * M_PI / cmap_grid->grid_spacing;
 
         /* Where on the grid are we */
-        iphi1 = static_cast<int>(xphi1 / dx);
-        iphi2 = static_cast<int>(xphi2 / dx);
+        int iphi1 = static_cast<int>(xphi1 / dx);
+        int iphi2 = static_cast<int>(xphi2 / dx);
 
         iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->grid_spacing, &ip1m1, &ip1p1, &ip1p2);
         iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->grid_spacing, &ip2m1, &ip2p1, &ip2p2);
 
-        pos1 = iphi1 * cmap_grid->grid_spacing + iphi2;
-        pos2 = ip1p1 * cmap_grid->grid_spacing + iphi2;
-        pos3 = ip1p1 * cmap_grid->grid_spacing + ip2p1;
-        pos4 = iphi1 * cmap_grid->grid_spacing + ip2p1;
+        const int pos1 = iphi1 * cmap_grid->grid_spacing + iphi2;
+        const int pos2 = ip1p1 * cmap_grid->grid_spacing + iphi2;
+        const int pos3 = ip1p1 * cmap_grid->grid_spacing + ip2p1;
+        const int pos4 = iphi1 * cmap_grid->grid_spacing + ip2p1;
 
         ty[0] = cmapd[pos1 * 4];
         ty[1] = cmapd[pos2 * 4];
@@ -3327,7 +3386,7 @@ real cmap_dihs(int                 nbonds,
         xphi1 = xphi1 * gmx::c_rad2Deg;
         xphi2 = xphi2 * gmx::c_rad2Deg;
 
-        for (i = 0; i < 4; i++) /* 16 */
+        for (int i = 0; i < 4; i++) /* 16 */
         {
             tx[i]      = ty[i];
             tx[i + 4]  = ty1[i] * dx;
@@ -3335,7 +3394,7 @@ real cmap_dihs(int                 nbonds,
             tx[i + 12] = ty12[i] * dx * dx;
         }
 
-        real tc[16] = { 0 };
+        std::array<real, 16> tc = { 0 };
         for (int idx = 0; idx < 16; idx++) /* 1056 */
         {
             for (int k = 0; k < 16; k++)
@@ -3344,14 +3403,14 @@ real cmap_dihs(int                 nbonds,
             }
         }
 
-        tt = (xphi1 - iphi1 * dx) / dx;
-        tu = (xphi2 - iphi2 * dx) / dx;
+        const real tt = (xphi1 - iphi1 * dx) / dx;
+        const real tu = (xphi2 - iphi2 * dx) / dx;
 
-        e   = 0;
-        df1 = 0;
-        df2 = 0;
+        real e   = 0;
+        real df1 = 0;
+        real df2 = 0;
 
-        for (i = 3; i >= 0; i--)
+        for (int i = 3; i >= 0; i--)
         {
             l1 = loop_index[i][3];
             l2 = loop_index[i][2];
@@ -3362,95 +3421,20 @@ real cmap_dihs(int                 nbonds,
             df2 = tt * df2 + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1];
         }
 
-        fac = gmx::c_rad2Deg / dx;
-        df1 = df1 * fac;
-        df2 = df2 * fac;
+        const real fac = gmx::c_rad2Deg / dx;
+        df1            = df1 * fac;
+        df2            = df2 * fac;
 
         /* CMAP energy */
         vtot += e;
 
         /* Do forces - first torsion */
-        fg1  = iprod(r1_ij, r1_kj);
-        hg1  = iprod(r1_kl, r1_kj);
-        fga1 = fg1 * ra2r1 * rgr1;
-        hgb1 = hg1 * rb2r1 * rgr1;
-        gaa1 = -ra2r1 * rg1;
-        gbb1 = rb2r1 * rg1;
-
-        for (i = 0; i < DIM; i++)
-        {
-            dtf1[i] = gaa1 * a1[i];
-            dtg1[i] = fga1 * a1[i] - hgb1 * b1[i];
-            dth1[i] = gbb1 * b1[i];
-
-            f1[i] = df1 * dtf1[i];
-            g1[i] = df1 * dtg1[i];
-            h1[i] = df1 * dth1[i];
-
-            f1_i[i] = f1[i];
-            f1_j[i] = -f1[i] - g1[i];
-            f1_k[i] = h1[i] + g1[i];
-            f1_l[i] = -h1[i];
-
-            f[a1i][i] = f[a1i][i] + f1_i[i];
-            f[a1j][i] = f[a1j][i] + f1_j[i]; /* - f1[i] - g1[i] */
-            f[a1k][i] = f[a1k][i] + f1_k[i]; /* h1[i] + g1[i] */
-            f[a1l][i] = f[a1l][i] + f1_l[i]; /* h1[i] */
-        }
+        accumulateCmapForces(
+                x, f, fshift, pbc, r1_ij, r1_kj, r1_kl, a1, b1, h1, ra2r1, rb2r1, rgr1, rg1, a1i, a1j, a1k, a1l, df1, t11, t21);
 
         /* Do forces - second torsion */
-        fg2  = iprod(r2_ij, r2_kj);
-        hg2  = iprod(r2_kl, r2_kj);
-        fga2 = fg2 * ra2r2 * rgr2;
-        hgb2 = hg2 * rb2r2 * rgr2;
-        gaa2 = -ra2r2 * rg2;
-        gbb2 = rb2r2 * rg2;
-
-        for (i = 0; i < DIM; i++)
-        {
-            dtf2[i] = gaa2 * a2[i];
-            dtg2[i] = fga2 * a2[i] - hgb2 * b2[i];
-            dth2[i] = gbb2 * b2[i];
-
-            f2[i] = df2 * dtf2[i];
-            g2[i] = df2 * dtg2[i];
-            h2[i] = df2 * dth2[i];
-
-            f2_i[i] = f2[i];
-            f2_j[i] = -f2[i] - g2[i];
-            f2_k[i] = h2[i] + g2[i];
-            f2_l[i] = -h2[i];
-
-            f[a2i][i] = f[a2i][i] + f2_i[i]; /* f2[i] */
-            f[a2j][i] = f[a2j][i] + f2_j[i]; /* - f2[i] - g2[i] */
-            f[a2k][i] = f[a2k][i] + f2_k[i]; /* h2[i] + g2[i] */
-            f[a2l][i] = f[a2l][i] + f2_l[i]; /* - h2[i] */
-        }
-
-        /* Shift forces */
-        if (fshift != nullptr)
-        {
-            if (pbc)
-            {
-                t31 = pbc_rvec_sub(pbc, x[a1l], x[a1j], h1);
-                t32 = pbc_rvec_sub(pbc, x[a2l], x[a2j], h2);
-            }
-            else
-            {
-                t31 = c_centralShiftIndex;
-                t32 = c_centralShiftIndex;
-            }
-
-            rvec_inc(fshift[t11], f1_i);
-            rvec_inc(fshift[c_centralShiftIndex], f1_j);
-            rvec_inc(fshift[t21], f1_k);
-            rvec_inc(fshift[t31], f1_l);
-
-            rvec_inc(fshift[t12], f2_i);
-            rvec_inc(fshift[c_centralShiftIndex], f2_j);
-            rvec_inc(fshift[t22], f2_k);
-            rvec_inc(fshift[t32], f2_l);
-        }
+        accumulateCmapForces(
+                x, f, fshift, pbc, r2_ij, r2_kj, r2_kl, a2, b2, h2, ra2r2, rb2r2, rgr2, rg2, a2i, a2j, a2k, a2l, df2, t12, t22);
     }
     return vtot;
 }
