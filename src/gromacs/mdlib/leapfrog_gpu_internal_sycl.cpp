@@ -56,6 +56,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/template_mp.h"
 
+//! \brief Class name for leap-frog kernel
+template<gmx::NumTempScaleValues numTempScaleValues, gmx::VelocityScalingType velocityScaling>
+class LeapFrogKernel;
+
 namespace gmx
 {
 
@@ -156,15 +160,11 @@ auto leapFrogKernel(
     };
 }
 
-// SYCL 1.2.1 requires providing a unique type for a kernel. Should not be needed for SYCL2020.
-template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
-class LeapFrogKernelName;
-
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling, class... Args>
 static cl::sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
 {
     // Should not be needed for SYCL2020.
-    using kernelNameType = LeapFrogKernelName<numTempScaleValues, velocityScaling>;
+    using kernelNameType = LeapFrogKernel<numTempScaleValues, velocityScaling>;
 
     const cl::sycl::range<1> rangeAllAtoms(numAtoms);
     cl::sycl::queue          q = deviceStream.stream();

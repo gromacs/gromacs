@@ -54,6 +54,10 @@ using cl::sycl::access::fence_space;
 using cl::sycl::access::mode;
 using cl::sycl::access::target;
 
+//! \brief Class name for NBNXM prune-only kernel
+template<bool haveFreshList>
+class NbnxmKernelPruneOnly;
+
 namespace Nbnxm
 {
 
@@ -216,17 +220,12 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
     };
 }
 
-// SYCL 1.2.1 requires providing a unique type for a kernel. Should not be needed for SYCL2020.
-template<bool haveFreshList>
-class NbnxmKernelPruneOnlyName;
-
 template<bool haveFreshList, class... Args>
 cl::sycl::event launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream,
                                            const int           numSciInPart,
                                            Args&&... args)
 {
-    // Should not be needed for SYCL2020.
-    using kernelNameType = NbnxmKernelPruneOnlyName<haveFreshList>;
+    using kernelNameType = NbnxmKernelPruneOnly<haveFreshList>;
 
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,

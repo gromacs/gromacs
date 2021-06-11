@@ -49,6 +49,9 @@
 #include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/utility/gmxassert.h"
 
+//! \brief Class name for scaling kernel
+class ScaleKernel;
+
 namespace gmx
 {
 
@@ -77,7 +80,7 @@ void launchScaleCoordinatesKernel(const int            numAtoms,
 
     cl::sycl::event e = queue.submit([&](cl::sycl::handler& cgh) {
         auto kernel = scaleKernel(cgh, d_coordinates, mu);
-        cgh.parallel_for<class ScaleKernelName>(rangeAllAtoms, kernel);
+        cgh.parallel_for<ScaleKernel>(rangeAllAtoms, kernel);
     });
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the performance if nstpcouple is small. See Issue #4018

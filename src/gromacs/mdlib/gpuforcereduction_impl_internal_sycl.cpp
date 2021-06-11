@@ -54,6 +54,10 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
 #include "gromacs/utility/template_mp.h"
 
+//! \brief Class name for reduction kernel
+template<bool addRvecForce, bool accumulateForce>
+class ReduceKernel;
+
 namespace gmx
 {
 
@@ -94,9 +98,6 @@ static auto reduceKernel(cl::sycl::handler&                                 cgh,
 }
 
 template<bool addRvecForce, bool accumulateForce>
-class ReduceKernelName;
-
-template<bool addRvecForce, bool accumulateForce>
 static void launchReductionKernel_(const int                   numAtoms,
                                    const int                   atomStart,
                                    const DeviceBuffer<Float3>& b_nbnxmForce,
@@ -114,7 +115,7 @@ static void launchReductionKernel_(const int                   numAtoms,
     queue.submit([&](cl::sycl::handler& cgh) {
         auto kernel = reduceKernel<addRvecForce, accumulateForce>(
                 cgh, b_nbnxmForce, b_rvecForceToAdd, b_forceTotal, b_cell, atomStart);
-        cgh.parallel_for<ReduceKernelName<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
+        cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
     });
 }
 

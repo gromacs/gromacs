@@ -145,6 +145,9 @@ static DeviceStatus isDeviceCompatible(const cl::sycl::device& syclDevice)
     }
 }
 
+// Declaring the class here to avoid long unreadable name in the profiler report
+//! \brief Class name for test kernel
+class DummyKernel;
 
 /*!
  * \brief Checks that device \c deviceInfo is sane (ie can run a kernel).
@@ -168,7 +171,7 @@ static bool isDeviceFunctional(const cl::sycl::device& syclDevice, std::string* 
         queue.submit([&](cl::sycl::handler& cgh) {
                  auto d_buffer = buffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
                  cl::sycl::range<1> range{ numThreads };
-                 cgh.parallel_for<class DummyKernel>(range, [=](cl::sycl::id<1> threadId) {
+                 cgh.parallel_for<DummyKernel>(range, [=](cl::sycl::id<1> threadId) {
                      d_buffer[threadId] = threadId.get(0);
                  });
              }).wait_and_throw();
