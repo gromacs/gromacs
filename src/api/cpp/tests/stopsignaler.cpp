@@ -177,15 +177,17 @@ private:
  */
 TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
 {
-    const int nsteps = 1;
+    const int nsteps = 4;
     makeTprFile(nsteps);
-    auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
-    auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
 
     // Check assumptions about basic simulation behavior.
     {
-        const int      nstlist = 1;
-        gmxapi::MDArgs args    = makeMdArgs();
+        const int nstlist = 1;
+
+        auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
+        auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
+
+        gmxapi::MDArgs args = makeMdArgs();
         args.emplace_back("-nstlist");
         args.emplace_back(std::to_string(nstlist));
 
@@ -210,13 +212,31 @@ TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
 
     // Make sure that stop signal shortens simulation.
     {
-        const int      nstlist = 1;
-        gmxapi::MDArgs args    = makeMdArgs();
+        /* StopHandler promises to stop a simulation at the next NS step after the signal got communicated.
+         * We don't know the communication interval, but we know that it is at most nstlist. We cannot assume
+         * that the signal gets communicated on the step it is set, even if that step is a communication step.
+         * As the signal is set on the first step, we know that the restraint will be called at
+         * most 2*nstlist + 1 times.
+         * Since the time elapsed after the first step is 0, however, we expect the elapsed time
+         * divided by the step size to be at most 2*nstlist.
+         */
+
+        const int           nstlist  = 1;
+        constexpr const int maxsteps = nstlist * 2 + 1;
+        // This test is meaningless if the the simulation ends early without a signal.
+        static_assert(
+                maxsteps < nsteps,
+                "Simulation is already scheduled to end before it can receive a stop signal.");
+
+        auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
+        auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
+
+        gmxapi::MDArgs args = makeMdArgs();
         args.emplace_back("-nstlist");
         args.emplace_back(std::to_string(nstlist));
         // TODO (Ref #3256) use api functionality to extend simulation instead
         args.emplace_back("-nsteps");
-        args.emplace_back(std::to_string(nsteps * 2));
+        args.emplace_back(std::to_string(nsteps));
 
         context->setMDArgs(args);
 
@@ -232,15 +252,10 @@ TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
         gmxapi::Status status;
         ASSERT_NO_THROW(status = session->run());
         EXPECT_TRUE(status.success());
-        /* StopHandler promises to stop a simulation at the next NS step after the signal got communicated.
-         * We don't know the communication interval, but we know that it is at most nstlist. We cannot assume
-         * that the signal gets communicated on the step it is set, even if that step is a communication step.
-         * As the signal is set on the first step, we know that the restraint will be called at
-         * most 2*nstlist + 1 times.
-         * Since the time elapsed after the first step is 0, however, we expect the elapsed time
-         * divided by the step size to be at most 2*nstlist.
-         */
-        EXPECT_LE(gmx::roundToInt(restraint->timeElapsedSinceStart() / getTestStepSize()), 2 * nstlist);
+
+        const int steps_just_run =
+                gmx::roundToInt(restraint->timeElapsedSinceStart() / getTestStepSize());
+        EXPECT_LT(steps_just_run, maxsteps);
 
         status = session->close();
         EXPECT_TRUE(status.success());
