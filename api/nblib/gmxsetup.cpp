@@ -102,37 +102,8 @@ void NbvSetupUtil::setAtomProperties(const std::vector<int>&  particleTypeIdOfAl
 //! Sets up and returns a Nbnxm object for the given options and system
 void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options)
 {
-    const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
-                                            : gmx::PinningPolicy::CannotBePinned);
-    const int  numThreads = options.numOpenMPThreads;
-    // Note: the options and Nbnxm combination rule enums values should match
-    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    checkKernelSetup(options.nbnxmSimd); // throws exception is setup is invalid
-
-    Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
-
-    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
-    Nbnxm::GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
-    auto pairSearch   = std::make_unique<PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
-
-    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
-                                                       gmx::MDLogger(),
-                                                       kernelSetup.kernelType,
-                                                       combinationRule,
-                                                       numParticleTypes,
-                                                       nonbondedParameters_,
-                                                       1,
-                                                       numThreads);
-
-    // Put everything together
-    auto nbv = std::make_unique<nonbonded_verlet_t>(
-            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullptr);
-
-    gmxForceCalculator_->nbv_ = std::move(nbv);
+    gmxForceCalculator_->nbv_ = createNbnxmCPU(numParticleTypes, options, 1, nonbondedParameters_);
 }
 
 void NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)

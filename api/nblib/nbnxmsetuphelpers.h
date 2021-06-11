@@ -107,6 +107,12 @@ real ewaldCoeff(real ewald_rtol, real pairlistCutoff);
 //! Creates an interaction_const_t object from NBKernelOptions
 interaction_const_t createInteractionConst(const NBKernelOptions& options);
 
+//! Create nonbonded_verlet_t object
+std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(size_t                    numParticleTypes,
+                                                   const NBKernelOptions&    options,
+                                                   int                       numEnergyGroups,
+                                                   gmx::ArrayRef<const real> nonbondedParameters);
+
 //! Set number of OpenMP threads in the GROMACS backend
 void setGmxNonBondedNThreads(int numThreads);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,6 +243,41 @@ interaction_const_t createInteractionConst(const NBKernelOptions& options)
         init_interaction_const_tables(nullptr, &interactionConst, 0, 0);
     }
     return interactionConst;
+}
+
+std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              numParticleTypes,
+                                                   const NBKernelOptions&    options,
+                                                   int                       numEnergyGroups,
+                                                   gmx::ArrayRef<const real> nonbondedParameters)
+{
+    const auto pinPolicy  = gmx::PinningPolicy::CannotBePinned;
+    const int  numThreads = options.numOpenMPThreads;
+    // Note: the options and Nbnxm combination rule enums values should match
+    const int combinationRule = static_cast<int>(options.ljCombinationRule);
+
+    Nbnxm::KernelSetup kernelSetup = createKernelSetupCPU(options);
+
+    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
+
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairSearch   = std::make_unique<PairSearch>(
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+
+    // Needs to be called with the number of unique ParticleTypes
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
+                                                       gmx::MDLogger(),
+                                                       kernelSetup.kernelType,
+                                                       combinationRule,
+                                                       numParticleTypes,
+                                                       nonbondedParameters,
+                                                       numEnergyGroups,
+                                                       numThreads);
+
+    // Put everything together
+    auto nbv = std::make_unique<nonbonded_verlet_t>(
+            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullptr);
+
+    return nbv;
 }
 
 void setGmxNonBondedNThreads(int numThreads)

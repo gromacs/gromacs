@@ -58,6 +58,7 @@ namespace test
 {
 namespace
 {
+
 TEST(NbnxmSetupTest, findNumEnergyGroups)
 {
     std::vector<int64_t> v(10);
@@ -177,6 +178,16 @@ TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU4XM)
     EXPECT_ANY_THROW(createKernelSetupCPU(nbKernelOptions));
 }
 #endif
+
+TEST(NbnxmSetupTest, CanCreateNbnxmCPU)
+{
+    size_t          numParticles = 1;
+    NBKernelOptions nbKernelOptions;
+    nbKernelOptions.nbnxmSimd             = SimdKernels::SimdNo;
+    int               numEnergyGroups     = 1;
+    std::vector<real> nonbondedParameters = { 1, 1 };
+    EXPECT_NO_THROW(createNbnxmCPU(numParticles, nbKernelOptions, numEnergyGroups, nonbondedParameters));
+}
 
 } // namespace
 } // namespace test
