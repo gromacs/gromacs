@@ -267,18 +267,38 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     return compiler
 
 
-def get_mpi(args, compiler):
+def get_gdrcopy(args, compiler):
+    if args.cuda is not None:
+        if hasattr(compiler, 'toolchain'):
+            # Version last updated June 7, 2021
+            return hpccm.building_blocks.gdrcopy(toolchain=compiler.toolchain, version="2.2")
+        else:
+            raise RuntimeError('compiler is not an HPCCM compiler building block!')
+    else:
+        return None
+
+def get_ucx(args, compiler, gdrcopy):
+    if args.cuda is not None:
+        if hasattr(compiler, 'toolchain'):
+            use_gdrcopy = (gdrcopy is not None)
+            # Version last updated June 7, 2021
+            return hpccm.building_blocks.ucx(toolchain=compiler.toolchain, gdrcopy=use_gdrcopy, version="1.10.1", cuda=True)
+        else:
+            raise RuntimeError('compiler is not an HPCCM compiler building block!')
+    else:
+        return None
+
+def get_mpi(args, compiler, ucx):
     # If needed, add MPI to the image
     if args.mpi is not None:
         if args.mpi == 'openmpi':
-            use_cuda = False
-            if args.cuda is not None:
-                use_cuda = True
-
             if hasattr(compiler, 'toolchain'):
                 if args.oneapi is not None:
                     raise RuntimeError('oneAPI building OpenMPI is not supported')
-                return hpccm.building_blocks.openmpi(toolchain=compiler.toolchain, cuda=use_cuda, infiniband=False)
+                use_cuda = (args.cuda is not None)
+                use_ucx = (ucx is not None)
+                # Version last updated June 7, 2021
+                return hpccm.building_blocks.openmpi(toolchain=compiler.toolchain, version="4.1.1", cuda=use_cuda, ucx=use_ucx, infiniband=False)
             else:
                 raise RuntimeError('compiler is not an HPCCM compiler building block!')
 
@@ -494,6 +514,10 @@ def add_python_stages(building_blocks: typing.Mapping[str, bb_base],
     pyenv_stage = hpccm.Stage()
     pyenv_stage += hpccm.primitives.baseimage(image=base_image_tag(input_args), _as='pyenv')
     pyenv_stage += building_blocks['compiler']
+    if building_blocks['gdrcopy'] is not None:
+        pyenv_stage += building_blocks['gdrcopy']
+    if building_blocks['ucx'] is not None:
+        pyenv_stage += building_blocks['ucx']
     pyenv_stage += building_blocks['mpi']
     pyenv_stage += hpccm.building_blocks.packages(ospackages=_python_extra_packages)
 
@@ -502,6 +526,10 @@ def add_python_stages(building_blocks: typing.Mapping[str, bb_base],
         stage = hpccm.Stage()
         stage += hpccm.primitives.baseimage(image=base_image_tag(input_args), _as=stage_name)
         stage += building_blocks['compiler']
+        if building_blocks['gdrcopy'] is not None:
+            stage += building_blocks['gdrcopy']
+        if building_blocks['ucx'] is not None:
+            stage += building_blocks['ucx']
         stage += building_blocks['mpi']
         stage += hpccm.building_blocks.packages(ospackages=_python_extra_packages)
 
@@ -606,7 +634,9 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
 
     # These are the most expensive and most reusable layers, so we put them first.
     building_blocks['compiler'] = get_compiler(args, compiler_build_stage=stages.get('compiler_build'))
-    building_blocks['mpi'] = get_mpi(args, building_blocks['compiler'])
+    building_blocks['gdrcopy'] = get_gdrcopy(args, building_blocks['compiler'])
+    building_blocks['ucx'] = get_ucx(args, building_blocks['compiler'], building_blocks['gdrcopy'])
+    building_blocks['mpi'] = get_mpi(args, building_blocks['compiler'], building_blocks['ucx'])
     for i, cmake in enumerate(args.cmake):
         building_blocks['cmake' + str(i)] = hpccm.building_blocks.cmake(
             eula=True,
