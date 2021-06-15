@@ -1351,9 +1351,7 @@ static void do_dip(const t_topology*       top,
 
             if (fnadip)
             {
-                real aver;
-                gmx_stats_get_average(muframelsq, &aver);
-                fprintf(adip, "%10g %f \n", t, aver);
+                fprintf(adip, "%10g %f \n", t, gmx_stats_get_average(muframelsq));
             }
             /*if (dipole)
                printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
@@ -1472,25 +1470,21 @@ static void do_dip(const t_topology*       top,
     }
     if (!bMU)
     {
-        real aver, sigma, error;
-
-        gmx_stats_get_ase(mulsq, &aver, &sigma, &error);
+        auto [aver, sigma, error] = gmx_stats_get_ase(mulsq);
         printf("\nDipole moment (Debye)\n");
         printf("---------------------\n");
         printf("Average  = %8.4f  Std. Dev. = %8.4f  Error = %8.4f\n", aver, sigma, error);
         if (bQuad)
         {
-            rvec a, s, e;
-            for (m = 0; (m < DIM); m++)
-            {
-                gmx_stats_get_ase(mulsq, &(a[m]), &(s[m]), &(e[m]));
-            }
+            auto [averageXX, sigmaXX, errorXX] = gmx_stats_get_ase(Qlsq[XX]);
+            auto [averageYY, sigmaYY, errorYY] = gmx_stats_get_ase(Qlsq[YY]);
+            auto [averageZZ, sigmaZZ, errorZZ] = gmx_stats_get_ase(Qlsq[ZZ]);
 
             printf("\nQuadrupole moment (Debye-Ang)\n");
             printf("-----------------------------\n");
-            printf("Averages  = %8.4f  %8.4f  %8.4f\n", a[XX], a[YY], a[ZZ]);
-            printf("Std. Dev. = %8.4f  %8.4f  %8.4f\n", s[XX], s[YY], s[ZZ]);
-            printf("Error     = %8.4f  %8.4f  %8.4f\n", e[XX], e[YY], e[ZZ]);
+            printf("Averages  = %8.4f  %8.4f  %8.4f\n", averageXX, averageYY, averageZZ);
+            printf("Std. Dev. = %8.4f  %8.4f  %8.4f\n", sigmaXX, sigmaYY, sigmaZZ);
+            printf("Error     = %8.4f  %8.4f  %8.4f\n", errorXX, errorYY, errorZZ);
         }
         printf("\n");
     }

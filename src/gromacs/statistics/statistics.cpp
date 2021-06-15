@@ -37,15 +37,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "statistics.h"
 
 #include <cmath>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -79,7 +78,7 @@ void gmx_stats_free(gmx_stats_t gstats)
     sfree(stats);
 }
 
-StatisticsStatus gmx_stats_add_point(gmx_stats_t gstats, double x, double y, double dx, double dy)
+void gmx_stats_add_point(gmx_stats_t gstats, double x, double y, double dx, double dy)
 {
     gmx_stats* stats = gstats;
 
@@ -111,11 +110,9 @@ StatisticsStatus gmx_stats_add_point(gmx_stats_t gstats, double x, double y, dou
     stats->dy[stats->np] = dy;
     stats->np++;
     stats->computed = 0;
-
-    return StatisticsStatus::Ok;
 }
 
-static StatisticsStatus gmx_stats_compute(gmx_stats* stats, int weight)
+static void gmx_stats_compute(gmx_stats* stats, int weight)
 {
     double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
     double ssxx, ssyy, ssxy;
@@ -125,10 +122,7 @@ static StatisticsStatus gmx_stats_compute(gmx_stats* stats, int weight)
 
     if (stats->computed == 0)
     {
-        if (N < 1)
-        {
-            return StatisticsStatus::NoPoints;
-        }
+        GMX_RELEASE_ASSERT(N >= 1, "Must have points to work on");
 
         xx = xx_nw = 0;
         yy = yy_nw = 0;
@@ -240,20 +234,13 @@ static StatisticsStatus gmx_stats_compute(gmx_stats* stats, int weight)
 
         stats->computed = 1;
     }
-
-    return StatisticsStatus::Ok;
 }
 
-StatisticsStatus
-gmx_stats_get_ab(gmx_stats_t gstats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit)
+void gmx_stats_get_ab(gmx_stats_t gstats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit)
 {
-    gmx_stats*       stats = gstats;
-    StatisticsStatus ok;
+    gmx_stats* stats = gstats;
 
-    if ((ok = gmx_stats_compute(stats, weight)) != StatisticsStatus::Ok)
-    {
-        return ok;
-    }
+    gmx_stats_compute(stats, weight);
     if (nullptr != a)
     {
         *a = stats->a;
@@ -278,126 +265,72 @@ gmx_stats_get_ab(gmx_stats_t gstats, int weight, real* a, real* b, real* da, rea
     {
         *Rfit = stats->Rfit;
     }
-
-    return StatisticsStatus::Ok;
 }
 
-StatisticsStatus gmx_stats_get_average(gmx_stats_t gstats, real* aver)
+real gmx_stats_get_average(gmx_stats_t gstats)
 {
-    gmx_stats*       stats = gstats;
-    StatisticsStatus ok;
+    gmx_stats* stats = gstats;
 
-    if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != StatisticsStatus::Ok)
+    if (gstats->np < 1)
     {
-        return ok;
+        GMX_THROW(gmx::InconsistentInputError("No points to average"));
     }
+    gmx_stats_compute(stats, elsqWEIGHT_NONE);
 
-    *aver = stats->aver;
-
-    return StatisticsStatus::Ok;
+    return stats->aver;
 }
 
-StatisticsStatus gmx_stats_get_ase(gmx_stats_t gstats, real* aver, real* sigma, real* error)
+std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t gstats)
 {
-    gmx_stats*       stats = gstats;
-    StatisticsStatus ok;
+    gmx_stats* stats = gstats;
 
-    if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != StatisticsStatus::Ok)
+    if (gstats->np < 1)
     {
-        return ok;
+        GMX_THROW(gmx::InconsistentInputError("No points to average"));
     }
+    gmx_stats_compute(stats, elsqWEIGHT_NONE);
 
-    if (nullptr != aver)
-    {
-        *aver = stats->aver;
-    }
-    if (nullptr != sigma)
-    {
-        *sigma = stats->sigma_aver;
-    }
-    if (nullptr != error)
-    {
-        *error = stats->error;
-    }
-
-    return StatisticsStatus::Ok;
+    return std::make_tuple(stats->aver, stats->sigma_aver, stats->error);
 }
 
-static const char* enumValueToString(StatisticsStatus enumValue)
+// When using GMX_DOUBLE=OFF, some callers want to analyse x values
+// that are already computed in double precision. So we need to
+// compile two versions, so that the promotion to double is used when
+// needed.
+template<typename RealT>
+void low_lsq_y_ax_b(int n, const RealT* xr, real yr[], real* a, real* b, real* r, real* chi2)
 {
-    constexpr gmx::EnumerationArray<StatisticsStatus, const char*> statisticsStatusNames = {
-        "All well in STATS land", "No points"
-    };
-    return statisticsStatusNames[enumValue];
-}
-
-void gmx_stats_message([[maybe_unused]] StatisticsStatus estats)
-{
-    GMX_ASSERT(estats == StatisticsStatus::Ok, enumValueToString(estats));
-}
-
-static StatisticsStatus
-low_lsq_y_ax_b(int n, const real* xr, const double* xd, real yr[], real* a, real* b, real* r, real* chi2)
-{
-    gmx_stats_t      lsq = gmx_stats_init();
-    StatisticsStatus ok;
-
+    gmx_stats_t lsq = gmx_stats_init();
     for (int i = 0; (i < n); i++)
     {
-        double pt;
-
-        if (xd != nullptr)
-        {
-            pt = xd[i];
-        }
-        else if (xr != nullptr)
-        {
-            pt = xr[i];
-        }
-        else
-        {
-            gmx_incons("Either xd or xr has to be non-NULL in low_lsq_y_ax_b()");
-        }
-
-        if ((ok = gmx_stats_add_point(lsq, pt, yr[i], 0, 0)) != StatisticsStatus::Ok)
-        {
-            gmx_stats_free(lsq);
-            return ok;
-        }
+        gmx_stats_add_point(lsq, double(xr[i]), yr[i], 0, 0);
     }
-    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
+    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
     gmx_stats_free(lsq);
-
-    return ok;
 }
 
-StatisticsStatus lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2)
+void lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2)
 {
-    return low_lsq_y_ax_b(n, x, nullptr, y, a, b, r, chi2);
+    low_lsq_y_ax_b(n, x, y, a, b, r, chi2);
 }
 
-StatisticsStatus lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2)
+void lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2)
 {
-    return low_lsq_y_ax_b(n, nullptr, x, y, a, b, r, chi2);
+    low_lsq_y_ax_b(n, x, y, a, b, r, chi2);
 }
 
-StatisticsStatus
-lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2)
+void lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2)
 {
-    gmx_stats_t      lsq = gmx_stats_init();
-    StatisticsStatus ok;
+    if (n < 1)
+    {
+        GMX_THROW(gmx::InconsistentInputError("No points to fit"));
+    }
 
+    gmx_stats_t lsq = gmx_stats_init();
     for (int i = 0; (i < n); i++)
     {
-        ok = gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i]);
-        if (ok != StatisticsStatus::Ok)
-        {
-            gmx_stats_free(lsq);
-            return ok;
-        }
+        gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i]);
     }
-    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
+    gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
     gmx_stats_free(lsq);
-
-    return ok;
 }

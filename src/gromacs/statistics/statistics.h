@@ -46,18 +46,12 @@
 
 #include <cstdio>
 
+#include <tuple>
+
 #include "gromacs/utility/real.h"
 
 //! Abstract container type
 typedef struct gmx_stats* gmx_stats_t;
-
-//! Error codes returned by the routines
-enum class StatisticsStatus : int
-{
-    Ok,
-    NoPoints,
-    Count
-};
 
 //! Enum for statistical weights
 enum
@@ -88,9 +82,8 @@ void gmx_stats_free(gmx_stats_t stats);
  * \param[in] y   The y value
  * \param[in] dx  The error in the x value
  * \param[in] dy  The error in the y value
- * \return error code
  */
-StatisticsStatus gmx_stats_add_point(gmx_stats_t stats, double x, double y, double dx, double dy);
+void gmx_stats_add_point(gmx_stats_t stats, double x, double y, double dx, double dy);
 
 /*! \brief
  * Fit the data to y = ax + b, possibly weighted, if uncertainties
@@ -103,34 +96,25 @@ StatisticsStatus gmx_stats_add_point(gmx_stats_t stats, double x, double y, doub
  * \param[out] db sigma in b
  * \param[out] chi2 normalized quality of fit
  * \param[out] Rfit correlation coefficient
- * \return error code
  */
-StatisticsStatus
-gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit);
+void gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit);
 
 /*! \brief
  * Computes and returns the average value.
  * \param[in]  stats The data structure
  * \param[out] aver  Average value
- * \return error code
+ * \return Average value
+ * \throws  InconsistentInputError if given no points to average
  */
-StatisticsStatus gmx_stats_get_average(gmx_stats_t stats, real* aver);
+real gmx_stats_get_average(gmx_stats_t stats);
 
 /*! \brief
  * Pointers may be null, in which case no assignment will be done.
  * \param[in]  stats The data structure
- * \param[out] aver  Average value
- * \param[out] sigma  Standard deviation
- * \param[out] error Standard error
- * \return error code
+ * \return Tuple of (average value, its standard deviation, its standard error)
+ * \throws  InconsistentInputError if given no points to analyze
  */
-StatisticsStatus gmx_stats_get_ase(gmx_stats_t stats, real* aver, real* sigma, real* error);
-
-/*! \brief Assert that statistics are OK
- *
- * \param[in] estats error code
- */
-void gmx_stats_message([[maybe_unused]] StatisticsStatus estats);
+std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t gstats);
 
 /****************************************************
  * Some statistics utilities for convenience: useful when a complete data
@@ -146,13 +130,16 @@ void gmx_stats_message([[maybe_unused]] StatisticsStatus estats);
  * \param[out] b intercept
  * \param[out] r correlation coefficient
  * \param[out] chi2 quality of fit
- * \return error code
+ *
+ * \throws  InconsistentInputError if given no points to fit
  */
-StatisticsStatus lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2);
+void lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2);
 
 /*! \copydoc lsq_y_ax_b
+ * Suits cases where x is already always computed in double precision
+ * even in a mixed-precision build configuration.
  */
-StatisticsStatus lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2);
+void lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2);
 
 /*! \brief
  * Fit a straight line y=ax+b thru the n data points x, y.
@@ -166,9 +153,9 @@ StatisticsStatus lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* 
  * \param[out] db error in intercept
  * \param[out] r correlation coefficient
  * \param[out] chi2 quality of fit
- * \return error code
+ *
+ * \throws  InconsistentInputError if given no points to fit
  */
-StatisticsStatus
-lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2);
+void lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2);
 
 #endif

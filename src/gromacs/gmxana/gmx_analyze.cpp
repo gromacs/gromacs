@@ -164,8 +164,7 @@ static void plot_coscont(const char* ccfile, int n, int nset, real** val, const 
 
 static void regression_analysis(int n, gmx_bool bXYdy, real* x, int nset, real** val)
 {
-    real             S, chi2, a, b, da, db, r = 0;
-    StatisticsStatus ok;
+    real S, chi2, a, b, da, db, r = 0;
 
     if (bXYdy || (nset == 1))
     {
@@ -175,18 +174,11 @@ static void regression_analysis(int n, gmx_bool bXYdy, real* x, int nset, real**
         printf("(use option -xydy).\n\n");
         if (bXYdy)
         {
-            if ((ok = lsq_y_ax_b_error(n, x, val[0], val[1], &a, &b, &da, &db, &r, &S))
-                != StatisticsStatus::Ok)
-            {
-                gmx_stats_message(ok);
-            }
+            lsq_y_ax_b_error(n, x, val[0], val[1], &a, &b, &da, &db, &r, &S);
         }
         else
         {
-            if ((ok = lsq_y_ax_b(n, x, val[0], &a, &b, &r, &S)) != StatisticsStatus::Ok)
-            {
-                gmx_stats_message(ok);
-            }
+            lsq_y_ax_b(n, x, val[0], &a, &b, &r, &S);
         }
         chi2 = gmx::square((n - 2) * S);
         printf("Chi2                    = %g\n", chi2);
