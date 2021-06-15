@@ -173,7 +173,8 @@ _docs_extra_packages = ['autoconf',
                         'texlive-latex-base',
                         'texlive-latex-extra',
                         'texlive-fonts-recommended',
-                        'texlive-fonts-extra']
+                        'texlive-fonts-extra',
+                        'tex-gyre']
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='GROMACS CI image creation script',

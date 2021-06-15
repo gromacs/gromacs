@@ -6,7 +6,7 @@
     - .gromacs:base:configure
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
   stage: configure-build
   cache: {}
   variables:
@@ -77,7 +77,7 @@
     - .before_script:default
     - .rules:nightly-only-for-release
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
   stage: release-configure
   cache: {}
   variables:
@@ -188,7 +188,7 @@ docs:configure:
 
 .docs:build:
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -228,7 +228,7 @@ docs:build:
     - .gromacs:base:build
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
   cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 4
