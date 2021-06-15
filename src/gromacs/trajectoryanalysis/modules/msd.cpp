@@ -171,19 +171,22 @@ inline double calcSingleSquaredDistance(const RVec c1, const RVec c2)
     const DVec firstCoords  = c1.toDVec();
     const DVec secondCoords = c2.toDVec();
     double     result       = 0;
-    if constexpr (x) // NOLINT // NOLINTNEXTLINE
+    if constexpr (x)
     {
         result += (firstCoords[XX] - secondCoords[XX]) * (firstCoords[XX] - secondCoords[XX]);
     }
-    if constexpr (y) // NOLINT // NOLINTNEXTLINE
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
+    if constexpr (y)
     {
         result += (firstCoords[YY] - secondCoords[YY]) * (firstCoords[YY] - secondCoords[YY]);
     }
-    if constexpr (z) // NOLINT // NOLINTNEXTLINE
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
+    if constexpr (z)
     {
         result += (firstCoords[ZZ] - secondCoords[ZZ]) * (firstCoords[ZZ] - secondCoords[ZZ]);
     }
-    return result; // NOLINT
+    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
+    return result;
 }
 
 /*! \brief Calculate average displacement between sets of points

@@ -905,13 +905,8 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
 
     PropagatorConnection propagatorConnection{ propagatorTag };
 
-    // The clang-tidy version on our current CI throws 3 different warnings
-    // for the if constexpr lines, so disable linting for now. Also, this only
-    // works if the brace is on the same line, so turn off clang-format as well
-    // clang-format off
-    // NOLINTNEXTLINE
-    if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>()) {
-        // clang-format on
+    if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>())
+    {
         propagatorConnection.setNumVelocityScalingVariables =
                 [propagator](int num, ScaleVelocities scaleVelocities) {
                     propagator->setNumVelocityScalingVariables(num, scaleVelocities);
@@ -920,26 +915,20 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->velocityScalingCallback();
         };
     }
-    // clang-format off
-    // NOLINTNEXTLINE
-    if constexpr (hasStartVelocityScaling<integrationStage>()) {
-        // clang-format on
+    if constexpr (hasStartVelocityScaling<integrationStage>())
+    {
         propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
             return propagator->viewOnStartVelocityScaling();
         };
     }
-    // clang-format off
-    // NOLINTNEXTLINE
-    if constexpr (hasEndVelocityScaling<integrationStage>()) {
-        // clang-format on
+    if constexpr (hasEndVelocityScaling<integrationStage>())
+    {
         propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
             return propagator->viewOnEndVelocityScaling();
         };
     }
-    // clang-format off
-    // NOLINTNEXTLINE
-    if constexpr (hasPositionScaling<integrationStage>()) {
-        // clang-format on
+    if constexpr (hasPositionScaling<integrationStage>())
+    {
         propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
             propagator->setNumPositionScalingVariables(num);
         };
@@ -950,10 +939,8 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->positionScalingCallback();
         };
     }
-    // clang-format off
-    // NOLINTNEXTLINE
-    if constexpr (hasParrinelloRahmanScaling<integrationStage>()) {
-        // clang-format on
+    if constexpr (hasParrinelloRahmanScaling<integrationStage>())
+    {
         propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
             return propagator->viewOnPRScalingMatrix();
         };
@@ -962,7 +949,6 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
         };
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     return propagatorConnection;
 }
 
