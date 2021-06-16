@@ -27,6 +27,13 @@ Also enforces that this option is exclusive with other analysis modes.
 
 :issue:`4060`
 
+Fixed gmx dipoles -quad option
+""""""""""""""""""""""""""""""
+
+The tool now reports correct values.
+
+:issue:`4080`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
