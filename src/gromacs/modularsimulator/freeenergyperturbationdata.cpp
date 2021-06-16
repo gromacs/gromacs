@@ -87,9 +87,24 @@ void FreeEnergyPerturbationData::Element::scheduleTask(Step                     
                                                        Time gmx_unused            time,
                                                        const RegisterRunFunction& registerRunFunction)
 {
-    if (lambdasChange_)
+    // If we do slow growth, we update lambda every step
+    // If it's set externally, we get notified, so we only update when necessary (at nextLambdaSettingStep_)
+    // However, if we reload from checkpoint, it might be that checkpointing happened right between the
+    // external caller setting the state and us applying it, so we also check newFepStateStep_.
+    const bool needToSetExternalState = externalFepStateSetting_
+                                        && ((step == externalFepStateSetting_->nextFepStateSettingStep)
+                                            || (step == externalFepStateSetting_->newFepStateStep));
+    if (doSlowGrowth_)
     {
         registerRunFunction([this, step]() { freeEnergyPerturbationData_->updateLambdas(step); });
+    }
+    else if (needToSetExternalState)
+    {
+        registerRunFunction([this, step]() {
+            GMX_ASSERT(step == externalFepStateSetting_->newFepStateStep,
+                       "FEP state setting step mismatch");
+            freeEnergyPerturbationData_->setLambdaState(step, externalFepStateSetting_->newFepState);
+        });
     }
 }
 
@@ -100,12 +115,18 @@ void FreeEnergyPerturbationData::updateLambdas(Step step)
     updateMDAtoms();
 }
 
+void FreeEnergyPerturbationData::setLambdaState(Step step, int newState)
+{
+    currentFEPState_ = newState;
+    updateLambdas(step);
+}
+
 ArrayRef<real> FreeEnergyPerturbationData::lambdaView()
 {
     return lambda_;
 }
 
-ArrayRef<const real> FreeEnergyPerturbationData::constLambdaView()
+ArrayRef<const real> FreeEnergyPerturbationData::constLambdaView() const
 {
     return lambda_;
 }
@@ -120,6 +141,11 @@ void FreeEnergyPerturbationData::updateMDAtoms()
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[FreeEnergyPerturbationCouplingType::Mass]);
 }
 
+FepStateSetting* FreeEnergyPerturbationData::enableExternalFepStateSetting() const
+{
+    return element_->enableExternalFepStateSetting();
+}
+
 namespace
 {
 /*!
@@ -130,8 +156,9 @@ namespace
  */
 enum class CheckpointVersion
 {
-    Base, //!< First version of modular checkpointing
-    Count //!< Number of entries. Add new versions right above this!
+    Base,                       //!< First version of modular checkpointing
+    AddedExternalLambdaSetting, //!< Additional values to ensure no state setting info is lost
+    Count                       //!< Number of entries. Add new versions right above this!
 };
 constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
 } // namespace
@@ -145,6 +172,43 @@ void FreeEnergyPerturbationData::doCheckpointData(CheckpointData<operation>* che
     checkpointData->arrayRef("lambda vector", makeCheckpointArrayRef<operation>(lambda_));
 }
 
+template<CheckpointDataOperation operation>
+void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operation>* checkpointData)
+{
+    CheckpointVersion fileVersion = c_currentVersion;
+    if (operation == CheckpointDataOperation::Read)
+    {
+        // We can read the same key as above - we can only write it once, though!
+        fileVersion = checkpointVersion(
+                checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
+    }
+
+    if (fileVersion > CheckpointVersion::AddedExternalLambdaSetting)
+    {
+        // If checkpointing happens between receiving the request and actually setting the new
+        // lambda state, we need to preserve this information.
+        bool externalLambdaSetting = externalFepStateSetting_.has_value();
+        checkpointData->scalar("External lambda setting", &externalLambdaSetting);
+        if constexpr (operation == CheckpointDataOperation::Read)
+        {
+            GMX_RELEASE_ASSERT(
+                    !(externalLambdaSetting && !externalFepStateSetting_.has_value()),
+                    "Checkpoint mismatch: Checkpointed simulation used external lambda setting, "
+                    "while the current simulation does not.");
+            GMX_RELEASE_ASSERT(!(!externalLambdaSetting && externalFepStateSetting_.has_value()),
+                               "Checkpoint mismatch: Checkpointed simulation dit not use external "
+                               "lambda setting, "
+                               "while the current simulation does.");
+        }
+        if (externalFepStateSetting_.has_value()) // NOLINT(readability-misleading-indentation)
+        {
+            checkpointData->scalar("Requested new FEP state", &externalFepStateSetting_->newFepState);
+            checkpointData->scalar("Step at which new FEP state is applied",
+                                   &externalFepStateSetting_->newFepStateStep);
+        }
+    }
+}
+
 void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                               const t_commrec*                   cr)
 {
@@ -152,6 +216,7 @@ void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<Writ
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Write>(
                 &checkpointData.value());
+        doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
 }
 
@@ -162,6 +227,7 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Read>(
                 &checkpointData.value());
+        doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
     if (DOMAINDECOMP(cr))
     {
@@ -169,6 +235,15 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
         dd_bcast(cr->dd,
                  ssize(freeEnergyPerturbationData_->lambda_) * int(sizeof(real)),
                  freeEnergyPerturbationData_->lambda_.data());
+        if (externalFepStateSetting_.has_value())
+        {
+            dd_bcast(cr->dd,
+                     sizeof(externalFepStateSetting_->newFepState),
+                     &externalFepStateSetting_->newFepState);
+            dd_bcast(cr->dd,
+                     sizeof(externalFepStateSetting_->newFepStateStep),
+                     &externalFepStateSetting_->newFepStateStep);
+        }
     }
 }
 
@@ -184,7 +259,7 @@ DomDecCallback FreeEnergyPerturbationData::Element::registerDomDecCallback()
 
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
                                              double                      deltaLambda) :
-    freeEnergyPerturbationData_(freeEnergyPerturbationElement), lambdasChange_(deltaLambda != 0)
+    freeEnergyPerturbationData_(freeEnergyPerturbationElement), doSlowGrowth_(deltaLambda != 0)
 {
 }
 
@@ -196,6 +271,28 @@ void FreeEnergyPerturbationData::Element::elementSetup()
 FreeEnergyPerturbationData::Element* FreeEnergyPerturbationData::element()
 {
     return element_.get();
+}
+
+FepStateSetting* FreeEnergyPerturbationData::Element::enableExternalFepStateSetting()
+{
+    GMX_RELEASE_ASSERT(!doSlowGrowth_,
+                       "External FEP state setting is incompatible with slow growth.");
+    // This could be implemented with some sanity checks, but there's no use case right now
+    GMX_RELEASE_ASSERT(!externalFepStateSetting_.has_value(),
+                       "External FEP state setting by more than one element not supported.");
+    externalFepStateSetting_ = FepStateSetting();
+    return &externalFepStateSetting_.value();
+}
+
+void FepStateSetting::signalSettingStep(Step step)
+{
+    nextFepStateSettingStep = step;
+}
+
+void FepStateSetting::setNewState(int state, Step step)
+{
+    newFepState     = state;
+    newFepStateStep = step;
 }
 
 ISimulatorElement* FreeEnergyPerturbationData::Element::getElementPointerImpl(

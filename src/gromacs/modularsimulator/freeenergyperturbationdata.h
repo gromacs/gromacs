@@ -58,6 +58,7 @@ namespace gmx
 {
 enum class CheckpointDataOperation;
 class EnergyData;
+class FepStateSetting;
 class GlobalCommunicationHelper;
 class LegacySimulatorData;
 class MDAtoms;
@@ -82,9 +83,18 @@ public:
     //! Get a view of the current lambda vector
     ArrayRef<real> lambdaView();
     //! Get a const view of the current lambda vector
-    ArrayRef<const real> constLambdaView();
+    [[nodiscard]] ArrayRef<const real> constLambdaView() const;
     //! Get the current FEP state
-    int currentFEPState() const;
+    [[nodiscard]] int currentFEPState() const;
+
+    /*! \brief Enable setting of the FEP state by an external object
+     *
+     * Currently, this can only be called once, usually during setup time.
+     * Having more than one object setting the FEP state would require additional bookkeeping.
+     *
+     * \return Pointer to an object allowing to set new FEP state
+     */
+    [[nodiscard]] FepStateSetting* enableExternalFepStateSetting() const;
 
     //! The element taking part in the simulator loop
     class Element;
@@ -100,6 +110,8 @@ public:
 private:
     //! Update the lambda values
     void updateLambdas(Step step);
+    //! Update the lambda values
+    void setLambdaState(Step step, int newState);
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData);
@@ -122,6 +134,29 @@ private:
     MDAtoms* mdAtoms_;
 };
 
+/*! \internal
+ * \ingroup module_modularsimulator
+ * \brief Allows external clients to specify how to change the FEP state
+ */
+class FepStateSetting
+{
+public:
+    //! Signal (during task scheduling) that a signal stepping step will happen
+    void signalSettingStep(Step step);
+    //! Set new state at specific step (called during simulation run)
+    void setNewState(int state, Step step);
+
+    // Allow private member access
+    friend class FreeEnergyPerturbationData::Element;
+
+private:
+    //! The next external lambda setting step
+    Step nextFepStateSettingStep = -1;
+    //! The new FEP state set externally
+    int newFepState = -1;
+    //! The step at which the new FEP state gets used
+    Step newFepStateStep = -1;
+};
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -178,11 +213,21 @@ public:
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper);
 
+    //! Enable setting of the FEP state by an external object
+    FepStateSetting* enableExternalFepStateSetting();
+
 private:
     //! The free energy data
     FreeEnergyPerturbationData* freeEnergyPerturbationData_;
-    //! Whether lambda values are non-static
-    const bool lambdasChange_;
+    //! Whether lambda values change continuously
+    const bool doSlowGrowth_;
+
+    //! Information about external lambda setting, set only if external lambda setting is enabled
+    std::optional<FepStateSetting> externalFepStateSetting_;
+
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData);
 };
 
 } // namespace gmx
