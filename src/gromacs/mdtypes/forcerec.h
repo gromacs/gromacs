@@ -257,8 +257,8 @@ struct t_forcerec
     // The listed forces calculation data, 1 entry or multiple entries with multiple time stepping
     std::vector<ListedForces> listedForces;
 
-    /* TODO: Replace the pointer by an object once we got rid of C */
-    gmx::ListedForcesGpu* listedForcesGpu = nullptr;
+    // The listed forces calculation data for GPU
+    std::unique_ptr<gmx::ListedForcesGpu> listedForcesGpu;
 
     /* Ewald correction thread local virial and energy data */
     int                              nthread_ewc = 0;

@@ -1611,7 +1611,6 @@ int Mdrunner::mdrunner()
     const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
     std::unique_ptr<MDAtoms> mdAtoms;
     std::unique_ptr<VirtualSitesHandler> vsite;
-    std::unique_ptr<ListedForcesGpu>     listedForcesGpu;
 
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
@@ -1677,13 +1676,12 @@ int Mdrunner::mdrunner()
             GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
                                "GPU device stream manager should be valid in order to use GPU "
                                "version of bonded forces.");
-            listedForcesGpu = std::make_unique<ListedForcesGpu>(
+            fr->listedForcesGpu = std::make_unique<ListedForcesGpu>(
                     mtop.ffparams,
                     fr->ic->epsfac * fr->fudgeQQ,
                     deviceStreamManager->context(),
                     deviceStreamManager->bondedStream(havePPDomainDecomposition(cr)),
                     wcycle.get());
-            fr->listedForcesGpu = listedForcesGpu.get();
         }
 
         /* Initialize the mdAtoms structure.
@@ -2073,8 +2071,7 @@ int Mdrunner::mdrunner()
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     mdModules_.reset(nullptr); // destruct force providers here as they might also use the GPU
-    listedForcesGpu.reset(nullptr);
-    fr.reset(nullptr); // destruct forcerec before gpu
+    fr.reset(nullptr);         // destruct forcerec before gpu
     // TODO convert to C++ so we can get rid of these frees
     sfree(disresdata);
 

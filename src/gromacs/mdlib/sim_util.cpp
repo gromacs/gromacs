@@ -1470,7 +1470,7 @@ void do_force(FILE*                               fplog,
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
         nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 
-        nbv->setupGpuShortRangeWork(fr->listedForcesGpu, InteractionLocality::Local);
+        nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::Local);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
@@ -1559,7 +1559,7 @@ void do_force(FILE*                               fplog,
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
             nbv->constructPairlist(InteractionLocality::NonLocal, top->excls, step, nrnb);
 
-            nbv->setupGpuShortRangeWork(fr->listedForcesGpu, InteractionLocality::NonLocal);
+            nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::NonLocal);
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
             wallcycle_stop(wcycle, WallCycleCounter::NS);
             // TODO refactor this GPU halo exchange re-initialisation
@@ -2285,7 +2285,8 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    launchGpuEndOfStepTasks(nbv, fr->listedForcesGpu, fr->pmedata, enerd, *runScheduleWork, step, wcycle);
+    launchGpuEndOfStepTasks(
+            nbv, fr->listedForcesGpu.get(), fr->pmedata, enerd, *runScheduleWork, step, wcycle);
 
     if (DOMAINDECOMP(cr))
     {
