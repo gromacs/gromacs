@@ -102,7 +102,6 @@ void gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da,
 /*! \brief
  * Computes and returns the average value.
  * \param[in]  stats The data structure
- * \param[out] aver  Average value
  * \return Average value
  * \throws  InconsistentInputError if given no points to average
  */
@@ -114,7 +113,7 @@ real gmx_stats_get_average(gmx_stats_t stats);
  * \return Tuple of (average value, its standard deviation, its standard error)
  * \throws  InconsistentInputError if given no points to analyze
  */
-std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t gstats);
+std::tuple<real, real, real> gmx_stats_get_ase(gmx_stats_t stats);
 
 /****************************************************
  * Some statistics utilities for convenience: useful when a complete data
