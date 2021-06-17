@@ -40,6 +40,7 @@
 
 #include <array>
 #include <string>
+#include <type_traits>
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
@@ -239,8 +240,7 @@ void prepareGpuKernelArgument(KernelPtr                          kernel,
                               const CurrentArg*                  argPtr,
                               const RemainingArgs*... otherArgsPtrs)
 {
-    // NOLINTNEXTLINE(google-readability-casting)
-    (*kernelArgsPtr)[argIndex] = (void*)argPtr;
+    (*kernelArgsPtr)[argIndex] = const_cast<void*>(static_cast<const void*>(argPtr));
     prepareGpuKernelArgument(kernel, kernelArgsPtr, argIndex + 1, otherArgsPtrs...);
 }
 
@@ -284,8 +284,7 @@ void launchGpuKernel(void (*kernel)(Args...),
 {
     dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
     dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
-    // NOLINTNEXTLINE(google-readability-casting)
-    cudaLaunchKernel((void*)kernel,
+    cudaLaunchKernel(reinterpret_cast<void*>(kernel),
                      gridSize,
                      blockSize,
                      const_cast<void**>(kernelArgs.data()),
