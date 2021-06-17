@@ -206,7 +206,7 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nxInt, gmx_fft_flag gmx_unused fla
     fft->ooplace[3] = nullptr;
 
     MKL_LONG nx = nxInt;
-    status = DftiCreateDescriptor(&fft->inplace[0], GMX_DFTI_PREC, DFTI_REAL, 1, nx);
+    status      = DftiCreateDescriptor(&fft->inplace[0], GMX_DFTI_PREC, DFTI_REAL, 1, nx);
 
     if (status == 0)
     {
