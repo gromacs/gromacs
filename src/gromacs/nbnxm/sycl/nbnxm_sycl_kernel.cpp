@@ -479,7 +479,26 @@ static inline void reduceForceIAndFShift(cl::sycl::accessor<float, 1, mode::read
            storing the reduction result above. */
         if (tidxj < 3)
         {
-            atomicFetchAdd(a_fShift, 3 * shift + tidxj, fShiftBuf);
+            if constexpr (c_clSize == 4)
+            {
+                /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
+                 * a compare-and-swap (CAS) loop. It has particularly poor performance when
+                 * updating the same memory location from the same work-group.
+                 * Such optimization might be slightly beneficial for NVIDIA and AMD as well,
+                 * but it is unlikely to make a big difference and thus was not evaluated.
+                 */
+                auto sg = itemIdx.get_sub_group();
+                fShiftBuf += sycl_2020::shift_left(sg, fShiftBuf, 1);
+                fShiftBuf += sycl_2020::shift_left(sg, fShiftBuf, 2);
+                if (tidxi == 0)
+                {
+                    atomicFetchAdd(a_fShift, 3 * shift + tidxj, fShiftBuf);
+                }
+            }
+            else
+            {
+                atomicFetchAdd(a_fShift, 3 * shift + tidxj, fShiftBuf);
+            }
         }
     }
 }
