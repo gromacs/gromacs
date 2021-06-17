@@ -37,7 +37,6 @@ and search for a potential answer or ask a question from the community.
    managing-simulations
    faq
    force-fields
-   cmdline
    mdp-options
    mdrun-features
    mdrun-performance
