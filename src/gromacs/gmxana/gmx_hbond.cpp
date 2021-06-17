@@ -114,17 +114,11 @@ static const char* grpnames[grNR] = { "0", "1", "I" };
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static gmx_bool bDebug = FALSE;
 
-#define HB_NO 0
-#define HB_YES 1 << 0
-#define HB_INS 1 << 1
-#define HB_YESINS (HB_YES | HB_INS)
 #define HB_NR (1 << 2)
 #define MAXHYDRO 4
 
 #define ISHB(h) ((h)&2)
 #define ISDIST(h) ((h)&1)
-#define ISDIST2(h) ((h)&4)
-#define ISACC(h) ((h)&c_acceptorMask)
 #define ISDON(h) ((h)&c_donorMask)
 #define ISINGRP(h) ((h)&c_inGroupMask)
 

@@ -62,14 +62,6 @@
 
 #include "nbnxm_ocl_types.h"
 
-/*! \brief Stringifies the input argument
- */
-#define STRINGIFY_PARAM(c) #c
-
-/*! \brief Stringifies the result of expansion of a macro argument
- */
-#define STRINGIFY_MACRO(c) STRINGIFY_PARAM(c)
-
 /*! \brief Array of the defines needed to generate a specific eel flavour
  *
  * The twin-cutoff entries are not normally used, because those setups are

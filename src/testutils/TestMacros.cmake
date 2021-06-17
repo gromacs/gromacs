@@ -48,10 +48,12 @@ function (gmx_add_unit_test_library NAME)
             set_target_properties(${NAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
         endif()
-        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
-            target_compile_options(${NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
+        gmx_warn_on_everything(${NAME})
+        if (HAS_WARNING_EVERYTHING)
+            # Some false positives exist produced by GoogleTest implementation
+            gmx_target_warning_suppression(${NAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+            gmx_target_warning_suppression(${NAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
         endif()
-
     endif()
 endfunction ()
 
@@ -176,14 +178,11 @@ function (gmx_add_gtest_executable EXENAME)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
         endif()
-        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
-            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
-        endif()
-        # clang-3.6 warns about a number of issues that are not reported by more modern compilers
-        # and we know they are not real issues. So we only check that it can compile without error
-        # but ignore all warnings.
-        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^3\.6")
-            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
+        gmx_warn_on_everything(${EXENAME})
+        if (HAS_WARNING_EVERYTHING)
+            # Some false positives exist produced by GoogleTest implementation
+            gmx_target_warning_suppression(${EXENAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+            gmx_target_warning_suppression(${EXENAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
         endif()
     endif()
 endfunction()

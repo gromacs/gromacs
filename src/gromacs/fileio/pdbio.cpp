@@ -87,8 +87,6 @@ const char* enumValueToString(PdbRecordType enumValue)
     return pdbRecordTypeName[enumValue];
 }
 
-#define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
-
 void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
 {
     real alpha, beta, gamma;

@@ -34,6 +34,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
 # Test C flags FLAGS, and set VARIABLE to true if the work. Also add the
 # flags to CFLAGSVAR.
 MACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
@@ -414,3 +417,114 @@ macro (gmx_c_flags)
     endif()
 
 endmacro()
+
+# Make sure we generate warnings (and hopefully fix) "everything"
+# reported by compilers that support that (ie recent clang and its
+# derivatives).
+function(gmx_warn_on_everything target)
+
+    # If the compiler suports warning on "everything" then we'll turn
+    # it on. Note that all warnings become errors for developer
+    # builds, but not for user builds.
+    gmx_target_warning_suppression(${target} "-Weverything" HAS_WARNING_EVERYTHING)
+
+    if (NOT HAS_WARNING_EVERYTHING)
+        # There's no need to suppress aspects of "-Weverything" if
+        # that warning is not supported.
+        return()
+    endif()
+
+    # We don't actually fix everything, so list the exceptions that we
+    # choose to make. We may be able to eliminate some of these over
+    # time.
+    #
+    # We check whether the flag is accepted first, so that we suppress
+    # such warnings also with compilers that don't directly identify
+    # as e.g. clang despite being based on it (e.g. most vendor
+    # compilers), and also don't fail to compile GROMACS when future
+    # versions of any such compiler changes how the warnings
+    # look/work.
+
+    # We have no intention of C++98 compability
+    gmx_target_warning_suppression(${target} "-Wno-c++98-compat" HAS_WARNING_NO_CPLUSPLUS98_COMPAT)
+    gmx_target_warning_suppression(${target} "-Wno-c++98-compat-pedantic" HAS_WARNING_NO_CPLUSPLUS98_COMPAT_PEDANTIC)
+
+    # Don't warn for use of OpenMP pragmas in no-omp build
+    gmx_target_warning_suppression(${target} "-Wno-source-uses-openmp" HAS_WARNING_NO_SOURCE_USED_OPENMP)
+
+    # Allowed in attributes (compilers are required to ignore unknown attributes)
+    gmx_target_warning_suppression(${target} "-Wno-c++17-extensions" HAS_WARNING_NO_CPLUSPLUS17_EXTENSIONS)
+
+    # Custom Doxygen commands are used
+    gmx_target_warning_suppression(${target} "-Wno-documentation-unknown-command" HAS_WARNING_NO_DOCUMENTATION_UNKNOWN_COMMAND)
+
+    # We need to use default labels in switch statements, because GCC gives
+    # maybe-uninitialized without default label and checks for illegal enum values.
+    gmx_target_warning_suppression(${target} "-Wno-covered-switch-default" HAS_WARNING_NO_COVERED_SWITCH_DEFAULT)
+
+    # Default statement for enum is OK.
+    # It's OK to not have branches for Count members of enum classes
+    gmx_target_warning_suppression(${target} "-Wno-switch-enum" HAS_WARNING_NO_SWITCH_ENUM)
+
+    # We need to use macros like
+    # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR and
+    # CLANG_DIAGNOSTIC_IGNORE. Those will look strange if they don't
+    # have a semicolon after them, and might confuse tools like IDEs
+    # also.
+    gmx_target_warning_suppression(${target} "-Wno-extra-semi-stmt" HAS_WARNING_NO_EXTRA_SEMI_STMT)
+
+    # We intend to use fully inline classes with virtual methods
+    gmx_target_warning_suppression(${target} "-Wno-weak-vtables" HAS_WARNING_NO_WEAK_VTABLES)
+
+    # We intend to use constructor arguments that shadow member variables
+    gmx_target_warning_suppression(${target} "-Wno-shadow" HAS_WARNING_NO_SHADOW)
+
+    # Padding of structs is routine, we don't need to hear about it
+    gmx_target_warning_suppression(${target} "-Wno-padded" HAS_WARNING_NO_PADDED)
+
+    # Our uses of double underscores in macro names are OK
+    gmx_target_warning_suppression(${target} "-Wno-reserved-id-macro" HAS_WARNING_NO_RESERVED_ID_MACRO)
+
+    # Implicit conversion of float to double is fine
+    gmx_target_warning_suppression(${target} "-Wno-double-promotion" HAS_WARNING_NO_DOUBLE_PROMOTION)
+
+    # No resources in static variables need exit-time destructors
+    gmx_target_warning_suppression(${target} "-Wno-exit-time-destructors" HAS_WARNING_NO_EXIT_TIME_DESTRUCTORS)
+
+    # Global constructors are not needed
+    gmx_target_warning_suppression(${target} "-Wno-global-constructors" HAS_WARNING_NO_GLOBAL_CONSTRUCTORS)
+
+    # False positives are emitted
+    gmx_target_warning_suppression(${target} "-Wno-documentation" HAS_WARNING_NO_DOCUMENTATION)
+
+    # We intend to use format strings that we construct, even though that is a security risk
+    gmx_target_warning_suppression(${target} "-Wno-format-nonliteral" HAS_WARNING_NO_FORMAT_NONLITERAL)
+
+    # We do a lot of conditional compilation that sometimes uses a symbol and sometimes does not
+    gmx_target_warning_suppression(${target} "-Wno-used-but-marked-unused" HAS_WARNING_NO_USED_BUT_MARKED_UNUSED)
+
+    # It's only risky to compare floats for equality when they are the
+    # result of computation.  Unfortunately it's hard to tell the
+    # difference and there's no good way to suppress this on a
+    # case-by-base basis.
+    gmx_target_warning_suppression(${target} "-Wno-float-equal" HAS_WARNING_NO_FLOAT_EQUAL)
+
+    #
+    # Exceptions we should consider fixing
+    #
+
+    # Much code in gmxana uses complex logic that may or may not be valid
+    gmx_target_warning_suppression(${target} "-Wno-conditional-uninitialized" HAS_WARNING_CONDITIONAL_UNINITIALIZED)
+
+    # We have many places implicit conversions still occur, most of which need fixing
+    gmx_target_warning_suppression(${target} "-Wno-conversion" HAS_WARNING_NO_CONVERSION)
+
+    # We use the Linux signal handlers in the intended way, but it triggers this warning.
+    # It would be better to localize this exception.
+    gmx_target_warning_suppression(${target} "-Wno-disabled-macro-expansion" HAS_WARNING_NO_DISABLED_MACRO_EXPANSION)
+
+    # The NBNXM simd kernels define lots of macros that are not used
+    # It would be better to localize this exception.
+    gmx_target_warning_suppression(${target} "-Wno-unused-macros" HAS_WARNING_NO_UNUSED_MACROS)
+
+endfunction()

@@ -78,13 +78,6 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
     }
 }
 
-// This is defined in src/gromacs/mdtypes/forcerec.h but there is also a
-// legacy C6 macro defined there that conflicts with the nblib C6 type.
-// Todo: Once that C6 has been refactored into a regular function, this
-//       file can just include forcerec.h
-//! Macro to marks particles to have Van der Waals interactions
-#define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
-
 TEST(NBlibTest, TopologyHasNumParticles)
 {
     WaterTopologyBuilder waters;

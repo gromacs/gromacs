@@ -202,18 +202,11 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 {
     DevelopmentFeatureFlags devFlags;
 
-    // Some builds of GCC 5 give false positive warnings that these
-    // getenv results are ignored when clearly they are used.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-
     devFlags.enableGpuBufferOps =
             GMX_GPU_CUDA && useGpuForNonbonded && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
-    devFlags.enableGpuHaloExchange = GMX_GPU_CUDA && getenv("GMX_GPU_DD_COMMS") != nullptr;
+    devFlags.enableGpuHaloExchange = GMX_MPI && GMX_GPU_CUDA && getenv("GMX_GPU_DD_COMMS") != nullptr;
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
-    devFlags.enableGpuPmePPComm = GMX_GPU_CUDA && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
-
-#pragma GCC diagnostic pop
+    devFlags.enableGpuPmePPComm = GMX_MPI && GMX_GPU_CUDA && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
 
     // Direct GPU comm path is being used with CUDA_AWARE_MPI
     // make sure underlying MPI implementation is CUDA-aware

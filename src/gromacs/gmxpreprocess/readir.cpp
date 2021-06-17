@@ -94,7 +94,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
-#define MAXPTR 254
 #define NOGID 255
 
 using gmx::BasicVector;
@@ -3254,7 +3253,6 @@ static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* op
      * But since this is much larger than STRLEN, such a line can not be parsed.
      * The real maximum is the number of names that fit in a string: STRLEN/2.
      */
-#define EGP_MAX (STRLEN / 2)
     int  j, k, nr;
     bool bSet;
 

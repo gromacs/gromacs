@@ -117,10 +117,10 @@ void loadStoreTester(TSimd gmx_simdcall loadFn(const T* mem),
 
     for (i = 0; i < simdWidth * 4; i++)
     {
-        EXPECT_EQ(src[i], (T)(1 + i)) << "Side effect on source memory, i = " << i;
+        EXPECT_EQ(src[i], T(1 + i)) << "Side effect on source memory, i = " << i;
         if (dst + i < pCopyDst || dst + i >= pCopyDst + simdWidth)
         {
-            EXPECT_EQ(dst[i], (T)(-1 - i)) << "Side effect on destination memory, i = " << i;
+            EXPECT_EQ(dst[i], T(-1 - i)) << "Side effect on destination memory, i = " << i;
         }
     }
 }

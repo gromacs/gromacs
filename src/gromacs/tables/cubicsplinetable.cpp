@@ -150,11 +150,11 @@ void fillSingleCubicSplineTableData(const std::function<double(double)>& functio
 
     for (int i = endIndex - 1; i >= 0; i--)
     {
-        double x = i * spacing;
-        double tmpFunctionValue;
-        double tmpDerivativeValue;
-        double nextHigherFunction;
-        double nextHigherDerivative;
+        double x                    = i * spacing;
+        double tmpFunctionValue     = 0;
+        double tmpDerivativeValue   = 0;
+        double nextHigherFunction   = 0;
+        double nextHigherDerivative = 0;
         double Y, F, G, H;
 
         if (range.first > 0 && i == 0)

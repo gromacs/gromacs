@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,16 +50,16 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#ifndef DOXYGEN
+
 /*! \brief Copies of values from cl_driver_diagnostics_intel.h,
  * which isn't guaranteed to be available. */
 /**@{*/
-#define CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL 0x4106
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_GOOD_INTEL 0x1
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL 0x2
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
+#    define CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL 0x4106
+#    define CL_CONTEXT_DIAGNOSTICS_LEVEL_GOOD_INTEL 0x1
+#    define CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL 0x2
+#    define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
 /**@}*/
-
-#ifndef DOXYGEN
 
 DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo)
 {

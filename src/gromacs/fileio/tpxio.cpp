@@ -247,9 +247,6 @@ static const t_ftupd ftupd[] = {
 };
 #define NFTUPD asize(ftupd)
 
-/* Needed for backward compatibility */
-#define MAXNODES 256
-
 /**************************************************************
  *
  * Now the higer level routines that do io of the structures and arrays

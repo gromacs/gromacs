@@ -311,8 +311,6 @@ int gmx_enemat(int argc, char* argv[])
 
         if (timecheck == 0)
         {
-#define DONTSKIP(cnt) (skip) ? (((cnt) % skip) == 0) : TRUE
-
             if (bCont)
             {
                 fprintf(stderr, "\rRead frame: %d, Time: %.3f", teller, fr->t);

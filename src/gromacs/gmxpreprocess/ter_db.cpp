@@ -90,8 +90,6 @@ static std::optional<EnumType> findTypeFromKeyword(char* keyw)
     return converter.valueFrom(keyw);
 }
 
-#define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
-
 static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, PreprocessingAtomTypes* atype, int* cgnr)
 {
     int    nr, i;

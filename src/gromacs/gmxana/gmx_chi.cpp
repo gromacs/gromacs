@@ -127,8 +127,7 @@ static gmx_bool bAllowed(real phi, real psi)
                                  "0000000000000000000000000000000000000000000000000000000000000",
                                  "0000000000000000000000000000000000000000000000000000000000000",
                                  "0000000000000000000000000000000000000000000000000000000000000" };
-#define NPP asize(map)
-    int x, y;
+    int                x, y;
 
 #define INDEX(ppp) (((static_cast<int>(360 + (ppp)*gmx::c_rad2Deg)) % 360) / 6)
     x = INDEX(phi);
@@ -1045,7 +1044,6 @@ static void print_transitions(const char* fn, int maxchi, int nlist, t_dlist dli
 
     /*  must correspond with enum in pp2shift.h:38 */
     char* leg[edMax];
-#define NLEG asize(leg)
 
     leg[0] = gmx_strdup("Phi");
     leg[1] = gmx_strdup("Psi");

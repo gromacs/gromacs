@@ -67,8 +67,6 @@ static const char mapper[] =
         "?";
 #define NMAP static_cast<long int>(sizeof(mapper) / sizeof(mapper[0]))
 
-#define MAX_XPM_LINELENGTH 4096
-
 real** mk_matrix(int nx, int ny, gmx_bool b1D)
 {
     int    i;

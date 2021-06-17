@@ -1293,9 +1293,9 @@ void do_force(FILE*                               fplog,
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
 
     const bool pmeSendCoordinatesFromGpu =
-            GMX_MPI && simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
+            simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
     const bool reinitGpuPmePpComms =
-            GMX_MPI && simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
+            simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
     auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
@@ -1353,7 +1353,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (GMX_MPI && !thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces)
+    if (!thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces)
     {
         /* Send particle coordinates to the pme nodes */
         if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)

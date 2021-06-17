@@ -93,9 +93,9 @@ void fillSingleQuadraticSplineTableData(const std::function<double(double)>& fun
 
     for (int i = endIndex - 1; i >= 0; i--)
     {
-        double x = i * spacing;
-        double tmpFunctionValue;
-        double tmpDerivativeValue;
+        double x                  = i * spacing;
+        double tmpFunctionValue   = 0;
+        double tmpDerivativeValue = 0;
 
         if (range.first > 0 && i == 0)
         {

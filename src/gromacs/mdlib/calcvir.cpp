@@ -51,16 +51,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"
 
-#define XXXX 0
-#define XXYY 1
-#define XXZZ 2
-#define YYXX 3
-#define YYYY 4
-#define YYZZ 5
-#define ZZXX 6
-#define ZZYY 7
-#define ZZZZ 8
-
 static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
 {
     vir[XX] -= 0.5 * dvx;

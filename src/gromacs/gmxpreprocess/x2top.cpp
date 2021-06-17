@@ -73,8 +73,6 @@
 
 #include "hackblock.h"
 
-#define MARGIN_FAC 1.1
-
 static bool is_bond(int nnm, t_nm2type nmt[], char* ai, char* aj, real blen)
 {
     int i, j;

@@ -78,15 +78,6 @@
 namespace Nbnxm
 {
 
-/*! \brief Copies of values from cl_driver_diagnostics_intel.h,
- * which isn't guaranteed to be available. */
-/**@{*/
-#define CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL 0x4106
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_GOOD_INTEL 0x1
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL 0x2
-#define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
-/**@}*/
-
 /*! \brief This parameter should be determined heuristically from the
  * kernel execution times
  *

@@ -112,7 +112,6 @@ int gmx_filter(int argc, char* argv[])
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-#define NLEG asize(leg)
     t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },
                        { efTPS, nullptr, nullptr, ffOPTRD },
                        { efNDX, nullptr, nullptr, ffOPTRD },

@@ -1157,7 +1157,6 @@ int gmx_analyze(int argc, char* argv[])
         { "-subav", FALSE, etBOOL, { &bSubAv }, "Subtract the average before autocorrelating" },
         { "-oneacf", FALSE, etBOOL, { &bAverCorr }, "Calculate one ACF over all sets" },
     };
-#define NPA asize(pa)
 
     FILE*             out;
     int               n, nlast, s, nset, i, j = 0;

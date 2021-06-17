@@ -76,7 +76,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&      grid,
                            int                     numColumnsMax,
                            bool                    mustInsertNonLocalDependency)
 {
-    GMX_ASSERT((bool)GMX_GPU_CUDA || (bool)GMX_GPU_SYCL,
+    GMX_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
                "NBNXM X buffer operations only supported in CUDA and SYCL");
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
     gmx::InteractionLocality interactionLoc = gmx::atomToInteractionLocality(locality);

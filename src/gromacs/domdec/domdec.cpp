@@ -138,14 +138,6 @@ static const char* enumValueToString(DlbState enumValue)
     return dlbStateNames[enumValue];
 }
 
-/* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
-#define DD_CGIBS 2
-
-/* The flags for the cggl_flag buffer in gmx_domdec_comm_t */
-#define DD_FLAG_NRCG 65535
-#define DD_FLAG_FW(d) (1 << (16 + (d)*2))
-#define DD_FLAG_BW(d) (1 << (16 + (d)*2 + 1))
-
 /* The DD zone order */
 static const ivec dd_zo[DD_MAXZONE] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 },
                                         { 0, 1, 1 }, { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 } };

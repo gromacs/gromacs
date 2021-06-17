@@ -101,8 +101,6 @@ void clearModificationBlock(MoleculePatchDatabase* globalPatches)
     }
 }
 
-#define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
-
 static bool contains_char(const BondedInteraction& s, char c)
 {
 
@@ -283,5 +281,3 @@ void copyModificationBlocks(const MoleculePatchDatabase& s, MoleculePatchDatabas
     }
     mergeAtomAndBondModifications(s, d);
 }
-
-#undef safe_strdup

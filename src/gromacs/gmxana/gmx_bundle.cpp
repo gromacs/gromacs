@@ -247,7 +247,6 @@ int gmx_bundle(int argc, char* argv[])
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-#define NLEG asize(leg)
     t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },        { efTPS, nullptr, nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },    { efXVG, "-ol", "bun_len", ffWRITE },

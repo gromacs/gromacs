@@ -81,7 +81,6 @@
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
 /* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
 
-#define MAX_SUZUKI_YOSHIDA_NUM 5
 #define SUZUKI_YOSHIDA_NUM 5
 
 static const double sy_const_1[] = { 1. };

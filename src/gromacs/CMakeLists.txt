@@ -392,10 +392,8 @@ set_target_properties(libgromacs PROPERTIES
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 
-# Make sure we fix "everything" found by more recent versions of clang.
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
-   target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
-endif()
+# Make sure we fix "everything" found by compilers that support that
+gmx_warn_on_everything(libgromacs)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
      #Control flow warnings are disabled because the commond line output is insufficient. There is no tool

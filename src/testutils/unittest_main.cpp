@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2017, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,12 +48,12 @@
 
 #ifndef TEST_DATA_PATH
 //! Path to test input data directory (needs to be set by the build system).
-#    define TEST_DATA_PATH 0
+#    define TEST_DATA_PATH nullptr
 #endif
 
 #ifndef TEST_TEMP_PATH
 //! Path to test output temporary directory (needs to be set by the build system).
-#    define TEST_TEMP_PATH 0
+#    define TEST_TEMP_PATH nullptr
 #endif
 
 #ifndef TEST_USES_MPI

@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,39 +59,6 @@ file(GENERATE
     )
 
 ####
-list(APPEND IGNORED_CLANG_ALL_WARNINGS
-    "-Wno-c++98-compat" "-Wno-c++98-compat-pedantic" #No intention of C++98 compability
-    "-Wno-source-uses-openmp" #Don't warn for no-omp build
-    "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
-    "-Wno-documentation-unknown-command" #Custom commands are used
-    "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
-    "-Wno-switch-enum" # default statement for enum is OK
-
-    # We need to use macros like
-    # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR. Those will look strange
-    # if they don't have a semicolon after them, and might confuse
-    # tools like IDEs also.
-    "-Wno-extra-semi-stmt"
-
-    #Following ones are undecided/TODO
-    "-Wno-disabled-macro-expansion"
-    "-Wno-cast-align"
-    "-Wno-reserved-id-macro"
-    "-Wno-global-constructors"
-    "-Wno-exit-time-destructors"
-    "-Wno-unused-macros"
-    "-Wno-weak-vtables"
-    "-Wno-conditional-uninitialized"
-    "-Wno-format-nonliteral"
-    "-Wno-shadow"
-    "-Wno-cast-qual"
-    "-Wno-documentation"
-    "-Wno-used-but-marked-unused"
-    "-Wno-padded"
-    "-Wno-float-equal"
-    "-Wno-old-style-cast"
-    "-Wno-conversion"
-    "-Wno-double-promotion")
 
 option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
 if (GMX_CLANG_TIDY)

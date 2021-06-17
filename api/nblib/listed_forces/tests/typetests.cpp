@@ -52,6 +52,9 @@ namespace nblib
 //! Number of atoms used in these tests.
 constexpr int c_numAtoms = 4;
 
+namespace
+{
+
 //! Coordinates for testing
 std::vector<std::vector<gmx::RVec>> c_coordinatesForTests = {
     { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.2 }, { 0.005, 0.0, 0.1 }, { -0.001, 0.1, 0.0 } },
@@ -70,6 +73,8 @@ std::vector<std::vector<HarmonicAngle>> c_InputHarmonicAngle = { { HarmonicAngle
 std::vector<std::vector<ProperDihedral>> c_InputDihs = { { { ProperDihedral(Degrees(-105.0), 15.0, 2) } } /*, { ImproperDihedral(100.0, 50.0) }*/ };
 // Todo: update test setup to allow more than one interaction type and add the following to the inputs
 // std::vector<std::vector<RyckaertBellemanDihedral>> c_InputDihs = { { RyckaertBellemanDihedral({ -7.35, 13.6, 8.4, -16.7, 1.3, 12.4 }) } };
+
+} // namespace
 
 template<class Interaction>
 class ListedForcesBase

@@ -356,8 +356,6 @@ int gmx_tcaf(int argc, char* argv[])
     real**            tc;
     gmx_output_env_t* oenv;
 
-#define NHISTO 360
-
     t_filenm fnm[] = { { efTRN, "-f", nullptr, ffREAD },      { efTPS, nullptr, nullptr, ffOPTRD },
                        { efNDX, nullptr, nullptr, ffOPTRD },  { efXVG, "-ot", "transcur", ffOPTWR },
                        { efXVG, "-oa", "tcaf_all", ffWRITE }, { efXVG, "-o", "tcaf", ffWRITE },

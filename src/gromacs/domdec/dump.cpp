@@ -61,7 +61,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
     rvec   grid_s[2], *grid_r = nullptr, cx, r;
     char   fname[STRLEN], buf[22];
     FILE*  out;
-    int    a, i, d, z, y, x;
+    int    a, i, d, z, x;
     matrix tric;
     real   vol;
 
@@ -111,7 +111,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
             }
             for (z = 0; z < 2; z++)
             {
-                for (y = 0; y < 2; y++)
+                for (int y = 0; y < 2; y++)
                 {
                     for (x = 0; x < 2; x++)
                     {
@@ -141,6 +141,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
             {
                 for (x = 0; x < 4; x++)
                 {
+                    int y = 0;
                     switch (d)
                     {
                         case 0: y = 1 + i * 8 + 2 * x; break;

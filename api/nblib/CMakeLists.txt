@@ -38,31 +38,6 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-# The following are copied directly from src/CMakeLists.txt
-set(IGNORED_CLANG_ALL_WARNINGS
-        "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
-        "-Wno-source-uses-openmp" #Don't warn for no-omp build
-        "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
-        "-Wno-documentation-unknown-command" #Custom commands are used
-        "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
-        "-Wno-switch-enum" # default statement for enum is OK
-
-        # These are all needed, mostly for testing code
-        "-Wno-conversion"
-        "-Wno-documentation"
-        "-Wno-double-promotion"
-        "-Wno-exit-time-destructors"
-        "-Wno-float-equal"
-        "-Wno-global-constructors"
-        "-Wno-padded"
-        "-Wno-reserved-id-macro"
-        "-Wno-shadow"
-        "-Wno-unused-macros"
-        "-Wno-weak-vtables"
-        )
-
-string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
-
 set(TESTUTILS_DIR ${PROJECT_SOURCE_DIR}/src/testutils)
 if (BUILD_TESTING)
     if(NOT GMX_DEVELOPER_BUILD)

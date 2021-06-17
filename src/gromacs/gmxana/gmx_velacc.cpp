@@ -219,8 +219,6 @@ int gmx_velacc(int argc, char* argv[])
     real*             normm = nullptr;
     gmx_output_env_t* oenv;
 
-#define NHISTO 360
-
     t_filenm fnm[] = { { efTRN, "-f", nullptr, ffREAD },
                        { efTPS, nullptr, nullptr, ffOPTRD },
                        { efNDX, nullptr, nullptr, ffOPTRD },
