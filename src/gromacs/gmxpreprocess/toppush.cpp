@@ -75,6 +75,8 @@ void generate_nbparams(CombinationRule         comb,
                        PreprocessingAtomTypes* atypes,
                        warninp*                wi)
 {
+    constexpr int c_nrfp2 = 2;
+
     int  nr, nrfp;
     real c, bi, bj, ci, cj, ci0, ci1, ci2, cj0, cj1, cj2;
 
@@ -85,22 +87,31 @@ void generate_nbparams(CombinationRule         comb,
 
     std::array<real, MAXFORCEPARAM> forceParam = { NOTSET };
     /* Fill the matrix with force parameters */
+    // Prefetch the parameters to improve cache hits and avoid dereference and call overhead
+    std::vector<std::pair<real, real>> cPrefetch;
+    cPrefetch.reserve(nr);
+    for (int i = 0; i < nr; i++)
+    {
+        cPrefetch.emplace_back(*atypes->atomNonBondedParamFromAtomType(i, 0),
+                               *atypes->atomNonBondedParamFromAtomType(i, 1));
+    }
     switch (ftype)
     {
         case F_LJ:
             switch (comb)
             {
                 case CombinationRule::Geometric:
-                    /* Gromos rules */
+                    // Geometric combination rules, c6 and c12 are independent
+                    GMX_RELEASE_ASSERT(nrfp == c_nrfp2, "nfrp should be 2");
                     for (int i = 0; (i < nr); i++)
                     {
                         for (int j = 0; (j < nr); j++)
                         {
-                            for (int nf = 0; (nf < nrfp); nf++)
+                            for (int nf = 0; (nf < c_nrfp2); nf++)
                             {
-                                ci             = *atypes->atomNonBondedParamFromAtomType(i, nf);
-                                cj             = *atypes->atomNonBondedParamFromAtomType(j, nf);
-                                c              = std::sqrt(ci * cj);
+                                ci = (nf == 0 ? cPrefetch[i].first : cPrefetch[i].second);
+                                cj = (nf == 0 ? cPrefetch[j].first : cPrefetch[j].second);
+                                c  = std::sqrt(ci * cj);
                                 forceParam[nf] = c;
                             }
                             interactions->interactionTypes.emplace_back(InteractionOfType({}, forceParam));
@@ -114,10 +125,10 @@ void generate_nbparams(CombinationRule         comb,
                     {
                         for (int j = 0; (j < nr); j++)
                         {
-                            ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
-                            cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
-                            ci1           = *atypes->atomNonBondedParamFromAtomType(i, 1);
-                            cj1           = *atypes->atomNonBondedParamFromAtomType(j, 1);
+                            ci0           = cPrefetch[i].first;
+                            cj0           = cPrefetch[j].first;
+                            ci1           = cPrefetch[i].second;
+                            cj1           = cPrefetch[j].second;
                             forceParam[0] = (fabs(ci0) + fabs(cj0)) * 0.5;
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -138,10 +149,10 @@ void generate_nbparams(CombinationRule         comb,
                     {
                         for (int j = 0; (j < nr); j++)
                         {
-                            ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
-                            cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
-                            ci1           = *atypes->atomNonBondedParamFromAtomType(i, 1);
-                            cj1           = *atypes->atomNonBondedParamFromAtomType(j, 1);
+                            ci0           = cPrefetch[i].first;
+                            cj0           = cPrefetch[j].first;
+                            ci1           = cPrefetch[i].second;
+                            cj1           = cPrefetch[j].second;
                             forceParam[0] = std::sqrt(std::fabs(ci0 * cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
@@ -169,12 +180,12 @@ void generate_nbparams(CombinationRule         comb,
             {
                 for (int j = 0; (j < nr); j++)
                 {
-                    ci0           = *atypes->atomNonBondedParamFromAtomType(i, 0);
-                    cj0           = *atypes->atomNonBondedParamFromAtomType(j, 0);
+                    ci0           = cPrefetch[i].first;
+                    cj0           = cPrefetch[j].first;
                     ci2           = *atypes->atomNonBondedParamFromAtomType(i, 2);
                     cj2           = *atypes->atomNonBondedParamFromAtomType(j, 2);
-                    bi            = *atypes->atomNonBondedParamFromAtomType(i, 1);
-                    bj            = *atypes->atomNonBondedParamFromAtomType(j, 1);
+                    bi            = cPrefetch[i].second;
+                    bj            = cPrefetch[j].second;
                     forceParam[0] = std::sqrt(ci0 * cj0);
                     if ((bi == 0) || (bj == 0))
                     {
