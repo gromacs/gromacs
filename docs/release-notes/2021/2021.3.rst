@@ -44,6 +44,11 @@ The source code validation could otherwise fail a build with cryptic errors.
 
 :issue:`3985`
 
+Ensure that NB-LIB and gmxapi can be build even without tests enabled
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Could otherwise lead to cryptic build errors.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
