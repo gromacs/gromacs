@@ -615,6 +615,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
     // Currently this is ideally suited for 32-wide subgroup size but slightly less so for others,
     // e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
     // Hence, the two are decoupled.
+    // When changing this code, please update requiredSubGroupSizeForNbnxm in src/gromacs/hardware/device_management_sycl.cpp.
     constexpr int prunedClusterPairSize = c_clSize * c_splitClSize;
 #if defined(HIPSYCL_PLATFORM_ROCM) // SYCL-TODO AMD RDNA/RDNA2 has 32-wide exec; how can we check for that?
     gmx_unused constexpr int subGroupSize = c_clSize * c_clSize;
