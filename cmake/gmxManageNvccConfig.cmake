@@ -162,12 +162,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
     # where nullptr would be preferable. GROMACS can't fix these, so
     # must suppress them.
-    GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+    GMX_TEST_CXXFLAG(HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
 
     # CUDA header crt/math_functions.h in at least CUDA 10.x and 11.1
     # used throw() specifications that are deprecated in more recent
     # C++ versions. GROMACS can't fix these, so must suppress them.
-    GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+    GMX_TEST_CXXFLAG(HAS_WARNING_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+
+    # CUDA headers cuda_runtime.h and channel_descriptor.h in at least
+    # CUDA 11.0 uses many C-style casts, which are ncessary for this
+    # header to work for C. GROMACS can't fix these, so must suppress
+    # the warnings they generate
+    GMX_TEST_CXXFLAG(HAS_WARNING_NO_OLD_STYLE_CAST "-Wno-old-style-cast" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
 
     # Add these flags to those used for the host compiler. The
     # "-Xcompiler" prefix directs nvcc to only use them for host
