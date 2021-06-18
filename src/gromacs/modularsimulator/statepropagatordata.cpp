@@ -73,6 +73,75 @@
 
 namespace gmx
 {
+/*! \internal
+ * \brief Helper object to scale velocities according to reference temperature change
+ */
+class StatePropagatorData::ReferenceTemperatureHelper
+{
+public:
+    //! Constructor
+    ReferenceTemperatureHelper(const t_inputrec*    inputrec,
+                               StatePropagatorData* statePropagatorData,
+                               const t_mdatoms*     mdatoms) :
+        numTemperatureGroups_(inputrec->opts.ngtc),
+        referenceTemperature_(inputrec->opts.ref_t, inputrec->opts.ref_t + inputrec->opts.ngtc),
+        velocityScalingFactors_(numTemperatureGroups_),
+        statePropagatorData_(statePropagatorData),
+        mdatoms_(mdatoms)
+    {
+    }
+
+    /*! \brief Update the reference temperature
+     *
+     * Changing the reference temperature requires scaling the velocities, which
+     * is done here.
+     *
+     * \param temperatures  New reference temperatures
+     * \param algorithm     The algorithm which initiated the temperature update
+     */
+    void updateReferenceTemperature(ArrayRef<const real>                           temperatures,
+                                    ReferenceTemperatureChangeAlgorithm gmx_unused algorithm)
+    {
+        // Currently, we don't know about any temperature change algorithms, so we assert this never gets called
+        GMX_ASSERT(false, "StatePropagatorData: Unknown ReferenceTemperatureChangeAlgorithm.");
+        for (int temperatureGroup = 0; temperatureGroup < numTemperatureGroups_; ++temperatureGroup)
+        {
+            velocityScalingFactors_[temperatureGroup] =
+                    std::sqrt(temperatures[temperatureGroup] / referenceTemperature_[temperatureGroup]);
+        }
+
+        auto velocities = statePropagatorData_->velocitiesView().unpaddedArrayRef();
+        int  nth        = gmx_omp_nthreads_get(ModuleMultiThread::Update);
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, velocityScalingFactors_, velocities)
+        for (int threadIndex = 0; threadIndex < nth; threadIndex++)
+        {
+            int startAtom = 0;
+            int endAtom   = 0;
+            getThreadAtomRange(nth, threadIndex, statePropagatorData_->localNAtoms_, &startAtom, &endAtom);
+            for (int atomIdx = startAtom; atomIdx < endAtom; ++atomIdx)
+            {
+                const int temperatureGroup = (mdatoms_->cTC != nullptr) ? mdatoms_->cTC[atomIdx] : 0;
+                velocities[atomIdx] *= velocityScalingFactors_[temperatureGroup];
+            }
+        }
+        std::copy(temperatures.begin(), temperatures.end(), referenceTemperature_.begin());
+    }
+
+private:
+    //! The number of temperature groups
+    const int numTemperatureGroups_;
+    //! Coupling temperature per group
+    std::vector<real> referenceTemperature_;
+    //! Working array used at every temperature update
+    std::vector<real> velocityScalingFactors_;
+
+    //! Pointer to StatePropagatorData to scale velocities
+    StatePropagatorData* statePropagatorData_;
+    //! Atom parameters for this domain (temperature group information)
+    const t_mdatoms* mdatoms_;
+};
+
 StatePropagatorData::StatePropagatorData(int                numAtoms,
                                          FILE*              fplog,
                                          const t_commrec*   cr,
@@ -101,6 +170,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
                                        finalConfigurationFilename,
                                        inputrec,
                                        globalTop)),
+    referenceTemperatureHelper_(std::make_unique<ReferenceTemperatureHelper>(inputrec, this, mdatoms)),
     vvResetVelocities_(false),
     isRegularSimulationEnd_(false),
     lastStep_(-1),
@@ -171,6 +241,8 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
         }
     }
 }
+
+StatePropagatorData::~StatePropagatorData() = default;
 
 StatePropagatorData::Element* StatePropagatorData::element()
 {
@@ -333,6 +405,12 @@ void StatePropagatorData::copyPosition(int start, int end)
     {
         previousX_[i] = x_[i];
     }
+}
+
+void StatePropagatorData::updateReferenceTemperature(ArrayRef<const real> temperatures,
+                                                     ReferenceTemperatureChangeAlgorithm algorithm)
+{
+    referenceTemperatureHelper_->updateReferenceTemperature(temperatures, algorithm);
 }
 
 void StatePropagatorData::Element::scheduleTask(Step                       step,

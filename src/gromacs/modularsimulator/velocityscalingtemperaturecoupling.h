@@ -150,6 +150,10 @@ public:
                           const PropagatorTag&                    propagatorTag);
 
 private:
+    //! Update the reference temperature
+    void updateReferenceTemperature(ArrayRef<const real>                temperatures,
+                                    ReferenceTemperatureChangeAlgorithm algorithm);
+
     //! The frequency at which the thermostat is applied
     const int nstcouple_;
     //! If != 0, offset the step at which the thermostat is applied
@@ -164,7 +168,7 @@ private:
     //! The coupling time step - simulation time step x nstcouple_
     const double couplingTimeStep_;
     //! Coupling temperature per group
-    const std::vector<real> referenceTemperature_;
+    std::vector<real> referenceTemperature_;
     //! Coupling time per group
     const std::vector<real> couplingTime_;
     //! Number of degrees of freedom per group

@@ -142,6 +142,9 @@ public:
 private:
     //! Return the value of the coupling integral at a specific time
     double temperatureCouplingIntegral(Time time) const;
+    //! Update the reference temperature
+    void updateReferenceTemperature(ArrayRef<const real>                temperatures,
+                                    ReferenceTemperatureChangeAlgorithm algorithm);
 
     //! CheckpointHelper identifier
     const std::string identifier_;

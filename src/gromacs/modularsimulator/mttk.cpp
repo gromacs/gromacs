@@ -95,13 +95,17 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
                      initialVolume,
                      legacySimulatorData->inputrec->compress,
                      statePropagatorData));
-    const auto* ptrToDataObject = builderHelper->simulationData<MttkData>(MttkData::dataID()).value();
+    auto* ptrToDataObject = builderHelper->simulationData<MttkData>(MttkData::dataID()).value();
 
     energyData->addConservedEnergyContribution([ptrToDataObject](Step /*unused*/, Time time) {
         return ptrToDataObject->temperatureCouplingIntegral(time);
     });
     energyData->setParrinelloRahmanBoxVelocities(
             [ptrToDataObject]() { return ptrToDataObject->boxVelocity_; });
+    builderHelper->registerReferenceTemperatureUpdate(
+            [ptrToDataObject](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
+                ptrToDataObject->updateReferenceTemperature(temperatures[0], algorithm);
+            });
 }
 
 std::string MttkData::dataID()
@@ -125,6 +129,7 @@ MttkData::MttkData(real                       referenceTemperature,
     integralTime_(0.0),
     referencePressure_(referencePressure),
     boxVelocity_{ { 0 } },
+    referenceTemperature_(referenceTemperature),
     statePropagatorData_(statePropagatorData)
 {
 }
@@ -205,6 +210,15 @@ real MttkData::referencePressure() const
 rvec* MttkData::boxVelocities()
 {
     return boxVelocity_;
+}
+
+void MttkData::updateReferenceTemperature(real temperature,
+                                          ReferenceTemperatureChangeAlgorithm gmx_unused algorithm)
+{
+    // Currently, we don't know about any temperature change algorithms, so we assert this never gets called
+    GMX_ASSERT(false, "MttkData: Unknown ReferenceTemperatureChangeAlgorithm.");
+    invMass_ *= temperature / referenceTemperature_;
+    referenceTemperature_ = temperature;
 }
 
 namespace

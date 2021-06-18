@@ -97,12 +97,17 @@ public:
     //! Return the current time of the NHC integral for the group
     real integralTime() const;
 
+    //! Set the reference temperature
+    void updateReferenceTemperature(real temperature);
+
 private:
     //! Increment coordinate time and update integral if applicable
     void finalizeUpdate(real couplingTimeStep);
 
     //! The reference temperature of this group
-    const real referenceTemperature_;
+    real referenceTemperature_;
+    //! The coupling time of this group
+    const real couplingTime_;
     //! The number of degrees of freedom in this group
     const real numDegreesOfFreedom_;
     //! The chain length of this group
@@ -130,6 +135,7 @@ NoseHooverGroup::NoseHooverGroup(int      chainLength,
                                  real     couplingTimeStep,
                                  NhcUsage nhcUsage) :
     referenceTemperature_(referenceTemperature),
+    couplingTime_(couplingTime),
     numDegreesOfFreedom_(numDegreesOfFreedom),
     chainLength_(chainLength),
     couplingTimeStep_(couplingTimeStep),
@@ -231,6 +237,14 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                         ArrayRef<real>(),
                         nhcUsage));
     }
+    auto* nhcDataPtr =
+            builderHelper
+                    ->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage))
+                    .value();
+    builderHelper->registerReferenceTemperatureUpdate(
+            [nhcDataPtr](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
+                nhcDataPtr->updateReferenceTemperature(temperatures, algorithm);
+            });
 
     const auto* ptrToDataObject =
             builderHelper
@@ -312,6 +326,44 @@ inline bool NoseHooverGroup::isAtFullCouplingTimeStep() const
 {
     // Check whether coordinate time divided by the time step is close to integer
     return timesClose(std::lround(coordinateTime_ / couplingTimeStep_) * couplingTimeStep_, coordinateTime_);
+}
+
+void NoseHooverChainsData::updateReferenceTemperature(ArrayRef<const real> temperatures,
+                                                      ReferenceTemperatureChangeAlgorithm gmx_unused algorithm)
+{
+    // Currently, we don't know about any temperature change algorithms, so we assert this never gets called
+    GMX_ASSERT(false, "NoseHooverChainsData: Unknown ReferenceTemperatureChangeAlgorithm.");
+    for (auto temperatureGroup = 0; temperatureGroup < numTemperatureGroups_; ++temperatureGroup)
+    {
+        noseHooverGroups_[temperatureGroup].updateReferenceTemperature(temperatures[temperatureGroup]);
+        if (noseHooverGroups_[temperatureGroup].isAtFullCouplingTimeStep())
+        {
+            noseHooverGroups_[temperatureGroup].calculateIntegral();
+        }
+    }
+}
+
+void NoseHooverGroup::updateReferenceTemperature(real temperature)
+{
+    const bool newTemperatureIsValid = (temperature > 0 && couplingTime_ > 0 && numDegreesOfFreedom_ > 0);
+    const bool oldTemperatureIsValid =
+            (referenceTemperature_ > 0 && couplingTime_ > 0 && numDegreesOfFreedom_ > 0);
+    GMX_RELEASE_ASSERT(newTemperatureIsValid == oldTemperatureIsValid,
+                       "Cannot turn temperature coupling on / off during simulation run.");
+    if (oldTemperatureIsValid && newTemperatureIsValid)
+    {
+        const real velocityFactor = std::sqrt(temperature / referenceTemperature_);
+        for (auto chainPosition = 0; chainPosition < chainLength_; ++chainPosition)
+        {
+            invXiMass_[chainPosition] *= (referenceTemperature_ / temperature);
+            xiVelocities_[chainPosition] *= velocityFactor;
+        }
+    }
+    referenceTemperature_ = temperature;
+    if (isAtFullCouplingTimeStep())
+    {
+        calculateIntegral();
+    }
 }
 
 namespace

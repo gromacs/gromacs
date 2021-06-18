@@ -107,6 +107,10 @@ public:
     [[nodiscard]] int frequency() const;
 
 private:
+    //! Update the reference temperature
+    static void updateReferenceTemperature(ArrayRef<const real>                temperatures,
+                                           ReferenceTemperatureChangeAlgorithm algorithm);
+
     //! Whether we're doing massive Andersen thermostatting
     const bool doMassive_;
     //! The rate

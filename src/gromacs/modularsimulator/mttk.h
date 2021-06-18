@@ -121,6 +121,8 @@ private:
     double temperatureCouplingIntegral(Time time) const;
     //! Calculate the current value of the MTTK conserved energy if it is needed
     void calculateIntegralIfNeeded();
+    //! Update the reference temperature
+    void updateReferenceTemperature(real temperature, ReferenceTemperatureChangeAlgorithm algorithm);
 
     //! The coupling time step
     const real couplingTimeStep_;
@@ -138,6 +140,8 @@ private:
     const real referencePressure_;
     //! The current box velocities (used for reporting only)
     tensor boxVelocity_;
+    //! The reference temperature the mass is based on
+    real referenceTemperature_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state data (access to the current box)

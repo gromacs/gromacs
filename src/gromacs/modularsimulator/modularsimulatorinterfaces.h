@@ -78,6 +78,7 @@ class EnergySignaller;
 class LastStepSignaller;
 class LoggingSignaller;
 class NeighborSearchSignaller;
+enum class ReferenceTemperatureChangeAlgorithm;
 enum class ScaleVelocities;
 template<class Signaller>
 class SignallerBuilder;
@@ -585,6 +586,10 @@ public:
     //! Register function to be informed about system re-partitioning
     virtual DomDecCallback registerDomDecCallback() = 0;
 };
+
+//! Callback updating the reference temperature
+using ReferenceTemperatureCallback =
+        std::function<void(ArrayRef<const real>, ReferenceTemperatureChangeAlgorithm algorithm)>;
 
 //! /}
 } // namespace gmx

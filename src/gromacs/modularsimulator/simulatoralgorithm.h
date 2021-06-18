@@ -363,6 +363,10 @@ public:
     void registerTemperaturePressureControl(std::function<void(const PropagatorConnection&)> registrationFunction);
     //! Register a propagator to be used with a temperature / pressure control algorithm
     void registerPropagator(PropagatorConnection connectionData);
+    //! Register for callback after an update to the reference temperature
+    void registerReferenceTemperatureUpdate(ReferenceTemperatureCallback referenceTemperatureCallback);
+    //! Get a callback to change reference temperature
+    ReferenceTemperatureCallback changeReferenceTemperatureCallback();
 
 private:
     //! Pointer to the associated ModularSimulatorAlgorithmBuilder
