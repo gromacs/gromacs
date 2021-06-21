@@ -195,7 +195,7 @@ TEST(NBlibTest, CanAddInteractions)
 
     HarmonicBondType hb(1, 2);
     CubicBondType    cub(1, 2, 3);
-    HarmonicAngle    ang(Degrees(1), 1);
+    HarmonicAngle    ang(1, Degrees(1));
 
     molecule.addInteraction(ParticleName("O"), ParticleName("H1"), hb);
     molecule.addInteraction(ParticleName("O"), ParticleName("H2"), hb);

@@ -63,7 +63,7 @@ public:
         std::vector<HarmonicBondType> bonds{ bond1, bond2 };
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        HarmonicAngle              angle(Degrees(179.9), 397.5);
+        HarmonicAngle              angle(397.5, Degrees(179.9));
         std::vector<HarmonicAngle> angles{ angle };
         pickType<HarmonicAngle>(interactions).parameters = angles;
 

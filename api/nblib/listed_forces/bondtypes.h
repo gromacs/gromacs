@@ -216,25 +216,41 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
 }
 
 
-/*! \brief Harmonic angle type
+/*! \brief Basic template for interactions with 2 parameters named forceConstant and equilAngle
+ *
+ * \tparam Phantom unused template parameter for type distinction
+ *
+ * Distinct angle types can be generated from this template with using declarations
+ * and declared, but undefined structs. For example:
+ * using HarmonicAngleType = AngleInteractionType<struct HarmonicAngleParameter>;
+ * HarmonicAngleParameter does not have to be defined.
  *
  * Note: the angle is always stored as radians internally
  */
-struct HarmonicAngle : public TwoParameterInteraction<struct HarmonicAngleTypeParameter>
+template<class Phantom>
+class AngleInteractionType : public TwoParameterInteraction<Phantom>
 {
-    HarmonicAngle() = default;
+public:
+    AngleInteractionType() = default;
     //! \brief construct from angle given in radians
-    HarmonicAngle(Radians angle, ForceConstant f) :
-        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle }
+    AngleInteractionType(ForceConstant f, Radians angle) :
+        TwoParameterInteraction<Phantom>{ f, angle }
     {
     }
 
     //! \brief construct from angle given in degrees
-    HarmonicAngle(Degrees angle, ForceConstant f) :
-        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle * DEG2RAD }
+    AngleInteractionType(ForceConstant f, Degrees angle) :
+        TwoParameterInteraction<Phantom>{ f, angle * DEG2RAD }
     {
     }
 };
+
+/*! \brief Harmonic angle type
+ *
+ * It represents the interaction of the form
+ * V(theta, forceConstant, equilAngle) = 0.5 * forceConstant * (theta - equilAngle)^2
+ */
+using HarmonicAngle = AngleInteractionType<struct HarmonicAngleParameter>;
 
 /*! \brief Proper Dihedral Implementation
  */

@@ -166,7 +166,7 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_(MoleculeName("MeO
     HarmonicBondType ometBond(1.1, 1.2);
     methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ometBond);
 
-    HarmonicAngle ochAngle(Degrees(108.52), 397.5);
+    HarmonicAngle ochAngle(397.5, Degrees(108.52));
     methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ParticleName("H3"), ochAngle);
 }
 

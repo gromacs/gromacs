@@ -62,7 +62,7 @@ TEST(NBlibTest, CanSplitListedWork)
 {
     ListedInteractionData interactions;
 
-    HarmonicAngle    angle(Degrees(1), 1);
+    HarmonicAngle    angle(1, Degrees(1));
     HarmonicBondType bond(1, 1);
 
     int largestIndex = 20;

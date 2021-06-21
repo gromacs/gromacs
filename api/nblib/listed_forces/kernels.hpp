@@ -533,13 +533,13 @@ inline void spreadTwoCenterForces(const T bondForce,
  * @param force_k
  */
 template <class T>
-inline void spreadThreeCenterForces(T cos_theta,
-                             T force,
-                             const gmx::RVec& r_ij,
-                             const gmx::RVec& r_kj,
-                             gmx::RVec* force_i,
-                             gmx::RVec* force_j,
-                             gmx::RVec* force_k)
+inline void spreadThreeCenterForces(T                          cos_theta,
+                                    T                          force,
+                                    const gmx::BasicVector<T>& r_ij,
+                                    const gmx::BasicVector<T>& r_kj,
+                                    gmx::BasicVector<T>*       force_i,
+                                    gmx::BasicVector<T>*       force_j,
+                                    gmx::BasicVector<T>*       force_k)
 {
     T cos_theta2 = cos_theta * cos_theta;
     if (cos_theta2 < 1)
@@ -556,9 +556,9 @@ inline void spreadThreeCenterForces(T cos_theta,
         T cii = sth * nrij_1 * nrij_1; /*   2		*/
         T ckk = sth * nrkj_1 * nrkj_1; /*   2		*/
 
-        gmx::RVec f_i{0, 0, 0};
-        gmx::RVec f_j{0, 0, 0};
-        gmx::RVec f_k{0, 0, 0};
+        gmx::BasicVector<T> f_i{0, 0, 0};
+        gmx::BasicVector<T> f_j{0, 0, 0};
+        gmx::BasicVector<T> f_k{0, 0, 0};
         for (int m = 0; m < dimSize; m++)
         { /*  39		*/
             f_i[m] = -(cik * r_kj[m] - cii * r_ij[m]);

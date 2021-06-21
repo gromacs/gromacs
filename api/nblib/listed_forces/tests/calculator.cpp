@@ -104,7 +104,7 @@ protected:
         // one bond between atoms 0-1 with bond1 parameters and another between atoms 1-2 with bond2 parameters
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 1 } };
 
-        HarmonicAngle                                angle(Degrees(108.53), 397.5);
+        HarmonicAngle                                angle(397.5, Degrees(108.53));
         std::vector<HarmonicAngle>                   angles{ angle };
         std::vector<InteractionIndex<HarmonicAngle>> angleIndices{ { 0, 1, 2, 0 } };
 

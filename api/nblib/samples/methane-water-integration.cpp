@@ -96,8 +96,8 @@ int main()
     HarmonicBondType ohHarmonicBond(1, 1);
     HarmonicBondType hcHarmonicBond(2, 1);
 
-    HarmonicAngle hohAngle(Degrees(120), 1);
-    HarmonicAngle hchAngle(Degrees(109.5), 1);
+    HarmonicAngle hohAngle(1, Degrees(120));
+    HarmonicAngle hchAngle(1, Degrees(109.5));
 
     // add harmonic bonds for water
     water.addInteraction(ParticleName("O"), ParticleName("H1"), ohHarmonicBond);

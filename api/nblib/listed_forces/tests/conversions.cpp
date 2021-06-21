@@ -65,8 +65,8 @@ ListedInteractionData someBondsAndAngles()
     std::vector<HarmonicBondType> bonds{ bond1, bond2 };
     pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-    HarmonicAngle              angle1(Degrees(100), 100);
-    HarmonicAngle              angle2(Degrees(101), 200);
+    HarmonicAngle              angle1(100, Degrees(100));
+    HarmonicAngle              angle2(200, Degrees(101));
     std::vector<HarmonicAngle> angles{ angle1, angle2 };
     pickType<HarmonicAngle>(interactions).parameters = angles;
 
