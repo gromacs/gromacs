@@ -53,6 +53,11 @@ function (gmx_add_unit_test_library NAME)
             # Some false positives exist produced by GoogleTest implementation
             gmx_target_warning_suppression(${NAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
             gmx_target_warning_suppression(${NAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+            if(GMX_GPU_CUDA)
+                # CUDA headers target C, so use old-style casts that clang
+                # warns about when it is the host compiler
+                gmx_target_warning_suppression(${NAME} "-Wno-old-style-cast" HAS_NO_OLD_STYLE_CAST)
+            endif()
         endif()
     endif()
 endfunction ()
@@ -183,6 +188,11 @@ function (gmx_add_gtest_executable EXENAME)
             # Some false positives exist produced by GoogleTest implementation
             gmx_target_warning_suppression(${EXENAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
             gmx_target_warning_suppression(${EXENAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+            if(GMX_GPU_CUDA)
+                # CUDA headers target C, so use old-style casts that clang
+                # warns about when it is the host compiler
+                gmx_target_warning_suppression(${EXENAME} "-Wno-old-style-cast" HAS_NO_OLD_STYLE_CAST)
+            endif()
         endif()
     endif()
 endfunction()

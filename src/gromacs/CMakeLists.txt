@@ -279,11 +279,6 @@ endif()
 # Do any special handling needed for .cpp files that use
 # CUDA runtime headers
 if (GMX_GPU_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
-    # where nullptr would be preferable. GROMACS can't fix these, so
-    # must suppress them.
-    GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-
     foreach(_compile_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
         set(GMX_CUDA_CLANG_FLAGS "${GMX_CUDA_CLANG_FLAGS} ${_compile_flag}")
     endforeach()
