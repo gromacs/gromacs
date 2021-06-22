@@ -6,7 +6,7 @@
 #   GPU: None
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 18.04
+#   OS: Ubuntu 20.04
 #   Compiler: Clang 11
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
@@ -18,7 +18,7 @@ gromacs:clang-TSAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -31,7 +31,7 @@ gromacs:clang-TSAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -41,7 +41,7 @@ gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -51,7 +51,7 @@ gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   tags:

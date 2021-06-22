@@ -8,7 +8,7 @@
 #   SIMD: no
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 18.04
+#   OS: Ubuntu 20.04
 #   Compiler: Clang 9
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2
@@ -21,7 +21,7 @@ simple-build:
     - .use-clang:base
     - .rules:basic-push
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     KUBERNETES_CPU_LIMIT: 8
