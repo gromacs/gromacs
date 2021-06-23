@@ -124,8 +124,6 @@ int gmx_fedisableexcept();
  *
  * Currently, it returns true unless any of the following conditions are met:
  * - release build,
- * - SYCL build (Intel IGC, at least 1.0.5964, raises FP exceptions in JIT compilation),
- * - - See https://github.com/intel/intel-graphics-compiler/issues/164
  * - compilers with known buggy FP exception support (clang with any optimization)
  *   or suspected buggy FP exception support (gcc 7.* with optimization).
  *
