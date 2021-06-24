@@ -165,6 +165,69 @@ if(GMX_SYCL_HIPSYCL)
         message(FATAL_ERROR "hipSYCL cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and has been removed in clang 12. Compile only for either CUDA or HIP targets.")
     endif()
     unset(_rerun_hipsycl_try_compile_tests)
+
+    # Find a suitable rocFFT when hipSYCL is targeting AMD devices
+    if (GMX_HIPSYCL_HAVE_HIP_TARGET)
+        # For consistency, we prefer to find rocFFT as part of the
+        # default ROCm distribution that supports the version of
+        # hipSYCL that is being used. Other installations of rocFFT
+        # might work, but could lead to problems that are hard to
+        # trace.
+        #
+        # The hipSYCL find package sets HIPSYCL_SYCLCC which we can
+        # use to find the JSON configuration file that points to the
+        # default ROCm installation used by hipSYCL, which can be used
+        # to find rocFFT.
+        #
+        # If this is unavailable or does not work, the user will need to
+        # set CMAKE_PREFIX_PATH so CMake is able to find the dependencies
+        # of rocFFT (namely hip, AMDDeviceLibs, amd_comgr, hsa-runtime64,
+        # ROCclr).
+        if (HIPSYCL_SYCLCC)
+            get_filename_component(HIPSYCL_SYCLCC_DIR ${HIPSYCL_SYCLCC} DIRECTORY)
+            find_file(HIPSYCL_SYCLCC_JSON syclcc.json
+                HINTS ${HIPSYCL_SYCLCC_DIR}/../etc/hipSYCL
+	        DOC "location of hipSYCL JSON configuration file"
+	        )
+            if (HIPSYCL_SYCLCC_JSON)
+                if(NOT HIPSYCL_SYCLCC_ROCM_PATH)
+                    file(READ ${HIPSYCL_SYCLCC_JSON} HIPSYCL_SYCLCC_JSON_CONTENTS)
+                    if (CMAKE_VERSION VERSION_LESS 3.19)
+                        # We want the value encoded by the line
+                        # "default-rocm-path" : "/opt/rocm",
+                        # so we use regular expressions to remove everything before
+                        # and after the relevant quotation marks.
+                        #
+                        # Remove this when GROMACS requires CMake 3.19 or higher, as the
+                        # proper JSON parsing below is more robust.
+                        string(REGEX REPLACE ".*\"default-rocm-path\" *: * \"" "" HIPSYCL_SYCLCC_ROCM_PATH_VALUE ${HIPSYCL_SYCLCC_JSON_CONTENTS})
+                        string(REGEX REPLACE "\",.*" "" HIPSYCL_SYCLCC_ROCM_PATH_VALUE ${HIPSYCL_SYCLCC_ROCM_PATH_VALUE})
+                    else()
+                        string(JSON HIPSYCL_SYCLCC_ROCM_PATH_VALUE GET ${HIPSYCL_SYCLCC_JSON_CONTENTS} "default-rocm-path")
+                    endif()
+                    set(HIPSYCL_SYCLCC_ROCM_PATH ${HIPSYCL_SYCLCC_ROCM_PATH_VALUE} CACHE FILEPATH "The default ROCm used by syclcc from hipSYCL")
+                endif()
+
+                if(HIPSYCL_SYCLCC_ROCM_PATH)
+                    # Teach the rocFFT find package how to find the necessary components
+                    # from the ROCm distribution used by hipSYCL.
+                    set(hip_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/hip/lib/cmake/hip)
+                    set(AMDDeviceLibs_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/lib/cmake/AMDDeviceLibs)
+                    set(amd_comgr_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/lib/cmake/amd_comgr)
+                    set(hsa-runtime64_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/lib/cmake/hsa-runtime64)
+                    set(ROCclr_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/rocclr/lib/cmake/rocclr)
+                    set(rocfft_DIR ${HIPSYCL_SYCLCC_ROCM_PATH}/rocfft/lib/cmake/rocfft)
+                endif()
+            endif()
+        endif()
+
+        # Find rocFFT, either from the ROCm used by hipSYCL, or as otherwise found on the system
+        find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${HIPSYCL_SYCLCC_ROCM_PATH} PATHS /opt/rocm)
+        if (NOT rocfft_FOUND)
+            message(FATAL_ERROR "rocFFT is required for the hipSYCL build, but was not found")
+        endif()
+        set(FIND_ROCFFT_QUIETLY "QUIET")
+    endif()
 else()
     if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
         # At least Intel dpcpp defaults to having SYCL enabled for all code. This leads to two problems:
