@@ -32,7 +32,7 @@
   when: never
 
 # Include in pipelines triggered through the web interface.
-.rules-element:if-web-then-always: &if-web-then-always
+.rules-element:if-web-then-on-success: &if-web-then-on-success
   if: '$CI_PIPELINE_SOURCE == "web"'
   when: on_success
 
@@ -42,12 +42,12 @@
   when: never
 
 # Include in pipelines triggered by "push" events to any branch.
-.rules-element:if-push-then-always: &if-push-then-always
+.rules-element:if-push-then-on-success: &if-push-then-on-success
   if: '$CI_PIPELINE_SOURCE == "push"'
   when: on_success
 
 # Include in "schedule" pipelines (e.g. nightly jobs)
-.rules-element:if-schedule-then-always: &if-schedule-then-always
+.rules-element:if-schedule-then-on-success: &if-schedule-then-on-success
   if: '$CI_PIPELINE_SOURCE == "schedule"'
   when: on_success
 
@@ -58,7 +58,7 @@
   when: never
 
 # Include in pipelines triggered in the merge request process.
-.rules-element:if-mr-then-always: &if-mr-then-always
+.rules-element:if-mr-then-on-success: &if-mr-then-on-success
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   when: on_success
 
@@ -70,14 +70,14 @@
   when: never
 
 # Include job when running for merge request or when pushing to protected branch.
-.rules-element:if-post-merge-acceptance-or-mr-then-always: &if-post-merge-acceptance-or-mr-then-always
+.rules-element:if-post-merge-acceptance-or-mr-then-on-success: &if-post-merge-acceptance-or-mr-then-on-success
   if: '$CI_PIPELINE_SOURCE == "merge_request_event" ||
        ($CI_PIPELINE_SOURCE == "push" &&
         $CI_COMMIT_REF_NAME == "master")'
   when: on_success
 
 # Include job only for post submit push
-.rules-element:if-post-merge-acceptance-then-always: &if-post-merge-acceptance-then-always
+.rules-element:if-post-merge-acceptance-then-on-success: &if-post-merge-acceptance-then-on-success
   if: '$CI_PIPELINE_SOURCE == "push" &&
        $CI_COMMIT_REF_NAME == "master"'
   when: on_success
@@ -100,9 +100,9 @@
     - *if-release-then-never
     - *if-mr-then-never
     - *if-post-merge-acceptance-then-never
-    - *if-web-then-always
-    - *if-push-then-always
-    - *if-schedule-then-always
+    - *if-web-then-on-success
+    - *if-push-then-on-success
+    - *if-schedule-then-on-success
 
 # Jobs to run after successful merge of a new commit.
 # Only run on GROMACS infrastructure and only when merging into
@@ -112,9 +112,9 @@
     - *if-not-gromacs-then-never
     - *if-release-then-never
     - *if-mr-then-never
-    - *if-post-merge-acceptance-then-always
-    - *if-web-then-always
-    - *if-schedule-then-always
+    - *if-post-merge-acceptance-then-on-success
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
 
 # Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
 # is set. Excludes non-GROMACS projects.
@@ -125,9 +125,9 @@
     - *if-release-then-never
     - *if-push-then-never
     - *if-post-merge-acceptance-then-never
-    - *if-web-then-always
-    - *if-schedule-then-always
-    - *if-mr-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
+    - *if-mr-then-on-success
 
 # Jobs running both in post submit and for merge requests
 # Excludes non-GROMACS projects.
@@ -135,9 +135,9 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
-    - *if-web-then-always
-    - *if-schedule-then-always
-    - *if-post-merge-acceptance-or-mr-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
+    - *if-post-merge-acceptance-or-mr-then-on-success
 
 # Jobs that run for merge requests and schedules for branch `master`,
 # but not when GROMACS_RELEASE is set.
@@ -147,13 +147,13 @@
     - *if-not-gromacs-then-never
     - *if-release-then-never
     - *if-post-merge-acceptance-then-never
-    - *if-web-then-always
+    - *if-web-then-on-success
     # This rule catches "push" and other events in branches other than `master`
     # but allows merge_request_events for merge requests targeting master.
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "master" && $CI_COMMIT_REF_NAME != "master"'
       when: never
-    - *if-schedule-then-always
-    - *if-mr-then-always
+    - *if-schedule-then-on-success
+    - *if-mr-then-on-success
 
 # Jobs that run for merge requests and schedules for branch `release-2021`,
 # but not when GROMACS_RELEASE is set.
@@ -173,9 +173,9 @@
     # to be provided through the web interface.
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "release-2021" && $CI_COMMIT_REF_NAME != "release-2021"'
       when: never
-    - *if-web-then-always
-    - *if-schedule-then-always
-    - *if-mr-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
+    - *if-mr-then-on-success
 
 # Jobs that run for merge requests and schedules for branch `release-2020`,
 # but not when GROMACS_RELEASE is set.
@@ -195,9 +195,9 @@
     # to be provided through the web interface.
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "release-2020" && $CI_COMMIT_REF_NAME != "release-2020"'
       when: never
-    - *if-web-then-always
-    - *if-schedule-then-always
-    - *if-mr-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
+    - *if-mr-then-on-success
 
 # Rule to run a job only in nightly release-preparation pipelines.
 # Checks if the GROMACS_RELEASE variable was set (typically through the GitLab web interface).
@@ -207,8 +207,8 @@
     - *if-not-gromacs-then-never
     - *if-not-release-then-never
     - *if-post-merge-acceptance-then-never
-    - *if-web-then-always
-    - *if-schedule-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
 
 # Jobs that run on schedules, but not for merge requests or when GROMACS_RELEASE
 # is set. Excludes non-gromacs projects.
@@ -217,5 +217,5 @@
     - *if-not-gromacs-then-never
     - *if-release-then-never
     - *if-post-merge-acceptance-then-never
-    - *if-web-then-always
-    - *if-schedule-then-always
+    - *if-web-then-on-success
+    - *if-schedule-then-on-success
