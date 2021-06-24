@@ -34,7 +34,7 @@
 # Include in pipelines triggered through the web interface.
 .rules-element:if-web-then-always: &if-web-then-always
   if: '$CI_PIPELINE_SOURCE == "web"'
-  when: always
+  when: on_success
 
 # Exclude from pipelines triggered by "push" events.
 .rules-element:if-push-then-never: &if-push-then-never
@@ -44,12 +44,12 @@
 # Include in pipelines triggered by "push" events to any branch.
 .rules-element:if-push-then-always: &if-push-then-always
   if: '$CI_PIPELINE_SOURCE == "push"'
-  when: always
+  when: on_success
 
 # Include in "schedule" pipelines (e.g. nightly jobs)
 .rules-element:if-schedule-then-always: &if-schedule-then-always
   if: '$CI_PIPELINE_SOURCE == "schedule"'
-  when: always
+  when: on_success
 
 # Exclude from selective "schedule" pipelines, e.g. just those
 # that should run the post-merge-acceptance jobs.
@@ -60,7 +60,7 @@
 # Include in pipelines triggered in the merge request process.
 .rules-element:if-mr-then-always: &if-mr-then-always
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  when: always
+  when: on_success
 
 # Exclude from pipelines triggered in the merge request process, such as for
 # jobs that duplicate checks already performed for "push" events or that we
@@ -74,13 +74,13 @@
   if: '$CI_PIPELINE_SOURCE == "merge_request_event" ||
        ($CI_PIPELINE_SOURCE == "push" &&
         $CI_COMMIT_REF_NAME == "master")'
-  when: always
+  when: on_success
 
 # Include job only for post submit push
 .rules-element:if-post-merge-acceptance-then-always: &if-post-merge-acceptance-then-always
   if: '$CI_PIPELINE_SOURCE == "push" &&
        $CI_COMMIT_REF_NAME == "master"'
-  when: always
+  when: on_success
 
 # When composing a rule set, note that the first matching rule is applied.
 # If you want later rules to be evaluated, you must make sure that the *if*
