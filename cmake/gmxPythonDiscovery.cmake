@@ -53,15 +53,11 @@ if(NOT Python3_FIND_VIRTUALENV)
     # we want to preferentially discover user-space software.
     set(Python3_FIND_VIRTUALENV FIRST)
 endif()
-if(GMX_PYTHON_PACKAGE)
-    find_package(Python3 3.6 COMPONENTS Interpreter Development)
-    if (NOT Python3_FOUND OR NOT Python3_Development_FOUND)
-        message(FATAL_ERROR "Could not locate Python development requirements. \
-                Provide appropriate CMake hints or set GMX_PYTHON_PACKAGE=OFF")
-    endif ()
-else()
-    find_package(Python3 3.6 COMPONENTS Interpreter)
-endif()
+find_package(Python3 3.7 COMPONENTS Interpreter Development)
+if (GMX_PYTHON_PACKAGE AND (NOT Python3_FOUND OR NOT Python3_Development_FOUND))
+    message(FATAL_ERROR "Could not locate Python development requirements. \
+            Provide appropriate CMake hints or set GMX_PYTHON_PACKAGE=OFF")
+endif ()
 
 # Provide hints for other Python detection that may occur later.
 #
