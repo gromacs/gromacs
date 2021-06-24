@@ -112,6 +112,9 @@ target_link_libraries(nblib PRIVATE common)
 target_link_libraries(nblib PUBLIC legacy_api)
 # TODO: Explicitly link specific modules.
 target_link_libraries(nblib PRIVATE legacy_modules)
+if (GMX_OPENMP)
+    target_link_libraries(nblib PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 install(TARGETS nblib
         EXPORT nblib

@@ -116,7 +116,9 @@ _rocm_extra_packages = [
         'libelf1',
         'rocm-opencl',
         'rocm-dev',
-        'clinfo'
+        'clinfo',
+        'rocfft',
+        'hipfft',
 ]
                      
 
@@ -334,8 +336,7 @@ def get_hipsycl(args):
     if args.rocm is None:
         raise RuntimeError('hipSYCL requires the rocm packages')
 
-    cmake_opts = [f'-DLLVM_DIR=/usr/lib/llvm-{args.llvm}/cmake',
-                  f'-DCLANG_EXECUTABLE_PATH=/usr/bin/clang++-{args.llvm}',
+    cmake_opts = [f'-DLLVM_DIR=/opt/rocm/llvm/lib/cmake/llvm',
                   '-DCMAKE_PREFIX_PATH=/opt/rocm/lib/cmake',
                   '-DWITH_ROCM_BACKEND=ON']
     if args.cuda is not None:

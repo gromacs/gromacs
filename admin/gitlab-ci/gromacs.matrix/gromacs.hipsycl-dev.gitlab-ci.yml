@@ -7,7 +7,7 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: Clang 11
+#   Compiler: Clang 12 (ROCm)
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 
@@ -17,12 +17,17 @@ gromacs:hipsycl-dev:configure:
     - .use-clang:base
     - .use-sycl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.2-hipsycl-9867a7b-rocm-4.0.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.2-hipsycl-0bf6420aab18-rocm-4.2
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='cuda:sm_60,sm_61,sm_70,sm_75;hip:gfx900'"
+    # Override the default clang compiler to the one provided by ROCm
+    # Note that this compiler can only build for HIP targets. If this
+    # changes (or we build our own clang) then it would be nice to
+    # reinstate CUDA targets in -DHIPSYCL_TARGETS below.
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfx900'"
     # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
     COMPILER_MAJOR_VERSION: 11
@@ -34,7 +39,7 @@ gromacs:hipsycl-dev:build:
     - .before_script:default
     # Not using ccache because it plays poorly with syclcc-launcher
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.2-hipsycl-9867a7b-rocm-4.0.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.2.2-hipsycl-0bf6420aab18-rocm-4.2
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
