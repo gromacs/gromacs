@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@ Provide command line operation.
 
 __all__ = ['commandline_operation']
 
+import functools
 import os
+import pathlib
 import shutil
 import subprocess
 
@@ -51,6 +53,42 @@ from gmxapi.operation import OutputCollectionDescription
 # Module-level logger
 logger = root_logger.getChild('commandline')
 logger.info('Importing {}'.format(__name__))
+
+
+@functools.lru_cache()
+def _config() -> dict:
+    """Get the GROMACS configuration detected during installation.
+
+    If this appears to be a useful function, it may become part of the regular
+    interface, but it is currently unadvertised.
+    """
+    import json
+    from importlib.resources import open_text
+    with open_text('gmxapi', 'gmxconfig.json') as textfile:
+        config = json.load(textfile)
+    return config
+
+
+@functools.lru_cache()
+def cli_executable() -> pathlib.Path:
+    """Report the installed GROMACS command line executable."""
+    path = _config().get('gmx_executable', None)
+    if path is not None:
+        path = pathlib.Path(os.path.abspath(path))
+        if path.is_file():
+            return path
+    raise exceptions.FeatureNotAvailableError('GROMACS installation unavailable.')
+
+
+@functools.lru_cache()
+def cli_bindir() -> pathlib.Path:
+    """Report the installed GROMACS binary directory."""
+    path = _config().get('gmx_bindir', None)
+    if path is not None:
+        path = pathlib.Path(os.path.abspath(path))
+        if path.is_dir():
+            return path
+    raise exceptions.FeatureNotAvailableError('GROMACS installation unavailable.')
 
 
 # Create an Operation that consumes a list and a boolean to produce a string and an integer.

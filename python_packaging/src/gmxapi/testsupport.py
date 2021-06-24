@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -118,26 +118,13 @@ def remove_tempdir(request) -> RmOption:
     arg = request.config.getoption('--rm')
     return RmOption(arg)
 
+
 @pytest.fixture(scope='session')
 def gmxconfig():
-    try:
-        from importlib.resources import open_text
-        with open_text('gmxapi', 'gmxconfig.json') as textfile:
-            config = json.load(textfile)
-    except ImportError:
-        # TODO: Remove this when we require Python 3.7
-        try:
-            # A backport of importlib.resources is available as importlib_resources
-            # with a somewhat different interface.
-            from importlib_resources import files, as_file
-
-            source = files('gmxapi').joinpath('gmxconfig.json')
-            with as_file(source) as gmxconfig:
-                with open(gmxconfig, 'r') as fp:
-                    config = json.load(fp)
-        except ImportError:
-            config = None
+    from .commandline import _config
+    config = _config()
     yield config
+
 
 @pytest.fixture(scope='session')
 def mdrun_kwargs(request, gmxconfig):
@@ -255,50 +242,11 @@ def cleandir(remove_tempdir: RmOption):
         yield newdir
 
 
-class GmxBin:
-    """Represent the detected GROMACS installation."""
-    def __init__(self, gmxconfig):
-        # Try to use package resources to locate the "gmx" binary wrapper.
-        if gmxconfig is not None:
-            gmxbindir = gmxconfig.get('gmx_bindir', None)
-            command = gmxconfig.get('gmx_executable', None)
-        else:
-            gmxbindir = None
-            command = None
-
-        # TODO: Remove fall-back when we can rely on gmxconfig.json via importlib.resources in Py 3.7+.
-        allowed_command_names = ['gmx', 'gmx_mpi']
-        for command_name in allowed_command_names:
-            if command is not None:
-                break
-            command = shutil.which(command_name)
-            if command is None:
-                gmxbindir = os.getenv('GMXBIN')
-                if gmxbindir is None:
-                    gromacsdir = os.getenv('GROMACS_DIR')
-                    if gromacsdir is not None and gromacsdir != '':
-                        gmxbindir = os.path.join(gromacsdir, 'bin')
-                if gmxbindir is None:
-                    gmxapidir = os.getenv('gmxapi_DIR')
-                    if gmxapidir is not None and gmxapidir != '':
-                        gmxbindir = os.path.join(gmxapidir, 'bin')
-                if gmxbindir is not None:
-                    gmxbindir = os.path.abspath(gmxbindir)
-                    command = shutil.which(command_name, path=gmxbindir)
-
-        self._command = command
-        self._bindir = gmxbindir
-
-    def command(self):
-        return self._command
-
-    def bindir(self):
-        return self._bindir
-
-
 @pytest.fixture(scope='session')
-def gmxcli(gmxconfig):
-    command = GmxBin(gmxconfig).command()
+def gmxcli():
+    from .commandline import cli_executable
+    command = cli_executable()
+
     if command is None:
         message = "Tests need 'gmx' command line tool, but could not find it on the path."
         raise RuntimeError(message)
