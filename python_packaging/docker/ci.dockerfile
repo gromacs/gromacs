@@ -73,7 +73,6 @@ RUN . $VENV/bin/activate && \
 
 ADD --chown=testing:testing src/test /home/testing/gmxapi/test
 ADD scripts /docker_entry_points
-ADD --chown=testing:testing test /home/testing/test
 
 ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint
 
