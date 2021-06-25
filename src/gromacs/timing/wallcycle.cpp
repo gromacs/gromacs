@@ -398,7 +398,7 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle* wc, bool isPmeRank, int nthre
     }
     if (sc_useCycleSubcounters && !isPmeRank)
     {
-        for (auto counter : wc->wcsc)
+        for (auto& counter : wc->wcsc)
         {
             counter.c *= nthreads_pp;
         }

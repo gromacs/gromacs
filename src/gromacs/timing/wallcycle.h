@@ -259,7 +259,8 @@ inline void wallcycle_start_nocount(gmx_wallcycle* wc, WallCycleCounter ewc)
     {
         return;
     }
-    wc->wcc[ewc].n++;
+    wallcycle_start(wc, ewc);
+    wc->wcc[ewc].n--;
 }
 
 //! Stop the cycle count for ewc , returns the last cycle count
@@ -353,7 +354,8 @@ inline void wallcycle_sub_start_nocount(gmx_wallcycle* wc, WallCycleSubCounter e
 {
     if (sc_useCycleSubcounters && wc != nullptr)
     {
-        wc->wcsc[ewcs].start = gmx_cycles_read();
+        wallcycle_sub_start(wc, ewcs);
+        wc->wcsc[ewcs].n--;
     }
 }
 

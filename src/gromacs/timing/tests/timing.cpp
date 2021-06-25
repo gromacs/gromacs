@@ -41,8 +41,6 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <chrono>
 #include <memory>
 #include <thread>
@@ -59,8 +57,6 @@ namespace test
 {
 namespace
 {
-
-constexpr bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 
 //! Test function
 void sleepForMilliseconds(int msecs)
@@ -79,6 +75,60 @@ protected:
     std::unique_ptr<gmx_wallcycle> wcycle;
 };
 
+
+//! Test if event incrementing works correctly
+TEST_F(TimingTest, ElementCountingWorks)
+{
+    WallCycleCounter probe = WallCycleCounter::Run;
+    EXPECT_EQ(wcycle->wcc[probe].n, 0);
+    wallcycle_start(wcycle.get(), probe);
+    wallcycle_stop(wcycle.get(), probe);
+    EXPECT_EQ(wcycle->wcc[probe].n, 1);
+}
+
+//! Test if event incrementing works correctly for nocount
+TEST_F(TimingTest, ElementNoCountingWorks)
+{
+    WallCycleCounter probe = WallCycleCounter::Run;
+    EXPECT_EQ(wcycle->wcc[probe].n, 0);
+    wallcycle_start(wcycle.get(), probe);
+    wallcycle_stop(wcycle.get(), probe);
+    EXPECT_EQ(wcycle->wcc[probe].n, 1);
+    wallcycle_start_nocount(wcycle.get(), probe);
+    EXPECT_EQ(wcycle->wcc[probe].n, 0);
+    wallcycle_stop(wcycle.get(), probe);
+    EXPECT_EQ(wcycle->wcc[probe].n, 1);
+}
+
+//! Test if event incrementing works correctly
+TEST_F(TimingTest, SubElementCountingWorks)
+{
+    if (sc_useCycleSubcounters)
+    {
+        WallCycleSubCounter probe = WallCycleSubCounter::NonbondedKernel;
+        EXPECT_EQ(wcycle->wcsc[probe].n, 0);
+        wallcycle_sub_start(wcycle.get(), probe);
+        wallcycle_sub_stop(wcycle.get(), probe);
+        EXPECT_EQ(wcycle->wcsc[probe].n, 1);
+    }
+}
+
+//! Test if event incrementing works correctly for nocount
+TEST_F(TimingTest, SubElementNoCountingWorks)
+{
+    if (sc_useCycleSubcounters)
+    {
+        WallCycleSubCounter probe = WallCycleSubCounter::NonbondedKernel;
+        EXPECT_EQ(wcycle->wcsc[probe].n, 0);
+        wallcycle_sub_start(wcycle.get(), probe);
+        wallcycle_sub_stop(wcycle.get(), probe);
+        EXPECT_EQ(wcycle->wcsc[probe].n, 1);
+        wallcycle_sub_start_nocount(wcycle.get(), probe);
+        EXPECT_EQ(wcycle->wcsc[probe].n, 0);
+        wallcycle_sub_stop(wcycle.get(), probe);
+        EXPECT_EQ(wcycle->wcsc[probe].n, 1);
+    }
+}
 
 //! Test whether the we can run the cycle counter.
 TEST_F(TimingTest, RunWallCycle)
@@ -106,7 +156,7 @@ TEST_F(TimingTest, RunWallCycle)
 //! Test whether the subcyclecounter runs
 TEST_F(TimingTest, RunWallCycleSub)
 {
-    if (useCycleSubcounters)
+    if (sc_useCycleSubcounters)
     {
         WallCycleSubCounter probe = WallCycleSubCounter::DDRedist;
         WallCycleSubCounter ref   = WallCycleSubCounter::DDGrid;
