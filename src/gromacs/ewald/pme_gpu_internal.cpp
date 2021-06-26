@@ -606,9 +606,21 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
     if (pme_gpu_settings(pmeGpu).performGPUFFT)
     {
         pmeGpu->archSpecific->fftSetup.resize(0);
+        const bool        useDecomposition     = pme_gpu_settings(pmeGpu).useDecomposition;
+        const bool        performOutOfPlaceFFT = pmeGpu->archSpecific->performOutOfPlaceFFT;
+        PmeGpuGridParams& grid                 = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->grid;
         for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
         {
-            pmeGpu->archSpecific->fftSetup.push_back(std::make_unique<GpuParallel3dFft>(pmeGpu, gridIndex));
+            pmeGpu->archSpecific->fftSetup.push_back(
+                    std::make_unique<GpuParallel3dFft>(grid.realGridSize,
+                                                       grid.realGridSizePadded,
+                                                       grid.complexGridSizePadded,
+                                                       useDecomposition,
+                                                       performOutOfPlaceFFT,
+                                                       pmeGpu->archSpecific->deviceContext_,
+                                                       pmeGpu->archSpecific->pmeStream_,
+                                                       grid.d_realGrid[gridIndex],
+                                                       grid.d_fourierGrid[gridIndex]));
         }
     }
 }

@@ -92,6 +92,7 @@ elseif (GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         # Files that implement stubs
         pme_gpu_sycl_stubs.cpp
+        pme_gpu_3dfft_sycl.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
@@ -101,6 +102,7 @@ elseif (GMX_GPU_SYCL)
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
         pme_gpu_sycl_stubs.cpp
+        pme_gpu_3dfft_sycl.cpp
         pme_gpu_timings.cpp
         )
 else()
