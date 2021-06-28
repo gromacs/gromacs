@@ -16,6 +16,21 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed gmxapi MD plugin binding
+""""""""""""""""""""""""""""""
+
+Molecular Dynamics extension code was not properly handled when added to a
+simulation through the gmxapi Python interface.
+This meant that restraint potentials would silently fail to be applied with
+gmxapi versions >= 0.1.
+Updates have been applied internally to gmxapi.
+Third party code should not need to be updated, but developers will
+note an additional "null restraint" in
+https://gitlab.com/gromacs/gromacs/-/tree/master/python_packaging/sample_restraint
+(for illustration and testing purposes).
+
+:issue:`4078`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -161,7 +161,7 @@ setup(
     name='gmxapi',
 
     # TODO: single-source version information (currently repeated in gmxapi/version.py and CMakeLists.txt)
-    version='0.2.0',
+    version='0.2.1',
     python_requires='>=3.6',
     install_requires=['networkx>=2.0',
                       'numpy>=1'],

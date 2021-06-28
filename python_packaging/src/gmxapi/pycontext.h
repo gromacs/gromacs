@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ public:
     std::shared_ptr<gmxapi::Session> launch(const gmxapi::Workflow& work);
     std::shared_ptr<gmxapi::Context> get() const;
 
-    void addMDModule(pybind11::object forceProvider);
+    void addMDModule(const pybind11::object& forceProvider) const;
 
     /*!
      * \brief Borrow shared ownership of the System's container of associated modules.
