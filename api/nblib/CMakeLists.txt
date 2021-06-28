@@ -99,6 +99,7 @@ target_sources(nblib
         simulationstate.cpp
         topologyhelpers.cpp
         topology.cpp
+        virials.cpp
         )
 
 gmx_target_compile_options(nblib)

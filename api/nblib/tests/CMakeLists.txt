@@ -61,6 +61,7 @@ gmx_add_gtest_executable(
         molecules.cpp
         nbnxmsetup.cpp
         topology.cpp
+        virials.cpp
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
