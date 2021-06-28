@@ -625,7 +625,7 @@ void NoseHooverChainsElement::propagateNhc()
         else if (nhcUsage_ == NhcUsage::Barostat)
         {
             // Scale eta velocities by scalingFactor
-            mttkData_->scale(scalingFactor);
+            mttkData_->scale(scalingFactor, noseHooverChainData_->isAtFullCouplingTimeStep());
         }
     }
 
@@ -711,13 +711,18 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         StatePropagatorData gmx_unused* statePropagatorData,
         EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        NhcUsage                              nhcUsage,
-        Offset                                offset,
-        UseFullStepKE                         useFullStepKE,
-        ScheduleOnInitStep                    scheduleOnInitStep)
+        GlobalCommunicationHelper gmx_unused*  globalCommunicationHelper,
+        NhcUsage                               nhcUsage,
+        Offset                                 offset,
+        UseFullStepKE                          useFullStepKE,
+        ScheduleOnInitStep                     scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
 {
     GMX_RELEASE_ASSERT(nhcUsage == NhcUsage::Barostat, "System NHC element needs a propagator tag.");
+    if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
+    {
+        MttkData::build(legacySimulatorData, builderHelper, statePropagatorData, energyData, mttkPropagatorConnectionDetails);
+    }
     return getElementPointerImpl(legacySimulatorData,
                                  builderHelper,
                                  statePropagatorData,
@@ -756,10 +761,6 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
     MttkData* mttkData = nullptr;
     if (nhcUsage == NhcUsage::Barostat)
     {
-        if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
-        {
-            MttkData::build(legacySimulatorData, builderHelper, statePropagatorData, energyData);
-        }
         mttkData = builderHelper->simulationData<MttkData>(MttkData::dataID()).value();
     }
 

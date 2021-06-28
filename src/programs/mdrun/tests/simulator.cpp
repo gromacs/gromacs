@@ -178,6 +178,12 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         mdpFieldValues["nstcomm"]       = "1";
         mdpFieldValues["nstcalcenergy"] = "1";
     }
+    if (pcoupling == "mttk")
+    {
+        // Standard parameters use compressibility of 5e-5
+        // Increasing compressibility makes this test significantly more sensitive
+        mdpFieldValues["compressibility"] = "1";
+    }
 
     EnergyTermsToCompare energyTermsToCompare{ {
             { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },

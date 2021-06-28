@@ -57,6 +57,7 @@ class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
 class LegacySimulatorData;
 class ModularSimulatorAlgorithmBuilderHelper;
+struct MttkPropagatorConnectionDetails;
 class MttkData;
 class NoseHooverGroup;
 class StatePropagatorData;
@@ -199,6 +200,8 @@ public:
 
     /*! \brief Factory method implementation (no propagator connection)
      *
+     * This signature is used to connect a Nose-Hoover chain to a barostat
+     *
      * \param legacySimulatorData  Pointer allowing access to simulator level data
      * \param builderHelper  ModularSimulatorAlgorithmBuilder helper object
      * \param statePropagatorData  Pointer to the \c StatePropagatorData object
@@ -209,19 +212,22 @@ public:
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
      * \param scheduleOnInitStep  Whether the element is scheduled on the initial step
+     * \param mttkPropagatorConnectionDetails  Connection information for the MTTK barostat
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
-    static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
-                                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
-                                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                    GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    NhcUsage                   nhcUsage,
-                                                    Offset                     offset,
-                                                    UseFullStepKE              useFullStepKE,
-                                                    ScheduleOnInitStep         scheduleOnInitStep);
+    static ISimulatorElement*
+    getElementPointerImpl(LegacySimulatorData*                    legacySimulatorData,
+                          ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                          StatePropagatorData*                    statePropagatorData,
+                          EnergyData*                             energyData,
+                          FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+                          GlobalCommunicationHelper*              globalCommunicationHelper,
+                          NhcUsage                                nhcUsage,
+                          Offset                                  offset,
+                          UseFullStepKE                           useFullStepKE,
+                          ScheduleOnInitStep                      scheduleOnInitStep,
+                          const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails);
 
     /*! \brief Factory method implementation (including propagator connection)
      *

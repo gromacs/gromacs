@@ -193,6 +193,12 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                 ((legacySimulatorData_->startingBehavior == StartingBehavior::NewSimulation)
                          ? ScheduleOnInitStep::No
                          : ScheduleOnInitStep::Yes);
+        // Define the tags and offsets for MTTK pressure scaling
+        const MttkPropagatorConnectionDetails mttkPropagatorConnectionDetails = {
+            PropagatorTag("ScaleMTTKXPre"),  PropagatorTag("ScaleMTTKXPost"),  Offset(0),
+            PropagatorTag("ScaleMTTKVPre1"), PropagatorTag("ScaleMTTKVPost1"), Offset(1),
+            PropagatorTag("ScaleMTTKVPre2"), PropagatorTag("ScaleMTTKVPost2"), Offset(0)
+        };
 
         builder->add<ForceElement>();
         // Propagate velocities from t-dt/2 to t
@@ -218,17 +224,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // Propagate extended system variables from t-dt/2 to t
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
         {
-            builder->add<MttkElement>(Offset(-1),
-                                      scheduleTrotterFirstHalfOnInitStep,
-                                      PropagatorTag("ScaleMTTKXPre"),
-                                      PropagatorTag("ScaleMTTKXPost"),
-                                      Offset(0),
-                                      PropagatorTag("ScaleMTTKVPre1"),
-                                      PropagatorTag("ScaleMTTKVPost1"),
-                                      Offset(1),
-                                      PropagatorTag("ScaleMTTKVPre2"),
-                                      PropagatorTag("ScaleMTTKVPost2"),
-                                      Offset(0));
+            builder->add<MttkElement>(
+                    Offset(-1), scheduleTrotterFirstHalfOnInitStep, mttkPropagatorConnectionDetails);
         }
         if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::NoseHoover)
         {
@@ -241,8 +238,11 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
         {
-            builder->add<NoseHooverChainsElement>(
-                    NhcUsage::Barostat, Offset(-1), UseFullStepKE::Yes, scheduleTrotterFirstHalfOnInitStep);
+            builder->add<NoseHooverChainsElement>(NhcUsage::Barostat,
+                                                  Offset(-1),
+                                                  UseFullStepKE::Yes,
+                                                  scheduleTrotterFirstHalfOnInitStep,
+                                                  mttkPropagatorConnectionDetails);
         }
         // We have a full state at time t here
         builder->add<StatePropagatorData::Element>();
@@ -250,8 +250,11 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // Propagate extended system variables from t to t+dt/2
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
         {
-            builder->add<NoseHooverChainsElement>(
-                    NhcUsage::Barostat, Offset(0), UseFullStepKE::Yes, ScheduleOnInitStep::Yes);
+            builder->add<NoseHooverChainsElement>(NhcUsage::Barostat,
+                                                  Offset(0),
+                                                  UseFullStepKE::Yes,
+                                                  ScheduleOnInitStep::Yes,
+                                                  mttkPropagatorConnectionDetails);
         }
         if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::NoseHoover)
         {
@@ -263,17 +266,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
         {
-            builder->add<MttkElement>(Offset(0),
-                                      ScheduleOnInitStep::Yes,
-                                      PropagatorTag("ScaleMTTKXPre"),
-                                      PropagatorTag("ScaleMTTKXPost"),
-                                      Offset(0),
-                                      PropagatorTag("ScaleMTTKVPre1"),
-                                      PropagatorTag("ScaleMTTKVPost1"),
-                                      Offset(1),
-                                      PropagatorTag("ScaleMTTKVPre2"),
-                                      PropagatorTag("ScaleMTTKVPost2"),
-                                      Offset(0));
+            builder->add<MttkElement>(Offset(0), ScheduleOnInitStep::Yes, mttkPropagatorConnectionDetails);
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(
                     PropagatorTag("ScaleMTTKVPre2"));
         }
@@ -306,7 +299,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // Propagate box from t to t+dt
         if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
         {
-            builder->add<MttkBoxScaling>();
+            builder->add<MttkBoxScaling>(mttkPropagatorConnectionDetails);
         }
         else if (legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
         {
