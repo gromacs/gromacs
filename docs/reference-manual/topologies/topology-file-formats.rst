@@ -119,7 +119,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |NM4| replace:: (kJ mol\ :math:`^{-1}`\ nm\ :math:`^{-4}`
 .. |DKJ| replace:: :math:`D` (kJ mol\ :math:`^{-1}`
 .. |BETA| replace:: :math:`\beta` (nm\ :math:`^{-1}`
-.. |C23| replace:: :math:`C_{i=2,3}` (kJ mol\ :math:`^{-1}\ nm\ :math:`^{-i}`
+.. |C23| replace:: :math:`C_{i=2,3}` (kJ mol\ :math:`^{-1}`\ nm\ :math:`^{-i}`
 .. |BMM| replace:: :math:`b_m`
 .. |GE0| replace:: :math:`\geq 0`
 .. |KO| replace:: :math:`k`

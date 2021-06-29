@@ -76,8 +76,7 @@ if(POLICY CMP0074) #3.12
 endif()
 
 if(GMXAPI_MASTER_PROJECT)
-    # TODO: Retain compatibility with libgmxapi 0.1 and back down the requirement.
-    find_package(gmxapi 0.2.0 REQUIRED
+    find_package(gmxapi 0.2.1 REQUIRED
                  HINTS "$ENV{GROMACS_DIR}"
                  )
 endif()
@@ -252,5 +251,7 @@ endif()
 # to the `check` target. Normal usage is to first install the Python package,
 # then run `pytest` on the `tests` directory. Refer to gmxapi package documentation.
 if(NOT GMXAPI_MASTER_PROJECT)
-    add_subdirectory(test)
+	if (BUILD_TESTING)
+		add_subdirectory(test)
+	endif()
 endif()

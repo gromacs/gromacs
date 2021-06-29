@@ -137,7 +137,7 @@ void UpdateGroupsCog::clear()
     cogIndices_.clear();
     cogs_.clear();
     numAtomsPerCog_.clear();
-    globalToLocalMap_.clear();
+    globalToLocalMap_.clearAndResizeHashTable();
 }
 
 } // namespace gmx

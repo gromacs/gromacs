@@ -105,7 +105,7 @@ void dd_clear_local_vsite_indices(gmx_domdec_t* dd)
 {
     if (dd->vsite_comm)
     {
-        dd->ga2la_vsite->clear();
+        dd->ga2la_vsite->clearAndResizeHashTable();
     }
 }
 

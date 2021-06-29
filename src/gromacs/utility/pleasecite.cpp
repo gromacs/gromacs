@@ -557,6 +557,13 @@ void please_cite(FILE* fp, const char* key)
           153,
           2020,
           "114107" },
+        { "Lundborg2021",
+          "M. Lundborg, J. Lidmar, B. Hess",
+          "The accelerated weight histogram method for alchemical free energy calculations",
+          "J. Chem. Phys.",
+          154,
+          2021,
+          "204103" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 

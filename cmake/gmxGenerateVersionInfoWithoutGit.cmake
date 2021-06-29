@@ -48,6 +48,7 @@
 # DIRECTORIES_TO_CHECKSUM       - List of directories to hash
 # VERSION_CMAKEIN               - path to an input template file
 # VERSION_OUT                   - path to the output file
+# HAVE_FUNCTIONING_PYTHON       - Whether the python used can do the checking.
 #
 # The following a possible additional definitions
 # PYTHON_EXECUTABLE             - Needed to run checking stage of current tree
@@ -118,17 +119,7 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
     # version of GROMACS is in use.
     set(RELEASE_CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
     if(NOT VERSION_STRING_OF_FORK OR "${VERSION_STRING_OF_FORK}" STREQUAL "")
-        if(NOT EXISTS ${RELEASE_CHECKSUM_FILE})
-            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
-            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoChecksumFile")
-            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoChecksumFile")
-            message(WARNING "Could not valdiate the GROMACS source due to missing reference checksum file.")
-        elseif(NOT PYTHON_EXECUTABLE)
-            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
-            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
-            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
-            message(STATUS "Could not calculate checksum of source files without Python")
-        else()
+        if(EXISTS ${RELEASE_CHECKSUM_FILE} AND HAVE_FULL_FUNCTIONING_PYTHON)
             file(READ ${RELEASE_CHECKSUM_FILE} GMX_RELEASE_SOURCE_FILE_CHECKSUM)
             string(STRIP ${GMX_RELEASE_SOURCE_FILE_CHECKSUM} GMX_RELEASE_SOURCE_FILE_CHECKSUM)
             set(CHECKSUM_RESULT_FILE "${CMAKE_CURRENT_BINARY_DIR}/computed_checksum")
@@ -144,6 +135,16 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
                 set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-MODIFIED")
                 message(STATUS "The source code for this GROMACS installation is different from the officially released version.")
             endif()
+        elseif(HAVE_FULL_FUNCTIONING_PYTHON)
+            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
+            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoChecksumFile")
+            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoChecksumFile")
+            message(WARNING "Could not valdiate the GROMACS source due to missing reference checksum file.")
+        else()
+            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
+            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
+            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
+            message(STATUS "Could not calculate checksum of source files without functioning Python")
         endif()
     endif()
 else()

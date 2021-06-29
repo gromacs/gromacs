@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,12 +81,14 @@ void export_system(py::module& m)
 
     // Export system container class
     py::class_<System, std::shared_ptr<System>> system(m, "MDSystem");
-    system.def("launch",
-               [](System* system, std::shared_ptr<PyContext> context) {
-                   auto newSession = system->launch(context->get());
-                   return newSession;
-               },
-               "Launch the configured workflow in the provided context.");
+    system.def(
+            "launch",
+            [](System* system, std::shared_ptr<PyContext> context) {
+                auto work       = gmxapi::getWork(*system->get());
+                auto newSession = context->launch(*work);
+                return newSession;
+            },
+            "Launch the configured workflow in the provided context.");
 
     // Module-level function
     m.def("from_tpr",

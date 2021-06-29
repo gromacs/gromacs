@@ -138,7 +138,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t* dd)
 
     if (dd->constraint_comm)
     {
-        dc->ga2la->clear();
+        dc->ga2la->clearAndResizeHashTable();
     }
 }
 

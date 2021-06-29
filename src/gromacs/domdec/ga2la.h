@@ -149,8 +149,11 @@ public:
         }
     }
 
-    //! Clear all the entries in the list.
-    void clear()
+    /*! \brief Clear all the entries in the list.
+     *
+     * \param[in] resizeHashTable  When true the hash table is optimized based on the current number of entries stored
+     */
+    void clear(const bool resizeHashTable)
     {
         if (usingDirect_)
         {
@@ -158,6 +161,10 @@ public:
             {
                 entry.cell = -1;
             }
+        }
+        else if (resizeHashTable)
+        {
+            data_.hashed.clearAndResizeHashTable();
         }
         else
         {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,7 +152,7 @@ public:
      * 2. A new Session is created using the ContextImpl and the runner
      *
      * Then, for each module available through getSpec()->getModules(),
-     * the session and module are passed to gmxapi::setSessionRestraint().
+     * the session and module are passed to gmxapi::addSessionRestraint().
      * 1. A gmx::IRestraintPotential is retrieved from the module.
      * 2. A unique, named SessionResources is created for the module and attached to the SessionImpl.
      *     1. The module is added as a signaller to the session SignalManager
@@ -169,6 +169,8 @@ public:
      * \endcond
      */
     std::shared_ptr<Session> launch(const std::shared_ptr<Context>& context);
+
+    [[nodiscard]] Impl* get() const;
 
 private:
     /*!
@@ -190,6 +192,9 @@ private:
  * \ingroup gmxapi
  */
 System fromTprFile(const std::string& filename);
+
+class Workflow;
+std::shared_ptr<Workflow> getWork(const System::Impl& system);
 
 } // end namespace gmxapi
 
