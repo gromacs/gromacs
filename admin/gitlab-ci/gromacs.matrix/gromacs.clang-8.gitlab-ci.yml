@@ -21,6 +21,7 @@ gromacs:clang-8:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-8-cuda-11.0
   variables:
     COMPILER_MAJOR_VERSION: 8
+    CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON
 
 gromacs:clang-8:build:
   extends:

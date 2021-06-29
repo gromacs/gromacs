@@ -27,7 +27,7 @@ gromacs:clang-9-mpi:configure:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 9
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
-    CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON
+    CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON -DGMX_INSTALL_LEGACY_API=ON
 
 gromacs:clang-9-mpi:build:
   # Test using configuration: gromacs:clang-9-mpi:configure

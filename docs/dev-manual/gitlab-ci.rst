@@ -232,6 +232,14 @@ Other important variable keys are as follows.
     CMAKE_MPI_OPTIONS
         Provide CMake command line arguments to define GROMACS MPI build options.
 
+    GROMACS_MAJOR_VERSION
+        Read-only environment variable for CI scripts to check the
+        library API version to expect from the ``build`` job artifacts.
+        Initially, this variable is only defined in
+        :file:`admin/gitlab-ci/api-client.matrix/gromacs-master.gitlab-ci.yml`
+        but could be moved to :file:`admin/gitlab-ci/global.gitlab-ci.yml` if found
+        to be of general utility.
+
     GROMACS_RELEASE
         Read-only environment variable that can be checked to see if a job is
         executing in a pipeline for preparing a tagged release.

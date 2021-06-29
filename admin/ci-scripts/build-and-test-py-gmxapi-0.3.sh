@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Build, install, and test the gmxapi 0.2 Python package developed with
-# GROMACS 2021.
+# Build, install, and test the gmxapi 0.3 Python package developed with
+# GROMACS 2022.
 #
 # This script assumes an activated Python venv with the
 # gmxapi dependencies already installed, with `python` resolvable by the shell
@@ -23,7 +23,7 @@ pushd python_packaging/src
   # Ref: https://redmine.gromacs.org/issues/3273
   GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
       python setup.py sdist
-  # TODO: Identify SDIST
+  SDIST=dist/gmxapi*
 
   # Build and install from sdist.
   # Note that tool chain may be provided differently in GROMACS 2020 and 2021.
@@ -33,8 +33,7 @@ pushd python_packaging/src
           --no-deps \
           --no-index \
           --no-build-isolation \
-          dist/gmxapi*
-  # TODO: Build and install from $SDIST instead of wildcard.
+          $SDIST
 
 popd
 

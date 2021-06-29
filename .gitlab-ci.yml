@@ -42,13 +42,9 @@ include:
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/rules.gitlab-ci.yml'
   # gmxapi Python package.
-  - local: '/admin/gitlab-ci/python-gmxapi01.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/python-gmxapi02.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/python-gmxapi03.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/python-gmxapi.matrix.gitlab-ci.yml'
   # Further API validation and usability of sample gmxapi extension package.
-  - local: '/admin/gitlab-ci/sample_restraint.gitlab-ci.yml'
-  # API regression testing using sample gmxapi extension package.
-  - local: '/admin/gitlab-ci/sample_restraint-regression.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/api-client.matrix.gitlab-ci.yml'
   # Build and test GROMACS in a variety of environments and configurations.
   # To do: Consider expanding matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml

@@ -1,0 +1,70 @@
+# Test goal: Continuous integration testing for gmxapi clients development branch.
+# Test intents:
+#   OS: Ubuntu oldest supported
+#   GPU: unspecified
+#   GROMACS: master
+#   gmxapi: as per GROMACS master
+#   client code: sample_restraint as bundled with GROMACS master
+#   Scope: build, install, test
+# Test implementation choices (free to change as needed):
+#   GROMACS branch: master
+#   gmxapi Python package: 0.3 alpha from GROMACS master
+#   compiler: clang-8
+
+
+.sample_restraint:clang-8:gmx2022:
+  extends:
+    - .variables:default
+    - .use-clang:base
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  stage: test
+  variables:
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
+    PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
+    PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
+    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
+    GROMACS_MAJOR_VERSION: 2022
+  script:
+    - source $INSTALL_DIR/bin/GMXRC
+    - source $VENVPATH/bin/activate
+    - INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2022.sh
+  artifacts:
+    reports:
+      junit:
+        - $PLUGIN_TEST_XML
+        - $PLUGIN_MPI_TEST_XML
+    when: always
+    expire_in: 1 week
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
+
+sample_restraint:clang-8:gmx2022:py-3.7.7:
+  extends:
+    - .sample_restraint:clang-8:gmx2022
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.7"
+    PY_VER: "3.7.7"
+
+sample_restraint:clang-8:gmx2022:py-3.8.2:
+  extends:
+    - .sample_restraint:clang-8:gmx2022
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.8"
+    PY_VER: "3.8.2"
+
+sample_restraint:clang-8:gmx2022:py-3.9.1:
+  extends:
+    - .sample_restraint:clang-8:gmx2022
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.9"
+    PY_VER: "3.9.1"

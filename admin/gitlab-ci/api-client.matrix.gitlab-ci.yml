@@ -1,0 +1,8 @@
+# Build and test GROMACS client code to monitor implementation of specified APIs.
+#
+# Job configurations are inside api-client.matrix/ directory.
+
+include:
+  - local: '/admin/gitlab-ci/api-client.matrix/gromacs-master.gitlab-ci.yml'
+# TODO: (https://gitlab.com/gromacs/gromacs/-/issues/3563) Test against MPI builds.
+#  - local: '/admin/gitlab-ci/api-client.matrix/gromacs-master-mpi.gitlab-ci.yml'
