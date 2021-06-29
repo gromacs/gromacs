@@ -988,7 +988,8 @@ static char** read_topol(const char*                           infile,
                 "integrators we have not yet removed the GROMOS force fields, but you should be "
                 "aware of these issues and check if molecules in your system are affected before "
                 "proceeding. "
-                "Further information is available at https://redmine.gromacs.org/issues/2884 , "
+                "Further information is available at "
+                "https://gitlab.com/gromacs/gromacs/-/issues/2884, "
                 "and a longer explanation of our decision to remove physically incorrect "
                 "algorithms "
                 "can be found at https://doi.org/10.26434/chemrxiv.11474583.v1 .");
