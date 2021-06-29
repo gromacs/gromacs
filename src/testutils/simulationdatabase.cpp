@@ -324,7 +324,9 @@ MdpFieldValues prepareMdpFieldValues(const std::string&   simulationName,
     mdpFieldValues.insert(MdpField("pcoupl", pcoupl));
     for (const auto& mdpField : c_additionalMdpOptions.at(additionalMdpParameters))
     {
-        mdpFieldValues.insert(mdpField);
+        // Here, we are overwriting default values - we assume the additional
+        // parameters take precedence over the default parameters
+        mdpFieldValues[mdpField.first] = mdpField.second;
     }
 
     return mdpFieldValues;
