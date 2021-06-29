@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,32 @@ if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
 endif()
 if (GMX_FFT_MKL)
     gmx_add_libgromacs_sources(fft_mkl.cpp)
+endif()
+
+if (GMX_GPU_CUDA)
+    gmx_add_libgromacs_sources(
+        # CUDA-specific sources
+        gpu_3dfft.cu
+        )
+elseif (GMX_GPU_OPENCL)
+    gmx_add_libgromacs_sources(
+        # OpenCL-specific sources
+        gpu_3dfft_ocl.cpp
+        )
+elseif (GMX_GPU_SYCL)
+    # SYCL-TODO: proper implementation
+    gmx_add_libgromacs_sources(
+        # SYCL-specific sources
+        gpu_3dfft_sycl.cpp
+        )
+    _gmx_add_files_to_property(SYCL_SOURCES
+        gpu_3dfft_sycl.cpp
+        )
+else()
+    gmx_add_libgromacs_sources(
+        # Stub sources for CPU-only build
+        gpu_3dfft.cpp
+        )
 endif()
 
 # Source files have the following private module dependencies.

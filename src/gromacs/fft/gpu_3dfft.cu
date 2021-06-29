@@ -34,15 +34,16 @@
  */
 
 /*! \internal \file
- *  \brief Implements CUDA FFT routines for PME GPU.
+ *  \brief Implements GPU 3D FFT routines for CUDA.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
- *  \ingroup module_ewald
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
-#include "pme_gpu_3dfft.h"
+#include "gpu_3dfft.h"
 
 #include <cufft.h>
 
@@ -50,7 +51,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-class GpuParallel3dFft::Impl
+namespace gmx
+{
+
+class Gpu3dFft::Impl
 {
 public:
     Impl(ivec                 realGridSize,
@@ -78,15 +82,15 @@ static void handleCufftError(cufftResult_t status, const char* msg)
     }
 }
 
-GpuParallel3dFft::Impl::Impl(ivec       realGridSize,
-                             ivec       realGridSizePadded,
-                             ivec       complexGridSizePadded,
-                             const bool useDecomposition,
-                             const bool /*performOutOfPlaceFFT*/,
-                             const DeviceContext& /*context*/,
-                             const DeviceStream& pmeStream,
-                             DeviceBuffer<float> realGrid,
-                             DeviceBuffer<float> complexGrid) :
+Gpu3dFft::Impl::Impl(ivec       realGridSize,
+                     ivec       realGridSizePadded,
+                     ivec       complexGridSizePadded,
+                     const bool useDecomposition,
+                     const bool /*performOutOfPlaceFFT*/,
+                     const DeviceContext& /*context*/,
+                     const DeviceStream& pmeStream,
+                     DeviceBuffer<float> realGrid,
+                     DeviceBuffer<float> complexGrid) :
     realGrid_(reinterpret_cast<cufftReal*>(realGrid)),
     complexGrid_(reinterpret_cast<cufftComplex*>(complexGrid))
 {
@@ -147,7 +151,7 @@ GpuParallel3dFft::Impl::Impl(ivec       realGridSize,
     handleCufftError(result, "cufftSetStream C2R failure");
 }
 
-GpuParallel3dFft::Impl::~Impl()
+Gpu3dFft::Impl::~Impl()
 {
     cufftResult_t result;
     result = cufftDestroy(planR2C_);
@@ -156,7 +160,7 @@ GpuParallel3dFft::Impl::~Impl()
     handleCufftError(result, "cufftDestroy C2R failure");
 }
 
-void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
     cufftResult_t result;
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
@@ -171,15 +175,15 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timin
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(ivec                 realGridSize,
-                                   ivec                 realGridSizePadded,
-                                   ivec                 complexGridSizePadded,
-                                   const bool           useDecomposition,
-                                   const bool           performOutOfPlaceFFT,
-                                   const DeviceContext& context,
-                                   const DeviceStream&  pmeStream,
-                                   DeviceBuffer<float>  realGrid,
-                                   DeviceBuffer<float>  complexGrid) :
+Gpu3dFft::Gpu3dFft(ivec                 realGridSize,
+                   ivec                 realGridSizePadded,
+                   ivec                 complexGridSizePadded,
+                   const bool           useDecomposition,
+                   const bool           performOutOfPlaceFFT,
+                   const DeviceContext& context,
+                   const DeviceStream&  pmeStream,
+                   DeviceBuffer<float>  realGrid,
+                   DeviceBuffer<float>  complexGrid) :
     impl_(std::make_unique<Impl>(realGridSize,
                                  realGridSizePadded,
                                  complexGridSizePadded,
@@ -192,4 +196,6 @@ GpuParallel3dFft::GpuParallel3dFft(ivec                 realGridSize,
 {
 }
 
-GpuParallel3dFft::~GpuParallel3dFft() = default;
+Gpu3dFft::~Gpu3dFft() = default;
+
+} // namespace gmx

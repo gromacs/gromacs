@@ -60,7 +60,6 @@ if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
         pme_gather.cu
-        pme_gpu_3dfft.cu
         pme_solve.cu
         pme_spread.cu
         pme_gpu_program_impl.cu
@@ -80,7 +79,6 @@ if (GMX_GPU_CUDA)
 elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
-        pme_gpu_3dfft_ocl.cpp
         pme_gpu_program_impl_ocl.cpp
         # GPU-specific sources
         pme_gpu.cpp
@@ -92,7 +90,6 @@ elseif (GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         # Files that implement stubs
         pme_gpu_sycl_stubs.cpp
-        pme_gpu_3dfft_sycl.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp

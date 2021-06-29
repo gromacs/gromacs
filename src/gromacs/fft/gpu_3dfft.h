@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team.
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,14 +34,15 @@
  */
 
 /*! \internal \file
- *  \brief Declares the 3D FFT class for PME.
+ *  \brief Declares the GPU 3D FFT routines.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
- *  \ingroup module_ewald
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \ingroup module_fft
  */
 
-#ifndef GMX_EWALD_PME_GPU_3DFFT_H
-#define GMX_EWALD_PME_GPU_3DFFT_H
+#ifndef GMX_FFT_GPU_3DFFT_H
+#define GMX_FFT_GPU_3DFFT_H
 
 #include <memory>
 
@@ -52,13 +52,15 @@
 
 class DeviceContext;
 class DeviceStream;
-struct PmeGpu;
+
+namespace gmx
+{
 
 /*! \internal \brief
  * A 3D FFT class for performing R2C/C2R transforms
  * \todo Make this class actually parallel over multiple GPUs
  */
-class GpuParallel3dFft
+class Gpu3dFft
 {
 public:
     /*! \brief
@@ -74,18 +76,18 @@ public:
      * \param[in]  realGrid               Device buffer of floats for the real grid
      * \param[in]  complexGrid            Device buffer of complex floats for the complex grid
      */
-    GpuParallel3dFft(ivec                 realGridSize,
-                     ivec                 realGridSizePadded,
-                     ivec                 complexGridSizePadded,
-                     bool                 useDecomposition,
-                     bool                 performOutOfPlaceFFT,
-                     const DeviceContext& context,
-                     const DeviceStream&  pmeStream,
-                     DeviceBuffer<float>  realGrid,
-                     DeviceBuffer<float>  complexGrid);
+    Gpu3dFft(ivec                 realGridSize,
+             ivec                 realGridSizePadded,
+             ivec                 complexGridSizePadded,
+             bool                 useDecomposition,
+             bool                 performOutOfPlaceFFT,
+             const DeviceContext& context,
+             const DeviceStream&  pmeStream,
+             DeviceBuffer<float>  realGrid,
+             DeviceBuffer<float>  complexGrid);
 
     /*! \brief Destroys the FFT plans. */
-    ~GpuParallel3dFft();
+    ~Gpu3dFft();
     /*! \brief Performs the FFT transform in given direction
      *
      * \param[in]  dir           FFT transform direction specifier
@@ -97,5 +99,7 @@ private:
     class Impl;
     std::unique_ptr<Impl> impl_;
 };
+
+} // namespace gmx
 
 #endif

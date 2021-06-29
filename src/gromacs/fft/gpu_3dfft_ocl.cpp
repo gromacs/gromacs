@@ -34,15 +34,16 @@
  */
 
 /*! \internal \file
- *  \brief Implements OpenCL 3D FFT routines for PME GPU.
+ *  \brief Implements GPU 3D FFT routines for OpenCL.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
- *  \ingroup module_ewald
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
-#include "pme_gpu_3dfft.h"
+#include "gpu_3dfft.h"
 
 #include <array>
 #include <vector>
@@ -56,7 +57,10 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-class GpuParallel3dFft::Impl
+namespace gmx
+{
+
+class Gpu3dFft::Impl
 {
 public:
     Impl(ivec                 realGridSize,
@@ -83,19 +87,19 @@ static void handleClfftError(clfftStatus status, const char* msg)
     // Supposedly it's just a superset of standard OpenCL errors
     if (status != CLFFT_SUCCESS)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("%s: %d", msg, status)));
+        GMX_THROW(InternalError(formatString("%s: %d", msg, status)));
     }
 }
 
-GpuParallel3dFft::Impl::Impl(ivec                 realGridSize,
-                             ivec                 realGridSizePadded,
-                             ivec                 complexGridSizePadded,
-                             const bool           useDecomposition,
-                             const bool           performOutOfPlaceFFT,
-                             const DeviceContext& context,
-                             const DeviceStream&  pmeStream,
-                             DeviceBuffer<float>  realGrid,
-                             DeviceBuffer<float>  complexGrid) :
+Gpu3dFft::Impl::Impl(ivec                 realGridSize,
+                     ivec                 realGridSizePadded,
+                     ivec                 complexGridSizePadded,
+                     const bool           useDecomposition,
+                     const bool           performOutOfPlaceFFT,
+                     const DeviceContext& context,
+                     const DeviceStream&  pmeStream,
+                     DeviceBuffer<float>  realGrid,
+                     DeviceBuffer<float>  complexGrid) :
     realGrid_(realGrid), complexGrid_(complexGrid)
 {
     GMX_RELEASE_ASSERT(!useDecomposition, "FFT decomposition not implemented");
@@ -153,13 +157,13 @@ GpuParallel3dFft::Impl::Impl(ivec                 realGridSize,
     // TODO: disable last transpose (clfftSetPlanTransposeResult)
 }
 
-GpuParallel3dFft::Impl::~Impl()
+Gpu3dFft::Impl::~Impl()
 {
     clfftDestroyPlan(&planR2C_);
     clfftDestroyPlan(&planC2R_);
 }
 
-void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent)
+void Gpu3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent)
 {
     cl_mem                            tempBuffer = nullptr;
     constexpr std::array<cl_event, 0> waitEvents{ {} };
@@ -183,8 +187,7 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingE
             outputGrids = &impl_->realGrid_;
             break;
         default:
-            GMX_THROW(
-                    gmx::NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
+            GMX_THROW(NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
     }
     handleClfftError(clfftEnqueueTransform(plan,
                                            direction,
@@ -199,15 +202,15 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingE
                      "clFFT execution failure");
 }
 
-GpuParallel3dFft::GpuParallel3dFft(ivec                 realGridSize,
-                                   ivec                 realGridSizePadded,
-                                   ivec                 complexGridSizePadded,
-                                   const bool           useDecomposition,
-                                   const bool           performOutOfPlaceFFT,
-                                   const DeviceContext& context,
-                                   const DeviceStream&  pmeStream,
-                                   DeviceBuffer<float>  realGrid,
-                                   DeviceBuffer<float>  complexGrid) :
+Gpu3dFft::Gpu3dFft(ivec                 realGridSize,
+                   ivec                 realGridSizePadded,
+                   ivec                 complexGridSizePadded,
+                   const bool           useDecomposition,
+                   const bool           performOutOfPlaceFFT,
+                   const DeviceContext& context,
+                   const DeviceStream&  pmeStream,
+                   DeviceBuffer<float>  realGrid,
+                   DeviceBuffer<float>  complexGrid) :
     impl_(std::make_unique<Impl>(realGridSize,
                                  realGridSizePadded,
                                  complexGridSizePadded,
@@ -220,4 +223,6 @@ GpuParallel3dFft::GpuParallel3dFft(ivec                 realGridSize,
 {
 }
 
-GpuParallel3dFft::~GpuParallel3dFft() = default;
+Gpu3dFft::~Gpu3dFft() = default;
+
+} // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,41 +38,46 @@
  *
  *  \author Andrey Alekseenko <al42and@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \ingroup module_ewald
+ *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
-#include "pme_gpu_3dfft.h"
+#include "gpu_3dfft.h"
 
 #include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 
-class GpuParallel3dFft::Impl
+class Gpu3dFft::Impl
 {
 };
 
-GpuParallel3dFft::GpuParallel3dFft(ivec /*realGridSize*/,
-                                   ivec /*realGridSizePadded*/,
-                                   ivec /*complexGridSizePadded*/,
-                                   const bool /*useDecomposition*/,
-                                   const bool /*performOutOfPlaceFFT*/,
-                                   const DeviceContext& /*context*/,
-                                   const DeviceStream& /*pmeStream*/,
-                                   DeviceBuffer<float> /*realGrid*/,
-                                   DeviceBuffer<float> /*complexGrid*/)
+Gpu3dFft::Gpu3dFft(ivec /*realGridSize*/,
+                   ivec /*realGridSizePadded*/,
+                   ivec /*complexGridSizePadded*/,
+                   const bool /*useDecomposition*/,
+                   const bool /*performOutOfPlaceFFT*/,
+                   const DeviceContext& /*context*/,
+                   const DeviceStream& /*pmeStream*/,
+                   DeviceBuffer<float> /*realGrid*/,
+                   DeviceBuffer<float> /*complexGrid*/)
 {
-    GMX_THROW(gmx::NotImplementedError("PME is not implemented in SYCL"));
+    GMX_THROW(NotImplementedError("GPU 3DFFT is not implemented in SYCL"));
 }
 
-GpuParallel3dFft::~GpuParallel3dFft() = default;
+Gpu3dFft::~Gpu3dFft() = default;
 
-void GpuParallel3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
 {
-    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+    GMX_THROW(NotImplementedError("Not implemented on SYCL yet"));
 }
 
 #pragma clang diagnostic pop
+
+} // namespace gmx

@@ -62,16 +62,18 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+#include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/timing/gpu_timing.h" // for gtPME_EVENT_COUNT
-
-#include "pme_gpu_3dfft.h"
 
 #ifndef NUMFEPSTATES
 //! Number of FEP states.
 #    define NUMFEPSTATES 2
 #endif
 
-class GpuParallel3dFft;
+namespace gmx
+{
+class Gpu3dFft;
+} // namespace gmx
 
 /*! \internal \brief
  * The main PME CUDA/OpenCL-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
@@ -116,7 +118,7 @@ struct PmeGpuSpecific
     bool useTiming = false;
 
     //! Vector of FFT setups
-    std::vector<std::unique_ptr<GpuParallel3dFft>> fftSetup;
+    std::vector<std::unique_ptr<gmx::Gpu3dFft>> fftSetup;
 
     //! All the timers one might use
     gmx::EnumerationArray<PmeStage, GpuRegionTimer> timingEvents;
