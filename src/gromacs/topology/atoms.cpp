@@ -196,11 +196,6 @@ t_atoms* copy_t_atoms(const t_atoms* src)
 
     snew(dst, 1);
     init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
-    dst->nr = src->nr;
-    if (nullptr != src->atomname)
-    {
-        snew(dst->atomname, src->nr);
-    }
     if (nullptr != src->atomtype)
     {
         snew(dst->atomtype, src->nr);
