@@ -1059,12 +1059,12 @@ void check_ir(const char*                    mdparin,
             ir->nstcomm = abs(ir->nstcomm);
         }
 
-        if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy)
+        if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy
+            && ir->comm_mode != ComRemovalAlgorithm::LinearAccelerationCorrection)
         {
             warning_note(wi,
-                         "nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting "
-                         "nstcomm to nstcalcenergy");
-            ir->nstcomm = ir->nstcalcenergy;
+                         "nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, consider "
+                         "setting nstcomm equal to nstcalcenergy for less overhead");
         }
 
         if (ir->comm_mode == ComRemovalAlgorithm::Angular)
