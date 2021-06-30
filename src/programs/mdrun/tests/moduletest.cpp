@@ -174,6 +174,11 @@ void SimulationRunner::useGroFromDatabase(const char* name)
     groFileName_ = gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
+void SimulationRunner::useNdxFromDatabase(const std::string& name)
+{
+    ndxFileName_ = gmx::test::TestFileManager::getInputFilePath(name + ".ndx");
+}
+
 void SimulationRunner::useTopGroAndMdpFromFepTestDatabase(const std::string& name)
 {
     GMX_RELEASE_ASSERT(mdpSource_ != SimulationRunnerMdpSource::String,

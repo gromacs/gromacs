@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="spc216">
+    <PullSetup Name="umbrella-3D">
+      <Energy Name="Pressure">
+        <Real Name="Time 0.000000 Step 0 in frame 0">7047.8843</Real>
+        <Real Name="Time 0.005000 Step 5 in frame 1">6813.9585</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">6432.3613</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">5985.5601</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">5571.9185</Real>
+      </Energy>
+      <Energy Name="Kinetic En.">
+        <Real Name="Time 0.000000 Step 0 in frame 0">1627.3685</Real>
+        <Real Name="Time 0.005000 Step 5 in frame 1">1620.8447</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">1637.7889</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">1665.6293</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">1688.8979</Real>
+      </Energy>
+      <Energy Name="Potential">
+        <Real Name="Time 0.000000 Step 0 in frame 0">-7927.1426</Real>
+        <Real Name="Time 0.005000 Step 5 in frame 1">-7920.6416</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">-7937.6411</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">-7965.5195</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">-7988.6768</Real>
+      </Energy>
+      <Energy Name="COM Pull En.">
+        <Real Name="Time 0.000000 Step 0 in frame 0">0.031361848</Real>
+        <Real Name="Time 0.005000 Step 5 in frame 1">0.039091855</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">0.047064677</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">0.055442076</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">0.064478263</Real>
+      </Energy>
+    </PullSetup>
+  </Simulation>
+</ReferenceData>
