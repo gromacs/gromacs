@@ -50,8 +50,10 @@ namespace gmx
 {
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
+#ifdef __clang__
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+#endif
 
 class Gpu3dFft::Impl
 {
@@ -78,6 +80,8 @@ void Gpu3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEve
     GMX_THROW(InternalError("Cannot run GPU routines in a CPU-only configuration"));
 }
 
-#pragma clang diagnostic pop
+#ifdef __clang__
+#    pragma clang diagnostic pop
+#endif
 
 } // namespace gmx
