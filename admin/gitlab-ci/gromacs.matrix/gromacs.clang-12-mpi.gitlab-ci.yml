@@ -1,7 +1,7 @@
 # Test goal: Clang build with MPI and double precision
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
-#   Compiler: Clang
+#   Compiler: Clang newest supported
 #   GPU: no
 #   MPI: OpenMPI
 #   Features: double precision FP
@@ -9,28 +9,28 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
-#   Compiler: Clang 9
+#   Compiler: Clang 12
 #   MPI: OpenMPI 3.1
 #   SIMD: AVX2_256
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
 #   Subcyclecounting: Active
 
-gromacs:clang-9-mpi:configure:
+gromacs:clang-12-mpi:configure:
   extends:
    - .gromacs:base:configure
    - .use-clang:base
    - .use-mpi
    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 12
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
     CMAKE_EXTRA_OPTIONS: -DGMX_CYCLE_SUBCOUNTERS=ON -DGMX_INSTALL_LEGACY_API=ON
 
-gromacs:clang-9-mpi:build:
-  # Test using configuration: gromacs:clang-9-mpi:configure
+gromacs:clang-12-mpi:build:
+  # Test using configuration: gromacs:clang-12-mpi:configure
   # Test scope: build
   extends:
     - .variables:default
@@ -38,29 +38,29 @@ gromacs:clang-9-mpi:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:clang-9-mpi:configure
+    - job: gromacs:clang-12-mpi:configure
 
-gromacs:clang-9-mpi:test:
+gromacs:clang-12-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:clang-9-mpi:build
+    - job: gromacs:clang-12-mpi:build
 
-gromacs:clang-9:regressiontest:
+gromacs:clang-12:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
@@ -68,6 +68,6 @@ gromacs:clang-9:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:clang-9-mpi:build
+    - job: gromacs:clang-12-mpi:build
     - job: regressiontests:prepare
 

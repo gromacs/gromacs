@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <PathToTest Name="windowsdir\traj.tng">
+    <String Name="getParentPath">windowsdir</String>
+    <String Name="getFilename">traj.tng</String>
+    <Bool Name="hasExtension">true</Bool>
+    <Bool Name="extensionMatchesPdb">false</Bool>
+    <String Name="stripExtension">windowsdir\traj</String>
+    <String Name="concatenateBeforeExtension">windowsdir\traj_34.tng</String>
+  </PathToTest>
+</ReferenceData>

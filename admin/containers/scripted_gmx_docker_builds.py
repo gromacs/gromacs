@@ -208,6 +208,27 @@ def base_image_tag(args) -> str:
             raise RuntimeError('Logic error: no Linux distribution selected.')
     return base_image_tag
 
+# Convert the linux distribution variables into something that hpccm
+# understands.
+def hpccm_distro_name(args) -> str:
+    if args.centos is not None:
+        name_mapping = { '7': 'centos7',
+                         '8': 'centos8' }
+        if args.centos in name_mapping:
+            hpccm_name = name_mapping[args.centos]
+        else:
+            raise RuntimeError('Logic error: unsupported CentOS distribution selected.')
+    elif args.ubuntu is not None:
+        name_mapping = { '20.04': 'ubuntu20',
+                         '18.04': 'ubuntu18',
+                         '16.04': 'ubuntu16' }
+        if args.ubuntu in name_mapping:
+            hpccm_name = name_mapping[args.ubuntu]
+        else:
+            raise RuntimeError('Logic error: unsupported Ubuntu distribution selected.')
+    else:
+        raise RuntimeError('Logic error: no Linux distribution selected.')
+    return hpccm_name
 
 def get_llvm_packages(args) -> typing.Iterable[str]:
     # If we use the package version of LLVM, we need to install extra packages for it.
@@ -247,7 +268,10 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
                 raise RuntimeError('No TSAN compiler build stage!')
         # Build the default compiler if we don't need special support
         else:
-            compiler = hpccm.building_blocks.llvm(extra_repository=True, version=args.llvm)
+            # Currently the focal apt repositories do not contain
+            # llvm higher than 11, so we work around that. This will
+            # need further work when we start supporting ubuntu 22.04
+            compiler = hpccm.building_blocks.llvm(version=args.llvm, upstream=True if int(args.llvm) > 11 else False)
 
     elif args.oneapi is not None:
         if compiler_build_stage is not None:
@@ -633,6 +657,11 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     building_blocks = collections.OrderedDict()
     building_blocks['base_packages'] = hpccm.building_blocks.packages(
         ospackages=_common_packages)
+
+    # Normally in hpccm the first call to baseimage sets the context
+    # for other packages, e.g. for which apt respository to
+    # use. We want to set that early on.
+    hpccm.config.set_linux_distro(hpccm_distro_name(args))
 
     # These are the most expensive and most reusable layers, so we put them first.
     building_blocks['compiler'] = get_compiler(args, compiler_build_stage=stages.get('compiler_build'))

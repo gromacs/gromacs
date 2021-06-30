@@ -9,7 +9,7 @@
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
-#   Compiler: Clang 9
+#   Compiler: Clang 12
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2
 
@@ -21,7 +21,8 @@ simple-build:
     - .use-clang:base
     - .rules:basic-push
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
+
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     KUBERNETES_CPU_LIMIT: 8
@@ -33,7 +34,7 @@ simple-build:
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 12
     BUILD_DIR: simple-build
   script:
     - CMAKE=${CMAKE:-$(which cmake)}

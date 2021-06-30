@@ -74,11 +74,11 @@ gmxapi-0.1:clang-8:py-3.8.2:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
 
-.gmxapi-0.2:gcc-10:gmx2021:
+.gmxapi-0.2:gcc-11:gmx2021:
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -105,36 +105,36 @@ gmxapi-0.1:clang-8:py-3.8.2:
     - k8s-scilifelab
   # The dependency means we need to use the same tag restriction as upstream.
   needs:
-    - job: gromacs:gcc-10:build
+    - job: gromacs:gcc-11:build
       artifacts: true
 
-gmxapi-0.2:gcc-10:gmx2021:py-3.6.10:
+gmxapi-0.2:gcc-11:gmx2021:py-3.6.10:
   extends:
-    - .gmxapi-0.2:gcc-10:gmx2021
+    - .gmxapi-0.2:gcc-11:gmx2021
     - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
 
-gmxapi-0.2:gcc-10:gmx2021:py-3.7.7:
+gmxapi-0.2:gcc-11:gmx2021:py-3.7.7:
   extends:
-    - .gmxapi-0.2:gcc-10:gmx2021
+    - .gmxapi-0.2:gcc-11:gmx2021
     - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
 
-gmxapi-0.2:gcc-10:gmx2021:py-3.8.2:
+gmxapi-0.2:gcc-11:gmx2021:py-3.8.2:
   extends:
-    - .gmxapi-0.2:gcc-10:gmx2021
+    - .gmxapi-0.2:gcc-11:gmx2021
     - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
 
-gmxapi-0.2:gcc-10:gmx2021:py-3.9.1:
+gmxapi-0.2:gcc-11:gmx2021:py-3.9.1:
   extends:
-    - .gmxapi-0.2:gcc-10:gmx2021
+    - .gmxapi-0.2:gcc-11:gmx2021
     - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.9"

@@ -174,7 +174,8 @@ def image_name(configuration: argparse.Namespace) -> str:
     if configuration.intel_compute_runtime is not None:
         elements.append('intel-' + configuration.intel_compute_runtime)
     if configuration.rocm is not None:
-        elements.append('rocm-' + configuration.rocm)
+        if (configuration.rocm != 'debian'):
+            elements.append('rocm-' + configuration.rocm)
 
     # Check for special cases
     # The following attribute keys indicate the image is built for the named

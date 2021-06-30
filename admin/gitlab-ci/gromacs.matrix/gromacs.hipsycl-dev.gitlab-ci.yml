@@ -1,7 +1,7 @@
 # Test goal: build with hipSYCL (both CUDA and ROCm backends) to check SYCL code compatibility
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu newest supported
-#   Compiler: Clang newest supported
+#   Compiler: Clang
 #   GPU: hipSYCL
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):

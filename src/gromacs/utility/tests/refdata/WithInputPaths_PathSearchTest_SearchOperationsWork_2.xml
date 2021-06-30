@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <PathToTest Name="md">
+    <String Name="getParentPath"></String>
+    <String Name="getFilename">md</String>
+    <Bool Name="hasExtension">false</Bool>
+    <Bool Name="extensionMatchesPdb">false</Bool>
+    <String Name="stripExtension">md</String>
+    <String Name="concatenateBeforeExtension">md_34</String>
+  </PathToTest>
+</ReferenceData>

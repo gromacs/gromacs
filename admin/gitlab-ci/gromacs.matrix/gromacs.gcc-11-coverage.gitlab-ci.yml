@@ -1,53 +1,53 @@
 # Test goal: code coverage with newest GCC
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu newest supported
-#   Compiler: GCC newest supported
+#   Compiler: GCC
 #   GPU: no
 #   Scope: configure, build, unit tests, coverage
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
-#   Compiler: GCC 10
+#   Compiler: GCC 11
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 
-gromacs:gcc-10:coverage:configure:
+gromacs:gcc-11:coverage:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_FOR_COVERAGE=ON"
-    COMPILER_MAJOR_VERSION: 10
+    COMPILER_MAJOR_VERSION: 11
 
-gromacs:gcc-10:coverage:build:
+gromacs:gcc-11:coverage:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:gcc-10:coverage:configure
+    - job: gromacs:gcc-11:coverage:configure
 
-gromacs:gcc-10:coverage:test:
+gromacs:gcc-11:coverage:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-10:coverage:build
+    - job: gromacs:gcc-11:coverage:build
   artifacts:
     paths:
       - $BUILD_DIR
@@ -56,16 +56,16 @@ gromacs:coverage:analyse:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     VENVPATH: "/root/venv/py3.7"
-    GCOVR_GENERAL_OPTIONS: "-r ../ /. --gcov-executable=gcov-10 --exclude-unreachable-branches --exclude-throw-branches -j$KUBERNETES_CPU_LIMIT"
+    GCOVR_GENERAL_OPTIONS: "-r ../ /. --gcov-executable=gcov-11 --exclude-unreachable-branches --exclude-throw-branches -j$KUBERNETES_CPU_LIMIT"
     GCOVR_EXCLUDE_OPTIONS: "--exclude-directories '^src/external/.*' --exclude-directories '^src/gromacs/selection/.*' --exclude-directories '.*tests.*" 
   extends:
     - .variables:default
     - .rules:post-merge-acceptance
   stage: post-test
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11
   needs:
-    - job: gromacs:gcc-10:coverage:build
-    - job: gromacs:gcc-10:coverage:test
+    - job: gromacs:gcc-11:coverage:build
+    - job: gromacs:gcc-11:coverage:test
 
   tags:
     - k8s-scilifelab

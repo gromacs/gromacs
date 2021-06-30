@@ -336,11 +336,14 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
     std::string nstcomm    = "5";
 
     std::vector<PropagationParameters> parameterSets;
-    for (const std::string& simulationName : { "argon12" })
+    std::vector<std::string>           simulations = { "argon12" };
+    for (const std::string& simulationName : simulations)
     {
-        for (const std::string& integrator : { "md", "sd", "md-vv" })
+        std::vector<std::string> integrators{ "md", "sd", "md-vv" };
+        for (const std::string& integrator : integrators)
         {
-            for (const std::string& tcoupl : { "no", "v-rescale", "Nose-Hoover" })
+            std::vector<std::string> tcouplValues{ "no", "v-rescale", "Nose-Hoover" };
+            for (const std::string& tcoupl : tcouplValues)
             {
                 // SD doesn't support temperature-coupling algorithms,
                 if (integrator == "sd" && tcoupl != "no")
@@ -403,11 +406,14 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
     std::string nstcomm    = "5";
 
     std::vector<PropagationParameters> parameterSets;
-    for (const std::string& simulationName : { "tip3p5" })
+    std::vector<std::string>           simulations = { "tip3p5" };
+    for (const std::string& simulationName : simulations)
     {
-        for (const std::string& integrator : { "md", "sd", "md-vv" })
+        std::vector<std::string> integrators{ "md", "sd", "md-vv" };
+        for (const std::string& integrator : integrators)
         {
-            for (const std::string& tcoupl : { "no", "v-rescale" })
+            std::vector<std::string> tcouplValues{ "no", "v-rescale" };
+            for (const std::string& tcoupl : tcouplValues)
             {
                 // SD doesn't support temperature-coupling algorithms,
                 if (integrator == "sd" && tcoupl != "no")

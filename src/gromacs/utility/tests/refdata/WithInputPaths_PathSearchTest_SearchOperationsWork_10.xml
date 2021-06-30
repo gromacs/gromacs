@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <PathToTest Name="/tmp/absolutedir/conf.pdb">
+    <String Name="getParentPath">/tmp/absolutedir</String>
+    <String Name="getFilename">conf.pdb</String>
+    <Bool Name="hasExtension">true</Bool>
+    <Bool Name="extensionMatchesPdb">true</Bool>
+    <String Name="stripExtension">/tmp/absolutedir/conf</String>
+    <String Name="concatenateBeforeExtension">/tmp/absolutedir/conf_34.pdb</String>
+  </PathToTest>
+</ReferenceData>

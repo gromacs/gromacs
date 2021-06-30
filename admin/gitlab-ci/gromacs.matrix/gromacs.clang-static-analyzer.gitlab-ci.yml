@@ -10,7 +10,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
-#   Compiler: Clang 8
+#   Compiler: Clang 11
 
 gromacs:clang-static-analyzer:configure:
   extends:

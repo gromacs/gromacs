@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <PathToTest Name="nested/dir/conf.pdb">
+    <String Name="getParentPath">nested/dir</String>
+    <String Name="getFilename">conf.pdb</String>
+    <Bool Name="hasExtension">true</Bool>
+    <Bool Name="extensionMatchesPdb">true</Bool>
+    <String Name="stripExtension">nested/dir/conf</String>
+    <String Name="concatenateBeforeExtension">nested/dir/conf_34.pdb</String>
+  </PathToTest>
+</ReferenceData>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,59 +72,65 @@ TEST(PathTest, StripSourcePrefixWorks)
             << "This only affects source paths reported in fatal error messages.";
 }
 
-TEST(PathTest, SearchOperationsWork)
+class PathSearchTest : public testing::TestWithParam<std::string>
+{
+};
+
+TEST_P(PathSearchTest, SearchOperationsWork)
 {
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker rootChecker(data.rootChecker());
-    for (const std::string& input : { "",
-                                      "md.log",
-                                      "md",
-                                      "/tmp/absolute.txt",
-                                      "simpledir/traj.tng",
-                                      "simpledir/traj",
-                                      "windowsdir\\traj.tng",
-                                      "complex.dir/traj.tng",
-                                      "complex.dir/traj",
-                                      "nested/dir/conf.pdb",
-                                      "/tmp/absolutedir/conf.pdb" })
+    std::string                     input = GetParam();
+
+    auto checker = rootChecker.checkCompound("PathToTest", input);
     {
-        SCOPED_TRACE(std::string("for input '") + input + "'");
-        auto checker = rootChecker.checkCompound("PathToTest", input);
-        {
-            std::string result;
-            ASSERT_NO_THROW_GMX(result = Path::getParentPath(input));
-            checker.checkString(result, "getParentPath");
-        }
-        {
-            std::string result;
-            ASSERT_NO_THROW_GMX(result = Path::getFilename(input));
-            checker.checkString(result, "getFilename");
-        }
-        {
-            bool result = false;
-            ASSERT_NO_THROW_GMX(result = Path::hasExtension(input));
-            checker.checkBoolean(result, "hasExtension");
-        }
-        {
-            bool result = false;
-            ASSERT_NO_THROW_GMX(result = Path::extensionMatches(input, "pdb"));
-            checker.checkBoolean(result, "extensionMatchesPdb");
-            // The match is exclusive of the dot separator, so no
-            // input string can match.
-            ASSERT_FALSE(Path::extensionMatches(input, ".pdb"));
-        }
-        {
-            std::string result;
-            ASSERT_NO_THROW_GMX(result = Path::stripExtension(input));
-            checker.checkString(result, "stripExtension");
-        }
-        {
-            std::string result;
-            ASSERT_NO_THROW_GMX(result = Path::concatenateBeforeExtension(input, "_34"));
-            checker.checkString(result, "concatenateBeforeExtension");
-        }
+        std::string result;
+        ASSERT_NO_THROW_GMX(result = Path::getParentPath(input));
+        checker.checkString(result, "getParentPath");
+    }
+    {
+        std::string result;
+        ASSERT_NO_THROW_GMX(result = Path::getFilename(input));
+        checker.checkString(result, "getFilename");
+    }
+    {
+        bool result = false;
+        ASSERT_NO_THROW_GMX(result = Path::hasExtension(input));
+        checker.checkBoolean(result, "hasExtension");
+    }
+    {
+        bool result = false;
+        ASSERT_NO_THROW_GMX(result = Path::extensionMatches(input, "pdb"));
+        checker.checkBoolean(result, "extensionMatchesPdb");
+        // The match is exclusive of the dot separator, so no
+        // input string can match.
+        ASSERT_FALSE(Path::extensionMatches(input, ".pdb"));
+    }
+    {
+        std::string result;
+        ASSERT_NO_THROW_GMX(result = Path::stripExtension(input));
+        checker.checkString(result, "stripExtension");
+    }
+    {
+        std::string result;
+        ASSERT_NO_THROW_GMX(result = Path::concatenateBeforeExtension(input, "_34"));
+        checker.checkString(result, "concatenateBeforeExtension");
     }
 }
+
+INSTANTIATE_TEST_CASE_P(WithInputPaths,
+                        PathSearchTest,
+                        testing::Values("",
+                                        "md.log",
+                                        "md",
+                                        "/tmp/absolute.txt",
+                                        "simpledir/traj.tng",
+                                        "simpledir/traj",
+                                        "windowsdir\\traj.tng",
+                                        "complex.dir/traj.tng",
+                                        "complex.dir/traj",
+                                        "nested/dir/conf.pdb",
+                                        "/tmp/absolutedir/conf.pdb"));
 
 } // namespace
 } // namespace test

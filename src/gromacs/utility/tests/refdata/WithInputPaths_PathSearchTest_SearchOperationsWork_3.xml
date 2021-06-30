@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <PathToTest Name="/tmp/absolute.txt">
+    <String Name="getParentPath">/tmp</String>
+    <String Name="getFilename">absolute.txt</String>
+    <Bool Name="hasExtension">true</Bool>
+    <Bool Name="extensionMatchesPdb">false</Bool>
+    <String Name="stripExtension">/tmp/absolute</String>
+    <String Name="concatenateBeforeExtension">/tmp/absolute_34.txt</String>
+  </PathToTest>
+</ReferenceData>
