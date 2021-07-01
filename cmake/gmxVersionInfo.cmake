@@ -262,7 +262,7 @@ set(REGRESSIONTEST_BRANCH "release-2021")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "62606f5f6ea37f6114b6e9cf58218f13" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "0f9b3b7daec2558d1de74b215d882361" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -285,8 +285,8 @@ if (GMX_VERSION_STRING_OF_FORK)
     set(GMX_MANUAL_DOI_INTERNAL "")
     set(GMX_SOURCE_DOI_INTERNAL "")
 else()
-    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
-    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_MANUAL_DOI_INTERNAL "10.5281/zenodo.5053220") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "10.5281/zenodo.5053201") # Set correct doi string here
 endif()
 set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
 set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
