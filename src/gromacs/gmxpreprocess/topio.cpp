@@ -117,7 +117,7 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
         /* Copy normal and FEP parameters and multiply by fudge factor */
         gmx::ArrayRef<const real> existingParam = type.forceParam();
         GMX_RELEASE_ASSERT(2 * nrfp <= MAXFORCEPARAM,
-                           "Can't have more parameters than half of maximum p  arameter number");
+                           "Can't have more parameters than half of maximum parameter number");
         for (int j = 0; j < nrfp; j++)
         {
             /* If we are using sigma/epsilon values, only the epsilon values
@@ -137,7 +137,7 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
             forceParam[j]        = scaling * existingParam[j];
             forceParam[nrfp + j] = scaling * existingParam[j];
         }
-        pairs->interactionTypes.emplace_back(InteractionOfType(atomNumbers, forceParam));
+        pairs->interactionTypes.emplace_back(atomNumbers, forceParam);
         i++;
     }
 }

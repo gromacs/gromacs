@@ -175,12 +175,12 @@ NoseHooverChainsData::NoseHooverChainsData(int                  numTemperatureGr
     {
         for (auto temperatureGroup = 0; temperatureGroup < numTemperatureGroups; ++temperatureGroup)
         {
-            noseHooverGroups_.emplace_back(NoseHooverGroup(chainLength,
-                                                           referenceTemperature[temperatureGroup],
-                                                           numDegreesOfFreedom[temperatureGroup],
-                                                           couplingTime[temperatureGroup],
-                                                           couplingTimeStep,
-                                                           nhcUsage));
+            noseHooverGroups_.emplace_back(chainLength,
+                                           referenceTemperature[temperatureGroup],
+                                           numDegreesOfFreedom[temperatureGroup],
+                                           couplingTime[temperatureGroup],
+                                           couplingTimeStep,
+                                           nhcUsage);
         }
     }
     else if (nhcUsage == NhcUsage::Barostat)
@@ -189,8 +189,8 @@ NoseHooverChainsData::NoseHooverChainsData(int                  numTemperatureGr
                            "There can only be one barostat for the system");
         // Barostat has a single degree of freedom
         const int degreesOfFreedom = 1;
-        noseHooverGroups_.emplace_back(NoseHooverGroup(
-                chainLength, referenceTemperature[0], degreesOfFreedom, couplingTime[0], couplingTimeStep, nhcUsage));
+        noseHooverGroups_.emplace_back(
+                chainLength, referenceTemperature[0], degreesOfFreedom, couplingTime[0], couplingTimeStep, nhcUsage);
     }
 }
 

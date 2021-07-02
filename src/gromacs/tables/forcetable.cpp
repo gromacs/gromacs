@@ -754,7 +754,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     std::vector<t_tabledata> td;
     for (k = 0; (k < ntab); k++)
     {
-        td.emplace_back(t_tabledata(numRows, nx0, tabscale, true));
+        td.emplace_back(numRows, nx0, tabscale, true);
         for (i = 0; (i < numRows); i++)
         {
             td[k].x[i] = yy[0][i];

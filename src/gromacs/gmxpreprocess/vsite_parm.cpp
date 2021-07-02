@@ -159,7 +159,7 @@ static int vsite_bond_nrcheck(int ftype)
 static void enter_bonded(int nratoms, std::vector<VsiteBondedInteraction>* bondeds, const InteractionOfType& type)
 {
     GMX_RELEASE_ASSERT(nratoms == type.atoms().ssize(), "Size of atom array must match");
-    bondeds->emplace_back(VsiteBondedInteraction(type.atoms(), type.c0()));
+    bondeds->emplace_back(type.atoms(), type.c0());
 }
 
 /*! \internal \brief

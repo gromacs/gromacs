@@ -114,7 +114,8 @@ void generate_nbparams(CombinationRule         comb,
                                 c  = std::sqrt(ci * cj);
                                 forceParam[nf] = c;
                             }
-                            interactions->interactionTypes.emplace_back(InteractionOfType({}, forceParam));
+                            interactions->interactionTypes.emplace_back(gmx::ArrayRef<const int>{},
+                                                                        forceParam);
                         }
                     }
                     break;
@@ -138,7 +139,8 @@ void generate_nbparams(CombinationRule         comb,
                                 forceParam[0] *= -1;
                             }
                             forceParam[1] = std::sqrt(ci1 * cj1);
-                            interactions->interactionTypes.emplace_back(InteractionOfType({}, forceParam));
+                            interactions->interactionTypes.emplace_back(gmx::ArrayRef<const int>{},
+                                                                        forceParam);
                         }
                     }
 
@@ -162,7 +164,8 @@ void generate_nbparams(CombinationRule         comb,
                                 forceParam[0] *= -1;
                             }
                             forceParam[1] = std::sqrt(ci1 * cj1);
-                            interactions->interactionTypes.emplace_back(InteractionOfType({}, forceParam));
+                            interactions->interactionTypes.emplace_back(gmx::ArrayRef<const int>{},
+                                                                        forceParam);
                         }
                     }
 
@@ -196,7 +199,7 @@ void generate_nbparams(CombinationRule         comb,
                         forceParam[1] = 2.0 / (1 / bi + 1 / bj);
                     }
                     forceParam[2] = std::sqrt(ci2 * cj2);
-                    interactions->interactionTypes.emplace_back(InteractionOfType({}, forceParam));
+                    interactions->interactionTypes.emplace_back(gmx::ArrayRef<const int>{}, forceParam);
                 }
             }
 
@@ -725,8 +728,7 @@ static void push_bondtype(InteractionsOfType*      bt,
     if (addBondType)
     {
         /* fill the arrays up and down */
-        bt->interactionTypes.emplace_back(
-                InteractionOfType(b.atoms(), b.forceParam(), b.interactionTypeName()));
+        bt->interactionTypes.emplace_back(b.atoms(), b.forceParam(), b.interactionTypeName());
         /* need to store force values because they might change below */
         std::vector<real> forceParam(b.forceParam().begin(), b.forceParam().end());
 
@@ -745,7 +747,7 @@ static void push_bondtype(InteractionsOfType*      bt,
         {
             atoms.emplace_back(*oldAtom);
         }
-        bt->interactionTypes.emplace_back(InteractionOfType(atoms, forceParam, b.interactionTypeName()));
+        bt->interactionTypes.emplace_back(atoms, forceParam, b.interactionTypeName());
     }
 }
 
@@ -2694,7 +2696,7 @@ static void convert_pairs_to_pairsQ(gmx::ArrayRef<InteractionsOfType> interactio
         std::vector<real> forceParam = {
             fudgeQQ, atoms->atom[param.ai()].q, atoms->atom[param.aj()].q, param.c0(), param.c1()
         };
-        paramnew.emplace_back(InteractionOfType(param.atoms(), forceParam, ""));
+        paramnew.emplace_back(param.atoms(), forceParam, "");
     }
 
     /* now assign the new data to the F_LJC14_Q structure */

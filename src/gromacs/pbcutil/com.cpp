@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -148,7 +148,7 @@ void placeCoordinatesWithCOMInBox(const PbcType&      pbcType,
             std::vector<Range<int>> atomRanges;
             if (comShiftType == COMShiftType::Molecule)
             {
-                atomRanges.emplace_back(gmx::Range<int>(0, atomsPerMolecule));
+                atomRanges.emplace_back(0, atomsPerMolecule);
             }
             else if (comShiftType == COMShiftType::Residue)
             {

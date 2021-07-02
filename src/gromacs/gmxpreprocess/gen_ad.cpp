@@ -247,7 +247,7 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
         int i = 0;
         for (const auto& dihedral : dih)
         {
-            newDihedrals.emplace_back(std::pair<InteractionOfType, int>(dihedral, i++));
+            newDihedrals.emplace_back(dihedral, i++);
         }
     }
     else
@@ -266,7 +266,7 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
             if (was_dihedral_set_in_rtp(*dihedral) || dihedral == dih.begin()
                 || !is_dihedral_on_same_bond(*dihedral, *(dihedral - 1)))
             {
-                newDihedrals.emplace_back(std::pair<InteractionOfType, int>(*dihedral, i++));
+                newDihedrals.emplace_back(*dihedral, i++);
             }
         }
     }
@@ -372,7 +372,7 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
                 if (!bStop)
                 {
                     /* Not broken out */
-                    improper.emplace_back(InteractionOfType(ai, {}, bondeds.s));
+                    improper.emplace_back(ai, gmx::ArrayRef<const real>{}, bondeds.s);
                 }
             }
             while ((start < atoms->nr) && (atoms->atom[start].resind == i))

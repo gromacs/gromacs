@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2011,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,33 +62,33 @@ void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real>
     std::vector<int>  atoms = { ai, aj };
     std::vector<real> forceParm(c.begin(), c.end());
 
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
+    ps->interactionTypes.emplace_back(atoms, forceParm, s ? s : "");
 }
 
 void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, const char* s)
 {
     std::vector<int> atoms = { ai, aj, ak, al, am };
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}, s ? s : ""));
+    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{}, s ? s : "");
 }
 
 void add_vsite2_param(InteractionsOfType* ps, int ai, int aj, int ak, real c0)
 {
     std::vector<int>  atoms     = { ai, aj, ak };
     std::vector<real> forceParm = { c0 };
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
+    ps->interactionTypes.emplace_back(atoms, forceParm);
 }
 
 void add_vsite3_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, real c0, real c1)
 {
     std::vector<int>  atoms     = { ai, aj, ak, al };
     std::vector<real> forceParm = { c0, c1 };
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
+    ps->interactionTypes.emplace_back(atoms, forceParm);
 }
 
 void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
     std::vector<int> atoms = { ai, aj, ak, al };
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
+    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{});
 
     if (bSwapParity)
     {
@@ -99,7 +99,7 @@ void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bo
 void add_vsite4_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am)
 {
     std::vector<int> atoms = { ai, aj, ak, al, am };
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
+    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{});
 }
 
 int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool bNterm)
