@@ -321,15 +321,8 @@ public:
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
      * \param offset  The step offset at which the thermostat is applied
      * \param scheduleOnInitStep  Whether the element is scheduled on the initial step
-     * \param propagatorTagPrePosition  Tag of the propagators to scale positions before propagation
-     * \param propagatorTagPostPosition  Tag of the propagators to scale positions after propagation
-     * \param positionOffset  The step offset at which the position scaling is applied
-     * \param propagatorTagPreVelocity1  Tag of the propagators to scale velocities before first propagation
-     * \param propagatorTagPostVelocity1  Tag of the propagators to scale velocities after first propagation
-     * \param velocityOffset1  The step offset at which the first velocity scaling is applied
-     * \param propagatorTagPreVelocity2  Tag of the propagators to scale velocities before second propagation
-     * \param propagatorTagPostVelocity2  Tag of the propagators to scale velocities after second propagation
-     * \param velocityOffset2  The step offset at which the second velocity scaling is applied
+     * \param mttkPropagatorConnectionDetails  Reference to the \c MttkPropagatorConnectionDetails object containing propagator tags and offsets
+
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
@@ -405,6 +398,7 @@ public:
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param mttkPropagatorConnectionDetails  Reference to the \c MttkPropagatorConnectionDetails object containing propagator tags and offsets
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
