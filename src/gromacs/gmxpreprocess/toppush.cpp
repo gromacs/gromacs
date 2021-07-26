@@ -1813,17 +1813,7 @@ static std::vector<InteractionOfType>::iterator defaultInteractionsOfType(int ft
                                                                           bool bB,
                                                                           int* nparam_def)
 {
-    int nparam_found;
-    int nrfpA = interaction_function[ftype].nrfpA;
-    int nrfpB = interaction_function[ftype].nrfpB;
-
-    if ((!bB && nrfpA == 0) || (bB && nrfpB == 0))
-    {
-        return bt[ftype].interactionTypes.end();
-    }
-
-
-    nparam_found = 0;
+    int nparam_found = 0;
     if (ftype == F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS || ftype == F_PIDIHS)
     {
         int nmatch_max = -1;
@@ -2048,39 +2038,46 @@ void push_bond(Directive                         d,
     std::vector<InteractionOfType>::iterator foundBParameter = bondtype[ftype].interactionTypes.end();
     if (bBonded)
     {
-        foundAParameter =
-                defaultInteractionsOfType(ftype, bondtype, at, atypes, param, FALSE, &nparam_defA);
-        if (foundAParameter != bondtype[ftype].interactionTypes.end())
-        {
-            /* Copy the A-state and B-state default parameters. */
-            GMX_ASSERT(NRFPA(ftype) + NRFPB(ftype) <= MAXFORCEPARAM,
-                       "Bonded interactions may have at most 12 parameters");
-            gmx::ArrayRef<const real> defaultParam = foundAParameter->forceParam();
-            for (int j = 0; (j < NRFPA(ftype) + NRFPB(ftype)); j++)
-            {
-                param.setForceParameter(j, defaultParam[j]);
-            }
-            bFoundA = true;
-        }
-        else if (NRFPA(ftype) == 0)
+        if (NRFPA(ftype) == 0)
         {
             bFoundA = true;
         }
-        foundBParameter =
-                defaultInteractionsOfType(ftype, bondtype, at, atypes, param, TRUE, &nparam_defB);
-        if (foundBParameter != bondtype[ftype].interactionTypes.end())
+        else
         {
-            /* Copy only the B-state default parameters */
-            gmx::ArrayRef<const real> defaultParam = foundBParameter->forceParam();
-            for (int j = NRFPA(ftype); (j < NRFP(ftype)); j++)
+            foundAParameter =
+                    defaultInteractionsOfType(ftype, bondtype, at, atypes, param, FALSE, &nparam_defA);
+            if (foundAParameter != bondtype[ftype].interactionTypes.end())
             {
-                param.setForceParameter(j, defaultParam[j]);
+                /* Copy the A-state and B-state default parameters. */
+                GMX_ASSERT(NRFPA(ftype) + NRFPB(ftype) <= MAXFORCEPARAM,
+                           "Bonded interactions may have at most 12 parameters");
+                gmx::ArrayRef<const real> defaultParam = foundAParameter->forceParam();
+                for (int j = 0; (j < NRFPA(ftype) + NRFPB(ftype)); j++)
+                {
+                    param.setForceParameter(j, defaultParam[j]);
+                }
+                bFoundA = true;
             }
+        }
+
+        if (NRFPB(ftype) == 0)
+        {
             bFoundB = true;
         }
-        else if (NRFPB(ftype) == 0)
+        else
         {
-            bFoundB = true;
+            foundBParameter =
+                    defaultInteractionsOfType(ftype, bondtype, at, atypes, param, TRUE, &nparam_defB);
+            if (foundBParameter != bondtype[ftype].interactionTypes.end())
+            {
+                /* Copy only the B-state default parameters */
+                gmx::ArrayRef<const real> defaultParam = foundBParameter->forceParam();
+                for (int j = NRFPA(ftype); (j < NRFP(ftype)); j++)
+                {
+                    param.setForceParameter(j, defaultParam[j]);
+                }
+                bFoundB = true;
+            }
         }
     }
     else if (ftype == F_LJ14)
