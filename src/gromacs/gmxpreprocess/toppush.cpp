@@ -95,6 +95,7 @@ void generate_nbparams(CombinationRule         comb,
         cPrefetch.emplace_back(*atypes->atomNonBondedParamFromAtomType(i, 0),
                                *atypes->atomNonBondedParamFromAtomType(i, 1));
     }
+    interactions->interactionTypes.reserve(nr * nr);
     switch (ftype)
     {
         case F_LJ:
