@@ -10,44 +10,44 @@
 #   OS: Ubuntu 20.04
 #   Build type: RelWithDebInfo
 #   Compiler: GCC 10.2
-#   GPU: CUDA 11.3
+#   GPU: CUDA 11.4
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-10-cuda-11.2:configureMPI:
+gromacs:gcc-10-cuda-11.4:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
     - .use-mpi
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.4.0
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 10
 
-gromacs:gcc-10-cuda-11.2:buildMPI:
+gromacs:gcc-10-cuda-11.4:buildMPI:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.4.0
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:gcc-10-cuda-11.2:configureMPI
+    - job: gromacs:gcc-10-cuda-11.4:configureMPI
 
-gromacs:gcc-10-cuda-11.2:regressiontest-gpucommupd-MPI:
+gromacs:gcc-10-cuda-11.4:regressiontest-gpucommupd-MPI:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10-cuda-11.4.0
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -62,7 +62,7 @@ gromacs:gcc-10-cuda-11.2:regressiontest-gpucommupd-MPI:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-10-cuda-11.2:buildMPI
+    - job: gromacs:gcc-10-cuda-11.4:buildMPI
     - job: regressiontests:prepare
   artifacts:
     paths:
