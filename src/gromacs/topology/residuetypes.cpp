@@ -41,7 +41,6 @@
 #include <cstdio>
 
 #include <algorithm>
-#include <iterator>
 #include <optional>
 #include <string>
 
@@ -149,30 +148,6 @@ bool ResidueType::namedResidueHasType(const std::string& residueName, const std:
 {
     auto foundIt = findResidueEntryWithName(impl_->entry, residueName);
     return foundIt ? gmx::equalCaseInsensitive(residueType, (*foundIt)->residueType) : false;
-}
-
-int ResidueType::numberOfEntries() const
-{
-    return impl_->entry.size();
-}
-
-int ResidueType::indexFromResidueName(const std::string& residueName) const
-{
-    gmx::ArrayRef<const ResidueTypeEntry> temp(impl_->entry);
-    auto                                  foundIt = findResidueEntryWithName(temp, residueName);
-    return foundIt ? std::distance(temp.begin(), *foundIt) : -1;
-}
-
-std::string ResidueType::nameFromResidueIndex(int index) const
-{
-    if (index >= 0 && index < gmx::ssize(impl_->entry))
-    {
-        return impl_->entry[index].residueName;
-    }
-    else
-    {
-        return "";
-    }
 }
 
 std::string ResidueType::typeOfNamedDatabaseResidue(const std::string& residueName)

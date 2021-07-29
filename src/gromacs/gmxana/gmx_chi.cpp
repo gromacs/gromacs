@@ -43,7 +43,9 @@
 
 #include <algorithm>
 #include <array>
+#include <map>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "gromacs/commandline/pargs.h"
@@ -450,7 +452,6 @@ static int reset_em_all(gmx::ArrayRef<const t_dlist> dlist, int nf, real** dih, 
 
 static void histogramming(FILE*                    log,
                           int                      nbin,
-                          ResidueType*             rt,
                           int                      nf,
                           int                      maxchi,
                           real**                   dih,
@@ -500,7 +501,6 @@ static void histogramming(FILE*                    log,
     char        hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
     char**      leg;
 
-    size_t rt_size = rt->numberOfEntries();
     if (bSSHisto)
     {
         fp = gmx_ffopen(ssdump, "r");
@@ -518,19 +518,35 @@ static void histogramming(FILE*                    log,
         gmx_ffclose(fp);
     }
 
+    // Build a list of unique residue names found in the dihedral
+    // list, so we can loop over those unique names conveniently. The
+    // names are the same as the residue names found in rt in the
+    // caller, but ResidueType doesn't yet have a way to loop over its
+    // contents.
+    std::unordered_set<std::string> uniqueResidueNames;
+    for (const auto& dihedral : dlist)
+    {
+        uniqueResidueNames.emplace(dihedral.residueName);
+    }
     // Build the lookup tables for data relating to the all dihedrals
     // from each unique residue name represented in the dihedral list.
-    std::array<std::vector<std::vector<std::vector<int>>>, 3> his_aa_ss;
-    if (bSSHisto)
+    std::array<std::map<std::string, std::vector<std::vector<int>>>, 3> his_aa_ss;
+    std::vector<std::map<std::string, std::vector<int>>>                his_aa(edMax);
+    for (const auto& residueName : uniqueResidueNames)
     {
-        for (auto& secondaryStructure : his_aa_ss)
+        if (bSSHisto)
         {
-            // Construct the vector nest
-            secondaryStructure = { rt_size + 1, { edMax, std::vector<int>(nbin, 0) } };
+            for (auto& secondaryStructure : his_aa_ss)
+            {
+                secondaryStructure[residueName] =
+                        std::vector<std::vector<int>>(edMax, std::vector<int>(nbin, 0));
+            }
+        }
+        for (auto& dihedraltype : his_aa)
+        {
+            dihedraltype[residueName] = std::vector<int>(nbin, 0);
         }
     }
-    std::vector<std::vector<std::vector<int>>> his_aa = { edMax,
-                                                          { rt_size + 1, std::vector<int>(nbin, 0) } };
     snew(histmp, nbin);
 
     snew(Jc, dlist.size());
@@ -577,9 +593,9 @@ static void histogramming(FILE*                    log,
                          */
                         switch (ss_str[dihedral.resnr])
                         {
-                            case 'E': his_aa_ss[0][dihedral.index][Dih][hindex]++; break;
-                            case 'H': his_aa_ss[1][dihedral.index][Dih][hindex]++; break;
-                            default: his_aa_ss[2][dihedral.index][Dih][hindex]++; break;
+                            case 'E': his_aa_ss[0][dihedral.residueName][Dih][hindex]++; break;
+                            case 'H': his_aa_ss[1][dihedral.residueName][Dih][hindex]++; break;
+                            default: his_aa_ss[2][dihedral.residueName][Dih][hindex]++; break;
                         }
                     }
                     else if (debug)
@@ -629,7 +645,7 @@ static void histogramming(FILE*                    log,
                 /* Sum distribution per amino acid type as well */
                 for (int k = 0; (k < nbin); k++)
                 {
-                    his_aa[Dih][dihedral.index][k] += histmp[k];
+                    his_aa[Dih][dihedral.residueName][k] += histmp[k];
                     histmp[k] = 0;
                 }
                 j++;
@@ -726,7 +742,7 @@ static void histogramming(FILE*                    log,
     /* finished -jc stuff */
 
     std::vector<real> normhisto(nbin);
-    for (size_t i = 0; (i < rt_size); i++)
+    for (const auto& residueName : uniqueResidueNames)
     {
         for (int Dih = 0; (Dih < edMax); Dih++)
         {
@@ -734,7 +750,7 @@ static void histogramming(FILE*                    log,
             int j;
             for (j = 0; (j < nbin); j++)
             {
-                if (his_aa[Dih][i][j] != 0)
+                if (his_aa[Dih][residueName][j] != 0)
                 {
                     break;
                 }
@@ -745,10 +761,9 @@ static void histogramming(FILE*                    log,
             {
                 if (bNormalize)
                 {
-                    normalize_histo(his_aa[Dih][i], (360.0 / nbin), normhisto);
+                    normalize_histo(his_aa[Dih][residueName], (360.0 / nbin), normhisto);
                 }
 
-                std::string residueName = rt->nameFromResidueIndex(i);
                 switch (Dih)
                 {
                     case edPhi:
@@ -808,13 +823,13 @@ static void histogramming(FILE*                    log,
                     }
                     else
                     {
-                        fprintf(fp, "%5d  %10d\n", angle, his_aa[Dih][i][j]);
+                        fprintf(fp, "%5d  %10d\n", angle, his_aa[Dih][residueName][j]);
                     }
                     if (bSSHisto)
                     {
                         for (int k = 0; (k < 3); k++)
                         {
-                            fprintf(ssfp[k], "%5d  %10d\n", angle, his_aa_ss[k][i][Dih][j]);
+                            fprintf(ssfp[k], "%5d  %10d\n", angle, his_aa_ss[k][residueName][Dih][j]);
                         }
                     }
                 }
@@ -1573,7 +1588,6 @@ int gmx_chi(int argc, char* argv[])
     /* Histogramming & J coupling constants & calc of S2 order params */
     histogramming(log,
                   nbin,
-                  &rt,
                   nf,
                   maxchi,
                   dih,

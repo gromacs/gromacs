@@ -54,8 +54,6 @@ public:
     //! Get handle to underlying residue type data.
     ResidueTypeEntry* ResidueTypes();
 
-    //! Get number of entries in ResidueTypes.
-    int numberOfEntries() const;
     /*! \brief
      * Return true if residue \p residueName is found or false otherwise.
      *
@@ -78,20 +76,6 @@ public:
      * \returns If the check was successful.
      */
     bool namedResidueHasType(const std::string& residueName, const std::string& residueType);
-    /*! \brief
-     * Get index to entry in ResidueTypes with name \p residueName.
-     *
-     * \param[in] residueName Name of the residue being searched.
-     * \returns The index or -1 if not found.
-     */
-    int indexFromResidueName(const std::string& residueName) const;
-    /*! \brief
-     * Get the name of the entry in ResidueTypes with \p index.
-     *
-     * \param[in] index Which entry should be returned.
-     * \returns The name of the entry at \p index, or nullptr.
-     */
-    std::string nameFromResidueIndex(int index) const;
     /*! \brief
      * Return the residue type if a residue with that name exists, or "Other"
      *

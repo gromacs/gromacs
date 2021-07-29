@@ -38,6 +38,8 @@
 #ifndef GMX_GMXANA_GSTAT_H
 #define GMX_GMXANA_GSTAT_H
 
+#include <string>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
 
@@ -77,15 +79,15 @@ typedef struct
 
 struct t_dlist
 {
-    char      name[12];
-    int       resnr;
-    int       index;     /* Index for amino acids (histograms) */
-    int       j0[edMax]; /* Index in dih array (phi angle is first...) */
-    t_dihatms atm;
-    int       b[edMax];
-    int       ntr[edMax];
-    real      S2[edMax];
-    real      rot_occ[edMax][NROT];
+    char        name[12];
+    int         resnr;
+    std::string residueName;
+    int         j0[edMax]; /* Index in dih array (phi angle is first...) */
+    t_dihatms   atm;
+    int         b[edMax];
+    int         ntr[edMax];
+    real        S2[edMax];
+    real        rot_occ[edMax][NROT];
 };
 
 typedef struct
