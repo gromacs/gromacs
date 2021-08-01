@@ -1374,6 +1374,7 @@ void do_force(FILE*                               fplog,
                                  simulationWork.useGpuPmePpCommunication,
                                  reinitGpuPmePpComms,
                                  pmeSendCoordinatesFromGpu,
+                                 stepWork.useGpuPmeFReduction,
                                  localXReadyOnDevice,
                                  wcycle);
     }

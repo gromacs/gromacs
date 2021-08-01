@@ -1649,6 +1649,7 @@ int Mdrunner::mdrunner()
             fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
                     cr->mpi_comm_mysim,
                     cr->dd->pme_nodeid,
+                    cr->dd->pmeForceReceiveBuffer,
                     deviceStreamManager->context(),
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
         }

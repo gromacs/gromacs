@@ -84,7 +84,9 @@ void PmeForceSenderGpu::setForceSendBuffer(DeviceBuffer<RVec> /* d_f */)
                "correct implementation.");
 }
 
-void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */, int /* numAtoms */)
+void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */,
+                                            int /* numAtoms */,
+                                            bool /* sendForcesDirectToPpGpu */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

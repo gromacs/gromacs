@@ -94,10 +94,11 @@ public:
 
     /*! \brief
      * Send force to PP rank (used with Thread-MPI)
-     * \param[in] ppRank           PP rank to receive data
-     * \param[in] numAtoms         number of atoms to send
+     * \param[in] ppRank                   PP rank to receive data
+     * \param[in] numAtoms                 number of atoms to send
+     * \param[in] sendForcesDirectToPpGpu  whether forces are transferred direct to remote GPU memory
      */
-    void sendFToPpCudaDirect(int ppRank, int numAtoms);
+    void sendFToPpCudaDirect(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu);
 
     /*! \brief
      * Send force to PP rank (used with Lib-MPI)

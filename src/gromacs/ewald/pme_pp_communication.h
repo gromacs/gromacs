@@ -85,6 +85,8 @@ enum
 #define PP_PME_SWITCHGRID (1 << 11)
 #define PP_PME_RESETCOUNTERS (1 << 12)
 #define PP_PME_GPUCOMMS (1 << 13)
+// Whether PME forces are transferred directly to remote PP GPU memory in a specific step
+#define PP_PME_RECVFTOGPU (1 << 14)
 //@}
 
 /*! \brief Return values for gmx_pme_recv_q_x */

@@ -59,14 +59,16 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm             comm,
-                         int                  pmeRank,
-                         const DeviceContext& deviceContext,
-                         const DeviceStream&  deviceStream) :
+PmePpCommGpu::Impl::Impl(MPI_Comm                comm,
+                         int                     pmeRank,
+                         std::vector<gmx::RVec>& pmeCpuForceBuffer,
+                         const DeviceContext&    deviceContext,
+                         const DeviceStream&     deviceStream) :
     deviceContext_(deviceContext),
     pmePpCommStream_(deviceStream),
     comm_(comm),
     pmeRank_(pmeRank),
+    pmeCpuForceBuffer_(pmeCpuForceBuffer),
     d_pmeForces_(nullptr)
 {
 }
@@ -75,35 +77,31 @@ PmePpCommGpu::Impl::~Impl() = default;
 
 void PmePpCommGpu::Impl::reinit(int size)
 {
+    // Reallocate device buffer used for staging PME force
+    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
+
     // This rank will access PME rank memory directly, so needs to receive the remote PME buffer addresses.
 #if GMX_MPI
 
     if (GMX_THREAD_MPI)
     {
-        // receive device buffer address from PME rank
+        // receive device coordinate buffer address from PME rank
         MPI_Recv(&remotePmeXBuffer_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        // send host and device force buffer addresses to PME rank
+        MPI_Send(&d_pmeForces_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_);
+        RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_.data();
+        MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, 0, comm_);
     }
 
 #endif
-
-    // Reallocate buffer used for staging PME force on GPU
-    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
 }
 
 // TODO make this asynchronous by splitting into this into
 // launchRecvForceFromPmeCudaDirect() and sycnRecvForceFromPmeCudaDirect()
-void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(float3* recvPtr, bool receivePmeForceToGpu)
+void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu)
 {
 #if GMX_MPI
     // Remote PME task pushes GPU data directly data to this PP task.
-
-    void* localForcePtr = receivePmeForceToGpu ? static_cast<void*>(d_pmeForces_) : recvPtr;
-
-    // Send destination pointer to PME task. Do this every step since
-    // PME task is agostic as to whether destination is PP CPU or
-    // GPU.
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&localForcePtr, sizeof(void*), MPI_BYTE, pmeRank_, 0, comm_);
 
     // Recieve event from PME task after PME->PP force data push has
     // been scheduled and enqueue this to PP stream.
@@ -143,7 +141,7 @@ void PmePpCommGpu::Impl::receiveForceFromPme(float3* recvPtr, int recvSize, bool
     float3* pmeForcePtr = receivePmeForceToGpu ? asFloat3(d_pmeForces_) : recvPtr;
     if (GMX_THREAD_MPI)
     {
-        receiveForceFromPmeCudaDirect(pmeForcePtr, receivePmeForceToGpu);
+        receiveForceFromPmeCudaDirect(receivePmeForceToGpu);
     }
     else
     {
@@ -221,11 +219,12 @@ GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     }
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm             comm,
-                           int                  pmeRank,
-                           const DeviceContext& deviceContext,
-                           const DeviceStream&  deviceStream) :
-    impl_(new Impl(comm, pmeRank, deviceContext, deviceStream))
+PmePpCommGpu::PmePpCommGpu(MPI_Comm                comm,
+                           int                     pmeRank,
+                           std::vector<gmx::RVec>& pmeCpuForceBuffer,
+                           const DeviceContext&    deviceContext,
+                           const DeviceStream&     deviceStream) :
+    impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream))
 {
 }
 

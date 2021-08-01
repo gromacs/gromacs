@@ -80,10 +80,11 @@ public:
 
     /*! \brief
      * Send force to PP rank (used with Thread-MPI)
-     * \param[in] ppRank           PP rank to receive data
-     * \param[in] numAtoms         number of atoms to send
+     * \param[in] ppRank                   PP rank to receive data
+     * \param[in] numAtoms                 number of atoms to send
+     * \param[in] sendForcesDirectToPpGpu  whether forces are transferred direct to remote GPU memory
      */
-    void sendFToPpCudaDirect(int ppRank, int numAtoms);
+    void sendFToPpCudaDirect(int ppRank, int numAtoms, bool sendForcesDirectToPpGpu);
 
     /*! \brief
      * Send force to PP rank (used with Lib-MPI)
@@ -110,6 +111,10 @@ private:
     std::vector<DeviceBuffer<RVec>> localForcePtr_;
     //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
+    //! Vector of CPU force buffer pointers for multiple remote PP tasks
+    std::vector<float3*> pmeRemoteCpuForcePtr_;
+    //! Vector of GPU force buffer pointers for multiple remote PP tasks
+    std::vector<float3*> pmeRemoteGpuForcePtr_;
 };
 
 } // namespace gmx
