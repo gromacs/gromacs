@@ -64,7 +64,7 @@ class PmePpCommGpu::Impl
 /*!\brief Constructor stub. */
 PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
                            int /* pmeRank */,
-                           std::vector<gmx::RVec>& /* pmeCpuForceBuffer */,
+                           std::vector<gmx::RVec>* /* pmeCpuForceBuffer */,
                            const DeviceContext& /* deviceContext */,
                            const DeviceStream& /* deviceStream */) :
     impl_(nullptr)

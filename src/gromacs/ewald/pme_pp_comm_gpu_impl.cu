@@ -61,7 +61,7 @@ namespace gmx
 
 PmePpCommGpu::Impl::Impl(MPI_Comm                comm,
                          int                     pmeRank,
-                         std::vector<gmx::RVec>& pmeCpuForceBuffer,
+                         std::vector<gmx::RVec>* pmeCpuForceBuffer,
                          const DeviceContext&    deviceContext,
                          const DeviceStream&     deviceStream) :
     deviceContext_(deviceContext),
@@ -89,7 +89,7 @@ void PmePpCommGpu::Impl::reinit(int size)
         MPI_Recv(&remotePmeXBuffer_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
         // send host and device force buffer addresses to PME rank
         MPI_Send(&d_pmeForces_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_);
-        RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_.data();
+        RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_->data();
         MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, 0, comm_);
     }
 
@@ -221,7 +221,7 @@ GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
 
 PmePpCommGpu::PmePpCommGpu(MPI_Comm                comm,
                            int                     pmeRank,
-                           std::vector<gmx::RVec>& pmeCpuForceBuffer,
+                           std::vector<gmx::RVec>* pmeCpuForceBuffer,
                            const DeviceContext&    deviceContext,
                            const DeviceStream&     deviceStream) :
     impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream))

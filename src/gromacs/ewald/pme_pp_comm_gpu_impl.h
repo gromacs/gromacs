@@ -66,7 +66,7 @@ public:
      */
     Impl(MPI_Comm                comm,
          int                     pmeRank,
-         std::vector<gmx::RVec>& pmeCpuForceBuffer,
+         std::vector<gmx::RVec>* pmeCpuForceBuffer,
          const DeviceContext&    deviceContext,
          const DeviceStream&     deviceStream);
     ~Impl();
@@ -165,7 +165,7 @@ private:
     //! Rank of PME task
     int pmeRank_ = -1;
     //! Buffer for PME force on CPU
-    std::vector<gmx::RVec>& pmeCpuForceBuffer_;
+    std::vector<gmx::RVec>* pmeCpuForceBuffer_;
     //! Buffer for staging PME force on GPU
     DeviceBuffer<gmx::RVec> d_pmeForces_;
     //! number of atoms in PME force staging array
