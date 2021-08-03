@@ -81,7 +81,7 @@ TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
    the same way / at all, if we would try to duplicate less code. */
 
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         WithDifferentControlVariables,
         ReplicaExchangeEnsembleTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
@@ -89,7 +89,7 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values(TemperatureCoupling::VRescale),
                            ::testing::Values(PressureCoupling::No, PressureCoupling::Berendsen)));
 #else
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         DISABLED_WithDifferentControlVariables,
         ReplicaExchangeEnsembleTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
@@ -107,12 +107,12 @@ TEST_P(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndTh
     runMaxhTest();
 }
 
-INSTANTIATE_TEST_CASE_P(InNvt,
-                        ReplicaExchangeTerminationTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1)),
-                                           ::testing::Values(IntegrationAlgorithm::MD),
-                                           ::testing::Values(TemperatureCoupling::VRescale),
-                                           ::testing::Values(PressureCoupling::No)));
+INSTANTIATE_TEST_SUITE_P(InNvt,
+                         ReplicaExchangeTerminationTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1)),
+                                            ::testing::Values(IntegrationAlgorithm::MD),
+                                            ::testing::Values(TemperatureCoupling::VRescale),
+                                            ::testing::Values(PressureCoupling::No)));
 
 /*! \brief Return replica exchange related output from logfile
  *
@@ -318,7 +318,7 @@ struct PrintReplicaExchangeParametersToString
 };
 
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         ReplicaExchangeIsEquivalentToReferenceLeapFrog,
         ReplicaExchangeRegressionTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
@@ -326,16 +326,16 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values(TemperatureCoupling::VRescale, TemperatureCoupling::NoseHoover),
                            ::testing::Values(PressureCoupling::CRescale, PressureCoupling::ParrinelloRahman)),
         PrintReplicaExchangeParametersToString());
-INSTANTIATE_TEST_CASE_P(ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
-                        ReplicaExchangeRegressionTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
-                                                             NumRanksPerSimulation(2)),
-                                           ::testing::Values(IntegrationAlgorithm::VV),
-                                           ::testing::Values(TemperatureCoupling::NoseHoover),
-                                           ::testing::Values(PressureCoupling::No)),
-                        PrintReplicaExchangeParametersToString());
+INSTANTIATE_TEST_SUITE_P(ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
+                         ReplicaExchangeRegressionTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                              NumRanksPerSimulation(2)),
+                                            ::testing::Values(IntegrationAlgorithm::VV),
+                                            ::testing::Values(TemperatureCoupling::NoseHoover),
+                                            ::testing::Values(PressureCoupling::No)),
+                         PrintReplicaExchangeParametersToString());
 #else
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         DISABLED_ReplicaExchangeIsEquivalentToReferenceLeapFrog,
         ReplicaExchangeRegressionTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
@@ -343,14 +343,14 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values(TemperatureCoupling::VRescale, TemperatureCoupling::NoseHoover),
                            ::testing::Values(PressureCoupling::CRescale, PressureCoupling::ParrinelloRahman)),
         PrintReplicaExchangeParametersToString());
-INSTANTIATE_TEST_CASE_P(DISABLED_ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
-                        ReplicaExchangeRegressionTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
-                                                             NumRanksPerSimulation(2)),
-                                           ::testing::Values(IntegrationAlgorithm::VV),
-                                           ::testing::Values(TemperatureCoupling::NoseHoover),
-                                           ::testing::Values(PressureCoupling::No)),
-                        PrintReplicaExchangeParametersToString());
+INSTANTIATE_TEST_SUITE_P(DISABLED_ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
+                         ReplicaExchangeRegressionTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                              NumRanksPerSimulation(2)),
+                                            ::testing::Values(IntegrationAlgorithm::VV),
+                                            ::testing::Values(TemperatureCoupling::NoseHoover),
+                                            ::testing::Values(PressureCoupling::No)),
+                         PrintReplicaExchangeParametersToString());
 #endif
 } // namespace test
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,7 +139,7 @@ const std::vector<uint64_t> bitsPi{
 
 // Test the known ansers for the ThreeFry random function when the argument
 // is (1) all zero, (2) all ones, (3) the bits of pi, for a bunch of different flavors of ThreeFry.
-INSTANTIATE_TEST_CASE_P(KnownAnswersTest, ThreeFry2x64Test, ::testing::Values(bitsZero, bitsOne, bitsPi));
+INSTANTIATE_TEST_SUITE_P(KnownAnswersTest, ThreeFry2x64Test, ::testing::Values(bitsZero, bitsOne, bitsPi));
 
 
 // ThreeFry2x64 tests

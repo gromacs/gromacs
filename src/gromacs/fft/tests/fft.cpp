@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -213,7 +213,7 @@ TEST_P(FFTTest1D, Real)
     checker_.checkSequenceArray(rx, out, "backward");
 }
 
-INSTANTIATE_TEST_CASE_P(7_8_25_36_60, FFTTest1D, ::testing::Values(7, 8, 25, 36, 60));
+INSTANTIATE_TEST_SUITE_P(7_8_25_36_60, FFTTest1D, ::testing::Values(7, 8, 25, 36, 60));
 
 
 TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)

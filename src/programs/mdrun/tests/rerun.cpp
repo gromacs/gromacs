@@ -203,13 +203,13 @@ TEST_P(MdrunRerunTest, WithinTolerances)
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if !GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         NormalMdrunIsReproduced,
         MdrunRerunTest,
         ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
                            ::testing::Values("md", "md-vv", "bd", "sd")));
 #else
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         DISABLED_NormalMdrunIsReproduced,
         MdrunRerunTest,
         ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
@@ -269,17 +269,17 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if !GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(MdrunIsReproduced,
-                        MdrunRerunFreeEnergyTest,
-                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                           ::testing::Values("md", "md-vv", "sd"),
-                                           ::testing::Range(0, 11)));
+INSTANTIATE_TEST_SUITE_P(MdrunIsReproduced,
+                         MdrunRerunFreeEnergyTest,
+                         ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                            ::testing::Values("md", "md-vv", "sd"),
+                                            ::testing::Range(0, 11)));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_MdrunIsReproduced,
-                        MdrunRerunFreeEnergyTest,
-                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                           ::testing::Values("md", "md-vv", "sd"),
-                                           ::testing::Range(0, 11)));
+INSTANTIATE_TEST_SUITE_P(DISABLED_MdrunIsReproduced,
+                         MdrunRerunFreeEnergyTest,
+                         ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                            ::testing::Values("md", "md-vv", "sd"),
+                                            ::testing::Range(0, 11)));
 #endif
 
 } // namespace

@@ -114,11 +114,11 @@ TEST_P(CalculateAcceptanceWeightRangeRegression, ValuesMatch)
     EXPECT_REAL_EQ(expectedOutput, calculateAcceptanceWeight(calculationMode, inputValue));
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         SimpleTests,
         CalculateAcceptanceWeightSimple,
         ::testing::Values(1., -1., 0., GMX_REAL_NEGZERO, GMX_REAL_EPS, -GMX_REAL_EPS, GMX_REAL_MAX, -GMX_REAL_MAX));
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         RegressionTests,
         CalculateAcceptanceWeightRangeRegression,
         ::testing::Values(

@@ -76,10 +76,10 @@ public:
     PmeSolveTest() = default;
 
     //! Sets the programs once
-    static void SetUpTestCase() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
+    static void SetUpTestSuite() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
 
     //! The test
-    void runTest()
+    static void runTest()
     {
         /* Getting the input */
         Matrix3x3                    box;
@@ -319,50 +319,50 @@ const auto c_inputEwaldCoeff_lj = ::testing::Values(0.7);
 const auto c_inputMethods = ::testing::Values(PmeSolveAlgorithm::Coulomb, PmeSolveAlgorithm::LennardJones);
 
 //! Instantiation of the PME solving test
-INSTANTIATE_TEST_CASE_P(SaneInput,
-                        PmeSolveTest,
-                        ::testing::Combine(c_inputBoxes,
-                                           c_inputGridSizes,
-                                           c_inputGrids,
-                                           c_inputEpsilon_r,
-                                           c_inputEwaldCoeff_q,
-                                           c_inputEwaldCoeff_lj,
-                                           c_inputMethods));
+INSTANTIATE_TEST_SUITE_P(SaneInput,
+                         PmeSolveTest,
+                         ::testing::Combine(c_inputBoxes,
+                                            c_inputGridSizes,
+                                            c_inputGrids,
+                                            c_inputEpsilon_r,
+                                            c_inputEwaldCoeff_q,
+                                            c_inputEwaldCoeff_lj,
+                                            c_inputMethods));
 
 //! A few more instances to check that different ewaldCoeff_q actually affects results of the Coulomb solver
-INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffQ,
-                        PmeSolveTest,
-                        ::testing::Combine(c_inputBoxes,
-                                           c_inputGridSizes,
-                                           c_inputGrids,
-                                           c_inputEpsilon_r,
-                                           ::testing::Values(0.4),
-                                           c_inputEwaldCoeff_lj,
-                                           ::testing::Values(PmeSolveAlgorithm::Coulomb)));
+INSTANTIATE_TEST_SUITE_P(DifferentEwaldCoeffQ,
+                         PmeSolveTest,
+                         ::testing::Combine(c_inputBoxes,
+                                            c_inputGridSizes,
+                                            c_inputGrids,
+                                            c_inputEpsilon_r,
+                                            ::testing::Values(0.4),
+                                            c_inputEwaldCoeff_lj,
+                                            ::testing::Values(PmeSolveAlgorithm::Coulomb)));
 
 //! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver.
 //! The value has to be approximately larger than 1 / (box dimensions) to have a meaningful output grid.
 //! Previous value of 0.3 caused one of the grid cells to be less or greater than GMX_FLOAT_MIN, depending on the architecture.
-INSTANTIATE_TEST_CASE_P(DifferentEwaldCoeffLJ,
-                        PmeSolveTest,
-                        ::testing::Combine(c_inputBoxes,
-                                           c_inputGridSizes,
-                                           c_inputGrids,
-                                           c_inputEpsilon_r,
-                                           c_inputEwaldCoeff_q,
-                                           ::testing::Values(2.35),
-                                           ::testing::Values(PmeSolveAlgorithm::LennardJones)));
+INSTANTIATE_TEST_SUITE_P(DifferentEwaldCoeffLJ,
+                         PmeSolveTest,
+                         ::testing::Combine(c_inputBoxes,
+                                            c_inputGridSizes,
+                                            c_inputGrids,
+                                            c_inputEpsilon_r,
+                                            c_inputEwaldCoeff_q,
+                                            ::testing::Values(2.35),
+                                            ::testing::Values(PmeSolveAlgorithm::LennardJones)));
 
 //! A few more instances to check that different epsilon_r actually affects results of all solvers
-INSTANTIATE_TEST_CASE_P(DifferentEpsilonR,
-                        PmeSolveTest,
-                        ::testing::Combine(c_inputBoxes,
-                                           c_inputGridSizes,
-                                           c_inputGrids,
-                                           testing::Values(1.9),
-                                           c_inputEwaldCoeff_q,
-                                           c_inputEwaldCoeff_lj,
-                                           c_inputMethods));
+INSTANTIATE_TEST_SUITE_P(DifferentEpsilonR,
+                         PmeSolveTest,
+                         ::testing::Combine(c_inputBoxes,
+                                            c_inputGridSizes,
+                                            c_inputGrids,
+                                            testing::Values(1.9),
+                                            c_inputEwaldCoeff_q,
+                                            c_inputEwaldCoeff_lj,
+                                            c_inputMethods));
 
 } // namespace
 } // namespace test

@@ -389,7 +389,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
 // Run test on pre-determined set of combinations for test parameters, which include the numbers of SETTLEs (water
 // molecules), whether or not velocities are updated and virial contribution is computed, was the PBC enabled.
 // The test will cycle through all available runners, including CPU and, if applicable, GPU implementations of SETTLE.
-INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(WithParameters, SettleTest, ::testing::ValuesIn(parametersSets));
 
 } // namespace
 } // namespace test

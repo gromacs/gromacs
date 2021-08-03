@@ -188,7 +188,7 @@ public:
     NonConstValueType ma[aSize] = { ValueType(1.2), ValueType(2.4), ValueType(3.1) };
 };
 
-TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
+TYPED_TEST_SUITE(ArrayRefTest, ArrayRefTypes);
 
 
 TYPED_TEST(ArrayRefTest, MakeWithAssignmentWorks)

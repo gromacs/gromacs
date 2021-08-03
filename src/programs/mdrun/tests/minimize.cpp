@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,14 +181,14 @@ std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 // OpenCL builds. However, once that compilation is cached for the
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
-INSTANTIATE_TEST_CASE_P(MinimizersWorkWithConstraints,
-                        EnergyMinimizationTest,
-                        ::testing::Combine(::testing::ValuesIn(constrainedSystemsToTest_g),
-                                           ::testing::ValuesIn(minimizersToTestWithConstraints_g)));
-INSTANTIATE_TEST_CASE_P(MinimizersWork,
-                        EnergyMinimizationTest,
-                        ::testing::Combine(::testing::ValuesIn(unconstrainedSystemsToTest_g),
-                                           ::testing::ValuesIn(minimizersToTest_g)));
+INSTANTIATE_TEST_SUITE_P(MinimizersWorkWithConstraints,
+                         EnergyMinimizationTest,
+                         ::testing::Combine(::testing::ValuesIn(constrainedSystemsToTest_g),
+                                            ::testing::ValuesIn(minimizersToTestWithConstraints_g)));
+INSTANTIATE_TEST_SUITE_P(MinimizersWork,
+                         EnergyMinimizationTest,
+                         ::testing::Combine(::testing::ValuesIn(unconstrainedSystemsToTest_g),
+                                            ::testing::ValuesIn(minimizersToTest_g)));
 
 } // namespace
 } // namespace test

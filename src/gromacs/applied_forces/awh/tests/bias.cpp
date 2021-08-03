@@ -217,14 +217,14 @@ TEST_P(BiasTest, ForcesBiasPmf)
  * It would be nice if the test would explicitly check for this.
  * Currently this is tested through identical reference data.
  */
-INSTANTIATE_TEST_CASE_P(WithParameters,
-                        BiasTest,
-                        ::testing::Combine(::testing::Values(AwhHistogramGrowthType::Linear,
-                                                             AwhHistogramGrowthType::ExponentialLinear),
-                                           ::testing::Values(AwhPotentialType::Umbrella,
-                                                             AwhPotentialType::Convolved),
-                                           ::testing::Values(BiasParams::DisableUpdateSkips::yes,
-                                                             BiasParams::DisableUpdateSkips::no)));
+INSTANTIATE_TEST_SUITE_P(WithParameters,
+                         BiasTest,
+                         ::testing::Combine(::testing::Values(AwhHistogramGrowthType::Linear,
+                                                              AwhHistogramGrowthType::ExponentialLinear),
+                                            ::testing::Values(AwhPotentialType::Umbrella,
+                                                              AwhPotentialType::Convolved),
+                                            ::testing::Values(BiasParams::DisableUpdateSkips::yes,
+                                                              BiasParams::DisableUpdateSkips::no)));
 
 // Test that we detect coverings and exit the initial stage at the correct step
 TEST(BiasTest, DetectsCovering)

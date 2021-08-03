@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,19 +155,19 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
 }
 
 #if !GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(CheckpointCoordinatesAreSane,
-                        CheckpointCoordinatesSanityChecks,
-                        ::testing::Combine(::testing::Values("spc2"),
-                                           ::testing::Values("md", "md-vv"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("no")));
+INSTANTIATE_TEST_SUITE_P(CheckpointCoordinatesAreSane,
+                         CheckpointCoordinatesSanityChecks,
+                         ::testing::Combine(::testing::Values("spc2"),
+                                            ::testing::Values("md", "md-vv"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("no")));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_CheckpointCoordinatesAreSane,
-                        CheckpointCoordinatesSanityChecks,
-                        ::testing::Combine(::testing::Values("spc2"),
-                                           ::testing::Values("md", "md-vv"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("no")));
+INSTANTIATE_TEST_SUITE_P(DISABLED_CheckpointCoordinatesAreSane,
+                         CheckpointCoordinatesSanityChecks,
+                         ::testing::Combine(::testing::Values("spc2"),
+                                            ::testing::Values("md", "md-vv"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("no")));
 #endif
 
 } // namespace

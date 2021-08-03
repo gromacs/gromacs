@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011,2012,2013,2014,2015 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -334,7 +334,7 @@ typedef AnalysisDataCommonTest<SimpleInputData> AnalysisDataSimpleTest;
 typedef AnalysisDataCommonTest<MultipointInputData> AnalysisDataMultipointTest;
 //! List of input data types for tests applicable to all types of data.
 typedef ::testing::Types<SimpleInputData, DataSetsInputData, MultipointInputData, MultipointDataSetsInputData> AllInputDataTypes;
-TYPED_TEST_CASE(AnalysisDataCommonTest, AllInputDataTypes);
+TYPED_TEST_SUITE(AnalysisDataCommonTest, AllInputDataTypes);
 
 /*
  * Tests that data is forwarded correctly to modules using two independent

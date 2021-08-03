@@ -207,16 +207,16 @@ TEST_P(MtsComparisonTest, WithinTolerances)
                     MaxNumFrames::compareAllFrames());
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         MultipleTimeSteppingIsNearSingleTimeStepping,
         MtsComparisonTest,
         ::testing::Combine(::testing::Values("ala"),
                            ::testing::Values("longrange-nonbonded",
                                              "longrange-nonbonded nonbonded pair dihedral")));
 
-INSTANTIATE_TEST_CASE_P(MultipleTimeSteppingIsNearSingleTimeSteppingPull,
-                        MtsComparisonTest,
-                        ::testing::Combine(::testing::Values("spc2"), ::testing::Values("pull")));
+INSTANTIATE_TEST_SUITE_P(MultipleTimeSteppingIsNearSingleTimeSteppingPull,
+                         MtsComparisonTest,
+                         ::testing::Combine(::testing::Values("spc2"), ::testing::Values("pull")));
 
 } // namespace
 } // namespace test

@@ -117,11 +117,13 @@ TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
 // coordinates. It's better to run the tests only in single than not
 // have the tests.
 #if !GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         SinglePeptideFragments,
         EditconfTest,
         ::testing::Combine(::testing::Values("fragment1.pdb", "fragment1.gro", "fragment1.g96"),
                            ::testing::Values(efPDB, efGRO, efG96)));
+#else
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EditconfTest);
 #endif
 
 } // namespace

@@ -657,7 +657,7 @@ TEST_P(EnergyOutputTest, CheckOutput)
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-INSTANTIATE_TEST_CASE_P(WithParameters, EnergyOutputTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(WithParameters, EnergyOutputTest, ::testing::ValuesIn(parametersSets));
 
 } // namespace
 } // namespace test

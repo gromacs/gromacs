@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ public:
     }
 
 private:
-    std::string getFileSuffix(const char* type)
+    static std::string getFileSuffix(const char* type)
     {
         return std::string(type) + "." + ftp2ext(GetParam());
     }
@@ -206,8 +206,8 @@ TEST_P(StructureIORoundtripTest, ReadWriteTpsConf)
     writeTestFileAndTest();
 }
 
-INSTANTIATE_TEST_CASE_P(WithDifferentFormats,
-                        StructureIORoundtripTest,
-                        ::testing::Values(efGRO, efG96, efPDB, efESP));
+INSTANTIATE_TEST_SUITE_P(WithDifferentFormats,
+                         StructureIORoundtripTest,
+                         ::testing::Values(efGRO, efG96, efPDB, efESP));
 
 } // namespace

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,7 @@ public:
 
 using ArrayRefTypes =
         ::testing::Types<ArrayRef<SimdReal>, ArrayRef<const SimdReal>, ArrayRef<SimdInt32>, ArrayRef<const SimdInt32>>;
-TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
+TYPED_TEST_SUITE(ArrayRefTest, ArrayRefTypes);
 
 TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
 {
@@ -185,7 +185,7 @@ template<typename TypeParam>
 using ArrayRefReadWriteTest = ArrayRefTest<TypeParam>;
 
 using ArrayRefReadWriteTypes = ::testing::Types<ArrayRef<SimdReal>, ArrayRef<SimdInt32>>;
-TYPED_TEST_CASE(ArrayRefReadWriteTest, ArrayRefReadWriteTypes);
+TYPED_TEST_SUITE(ArrayRefReadWriteTest, ArrayRefReadWriteTypes);
 
 TYPED_TEST(ArrayRefReadWriteTest, Assignment)
 {
@@ -217,7 +217,7 @@ using ArrayRefArithmeticTypes = ::testing::Types<ArrayRef<SimdReal>
                                                  ArrayRef<SimdInt32>
 #        endif
                                                  >;
-TYPED_TEST_CASE(ArrayRefArithmeticTest, ArrayRefArithmeticTypes);
+TYPED_TEST_SUITE(ArrayRefArithmeticTest, ArrayRefArithmeticTypes);
 
 TYPED_TEST(ArrayRefArithmeticTest, Basic)
 {

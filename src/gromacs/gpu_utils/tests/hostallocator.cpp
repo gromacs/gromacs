@@ -149,7 +149,7 @@ struct HostAllocatorTest : HostMemoryTest<T>
 {
     using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
 };
-TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
+TYPED_TEST_SUITE(HostAllocatorTest, TestTypes);
 
 //! Typed test fixture (no mem/gpu initializtion - much faster)
 template<typename T>
@@ -157,7 +157,7 @@ struct HostAllocatorTestNoMem : ::testing::Test
 {
     using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
 };
-TYPED_TEST_CASE(HostAllocatorTestNoMem, TestTypes);
+TYPED_TEST_SUITE(HostAllocatorTestNoMem, TestTypes);
 
 //! Typed test fixture for tests requiring a copyable type
 template<typename T>
@@ -167,12 +167,12 @@ struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T>
 //! The types used in testing minus move only types
 using TestTypesCopyable = ::testing::Types<int32_t, real, RVec>;
 
-TYPED_TEST_CASE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
+TYPED_TEST_SUITE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
 
 //! Typed test fixture for tests requiring a copyable type
 template<typename T>
 using HostAllocatorTestCopyable = HostAllocatorTest<T>;
-TYPED_TEST_CASE(HostAllocatorTestCopyable, TestTypesCopyable);
+TYPED_TEST_SUITE(HostAllocatorTestCopyable, TestTypesCopyable);
 
 // Note that in GoogleTest typed tests, the use of TestFixture:: and
 // this-> is sometimes required to get access to things in the fixture
@@ -370,7 +370,7 @@ TEST(HostAllocatorUntypedTest, Comparison)
 using AllocatorTypesToTest =
         ::testing::Types<HostAllocator<real>, HostAllocator<int32_t>, HostAllocator<RVec>, HostAllocator<MoveOnly>>;
 
-TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
+TYPED_TEST_SUITE(AllocatorTest, AllocatorTypesToTest);
 
 } // namespace test
 } // namespace gmx

@@ -183,7 +183,7 @@ TEST_P(EwaldSurfaceTermTest, WithinTolerances)
 std::vector<std::string> surfaceTerm = { "3DC", "epsilon-surface-constraint", "epsilon-surface" };
 //! \}
 
-INSTANTIATE_TEST_CASE_P(EwaldSurfaceTerm, EwaldSurfaceTermTest, ::testing::ValuesIn(surfaceTerm));
+INSTANTIATE_TEST_SUITE_P(EwaldSurfaceTerm, EwaldSurfaceTermTest, ::testing::ValuesIn(surfaceTerm));
 
 } // namespace
 } // namespace test

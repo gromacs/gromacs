@@ -156,7 +156,7 @@ TEST_P(FreeEnergyParameterTest, CorrectLambdas)
                           currentLambdas(GetParam().step, getFepVals(), GetParam().currentLambdaState)));
 }
 
-INSTANTIATE_TEST_CASE_P(WithParameters, FreeEnergyParameterTest, ::testing::ValuesIn(freeEnergyParameterSets));
+INSTANTIATE_TEST_SUITE_P(WithParameters, FreeEnergyParameterTest, ::testing::ValuesIn(freeEnergyParameterSets));
 
 } // namespace
 

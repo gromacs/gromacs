@@ -202,9 +202,9 @@ class MdrunTestFixtureBase : public ::testing::Test
 {
 public:
     //! Per-test-case setup for lengthy processes that need run only once.
-    static void SetUpTestCase();
+    static void SetUpTestSuite();
     //! Per-test-case tear down
-    static void TearDownTestCase();
+    static void TearDownTestSuite();
 
     MdrunTestFixtureBase();
     ~MdrunTestFixtureBase() override;

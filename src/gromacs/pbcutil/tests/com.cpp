@@ -206,15 +206,15 @@ TEST_P(COMInPlaceTest, MatrixDefault)
     runTestResidue(box);
 }
 
-INSTANTIATE_TEST_CASE_P(CorrectCoordinates,
-                        COMInPlaceTest,
-                        testing::Combine(::testing::Values(UnitCellType::Compact,
-                                                           UnitCellType::Rectangular,
-                                                           UnitCellType::Triclinic),
-                                         ::testing::Values(CenteringType::Rectangular,
-                                                           CenteringType::Triclinic,
-                                                           CenteringType::Zero),
-                                         ::testing::Values(PbcType::No, PbcType::Xyz, PbcType::XY)));
+INSTANTIATE_TEST_SUITE_P(CorrectCoordinates,
+                         COMInPlaceTest,
+                         testing::Combine(::testing::Values(UnitCellType::Compact,
+                                                            UnitCellType::Rectangular,
+                                                            UnitCellType::Triclinic),
+                                          ::testing::Values(CenteringType::Rectangular,
+                                                            CenteringType::Triclinic,
+                                                            CenteringType::Zero),
+                                          ::testing::Values(PbcType::No, PbcType::Xyz, PbcType::XY)));
 
 // TODO add PbcType::Screw once it is fully supported.
 

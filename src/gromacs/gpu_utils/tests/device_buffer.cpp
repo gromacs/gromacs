@@ -99,7 +99,7 @@ class DeviceBufferTest : public ::testing::Test
 };
 
 using TypeParamList = testing::Types<short, int, float, double, gmx::RVec>;
-TYPED_TEST_CASE(DeviceBufferTest, TypeParamList);
+TYPED_TEST_SUITE(DeviceBufferTest, TypeParamList);
 
 TYPED_TEST(DeviceBufferTest, CanAllocateAndFreeDeviceBuffer)
 {

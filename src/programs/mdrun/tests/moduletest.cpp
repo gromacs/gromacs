@@ -344,7 +344,7 @@ MPI_Comm MdrunTestFixtureBase::communicator_ = MPI_COMM_NULL;
 std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::hwinfo_;
 
 // static
-void MdrunTestFixtureBase::SetUpTestCase()
+void MdrunTestFixtureBase::SetUpTestSuite()
 {
     communicator_ = MPI_COMM_WORLD;
     auto newHwinfo =
@@ -353,7 +353,7 @@ void MdrunTestFixtureBase::SetUpTestCase()
 }
 
 // static
-void MdrunTestFixtureBase::TearDownTestCase()
+void MdrunTestFixtureBase::TearDownTestSuite()
 {
     hwinfo_.reset(nullptr);
 }

@@ -590,10 +590,10 @@ TEST_P(ConstraintsTest, ConstraintsTest)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(WithParameters,
-                        ConstraintsTest,
-                        ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
-                                           ::testing::ValuesIn(c_pbcs)));
+INSTANTIATE_TEST_SUITE_P(WithParameters,
+                         ConstraintsTest,
+                         ::testing::Combine(::testing::ValuesIn(c_constraintsTestSystemList),
+                                            ::testing::ValuesIn(c_pbcs)));
 
 } // namespace
 } // namespace test

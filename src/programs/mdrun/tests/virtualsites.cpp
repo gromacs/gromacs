@@ -620,7 +620,7 @@ TEST_P(VirtualSiteTest, WithinToleranceOfReference)
             runner_.fullPrecisionTrajectoryFileName_, virtualSites, tolerance);
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         VelocitiesConformToExpectations,
         VirtualSiteTest,
         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),

@@ -178,10 +178,10 @@ std::vector<RefCoordScaling> c_refCoordScalingForTests = { RefCoordScaling::No,
                                                            RefCoordScaling::Com,
                                                            RefCoordScaling::All };
 
-INSTANTIATE_TEST_CASE_P(PosResBasicTest,
-                        PositionRestraintsTest,
-                        ::testing::Combine(::testing::ValuesIn(c_refCoordScalingForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(PosResBasicTest,
+                         PositionRestraintsTest,
+                         ::testing::Combine(::testing::ValuesIn(c_refCoordScalingForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
 } // namespace
 

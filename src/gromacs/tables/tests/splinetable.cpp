@@ -370,7 +370,7 @@ double pmeCorrDerivative(double r)
 /*! \brief Typed-test list. We test QuadraticSplineTable and CubicSplineTable
  */
 typedef ::testing::Types<QuadraticSplineTable, CubicSplineTable> SplineTableTypes;
-TYPED_TEST_CASE(SplineTableTest, SplineTableTypes);
+TYPED_TEST_SUITE(SplineTableTest, SplineTableTypes);
 
 
 TYPED_TEST(SplineTableTest, HandlesIncorrectInput)

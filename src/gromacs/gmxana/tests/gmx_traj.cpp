@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,6 @@ const char* const trajectoryFileNames[] = { "spc2-traj.trr",
                                             "spc2-traj.xtc", "spc2-traj.gro",
                                             "spc2-traj.pdb", "spc2-traj.g96" };
 
-INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom, GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
+INSTANTIATE_TEST_SUITE_P(NoFatalErrorWhenWritingFrom, GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
 
 } // namespace

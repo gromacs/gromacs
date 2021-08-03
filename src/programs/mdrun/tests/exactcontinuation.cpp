@@ -456,7 +456,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 // tests can run in such configurations.
 #if !GMX_GPU_OPENCL
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         NormalIntegrators,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12", "spc2", "alanine_vsite_vacuo"),
@@ -465,15 +465,15 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values("no"),
                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(NormalIntegratorsWithFEP,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                           ::testing::Values("md", "md-vv", "bd", "sd"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values(MdpParameterDatabase::Default)));
+INSTANTIATE_TEST_SUITE_P(NormalIntegratorsWithFEP,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                            ::testing::Values("md", "md-vv", "bd", "sd"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         NVT,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12"),
@@ -482,7 +482,7 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values("no"),
                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         NPH,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12"),
@@ -491,7 +491,7 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         NPT,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12"),
@@ -500,30 +500,32 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values("berendsen", "parrinello-rahman", "C-rescale"),
                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(MTTK,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("argon12"),
-                                           ::testing::Values("md-vv"),
-                                           ::testing::Values("nose-hoover"),
-                                           ::testing::Values("mttk"),
-                                           ::testing::Values(MdpParameterDatabase::Default)));
+INSTANTIATE_TEST_SUITE_P(MTTK,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("argon12"),
+                                            ::testing::Values("md-vv"),
+                                            ::testing::Values("nose-hoover"),
+                                            ::testing::Values("mttk"),
+                                            ::testing::Values(MdpParameterDatabase::Default)));
 
-INSTANTIATE_TEST_CASE_P(Pull,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("spc2"),
-                                           ::testing::Values("md", "md-vv"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values(MdpParameterDatabase::Pull)));
+INSTANTIATE_TEST_SUITE_P(Pull,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("spc2"),
+                                            ::testing::Values("md", "md-vv"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values(MdpParameterDatabase::Pull)));
 
-INSTANTIATE_TEST_CASE_P(Awh,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("alanine_vacuo"),
-                                           ::testing::Values("md", "md-vv"),
-                                           ::testing::Values("v-rescale"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values(MdpParameterDatabase::Awh)));
+INSTANTIATE_TEST_SUITE_P(Awh,
+                         MdrunNoAppendContinuationIsExact,
+                         ::testing::Combine(::testing::Values("alanine_vacuo"),
+                                            ::testing::Values("md", "md-vv"),
+                                            ::testing::Values("v-rescale"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values(MdpParameterDatabase::Awh)));
 
+#else
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MdrunNoAppendContinuationIsExact);
 #endif
 
 } // namespace

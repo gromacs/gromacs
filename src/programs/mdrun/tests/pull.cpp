@@ -211,12 +211,12 @@ TEST_P(PullIntegrationTest, WithinTolerances)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(PullTest,
-                        PullIntegrationTest,
-                        ::testing::Combine(::testing::Values("spc216"),
-                                           ::testing::Values("umbrella-3D",
-                                                             "umbrella-2D",
-                                                             "constraint-flatbottom")));
+INSTANTIATE_TEST_SUITE_P(PullTest,
+                         PullIntegrationTest,
+                         ::testing::Combine(::testing::Values("spc216"),
+                                            ::testing::Values("umbrella-3D",
+                                                              "umbrella-2D",
+                                                              "constraint-flatbottom")));
 
 } // namespace
 } // namespace test

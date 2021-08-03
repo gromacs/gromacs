@@ -468,25 +468,27 @@ using ::testing::ValuesIn;
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if !GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(BasicPropagators,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(PropagatorsWithCoupling,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(PropagatorsWithConstraints,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithConstraints()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(BasicPropagators,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(PropagatorsWithCoupling,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(PropagatorsWithConstraints,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(propagationParametersWithConstraints()),
+                                 Values(outputParameters)));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_BasicPropagators,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithCoupling,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithConstraints,
-                        PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithConstraints()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(DISABLED_BasicPropagators,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(DISABLED_PropagatorsWithCoupling,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
+INSTANTIATE_TEST_SUITE_P(DISABLED_PropagatorsWithConstraints,
+                         PeriodicActionsTest,
+                         Combine(ValuesIn(propagationParametersWithConstraints()),
+                                 Values(outputParameters)));
 #endif
 
 } // namespace

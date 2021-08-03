@@ -78,7 +78,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
 public:
     PmeBSplineModuliTest() = default;
     //! The whole logic being tested is contained here
-    void runTest()
+    static void runTest()
     {
         /* Getting the input */
         const BSplineModuliInputParameters parameters = GetParam();
@@ -159,7 +159,7 @@ std::vector<BSplineModuliInputParameters> const invalidInputs{
 };
 
 /*! \brief Instantiation of the PME B-spline moduli creation test with invalid input */
-INSTANTIATE_TEST_CASE_P(InsaneInput, PmeBSplineModuliFailureTest, ::testing::ValuesIn(invalidInputs));
+INSTANTIATE_TEST_SUITE_P(InsaneInput, PmeBSplineModuliFailureTest, ::testing::ValuesIn(invalidInputs));
 
 /* Valid input instances */
 
@@ -167,11 +167,11 @@ INSTANTIATE_TEST_CASE_P(InsaneInput, PmeBSplineModuliFailureTest, ::testing::Val
 std::vector<IVec> const sampleGridSizes{ IVec{ 64, 32, 64 }, IVec{ 57, 84, 29 } };
 
 /*! \brief Instantiation of the PME B-spline moduli creation test with valid input - up to order of 8 */
-INSTANTIATE_TEST_CASE_P(SaneInput1,
-                        PmeBSplineModuliCorrectnessTest,
-                        ::testing::Combine(::testing::ValuesIn(sampleGridSizes),
-                                           ::testing::Range(3, 8 + 1),
-                                           ::testing::Values(ModuliType::PME, ModuliType::P3M)));
+INSTANTIATE_TEST_SUITE_P(SaneInput1,
+                         PmeBSplineModuliCorrectnessTest,
+                         ::testing::Combine(::testing::ValuesIn(sampleGridSizes),
+                                            ::testing::Range(3, 8 + 1),
+                                            ::testing::Values(ModuliType::PME, ModuliType::P3M)));
 } // namespace
 } // namespace test
 } // namespace gmx

@@ -1,68 +1,21 @@
 This directory contains source code for Google C++ Testing and Mocking
 Frameworks.
 
-The code has been copied nearly verbatim from the GoogleTest 1.8.1
-git tag by copying the following files/directories recursively:
-
-README.md
-googletest
-googlemock
-
-However, the following files/subdirectories were excluded because they
-are unneeded for GROMACS:
-
-*.pump
-googletest/configure.ac
-googletest/Makefile.am
-googletest/codegear
-googletest/msvc
-googletest/m4
-googletest/xcode
-googletest/test
-googletest/scripts
-googletest/samples
+The code has been copied verbatim from the GoogleTest git commit with
+hash 96f4ce0 by copying the following files/directories recursively.
+No files were omitted or changed, consistent with the live-at-head
+philosophy followed by GoogleTest.
 
 This README.Gromacs file is new, of course.
 
-The top-level CMakeLists.txt has enable_testing() commented out, as we
-do not intend to test GoogleTest as part of a GROMACS build.
+Conditional compilation based on __clang_analyzer__ is used to work
+around reports from the clang static analyzer in
+googletest/include/gtest/gtest-matchers.h and
+googlemock/include/gmock/gmock-matchers.h.
 
-The CMakeLists.txt files in googletest and googlemock have declared
-their include directories as SYSTEM INTERFACE (not just INTERFACE) so
-that compilers will include such headers with e.g. -isystem, so that
-they will not generate warnings from such headers included in GROMACS
-test code.
+Some warning-generation flags are removed from
+googletest/cmake/internal_utils.cmake because these are not always
+supported by compilers.
 
-As gtest is not building libraries inside googletest/googletest/src,
-the link_directories command for that is removed.
-
-The googlemock/CMakeLists.txt no longer builds
-googletest/src/gtest-all.cc as part of the gmock target, because it is
-already built as part of the gtest target, and this leads to duplicate
-definitions of extern symbols declared in gtest headers. Added the
-link-time dependency of gmock upon gtest that is now required.
-
-The gmock_main executables and library are not created,
-because GROMACS does not use them.
-
-googletest-1.8.0 also assumes that streaming results to a socket is
-something you can always do on Linux, but the implementation uses
-getaddrinfo(), about which the Cray linker warns because its use would
-require shared libraries at run time. Since GROMACS testing doesn't
-use this feature, we'd just want to turn it off, but there's no
-interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
-googletest/include/gtest/internal/gtest-port.h to allow the default
-behaviour to be applied only if the user hasn't gotten involved.
-
-Some compiler warnings cannot be suppressed through CMake machinery,
-such as for the clang static analyzer, and some lines are removed
-from consideration by wrapping with `#ifndef __clang_analyzer__`
-or marking them with `/*NOLINT*/` comment.
-... `#endif`. A suppression is added to internal_utils.cmake.
-
-GoogleTest declares quite old minimum CMake versions, which newer
-CMake versions warn about. In practice, the CMake version requirement
-for GROMACS is greater than these minimums, and that version will be
-used for GoogleTest also. The warnings aren't useful for GROMACS
-developers, so those declarations by GoogleTest have been commented
-out.
+A clang-tidy suppression has been added to
+googletest/include/gtest/internal/gtest-internal.h.

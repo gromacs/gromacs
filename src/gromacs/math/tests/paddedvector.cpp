@@ -81,7 +81,7 @@ using Implementations = ::testing::Types<std::allocator<int32_t>,
                                          AlignedAllocator<double>,
                                          AlignedAllocator<BasicVector<float>>,
                                          AlignedAllocator<BasicVector<double>>>;
-TYPED_TEST_CASE(PaddedVectorTest, Implementations);
+TYPED_TEST_SUITE(PaddedVectorTest, Implementations);
 
 TYPED_TEST(PaddedVectorTest, DefaultConstructorWorks)
 {

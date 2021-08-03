@@ -363,7 +363,7 @@ class FunctionTestIntegerTypes : public ::testing::Test
 };
 
 typedef ::testing::Types<char, unsigned char, int, unsigned int, long, unsigned long> IntegerTypes;
-TYPED_TEST_CASE(FunctionTestIntegerTypes, IntegerTypes);
+TYPED_TEST_SUITE(FunctionTestIntegerTypes, IntegerTypes);
 
 TYPED_TEST(FunctionTestIntegerTypes, IsPowerOfTwo)
 {

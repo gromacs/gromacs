@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ TEST_P(ImdTest, ImdCanRun)
 
 // Check a dynamical integrator and an energy minimizer. No need to
 // cover the whole space.
-INSTANTIATE_TEST_CASE_P(WithIntegrator, ImdTest, ::testing::Values("md", "steep"));
+INSTANTIATE_TEST_SUITE_P(WithIntegrator, ImdTest, ::testing::Values("md", "steep"));
 
 } // namespace test
 } // namespace gmx

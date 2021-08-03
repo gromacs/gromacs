@@ -53,6 +53,8 @@ function (gmx_add_unit_test_library NAME)
             # Some false positives exist produced by GoogleTest implementation
             gmx_target_warning_suppression(${NAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
             gmx_target_warning_suppression(${NAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+            # Use of GoogleMock can generate mock member functions that are unused
+            gmx_target_warning_suppression(${NAME} "-Wno-unused-member-function" HAS_WARNING_NO_UNUSED_MEMBER_FUNCTION)
             if(GMX_GPU_CUDA)
                 # CUDA headers target C, so use old-style casts that clang
                 # warns about when it is the host compiler
@@ -188,6 +190,8 @@ function (gmx_add_gtest_executable EXENAME)
             # Some false positives exist produced by GoogleTest implementation
             gmx_target_warning_suppression(${EXENAME} "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
             gmx_target_warning_suppression(${EXENAME} "-Wno-gnu-zero-variadic-macro-arguments" HAS_WARNING_NO_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+            # Use of GoogleMock can generate mock member functions that are unused
+            gmx_target_warning_suppression(${EXENAME} "-Wno-unused-member-function" HAS_WARNING_NO_UNUSED_MEMBER_FUNCTION)
             if(GMX_GPU_CUDA)
                 # CUDA headers target C, so use old-style casts that clang
                 # warns about when it is the host compiler

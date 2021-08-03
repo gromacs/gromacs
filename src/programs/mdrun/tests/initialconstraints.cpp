@@ -131,7 +131,7 @@ TEST_P(InitialConstraintsTest, Works)
 //! Integrators with energy conservation to test
 const EnergyIntegratorType c_integratorsToTest[] = { "md", "md-vv", "md-vv-avek" };
 
-INSTANTIATE_TEST_CASE_P(Checking, InitialConstraintsTest, ::testing::ValuesIn(c_integratorsToTest));
+INSTANTIATE_TEST_SUITE_P(Checking, InitialConstraintsTest, ::testing::ValuesIn(c_integratorsToTest));
 
 } // namespace
 } // namespace test

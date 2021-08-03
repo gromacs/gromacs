@@ -227,7 +227,7 @@ private:
 public:
     PmeGatherTest() = default;
     //! Sets the input atom data references and programs once
-    static void SetUpTestCase()
+    static void SetUpTestSuite()
     {
         size_t start = 0;
         for (auto atomCount : atomCounts)
@@ -258,7 +258,7 @@ public:
     }
 
     //! The test
-    void runTest()
+    static void runTest()
     {
         /* Getting the input */
         Matrix3x3                 box;
@@ -373,13 +373,13 @@ TEST_P(PmeGatherTest, ReproducesOutputs)
 }
 
 //! Instantiation of the PME gathering test
-INSTANTIATE_TEST_CASE_P(SaneInput,
-                        PmeGatherTest,
-                        ::testing::Combine(::testing::ValuesIn(c_sampleBoxes),
-                                           ::testing::ValuesIn(pmeOrders),
-                                           ::testing::ValuesIn(c_sampleGridSizes),
-                                           ::testing::ValuesIn(c_sampleGrids),
-                                           ::testing::ValuesIn(atomCounts)));
+INSTANTIATE_TEST_SUITE_P(SaneInput,
+                         PmeGatherTest,
+                         ::testing::Combine(::testing::ValuesIn(c_sampleBoxes),
+                                            ::testing::ValuesIn(pmeOrders),
+                                            ::testing::ValuesIn(c_sampleGridSizes),
+                                            ::testing::ValuesIn(c_sampleGrids),
+                                            ::testing::ValuesIn(atomCounts)));
 
 } // namespace
 } // namespace test

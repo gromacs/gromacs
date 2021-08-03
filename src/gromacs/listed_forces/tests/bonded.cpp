@@ -783,47 +783,47 @@ std::vector<PaddedVector<RVec>> c_coordinatesForTestsZeroAngle = {
 //! PBC values for testing
 std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
-INSTANTIATE_TEST_CASE_P(Bond,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputBonds),
-                                           ::testing::ValuesIn(c_coordinatesForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(Bond,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputBonds),
+                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(Angle,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputAngles),
-                                           ::testing::ValuesIn(c_coordinatesForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(Angle,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputAngles),
+                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(Dihedral,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputDihs),
-                                           ::testing::ValuesIn(c_coordinatesForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(Dihedral,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputDihs),
+                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(Polarize,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputPols),
-                                           ::testing::ValuesIn(c_coordinatesForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(Polarize,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputPols),
+                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(Restraints,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputRestraints),
-                                           ::testing::ValuesIn(c_coordinatesForTests),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(Restraints,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputRestraints),
+                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(BondZeroLength,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputBondsZeroLength),
-                                           ::testing::ValuesIn(c_coordinatesForTestsZeroBondLength),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(BondZeroLength,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputBondsZeroLength),
+                                            ::testing::ValuesIn(c_coordinatesForTestsZeroBondLength),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
-INSTANTIATE_TEST_CASE_P(AngleZero,
-                        ListedForcesTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
-                                           ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(AngleZero,
+                         ListedForcesTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
+                                            ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
 } // namespace
 

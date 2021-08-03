@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,20 +89,20 @@ TEST_P(MdrunCompressedXOutput, ExitsNormally)
     ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
-INSTANTIATE_TEST_CASE_P(WithDifferentOutputGroupSettings,
-                        MdrunCompressedXOutput,
-                        ::testing::Values( // Test writing the whole system via
-                                           // the default behaviour
-                                "",
+INSTANTIATE_TEST_SUITE_P(WithDifferentOutputGroupSettings,
+                         MdrunCompressedXOutput,
+                         ::testing::Values( // Test writing the whole system via
+                                            // the default behaviour
+                                 "",
 
-                                // Test writing the whole system
-                                // explicitly
-                                "compressed-x-grps = System\n",
+                                 // Test writing the whole system
+                                 // explicitly
+                                 "compressed-x-grps = System\n",
 
-                                // Test writing only part of the system.
-                                // It would be nice to check that this test
-                                // writes 3 atoms and the others write 6, but
-                                // that's not yet easy.
-                                "compressed-x-grps = SecondWaterMolecule\n"));
+                                 // Test writing only part of the system.
+                                 // It would be nice to check that this test
+                                 // writes 3 atoms and the others write 6, but
+                                 // that's not yet easy.
+                                 "compressed-x-grps = SecondWaterMolecule\n"));
 
 } // namespace

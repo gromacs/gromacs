@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,29 +106,31 @@ TEST_P(NoOptionalOutput, Works)
     prepareTest(GetParam());
 }
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported, SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported, SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleUnSupported, SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported, AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported, SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetVelocityUnSupportedFiles,
-                        ::testing::ValuesIn(setVelocityUnSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleUnSupported,
+                         SetVelocityUnSupportedFiles,
+                         ::testing::ValuesIn(setVelocityUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported, SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported, SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleUnSupported, SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported,
+                         SetPrecisionSupportedFiles,
+                         ::testing::ValuesIn(setPrecisionSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetPrecisionUnSupportedFiles,
-                        ::testing::ValuesIn(setPrecisionUnSupported));
+INSTANTIATE_TEST_SUITE_P(ModuleUnSupported,
+                         SetPrecisionUnSupportedFiles,
+                         ::testing::ValuesIn(setPrecisionUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported, NoOptionalOutput, ::testing::ValuesIn(anySupported));
+INSTANTIATE_TEST_SUITE_P(ModuleSupported, NoOptionalOutput, ::testing::ValuesIn(anySupported));
 } // namespace test
 
 } // namespace gmx

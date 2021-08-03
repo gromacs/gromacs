@@ -490,13 +490,13 @@ std::vector<PaddedVector<RVec>> c_coordinates = {
     { { 1.0, 1.0, 1.0 }, { 1.1, 1.15, 1.2 }, { 0.9, 0.85, 0.8 }, { 1.1, 1.15, 0.8 } }
 };
 
-INSTANTIATE_TEST_CASE_P(NBInteraction,
-                        NonbondedFepTest,
-                        ::testing::Combine(::testing::ValuesIn(c_interaction),
-                                           ::testing::ValuesIn(c_coordinates),
-                                           ::testing::ValuesIn(c_fepLambdas),
-                                           ::testing::ValuesIn(c_softcoreAlphas),
-                                           ::testing::ValuesIn(c_softcoreCoulomb)));
+INSTANTIATE_TEST_SUITE_P(NBInteraction,
+                         NonbondedFepTest,
+                         ::testing::Combine(::testing::ValuesIn(c_interaction),
+                                            ::testing::ValuesIn(c_coordinates),
+                                            ::testing::ValuesIn(c_fepLambdas),
+                                            ::testing::ValuesIn(c_softcoreAlphas),
+                                            ::testing::ValuesIn(c_softcoreCoulomb)));
 
 } // namespace
 

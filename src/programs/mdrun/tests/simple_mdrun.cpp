@@ -184,9 +184,12 @@ std::vector<std::string> systemsToTest_g = { "angles1" };
 std::vector<std::string> md_g            = { "md", "md-vv" };
 //! \}
 
-INSTANTIATE_TEST_CASE_P(Angles1,
-                        SimpleMdrunTest,
-                        ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::ValuesIn(md_g)));
+INSTANTIATE_TEST_SUITE_P(Angles1,
+                         SimpleMdrunTest,
+                         ::testing::Combine(::testing::ValuesIn(systemsToTest_g),
+                                            ::testing::ValuesIn(md_g)));
+#else
+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleMdrunTest);
 #endif
 } // namespace
 } // namespace test

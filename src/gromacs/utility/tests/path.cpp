@@ -118,19 +118,19 @@ TEST_P(PathSearchTest, SearchOperationsWork)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(WithInputPaths,
-                        PathSearchTest,
-                        testing::Values("",
-                                        "md.log",
-                                        "md",
-                                        "/tmp/absolute.txt",
-                                        "simpledir/traj.tng",
-                                        "simpledir/traj",
-                                        "windowsdir\\traj.tng",
-                                        "complex.dir/traj.tng",
-                                        "complex.dir/traj",
-                                        "nested/dir/conf.pdb",
-                                        "/tmp/absolutedir/conf.pdb"));
+INSTANTIATE_TEST_SUITE_P(WithInputPaths,
+                         PathSearchTest,
+                         testing::Values("",
+                                         "md.log",
+                                         "md",
+                                         "/tmp/absolute.txt",
+                                         "simpledir/traj.tng",
+                                         "simpledir/traj",
+                                         "windowsdir\\traj.tng",
+                                         "complex.dir/traj.tng",
+                                         "complex.dir/traj",
+                                         "nested/dir/conf.pdb",
+                                         "/tmp/absolutedir/conf.pdb"));
 
 } // namespace
 } // namespace test

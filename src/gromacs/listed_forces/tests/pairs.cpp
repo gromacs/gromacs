@@ -454,11 +454,11 @@ std::vector<PaddedVector<RVec>> c_coordinatesFor14Interaction = {
     { { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 }, { 1.1, 1.2, 1.3 } }
 };
 
-INSTANTIATE_TEST_CASE_P(14Interaction,
-                        ListedForcesPairsTest,
-                        ::testing::Combine(::testing::ValuesIn(c_14Interaction),
-                                           ::testing::ValuesIn(c_coordinatesFor14Interaction),
-                                           ::testing::ValuesIn(c_pbcForTests)));
+INSTANTIATE_TEST_SUITE_P(14Interaction,
+                         ListedForcesPairsTest,
+                         ::testing::Combine(::testing::ValuesIn(c_14Interaction),
+                                            ::testing::ValuesIn(c_coordinatesFor14Interaction),
+                                            ::testing::ValuesIn(c_pbcForTests)));
 
 } // namespace
 

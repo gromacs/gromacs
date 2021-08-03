@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,7 +146,7 @@ const Container g_unchangedOutputs = {
     "\t #\n",
     "   # not expected \n",
 };
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
         ParsesLinesDifferently,
         TextReaderTest,
         ::testing::Values(

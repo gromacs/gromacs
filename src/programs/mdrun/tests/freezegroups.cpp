@@ -219,10 +219,10 @@ TEST_P(FreezeGroupTest, WithinTolerances)
                       TrajectoryComparison::s_defaultTrajectoryTolerances);
 }
 
-INSTANTIATE_TEST_CASE_P(FreezeWorks,
-                        FreezeGroupTest,
-                        ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("no")));
+INSTANTIATE_TEST_SUITE_P(FreezeWorks,
+                         FreezeGroupTest,
+                         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
+                                            ::testing::Values("no"),
+                                            ::testing::Values("no")));
 } // namespace
 } // namespace gmx::test

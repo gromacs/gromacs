@@ -94,22 +94,22 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(InNvt,
-                        MultiSimTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
-                                                             NumRanksPerSimulation(2)),
-                                           ::testing::Values(IntegrationAlgorithm::MD),
-                                           ::testing::Values(TemperatureCoupling::VRescale),
-                                           ::testing::Values(PressureCoupling::No)));
+INSTANTIATE_TEST_SUITE_P(InNvt,
+                         MultiSimTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                              NumRanksPerSimulation(2)),
+                                            ::testing::Values(IntegrationAlgorithm::MD),
+                                            ::testing::Values(TemperatureCoupling::VRescale),
+                                            ::testing::Values(PressureCoupling::No)));
 #else
 // Test needs real MPI to run
-INSTANTIATE_TEST_CASE_P(DISABLED_InNvt,
-                        MultiSimTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
-                                                             NumRanksPerSimulation(2)),
-                                           ::testing::Values(IntegrationAlgorithm::MD),
-                                           ::testing::Values(TemperatureCoupling::VRescale),
-                                           ::testing::Values(PressureCoupling::No)));
+INSTANTIATE_TEST_SUITE_P(DISABLED_InNvt,
+                         MultiSimTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                              NumRanksPerSimulation(2)),
+                                            ::testing::Values(IntegrationAlgorithm::MD),
+                                            ::testing::Values(TemperatureCoupling::VRescale),
+                                            ::testing::Values(PressureCoupling::No)));
 #endif
 
 //! Convenience typedef
@@ -120,13 +120,13 @@ TEST_P(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenResta
     runMaxhTest();
 }
 
-INSTANTIATE_TEST_CASE_P(InNvt,
-                        MultiSimTerminationTest,
-                        ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
-                                                             NumRanksPerSimulation(2)),
-                                           ::testing::Values(IntegrationAlgorithm::MD),
-                                           ::testing::Values(TemperatureCoupling::VRescale),
-                                           ::testing::Values(PressureCoupling::No)));
+INSTANTIATE_TEST_SUITE_P(InNvt,
+                         MultiSimTerminationTest,
+                         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
+                                                              NumRanksPerSimulation(2)),
+                                            ::testing::Values(IntegrationAlgorithm::MD),
+                                            ::testing::Values(TemperatureCoupling::VRescale),
+                                            ::testing::Values(PressureCoupling::No)));
 
 } // namespace test
 } // namespace gmx

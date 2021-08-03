@@ -146,10 +146,10 @@ TEST_P(ProperDihedralTest, CheckListed)
     checkForcesAndEnergies();
 }
 
-INSTANTIATE_TEST_CASE_P(FourCenter,
-                        ProperDihedralTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputDihs),
-                                           ::testing::ValuesIn(c_coordinatesForTests)));
+INSTANTIATE_TEST_SUITE_P(FourCenter,
+                         ProperDihedralTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputDihs),
+                                            ::testing::ValuesIn(c_coordinatesForTests)));
 
 class HarmonicBondTest :
     public ListedForcesBase<HarmonicBondType>,
@@ -169,10 +169,10 @@ TEST_P(HarmonicBondTest, CheckListed)
     checkForcesAndEnergies();
 }
 
-INSTANTIATE_TEST_CASE_P(TwoCenter,
-                        HarmonicBondTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputHarmonicBond),
-                                           ::testing::ValuesIn(c_coordinatesForTests)));
+INSTANTIATE_TEST_SUITE_P(TwoCenter,
+                         HarmonicBondTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputHarmonicBond),
+                                            ::testing::ValuesIn(c_coordinatesForTests)));
 
 class HarmonicAngleTest :
     public ListedForcesBase<HarmonicAngle>,
@@ -193,9 +193,9 @@ TEST_P(HarmonicAngleTest, CheckListed)
     checkForcesAndEnergies();
 }
 
-INSTANTIATE_TEST_CASE_P(ThreeCenter,
-                        HarmonicAngleTest,
-                        ::testing::Combine(::testing::ValuesIn(c_InputHarmonicAngle),
-                                           ::testing::ValuesIn(c_coordinatesForTests)));
+INSTANTIATE_TEST_SUITE_P(ThreeCenter,
+                         HarmonicAngleTest,
+                         ::testing::Combine(::testing::ValuesIn(c_InputHarmonicAngle),
+                                            ::testing::ValuesIn(c_coordinatesForTests)));
 
 } // namespace nblib

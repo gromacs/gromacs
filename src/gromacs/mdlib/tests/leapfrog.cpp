@@ -270,7 +270,7 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     }
 }
 
-INSTANTIATE_TEST_CASE_P(WithParameters, LeapFrogTest, ::testing::ValuesIn(parametersSets));
+INSTANTIATE_TEST_SUITE_P(WithParameters, LeapFrogTest, ::testing::ValuesIn(parametersSets));
 
 } // namespace
 } // namespace test
