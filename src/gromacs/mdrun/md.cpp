@@ -1507,8 +1507,10 @@ void gmx::LegacySimulator::do_md()
                                     *md);
 
                     // Copy data to the GPU after buffers might have being reinitialized
-                    // coordinates have been copied already if PME or buffer ops has not needed it this step.
+                    /* The velocity copy is redundant if we had Center-of-Mass motion removed on
+                     * the previous step. We don't check that now. */
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
+                    // coordinates have been copied already if PME or buffer ops has not needed it this step.
                     const bool useGpuPmeOnThisRank = runScheduleWork->simulationWork.useGpuPme
                                                      && thisRankHasDuty(cr, DUTY_PME)
                                                      && runScheduleWork->stepWork.computeSlowForces;

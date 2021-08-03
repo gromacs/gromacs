@@ -230,14 +230,6 @@ public:
      */
     void copyVelocitiesToGpu(gmx::ArrayRef<const gmx::RVec> h_v, AtomLocality atomLocality);
 
-    /*! \brief Get the event synchronizer on the H2D velocities copy.
-     *
-     *  \param[in] atomLocality  Locality of the particles to wait for.
-     *
-     *  \returns  The event to synchronize the stream that consumes velocities on device.
-     */
-    GpuEventSynchronizer* getVelocitiesReadyOnDeviceEvent(AtomLocality atomLocality);
-
     /*! \brief Copy velocities from the GPU memory.
      *
      *  \param[in] h_v           Velocities buffer in the host memory.
@@ -353,8 +345,6 @@ private:
     //! An array of events that indicate D2H copy of coordinates is complete (one event for each atom locality)
     EnumerationArray<AtomLocality, GpuEventSynchronizer> xReadyOnHost_;
 
-    //! An array of events that indicate H2D copy of velocities is complete (one event for each atom locality)
-    EnumerationArray<AtomLocality, GpuEventSynchronizer> vReadyOnDevice_;
     //! An array of events that indicate D2H copy of velocities is complete (one event for each atom locality)
     EnumerationArray<AtomLocality, GpuEventSynchronizer> vReadyOnHost_;
 

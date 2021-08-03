@@ -417,17 +417,14 @@ void StatePropagatorDataGpu::Impl::copyVelocitiesToGpu(const gmx::ArrayRef<const
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
 
     copyToDevice(d_v_, h_v, d_vSize_, atomLocality, *deviceStream);
-    vReadyOnDevice_[atomLocality].markEvent(*deviceStream);
+    /* Not marking the event, because it is not used anywhere.
+     * Since we only use velocities on the device for update, and we launch the copy in
+     * the "update" stream, that should be safe.
+     */
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
-
-GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getVelocitiesReadyOnDeviceEvent(AtomLocality atomLocality)
-{
-    return &vReadyOnDevice_[atomLocality];
-}
-
 
 void StatePropagatorDataGpu::Impl::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec> h_v, AtomLocality atomLocality)
 {
@@ -635,11 +632,6 @@ void StatePropagatorDataGpu::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::
                                                  AtomLocality                         atomLocality)
 {
     return impl_->copyVelocitiesToGpu(h_v, atomLocality);
-}
-
-GpuEventSynchronizer* StatePropagatorDataGpu::getVelocitiesReadyOnDeviceEvent(AtomLocality atomLocality)
-{
-    return impl_->getVelocitiesReadyOnDeviceEvent(atomLocality);
 }
 
 void StatePropagatorDataGpu::copyVelocitiesFromGpu(gmx::ArrayRef<RVec> h_v, AtomLocality atomLocality)

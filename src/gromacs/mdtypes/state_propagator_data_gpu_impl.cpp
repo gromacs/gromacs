@@ -166,14 +166,6 @@ void StatePropagatorDataGpu::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::
                "GPU implementation.");
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::getVelocitiesReadyOnDeviceEvent(AtomLocality /* atomLocality */)
-{
-    GMX_ASSERT(!impl_,
-               "A CPU stub method from GPU state propagator data was called instead of one from "
-               "GPU implementation.");
-    return nullptr;
-}
-
 void StatePropagatorDataGpu::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec> /* h_v          */,
                                                    AtomLocality /* atomLocality */)
 {

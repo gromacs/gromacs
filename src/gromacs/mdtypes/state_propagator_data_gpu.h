@@ -169,6 +169,10 @@ public:
 
     /*! \brief Copy positions to the GPU memory.
      *
+     * Use \ref getCoordinatesReadyOnDeviceEvent to get the associated event synchronizer or
+     * \ref waitCoordinatesCopiedToDevice to wait for the copy completion.
+     * Note: the event is not marked in OpenCL, because it is not used.
+     *
      *  \param[in] h_x           Positions in the host memory.
      *  \param[in] atomLocality  Locality of the particles to copy.
      */
@@ -230,18 +234,12 @@ public:
 
     /*! \brief Copy velocities to the GPU memory.
      *
+     * Does not mark any event, because we don't use it anywhere at the moment.
+     *
      *  \param[in] h_v           Velocities in the host memory.
      *  \param[in] atomLocality  Locality of the particles to copy.
      */
     void copyVelocitiesToGpu(gmx::ArrayRef<const gmx::RVec> h_v, AtomLocality atomLocality);
-
-    /*! \brief Get the event synchronizer for the H2D velocities copy.
-     *
-     *  \param[in] atomLocality  Locality of the particles to wait for.
-     *
-     *  \returns  The event to synchronize the stream that consumes velocities on device.
-     */
-    GpuEventSynchronizer* getVelocitiesReadyOnDeviceEvent(AtomLocality atomLocality);
 
     /*! \brief Copy velocities from the GPU memory.
      *
