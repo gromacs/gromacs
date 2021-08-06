@@ -26,7 +26,8 @@ Using gitlab, new code enters GROMACS by merging git development branches into
 the master branch. 
 
 To automatically detect issues in new code, it is tested within continuous
-integration (CI) with a large combination of settings. 
+integration (CI) with a large combination of settings.
+See `gmx-codeformatting` for help meeting and testing the style guidelines.
 
 Setting up login credentials with gitlab
 ----------------------------------------
