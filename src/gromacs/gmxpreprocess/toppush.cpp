@@ -1727,18 +1727,31 @@ static int findNumberOfDihedralAtomMatches(const InteractionOfType&       bondTy
                                            const gmx::ArrayRef<const int> atomTypes)
 {
     GMX_RELEASE_ASSERT(atomTypes.size() == 4, "Dihedrals have 4 atom types");
-    if ((bondType.ai() == -1 || atomTypes[0] == bondType.ai())
-        && (bondType.aj() == -1 || atomTypes[1] == bondType.aj())
-        && (bondType.ak() == -1 || atomTypes[2] == bondType.ak())
-        && (bondType.al() == -1 || atomTypes[3] == bondType.al()))
+    const gmx::ArrayRef<const int> bondTypeAtomTypes = bondType.atoms();
+    GMX_RELEASE_ASSERT(bondTypeAtomTypes.size() == 4, "Dihedral types have 4 atom types");
+    int numExactMatches = 0;
+    if (std::equal(bondTypeAtomTypes.begin(),
+                   bondTypeAtomTypes.end(),
+                   atomTypes.begin(),
+                   [&numExactMatches](int bondTypeAtomType, int atomType) {
+                       if (bondTypeAtomType == atomType)
+                       {
+                           // Found an exact atom type match
+                           ++numExactMatches;
+                           return true;
+                       }
+                       else if (bondTypeAtomType == -1)
+                       {
+                           // Found a wildcard atom type match
+                           return true;
+                       }
+                       // Atom types do not match
+                       return false;
+                   }))
     {
-        return (bondType.ai() == -1 ? 0 : 1) + (bondType.aj() == -1 ? 0 : 1)
-               + (bondType.ak() == -1 ? 0 : 1) + (bondType.al() == -1 ? 0 : 1);
+        return numExactMatches;
     }
-    else
-    {
-        return -1;
-    }
+    return -1;
 }
 
 static std::vector<InteractionOfType>::iterator
@@ -1754,7 +1767,7 @@ defaultInteractionsOfType(int                               ftype,
         int nmatch_max = -1;
 
         /* For dihedrals we allow wildcards. We choose the first type
-         * that has the most real matches, i.e. non-wildcard matches.
+         * that has the most exact matches, i.e. non-wildcard matches.
          */
         auto prevPos = bondType[ftype].interactionTypes.end();
         auto pos     = bondType[ftype].interactionTypes.begin();
