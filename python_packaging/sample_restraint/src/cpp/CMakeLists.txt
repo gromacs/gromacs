@@ -11,9 +11,21 @@ add_library(gmxapi_extension_resources STATIC
 set_target_properties(gmxapi_extension_resources PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(gmxapi_extension_resources PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi_extension_resources PUBLIC
-                      Gromacs::libgromacs
-                      Gromacs::gmxapi)
+# Note that the sample_restraint project is generally built as its own (master) project,
+# but can be built within the GROMACS project build tree when GMX_PYTHON_PACKAGE=ON.
+# When build against an existing GROMACS installation, the target that provides the
+# restraint API headers is `Gromacs::libgromacs`. When built within the GROMACS build
+# tree, the target that provides the restraint API is `restraint`. This is subject to
+# change in the context of #3152 and #3288.
+if(GMXAPI_EXTENSION_MASTER_PROJECT)
+    target_link_libraries(gmxapi_extension_resources PUBLIC
+                          Gromacs::libgromacs
+                          Gromacs::gmxapi)
+else()
+    target_link_libraries(gmxapi_extension_resources PUBLIC
+                          restraint
+                          Gromacs::gmxapi)
+endif ()
 
 # Create an archive library for our restrained ensemble plugin.
 add_library(gmxapi_extension_ensemblepotential STATIC
@@ -34,8 +46,21 @@ set_target_properties(gmxapi_extension_ensemblepotential PROPERTIES BUILD_WITH_I
 
 target_link_libraries(gmxapi_extension_ensemblepotential PRIVATE
                       gmxapi_extension_resources
-                      Gromacs::libgromacs
                       Gromacs::gmxapi)
+
+# Note that the sample_restraint project is generally built as its own (master) project,
+# but can be built within the GROMACS project build tree when GMX_PYTHON_PACKAGE=ON.
+# When build against an existing GROMACS installation, the target that provides the
+# restraint API headers is `Gromacs::libgromacs`. When built within the GROMACS build
+# tree, the target that provides the restraint API is `restraint`. This is subject to
+# change in the context of #3152 and #3288.
+if(GMXAPI_EXTENSION_MASTER_PROJECT)
+    target_link_libraries(gmxapi_extension_ensemblepotential PUBLIC
+                          Gromacs::libgromacs)
+else()
+    target_link_libraries(gmxapi_extension_ensemblepotential PUBLIC
+                          restraint)
+endif()
 
 # Create an archive library for a test plugin.
 add_library(gmxapi_extension_test STATIC
@@ -49,7 +74,18 @@ target_include_directories(gmxapi_extension_test PUBLIC
 set_target_properties(gmxapi_extension_test PROPERTIES SKIP_BUILD_RPATH FALSE)
 set_target_properties(gmxapi_extension_test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 target_link_libraries(gmxapi_extension_test PRIVATE
-                      gmxapi_extension_resources)
-target_link_libraries(gmxapi_extension_test PUBLIC
-                      Gromacs::libgromacs
+                      gmxapi_extension_resources
                       Gromacs::gmxapi)
+# Note that the sample_restraint project is generally built as its own (master) project,
+# but can be built within the GROMACS project build tree when GMX_PYTHON_PACKAGE=ON.
+# When build against an existing GROMACS installation, the target that provides the
+# restraint API headers is `Gromacs::libgromacs`. When built within the GROMACS build
+# tree, the target that provides the restraint API is `restraint`. This is subject to
+# change in the context of #3152 and #3288.
+if(GMXAPI_EXTENSION_MASTER_PROJECT)
+    target_link_libraries(gmxapi_extension_test PRIVATE
+                          Gromacs::libgromacs)
+else()
+    target_link_libraries(gmxapi_extension_test PRIVATE
+                          restraint)
+endif()
