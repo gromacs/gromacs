@@ -49,6 +49,7 @@ RUN mkdir /home/jovyan/plugin-build && \
     GROMACS_DIR=/home/jovyan/install/gromacs gmxapi_DIR=/home/jovyan/install/gromacs \
         cmake ../sample_restraint -DPYTHON_EXECUTABLE=/opt/conda/bin/python && \
     LD_LIBRARY_PATH=/opt/conda/lib make && \
+    make tests && \
     make test && \
     make install) && \
     PYTHONPATH=plugin-build/src/pythonmodule CONDA_DIR=/opt/conda \

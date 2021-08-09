@@ -86,6 +86,7 @@ RUN . $VENV/bin/activate && \
              -DDOWNLOAD_GOOGLETEST=ON \
              -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON && \
      make -j4 && \
+     make tests && \
      make test && \
      make install \
     )

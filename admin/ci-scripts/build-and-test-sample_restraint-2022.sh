@@ -46,8 +46,7 @@ pushd python_packaging/sample_restraint
     cmake .. \
              -DDOWNLOAD_GOOGLETEST=ON \
              -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
-    make
-
+    make -j4 tests
     make test
     #TODO: Can we get ctest JUnitXML output here?
 

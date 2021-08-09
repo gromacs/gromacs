@@ -29,6 +29,4 @@ add_custom_target(gmxapi_extension_pytest
 # The current test fixtures require the `gmx` tool-wrapper executable.
 add_dependencies(gmxapi_extension_pytest gmx)
 
-add_dependencies(tests gmxapi_extension_histogram-test gmxapi_extension_bounding-test)
-
 add_dependencies(check gmxapi_extension_pytest)

@@ -93,16 +93,8 @@ endif ()
 # Note: Expects topol.tpr to be in CURRENT_BINARY_DUR
 configure_file(testingconfiguration.in.h testingconfiguration.h)
 
-# Test that the library can access its dependencies and build.
-add_executable(gmxapi_extension_library-test test_binding.cpp)
-add_dependencies(gmxapi_extension_library-test gmxapi_extension_spc2_water_box)
-target_include_directories(gmxapi_extension_library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(gmxapi_extension_library-test Gromacs::libgromacs Gromacs::gmxapi GTest::Main)
-gtest_add_tests(TARGET gmxapi_extension_library-test
-                TEST_LIST BasicPlugin)
-
 # Test the C++ force evaluation for the restrained-ensemble biasing potential.
-add_executable(gmxapi_extension_histogram-test test_histogram.cpp)
+add_executable(gmxapi_extension_histogram-test EXCLUDE_FROM_ALL test_histogram.cpp)
 add_dependencies(gmxapi_extension_histogram-test gmxapi_extension_spc2_water_box)
 target_include_directories(gmxapi_extension_histogram-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(gmxapi_extension_histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
@@ -112,7 +104,7 @@ gtest_add_tests(TARGET gmxapi_extension_histogram-test
                 TEST_LIST EnsembleHistogramPotentialPlugin)
 
 # Test the flat-bottom bounding potential built in to the ensemble restraint.
-add_executable(gmxapi_extension_bounding-test test_bounding_restraint.cpp)
+add_executable(gmxapi_extension_bounding-test EXCLUDE_FROM_ALL test_bounding_restraint.cpp)
 add_dependencies(gmxapi_extension_bounding-test gmxapi_extension_spc2_water_box)
 target_include_directories(gmxapi_extension_bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(gmxapi_extension_bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
@@ -121,6 +113,16 @@ target_link_libraries(gmxapi_extension_bounding-test gmxapi_extension_ensemblepo
 gtest_add_tests(TARGET gmxapi_extension_bounding-test
                 TEST_LIST EnsembleBoundingPotentialPlugin)
 
-if (NOT GMXAPI_EXTENSION_MASTER_PROJECT)
+# Like GROMACS, this project uses a `tests` target to avoid
+# building the tests unnecessarily (such as for the `install` target).
+# If built as part of the GROMACS build tree (GROMACS is the "master" project),
+# the `tests` target is defined by the parent project.
+# Otherwise (the MD plugin is the "master project"), we have to add
+# the `tests` target in this project.
+if (GMXAPI_EXTENSION_MASTER_PROJECT)
+    add_custom_target(tests)
+else()
     include(CMakeGROMACS.txt)
 endif ()
+
+add_dependencies(tests gmxapi_extension_histogram-test gmxapi_extension_bounding-test)

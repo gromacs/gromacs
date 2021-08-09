@@ -172,7 +172,8 @@ From the root directory of the GROMACS source, the sample_restraint source code 
     # cmake .. -DGMXPLUGIN_USER_INSTALL=ON -DPYTHON_EXECUTABLE=`which python3`
     # Build myplugin.
     make
-    # run C++ tests
+    # build and run C++ tests
+    make tests
     make test
     # optionally, install
     make install
