@@ -364,7 +364,7 @@ TEST_F(FFTTest3D, Real5_6_9)
     checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 }
 
-#if GMX_GPU
+#if GMX_GPU_CUDA || GMX_GPU_OPENCL
 TEST_F(FFTTest3D, GpuReal5_6_9)
 {
     // Ensure library resources are managed appropriately
