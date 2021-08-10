@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,6 +109,14 @@ void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const X
         // that would be useful to test (and in particular, not with every
         // output file).
         if (startsWith(line, "#"))
+        {
+            continue;
+        }
+        // Ignore ampersand dataset separators (for now)
+        // Later, when we need to test code that writes multiple
+        // datasets, we might want to introduce that new concept
+        // to this testing code.
+        if (startsWith(line, "&"))
         {
             continue;
         }

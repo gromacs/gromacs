@@ -374,6 +374,31 @@ void CommandLineTestHelper::setOutputFile(CommandLine*                args,
     impl_->outputFiles_.emplace_back(option, fullFilename, matcher.createFileMatcher());
 }
 
+void CommandLineTestHelper::setOutputFileWithGeneratedName(const char* filename,
+                                                           const ITextBlockMatcherSettings& matcher)
+{
+    setOutputFileWithGeneratedName(std::string(filename), TextFileMatch(matcher));
+}
+
+void CommandLineTestHelper::setOutputFileWithGeneratedName(std::string&& filename,
+                                                           const ITextBlockMatcherSettings& matcher)
+{
+    setOutputFileWithGeneratedName(std::move(filename), TextFileMatch(matcher));
+}
+
+void CommandLineTestHelper::setOutputFileWithGeneratedName(const char*                 filename,
+                                                           const IFileMatcherSettings& matcher)
+{
+    setOutputFileWithGeneratedName(std::string(filename), matcher);
+}
+
+void CommandLineTestHelper::setOutputFileWithGeneratedName(std::string&&               filename,
+                                                           const IFileMatcherSettings& matcher)
+{
+    impl_->outputFiles_.emplace_back(filename.c_str(), filename, matcher.createFileMatcher());
+    impl_->fileManager_.manageGeneratedOutputFile(std::move(filename));
+}
+
 void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
 {
     if (!impl_->outputFiles_.empty())
@@ -459,6 +484,30 @@ void CommandLineTestBase::setOutputFile(const char*                 option,
                                         const IFileMatcherSettings& matcher)
 {
     impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
+}
+
+void CommandLineTestBase::setOutputFileWithGeneratedName(const char*                      filename,
+                                                         const ITextBlockMatcherSettings& matcher)
+{
+    impl_->helper_.setOutputFileWithGeneratedName(std::string(filename), matcher);
+}
+
+void CommandLineTestBase::setOutputFileWithGeneratedName(std::string&&                    filename,
+                                                         const ITextBlockMatcherSettings& matcher)
+{
+    impl_->helper_.setOutputFileWithGeneratedName(std::move(filename), matcher);
+}
+
+void CommandLineTestBase::setOutputFileWithGeneratedName(const char*                 filename,
+                                                         const IFileMatcherSettings& matcher)
+{
+    impl_->helper_.setOutputFileWithGeneratedName(std::string(filename), matcher);
+}
+
+void CommandLineTestBase::setOutputFileWithGeneratedName(std::string&&               filename,
+                                                         const IFileMatcherSettings& matcher)
+{
+    impl_->helper_.setOutputFileWithGeneratedName(std::move(filename), matcher);
 }
 
 void CommandLineTestBase::setInputAndOutputFile(const char*                      option,
