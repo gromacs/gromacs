@@ -62,7 +62,6 @@ int ParticleSequencer::operator()(const MoleculeName& moleculeName,
     }
     catch (const std::out_of_range& outOfRange)
     {
-        // TODO: use string format function once we have it
         if (moleculeName.value() == residueName.value())
         {
             printf("No particle %s in residue %s in molecule %s found\n",

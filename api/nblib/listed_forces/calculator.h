@@ -95,17 +95,13 @@ public:
      */
     void compute(gmx::ArrayRef<const Vec3> coordinates, gmx::ArrayRef<Vec3> forces, bool usePbc = false);
 
-    //! Alternative overload with the energies in an output buffer
+    //! \brief Alternative overload with the energies in an output buffer
     void compute(gmx::ArrayRef<const Vec3> coordinates,
                  gmx::ArrayRef<Vec3>       forces,
                  EnergyType&               energies,
                  bool                      usePbc = false);
 
-    /*! \brief We need to declare the destructor here to move the (still default) implementation
-     *  to the .cpp file. Omitting this declaration would mean an inline destructor
-     *  which can't compile because the unique_ptr dtor needs ~ForceBuffer, which is not available
-     * here because it's incomplete.
-     */
+    //! \brief default, but moved to separate compilation unit
     ~ListedForceCalculator();
 
 private:

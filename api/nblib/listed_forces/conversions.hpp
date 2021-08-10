@@ -58,7 +58,7 @@ namespace nblib
 
 /*! this trait maps nblib InteractionTypes to the corresponding gmx enum
  *
- * @tparam InteractionType
+ * \tparam InteractionType
  */
 template<class InteractionType>
 struct ListedIndex
@@ -124,6 +124,7 @@ void transferParameters([[maybe_unused]] const InteractionData& interactionData,
 {
 }
 
+//! \brief Harmonic bond parameter conversion function
 template<>
 void transferParameters(const ListedTypeData<HarmonicBondType>& interactions, gmx_ffparams_t& gmx_params)
 {
@@ -136,6 +137,7 @@ void transferParameters(const ListedTypeData<HarmonicBondType>& interactions, gm
     }
 }
 
+//! \brief Harmonic angle parameter conversion function
 template<>
 void transferParameters(const ListedTypeData<HarmonicAngle>& interactions, gmx_ffparams_t& gmx_params)
 {
@@ -148,6 +150,7 @@ void transferParameters(const ListedTypeData<HarmonicAngle>& interactions, gmx_f
     }
 }
 
+//! \brief Proper dihedral parameter conversion function
 template<>
 void transferParameters(const ListedTypeData<ProperDihedral>& interactions, gmx_ffparams_t& gmx_params)
 {

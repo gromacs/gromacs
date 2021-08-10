@@ -62,7 +62,7 @@ using ParticleTypeName = StrongType<std::string, struct ParticleTypeNameParamete
 //! Named type for particle mass
 using Mass = StrongType<real, struct MassParameter>;
 
-// Shorthand for a map used for looking up non-bonded parameters using particle types
+//! Shorthand for a map used for looking up non-bonded parameters using particle types
 //! Named type for the C6 parameter in the Lennard-Jones potential
 using C6 = StrongType<real, struct C6Parameter>;
 //! Named type for the C12 parameter in the Lennard-Jones potential

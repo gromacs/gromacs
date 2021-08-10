@@ -51,6 +51,7 @@
 #include "nblib/simulationstate.h"
 #include "nblib/simulationstateimpl.h"
 #include "nblib/util/setup.h"
+#include "nblib/vector.h"
 
 namespace nblib
 {
