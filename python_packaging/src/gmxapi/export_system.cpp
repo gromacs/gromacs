@@ -44,6 +44,7 @@
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
+#include "gmxapi/version.h"
 
 #include "pycontext.h"
 #include "pysystem.h"
@@ -80,13 +81,7 @@ void export_system(py::module& m)
 
     // Export system container class
     py::class_<System, std::shared_ptr<System>> system(m, "MDSystem");
-    system.def("launch",
-               [](System* system, std::shared_ptr<PyContext> context) {
-                   auto work       = gmxapi::getWork(*system->get());
-                   auto newSession = context->launch(*work);
-                   return newSession;
-               },
-               "Launch the configured workflow in the provided context.");
+    system.def("launch", &launch, "Launch the configured workflow in the provided context.");
 
     // Module-level function
     m.def("from_tpr", &gmxpy::from_tpr,
