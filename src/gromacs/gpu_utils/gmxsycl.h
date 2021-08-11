@@ -94,8 +94,8 @@
 #endif
 
 /* Exposing Intel-specific extensions in a manner compatible with SYCL2020 provisional spec.
- * Despite ICPX (up to 2021.1.2 at the least) having SYCL_LANGUAGE_VERSION=202001,
- * some parts of the spec are still in custom sycl::ONEAPI namespace (sycl::intel in beta versions),
+ * Despite ICPX (up to 2021.3.0 at the least) having SYCL_LANGUAGE_VERSION=202001,
+ * some parts of the spec are still in custom sycl::ONEAPI namespace (sycl::ext::oneapi in beta versions),
  * and some functions have different names. To make things easier to upgrade
  * in the future, this thin layer is added.
  * */
@@ -104,7 +104,8 @@ namespace sycl_2020
 namespace detail
 {
 #if GMX_SYCL_DPCPP
-// Confirmed to work for 2021.1-beta10 (20201005), 2021.1.1 (20201113), 2021.1.2 (20201214).
+// Confirmed to work for 2021.1-beta10 (20201005) to 2021.3.0 (20210619).
+// Deprecated in favor of sycl::ext::oneapi on 20210717 in https://github.com/intel/llvm/commit/d703f578.
 namespace origin = cl::sycl::ONEAPI;
 #elif GMX_SYCL_HIPSYCL
 namespace origin = cl::sycl;

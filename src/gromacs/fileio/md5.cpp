@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2011,2012,2014 by the GROMACS development team.
- * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,9 @@
 
 #include "config.h"
 
+#include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #if GMX_INTEGER_BIG_ENDIAN
 #    define ARCH_IS_BIG_ENDIAN 1
@@ -207,7 +209,7 @@ static void md5_process(md5_state_t* pms, const md5_byte_t* data /*[64]*/)
              * On little-endian machines, we can process properly aligned
              * data without copying it.
              */
-            if (!((data - reinterpret_cast<const md5_byte_t*>(0)) & 3))
+            if ((reinterpret_cast<std::uintptr_t>(data) % std::alignment_of_v<md5_word_t>) == 0)
             {
                 /* data are properly aligned */
                 X = reinterpret_cast<const md5_word_t*>(data);
