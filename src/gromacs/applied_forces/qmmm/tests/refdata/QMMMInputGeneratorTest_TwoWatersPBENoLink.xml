@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Vector Name="QM Translation">
+    <Real Name="X">0.48699999</Real>
+    <Real Name="Y">-0.13333333</Real>
+    <Real Name="Z">0.27499998</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 1">
+    <Real Name="X">1</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 2">
+    <Real Name="X">0</Real>
+    <Real Name="Y">1</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 3">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">1</Real>
+  </Vector>
+  <String Name="Input">&amp;GLOBAL
+  PRINT_LEVEL LOW
+  PROJECT GROMACS
+  RUN_TYPE ENERGY_FORCE
+&amp;END GLOBAL
+&amp;FORCE_EVAL
+  METHOD QMMM
+  &amp;DFT
+    CHARGE 0
+    MULTIPLICITY 1
+    BASIS_SET_FILE_NAME  BASIS_MOLOPT
+    POTENTIAL_FILE_NAME  POTENTIAL
+    &amp;MGRID
+      NGRIDS 5
+      CUTOFF 450
+      REL_CUTOFF 50
+      COMMENSURATE
+    &amp;END MGRID
+    &amp;SCF
+      SCF_GUESS RESTART
+      EPS_SCF 5.0E-8
+      MAX_SCF 20
+      &amp;OT  T
+        MINIMIZER  DIIS
+        STEPSIZE   0.15
+        PRECONDITIONER FULL_ALL
+      &amp;END OT
+      &amp;OUTER_SCF  T
+        MAX_SCF 20
+        EPS_SCF 5.0E-8
+      &amp;END OUTER_SCF
+    &amp;END SCF
+    &amp;XC
+      DENSITY_CUTOFF     1.0E-12
+      GRADIENT_CUTOFF    1.0E-12
+      TAU_CUTOFF         1.0E-12
+      &amp;XC_FUNCTIONAL PBE
+      &amp;END XC_FUNCTIONAL
+    &amp;END XC
+    &amp;QS
+     METHOD GPW
+     EPS_DEFAULT 1.0E-10
+     EXTRAPOLATION ASPC
+     EXTRAPOLATION_ORDER  4
+    &amp;END QS
+  &amp;END DFT
+  &amp;QMMM
+    &amp;CELL
+      A 10.000 0.000 0.000
+      B 0.000 10.000 0.000
+      C 0.000 0.000 10.000
+      PERIODIC XYZ
+    &amp;END CELL
+    CENTER EVERY_STEP
+    CENTER_GRID TRUE
+    &amp;WALLS
+      TYPE REFLECTIVE
+    &amp;END WALLS
+    ECOUPL GAUSS
+    USE_GEEP_LIB 12
+    &amp;PERIODIC
+      GMAX     1.0E+00
+      &amp;MULTIPOLE ON
+         RCUT     1.0E+01
+         EWALD_PRECISION     1.0E-06
+      &amp;END
+    &amp;END PERIODIC
+    &amp;QM_KIND H  
+      MM_INDEX 2 3
+    &amp;END QM_KIND
+    &amp;QM_KIND O  
+      MM_INDEX 1
+    &amp;END QM_KIND
+  &amp;END QMMM
+  &amp;MM
+    &amp;FORCEFIELD
+      DO_NONBONDED FALSE
+    &amp;END FORCEFIELD
+    &amp;POISSON
+      &amp;EWALD
+        EWALD_TYPE NONE
+      &amp;END EWALD
+    &amp;END POISSON
+  &amp;END MM
+  &amp;SUBSYS
+    &amp;CELL
+      A 20.000 0.000 0.000
+      B 0.000 20.000 0.000
+      C 0.000 0.000 20.000
+      PERIODIC XYZ
+    &amp;END CELL
+    &amp;TOPOLOGY
+      COORD_FILE_NAME %s
+      COORD_FILE_FORMAT PDB
+      CHARGE_EXTENDED TRUE
+      CONNECTIVITY OFF
+      &amp;GENERATE
+         &amp;ISOLATED_ATOMS
+            LIST 1..6
+         &amp;END
+      &amp;END GENERATE
+    &amp;END TOPOLOGY
+    &amp;KIND H  
+      ELEMENT H  
+      BASIS_SET DZVP-MOLOPT-GTH
+      POTENTIAL GTH-PBE
+    &amp;END KIND
+    &amp;KIND O  
+      ELEMENT O  
+      BASIS_SET DZVP-MOLOPT-GTH
+      POTENTIAL GTH-PBE
+    &amp;END KIND
+    &amp;KIND X
+      ELEMENT H
+    &amp;END KIND
+  &amp;END SUBSYS
+&amp;END FORCE_EVAL
+</String>
+  <String Name="PDB">ATOM      0  O    QM     1       4.920   4.667   5.190  1.00  0.00          O   0.000000
+ATOM      1  H    QM     1       4.700   5.567   5.450  1.00  0.00          H   0.000000
+ATOM      2  H    QM     1       5.380   4.767   4.360  1.00  0.00          H   0.000000
+ATOM      3  O    MM     2      14.620   4.977  18.440  1.00  0.00          O   -0.834000
+ATOM      4  H    MM     2      14.380   4.817  19.360  1.00  0.00          H   0.417000
+ATOM      5  H    MM     2      14.030   5.677  18.160  1.00  0.00          H   0.417000
+</String>
+</ReferenceData>
