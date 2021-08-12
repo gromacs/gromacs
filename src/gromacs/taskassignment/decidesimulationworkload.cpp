@@ -55,11 +55,12 @@ namespace gmx
 SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             const bool        disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
-                                            bool                           useGpuForNonbonded,
-                                            PmeRunMode                     pmeRunMode,
-                                            bool                           useGpuForBonded,
-                                            bool                           useGpuForUpdate,
-                                            bool                           useGpuDirectHalo)
+                                            bool       havePpDomainDecomposition,
+                                            bool       useGpuForNonbonded,
+                                            PmeRunMode pmeRunMode,
+                                            bool       useGpuForBonded,
+                                            bool       useGpuForUpdate,
+                                            bool       useGpuDirectHalo)
 {
     SimulationWorkload simulationWorkload;
     simulationWorkload.computeNonbonded = !disableNonbondedCalculation;
@@ -76,7 +77,9 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.useGpuUpdate    = useGpuForUpdate;
     simulationWorkload.useGpuBufferOps = (devFlags.enableGpuBufferOps || useGpuForUpdate)
                                          && !simulationWorkload.computeNonbondedAtMtsLevel1;
-    simulationWorkload.useGpuHaloExchange = useGpuDirectHalo;
+    simulationWorkload.havePpDomainDecomposition = havePpDomainDecomposition;
+    simulationWorkload.useCpuHaloExchange        = havePpDomainDecomposition && !useGpuDirectHalo;
+    simulationWorkload.useGpuHaloExchange        = useGpuDirectHalo;
     simulationWorkload.useGpuPmePpCommunication =
             devFlags.enableGpuPmePPComm && (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuDirectCommunication =

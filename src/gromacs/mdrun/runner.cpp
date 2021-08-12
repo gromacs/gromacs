@@ -1443,6 +1443,7 @@ int Mdrunner::mdrunner()
     runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
                                                               disableNonbondedCalculation,
                                                               devFlags,
+                                                              havePPDomainDecomposition(cr),
                                                               useGpuForNonbonded,
                                                               pmeRunMode,
                                                               useGpuForBonded,

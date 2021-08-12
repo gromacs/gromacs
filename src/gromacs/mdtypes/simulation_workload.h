@@ -180,6 +180,10 @@ public:
     bool useGpuUpdate = false;
     //! If buffer operations are performed on GPU.
     bool useGpuBufferOps = false;
+    //! If PP domain decomposition is active.
+    bool havePpDomainDecomposition = false;
+    //! If domain decomposition halo exchange is performed on CPU (in CPU-only runs or with staged GPU communication).
+    bool useCpuHaloExchange = false;
     //! If domain decomposition halo exchange is performed on GPU.
     bool useGpuHaloExchange = false;
     //! If direct PP-PME communication between GPU is used.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,6 +61,7 @@ struct DevelopmentFeatureFlags;
  * \param[in] inputrec           The input record
  * \param[in] disableNonbondedCalculation  Disable calculation of nonbonded forces
  * \param[in] devFlags           The development feature flags
+ * \param[in] havePpDomainDecomposition Whether PP domain decomposition is used in this run.
  * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
  *                               calculations on GPU(s).
  * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
@@ -73,11 +74,12 @@ struct DevelopmentFeatureFlags;
 SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             bool              disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
-                                            bool                           useGpuForNonbonded,
-                                            PmeRunMode                     pmeRunMode,
-                                            bool                           useGpuForBonded,
-                                            bool                           useGpuForUpdate,
-                                            bool                           useGpuDirectHalo);
+                                            bool       havePpDomainDecomposition,
+                                            bool       useGpuForNonbonded,
+                                            PmeRunMode pmeRunMode,
+                                            bool       useGpuForBonded,
+                                            bool       useGpuForUpdate,
+                                            bool       useGpuDirectHalo);
 
 } // namespace gmx
 
