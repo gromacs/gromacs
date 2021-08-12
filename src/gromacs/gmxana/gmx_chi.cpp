@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -750,7 +750,8 @@ static void histogramming(FILE*                   log,
                     normalize_histo(nbin, his_aa[Dih][i], (360.0 / nbin), normhisto);
                 }
 
-                residue_name = rt->nameFromResidueIndex(i).c_str();
+                std::string residueName = rt->nameFromResidueIndex(i);
+                residue_name            = residueName.c_str();
                 switch (Dih)
                 {
                     case edPhi:
@@ -1526,7 +1527,7 @@ int gmx_chi(int argc, char* argv[])
     }
 
     /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi
-     * pass nactdih instead of ndih to low_ana_dih_trans and get_chi_product_traj
+     * pass nactdih instead of ndih to low_ana_dih_trans
      * to prevent accessing off end of arrays when maxchi < 5 or 6. */
     nactdih = reset_em_all(nlist, dlist, nf, dih, maxchi);
 
@@ -1606,7 +1607,7 @@ int gmx_chi(int argc, char* argv[])
         }
         mk_chi_lookup(chi_lookup, maxchi, nlist, dlist);
 
-        get_chi_product_traj(dih, nf, nactdih, maxchi, dlist, time, chi_lookup, multiplicity, FALSE,
+        get_chi_product_traj(dih, nf, nlist, maxchi, dlist, time, chi_lookup, multiplicity, FALSE,
                              bNormHisto, core_frac, bAll, opt2fn("-cp", NFILE, fnm), oenv);
 
         for (i = 0; i < nlist; i++)
