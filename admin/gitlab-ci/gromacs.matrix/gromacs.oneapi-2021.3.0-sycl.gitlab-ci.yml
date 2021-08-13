@@ -1,9 +1,9 @@
-# Test goal: Newest ICPX build with OpenCL
+# Test goal: Newest ICPX build with SYCL
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
 #   Compiler: ICPX newest supported
 #   FFT: MKL
-#   GPU: OpenCL
+#   GPU: SYCL
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -13,50 +13,50 @@
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 4/2
 
-gromacs:oneapi-2021.1.1-opencl:configure:
+gromacs:oneapi-2021.3.0-sycl:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
-   - .use-opencl
-   - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.1.1
+   - .use-sycl
+   - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.3.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
-gromacs:oneapi-2021.1.1-opencl:build:
+gromacs:oneapi-2021.3.0-sycl:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
-    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.1.1
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.3.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.1.1-opencl:configure
+    - job: gromacs:oneapi-2021.3.0-sycl:configure
 
-gromacs:oneapi-2021.1.1-opencl:test:
+gromacs:oneapi-2021.3.0-sycl:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
-    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.1.1
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.3.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.1.1-opencl:build
+    - job: gromacs:oneapi-2021.3.0-sycl:build
 
-gromacs:oneapi-2021.1.1-opencl:regressiontest:
+gromacs:oneapi-2021.3.0-sycl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
-    - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.1.1
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.3.0
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.1.1-opencl:build
+    - job: gromacs:oneapi-2021.3.0-sycl:build
     - job: regressiontests:prepare
 
