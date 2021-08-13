@@ -1668,12 +1668,17 @@ void do_force(FILE*                               fplog,
 
     // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
     // this wait ensures that the D2H transfer is complete.
-    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
-        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
-            || simulationWork.computeMuTot))
+    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
     {
-        GMX_ASSERT(haveCopiedXFromGpu, "a wait should only be triggered if copy has been scheduled");
-        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        const bool needCoordsOnHost  = (runScheduleWork->domainWork.haveCpuLocalForceWork
+                                       || stepWork.computeVirial || simulationWork.computeMuTot);
+        const bool haveAlreadyWaited = haveHostHaloExchangeComms;
+        if (needCoordsOnHost && !haveAlreadyWaited)
+        {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
     }
 
     DipoleData dipoleData;
