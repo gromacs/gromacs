@@ -1970,7 +1970,7 @@ void push_bond(Directive                         d,
     }
 
     // These are the atom indices for this interaction
-    gmx::ArrayRef<int> atomIndices(aa.begin(), aa.begin() + nral);
+    auto atomIndices = gmx::ArrayRef<const int>(aa).subArray(0, nral);
 
     // Look up the A-state atom types for this interaction
     std::vector<int> atomTypes(atomIndices.size());
