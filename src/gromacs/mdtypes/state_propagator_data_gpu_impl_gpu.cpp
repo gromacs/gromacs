@@ -85,11 +85,11 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     // Note, that nullptr stream is used here to indicate that the copy is not supported.
     xCopyStreams_[AtomLocality::Local]    = updateStream_;
     xCopyStreams_[AtomLocality::NonLocal] = nonLocalStream_;
-    xCopyStreams_[AtomLocality::All]      = updateStream_;
+    xCopyStreams_[AtomLocality::All]      = nullptr;
 
     vCopyStreams_[AtomLocality::Local]    = updateStream_;
     vCopyStreams_[AtomLocality::NonLocal] = nullptr;
-    vCopyStreams_[AtomLocality::All]      = updateStream_;
+    vCopyStreams_[AtomLocality::All]      = nullptr;
 
     fCopyStreams_[AtomLocality::Local]    = localStream_;
     fCopyStreams_[AtomLocality::NonLocal] = nonLocalStream_;
@@ -121,7 +121,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     // This it temporary measure to make it safe to use this class in those cases.
     xCopyStreams_[AtomLocality::Local]    = pmeStream_;
     xCopyStreams_[AtomLocality::NonLocal] = nullptr;
-    xCopyStreams_[AtomLocality::All]      = pmeStream_;
+    xCopyStreams_[AtomLocality::All]      = nullptr;
 
     vCopyStreams_[AtomLocality::Local]    = nullptr;
     vCopyStreams_[AtomLocality::NonLocal] = nullptr;
@@ -311,7 +311,12 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getCoordinates()
 void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec> h_x,
                                                         AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    GMX_ASSERT(atomLocality < AtomLocality::All,
+               formatString("Wrong atom locality. Only Local and NonLocal are allowed for "
+                            "coordinate transfers, passed value is \"%s\"",
+                            enumValueToString(atomLocality))
+                       .c_str());
+
     const DeviceStream* deviceStream = xCopyStreams_[atomLocality];
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying positions with given atom locality.");
@@ -376,7 +381,11 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::xUpdatedOnDevice()
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x, AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    GMX_ASSERT(atomLocality < AtomLocality::All,
+               formatString("Wrong atom locality. Only Local and NonLocal are allowed for "
+                            "coordinate transfers, passed value is \"%s\"",
+                            enumValueToString(atomLocality))
+                       .c_str());
     const DeviceStream* deviceStream = xCopyStreams_[atomLocality];
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying positions with given atom locality.");
@@ -408,7 +417,11 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getVelocities()
 void StatePropagatorDataGpu::Impl::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::RVec> h_v,
                                                        AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    GMX_ASSERT(atomLocality == AtomLocality::Local,
+               formatString("Wrong atom locality. Only Local is allowed for "
+                            "velocity transfers, passed value is \"%s\"",
+                            enumValueToString(atomLocality))
+                       .c_str());
     const DeviceStream* deviceStream = vCopyStreams_[atomLocality];
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying velocities with given atom locality.");
@@ -428,7 +441,11 @@ void StatePropagatorDataGpu::Impl::copyVelocitiesToGpu(const gmx::ArrayRef<const
 
 void StatePropagatorDataGpu::Impl::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec> h_v, AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    GMX_ASSERT(atomLocality == AtomLocality::Local,
+               formatString("Wrong atom locality. Only Local is allowed for "
+                            "velocity transfers, passed value is \"%s\"",
+                            enumValueToString(atomLocality))
+                       .c_str());
     const DeviceStream* deviceStream = vCopyStreams_[atomLocality];
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying velocities with given atom locality.");

@@ -62,11 +62,17 @@ enum class AtomLocality : int
     Count    = 3  //!< The number of atom locality types
 };
 
-/*! \brief Descriptive strings for atom localities */
-static const EnumerationArray<AtomLocality, const char*> c_atomLocalityNames = {
-    { "local", "non-local", "all" }
-};
-
+/*! \brief Get the human-friendly name for atom localities.
+ *
+ * \param[in] enumValue The enum value to get the name for.
+ */
+[[maybe_unused]] static const char* enumValueToString(AtomLocality enumValue)
+{
+    static constexpr gmx::EnumerationArray<AtomLocality, const char*> atomLocalityNames = {
+        "Local", "Non-local", "All"
+    };
+    return atomLocalityNames[enumValue];
+}
 /*! \brief Interaction locality indicator: local, non-local, all.
  *
  * Used for calls to:
@@ -79,10 +85,17 @@ enum class InteractionLocality : int
     Count    = 2  //!< The number of interaction locality types
 };
 
-/*! \brief Descriptive strings for interaction localities */
-static const EnumerationArray<InteractionLocality, const char*> c_interactionLocalityNames = {
-    { "local", "non-local" }
-};
+/*! \brief Get the human-friendly name for interaction localities.
+ *
+ * \param[in] enumValue The enum value to get the name for.
+ */
+[[maybe_unused]] static const char* enumValueToString(InteractionLocality enumValue)
+{
+    static constexpr gmx::EnumerationArray<InteractionLocality, const char*> interactionLocalityNames = {
+        "Local", "Non-local"
+    };
+    return interactionLocalityNames[enumValue];
+}
 
 /*! \brief Convert atom locality to interaction locality.
  *
