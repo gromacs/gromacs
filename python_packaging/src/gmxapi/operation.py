@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -497,9 +497,8 @@ class DataProxyMeta(abc.ABCMeta):
             class MyProxy(DataProxyBase, descriptors={name: MyDescriptor() for name in datanames}): pass
 
         Note:
-            If we are only using this metaclass for the __prepare__ hook by the
-            time we require Python >= 3.6, we could reimplement __prepare__ as
-            DataProxyBase.__init_subclass__ and remove this metaclass.
+            Recent Python versions allow this to be replaced via ``__init_subclass__`` hook.
+            See :issue:`4116`
         """
         if descriptors is None:
             return {}
@@ -1164,8 +1163,10 @@ class ConcreteInputDescription(InputDescription):
 class OperationMeta(abc.ABCMeta):
     """Metaclass to manage the definition of Operation implementation classes.
 
-    Note that this metaclass can be superseded by `__init_subclass__()` when
-    the minimum Python version is increased to Python 3.6+.
+    Design Note:
+        Note that this metaclass can be superseded by `__init_subclass__()`.
+        See :issue:`4116`.
+
     """
 
     def __new__(meta, name, bases, class_dict):
