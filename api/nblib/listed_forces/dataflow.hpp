@@ -64,9 +64,24 @@
 namespace nblib
 {
 
-template<class TwoCenterType, class BasicVector>
+//! \brief returns the address of an element in the shiftForces buffer
+template<class ShiftForce>
+inline ShiftForce* accessShiftForces(int shiftIndex, gmx::ArrayRef<ShiftForce> shiftForces)
+{
+    return shiftForces.data() + shiftIndex;
+}
+
+//! \brief dummy op in case shift forces are not computed (will be removed by the compiler)
+inline std::nullptr_t accessShiftForces([[maybe_unused]] int shiftIndex,
+                                        [[maybe_unused]] gmx::ArrayRef<std::nullptr_t> shiftForces)
+{
+    return nullptr;
+}
+
+template<class TwoCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
-auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, BasicVector* fi, BasicVector* fj)
+auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, BasicVector* fi, BasicVector* fj,
+                      ShiftForce* sh_f, ShiftForce* sh_fc)
 {
     using ValueType = BasicVectorValueType_t<BasicVector>;
 
@@ -78,7 +93,7 @@ auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, Ba
     if (dr2 != 0.0)
     {
         force /= dr;
-        spreadTwoCenterForces(force, dx, fi, fj);
+        spreadTwoCenterForces(force, dx, fi, fj, sh_f, sh_fc);
     }
 
     return energy;
@@ -97,54 +112,59 @@ auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, Ba
  * \param[in] pbc Object used for computing distances accounting for PBC's
  * \return Computed kernel energies
  */
-template <class Buffer, class TwoCenterType, class BasicVector, class Pbc,
+template <class Buffer, class TwoCenterType, class BasicVector, class ShiftForce, class Pbc,
           std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
 auto dispatchInteraction(InteractionIndex<TwoCenterType> index,
                          gmx::ArrayRef<const TwoCenterType> bondInstances,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
+                         gmx::ArrayRef<ShiftForce> shiftForces,
                          const Pbc& pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
     int i = std::get<0>(index);
     int j = std::get<1>(index);
-    BasicVector x1 = x[i];
-    BasicVector x2 = x[j];
+    BasicVector   xi   = x[i];
+    BasicVector   xj   = x[j];
     TwoCenterType bond = bondInstances[std::get<2>(index)];
 
     BasicVector dx;
-    // calculate x1 - x2 modulo pbc
-    pbc.dxAiuc(x1, x2, dx);
+    // calculate xi - xj modulo pbc
+    int sIdx = pbc.dxAiuc(xi, xj, dx);
 
-    energy.carrier() = computeTwoCenter(bond, dx, &(*forces)[i], &(*forces)[j]);
+    ShiftForce* sh_f  = accessShiftForces(sIdx, shiftForces);
+    ShiftForce* sh_fc = accessShiftForces(gmx::c_centralShiftIndex, shiftForces);
+
+    energy.carrier() = computeTwoCenter(bond, dx, &(*forces)[i], &(*forces)[j], sh_f, sh_fc);
     return energy;
 }
 
 
-template<class ThreeCenterType, class BasicVector>
+template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
 std::enable_if_t<HasTwoCenterAggregate<ThreeCenterType>::value, BasicVectorValueType_t<BasicVector>>
 addTwoCenterAggregate(const ThreeCenterType& parameters, const BasicVector& rij, const BasicVector& rkj,
-                      BasicVector* fi, BasicVector* fj, BasicVector* fk)
+                      BasicVector* fi, BasicVector* fj, BasicVector* fk,
+                      ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
 {
     if (parameters.manifest == ThreeCenterType::Cargo::ij)
     {
         // i-j bond
-        return computeTwoCenter(parameters.twoCenter(), rij, fi, fj);
+        return computeTwoCenter(parameters.twoCenter(), rij, fi, fj, shf_ij, shf_c);
     }
     if (parameters.manifest == ThreeCenterType::Cargo::jk)
     {
         // j-k bond
-        return computeTwoCenter(parameters.twoCenter(), rkj, fk, fj);
+        return computeTwoCenter(parameters.twoCenter(), rkj, fk, fj, shf_kj, shf_c);
     }
 
     // aggregate is empty
     return 0.0;
 };
 
-template<class ThreeCenterType, class BasicVector>
+template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
 std::enable_if_t<!HasTwoCenterAggregate<ThreeCenterType>::value, BasicVectorValueType_t<BasicVector>>
 addTwoCenterAggregate([[maybe_unused]] const ThreeCenterType& parameters,
@@ -152,15 +172,19 @@ addTwoCenterAggregate([[maybe_unused]] const ThreeCenterType& parameters,
                       [[maybe_unused]] const BasicVector& rkj,
                       [[maybe_unused]] BasicVector* fi,
                       [[maybe_unused]] BasicVector* fj,
-                      [[maybe_unused]] BasicVector* fk)
+                      [[maybe_unused]] BasicVector* fk,
+                      [[maybe_unused]] ShiftForce* shf_ij,
+                      [[maybe_unused]] ShiftForce* shf_kj,
+                      [[maybe_unused]] ShiftForce* shf_c)
 {
     return 0.0;
 };
 
-template<class ThreeCenterType, class BasicVector>
+template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
 auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& rij, const BasicVector& rkj,
-                        [[maybe_unused]] const BasicVector& rik, BasicVector* fi, BasicVector* fj, BasicVector* fk)
+                        const BasicVector& /* rik */, BasicVector* fi, BasicVector* fj, BasicVector* fk,
+                        ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
 {
     using ValueType = BasicVectorValueType_t<BasicVector>;
     // calculate 3-center common quantities: angle between x1-x2 and x2-x3
@@ -168,10 +192,10 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
     ValueType costh = basicVectorCosAngle(rij, rkj); /* 25 */
     ValueType theta = std::acos(costh);    /* 10 */
 
-    // call type-specific angle kernel, e.g. harmonic, linear, quartic,  etc.
+    // call type-specific angle kernel, e.g. harmonic, restricted, quartic, etc.
     auto [force, energy] = threeCenterKernel(theta, parameters);
 
-    spreadThreeCenterForces(costh, force, rij, rkj, fi, fj, fk);
+    spreadThreeCenterForces(costh, force, rij, rkj, fi, fj, fk, shf_ij, shf_kj, shf_c);
 
     return energy;
 }
@@ -189,13 +213,14 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
  * \param[in] PBC
  * \return Computed kernel energies
  */
-template <class Buffer, class ThreeCenterType, class BasicVector, class Pbc,
+template <class Buffer, class ThreeCenterType, class BasicVector, class ShiftForce, class Pbc,
           std::enable_if_t<Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
 auto dispatchInteraction(InteractionIndex<ThreeCenterType> index,
                          gmx::ArrayRef<const ThreeCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
+                         gmx::ArrayRef<ShiftForce> shiftForces,
                          const Pbc& pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
@@ -212,12 +237,16 @@ auto dispatchInteraction(InteractionIndex<ThreeCenterType> index,
     BasicVector fi{0,0,0}, fj{0,0,0}, fk{0,0,0};
 
     BasicVector rij, rkj, rik;
-    pbc.dxAiuc(xi, xj, rij); /* 3 */
-    pbc.dxAiuc(xk, xj, rkj); /* 3 */
+    int sIdx_ij = pbc.dxAiuc(xi, xj, rij); /* 3 */
+    int sIdx_kj = pbc.dxAiuc(xk, xj, rkj); /* 3 */
     pbc.dxAiuc(xi, xk, rik); /* 3 */
 
-    energy.carrier()            = computeThreeCenter(threeCenterParameters, rij, rkj, rik, &fi, &fj, &fk);
-    energy.twoCenterAggregate() = addTwoCenterAggregate(threeCenterParameters, rij, rkj, &fi, &fj, &fk);
+    ShiftForce* shf_ij = accessShiftForces(sIdx_ij, shiftForces);
+    ShiftForce* shf_kj = accessShiftForces(sIdx_kj, shiftForces);
+    ShiftForce* shf_c  = accessShiftForces(gmx::c_centralShiftIndex, shiftForces);
+
+    energy.carrier()            = computeThreeCenter(threeCenterParameters, rij, rkj, rik, &fi, &fj, &fk, shf_ij, shf_kj, shf_c);
+    energy.twoCenterAggregate() = addTwoCenterAggregate(threeCenterParameters, rij, rkj, &fi, &fj, &fk, shf_ij, shf_kj, shf_c);
 
     (*forces)[i] += fi;
     (*forces)[j] += fj;
@@ -276,13 +305,14 @@ addThreeCenterAggregate([[maybe_unused]] const FourCenterType& parameters,
  * \param[in] pbc Object used for computing distances accounting for PBC's
  * \return Computed kernel energies
  */
-template <class Buffer, class FourCenterType, class BasicVector, class Pbc,
+template <class Buffer, class FourCenterType, class BasicVector, class ShiftForce, class Pbc,
           std::enable_if_t<Contains<FourCenterType, SupportedFourCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
 auto dispatchInteraction(InteractionIndex<FourCenterType> index,
                          gmx::ArrayRef<const FourCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
+                         gmx::ArrayRef<ShiftForce> shiftForces,
                          const Pbc& pbc)
 {
     using RealScalar = BasicVectorValueType_t<BasicVector>;
@@ -300,22 +330,29 @@ auto dispatchInteraction(InteractionIndex<FourCenterType> index,
 
     BasicVector fi{0,0,0}, fj{0,0,0}, fk{0,0,0}, fl{0,0,0};
 
-    BasicVector dxIJ, dxKJ, dxKL;
-    pbc.dxAiuc(xi, xj, dxIJ);
-    pbc.dxAiuc(xk, xj, dxKJ);
+    BasicVector dxIJ, dxKJ, dxKL, dxLJ;
+    int sIdx_ij = pbc.dxAiuc(xi, xj, dxIJ);
+    int sIdx_kj = pbc.dxAiuc(xk, xj, dxKJ);
     pbc.dxAiuc(xk, xl, dxKL);
+
+    int sIdx_lj = pbc.dxAiuc(xl, xj, dxLJ);
+
+    ShiftForce* shf_ij = accessShiftForces(sIdx_ij, shiftForces);
+    ShiftForce* shf_kj = accessShiftForces(sIdx_kj, shiftForces);
+    ShiftForce* shf_lj = accessShiftForces(sIdx_lj, shiftForces);
+    ShiftForce* shf_c  = accessShiftForces(gmx::c_centralShiftIndex, shiftForces);
 
     FourCenterType fourCenterTypeParams = parameters[std::get<4>(index)];
 
     BasicVector m, n;
-    RealScalar phi = dihedralPhi(dxIJ, dxKJ, dxKL, m, n);
+    RealScalar phi = dihedralPhi(dxIJ, dxKJ, dxKL, &m, &n);
 
     auto [force, kernelEnergy] = fourCenterKernel(phi, fourCenterTypeParams);
 
     energy.carrier()              = kernelEnergy;
     energy.threeCenterAggregate() = addThreeCenterAggregate(fourCenterTypeParams, dxIJ, dxKJ, dxKL, &fi, &fj, &fk, &fl);
 
-    spreadFourCenterForces(force, dxIJ, dxKJ, dxKL, m, n, &fi, &fj, &fk, &fl);
+    spreadFourCenterForces(force, dxIJ, dxKJ, dxKL, m, n, &fi, &fj, &fk, &fl, shf_ij, shf_kj, shf_lj, shf_c);
 
     (*forces)[i] += fi;
     (*forces)[j] += fj;
@@ -338,13 +375,14 @@ auto dispatchInteraction(InteractionIndex<FourCenterType> index,
  * \param[in] pbc Object used for computing distances accounting for PBC's
  * \return Computed kernel energies
  */
-template <class Buffer, class FiveCenterType, class BasicVector, class Pbc,
+template <class Buffer, class FiveCenterType, class BasicVector, class ShiftForce, class Pbc,
           std::enable_if_t<Contains<FiveCenterType, SupportedFiveCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
 auto dispatchInteraction(InteractionIndex<FiveCenterType> index,
                          gmx::ArrayRef<const FiveCenterType> parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
+                         [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
                          const Pbc& pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
@@ -389,6 +427,25 @@ auto dispatchInteraction(InteractionIndex<FiveCenterType> index,
  * \param[in] pbc Object used for computing distances accounting for PBC's
  * \return Computed kernel energies
  */
+template <class Index, class InteractionType, class Buffer, class ShiftForce, class Pbc>
+auto computeForces(gmx::ArrayRef<const Index> indices,
+                   gmx::ArrayRef<const InteractionType> parameters,
+                   gmx::ArrayRef<const Vec3> x,
+                   Buffer* forces,
+                   gmx::ArrayRef<ShiftForce> shiftForces,
+                   const Pbc& pbc)
+{
+    KernelEnergy<BasicVectorValueType_t<Vec3>> energy;
+
+    for (const auto& index : indices)
+    {
+        energy += dispatchInteraction(index, parameters, x, forces, shiftForces, pbc);
+    }
+
+    return energy;
+}
+
+//! \brief convenience overload without shift forces
 template <class Index, class InteractionType, class Buffer, class Pbc>
 auto computeForces(gmx::ArrayRef<const Index> indices,
                    gmx::ArrayRef<const InteractionType> parameters,
@@ -396,14 +453,7 @@ auto computeForces(gmx::ArrayRef<const Index> indices,
                    Buffer* forces,
                    const Pbc& pbc)
 {
-    KernelEnergy<BasicVectorValueType_t<Vec3>> energy;
-
-    for (const auto& index : indices)
-    {
-        energy += dispatchInteraction(index, parameters, x, forces, pbc);
-    }
-
-    return energy;
+    return computeForces(indices, parameters, x, forces, gmx::ArrayRef<std::nullptr_t>{}, pbc);
 }
 
 /*! \brief implement a loop over bond types and accumulate their force contributions
@@ -414,10 +464,11 @@ auto computeForces(gmx::ArrayRef<const Index> indices,
  * \param[in] pbc Object used for computing distances accounting for PBC's
  * \return Computed kernel energies
  */
-template<class Buffer, class Pbc>
+template<class Buffer, class ShiftForce, class Pbc>
 auto reduceListedForces(const ListedInteractionData& interactions,
                         gmx::ArrayRef<const Vec3> x,
                         Buffer* forces,
+                        gmx::ArrayRef<ShiftForce> shiftForces,
                         const Pbc& pbc)
 {
     using ValueType = BasicVectorValueType_t<Vec3>;
@@ -425,12 +476,13 @@ auto reduceListedForces(const ListedInteractionData& interactions,
     energies.fill(0);
 
     // calculate one bond type
-    auto computeForceType = [forces, &x, &energies, &pbc](const auto& interactionElement) {
+    auto computeForceType = [forces, x, shiftForces, &energies, &pbc](const auto& interactionElement) {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
 
         gmx::ArrayRef<const InteractionIndex<InteractionType>> indices(interactionElement.indices);
         gmx::ArrayRef<const InteractionType>                   parameters(interactionElement.parameters);
-        KernelEnergy<ValueType> energy = computeForces(indices, parameters, x, forces, pbc);
+
+        KernelEnergy<ValueType> energy = computeForces(indices, parameters, x, forces, shiftForces, pbc);
 
         energies[CarrierIndex<InteractionType>{}] += energy.carrier();
         energies[TwoCenterAggregateIndex<InteractionType>{}] += energy.twoCenterAggregate();
@@ -442,6 +494,16 @@ auto reduceListedForces(const ListedInteractionData& interactions,
     for_each_tuple(computeForceType, interactions);
 
     return energies;
+}
+
+//! \brief convenience overload without shift forces
+template<class Buffer, class Pbc>
+auto reduceListedForces(const ListedInteractionData& interactions,
+                        gmx::ArrayRef<const Vec3> x,
+                        Buffer* forces,
+                        const Pbc& pbc)
+{
+    return reduceListedForces(interactions, x, forces, gmx::ArrayRef<std::nullptr_t>{}, pbc);
 }
 
 } // namespace nblib
