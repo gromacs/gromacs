@@ -48,7 +48,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/mdtypes/interaction_const.h"

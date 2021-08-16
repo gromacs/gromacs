@@ -44,7 +44,7 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 

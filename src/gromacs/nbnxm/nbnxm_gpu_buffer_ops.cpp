@@ -44,13 +44,7 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/device_stream.h"
-#if GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
-#elif GMX_GPU_OPENCL
-#    include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
-#elif GMX_GPU_SYCL
-#    include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
-#endif
+#include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"

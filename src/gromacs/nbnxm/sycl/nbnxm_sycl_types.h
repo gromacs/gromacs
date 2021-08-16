@@ -46,7 +46,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/syclutils.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
