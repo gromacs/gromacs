@@ -86,7 +86,7 @@ Nbnxm::KernelType translateBenchmarkEnum(const SimdKernels& kernel)
     return static_cast<Nbnxm::KernelType>(kernelInt);
 }
 
-void checkKernelSetup(const SimdKernels nbnxmSimd)
+void checkKernelSetupSimd(const SimdKernels nbnxmSimd)
 {
     if (nbnxmSimd >= SimdKernels::Count || nbnxmSimd == SimdKernels::SimdAuto)
     {
@@ -106,14 +106,14 @@ void checkKernelSetup(const SimdKernels nbnxmSimd)
     }
 }
 
-Nbnxm::KernelSetup createKernelSetupCPU(const NBKernelOptions& options)
+Nbnxm::KernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bool useTabulatedEwaldCorr)
 {
-    checkKernelSetup(options.nbnxmSimd);
+    checkKernelSetupSimd(nbnxmSimd);
 
     Nbnxm::KernelSetup kernelSetup;
 
     // The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
-    kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
+    kernelSetup.kernelType = translateBenchmarkEnum(nbnxmSimd);
 
     // The plain-C kernel does not support analytical ewald correction
     if (kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC)
@@ -122,16 +122,14 @@ Nbnxm::KernelSetup createKernelSetupCPU(const NBKernelOptions& options)
     }
     else
     {
-        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr
-                                                 ? Nbnxm::EwaldExclusionType::Table
-                                                 : Nbnxm::EwaldExclusionType::Analytical;
+        kernelSetup.ewaldExclusionType = useTabulatedEwaldCorr ? Nbnxm::EwaldExclusionType::Table
+                                                               : Nbnxm::EwaldExclusionType::Analytical;
     }
 
     return kernelSetup;
 }
 
-std::vector<int64_t> createParticleInfoAllVdv(const size_t numParticles)
-
+std::vector<int64_t> createParticleInfoAllVdw(const size_t numParticles)
 {
     std::vector<int64_t> particleInfoAllVdw(numParticles);
     for (size_t particleI = 0; particleI < numParticles; particleI++)
@@ -255,7 +253,8 @@ std::unique_ptr<nonbonded_verlet_t> createNbnxmCPU(const size_t              num
     // Note: the options and Nbnxm combination rule enums values should match
     const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    Nbnxm::KernelSetup kernelSetup = createKernelSetupCPU(options);
+    Nbnxm::KernelSetup kernelSetup =
+            createKernelSetupCPU(options.nbnxmSimd, options.useTabulatedEwaldCorr);
 
     PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
 

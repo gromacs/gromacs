@@ -85,9 +85,6 @@ public:
     //! Marks particles to have Van der Waals interactions
     void setParticleInfoAllVdv(size_t numParticles);
 
-    //! Returns the kernel setup
-    Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options);
-
     //! Set up StepWorkload data
     void setupStepWorkload(const NBKernelOptions& options);
 

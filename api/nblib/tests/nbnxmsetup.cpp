@@ -43,8 +43,9 @@
  */
 #include <cmath>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "nblib/box.h"
@@ -99,19 +100,20 @@ TEST(NbnxmSetupTest, canTranslateBenchmarkEnum4XM)
 
 TEST(NbnxmSetupTest, CheckKernelSetupThrowsAuto)
 {
-    EXPECT_ANY_THROW(checkKernelSetup(SimdKernels::SimdAuto));
+    EXPECT_ANY_THROW(checkKernelSetupSimd(SimdKernels::SimdAuto));
 }
 
 TEST(NbnxmSetupTest, CheckKernelSetupThrowsCount)
 {
-    EXPECT_ANY_THROW(checkKernelSetup(SimdKernels::Count));
+    EXPECT_ANY_THROW(checkKernelSetupSimd(SimdKernels::Count));
 }
 
 TEST(NbnxmSetupTest, canCreateKernelSetupPlain)
 {
     NBKernelOptions nbKernelOptions;
-    nbKernelOptions.nbnxmSimd      = SimdKernels::SimdNo;
-    Nbnxm::KernelSetup kernelSetup = createKernelSetupCPU(nbKernelOptions);
+    nbKernelOptions.nbnxmSimd = SimdKernels::SimdNo;
+    Nbnxm::KernelSetup kernelSetup =
+            createKernelSetupCPU(nbKernelOptions.nbnxmSimd, nbKernelOptions.useTabulatedEwaldCorr);
     EXPECT_EQ(kernelSetup.kernelType, Nbnxm::KernelType::Cpu4x4_PlainC);
     EXPECT_EQ(kernelSetup.ewaldExclusionType, Nbnxm::EwaldExclusionType::Table);
 }
@@ -123,7 +125,7 @@ TEST(NbnxmSetupTest, canCreateParticleInfoAllVdv)
     mask |= gmx::sc_atomInfo_HasVdw;
     mask |= gmx::sc_atomInfo_HasCharge;
     std::vector<int64_t> refParticles  = { mask, mask };
-    std::vector<int64_t> testParticles = createParticleInfoAllVdv(numParticles);
+    std::vector<int64_t> testParticles = createParticleInfoAllVdw(numParticles);
     EXPECT_EQ(refParticles, testParticles);
 }
 
@@ -154,7 +156,7 @@ TEST(NbnxmSetupTest, canCheckKernelSetup)
 #ifdef GMX_NBNXN_SIMD_2XNN
     nbKernelOptions.nbnxmSimd = SimdKernels::Simd2XMM;
 #endif
-    EXPECT_NO_THROW(checkKernelSetup(nbKernelOptions.nbnxmSimd));
+    EXPECT_NO_THROW(checkKernelSetupSimd(nbKernelOptions.nbnxmSimd));
 }
 
 // check if the user is allowed to ask for SimdKernels::Simd2XMM when NBLIB is not compiled with it
@@ -164,7 +166,7 @@ TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU2XM)
     NBKernelOptions nbKernelOptions;
     nbKernelOptions.nbnxmSimd             = SimdKernels::Simd2XMM;
     nbKernelOptions.useTabulatedEwaldCorr = true;
-    EXPECT_ANY_THROW(createKernelSetupCPU(nbKernelOptions));
+    EXPECT_ANY_THROW(createKernelSetupCPU(nbKernelOptions.nbnxmSimd, nbKernelOptions.useTabulatedEwaldCorr));
 }
 #endif
 
@@ -175,7 +177,7 @@ TEST(NbnxmSetupTest, cannotCreateKernelSetupCPU4XM)
     NBKernelOptions nbKernelOptions;
     nbKernelOptions.nbnxmSimd             = SimdKernels::Simd4XM;
     nbKernelOptions.useTabulatedEwaldCorr = false;
-    EXPECT_ANY_THROW(createKernelSetupCPU(nbKernelOptions));
+    EXPECT_ANY_THROW(createKernelSetupCPU(nbKernelOptions.nbnxmSimd, nbKernelOptions.useTabulatedEwaldCorr));
 }
 #endif
 

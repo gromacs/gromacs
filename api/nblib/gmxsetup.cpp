@@ -76,15 +76,10 @@ void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
     setGmxNonBondedNThreads(options.numOpenMPThreads);
 }
 
-Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
-{
-    return createKernelSetupCPU(options);
-}
-
 void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
 
 {
-    particleInfoAllVdw_ = createParticleInfoAllVdv(numParticles);
+    particleInfoAllVdw_ = createParticleInfoAllVdw(numParticles);
 }
 
 void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& particleTypes,

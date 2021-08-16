@@ -82,17 +82,17 @@ int64_t findNumEnergyGroups(gmx::ArrayRef<int64_t> particleInteractionFlags);
 //! Helper to translate between the different enumeration values.
 Nbnxm::KernelType translateBenchmarkEnum(const SimdKernels& kernel);
 
-/*! \brief Checks the kernel setup
+/*! \brief Checks the kernel SIMD setup in CPU case
  *
  * Throws an exception when the kernel is not available.
  */
-void checkKernelSetup(SimdKernels nbnxmSimd);
+void checkKernelSetupSimd(SimdKernels nbnxmSimd);
 
-//! Creates and returns the kernel setup
-Nbnxm::KernelSetup createKernelSetupCPU(const NBKernelOptions& options);
+//! Creates and returns the kernel setup for CPU
+Nbnxm::KernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bool useTabulatedEwaldCorr);
 
 //! Create Particle info array to mark those that undergo VdV interaction
-std::vector<int64_t> createParticleInfoAllVdv(size_t numParticles);
+std::vector<int64_t> createParticleInfoAllVdw(size_t numParticles);
 
 //! Create the non-bonded parameter vector in GROMACS format
 std::vector<real> createNonBondedParameters(const std::vector<ParticleType>& particleTypes,
