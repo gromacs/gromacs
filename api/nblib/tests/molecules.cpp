@@ -212,6 +212,32 @@ TEST(NBlibTest, CanAddInteractions)
     EXPECT_EQ(pickType<HarmonicAngle>(interactionData).interactions_.size(), 1);
 }
 
+TEST(NBlibTest, CanAddUreyBradley)
+{
+    Molecule     molecule(MoleculeName("UreyBradleyTest"));
+    ParticleType O(ParticleTypeName("Ow"), Mass(1));
+    ParticleType H(ParticleTypeName("Hw"), Mass(1));
+    molecule.addParticle(ParticleName("O"), O);
+    molecule.addParticle(ParticleName("H1"), H);
+    molecule.addParticle(ParticleName("H2"), H);
+
+    addUreyBradleyInteraction(molecule,
+                              ParticleName("H1"),
+                              ParticleName("O"),
+                              ParticleName("H2"),
+                              Radians(1.82),
+                              ForceConstant(2.0),
+                              EquilConstant(0.15),
+                              ForceConstant(3.0));
+
+    const auto& interactionData = molecule.interactionData();
+
+    //! harmonic bonds
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactions_.size(), 1);
+    //! angular interactions
+    EXPECT_EQ(pickType<HarmonicAngle>(interactionData).interactions_.size(), 1);
+}
+
 } // namespace
 } // namespace test
 } // namespace nblib
