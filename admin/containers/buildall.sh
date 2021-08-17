@@ -10,15 +10,16 @@ SCRIPT=$PWD/scripted_gmx_docker_builds.py
 # thread and no MPI configurations.
 
 args[${#args[@]}]="--gcc 11 --clfft --mpi openmpi --rocm"
-args[${#args[@]}]="--gcc 10 --cuda 11.4.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--gcc 11 --cuda 11.4.1 --clfft --mpi openmpi"
 args[${#args[@]}]="--gcc 7 --cuda 11.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--llvm 11 --cuda 11.4.1"
 args[${#args[@]}]="--llvm 11 --tsan"
 args[${#args[@]}]="--llvm 8 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 12 --clfft --mpi openmpi --rocm"
 args[${#args[@]}]="--oneapi 2021.3.0"
 args[${#args[@]}]="--oneapi 2021.2.0 --intel-compute-runtime 21.21.19914"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7"
-args[${#args[@]}]="--llvm 11 --cuda 11.4.0 --hipsycl 0bf6420aab18 --rocm 4.2"
+args[${#args[@]}]="--llvm 12 --cuda 11.4.1 --hipsycl 4481c03 --rocm 4.3"
 
 echo "Building the following images."
 for arg_string in "${args[@]}"; do
