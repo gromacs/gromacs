@@ -377,6 +377,13 @@ macro (gmx_c_flags)
         if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 202110)
             GMX_TEST_CXXFLAG(CXXFLAGS_NO_UNROLL_WARNING "-Wno-pass-failed" GMXC_CXXFLAGS)
         endif()
+        # Intel ICPX compiler since 2021.3.0 uses -ffp-contract=fast option by default.
+        # This causes issues with the CorrelationsTests ExpfitTest.EffnERREST.
+        # The root cause is the test itself, but while it's being fixed, here is a workaround.
+        # See Issue #3955. TODO: Remove once the issue is resolved (e.g., by !1794).
+        if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 20210300)
+            GMX_TEST_CXXFLAG(CXXFLAGS_FFP_CONTRACT "-ffp-contract=on" GMXC_CXXFLAGS)
+        endif()
     endif()
 
     # Apple bastardized version of Clang
