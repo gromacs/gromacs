@@ -71,10 +71,7 @@ public:
     /*! \brief Create Update-Constrain object.
      *
      * The constructor is given a non-nullptr \p deviceStream, in which all the update and constrain
-     * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that
-     * modify coordinates. The event is maintained outside this class and also passed to all (if
-     * any) consumers of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr
-     * because the markEvent(...) method is called unconditionally.
+     * routines are executed.
      *
      * \param[in] ir                  Input record data: LINCS takes number of iterations and order of
      *                                projection from it.
@@ -83,17 +80,14 @@ public:
      * \param[in] numTempScaleValues  Number of temperature scaling groups. Zero for no temperature scaling.
      * \param[in] deviceContext       GPU device context.
      * \param[in] deviceStream        GPU stream to use.
-     * \param[in] xUpdatedOnDevice    The event synchronizer to use to mark that update is done
-     *                                on the GPU.
      * \param[in] wcycle              The wallclock counter
      */
-    UpdateConstrainGpu(const t_inputrec&     ir,
-                       const gmx_mtop_t&     mtop,
-                       int                   numTempScaleValues,
-                       const DeviceContext&  deviceContext,
-                       const DeviceStream&   deviceStream,
-                       GpuEventSynchronizer* xUpdatedOnDevice,
-                       gmx_wallcycle*        wcycle);
+    UpdateConstrainGpu(const t_inputrec&    ir,
+                       const gmx_mtop_t&    mtop,
+                       int                  numTempScaleValues,
+                       const DeviceContext& deviceContext,
+                       const DeviceStream&  deviceStream,
+                       gmx_wallcycle*       wcycle);
 
     ~UpdateConstrainGpu();
 
@@ -166,9 +160,10 @@ public:
      */
     void setPbc(PbcType pbcType, const matrix box);
 
-    /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
+    /*! \brief Return the synchronizer associated with the event that indicates
+     * that the coordinates are ready on the device.
      */
-    GpuEventSynchronizer* getCoordinatesReadySync();
+    GpuEventSynchronizer* xUpdatedOnDeviceEvent();
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported

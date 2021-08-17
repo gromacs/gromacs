@@ -117,7 +117,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
         }
     }
 
-    coordinatesReady_->markEvent(deviceStream_);
+    xUpdatedOnDeviceEvent_.markEvent(deviceStream_);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
@@ -149,20 +149,14 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
-                               const gmx_mtop_t&     mtop,
-                               const int             numTempScaleValues,
-                               const DeviceContext&  deviceContext,
-                               const DeviceStream&   deviceStream,
-                               GpuEventSynchronizer* xUpdatedOnDevice,
-                               gmx_wallcycle*        wcycle) :
-    deviceContext_(deviceContext),
-    deviceStream_(deviceStream),
-    coordinatesReady_(xUpdatedOnDevice),
-    wcycle_(wcycle)
+UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
+                               const gmx_mtop_t&    mtop,
+                               const int            numTempScaleValues,
+                               const DeviceContext& deviceContext,
+                               const DeviceStream&  deviceStream,
+                               gmx_wallcycle*       wcycle) :
+    deviceContext_(deviceContext), deviceStream_(deviceStream), wcycle_(wcycle)
 {
-    GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
-
     integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_, numTempScaleValues);
     if (sc_haveGpuConstraintSupport)
     {
@@ -220,19 +214,18 @@ void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)
     setPbcAiuc(numPbcDimensions(pbcType), box, &pbcAiuc_);
 }
 
-GpuEventSynchronizer* UpdateConstrainGpu::Impl::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainGpu::Impl::xUpdatedOnDeviceEvent()
 {
-    return coordinatesReady_;
+    return &xUpdatedOnDeviceEvent_;
 }
 
-UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
-                                       const gmx_mtop_t&     mtop,
-                                       const int             numTempScaleValues,
-                                       const DeviceContext&  deviceContext,
-                                       const DeviceStream&   deviceStream,
-                                       GpuEventSynchronizer* xUpdatedOnDevice,
-                                       gmx_wallcycle*        wcycle) :
-    impl_(new Impl(ir, mtop, numTempScaleValues, deviceContext, deviceStream, xUpdatedOnDevice, wcycle))
+UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&    ir,
+                                       const gmx_mtop_t&    mtop,
+                                       const int            numTempScaleValues,
+                                       const DeviceContext& deviceContext,
+                                       const DeviceStream&  deviceStream,
+                                       gmx_wallcycle*       wcycle) :
+    impl_(new Impl(ir, mtop, numTempScaleValues, deviceContext, deviceStream, wcycle))
 {
 }
 
@@ -285,9 +278,9 @@ void UpdateConstrainGpu::setPbc(const PbcType pbcType, const matrix box)
     impl_->setPbc(pbcType, box);
 }
 
-GpuEventSynchronizer* UpdateConstrainGpu::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainGpu::xUpdatedOnDeviceEvent()
 {
-    return impl_->getCoordinatesReadySync();
+    return impl_->xUpdatedOnDeviceEvent();
 }
 
 bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)

@@ -48,6 +48,7 @@
 
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #    include "gromacs/math/vectypes.h"
 #    include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #    include "gromacs/timing/wallcycle.h"
@@ -358,7 +359,8 @@ StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality atom
     }
     if (atomLocality == AtomLocality::Local && simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
     {
-        return &xUpdatedOnDevice_;
+        GMX_ASSERT(xUpdatedOnDeviceEvent_ != nullptr, "The event synchronizer can not be nullptr.");
+        return xUpdatedOnDeviceEvent_;
     }
     else
     {
@@ -374,9 +376,10 @@ void StatePropagatorDataGpu::Impl::waitCoordinatesCopiedToDevice(AtomLocality at
     wallcycle_stop(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::Impl::xUpdatedOnDevice()
+void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent)
 {
-    return &xUpdatedOnDevice_;
+    GMX_ASSERT(xUpdatedOnDeviceEvent != nullptr, "The event synchronizer can not be nullptr.");
+    xUpdatedOnDeviceEvent_ = xUpdatedOnDeviceEvent;
 }
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x, AtomLocality atomLocality)
@@ -624,9 +627,9 @@ void StatePropagatorDataGpu::waitCoordinatesCopiedToDevice(AtomLocality atomLoca
     return impl_->waitCoordinatesCopiedToDevice(atomLocality);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::xUpdatedOnDevice()
+void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent)
 {
-    return impl_->xUpdatedOnDevice();
+    impl_->setXUpdatedOnDeviceEvent(xUpdatedOnDeviceEvent);
 }
 
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec> h_x, AtomLocality atomLocality)

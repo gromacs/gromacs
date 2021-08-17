@@ -206,11 +206,11 @@ public:
      */
     void waitCoordinatesCopiedToDevice(AtomLocality atomLocality);
 
-    /*! \brief Getter for the event synchronizer for the update is done on th GPU
+    /*! \brief Setter for the event synchronizer for the update is done on th GPU
      *
-     *  \returns  The event to synchronize the stream coordinates wre updated on device.
+     *  \param[in] xUpdatedOnDeviceEvent  The event to synchronize the stream coordinates wre updated on device.
      */
-    GpuEventSynchronizer* xUpdatedOnDevice();
+    void setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent);
 
     /*! \brief Copy positions from the GPU memory.
      *

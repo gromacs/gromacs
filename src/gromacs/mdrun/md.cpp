@@ -482,8 +482,9 @@ void gmx::LegacySimulator::do_md()
                 ekind->ngtc,
                 fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
-                stateGpu->xUpdatedOnDevice(),
                 wcycle);
+
+        stateGpu->setXUpdatedOnDeviceEvent(integrator->xUpdatedOnDeviceEvent());
 
         integrator->setPbc(PbcType::Xyz, state->box);
     }
