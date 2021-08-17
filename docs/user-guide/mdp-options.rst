@@ -849,10 +849,10 @@ Tables
 
    Currently unsupported.
    When user tables are used for electrostatics and/or VdW, here one
-   can give pairs of energy groups for which seperate user tables
+   can give pairs of energy groups for which separate user tables
    should be used. The two energy groups will be appended to the table
    file name, in order of their definition in :mdp:`energygrps`,
-   seperated by underscores. For example, if ``energygrps = Na Cl
+   separated by underscores. For example, if ``energygrps = Na Cl
    Sol`` and ``energygrp-table = Na Na Na Cl``, :ref:`gmx mdrun` will
    read ``table_Na_Na.xvg`` and ``table_Na_Cl.xvg`` in addition to the
    normal ``table.xvg`` which will be used for all other energy group

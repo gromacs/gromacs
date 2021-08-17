@@ -129,7 +129,7 @@ private:
     // while clang requires it to avoid -Wunused
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
-    //! Wether we use forceMtsCombined_
+    //! Whether we use forceMtsCombined_
     gmx_used_in_debug bool useForceMtsCombined_;
 #pragma GCC diagnostic pop
 };
@@ -192,7 +192,7 @@ private:
     PaddedHostVector<RVec> forceMtsCombined_;
     //! The view to the force buffer
     ForceBuffersView view_;
-    //! Wether we use forceMtsCombined_
+    //! Whether we use forceMtsCombined_
     bool useForceMtsCombined_;
 };
 

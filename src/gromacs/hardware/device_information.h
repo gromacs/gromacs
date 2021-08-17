@@ -80,7 +80,7 @@ enum class DeviceStatus : int
     IncompatibleClusterSize = 3,
     //! There are known issues with OpenCL on NVIDIA Volta and newer.
     IncompatibleNvidiaVolta = 4,
-    /* \brief The device originates from non-recommended SYCL backend.
+    /*! \brief The device originates from non-recommended SYCL backend.
      * The device might work by itself, but to simplify device allocation, it is marked as incompatible.
      * */
     NotPreferredBackend = 5,

@@ -342,7 +342,7 @@ gmx_bool gmx_fexist(const std::string& fname)
     FILE* test = fopen(fname.c_str(), "r");
     if (test == nullptr)
     {
-/*Windows doesn't allow fopen of directory - so we need to check this seperately */
+/*Windows doesn't allow fopen of directory - so we need to check this separately */
 #if GMX_NATIVE_WINDOWS
         DWORD attr = GetFileAttributes(fname.c_str());
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);

@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ if [ "$filename" == "" ]; then
     exit 1
 fi
 
-# We cannot detect wether it is a C++ or C header. Should be fine to always use C++
+# We cannot detect whether it is a C++ or C header. Should be fine to always use C++
 if [ "${filename##*.}" == "h" ]; then
     cmd="$cmd -x c++"
 fi

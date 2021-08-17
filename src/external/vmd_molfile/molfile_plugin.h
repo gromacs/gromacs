@@ -343,7 +343,7 @@ typedef struct {
   int memory;            /**< amount of memory used in Mbyte. XXX:? */ 
   int runtype;           /**< flag indicating the calculation method. */
   int scftype;           /**< SCF type: RHF, UHF, ROHF, GVB or MCSCF wfn. */
-  int status;            /**< indicates wether SCF and geometry optimization
+  int status;            /**< indicates whether SCF and geometry optimization
                           *   have converged properly. */
   int num_electrons;     /**< number of electrons.    XXX: can be fractional in some DFT codes */
   int totalcharge;       /**< total charge of system. XXX: can be fractional in some DFT codes */

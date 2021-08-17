@@ -110,7 +110,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         // TODO Argument parsing can't handle std::string. We should
         // fix that by changing the parsing, once more of the roles of
         // handling, validating and implementing defaults for user
-        // command-line options have been seperated.
+        // command-line options have been separated.
         hw_opt.devicesSelectedByUser = devicesSelectedByUser;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 

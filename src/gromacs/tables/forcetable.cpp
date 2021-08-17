@@ -153,7 +153,7 @@ EwaldCorrectionTables generateEwaldCorrectionTables(const int    numPoints,
     double   x_r0;
 
     /* This function is called using either v_ewald_lr or v_lj_ewald_lr as a function argument
-     * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
+     * depending on whether we should create electrostatic or Lennard-Jones Ewald tables.
      */
 
     if (numPoints < 2)

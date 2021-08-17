@@ -318,7 +318,7 @@ private:
     const DeviceStream* localStream_;
     //! GPU NBNXM non-local stream.
     const DeviceStream* nonLocalStream_;
-    //! GPU Update-constreaints stream.
+    //! GPU Update-constraints stream.
     const DeviceStream* updateStream_;
 
     // Streams to use for coordinates H2D and D2H copies (one event for each atom locality)

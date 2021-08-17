@@ -145,7 +145,7 @@ struct bonded_threading_t
     int numAtomsForce = 0;
 
     /* There are two different ways to distribute the bonded force calculation
-     * over the threads. We dedice which to use based on the number of threads.
+     * over the threads. We decide which to use based on the number of threads.
      */
     //! Maximum thread count for uniform distribution of bondeds over threads
     int max_nthread_uniform = 0;

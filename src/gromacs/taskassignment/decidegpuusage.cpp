@@ -527,7 +527,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
     // is busy, for which we currently only check PME or Ewald.
     // (It would be better to dynamically assign bondeds based on timings)
     // Note that here we assume that the auto setting of PME ranks will not
-    // choose seperate PME ranks when nonBonded are assigned to the GPU.
+    // choose separate PME ranks when nonBonded are assigned to the GPU.
     bool usingOurCpuForPmeOrEwald =
             (EVDW_PME(inputrec.vdwtype)
              || (EEL_PME_EWALD(inputrec.coulombtype) && !useGpuForPme && numPmeRanksPerSimulation <= 0));

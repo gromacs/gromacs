@@ -2286,7 +2286,7 @@ clfftStatus	clfftBakePlan( clfftPlanHandle plHandle, cl_uint numQueues, cl_comma
 						clLengths[1] = fftPlan->length[1];
 
 						//NON_SQUARE_KERNEL_ORDER currKernelOrder;
-						// controling the transpose and swap kernel order
+						// controlling the transpose and swap kernel order
 						// if leading dim is larger than the other dim it makes sense to swap and transpose
 						if (clLengths[0] > clLengths[1])
 						{

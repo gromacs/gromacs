@@ -124,7 +124,7 @@ struct PartialDeserializedTprFile
 /*
  * These routines handle reading and writing of preprocessed
  * topology files in any of the following formats:
- * TPR : topology in XDR format, portable accross platforms
+ * TPR : topology in XDR format, portable across platforms
  *
  * Files are written in the precision with which the source are compiled,
  * but double and single precision can be read by either.

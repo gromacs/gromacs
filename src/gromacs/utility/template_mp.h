@@ -60,7 +60,8 @@ auto dispatchTemplatedFunction(Function&& f)
     return std::forward<Function>(f)();
 }
 
-/** \internal \brief Helper function to select appropriate template based on runtime values.
+/*! \internal \brief
+ * Helper function to select appropriate template based on runtime values.
  *
  * Can use enums or booleans for template parameters.
  * These enums must have a member \c Count indicating the total number of valid values.

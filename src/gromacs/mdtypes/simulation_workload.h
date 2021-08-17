@@ -160,7 +160,7 @@ class SimulationWorkload
 public:
     //! Whether to compute nonbonded pair interactions
     bool computeNonbonded = false;
-    //! Wether nonbonded pair forces are to be computed at slow MTS steps only
+    //! Whether nonbonded pair forces are to be computed at slow MTS steps only
     bool computeNonbondedAtMtsLevel1 = false;
     //! Whether total dipole needs to be computed
     bool computeMuTot = false;

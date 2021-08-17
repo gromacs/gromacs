@@ -336,7 +336,7 @@ Variables affecting the ``all`` target
   Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
   run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable is set with
   ``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
-  To apply the automatic fixes to the issue identified clang-tidy should be run seperately (running clang-tidy
+  To apply the automatic fixes to the issue identified clang-tidy should be run separately (running clang-tidy
   with ``-fix-errors`` as part of the build can corrupt header files). To fix a specific file run
   ``clang-tidy -fix-errors -header-filter '.*' {file}``, to fix all files in parallel
   ``run-clang-tidy.py -fix -header-filter '.*' '(?<!/selection/parser\.cpp|selection/scanner\.cpp)$'``,

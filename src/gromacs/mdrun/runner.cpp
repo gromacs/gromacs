@@ -1391,7 +1391,7 @@ int Mdrunner::mdrunner()
     }
 
     // The GPU update is decided here because we need to know whether the constraints or
-    // SETTLEs can span accross the domain borders (i.e. whether or not update groups are
+    // SETTLEs can span across the domain borders (i.e. whether or not update groups are
     // defined). This is only known after DD is initialized, hence decision on using GPU
     // update is done so late.
     try

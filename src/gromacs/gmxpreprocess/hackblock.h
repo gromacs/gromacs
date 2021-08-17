@@ -177,7 +177,7 @@ struct MoleculePatch
     std::vector<t_atom> atom;
     //! Chargegroup number.
     int cgnr = NOTSET;
-    //! Type of attachement.
+    //! Type of attachment.
     int tp = 0;
     //! Number of control atoms.
     int nctl = 0;

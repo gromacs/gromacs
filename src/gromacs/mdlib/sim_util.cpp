@@ -1093,7 +1093,7 @@ static void reduceAndUpdateMuTot(DipoleData*                   dipoleData,
     }
 }
 
-/*! \brief Combines MTS level0 and level1 force buffes into a full and MTS-combined force buffer.
+/*! \brief Combines MTS level0 and level1 force buffers into a full and MTS-combined force buffer.
  *
  * \param[in]     numAtoms        The number of atoms to combine forces for
  * \param[in,out] forceMtsLevel0  Input: F_level0, output: F_level0 + F_level1

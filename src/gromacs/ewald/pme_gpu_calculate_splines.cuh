@@ -173,7 +173,7 @@ __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_desti
  * \tparam[in] atomsPerBlock        Number of atoms processed by a block - should be accounted for
  *                                  in the sizes of the shared memory arrays.
  * \tparam[in] atomsPerWarp         Number of atoms processed by a warp
- * \tparam[in] writeSmDtheta        Bool controling if the theta derivative should be written to shared memory. Enables calculation of dtheta if set.
+ * \tparam[in] writeSmDtheta        Bool controlling if the theta derivative should be written to shared memory. Enables calculation of dtheta if set.
  * \tparam[in] writeGlobal          A boolean which tells if the theta values and gridlines should be written to global memory. Enables calculation of dtheta if set.
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
  * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
