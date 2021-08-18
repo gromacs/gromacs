@@ -41,6 +41,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 
 #include <gtest/gtest.h>
@@ -100,6 +102,26 @@ TEST(GpuEventSynchronizerTest, BasicFunctionality)
             gpuEventSynchronizer.markEvent(streamB);
             gpuEventSynchronizer.waitForEvent();
         }
+
+#    if !GMX_GPU_CUDA // CUDA has very lax rules for event consumption. See Issues #2527 and #3988.
+        {
+            SCOPED_TRACE("Wait before marking");
+            GpuEventSynchronizer gpuEventSynchronizer;
+            EXPECT_THROW(gpuEventSynchronizer.waitForEvent(), gmx::InternalError);
+        }
+        {
+            SCOPED_TRACE("enqueueWait before marking");
+            GpuEventSynchronizer gpuEventSynchronizer;
+            EXPECT_THROW(gpuEventSynchronizer.enqueueWaitEvent(streamA), gmx::InternalError);
+        }
+        {
+            SCOPED_TRACE("Wait twice after marking");
+            GpuEventSynchronizer gpuEventSynchronizer;
+            gpuEventSynchronizer.markEvent(streamA);
+            gpuEventSynchronizer.waitForEvent();
+            EXPECT_THROW(gpuEventSynchronizer.waitForEvent(), gmx::InternalError);
+        }
+#    endif
     }
 }
 #endif // GMX_GPU

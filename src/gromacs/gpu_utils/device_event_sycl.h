@@ -47,10 +47,10 @@
  *  \author Andrey Alekseenko <al42and@gmail.com>
  * \inlibraryapi
  */
-#ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
-#define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
+#ifndef GMX_GPU_UTILS_DEVICE_EVENT_SYCL_H
+#define GMX_GPU_UTILS_DEVICE_EVENT_SYCL_H
 
-#include <optional>
+#include <vector>
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
@@ -58,51 +58,31 @@
 #include "gromacs/utility/gmxassert.h"
 
 #ifndef DOXYGEN
-/*! \libinternal \brief
- * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
- * The event can be put into the stream with markEvent() and then later waited on with waitForEvent().
- * This can be repeated as necessary, but the current implementation does not allow waiting on
- * completed event more than once, expecting only exact pairs of markEvent(stream); waitForEvent().
- * The class generally attempts to track the correctness of its state transitions, but
- * please note that calling waitForEvent() right after the construction will fail with OpenCL
- * and SYCL but succeed with CUDA.
- *
- * Another possible mode of operation can be implemented if needed:
- * multiple calls to waitForEvent() after a single markEvent(). For this, event.reset() call
- * from waitForEvent() should instead happen conditionally at the beginning of markEvent(), replacing
- * the GMX_ASSERT(). This was tested to work both with CUDA, NVidia OpenCL, and Intel SYCL,
- * but not with AMD/Intel OpenCl.
- *
- *  \warning This class is offered for uniformity with other GPU implementations, but expect it to
- *  be deprecated in the future.
- *
- */
-class GpuEventSynchronizer
+
+class DeviceEvent
 {
 public:
     //! A constructor.
-    GpuEventSynchronizer()
+    DeviceEvent()
     {
         doNotSynchronizeBetweenStreams_ = (std::getenv("GMX_GPU_SYCL_NO_SYNCHRONIZE") != nullptr);
         events_.reserve(1);
     }
     //! A constructor from an existing event.
-    GpuEventSynchronizer(const cl::sycl::event& event) : events_{ event } {}
+    DeviceEvent(const cl::sycl::event& event) : events_{ event } {}
     //! A destructor.
-    ~GpuEventSynchronizer() = default;
-    //! No copying
-    GpuEventSynchronizer(const GpuEventSynchronizer&) = delete;
-    //! No assignment
-    GpuEventSynchronizer& operator=(GpuEventSynchronizer&&) = delete;
-    //! Moving is disabled but can be considered in the future if needed
-    GpuEventSynchronizer(GpuEventSynchronizer&&) = delete;
+    ~DeviceEvent() = default;
+    // Disable copy, move, and assignment. They all can be allowed, but not needed yet.
+    DeviceEvent& operator=(const DeviceEvent&) = delete;
+    DeviceEvent(const DeviceEvent&)            = delete;
+    DeviceEvent& operator=(DeviceEvent&&) = delete;
+    DeviceEvent(DeviceEvent&&)            = delete;
 
     /*! \brief Marks the synchronization point in the \p deviceStream.
-     * Should be called first and then followed by waitForEvent() or enqueueWaitEvent().
+     * Should be called first and then followed by wait() or enqueueWait().
      */
-    inline void markEvent(const DeviceStream& deviceStream)
+    inline void mark(const DeviceStream& deviceStream)
     {
-        GMX_ASSERT(!isMarked(), "Do not call markEvent more than once!");
 #    if GMX_SYCL_HIPSYCL
         // Relies on HIPSYCL_EXT_QUEUE_WAIT_LIST extension
         events_ = deviceStream.stream().get_wait_list();
@@ -111,39 +91,21 @@ public:
         events_ = { deviceStream.stream().submit_barrier() };
 #    endif
     }
-    /*! \brief Synchronizes the host thread on the marked event.
-     * As in the OpenCL implementation, the event is released.
-     */
-    inline void waitForEvent()
+
+    //! Synchronizes the host thread on the marked event.
+    inline void wait()
     {
-        GMX_ASSERT(isMarked(), "Don't call waitForEvent before marking the event!");
 #    if GMX_SYCL_DPCPP
-        GMX_ASSERT(events_.size() == 1, "One event expected in DPCPP, but we have several!");
+        // Note: this is not to prevent use-before-marking, but for checking the DPC++ vs hipSYCL consistency
+        GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
 #    endif
         for (auto& event : events_)
         {
             event.wait_and_throw();
         }
-        reset();
     }
-    /*! \brief Checks the completion of the underlying event and resets the object if it was. */
-    inline bool isReady()
-    {
-        bool allReady = std::all_of(events_.begin(), events_.end(), [](cl::sycl::event& event) {
-            auto info       = event.get_info<cl::sycl::info::event::command_execution_status>();
-            bool isComplete = (info == cl::sycl::info::event_command_status::complete);
-            return isComplete;
-        });
-        if (allReady)
-        {
-            reset();
-        }
-        return allReady;
-    }
-    /*! \brief Enqueues a wait for the recorded event in stream \p deviceStream.
-     * As in the OpenCL implementation, the event is released.
-     */
-    inline void enqueueWaitEvent(const DeviceStream& deviceStream)
+
+    inline void enqueueWait(const DeviceStream& deviceStream)
     {
         if (!doNotSynchronizeBetweenStreams_)
         {
@@ -151,21 +113,33 @@ public:
             // Submit an empty kernel that depends on all the events recorded.
             deviceStream.stream().single_task(events_, [=]() {});
 #    else
+            GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
             // Relies on SYCL_INTEL_enqueue_barrier extensions
-            GMX_ASSERT(events_.size() == 1, "Only one event expected in DPCPP!");
             deviceStream.stream().submit_barrier(events_);
 #    endif
         }
-        reset();
     }
+
+    //! Checks the completion of the underlying event.
+    inline bool isReady()
+    {
+        bool allReady = std::all_of(events_.begin(), events_.end(), [](cl::sycl::event& event) {
+            auto info       = event.get_info<cl::sycl::info::event::command_execution_status>();
+            bool isComplete = (info == cl::sycl::info::event_command_status::complete);
+            return isComplete;
+        });
+        return allReady;
+    }
+
+    //! Checks whether this object encapsulates an underlying event.
+    inline bool isMarked() { return !events_.empty(); }
+
     //! Reset the event to unmarked state.
     inline void reset() { events_.clear(); }
-    //! Check if the event is marked. Needed for some workarounds for #3988
-    inline bool isMarked() const { return !events_.empty(); }
 
 private:
     std::vector<cl::sycl::event> events_;
-    /*! \brief Dev. setting to no-op enqueueWaitEvent
+    /*! \brief Dev. setting to no-op enqueueWait
      *
      * In SYCL, dependencies between the GPU tasks are managed by the runtime, so manual
      * synchronization between GPU streams should be redundant, but we keep it on by default.
@@ -176,6 +150,6 @@ private:
     bool doNotSynchronizeBetweenStreams_;
 };
 
-#endif // !defined DOXYGEN
+#endif // DOXYGEN
 
-#endif // GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
+#endif // GMX_GPU_UTILS_DEVICE_EVENT_SYCL_H
