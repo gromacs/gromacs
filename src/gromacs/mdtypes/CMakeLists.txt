@@ -48,6 +48,7 @@ file(GLOB MDTYPES_SOURCES
     md_enums.cpp
     multipletimestepping.cpp
     observableshistory.cpp
+    observablesreducer.cpp
     state.cpp)
 
 if(GMX_GPU)
