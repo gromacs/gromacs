@@ -56,8 +56,10 @@ class DeviceStream;
 // [[noreturn]] attributes must be added to the methods, so it's
 // easier to silence the warning here and avoid them appearing in
 // the Doxygen
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+#    ifdef __clang__
+#        pragma clang diagnostic push
+#        pragma clang diagnostic ignored "-Wmissing-noreturn"
+#    endif
 
 class DeviceEvent
 {
@@ -106,7 +108,9 @@ public:
     }
 };
 
-#    pragma clang diagnostic pop
+#    ifdef __clang__
+#        pragma clang diagnostic pop
+#    endif
 
 #elif GMX_GPU_CUDA
 #    include "device_event.cuh"
