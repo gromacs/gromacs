@@ -120,7 +120,16 @@ using HarmonicBondType = TwoParameterInteraction<struct HarmonicBondTypeParamete
  * It represents the interaction of the form
  * V(r, forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilConstant^2)^2
  */
-using G96BondType = TwoParameterInteraction<struct G96BondTypeParameter>;
+class G96BondType : public TwoParameterInteraction<struct G96BondTypeParameter>
+{
+public:
+    G96BondType() = default;
+    //! \brief Store square of equilibrium distance
+    G96BondType(ForceConstant f, EquilConstant equilConstant) :
+        TwoParameterInteraction<struct G96BondTypeParameter>{ f, equilConstant * equilConstant }
+    {
+    }
+};
 
 
 /*! \brief FENE bond type
