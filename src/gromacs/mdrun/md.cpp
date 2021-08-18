@@ -1016,7 +1016,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         // Allocate or re-size GPU halo exchange object, if necessary
-        if (bNS && havePPDomainDecomposition(cr) && simulationWork.useGpuHaloExchange)
+        if (bNS && simulationWork.havePpDomainDecomposition && simulationWork.useGpuHaloExchange)
         {
             GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
                                "GPU device manager has to be initialized to use GPU "
@@ -1510,18 +1510,14 @@ void gmx::LegacySimulator::do_md()
                     /* The velocity copy is redundant if we had Center-of-Mass motion removed on
                      * the previous step. We don't check that now. */
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
-                    // coordinates have been copied already if PME or buffer ops has not needed it this step.
-                    const bool useGpuPmeOnThisRank = runScheduleWork->simulationWork.useGpuPme
-                                                     && thisRankHasDuty(cr, DUTY_PME)
-                                                     && runScheduleWork->stepWork.computeSlowForces;
-                    if (!useGpuPmeOnThisRank && !runScheduleWork->stepWork.useGpuXBufferOps)
+                    if (!runScheduleWork->stepWork.haveGpuPmeOnThisRank
+                        && !runScheduleWork->stepWork.useGpuXBufferOps)
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
                     }
                 }
 
-                if (simulationWork.useGpuPme && !runScheduleWork->simulationWork.useGpuPmePpCommunication
-                    && !thisRankHasDuty(cr, DUTY_PME))
+                if (simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
                 {
                     // The PME forces were recieved to the host, so have to be copied
                     stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::All);
@@ -2034,7 +2030,7 @@ void gmx::LegacySimulator::do_md()
     /* Stop measuring walltime */
     walltime_accounting_end_time(walltime_accounting);
 
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (simulationWork.haveSeparatePmeRank)
     {
         /* Tell the PME only node to finish */
         gmx_pme_send_finish(cr);
