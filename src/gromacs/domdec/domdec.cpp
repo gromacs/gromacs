@@ -3221,3 +3221,42 @@ void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces)
         }
     }
 }
+
+void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
+                                            const gmx_mtop_t&        mtop,
+                                            const matrix             box,
+                                            gmx::ArrayRef<gmx::RVec> positions)
+{
+    int atomOffset = 0;
+    for (const gmx_molblock_t& molblock : mtop.molblock)
+    {
+        const auto& updateGrouping = dd.comm->systemInfo.updateGroupingPerMoleculetype[molblock.type];
+
+        for (int mol = 0; mol < molblock.nmol; mol++)
+        {
+            for (int g = 0; g < updateGrouping.numBlocks(); g++)
+            {
+                const auto& block     = updateGrouping.block(g);
+                const int   atomBegin = atomOffset + block.begin();
+                const int   atomEnd   = atomOffset + block.end();
+                for (int a = atomBegin + 1; a < atomEnd; a++)
+                {
+                    // Make sure that atoms in the same update group
+                    // are in the same periodic image after restarts.
+                    for (int d = DIM - 1; d >= 0; d--)
+                    {
+                        while (positions[a][d] - positions[atomBegin][d] > 0.5_real * box[d][d])
+                        {
+                            positions[a] -= box[d];
+                        }
+                        while (positions[a][d] - positions[atomBegin][d] < -0.5_real * box[d][d])
+                        {
+                            positions[a] += box[d];
+                        }
+                    }
+                }
+            }
+            atomOffset += updateGrouping.fullRange().end();
+        }
+    }
+}

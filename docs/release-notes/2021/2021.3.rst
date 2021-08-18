@@ -44,6 +44,16 @@ https://gitlab.com/gromacs/gromacs/-/tree/master/python_packaging/sample_restrai
 
 :issue:`4078` and :issue:`4102`
 
+Fixed multi-rank restarts from checkpoints written by single-rank simulations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Currently a single-rank simulation never uses update groups, however a
+multi-rank run can do so. This fix ensures that the atoms within
+update groups always start in the same periodic image, which was not
+guaranteed if the checkpoint was written by a single-rank simulation.
+
+:issue:`4016`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
