@@ -62,6 +62,7 @@ struct DevelopmentFeatureFlags;
  * \param[in] disableNonbondedCalculation  Disable calculation of nonbonded forces
  * \param[in] devFlags           The development feature flags
  * \param[in] havePpDomainDecomposition Whether PP domain decomposition is used in this run.
+ * \param[in] haveSeparatePmeRank Whether separate PME rank(s) are used in this run.
  * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
  *                               calculations on GPU(s).
  * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
@@ -75,6 +76,7 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             bool              disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool       havePpDomainDecomposition,
+                                            bool       haveSeparatePmeRank,
                                             bool       useGpuForNonbonded,
                                             PmeRunMode pmeRunMode,
                                             bool       useGpuForBonded,

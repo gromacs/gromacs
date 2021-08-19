@@ -187,6 +187,10 @@ public:
     bool useCpuHaloExchange = false;
     //! If domain decomposition halo exchange is performed on GPU.
     bool useGpuHaloExchange = false;
+    //! If separate PME rank(s) are used.
+    bool haveSeparatePmeRank = false;
+    //! If PP-PME communication is done purely on CPU (in CPU-only runs or with staged GPU communication).
+    bool useCpuPmePpCommunication = false;
     //! If direct PP-PME communication between GPU is used.
     bool useGpuPmePpCommunication = false;
     //! If direct GPU-GPU communication is enabled.

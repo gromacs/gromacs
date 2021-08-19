@@ -1147,19 +1147,19 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
     fr->gpuForceReduction[gmx::AtomLocality::Local]->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
 
     if (runScheduleWork->simulationWork.useGpuPme
-        && (thisRankHasDuty(cr, DUTY_PME) || runScheduleWork->simulationWork.useGpuPmePpCommunication))
+        && (!runScheduleWork->simulationWork.haveSeparatePmeRank
+            || runScheduleWork->simulationWork.useGpuPmePpCommunication))
     {
         DeviceBuffer<gmx::RVec> forcePtr =
-                thisRankHasDuty(cr, DUTY_PME) ? pme_gpu_get_device_f(fr->pmedata)
-                                              :                    // PME force buffer on same GPU
-                        fr->pmePpCommGpu->getGpuForceStagingPtr(); // buffer received from other GPU
+                runScheduleWork->simulationWork.haveSeparatePmeRank
+                        ? fr->pmePpCommGpu->getGpuForceStagingPtr() // buffer received from other GPU
+                        : pme_gpu_get_device_f(fr->pmedata);        // PME force buffer on same GPU
         fr->gpuForceReduction[gmx::AtomLocality::Local]->registerRvecForce(forcePtr);
 
         GpuEventSynchronizer* const pmeSynchronizer =
-                (thisRankHasDuty(cr, DUTY_PME) ? pme_gpu_get_f_ready_synchronizer(fr->pmedata)
-                                               : // PME force buffer on same GPU
-                         fr->pmePpCommGpu->getForcesReadySynchronizer()); // buffer received from other GPU
-
+                (runScheduleWork->simulationWork.haveSeparatePmeRank
+                         ? fr->pmePpCommGpu->getForcesReadySynchronizer() // buffer received from other GPU
+                         : pme_gpu_get_f_ready_synchronizer(fr->pmedata)); // PME force buffer on same GPU
         if (GMX_THREAD_MPI)
         {
             GMX_ASSERT(pmeSynchronizer != nullptr, "PME force ready cuda event should not be NULL");
@@ -1315,11 +1315,10 @@ void do_force(FILE*                               fplog,
     // to a remote task for halo exchange or PME-PP communication. At
     // search steps the current coordinates are already on the host,
     // hence copy is not needed.
-    const bool haveHostPmePpComms =
-            !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
-            || haveHostPmePpComms || simulationWork.useCpuHaloExchange || simulationWork.computeMuTot))
+            || simulationWork.useCpuPmePpCommunication || simulationWork.useCpuHaloExchange
+            || simulationWork.computeMuTot))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         haveCopiedXFromGpu = true;
@@ -1352,7 +1351,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (!thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces)
+    if (simulationWork.haveSeparatePmeRank && stepWork.computeSlowForces)
     {
         /* Send particle coordinates to the pme nodes */
         if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
@@ -1709,7 +1708,7 @@ void do_force(FILE*                               fplog,
     /* Reset energies */
     reset_enerdata(enerd);
 
-    if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
+    if (DOMAINDECOMP(cr) && simulationWork.haveSeparatePmeRank)
     {
         wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
         dd_force_flop_start(cr->dd, nrnb);
@@ -2214,7 +2213,7 @@ void do_force(FILE*                               fplog,
 
     // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
     // TODO refactor this and unify with below default-path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && simulationWork.useGpuPmePpCommunication
+    if (PAR(cr) && simulationWork.haveSeparatePmeRank && simulationWork.useGpuPmePpCommunication
         && stepWork.computeSlowForces)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
@@ -2272,7 +2271,8 @@ void do_force(FILE*                               fplog,
             // NOTE: If there are virtual sites, the forces are modified on host after this D2H copy. Hence,
             //       they should not be copied in do_md(...) for the output.
             if (!simulationWork.useGpuUpdate
-                || (simulationWork.useGpuUpdate && DOMAINDECOMP(cr) && haveHostPmePpComms) || vsite)
+                || (simulationWork.useGpuUpdate && DOMAINDECOMP(cr) && simulationWork.useCpuPmePpCommunication)
+                || vsite)
             {
                 stateGpu->copyForcesFromGpu(forceWithShift, AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
@@ -2308,7 +2308,7 @@ void do_force(FILE*                               fplog,
     }
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication
+    if (PAR(cr) && simulationWork.haveSeparatePmeRank && simulationWork.useCpuPmePpCommunication
         && stepWork.computeSlowForces)
     {
         /* In case of node-splitting, the PP nodes receive the long-range

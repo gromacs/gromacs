@@ -56,6 +56,7 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             const bool        disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool       havePpDomainDecomposition,
+                                            bool       haveSeparatePmeRank,
                                             bool       useGpuForNonbonded,
                                             PmeRunMode pmeRunMode,
                                             bool       useGpuForBonded,
@@ -80,8 +81,18 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.havePpDomainDecomposition = havePpDomainDecomposition;
     simulationWorkload.useCpuHaloExchange        = havePpDomainDecomposition && !useGpuDirectHalo;
     simulationWorkload.useGpuHaloExchange        = useGpuDirectHalo;
+    if (pmeRunMode == PmeRunMode::None)
+    {
+        GMX_RELEASE_ASSERT(!haveSeparatePmeRank, "Can not have separate PME rank(s) without PME.");
+    }
+    simulationWorkload.haveSeparatePmeRank = haveSeparatePmeRank;
     simulationWorkload.useGpuPmePpCommunication =
-            devFlags.enableGpuPmePPComm && (pmeRunMode == PmeRunMode::GPU);
+            haveSeparatePmeRank && devFlags.enableGpuPmePPComm && (pmeRunMode == PmeRunMode::GPU);
+    simulationWorkload.useCpuPmePpCommunication =
+            haveSeparatePmeRank && !simulationWorkload.useGpuPmePpCommunication;
+    GMX_RELEASE_ASSERT(!(simulationWorkload.useGpuPmePpCommunication
+                         && simulationWorkload.useCpuPmePpCommunication),
+                       "Cannot do PME-PP communication on both CPU and GPU");
     simulationWorkload.useGpuDirectCommunication =
             devFlags.enableGpuHaloExchange || devFlags.enableGpuPmePPComm;
     simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution(inputrec);

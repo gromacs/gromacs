@@ -1453,10 +1453,15 @@ int Mdrunner::mdrunner()
                                                          EI_ENERGY_MINIMIZATION(inputrec->eI));
 
     // Also populates the simulation constant workload description.
+    // Note: currently the default duty is DUTY_PP | DUTY_PME for all simulations, including those without PME,
+    // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
+    // but this will no longer be the case if cr->duty is changed for !EEL_PME(fr->ic->eeltype).
+    const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
     runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
                                                               disableNonbondedCalculation,
                                                               devFlags,
                                                               havePPDomainDecomposition(cr),
+                                                              haveSeparatePmeRank,
                                                               useGpuForNonbonded,
                                                               pmeRunMode,
                                                               useGpuForBonded,
