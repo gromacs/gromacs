@@ -950,15 +950,13 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
  * \param[in]      mtsLevels            The multiple time-stepping levels, either empty or 2 levels
  * \param[in]      step                 The current MD step
  * \param[in]      simulationWork       Simulation workload description.
- * \param[in]      rankHasPmeDuty       If this rank computes PME.
  *
  * \returns New Stepworkload description.
  */
 static StepWorkload setupStepWorkload(const int                     legacyFlags,
                                       ArrayRef<const gmx::MtsLevel> mtsLevels,
                                       const int64_t                 step,
-                                      const SimulationWorkload&     simulationWork,
-                                      const bool                    rankHasPmeDuty)
+                                      const SimulationWorkload&     simulationWork)
 {
     GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Expect 0 or 2 MTS levels");
     const bool computeSlowForces = (mtsLevels.empty() || step % mtsLevels[1].stepFactor == 0);
@@ -985,15 +983,13 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     }
     flags.useGpuXBufferOps = simulationWork.useGpuBufferOps;
     // on virial steps the CPU reduction path is taken
-    flags.useGpuFBufferOps = simulationWork.useGpuBufferOps && !flags.computeVirial;
-    flags.useGpuPmeFReduction = flags.computeSlowForces && flags.useGpuFBufferOps && simulationWork.useGpuPme
-                                && (rankHasPmeDuty || simulationWork.useGpuPmePpCommunication);
-    flags.useGpuXHalo = simulationWork.useGpuHaloExchange;
-    flags.useGpuFHalo = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
-    // Note that rankHasPmeDuty is used confusingly due to the way cr->duty is set up (can be true even for non-PME runs),
-    // but the haveGpuPmeOnThisRank still ends up correct as simulationWork.useGpuPme == false in such cases.
-    // TODO: improve this when duty-reliance is eliminated
-    flags.haveGpuPmeOnThisRank = simulationWork.useGpuPme && rankHasPmeDuty && flags.computeSlowForces;
+    flags.useGpuFBufferOps       = simulationWork.useGpuBufferOps && !flags.computeVirial;
+    const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
+    flags.useGpuPmeFReduction    = flags.computeSlowForces && flags.useGpuFBufferOps
+                                && (rankHasGpuPmeTask || simulationWork.useGpuPmePpCommunication);
+    flags.useGpuXHalo          = simulationWork.useGpuHaloExchange;
+    flags.useGpuFHalo          = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
+    flags.haveGpuPmeOnThisRank = rankHasGpuPmeTask && flags.computeSlowForces;
     flags.combineMtsForcesBeforeHaloExchange =
             (flags.computeForces && simulationWork.useMts && flags.computeSlowForces
              && flags.useOnlyMtsCombinedForceBuffer
@@ -1255,8 +1251,7 @@ void do_force(FILE*                               fplog,
 
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
-    runScheduleWork->stepWork = setupStepWorkload(
-            legacyFlags, inputrec.mtsLevels, step, simulationWork, thisRankHasDuty(cr, DUTY_PME));
+    runScheduleWork->stepWork = setupStepWorkload(legacyFlags, inputrec.mtsLevels, step, simulationWork);
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
     /* At a search step we need to start the first balancing region
