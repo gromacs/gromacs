@@ -143,7 +143,6 @@ using gmx::SimulationSignaller;
 void gmx::LegacySimulator::do_mimic()
 {
     const t_inputrec* ir = inputrec;
-    int64_t           step, step_rel;
     double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
@@ -415,8 +414,8 @@ void gmx::LegacySimulator::do_mimic()
                     "MiMiC does not report kinetic energy, total energy, temperature, virial and "
                     "pressure.");
 
-    step     = ir->init_step;
-    step_rel = 0;
+    int64_t step     = ir->init_step;
+    int64_t step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),

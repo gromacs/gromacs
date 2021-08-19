@@ -167,7 +167,6 @@ void gmx::LegacySimulator::do_md()
     // will go away eventually.
     const t_inputrec* ir = inputrec;
 
-    int64_t      step, step_rel;
     double       t, t0 = ir->init_t;
     gmx_bool     bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool     bNS = FALSE, bNStList, bStopCM, bFirstStep, bInitStep, bLastStep = FALSE;
@@ -802,8 +801,8 @@ void gmx::LegacySimulator::do_md()
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
 
-    step     = ir->init_step;
-    step_rel = 0;
+    int64_t step     = ir->init_step;
+    int64_t step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),

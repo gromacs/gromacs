@@ -174,7 +174,6 @@ void gmx::LegacySimulator::do_rerun()
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
     const t_inputrec* ir = inputrec;
-    int64_t           step, step_rel;
     double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
@@ -511,8 +510,8 @@ void gmx::LegacySimulator::do_rerun()
         calc_shifts(rerun_fr.box, fr->shift_vec);
     }
 
-    step     = ir->init_step;
-    step_rel = 0;
+    int64_t step     = ir->init_step;
+    int64_t step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
