@@ -706,7 +706,8 @@ static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
         }
         else
         {
-            if (cr->dd->comm->ddRankSetup.usePmeOnlyRanks)
+            const DDRankSetup& rankSetup = cr->dd->comm->ddRankSetup;
+            if (rankSetup.rankOrder != DdRankOrder::pp_pme && rankSetup.usePmeOnlyRanks)
             {
                 nodeid = ddindex + gmx_ddcoord2pmeindex(*cr->dd, x, y, z);
             }
@@ -2249,6 +2250,7 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
                                   int                  numNodes,
+                                  const DdRankOrder    rankOrder,
                                   const DDGridSetup&   ddGridSetup,
                                   const t_inputrec&    ir)
 {
@@ -2260,6 +2262,8 @@ static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
                                  ddGridSetup.numPmeOnlyRanks);
 
     DDRankSetup ddRankSetup;
+
+    ddRankSetup.rankOrder = rankOrder;
 
     ddRankSetup.numPPRanks = numNodes - ddGridSetup.numPmeOnlyRanks;
     copy_ivec(ddGridSetup.numDomains, ddRankSetup.numPPCells);
@@ -2970,7 +2974,8 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
 
     cr_->npmenodes = ddGridSetup_.numPmeOnlyRanks;
 
-    ddRankSetup_ = getDDRankSetup(mdlog_, cr_->sizeOfDefaultCommunicator, ddGridSetup_, ir_);
+    ddRankSetup_ = getDDRankSetup(
+            mdlog_, cr_->sizeOfDefaultCommunicator, options_.rankOrder, ddGridSetup_, ir_);
 
     /* Generate the group communicator, also decides the duty of each rank */
     cartSetup_ = makeGroupCommunicators(
@@ -3239,4 +3244,43 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
     init_gtc_state(state_local, buf[1], buf[2], buf[3]);
     init_dfhist_state(state_local, buf[4]);
     state_local->flags = buf[0];
+}
+
+void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
+                                            const gmx_mtop_t&        mtop,
+                                            const matrix             box,
+                                            gmx::ArrayRef<gmx::RVec> positions)
+{
+    int atomOffset = 0;
+    for (const gmx_molblock_t& molblock : mtop.molblock)
+    {
+        const auto& updateGrouping = dd.comm->systemInfo.updateGroupingsPerMoleculeType[molblock.type];
+
+        for (int mol = 0; mol < molblock.nmol; mol++)
+        {
+            for (int g = 0; g < updateGrouping.numBlocks(); g++)
+            {
+                const auto& block     = updateGrouping.block(g);
+                const int   atomBegin = atomOffset + block.begin();
+                const int   atomEnd   = atomOffset + block.end();
+                for (int a = atomBegin + 1; a < atomEnd; a++)
+                {
+                    // Make sure that atoms in the same update group
+                    // are in the same periodic image after restarts.
+                    for (int d = DIM - 1; d >= 0; d--)
+                    {
+                        while (positions[a][d] - positions[atomBegin][d] > 0.5_real * box[d][d])
+                        {
+                            positions[a] -= box[d];
+                        }
+                        while (positions[a][d] - positions[atomBegin][d] < -0.5_real * box[d][d])
+                        {
+                            positions[a] += box[d];
+                        }
+                    }
+                }
+            }
+            atomOffset += updateGrouping.fullRange().end();
+        }
+    }
 }

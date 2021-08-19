@@ -76,9 +76,13 @@ if(POLICY CMP0074) #3.12
 endif()
 
 if(GMXAPI_MASTER_PROJECT)
-    find_package(gmxapi 0.2.1 REQUIRED
+    find_package(gmxapi 0.2 REQUIRED
                  HINTS "$ENV{GROMACS_DIR}"
                  )
+    if (gmxapi_VERSION VERSION_LESS 0.2.1)
+        message(WARNING "Your GROMACS installation does not support custom MD plugins. "
+                "If you need this feature, please install GROMACS 2021.3 or higher.")
+    endif ()
 endif()
 if(gmxapi_FOUND)
     set(_suffix "")
@@ -131,6 +135,12 @@ set(GMXAPI_PYTHON_EXTENSION_SOURCES
 pybind11_add_module(_gmxapi
                     ${GMXAPI_PYTHON_EXTENSION_SOURCES}
                     )
+
+if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
+    target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/launch_020.cpp)
+endif()
 
 target_include_directories(_gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi

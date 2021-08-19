@@ -195,7 +195,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
     int (*calc_bin)(real, int, real);
     real dt;
 
-    if (1 <= nframes)
+    if (nframes <= 1)
     {
         return;
     }

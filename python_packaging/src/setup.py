@@ -87,7 +87,7 @@ exist in the same location (with different suffixes) only the first one will be
 used when guessing a toolchain, because setup.py does not know which corresponds
 to the gmxapi support library.
 
-If specifying GMXTOOLCHAINDIR and gmxapi_DIR, the tool chain directory must be 
+If specifying GMXTOOLCHAINDIR and gmxapi_DIR, the tool chain directory must be
 located within a subdirectory of gmxapi_DIR.
 
 Refer to project web site for complete documentation.
@@ -157,6 +157,17 @@ cmake_platform_hints = '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)
 cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'.format(gmxapi_DIR)
 cmake_args = [cmake_platform_hints, cmake_gmxapi_hint]
 
+long_description = """gmxapi provides Python access to GROMACS molecular simulation tools.
+Operations can be connected flexibly to allow high performance simulation and
+analysis with complex control and data flows. Users can define new operations
+in C++ or Python with the same tool kit used to implement this package.
+
+This Python package requires a compatible GROMACS installation with the API
+libraries and headers.
+
+See http://gmxapi.org/ for details on installation and usage.
+"""
+
 setup(
     name='gmxapi',
 
@@ -174,6 +185,7 @@ setup(
     author='M. Eric Irrgang',
     author_email='info@gmxapi.org',
     description='gmxapi Python interface for GROMACS',
+    long_description=long_description,
     license='LGPL',
     url='http://gmxapi.org/',
 

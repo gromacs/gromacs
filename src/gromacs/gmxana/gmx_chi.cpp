@@ -748,7 +748,8 @@ static void histogramming(FILE*                   log,
                     normalize_histo(nbin, his_aa[Dih][i], (360.0 / nbin), normhisto);
                 }
 
-                residue_name = rt->nameFromResidueIndex(i).c_str();
+                std::string residueName = rt->nameFromResidueIndex(i);
+                residue_name            = residueName.c_str();
                 switch (Dih)
                 {
                     case edPhi:
@@ -1555,7 +1556,7 @@ int gmx_chi(int argc, char* argv[])
     }
 
     /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi
-     * pass nactdih instead of ndih to low_ana_dih_trans and get_chi_product_traj
+     * pass nactdih instead of ndih to low_ana_dih_trans
      * to prevent accessing off end of arrays when maxchi < 5 or 6. */
     nactdih = reset_em_all(nlist, dlist, nf, dih, maxchi);
 
@@ -1682,7 +1683,7 @@ int gmx_chi(int argc, char* argv[])
 
         get_chi_product_traj(dih,
                              nf,
-                             nactdih,
+                             nlist,
                              maxchi,
                              dlist,
                              time,

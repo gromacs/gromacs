@@ -45,7 +45,7 @@
 #include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
-
+#include "gmxapi/version.h"
 
 namespace py = pybind11;
 
@@ -102,6 +102,10 @@ PyContext::PyContext() :
 
 void PyContext::addMDModule(const pybind11::object& force_object) const
 {
+    if (!::gmxapi::Version::isAtLeast(0, 2, 1))
+    {
+        throw ::gmxapi::NotImplementedError("Feature requires gmxapi 0.2.1 with GROMACS 2021.3.");
+    }
     // If force_object has a bind method, give it a PyCapsule with a pointer
     // to our C++ object.
     if (py::hasattr(force_object, "bind"))

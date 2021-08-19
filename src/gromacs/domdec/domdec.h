@@ -291,4 +291,27 @@ void communicateGpuHaloCoordinates(const t_commrec&      cr,
  */
 void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces);
 
+/*! \brief Wraps the \c positions so that atoms from the same
+ * update group share the same periodic image wrt \c box.
+ *
+ * When DD and update groups are in use, the simulation master rank
+ * should call this to ensure that e.g. when restarting a simulation
+ * that did not use update groups that the coordinates satisfy the new
+ * requirements.
+ *
+ * This function can probably be removed when even single-rank
+ * simulations use domain decomposition, because then the choice of
+ * whether update groups are used is probably going to be the same
+ * regardless of the rank count.
+ *
+ * \param[in]    dd         The DD manager
+ * \param[in]    mtop       The system topology
+ * \param[in]    box        The global system box
+ * \param[in]    positions  The global system positions
+ */
+void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
+                                            const gmx_mtop_t&        mtop,
+                                            const matrix             box,
+                                            gmx::ArrayRef<gmx::RVec> positions);
+
 #endif

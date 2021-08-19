@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2021, by the GROMACS development team, led by
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,31 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXPY_SYSTEM_H
-#define GMXPY_SYSTEM_H
-
 /*! \file
- * \brief Declare helpers for gmxapi::System.
+ * \brief Implement Session launcher.
  *
  * \ingroup module_python
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
-#include <memory>
-#include <string>
-
-#include "gmxapi/gmxapi.h"
-#include "gmxapi/system.h"
+#include "pycontext.h"
+#include "pysystem.h"
 
 namespace gmxpy
 {
 
-std::shared_ptr<gmxapi::System> from_tpr(std::string filename);
+std::shared_ptr<gmxapi::Session> launch(::gmxapi::System* system, PyContext* context)
+{
+    auto work       = gmxapi::getWork(*system->get());
+    auto newSession = context->launch(*work);
+    return newSession;
+}
 
-class PyContext;
-
-std::shared_ptr<gmxapi::Session> launch(::gmxapi::System* system, PyContext* context);
-
-} // end namespace gmxpy
-
-#endif // header guard
+} // namespace gmxpy

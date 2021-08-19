@@ -60,6 +60,13 @@ struct t_commrec;
 
 struct BalanceRegion;
 
+namespace gmx
+{
+enum class DdRankOrder : int;
+}
+// namespace
+
+
 //! Indices to communicate in a dimension
 struct gmx_domdec_ind_t
 {
@@ -499,6 +506,9 @@ struct DDSettings
 /*! \brief Information on how the DD ranks are set up */
 struct DDRankSetup
 {
+    /**< The rank ordering */
+    gmx::DdRankOrder rankOrder;
+
     /**< The number of particle-particle (non PME-only) ranks */
     int numPPRanks = 0;
     /**< The DD PP grid */
