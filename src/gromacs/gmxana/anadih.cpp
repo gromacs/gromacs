@@ -42,6 +42,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -149,13 +150,11 @@ void ana_dih_trans(const char*             fn_trans,
                    const gmx_output_env_t* oenv)
 {
     /* just a wrapper; declare extra args, then chuck away at end. */
-    int      maxchi = 0;
-    t_dlist* dlist;
-    int*     multiplicity;
-    int      nlist = nangles;
-    int      k;
+    int  maxchi = 0;
+    int* multiplicity;
+    int  k;
 
-    snew(dlist, nlist);
+    std::vector<t_dlist> dlist(nangles);
     snew(multiplicity, nangles);
     for (k = 0; (k < nangles); k++)
     {
@@ -163,8 +162,7 @@ void ana_dih_trans(const char*             fn_trans,
     }
 
     low_ana_dih_trans(
-            TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, nlist, dlist, nframes, nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
-    sfree(dlist);
+            TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, dlist, nframes, nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
     sfree(multiplicity);
 }
 
@@ -174,8 +172,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
                        const char*             fn_histo,
                        int                     maxchi,
                        real**                  dih,
-                       int                     nlist,
-                       t_dlist                 dlist[],
+                       gmx::ArrayRef<t_dlist>  dlist,
                        int                     nframes,
                        int                     nangles,
                        const char*             grpname,
@@ -188,7 +185,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
     FILE* fp;
     int * tr_f, *tr_h;
     char  title[256];
-    int   i, j, k, Dih, ntrans;
+    int   Dih, ntrans;
     int   cur_bin, new_bin;
     real  ttime;
     real* rot_occ[NROT];
@@ -214,10 +211,10 @@ void low_ana_dih_trans(gmx_bool                bTrans,
         calc_bin = calc_Nbin;
     }
 
-    for (k = 0; k < NROT; k++)
+    for (int k = 0; k < NROT; k++)
     {
         snew(rot_occ[k], nangles);
-        for (i = 0; (i < nangles); i++)
+        for (int i = 0; (i < nangles); i++)
         {
             rot_occ[k][i] = 0;
         }
@@ -227,7 +224,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
 
     /* dih[i][j] is the dihedral angle i in frame j  */
     ntrans = 0;
-    for (i = 0; (i < nangles); i++)
+    for (int i = 0; (i < nangles); i++)
     {
 
         /*#define OLDIE*/
@@ -237,7 +234,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
         cur_bin = calc_bin(dih[i][0], multiplicity[i], core_frac);
         rot_occ[cur_bin][i]++;
 #endif
-        for (j = 1; (j < nframes); j++)
+        for (int j = 1; (j < nframes); j++)
         {
             new_bin = calc_bin(dih[i][j], multiplicity[i], core_frac);
             rot_occ[new_bin][i]++;
@@ -277,7 +274,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
             }
 #endif
         } /* end j */
-        for (k = 0; k < NROT; k++)
+        for (int k = 0; k < NROT; k++)
         {
             rot_occ[k][i] /= nframes;
         }
@@ -289,36 +286,34 @@ void low_ana_dih_trans(gmx_bool                bTrans,
         fprintf(stderr, "Time between transitions:    %10.3f ps\n", ttime);
     }
 
-    /* new by grs - copy transitions from tr_h[] to dlist->ntr[]
+    /* Copy transitions from tr_h[] to dlist->ntr[]
      * and rotamer populations from rot_occ to dlist->rot_occ[]
      * based on fn histogramming in g_chi. diff roles for i and j here */
-
-    j = 0;
-    for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
     {
-        for (i = 0; (i < nlist); i++)
+        int j = 0;
+        for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
         {
-            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+            for (auto& dihedral : dlist)
             {
-                /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
-                dlist[i].ntr[Dih] = tr_h[j];
-                for (k = 0; k < NROT; k++)
+                if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, dihedral)))
+                    || ((Dih > edOmega) && (dihedral.atm.Cn[Dih - NONCHI + 3] != -1)))
                 {
-                    dlist[i].rot_occ[Dih][k] = rot_occ[k][j];
+                    dihedral.ntr[Dih] = tr_h[j];
+                    for (int k = 0; k < NROT; k++)
+                    {
+                        dihedral.rot_occ[Dih][k] = rot_occ[k][j];
+                    }
+                    j++;
                 }
-                j++;
             }
         }
     }
-
-    /* end addition by grs */
 
     if (bTrans)
     {
         sprintf(title, "Number of transitions: %s", grpname);
         fp = xvgropen(fn_trans, title, "Time (ps)", "# transitions/timeframe", oenv);
-        for (j = 0; (j < nframes); j++)
+        for (int j = 0; (j < nframes); j++)
         {
             fprintf(fp, "%10.3f  %10d\n", time[j], tr_f[j]);
         }
@@ -327,14 +322,15 @@ void low_ana_dih_trans(gmx_bool                bTrans,
 
     /* Compute histogram from # transitions per dihedral */
     /* Use old array */
-    for (j = 0; (j < nframes); j++)
+    for (int j = 0; (j < nframes); j++)
     {
         tr_f[j] = 0;
     }
-    for (i = 0; (i < nangles); i++)
+    for (int i = 0; (i < nangles); i++)
     {
         tr_f[tr_h[i]]++;
     }
+    int j;
     for (j = nframes; ((tr_f[j - 1] == 0) && (j > 0)); j--) {}
 
     ttime = dt * nframes;
@@ -342,7 +338,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
     {
         sprintf(title, "Transition time: %s", grpname);
         fp = xvgropen(fn_histo, title, "Time (ps)", "#", oenv);
-        for (i = j - 1; (i > 0); i--)
+        for (int i = j - 1; (i > 0); i--)
         {
             if (tr_f[i] != 0)
             {
@@ -354,42 +350,41 @@ void low_ana_dih_trans(gmx_bool                bTrans,
 
     sfree(tr_f);
     sfree(tr_h);
-    for (k = 0; k < NROT; k++)
+    for (int k = 0; k < NROT; k++)
     {
         sfree(rot_occ[k]);
     }
 }
 
-void mk_multiplicity_lookup(int* multiplicity, int maxchi, int nlist, t_dlist dlist[], int nangles)
+void mk_multiplicity_lookup(int* multiplicity, int maxchi, gmx::ArrayRef<const t_dlist> dlist, int nangles)
 {
     /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
      * and store in multiplicity[j]
      */
 
-    int  j, Dih, i;
     char name[4];
 
-    j = 0;
-    for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
+    int j = 0;
+    for (int Dih = 0; (Dih < NONCHI + maxchi); Dih++)
     {
-        for (i = 0; (i < nlist); i++)
+        for (const auto& dihedral : dlist)
         {
-            std::strncpy(name, dlist[i].name, 3);
+            std::strncpy(name, dihedral.name, 3);
             name[3] = '\0';
-            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, dihedral)))
+                || ((Dih > edOmega) && (dihedral.atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* default - we will correct the rest below */
                 multiplicity[j] = 3;
 
                 /* make omegas 2fold, though doesn't make much more sense than 3 */
-                if (Dih == edOmega && (has_dihedral(edOmega, &(dlist[i]))))
+                if (Dih == edOmega && (has_dihedral(edOmega, dihedral)))
                 {
                     multiplicity[j] = 2;
                 }
 
                 /* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
-                if (Dih > edOmega && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1))
+                if (Dih > edOmega && (dihedral.atm.Cn[Dih - NONCHI + 3] != -1))
                 {
                     if (((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))
                         || ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))
@@ -420,7 +415,7 @@ void mk_multiplicity_lookup(int* multiplicity, int maxchi, int nlist, t_dlist dl
     }
 }
 
-void mk_chi_lookup(int** lookup, int maxchi, int nlist, t_dlist dlist[])
+void mk_chi_lookup(int** lookup, int maxchi, gmx::ArrayRef<const t_dlist> dlist)
 {
 
     /* by grs. should rewrite everything to use this. (but haven't,
@@ -428,16 +423,14 @@ void mk_chi_lookup(int** lookup, int maxchi, int nlist, t_dlist dlist[])
      * returns the dihed number given the residue number (from-0)
      * and chi (from-0) nr. -1 for chi undefined for that res (eg gly, ala..)*/
 
-    int i, j, Dih, Chi;
-
-    j = 0;
+    int j = 0;
     /* NONCHI points to chi1, therefore we have to start counting there. */
-    for (Dih = NONCHI; (Dih < NONCHI + maxchi); Dih++)
+    for (int Dih = NONCHI; (Dih < NONCHI + maxchi); Dih++)
     {
-        for (i = 0; (i < nlist); i++)
+        for (size_t i = 0; i < dlist.size(); i++)
         {
-            Chi = Dih - NONCHI;
-            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
+            int Chi = Dih - NONCHI;
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, dlist[i])))
                 || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
@@ -456,29 +449,27 @@ void mk_chi_lookup(int** lookup, int maxchi, int nlist, t_dlist dlist[])
 }
 
 
-void get_chi_product_traj(real**                  dih,
-                          int                     nframes,
-                          int                     nlist,
-                          int                     maxchi,
-                          t_dlist                 dlist[],
-                          real                    time[],
-                          int**                   lookup,
-                          int*                    multiplicity,
-                          gmx_bool                bRb,
-                          gmx_bool                bNormalize,
-                          real                    core_frac,
-                          gmx_bool                bAll,
-                          const char*             fnall,
-                          const gmx_output_env_t* oenv)
+void get_chi_product_traj(real**                       dih,
+                          int                          nframes,
+                          int                          maxchi,
+                          gmx::ArrayRef<const t_dlist> dlist,
+                          real                         time[],
+                          int**                        lookup,
+                          int*                         multiplicity,
+                          gmx_bool                     bRb,
+                          gmx_bool                     bNormalize,
+                          real                         core_frac,
+                          gmx_bool                     bAll,
+                          const char*                  fnall,
+                          const gmx_output_env_t*      oenv)
 {
 
     gmx_bool bRotZero, bHaveChi = FALSE;
-    int      accum = 0, index, i, j, k, Xi, n, b;
+    int      accum = 0, index, j, k, n, b;
     real*    chi_prtrj;
     int*     chi_prhist;
-    int      nbin;
     FILE *   fp, *fpall;
-    char     hisfile[256], histitle[256], *namept;
+    char     hisfile[256], histitle[256];
 
     int (*calc_bin)(real, int, real);
 
@@ -506,12 +497,13 @@ void get_chi_product_traj(real**                  dih,
         fpall = xvgropen(fnall, "Cumulative Rotamers", "Residue", "# Counts", oenv);
     }
 
-    for (i = 0; (i < nlist); i++)
+    int i = 0;
+    for (const auto& dihedral : dlist)
     {
 
         /* get nbin, the nr. of cumulative rotamers that need to be considered */
-        nbin = 1;
-        for (Xi = 0; Xi < maxchi; Xi++)
+        int nbin = 1;
+        for (int Xi = 0; Xi < maxchi; Xi++)
         {
             index = lookup[i][Xi]; /* chi_(Xi+1) of res i (-1 if off end) */
             if (index >= 0)
@@ -541,7 +533,7 @@ void get_chi_product_traj(real**                  dih,
                 {
                     bRotZero = TRUE;
                 }
-                for (Xi = 1; Xi < maxchi; Xi++)
+                for (int Xi = 1; Xi < maxchi; Xi++)
                 {
                     index = lookup[i][Xi]; /* chi_(Xi+1) of res i (-1 if off end) */
                     if (index >= 0)
@@ -575,17 +567,17 @@ void get_chi_product_traj(real**                  dih,
 
             if (bAll)
             {
-                /* print cuml rotamer vs time */
+                /* print cumulative rotamer vs time */
                 print_one(oenv, "chiproduct", dlist[i].name, "chi product for", "cumulative rotamer", nframes, time, chi_prtrj);
             }
 
-            /* make a histogram pf culm. rotamer occupancy too */
+            /* make a histogram of cumulative rotamer occupancy too */
             snew(chi_prhist, nbin);
             make_histo(nullptr, nframes, chi_prtrj, nbin, chi_prhist, 0, nbin);
             if (bAll)
             {
-                sprintf(hisfile, "histo-chiprod%s.xvg", dlist[i].name);
-                sprintf(histitle, "cumulative rotamer distribution for %s", dlist[i].name);
+                sprintf(hisfile, "histo-chiprod%s.xvg", dihedral.name);
+                sprintf(histitle, "cumulative rotamer distribution for %s", dihedral.name);
                 fprintf(stderr, "  and %s  ", hisfile);
                 fp = xvgropen(hisfile, histitle, "number", "", oenv);
                 if (output_env_get_print_xvgr_codes(oenv))
@@ -611,8 +603,8 @@ void get_chi_product_traj(real**                  dih,
 
             /* and finally print out occupancies to a single file */
             /* get the gmx from-1 res nr by setting a ptr to the number part
-             * of dlist[i].name - potential bug for 4-letter res names... */
-            namept = dlist[i].name + 3;
+             * of dihedral.name - potential bug for 4-letter res names... */
+            const char* namept = dihedral.name + 3;
             fprintf(fpall, "%5s ", namept);
             for (k = 0; (k < nbin); k++)
             {
@@ -630,6 +622,7 @@ void get_chi_product_traj(real**                  dih,
             sfree(chi_prhist);
             /* histogram done */
         }
+        ++i;
     }
 
     sfree(chi_prtrj);
@@ -798,26 +791,21 @@ void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], rea
     }
 }
 
-void normalize_histo(int npoints, const int histo[], real dx, real normhisto[])
+void normalize_histo(gmx::ArrayRef<const int> histo, real dx, gmx::ArrayRef<real> normhisto)
 {
-    int    i;
-    double d, fac;
-
-    d = 0;
-    for (i = 0; (i < npoints); i++)
+    double d = 0;
+    for (const auto& point : histo)
     {
-        d += dx * histo[i];
+        d += dx * point;
     }
     if (d == 0)
     {
         fprintf(stderr, "Empty histogram!\n");
         return;
     }
-    fac = 1.0 / d;
-    for (i = 0; (i < npoints); i++)
-    {
-        normhisto[i] = fac * histo[i];
-    }
+    double fac = 1.0 / d;
+    std::transform(
+            histo.begin(), histo.end(), normhisto.begin(), [fac](int point) { return fac * point; });
 }
 
 void read_ang_dih(const char*             trj_fn,

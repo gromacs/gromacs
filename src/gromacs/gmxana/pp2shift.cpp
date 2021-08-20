@@ -208,18 +208,13 @@ static void done_shifts(t_shiftdata* sd)
     sfree(sd);
 }
 
-void do_pp2shifts(FILE* fp, int nf, int nlist, t_dlist dlist[], real** dih)
+void do_pp2shifts(FILE* fp, int nf, gmx::ArrayRef<const t_dlist> dlist, real** dih)
 {
-    t_shiftdata *ca_sd, *co_sd, *ha_sd, *cb_sd;
-    int          i, j, Phi, Psi;
-    real         phi, psi;
-    real         ca, co, ha, cb;
-
     /* Read the shift files */
-    ca_sd = read_shifts("ca-shift.dat");
-    cb_sd = read_shifts("cb-shift.dat");
-    ha_sd = read_shifts("ha-shift.dat");
-    co_sd = read_shifts("co-shift.dat");
+    t_shiftdata* ca_sd = read_shifts("ca-shift.dat");
+    t_shiftdata* cb_sd = read_shifts("cb-shift.dat");
+    t_shiftdata* ha_sd = read_shifts("ha-shift.dat");
+    t_shiftdata* co_sd = read_shifts("co-shift.dat");
 
     fprintf(fp, "\n *** Chemical shifts from the chemical shift index ***\n");
     please_cite(fp, "Wishart98a");
@@ -230,24 +225,24 @@ void do_pp2shifts(FILE* fp, int nf, int nlist, t_dlist dlist[], real** dih)
             "delta Ha",
             "delta CO",
             "delta Cb");
-    for (i = 0; (i < nlist); i++)
+    for (const auto& dihedral : dlist)
     {
-        if ((has_dihedral(edPhi, &(dlist[i]))) && (has_dihedral(edPsi, &(dlist[i]))))
+        if ((has_dihedral(edPhi, dihedral)) && (has_dihedral(edPsi, dihedral)))
         {
-            Phi = dlist[i].j0[edPhi];
-            Psi = dlist[i].j0[edPsi];
-            ca = cb = co = ha = 0;
-            for (j = 0; (j < nf); j++)
+            int  Phi = dihedral.j0[edPhi];
+            int  Psi = dihedral.j0[edPsi];
+            real ca = 0, cb = 0, co = 0, ha = 0;
+            for (int j = 0; (j < nf); j++)
             {
-                phi = dih[Phi][j];
-                psi = dih[Psi][j];
+                real phi = dih[Phi][j];
+                real psi = dih[Psi][j];
 
                 ca += interpolate(phi, psi, ca_sd);
                 cb += interpolate(phi, psi, cb_sd);
                 co += interpolate(phi, psi, co_sd);
                 ha += interpolate(phi, psi, ha_sd);
             }
-            fprintf(fp, "%12s  %10g  %10g  %10g  %10g\n", dlist[i].name, ca / nf, ha / nf, co / nf, cb / nf);
+            fprintf(fp, "%12s  %10g  %10g  %10g  %10g\n", dihedral.name, ca / nf, ha / nf, co / nf, cb / nf);
         }
     }
     fprintf(fp, "\n");
