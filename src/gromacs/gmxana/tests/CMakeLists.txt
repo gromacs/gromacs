@@ -37,7 +37,8 @@ set(exename gmxana-test)
 gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
         entropy.cpp
-        gmx_traj.cpp
+        gmx_chi.cpp
         gmx_mindist.cpp
+        gmx_traj.cpp
         )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST IGNORE_LEAKS)

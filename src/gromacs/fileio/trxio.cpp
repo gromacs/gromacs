@@ -651,6 +651,12 @@ void close_trx(t_trxstatus* status)
     sfree(status);
 }
 
+void done_trx_xframe(t_trxstatus* status)
+{
+    done_frame(status->xframe);
+    sfree(status->xframe);
+}
+
 t_trxstatus* open_trx(const char* outfile, const char* filemode)
 {
     t_trxstatus* stat;

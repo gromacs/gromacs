@@ -63,6 +63,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/unique_cptr.h"
 
 static gmx_bool bAllowed(real phi, real psi)
 {
@@ -315,6 +316,7 @@ static void dump_em_all(int                     nlist,
     int   i, j, Xi;
 
     snew(data, nf);
+    gmx::sfree_guard dataGuard(data);
     if (bRAD)
     {
         std::strcpy(ystr, "Angle (rad)");
@@ -500,7 +502,6 @@ static void histogramming(FILE*                   log,
     gmx_bool    bBfac, bOccup;
     char        hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
     char**      leg;
-    const char* residue_name;
     int         rt_size;
 
     rt_size = rt->numberOfEntries();
@@ -723,6 +724,7 @@ static void histogramming(FILE*                   log,
         {
             sfree(leg[i]);
         }
+        sfree(leg);
     }
     /* finished -jc stuff */
 
@@ -749,24 +751,26 @@ static void histogramming(FILE*                   log,
                 }
 
                 std::string residueName = rt->nameFromResidueIndex(i);
-                residue_name            = residueName.c_str();
                 switch (Dih)
                 {
                     case edPhi:
-                        sprintf(hisfile, "histo-phi%s", residue_name);
-                        sprintf(title, "\\xf\\f{} Distribution for %s", residue_name);
+                        sprintf(hisfile, "histo-phi%s", residueName.c_str());
+                        sprintf(title, "\\xf\\f{} Distribution for %s", residueName.c_str());
                         break;
                     case edPsi:
-                        sprintf(hisfile, "histo-psi%s", residue_name);
-                        sprintf(title, "\\xy\\f{} Distribution for %s", residue_name);
+                        sprintf(hisfile, "histo-psi%s", residueName.c_str());
+                        sprintf(title, "\\xy\\f{} Distribution for %s", residueName.c_str());
                         break;
                     case edOmega:
-                        sprintf(hisfile, "histo-omega%s", residue_name);
-                        sprintf(title, "\\xw\\f{} Distribution for %s", residue_name);
+                        sprintf(hisfile, "histo-omega%s", residueName.c_str());
+                        sprintf(title, "\\xw\\f{} Distribution for %s", residueName.c_str());
                         break;
                     default:
-                        sprintf(hisfile, "histo-chi%d%s", Dih - NONCHI + 1, residue_name);
-                        sprintf(title, "\\xc\\f{}\\s%d\\N Distribution for %s", Dih - NONCHI + 1, residue_name);
+                        sprintf(hisfile, "histo-chi%d%s", Dih - NONCHI + 1, residueName.c_str());
+                        sprintf(title,
+                                "\\xc\\f{}\\s%d\\N Distribution for %s",
+                                Dih - NONCHI + 1,
+                                residueName.c_str());
                 }
                 std::strcpy(hhisfile, hisfile);
                 std::strcat(hhisfile, ".xvg");
@@ -849,6 +853,22 @@ static void histogramming(FILE*                   log,
         sfree(his_aa_ss);
         sfree(ss_str);
     }
+    for (Dih = 0; (Dih < edMax); Dih++)
+    {
+        for (i = 0; (i <= rt_size); i++)
+        {
+            sfree(his_aa[Dih][i]);
+        }
+        sfree(his_aa[Dih]);
+    }
+    sfree(his_aa);
+    for (i = 0; (i < nlist); i++)
+    {
+        sfree(Jc[i]);
+        sfree(Jcsig[i]);
+    }
+    sfree(Jc);
+    sfree(Jcsig);
 }
 
 static FILE* rama_file(const char* fn, const char* title, const char* xaxis, const char* yaxis, const gmx_output_env_t* oenv)
@@ -1043,19 +1063,10 @@ static void print_transitions(const char* fn, int maxchi, int nlist, t_dlist dli
     FILE* fp;
     int   i, Dih, Xi;
 
-    /*  must correspond with enum in pp2shift.h:38 */
-    char* leg[edMax];
-
-    leg[0] = gmx_strdup("Phi");
-    leg[1] = gmx_strdup("Psi");
-    leg[2] = gmx_strdup("Omega");
-    leg[3] = gmx_strdup("Chi1");
-    leg[4] = gmx_strdup("Chi2");
-    leg[5] = gmx_strdup("Chi3");
-    leg[6] = gmx_strdup("Chi4");
-    leg[7] = gmx_strdup("Chi5");
-    leg[8] = gmx_strdup("Chi6");
-
+    /*  must correspond with enum in gstat.h */
+    const char* leg[edMax] = {
+        "Phi", "Psi", "Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6",
+    };
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns", oenv);
     xvgr_legend(fp, NONCHI + maxchi, leg, oenv);
@@ -1465,12 +1476,13 @@ int gmx_chi(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
+    gmx::sfree_guard ppaGuard(ppa);
     if (!parse_common_args(
                 &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
-        sfree(ppa);
         return 0;
     }
+    gmx::unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
 
     /* Handle result from enumerated type */
     sscanf(maxchistr[0], "%d", &maxchi);
@@ -1516,18 +1528,25 @@ int gmx_chi(int argc, char* argv[])
     nbin     = 360 / ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    t_topology* top;
-    snew(top, 1);
-    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &pbcType, &x, nullptr, box, FALSE);
-    t_atoms& atoms = top->atoms;
+    t_symtab symtab;
+    char*    name;
+    t_atoms  atoms;
+    open_symtab(&symtab);
+    gmx::unique_cptr<t_symtab, done_symtab> symtabGuard(&symtab);
+    readConfAndAtoms(ftp2fn(efSTX, NFILE, fnm), &symtab, &name, &atoms, &pbcType, &x, nullptr, box);
+    gmx::sfree_guard                     nameGuard(name);
+    gmx::sfree_guard                     xGuard(x);
+    gmx::unique_cptr<t_atoms, done_atom> atomsGuard(&atoms);
     if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
-    fprintf(log, "Title: %s\n", *top->name);
+    fprintf(log, "Title: %s\n", name);
 
     ResidueType rt;
     dlist = mk_dlist(log, &atoms, &nlist, bPhi, bPsi, bChi, bHChi, maxchi, r0, &rt);
+    gmx::sfree_guard dlistGuard(dlist);
+
     fprintf(stderr, "%d residues with dihedrals found\n", nlist);
 
     if (nlist == 0)
@@ -1537,6 +1556,7 @@ int gmx_chi(int argc, char* argv[])
 
     /* Make a linear index for reading all. */
     index = make_chi_ind(nlist, dlist, &ndih);
+    gmx::sfree_guard indexGuard(index);
     isize = 4 * ndih;
     fprintf(stderr, "%d dihedrals found\n", ndih);
 
@@ -1545,6 +1565,9 @@ int gmx_chi(int argc, char* argv[])
     /* COMPUTE ALL DIHEDRALS! */
     read_ang_dih(
             ftp2fn(efTRX, NFILE, fnm), FALSE, TRUE, FALSE, bPBC, 1, &idum, &nf, &time, isize, index, &trans_frac, &aver_angle, dih, oenv);
+    gmx::sfree_guard timeGuard(time);
+    gmx::sfree_guard transFracGuard(trans_frac);
+    gmx::sfree_guard averAngleGuard(aver_angle);
 
     dt = (time[nf - 1] - time[0]) / (nf - 1); /* might want this for corr or n. transit*/
     if (bCorr)
@@ -1593,6 +1616,7 @@ int gmx_chi(int argc, char* argv[])
      * added multiplicity */
 
     snew(multiplicity, ndih);
+    gmx::sfree_guard multiplicityGuard(multiplicity);
     mk_multiplicity_lookup(multiplicity, maxchi, nlist, dlist, ndih);
 
     std::strcpy(grpname, "All residues, ");
@@ -1700,6 +1724,7 @@ int gmx_chi(int argc, char* argv[])
         {
             sfree(chi_lookup[i]);
         }
+        sfree(chi_lookup);
     }
 
     /* Correlation comes last because it messes up the angles */
@@ -1715,6 +1740,12 @@ int gmx_chi(int argc, char* argv[])
     {
         do_view(oenv, opt2fn("-corr", NFILE, fnm), "-nxy");
     }
+
+    for (i = 0; (i < ndih); i++)
+    {
+        sfree(dih[i]);
+    }
+    sfree(dih);
 
     return 0;
 }

@@ -156,6 +156,19 @@ void close_trx(t_trxstatus* status);
  * Also frees memory in the structure.
  */
 
+/*! \brief Deallocates an t_trxframe and its contents
+ *
+ * Old code using read_first_x() does not clean up all its memory when
+ * using close_trx(), but new code using read_first_frame() needs
+ * close_trx() to keep its current form. When using read_first_x(),
+ * this function should be called before close_trx() in order to clean
+ * up the t_trxframe inside the t_trxstatus before close_trx() can clean
+ * up the rest.
+ *
+ * As read_first_x() is deprecated, this function should not be called
+ * in new code. Use read_first_frame() and close_trx() instead. */
+void done_trx_xframe(t_trxstatus* status);
+
 t_trxstatus* open_trx(const char* outfile, const char* filemode);
 /* Open a TRX file and return an allocated status pointer */
 
@@ -236,12 +249,16 @@ int read_first_x(const gmx_output_env_t* oenv, t_trxstatus** status, const char*
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
  * The integer in status should be passed to calls of read_next_x
+ *
+ * DEPRECATED: Use read_first_frame and read_next_frame instead
  */
 
 gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, real* t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
+ *
+ * DEPRECATED: Use read_first_frame and read_next_frame instead
  */
 
 void rewind_trj(t_trxstatus* status);

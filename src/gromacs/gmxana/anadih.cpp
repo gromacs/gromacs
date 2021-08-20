@@ -848,6 +848,7 @@ void read_ang_dih(const char*             trj_fn,
 #define prev (1 - cur)
 
     snew(pbc, 1);
+    gmx::sfree_guard pbcGuard(pbc);
     read_first_x(oenv, &status, trj_fn, &t, &x, box);
 
     if (bAngles)
@@ -1025,9 +1026,9 @@ void read_ang_dih(const char*             trj_fn,
         /* Increment loop counter */
         teller++;
     } while (read_next_x(oenv, status, &t, x, box));
+    done_trx_xframe(status);
     close_trx(status);
 
-    sfree(x);
     sfree(angles[cur]);
     sfree(angles[prev]);
 

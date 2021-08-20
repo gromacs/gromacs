@@ -192,9 +192,9 @@ std::string TestFileManager::getTestSpecificFileNameRoot()
     }
     else
     {
-        const ::testing::TestSuite* test_case_info =
+        const ::testing::TestSuite* test_suite_info =
                 ::testing::UnitTest::GetInstance()->current_test_suite();
-        filenameRoot = std::string(test_case_info->name());
+        filenameRoot = std::string(test_suite_info->name());
     }
     std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
     return filenameRoot;
