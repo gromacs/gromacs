@@ -59,6 +59,7 @@ using cl::sycl::access::target;
 //! Number of work-items in a work-group
 constexpr static int sc_workGroupSize = 256;
 
+//! \brief Function returning the SETTLE kernel lambda.
 template<bool updateVelocities, bool computeVirial>
 auto settleKernel(cl::sycl::handler&                                           cgh,
                   const int                                                    numSettles,
@@ -349,6 +350,7 @@ auto settleKernel(cl::sycl::handler&                                           c
 template<bool updateVelocities, bool computeVirial>
 class SettleKernelName;
 
+//! \brief SETTLE SYCL kernel launch code.
 template<bool updateVelocities, bool computeVirial, class... Args>
 static cl::sycl::event launchSettleKernel(const DeviceStream& deviceStream, int numSettles, Args&&... args)
 {

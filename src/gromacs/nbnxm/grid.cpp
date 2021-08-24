@@ -99,7 +99,7 @@ static real gridAtomDensity(int numAtoms, const rvec lowerCorner, const rvec upp
     return static_cast<real>(numAtoms) / (size[XX] * size[YY] * size[ZZ]);
 }
 
-// Get approximate dimensions of each cell. Returns the length along X and Y.
+//! \brief Get approximate dimensions of each cell. Returns the length along X and Y.
 static std::array<real, DIM - 1> getTargetCellLength(const Grid::Geometry& geometry, const real atomDensity)
 {
     if (geometry.isSimple)

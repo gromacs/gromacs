@@ -88,7 +88,7 @@ using PaddedHostVector = gmx::PaddedHostVector<T>;
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* \brief Enum for all entries in \p t_state
+/*! \brief Enum for all entries in \p t_state
  *
  * These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,

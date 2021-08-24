@@ -63,6 +63,7 @@ namespace gmx
 
 using cl::sycl::access::mode;
 
+//! \brief Function returning the force reduction kernel lambda.
 template<bool addRvecForce, bool accumulateForce>
 static auto reduceKernel(cl::sycl::handler&                                 cgh,
                          DeviceAccessor<Float3, mode::read>                 a_nbnxmForce,
@@ -97,6 +98,7 @@ static auto reduceKernel(cl::sycl::handler&                                 cgh,
     };
 }
 
+//! \brief Force reduction SYCL kernel launch code.
 template<bool addRvecForce, bool accumulateForce>
 static void launchReductionKernel_(const int                   numAtoms,
                                    const int                   atomStart,
@@ -119,7 +121,7 @@ static void launchReductionKernel_(const int                   numAtoms,
     });
 }
 
-/*! \brief Select templated kernel and launch it. */
+/*! \brief Select templated Force reduction kernel and launch it. */
 void launchForceReductionKernel(int                  numAtoms,
                                 int                  atomStart,
                                 bool                 addRvecForce,

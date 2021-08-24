@@ -54,12 +54,6 @@
 namespace gmx
 {
 
-template<class Function>
-auto dispatchTemplatedFunction(Function&& f)
-{
-    return std::forward<Function>(f)();
-}
-
 /*! \internal \brief
  * Helper function to select appropriate template based on runtime values.
  *
@@ -85,7 +79,19 @@ auto dispatchTemplatedFunction(Function&& f)
             p0, p1, p2);
     }
  * \endcode
- */
+ *
+ * \tparam Function Type of \p f.
+ * \param f Function to call.
+ * \return The result of calling \c f().
+*/
+template<class Function>
+auto dispatchTemplatedFunction(Function&& f)
+{
+    return std::forward<Function>(f)();
+}
+
+// Recursive templates confuse Doxygen
+//! \cond
 template<class Function, class Enum, class... Enums>
 auto dispatchTemplatedFunction(Function&& f, Enum e, Enums... es)
 {
@@ -110,6 +116,7 @@ auto dispatchTemplatedFunction(Function&& f, bool e, Enums... es)
             },
             es...);
 }
+//! \endcond
 
 } // namespace gmx
 

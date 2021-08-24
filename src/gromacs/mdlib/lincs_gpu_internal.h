@@ -57,6 +57,17 @@ struct LincsGpuKernelParameters;
 //! Number of threads in a GPU block
 constexpr static int c_threadsPerBlock = 256;
 
+/*! \brief Backend-specific function to launch LINCS kernel.
+ *
+ * \param kernelParams LINCS parameters.
+ * \param d_x Initial coordinates before the integration.
+ * \param d_xp Coordinates after the integration which will be updated.
+ * \param updateVelocities Whether to also update velocities.
+ * \param d_v Velocities to update (ignored if \p updateVelocities is \c false).
+ * \param invdt Reciprocal of timestep.
+ * \param computeVirial Whether to compute the virial.
+ * \param deviceStream Device stream for kernel launch.
+ */
 void launchLincsGpuKernel(const LincsGpuKernelParameters& kernelParams,
                           const DeviceBuffer<Float3>&     d_x,
                           DeviceBuffer<Float3>            d_xp,

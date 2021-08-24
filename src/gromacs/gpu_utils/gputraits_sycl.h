@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/math/vectypes.h"
 
+//! Type of device texture object. In SYCL, that would be \c sycl::image, but it's not used.
 using DeviceTexture = void*;
 
 //! \brief Single GPU call timing event, not used with SYCL

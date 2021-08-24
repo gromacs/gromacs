@@ -50,6 +50,23 @@
 namespace gmx
 {
 
+/*! \brief Backend-specific function to launch GPU Leap Frog kernel.
+ *
+ * \param numAtoms Total number of atoms.
+ * \param[in,out] d_x Buffer containing initial coordinates, and where the updated ones will be written.
+ * \param[out] d_xp Buffer where a copy of the initial coordinates will be written.
+ * \param[in,out] d_v Buffer containing initial velocities, and where the updated ones will be written.
+ * \param[in]  d_f Buffer containing forces.
+ * \param[in] d_inverseMasses Buffer containing atoms' reciprocal masses.
+ * \param dt Timestep.
+ * \param doTemperatureScaling Whether temperature scaling is needed.
+ * \param numTempScaleValues Number of different T-couple values.
+ * \param d_tempScaleGroups Mapping of atoms into temperature scaling groups.
+ * \param d_lambdas Temperature scaling factors (one per group).
+ * \param prVelocityScalingType Type of Parrinello-Rahman velocity rescaling.
+ * \param prVelocityScalingMatrixDiagonal Diagonal elements of Parrinello-Rahman velocity scaling matrix.
+ * \param deviceStream Device stream for kernel launch.
+ */
 void launchLeapFrogKernel(int                          numAtoms,
                           DeviceBuffer<Float3>         d_x,
                           DeviceBuffer<Float3>         d_xp,

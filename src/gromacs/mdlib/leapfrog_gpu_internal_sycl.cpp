@@ -83,7 +83,7 @@ using cl::sycl::access::mode;
  * \param[in]     dt                               Timestep.
  * \param[in]     a_lambdas                        Temperature scaling factors (one per group).
  * \param[in]     a_tempScaleGroups                Mapping of atoms into groups.
- * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix
+ * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix.
  */
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 auto leapFrogKernel(
@@ -160,6 +160,7 @@ auto leapFrogKernel(
     };
 }
 
+//! \brief Leap Frog SYCL kernel launch code.
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling, class... Args>
 static cl::sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
 {
@@ -178,6 +179,7 @@ static cl::sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, in
     return e;
 }
 
+//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
 static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
 {
     if (!doTemperatureScaling)

@@ -53,6 +53,12 @@ namespace Nbnxm
 {
 using gmx::InteractionLocality;
 
+/*! Launch SYCL NBNXM kernel.
+ *
+ * \param nb Non-bonded parameters.
+ * \param stepWork Workload flags for the current step.
+ * \param iloc Interaction locality.
+ */
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc);
 
 } // namespace Nbnxm

@@ -64,6 +64,7 @@
 
 //! Constant used to help minimize preprocessed code
 static constexpr bool c_binarySupportsGpus = (GMX_GPU != 0);
+//! Whether \ref DeviceInformation can be serialized for sending via MPI.
 static constexpr bool c_canSerializeDeviceInformation =
         (!GMX_GPU_OPENCL && !GMX_GPU_SYCL); /*NOLINT(misc-redundant-expression)*/
 

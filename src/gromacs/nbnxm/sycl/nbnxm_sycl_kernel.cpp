@@ -70,9 +70,9 @@ struct EnergyFunctionProperties {
     static constexpr bool elecEwaldTab =
             (elecType == ElecType::EwaldTab || elecType == ElecType::EwaldTabTwin); ///< EL_EWALD_TAB
     static constexpr bool elecEwaldTwin =
-            (elecType == ElecType::EwaldAnaTwin || elecType == ElecType::EwaldTabTwin);
-    static constexpr bool elecEwald        = (elecEwaldAna || elecEwaldTab); ///< EL_EWALD_ANY
-    static constexpr bool vdwCombLB        = (vdwType == VdwType::CutCombLB);
+            (elecType == ElecType::EwaldAnaTwin || elecType == ElecType::EwaldTabTwin); ///< Use twin cut-off.
+    static constexpr bool elecEwald = (elecEwaldAna || elecEwaldTab);  ///< EL_EWALD_ANY
+    static constexpr bool vdwCombLB = (vdwType == VdwType::CutCombLB); ///< LJ_COMB && !LJ_COMB_GEOM
     static constexpr bool vdwCombGeom      = (vdwType == VdwType::CutCombGeom); ///< LJ_COMB_GEOM
     static constexpr bool vdwComb          = (vdwCombLB || vdwCombGeom);        ///< LJ_COMB
     static constexpr bool vdwEwaldCombGeom = (vdwType == VdwType::EwaldGeom); ///< LJ_EWALD_COMB_GEOM
@@ -86,9 +86,6 @@ struct EnergyFunctionProperties {
 //@{
 template<enum VdwType vdwType>
 constexpr bool ljComb = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwComb;
-
-template<enum ElecType elecType> // Yes, ElecType
-constexpr bool vdwCutoffCheck = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwaldTwin;
 
 template<enum ElecType elecType>
 constexpr bool elecEwald = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwald;
@@ -104,6 +101,7 @@ using cl::sycl::access::fence_space;
 using cl::sycl::access::mode;
 using cl::sycl::access::target;
 
+//! \brief Convert \p sigma and \p epsilon VdW parameters to \c c6,c12 pair.
 static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float epsilon)
 {
     const float sigma2 = sigma * sigma;
@@ -111,9 +109,10 @@ static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float e
     const float c6     = epsilon * sigma6;
     const float c12    = c6 * sigma6;
 
-    return Float2(c6, c12);
+    return { c6, c12 };
 }
 
+//! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
 template<bool doCalcEnergies>
 static inline void ljForceSwitch(const shift_consts_t         dispersionShift,
                                  const shift_consts_t         repulsionShift,
@@ -342,10 +341,20 @@ static inline void reduceForceJShuffle(Float3                             f,
     }
 }
 
-// This function also requires sm_buf to have a length of at least 1.
-// The function returns:
-//     - for thread #0 in the group: sum of all valueToReduce in a group
-//     - for other threads: unspecified
+/*!
+ * \brief Do workgroup-level reduction of a single \c float.
+ *
+ * While SYCL has \c sycl::reduce_over_group, it currently (oneAPI 2021.3.0) uses a very large
+ * shared memory buffer, which leads to a reduced occupancy.
+ *
+ * \tparam subGroupSize Size of a sub-group.
+ * \tparam groupSize Size of a work-group.
+ * \param itemIdx Current thread's \c sycl::nd_item.
+ * \param tidxi Current thread's linearized local index.
+ * \param sm_buf Accessor for local reduction buffer.
+ * \param valueToReduce Current thread's value. Must have length of at least 1.
+ * \return For thread with \p tidxi 0: sum of all \p valueToReduce. Other threads: unspecified.
+ */
 template<int subGroupSize, int groupSize>
 static inline float groupReduce(const cl::sycl::nd_item<1> itemIdx,
                                 const unsigned int         tidxi,
@@ -434,7 +443,7 @@ static inline void reduceForceJ(cl::sycl::accessor<float, 1, mode::read_write, t
 
 /*! \brief Final i-force reduction.
  *
- * Reduce c_nbnxnGpuNumClusterPerSupercluster i-force componets stored in \p fCiBuf[]
+ * Reduce c_nbnxnGpuNumClusterPerSupercluster i-force components stored in \p fCiBuf[]
  * accumulating atomically into \p a_f.
  * If \p calcFShift is true, further reduce shift forces and atomically accumulate into \p a_fShift.
  *
@@ -642,7 +651,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
             (props.elecEwald || props.elecRF || props.vdwEwald || (props.elecCutoff && doCalcEnergies));
 
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask data is stored.
-    // Currently this is ideally suited for 32-wide subgroup size but slightly less so for others,
+    // Currently, this is ideally suited for 32-wide subgroup size but slightly less so for others,
     // e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
     // Hence, the two are decoupled.
     // When changing this code, please update requiredSubGroupSizeForNbnxm in src/gromacs/hardware/device_management_sycl.cpp.
@@ -996,7 +1005,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
                                 if constexpr (props.elecRF)
                                 {
                                     energyElec +=
-                                            qi * qj * (pairExclMask * rInv + 0.5f * twoKRf * r2 - cRF);
+                                            qi * qj * (pairExclMask * rInv + 0.5F * twoKRf * r2 - cRF);
                                 }
                                 if constexpr (props.elecEwald)
                                 {
@@ -1030,7 +1039,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
         } // for (int j4 = cij4Start; j4 < cij4End; j4 += 1)
 
         /* skip central shifts when summing shift forces */
-        const bool doCalcShift = (calcShift && !(nbSci.shift == gmx::c_centralShiftIndex));
+        const bool doCalcShift = (calcShift && nbSci.shift != gmx::c_centralShiftIndex);
 
         reduceForceIAndFShift(
                 sm_reductionBuffer, fCiBuf, doCalcShift, itemIdx, tidxi, tidxj, sci, nbSci.shift, a_f, a_fShift);
@@ -1051,6 +1060,7 @@ auto nbnxmKernel(cl::sycl::handler&                                   cgh,
     };
 }
 
+//! \brief NBNXM kernel launch code.
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
 cl::sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
@@ -1077,6 +1087,7 @@ cl::sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int nu
     return e;
 }
 
+//! \brief Select templated kernel and launch it.
 template<class... Args>
 cl::sycl::event chooseAndLaunchNbnxmKernel(bool          doPruneNBL,
                                            bool          doCalcEnergies,

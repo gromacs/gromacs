@@ -55,6 +55,7 @@ class ScaleKernel;
 namespace gmx
 {
 
+//! \brief Function returning the scaling kernel lambda.
 static auto scaleKernel(cl::sycl::handler&                                         cgh,
                         DeviceAccessor<Float3, cl::sycl::access::mode::read_write> a_x,
                         const ScalingMatrix                                        scalingMatrix)

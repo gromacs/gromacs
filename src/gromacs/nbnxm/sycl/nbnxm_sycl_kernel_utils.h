@@ -49,11 +49,13 @@ namespace Nbnxm
 {
 
 #ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+//! \brief Default for the prune kernel's j4 processing concurrency.
 #    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
 #endif
-/*! \brief Macro defining default for the prune kernel's j4 processing concurrency.
+
+/*! \brief Prune kernel's j4 processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
+ *  The \c GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
  */
 static constexpr int c_syclPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
 
@@ -82,14 +84,13 @@ static constexpr float c_oneTwelfth = 0.08333333F;
 //! \brief Convert 3D range to 1D
 static inline cl::sycl::range<1> flattenRange(cl::sycl::range<3> range3d)
 {
-    return cl::sycl::range<1>(range3d.size());
+    return { range3d.size() };
 }
 
 //! \brief Convert 3D nd_range to 1D
 static inline cl::sycl::nd_range<1> flattenNDRange(cl::sycl::nd_range<3> nd_range3d)
 {
-    return cl::sycl::nd_range<1>(flattenRange(nd_range3d.get_global_range()),
-                                 flattenRange(nd_range3d.get_local_range()));
+    return { flattenRange(nd_range3d.get_global_range()), flattenRange(nd_range3d.get_local_range()) };
 }
 
 //! \brief Convert flattened 1D index to 3D
@@ -100,7 +101,7 @@ static inline cl::sycl::id<3> unflattenId(cl::sycl::id<1> id1d)
     const unsigned     id      = id1d[0];
     const unsigned     z       = id / rangeXY;
     const unsigned     xy      = id % rangeXY;
-    return cl::sycl::id<3>(xy % rangeX, xy / rangeX, z);
+    return { xy % rangeX, xy / rangeX, z };
 }
 
 } // namespace Nbnxm

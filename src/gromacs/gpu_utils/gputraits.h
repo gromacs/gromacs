@@ -81,6 +81,7 @@ struct Float4
 
 namespace gmx
 {
+//! Reinterpret-cast any pointer \p in to \c Float3, checking the type compatibility.
 template<typename T>
 static inline Float3* asGenericFloat3Pointer(T* in)
 {
@@ -90,6 +91,7 @@ static inline Float3* asGenericFloat3Pointer(T* in)
     return reinterpret_cast<Float3*>(in);
 }
 
+//! Reinterpret-cast any const pointer \p in to \c Float3, checking the type compatibility.
 template<typename T>
 static inline const Float3* asGenericFloat3Pointer(const T* in)
 {
@@ -99,6 +101,7 @@ static inline const Float3* asGenericFloat3Pointer(const T* in)
     return reinterpret_cast<const Float3*>(in);
 }
 
+//! Reinterpret-cast any container \p in to \c Float3, checking the type compatibility.
 template<typename C>
 static inline Float3* asGenericFloat3Pointer(C& in)
 {
@@ -108,6 +111,7 @@ static inline Float3* asGenericFloat3Pointer(C& in)
     return reinterpret_cast<Float3*>(in.data());
 }
 
+//! Reinterpret-cast any const container \p in to \c Float3, checking the type compatibility.
 template<typename C>
 static inline const Float3* asGenericFloat3Pointer(const C& in)
 {

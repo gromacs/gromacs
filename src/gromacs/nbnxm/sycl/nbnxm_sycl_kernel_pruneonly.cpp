@@ -220,6 +220,7 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
     };
 }
 
+//! \brief Leap Frog SYCL prune-only kernel launch code.
 template<bool haveFreshList, class... Args>
 cl::sycl::event launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream,
                                            const int           numSciInPart,
@@ -247,6 +248,7 @@ cl::sycl::event launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream,
     return e;
 }
 
+//! \brief Select templated kernel and launch it.
 template<class... Args>
 cl::sycl::event chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
 {

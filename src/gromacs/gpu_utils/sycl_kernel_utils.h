@@ -58,7 +58,7 @@
 static constexpr auto mode_atomic = GMX_SYCL_DPCPP ? cl::sycl::access::mode::read_write :
                                                    /* GMX_SYCL_HIPSYCL */ cl::sycl::access::mode::atomic;
 
-// \brief Full warp active thread mask used in CUDA warp-level primitives.
+//! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
@@ -91,9 +91,9 @@ static inline void atomicFetchAdd(DeviceAccessor<float, mode_atomic> acc, const 
 #endif
 }
 
-/* \brief Issue an intra sub-group barrier.
+/*! \brief Issue an intra sub-group barrier.
  *
- * Equivalent with CUDA syncwarp(c_cudaFullWarpMask).
+ * Equivalent with CUDA's \c syncwarp(c_cudaFullWarpMask).
  *
  */
 static inline void subGroupBarrier(const cl::sycl::nd_item<1> itemIdx)

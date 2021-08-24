@@ -162,7 +162,7 @@ void LeapFrogGpu::set(const int numAtoms, const real* inverseMasses, const unsig
     copyToDeviceBuffer(
             &d_inverseMasses_, inverseMasses, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
 
-    // Temperature scale group map only used if there are more then one group
+    // Temperature scale group map only used if there are more than one group
     if (numTempScaleValues_ > 1)
     {
         reallocateDeviceBuffer(

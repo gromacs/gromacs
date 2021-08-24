@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,8 @@ static auto mp_with_index(std::size_t i, F&& f)
     }
 }
 
+// Doxygen does not like recursive templates.
+//! \cond
 template<std::size_t N, class F, typename std::enable_if<(N > 1)>::type* = nullptr>
 static auto mp_with_index(std::size_t i, F&& f)
 {
@@ -101,7 +103,7 @@ static auto mp_with_index(std::size_t i, F&& f)
         return mp_with_index<N - 1>(i, std::forward<F>(f));
     }
 }
-
+//! \endcond
 
 } // namespace compat
 } // namespace gmx
