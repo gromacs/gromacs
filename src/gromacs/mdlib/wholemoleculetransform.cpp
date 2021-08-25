@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,12 +37,15 @@
 
 #include "wholemoleculetransform.h"
 
+#include "gromacs/domdec/ga2la.h"
 #include "gromacs/topology/mtop_util.h"
 
 namespace gmx
 {
 
-WholeMoleculeTransform::WholeMoleculeTransform(const gmx_mtop_t& mtop, const PbcType pbcType) :
+WholeMoleculeTransform::WholeMoleculeTransform(const gmx_mtop_t& mtop,
+                                               const PbcType     pbcType,
+                                               const bool        useAtomReordering) :
     pbcType_(pbcType)
 {
     gmx_localtop_t localTop(mtop.ffparams);
@@ -52,6 +55,53 @@ WholeMoleculeTransform::WholeMoleculeTransform(const gmx_mtop_t& mtop, const Pbc
     graph_ = mk_graph(localTop.idef, mtop.natoms);
 
     wholeMoleculeCoordinates_.resize(mtop.natoms);
+
+    if (useAtomReordering)
+    {
+        // Store a copy of the global edges
+        globalEdgeAtomBegin_       = graph_.edgeAtomBegin;
+        graphGlobalAtomOrderEdges_ = graph_.edges;
+        // Reset the graph range to cover the whole system
+        graph_.edgeAtomBegin = 0;
+        graph_.edgeAtomEnd   = graph_.shiftAtomEnd;
+
+        // Resize the edge color list for potential addition of non-connected atoms
+        graph_.edgeColor.resize(graph_.edgeAtomEnd);
+    }
+}
+
+void WholeMoleculeTransform::updateAtomOrder(ArrayRef<const int> globalAtomIndices, const gmx_ga2la_t& ga2la)
+{
+    GMX_RELEASE_ASSERT(!graphGlobalAtomOrderEdges_.empty(),
+                       "We need the edges in the global atom order");
+
+    GMX_RELEASE_ASSERT(globalAtomIndices.ssize() == graph_.shiftAtomEnd,
+                       "The number of indices should match the number of atoms we shift");
+
+    const int globalEdgeAtomEnd = globalEdgeAtomBegin_ + graphGlobalAtomOrderEdges_.size();
+    graph_.edges.clear();
+    for (const int globalAtomIndex : globalAtomIndices)
+    {
+        if (globalAtomIndex >= globalEdgeAtomBegin_ && globalAtomIndex < globalEdgeAtomEnd)
+        {
+            // Get the list of global atoms linked to this atom and add their local indices
+            const ArrayRef<const int> globalList =
+                    graphGlobalAtomOrderEdges_[globalAtomIndex - globalEdgeAtomBegin_];
+            graph_.edges.pushBackListOfSize(globalList.size());
+            ArrayRef<int> lastList = graph_.edges.back();
+            std::transform(globalList.begin(), globalList.end(), lastList.begin(), [&ga2la](int i) -> int {
+                return ga2la.find(i)->la;
+            });
+        }
+        else
+        {
+            // The atom has no edges, push back an empty list
+            graph_.edges.pushBackListOfSize(0);
+        }
+    }
+
+    GMX_RELEASE_ASSERT(int(graph_.edges.size()) == graph_.shiftAtomEnd,
+                       "We should have as many lists of edges as the system (shift) size");
 }
 
 void WholeMoleculeTransform::updateForAtomPbcJumps(ArrayRef<const RVec> x, const matrix box)

@@ -740,28 +740,32 @@ void init_forcerec(FILE*                            fplog,
     }
     else
     {
+        forcerec->bMolPBC = (!DOMAINDECOMP(commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType));
+
+        // Check and set up PBC for Ewald surface corrections or orientation restraints
         const bool useEwaldSurfaceCorrection =
                 (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
         const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-        if (!DOMAINDECOMP(commrec))
+        const bool moleculesAreAlwaysWhole =
+                (DOMAINDECOMP(commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
+        // WholeMoleculeTransform is only supported with a single PP rank
+        if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec)
+            && (useEwaldSurfaceCorrection || haveOrientationRestraints))
         {
-            forcerec->bMolPBC = true;
-
-            if (useEwaldSurfaceCorrection || haveOrientationRestraints)
-            {
-                forcerec->wholeMoleculeTransform =
-                        std::make_unique<gmx::WholeMoleculeTransform>(mtop, inputrec.pbcType);
-            }
+            GMX_RELEASE_ASSERT(
+                    !havePPDomainDecomposition(commrec),
+                    "WholeMoleculesTransform only works when all atoms are in the same domain");
+            forcerec->wholeMoleculeTransform = std::make_unique<gmx::WholeMoleculeTransform>(
+                    mtop, inputrec.pbcType, DOMAINDECOMP(commrec));
         }
         else
         {
-            forcerec->bMolPBC = dd_bonded_molpbc(*commrec->dd, forcerec->pbcType);
-
             /* With Ewald surface correction it is useful to support e.g. running water
              * in parallel with update groups.
              * With orientation restraints there is no sensible use case supported with DD.
              */
-            if ((useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*commrec->dd))
+            if ((useEwaldSurfaceCorrection
+                 && !(DOMAINDECOMP(commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd)))
                 || haveOrientationRestraints)
             {
                 gmx_fatal(FARGS,
@@ -774,7 +778,7 @@ void init_forcerec(FILE*                            fplog,
 
         if (useEwaldSurfaceCorrection)
         {
-            GMX_RELEASE_ASSERT(!DOMAINDECOMP(commrec) || dd_moleculesAreAlwaysWhole(*commrec->dd),
+            GMX_RELEASE_ASSERT(moleculesAreAlwaysWhole || forcerec->wholeMoleculeTransform,
                                "Molecules can not be broken by PBC with epsilon_surface > 0");
         }
     }

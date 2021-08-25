@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/utility/arrayref.h"
 
+class gmx_ga2la_t;
 struct gmx_mtop_t;
 enum class PbcType : int;
 
@@ -66,8 +67,23 @@ namespace gmx
 class WholeMoleculeTransform
 {
 public:
-    /*! \brief Constructor */
-    WholeMoleculeTransform(const gmx_mtop_t& mtop, PbcType pbcType);
+    /*! \brief Constructor
+     *
+     * \param[in] mtop               The global topology use for getting the connections between atoms
+     * \param[in] pbcType            The type of PBC
+     * \param[in] useAtomReordering  Whether we will use atom reordering
+     */
+    WholeMoleculeTransform(const gmx_mtop_t& mtop, PbcType pbcType, bool useAtomReordering);
+
+    /*! \brief Changes the atom order to the one provided
+     *
+     * This method is called after domain repartitioning.
+     * The object should have been constructed with \p useAtomReordering set to \p true.
+     *
+     * \param[in] globalAtomIndices  The global atom indices for the local atoms, size should be the system size
+     * \param[in] ga2la              Global to local atom index lookup (the inverse of \p globalAtomIndices)
+     */
+    void updateAtomOrder(ArrayRef<const int> globalAtomIndices, const gmx_ga2la_t& ga2la);
 
     /*! \brief Updates the graph when atoms have been shifted by periodic vectors */
     void updateForAtomPbcJumps(ArrayRef<const RVec> x, const matrix box);
@@ -88,6 +104,10 @@ private:
     PbcType pbcType_;
     //! The graph
     t_graph graph_;
+    //! The atom index at which graphGlobalAtomOrderEdges_ starts
+    int globalEdgeAtomBegin_;
+    //! The edges for the global atom order
+    ListOfLists<int> graphGlobalAtomOrderEdges_;
     //! Buffer for storing coordinates for whole molecules
     std::vector<RVec> wholeMoleculeCoordinates_;
 };

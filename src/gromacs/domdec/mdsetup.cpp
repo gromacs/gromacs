@@ -44,6 +44,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdlib/wholemoleculetransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -111,6 +112,11 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     if (!usingDomDec)
     {
         gmx_mtop_generate_local_top(top_global, top, inputrec.efep != FreeEnergyPerturbationType::No);
+    }
+
+    if (fr->wholeMoleculeTransform && usingDomDec)
+    {
+        fr->wholeMoleculeTransform->updateAtomOrder(cr->dd->globalAtomIndices, *cr->dd->ga2la);
     }
 
     if (vsite)

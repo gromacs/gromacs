@@ -58,4 +58,5 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         constrtestrunners_gpu.cpp
         leapfrogtestrunners_gpu.cpp
         settletestrunners_gpu.cpp
+	wholemoleculetransform.cpp
         )
