@@ -82,7 +82,7 @@ defined by the free energy pathway specified for the simulation. The
 exchange probability to maintain the correct ensemble probabilities is:
 
 .. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-          \left(\frac{1}{k_B T} - \frac{1}{k_B T}\right)((U_1(x_2) - U_1(x_1)) + (U_2(x_1) - U_2(x_2)))
+          \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)((U_1(x_2) - U_1(x_1)) + (U_2(x_1) - U_2(x_2)))
           \right]\right)
           :label: eqnREXcorrectensemble
 
@@ -94,7 +94,7 @@ Hamiltonian and temperature replica exchange can also be performed
 simultaneously, using the acceptance criteria:
 
 .. math:: P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-          \left(\frac{1}{k_B T} - \right)(\frac{U_1(x_2) - U_1(x_1)}{k_B T_1} + \frac{U_2(x_1) - U_2(x_2)}{k_B T_2})
+          \left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(\frac{U_1(x_2) - U_1(x_1)}{k_B T_1} + \frac{U_2(x_1) - U_2(x_2)}{k_B T_2})
           \right] \right)
           :label: eqnREXacceptance
 
