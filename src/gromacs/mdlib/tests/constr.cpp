@@ -66,8 +66,16 @@
 #include "constrtestdata.h"
 #include "constrtestrunners.h"
 
+//! Helper function to convert t_pbc into string and make test failure messages readable
+static void PrintTo(const t_pbc& pbc, std::ostream* os)
+{
+    *os << "PBC: " << c_pbcTypeNames[pbc.pbcType];
+}
+
+
 namespace gmx
 {
+
 namespace test
 {
 namespace
@@ -90,7 +98,6 @@ const std::vector<t_pbc> c_pbcs = [] {
 
     return pbcs;
 }();
-
 
 struct ConstraintsTestSystem
 {
@@ -146,6 +153,12 @@ struct ConstraintsTestSystem
     FloatingPointTolerance comTolerance    = absoluteTolerance(0.0001);
     FloatingPointTolerance virialTolerance = absoluteTolerance(0.0001);
 };
+
+//! Helper function to convert ConstraintsTestSystem into string and make test failure messages readable
+void PrintTo(const ConstraintsTestSystem& constraintsTestSystem, std::ostream* os)
+{
+    *os << constraintsTestSystem.title << " - " << constraintsTestSystem.numAtoms << " atoms";
+}
 
 const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
     std::vector<ConstraintsTestSystem> constraintsTestSystemList;
