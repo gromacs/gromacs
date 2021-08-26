@@ -53,6 +53,9 @@ Please refrain from setting things such as target version or deciding on unreaso
 to fix the issue on your own, please adhere to the other standards mentioned on the related pages
 :ref:`code-formatting` and :ref:`code-commitstyle`.
 
+.. seealso:: :doc:`contribute`
+
+.. _issue workflow:
 
 General issue workflow
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -62,6 +65,22 @@ The general issue workflow is shown in the figure below:
 .. image:: redmine-states.png
    :alt:  Sample procedure pathway for reported issues.
 
+Project maintainers will apply
+`Status labels <https://gitlab.com/gromacs/gromacs/-/labels?search=status>`__
+as the issue is processed.
+
+* `Status::Accepted <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AAccepted>`__:
+  Bug confirmed / Desirable feature.
+* `Status::In Progress <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AIn+Progress>`__:
+  Assignee starts to work.
+* `Status::Blocked <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3ABlocked>`__: Progress requires feedback or other action.
+* `Status::Rejected <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3ARejected>`__:
+  Invalid report or not a desirable feature.
+* `Status::Fix uploaded <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AFix+uploaded>`__:
+  Merge request is available for review
+* `Status::Feedback-wanted <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AFeedback-wanted>`__: Resolution pending additional feedback or response
+* `Status::Resolved <https://gitlab.com/gromacs/gromacs/-/issues?label_name%5B%5D=Status%3A%3AResolved>`__:
+  The issue will be closed if there is no further discussion.
 
 .. Text below is stolen from the old Gromacs web page
 

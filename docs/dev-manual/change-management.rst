@@ -88,7 +88,8 @@ Bad names: branch1234, mybranch, test, etc
 Labels
 ======
 
-Labels <https://docs.gitlab.com/ee/user/project/labels.html>`__ help developers by allowing additional filtering of issues and merge requests.
+`Labels <https://docs.gitlab.com/ee/user/project/labels.html>`__
+help developers by allowing additional filtering of issues and merge requests.
 
 The GROMACS project `defines many labels <https://gitlab.com/gromacs/gromacs/-/labels>`__.
 
