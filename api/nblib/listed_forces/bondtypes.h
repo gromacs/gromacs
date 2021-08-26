@@ -54,6 +54,7 @@
 
 #include <array>
 
+#include "nblib/exception.h"
 #include "nblib/particletype.h"
 #include "nblib/util/util.hpp"
 
@@ -135,7 +136,7 @@ public:
 /*! \brief FENE bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, equilConstant) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilConstant)^2)
+ * V(r, forceConstant, equilDistance) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilConstant)^2)
  */
 using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 
@@ -143,7 +144,7 @@ using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 /*! \brief Half-attractive quartic bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilConstant)^4
+ * V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilDistance)^4
  */
 using HalfAttractiveQuarticBondType =
         TwoParameterInteraction<struct HalfAttractiveQuarticBondTypeParameter>;
@@ -153,10 +154,11 @@ using HalfAttractiveQuarticBondType =
  *
  * It represents the interaction of the form
  * V(r, quadraticForceConstant, cubicForceConstant, equilConstant) = quadraticForceConstant * (r -
- * equilConstant)^2 + quadraticForceConstant * cubicForceConstant * (r - equilDistance)
+ * equilDistance)^2 + quadraticForceConstant * cubicForceConstant * (r - equilConstant)
  */
-struct CubicBondType
+class CubicBondType
 {
+public:
     CubicBondType() = default;
     CubicBondType(ForceConstant fq, ForceConstant fc, EquilConstant d) :
         quadraticForceConstant_(fq), cubicForceConstant_(fc), equilDistance_(d)
@@ -224,6 +226,36 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
            == std::tie(b.forceConstant(), b.exponent(), b.equilDistance());
 }
 
+/*! \brief Non-Bonded Pair Interaction Type
+ *
+ * It represents the interaction of the form
+ * of LJ interactions, but occur between atoms
+ * of the same bonded chain
+ * V(r, c_6, c_12) = c_12*(r^-12) - c_6*(r^-6)
+ */
+class PairLJType
+{
+public:
+    PairLJType() = default;
+    PairLJType(C6 c6, C12 c12) : c6_(c6), c12_(c12) {}
+
+    [[nodiscard]] const C6&  c6() const { return c6_; }
+    [[nodiscard]] const C12& c12() const { return c12_; }
+
+private:
+    C6  c6_;
+    C12 c12_;
+};
+
+inline bool operator<(const PairLJType& a, const PairLJType& b)
+{
+    return std::tie(a.c6(), a.c12()) < std::tie(b.c6(), b.c12());
+}
+
+inline bool operator==(const PairLJType& a, const PairLJType& b)
+{
+    return std::tie(a.c6(), a.c12()) == std::tie(b.c6(), b.c12());
+}
 
 /*! \brief Basic template for interactions with 2 parameters named forceConstant and equilAngle
  *
@@ -260,6 +292,177 @@ public:
  * V(theta, forceConstant, equilAngle) = 0.5 * forceConstant * (theta - equilAngle)^2
  */
 using HarmonicAngle = AngleInteractionType<struct HarmonicAngleParameter>;
+
+/*! \brief linear angle type
+ *
+ * It represents the interaction of the form
+ * V(theta, forceConstant, a) = 0.5 * forceConstant * (dr)^2
+ * where dr = - a * r_ij - (1 - a) * r_kj
+ */
+using LinearAngle = TwoParameterInteraction<struct LinearAngleParameter>;
+
+/*! \brief Basic template for angle types that use the cosines of their equilibrium angles
+ *         in their potential expression
+ */
+template<class Phantom>
+class CosineParamAngle : public TwoParameterInteraction<Phantom>
+{
+public:
+    CosineParamAngle() = default;
+    //! \brief construct from angle given in radians
+    CosineParamAngle(ForceConstant f, Radians angle) :
+        TwoParameterInteraction<Phantom>{ f, std::cos(angle) }
+    {
+    }
+
+    //! \brief construct from angle given in degrees
+    CosineParamAngle(ForceConstant f, Degrees angle) :
+        TwoParameterInteraction<Phantom>{ f, std::cos(angle * DEG2RAD) }
+    {
+    }
+};
+
+/*! \brief G96 or Cosine-based angle type
+ *
+ * This represents the interaction of the form
+ * V(cos(theta), forceConstant, cos(equilAngle)) = 0.5 * forceConstant * (cos(theta) - cos(equilAngle))^2
+ */
+using G96Angle = CosineParamAngle<struct G96AngleParameter>;
+
+/*! \brief Restricted angle type
+ *
+ * This represents the interaction of the form
+ * V(cos(theta), forceConstant, cos(equilAngle)) =
+ *     0.5 * forceConstant * (cos(theta) - cos(equilAngle))^2 / (sin(theta))^2
+ */
+using RestrictedAngle = CosineParamAngle<struct RestrictedAngleParameter>;
+
+/*! \brief Quartic angle type
+ *
+ * It represents the interaction of the form of a fourth order polynomial
+ * V(theta, forceConstant, equilAngle) = sum[i = 0 -> 4](forceConstant_i * (theta - equilAngle)^i
+ */
+class QuarticAngle
+{
+public:
+    QuarticAngle() = default;
+    //! \brief construct from given angle in radians
+    QuarticAngle(ForceConstant f0, ForceConstant f1, ForceConstant f2, ForceConstant f3, ForceConstant f4, Radians angle) :
+        forceConstants_{ f0, f1, f2, f3, f4 }, equilConstant_(angle)
+    {
+    }
+
+    //! \brief construct from given angle in degrees
+    QuarticAngle(ForceConstant f0, ForceConstant f1, ForceConstant f2, ForceConstant f3, ForceConstant f4, Degrees angle) :
+        forceConstants_{ f0, f1, f2, f3, f4 }, equilConstant_(angle * DEG2RAD)
+    {
+    }
+
+    [[nodiscard]] const std::array<ForceConstant, 5>& forceConstants() const
+    {
+        return forceConstants_;
+    }
+
+    ForceConstant forceConstant(int order) const
+    {
+        switch (order)
+        {
+            case 0: return forceConstants_[0];
+            case 1: return forceConstants_[1];
+            case 2: return forceConstants_[2];
+            case 3: return forceConstants_[3];
+            case 4: return forceConstants_[4];
+            default:
+                throw InputException(
+                        "Please enter a value between 0-4 for the Quartic Angle force constants");
+        }
+    }
+
+    Radians equilConstant() const { return equilConstant_; }
+
+private:
+    std::array<ForceConstant, 5> forceConstants_;
+    Radians                      equilConstant_;
+};
+
+inline bool operator<(const QuarticAngle& a, const QuarticAngle& b)
+{
+    return (a.forceConstants() < b.forceConstants()) && (a.equilConstant() < b.equilConstant());
+}
+
+inline bool operator==(const QuarticAngle& a, const QuarticAngle& b)
+{
+    return (a.forceConstants() == b.forceConstants()) && (a.equilConstant() == b.equilConstant());
+}
+
+
+/*! \brief Cross bond-bond interaction type
+ */
+class CrossBondBond
+{
+public:
+    CrossBondBond() = default;
+    CrossBondBond(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj) :
+        forceConstant_(f), r0ij_(r0ij), r0kj_(r0kj)
+    {
+    }
+
+    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
+    [[nodiscard]] const EquilConstant& equilDistanceIJ() const { return r0ij_; }
+    [[nodiscard]] const EquilConstant& equilDistanceKJ() const { return r0kj_; }
+
+private:
+    ForceConstant forceConstant_;
+    EquilConstant r0ij_;
+    EquilConstant r0kj_;
+};
+
+inline bool operator<(const CrossBondBond& a, const CrossBondBond& b)
+{
+    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
+           < std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
+}
+
+inline bool operator==(const CrossBondBond& a, const CrossBondBond& b)
+{
+    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ())
+           == std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ());
+}
+
+/*! \brief Cross bond-angle interaction type
+ */
+class CrossBondAngle
+{
+public:
+    CrossBondAngle() = default;
+    CrossBondAngle(ForceConstant f, EquilConstant r0ij, EquilConstant r0kj, EquilConstant r0ik) :
+        forceConstant_(f), r0ij_(r0ij), r0kj_(r0kj), r0ik_(r0ik)
+    {
+    }
+
+    [[nodiscard]] const ForceConstant& forceConstant() const { return forceConstant_; }
+    [[nodiscard]] const EquilConstant& equilDistanceIJ() const { return r0ij_; }
+    [[nodiscard]] const EquilConstant& equilDistanceKJ() const { return r0kj_; }
+    [[nodiscard]] const EquilConstant& equilDistanceIK() const { return r0ik_; }
+
+private:
+    ForceConstant forceConstant_;
+    EquilConstant r0ij_;
+    EquilConstant r0kj_;
+    EquilConstant r0ik_;
+};
+
+inline bool operator<(const CrossBondAngle& a, const CrossBondAngle& b)
+{
+    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
+           < std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
+}
+
+inline bool operator==(const CrossBondAngle& a, const CrossBondAngle& b)
+{
+    return std::tie(a.forceConstant(), a.equilDistanceIJ(), a.equilDistanceKJ(), a.equilDistanceIK())
+           == std::tie(b.forceConstant(), b.equilDistanceIJ(), b.equilDistanceKJ(), b.equilDistanceIK());
+}
 
 /*! \brief Proper Dihedral Implementation
  */
@@ -303,8 +506,9 @@ inline bool operator==(const ProperDihedral& a, const ProperDihedral& b)
 
 /*! \brief Improper Dihedral Implementation
  */
-struct ImproperDihedral : public TwoParameterInteraction<struct ImproperDihdedralParameter>
+class ImproperDihedral : public TwoParameterInteraction<struct ImproperDihdedralParameter>
 {
+public:
     ImproperDihedral() = default;
     ImproperDihedral(Radians phi, ForceConstant f) :
         TwoParameterInteraction<struct ImproperDihdedralParameter>{ f, phi }

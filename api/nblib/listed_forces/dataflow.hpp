@@ -200,6 +200,82 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
     return energy;
 }
 
+template<class BasicVector, class ShiftForce>
+inline NBLIB_ALWAYS_INLINE
+auto computeThreeCenter(const LinearAngle& parameters, const BasicVector& rij, const BasicVector& rkj,
+                        const BasicVector& /* rik */, BasicVector* fi, BasicVector* fj, BasicVector* fk,
+                        ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
+{
+    using ValueType = BasicVectorValueType_t<BasicVector>;
+
+    ValueType b  = parameters.equilConstant() - 1;
+    auto dr_vec  = b * rkj - parameters.equilConstant() * rij;
+    ValueType dr = norm(dr_vec);
+
+    auto [ci, ck, energy] = threeCenterKernel(dr, parameters);
+
+    BasicVector fi_loc = ci * dr_vec;
+    BasicVector fk_loc = ck * dr_vec;
+    BasicVector fj_loc = ValueType(-1.0) * (fi_loc + fk_loc);
+    *fi += fi_loc;
+    *fj += fj_loc;
+    *fk += fk_loc;
+
+    addShiftForce(fi_loc, shf_ij);
+    addShiftForce(fj_loc, shf_c);
+    addShiftForce(fk_loc, shf_kj);
+
+    return energy;
+}
+
+template<class BasicVector, class ShiftForce>
+inline NBLIB_ALWAYS_INLINE
+auto computeThreeCenter(const CrossBondBond& parameters, const BasicVector& rij, const BasicVector& rkj,
+                        const BasicVector& /* rik */, BasicVector* fi, BasicVector* fj, BasicVector* fk,
+                        ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
+{
+    using ValueType = BasicVectorValueType_t<BasicVector>;
+    // 28 flops from the norm() calls
+    auto [ci, ck, energy] = threeCenterKernel(norm(rij), norm(rkj), parameters);
+
+    BasicVector fi_loc = ci * rij;
+    BasicVector fk_loc = ck * rkj;
+    BasicVector fj_loc = ValueType(-1.0) * (fi_loc + fk_loc);
+    *fi += fi_loc;
+    *fj += fj_loc;
+    *fk += fk_loc;
+
+    addShiftForce(fi_loc, shf_ij);
+    addShiftForce(fj_loc, shf_c);
+    addShiftForce(fk_loc, shf_kj);
+
+    return energy;
+}
+
+template<class BasicVector, class ShiftForce>
+inline NBLIB_ALWAYS_INLINE
+auto computeThreeCenter(const CrossBondAngle& parameters, const BasicVector& rij, const BasicVector& rkj,
+                        const BasicVector& rik, BasicVector* fi, BasicVector* fj, BasicVector* fk,
+                        ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
+{
+    using ValueType = BasicVectorValueType_t<BasicVector>;
+    // 42 flops from the norm() calls
+    auto [ci, cj, ck, energy] = crossBondAngleKernel(norm(rij), norm(rkj), norm(rik), parameters);
+
+    BasicVector fi_loc = ci * rij + ck * rik;
+    BasicVector fk_loc = cj * rkj - ck * rik;
+    BasicVector fj_loc = ValueType(-1.0) * (fi_loc + fk_loc);
+    *fi += fi_loc;
+    *fj += fj_loc;
+    *fk += fk_loc;
+
+    addShiftForce(fi_loc, shf_ij);
+    addShiftForce(fj_loc, shf_c);
+    addShiftForce(fk_loc, shf_kj);
+
+    return energy;
+}
+
 /*! \brief Calculate three-center interactions
  *
  * \tparam Force buffer type

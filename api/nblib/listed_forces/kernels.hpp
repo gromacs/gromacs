@@ -256,6 +256,40 @@ inline auto bondKernel(T dr, const MorseBondType& bond)
     return morseScalarForce(bond.forceConstant(), bond.exponent(), bond.equilDistance(), dr);
 }
 
+/*! \brief kernel to calculate the scalar part for the 1-4 LJ non-bonded forces
+ *
+ * \param c6  C6 parameter of LJ potential
+ * \param c12 C12 parameter of LJ potential
+ * \param r   distance between the atoms
+ *
+ * \return tuple<force, potential energy>
+ */
+template <class T>
+inline std::tuple<T, T> pairLJScalarForce(C6 c6, C12 c12, T r)
+{
+    T rinv  = 1./r;                           /* 1 */
+    T rinv2 = rinv * rinv;                    /* 1 */
+    T rinv6 = rinv2 * rinv2 * rinv2;          /* 2 */
+
+    T epot  = rinv6*(c12*rinv6 - c6);         /* 3 */
+
+    T c6_     = 6.*c6;                        /* 1 */
+    T c12_    = 12.*c12;                      /* 1 */
+
+    T force = rinv6*(c12_*rinv6 - c6_)*rinv;  /* 4 */
+
+    return std::make_tuple(force, epot);
+
+    /* That was 13 flops */
+}
+
+//! Abstraction layer for different 2-center bonds. 1-4 LJ pair interactions case
+template <class T>
+inline auto bondKernel(T dr, const PairLJType& bond)
+{
+    return pairLJScalarForce(bond.c6(), bond.c12(), dr);
+}
+
 
 /*! \brief kernel to calculate the scalar part for the FENE pontential bond forces
  *         for lambda = 0
@@ -397,6 +431,36 @@ inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 
 //! Three-center interaction type kernels
 
+/*! \brief kernel to calculate the scalar part for linear angle forces
+ *         for lambda = 0
+ *
+ * \param k  force constant
+ * \param a  contribution of rij vector
+ * \param dr weighted distance metric
+ *
+ * \return tuple<force, potential energy>
+ */
+template <class T>
+inline std::tuple<T, T, T> linearAnglesScalar(T k, T a, T dr)
+{
+    T b = T(1.0) - a;
+
+    T kdr  = k * dr;
+    T epot = 0.5 * kdr * dr;
+
+    T ci = a * k;
+    T ck = b * k;
+
+    return std::make_tuple(ci, ck, epot);
+
+    /* That was 5 flops */
+}
+
+template <class T>
+inline auto threeCenterKernel(T dr, const LinearAngle& angle)
+{
+    return linearAnglesScalar(angle.forceConstant(), angle.equilConstant(), dr);
+}
 
 //! Harmonic Angle
 template <class T>
@@ -405,6 +469,134 @@ inline auto threeCenterKernel(T dr, const HarmonicAngle& angle)
     return harmonicScalarForce(angle.forceConstant(), angle.equilConstant(), dr);
 }
 
+//! Cosine based (GROMOS-96) Angle
+template <class T>
+inline auto threeCenterKernel(T dr, const G96Angle& angle)
+{
+    auto costheta = std::cos(dr);
+    auto feTuple = g96ScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);
+
+    // The above kernel call effectively computes the derivative of the potential with respect to
+    // cos(theta). However, we need the derivative with respect to theta. We use this extra -sin(theta)
+    // factor to account for this before the forces are spread between the particles.
+
+    std::get<0>(feTuple) *= -std::sqrt(1 - costheta*costheta);
+    return feTuple;
+}
+
+/*! \brief kernel to calculate the scalar part for cross bond-bond forces
+ *         for lambda = 0
+ *
+ * \param k force constant
+ * \param r0ij equilibrium distance between particles i & j
+ * \param r0kj equilibrium distance between particles k & j
+ * \param rij  input bond length between particles i & j
+ * \param rkj  input bond length between particles k & j
+ *
+ * \return tuple<force scalar i, force scalar k, potential energy>
+ */
+
+template <class T>
+inline std::tuple<T, T, T> crossBondBondScalarForce(T k, T r0ij, T r0kj, T rij, T rkj)
+{
+    T si = rij - r0ij;
+    T sk = rkj - r0kj;
+
+    T epot = k * si * sk;
+
+    T ci = -k * sk / rij;
+    T ck = -k * si / rkj;
+
+    return std::make_tuple(ci, ck, epot);
+
+    /* That was 8 flops */
+}
+
+//! Cross bond-bond interaction
+template <class T>
+inline auto threeCenterKernel(T drij, T drkj, const CrossBondBond& crossBondBond)
+{
+    return crossBondBondScalarForce(crossBondBond.forceConstant(), crossBondBond.equilDistanceIJ(), crossBondBond.equilDistanceKJ(), drij, drkj);
+}
+
+/*! \brief kernel to calculate the scalar part for cross bond-angle forces
+ *         for lambda = 0
+ *
+ * \param k force constant
+ * \param r0ij equilibrium distance between particles i & j
+ * \param r0kj equilibrium distance between particles k & j
+ * \param r0ik equilibrium distance between particles i & k
+ * \param rij  input bond length between particles i & j
+ * \param rkj  input bond length between particles k & j
+ * \param rik  input bond length between particles i & k
+ *
+ * \return tuple<force, potential energy>
+ */
+
+template <class T>
+inline std::tuple<T, T, T, T> crossBondAngleScalarForce(T k, T r0ij, T r0kj, T r0ik, T rij, T rkj, T rik)
+{
+    T sij = rij - r0ij;
+    T skj = rkj - r0kj;
+    T sik = rik - r0ik;
+
+    T epot = k * sik * (sij + skj);
+
+    T ci = -k * sik / rij;
+    T cj = -k * sik / rkj;
+    T ck = -k * (sij + skj) / rik;
+
+    return std::make_tuple(ci, cj, ck, epot);
+
+    /* That was 13 flops */
+}
+
+//! Cross bond-bond interaction
+template <class T>
+inline auto crossBondAngleKernel(T drij, T drkj, T drik, const CrossBondAngle& crossBondAngle)
+{
+    return crossBondAngleScalarForce(crossBondAngle.forceConstant(), crossBondAngle.equilDistanceIJ(), crossBondAngle.equilDistanceKJ(), crossBondAngle.equilDistanceIK(), drij, drkj, drik);
+}
+
+//! Quartic Angle
+template <class T>
+inline auto threeCenterKernel(T dr, const QuarticAngle& angle)
+{
+    T dt = dr - angle.equilConstant();       /*  1          */
+
+    T force  = 0;
+    T energy = angle.forceConstant(0);
+    T dtp  = 1.0;
+    for (auto j = 1; j <= 4; j++)
+    { /* 24     */
+        T c = angle.forceConstant(j);
+        force -= j * c * dtp;               /*  3          */
+        dtp *= dt;                          /*  1          */
+        energy += c * dtp;                  /*  2          */
+    }
+
+    /* TOTAL 25 */
+    return std::make_tuple(force, energy);
+}
+
+//! \brief Restricted Angle potential. Returns scalar force and energy
+template <class T>
+inline auto threeCenterKernel(T theta, const RestrictedAngle& angle)
+{
+    T costheta = std::cos(theta);
+    auto [force, ePot] = harmonicScalarForce(angle.forceConstant(), angle.equilConstant(), costheta);
+
+    // The above kernel call effectively computes the derivative of the potential with respect to
+    // cos(theta). However, we need the derivative with respect to theta.
+    // This introduces the extra (cos(theta)*cos(eqAngle) - 1)/(sin(theta)^3 factor for the force
+    // The call also computes the potential energy without the sin(theta)^-2 factor
+
+    T sintheta2 = (1 - costheta*costheta);
+    T sintheta  = std::sqrt(sintheta2);
+    force *= (costheta*angle.equilConstant() - 1)/(sintheta2*sintheta);
+    ePot /= sintheta2;
+    return std::make_tuple(force, ePot);
+}
 
 //! \brief Computes and returns the proper dihedral force
 template <class T>

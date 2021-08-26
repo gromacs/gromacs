@@ -76,11 +76,34 @@ static const std::vector<G96BondType> c_InputG96Bonds = { { G96BondType(50.0, 0.
 //! Function types for testing cubic bonds
 static const std::vector<CubicBondType> c_InputCubicBonds = { { CubicBondType(50.0, 2.0, 0.16) } };
 
+//! Function types for testing Morse bonds
+static const std::vector<MorseBondType> c_InputMorseBonds = { { MorseBondType(30.0, 2.7, 0.15) } };
+
 //! Function types for testing FENE bonds
 static const std::vector<FENEBondType> c_InputFeneBonds = { { FENEBondType(5.0, 0.4) } };
 
 //! Function types for testing Harmonic angles
 static const std::vector<HarmonicAngle> c_InputHarmonicAngles = { { HarmonicAngle(50.0, Degrees(100)) } };
+
+//! Function types for testing Linear angles
+static const std::vector<LinearAngle> c_InputLinearAngles = { { LinearAngle(50.0, 0.4) } };
+
+//! Function types for testing G96 angles
+static const std::vector<G96Angle> c_InputG96Angles = { { G96Angle(50.0, Degrees(100)) } };
+
+//! Function types for testing Restricted angles
+static const std::vector<RestrictedAngle> c_InputRestrictedAngles = { { RestrictedAngle(50.0, Degrees(100)) } };
+
+//! Function types for testing Quartic angles
+static const std::vector<QuarticAngle> c_InputQuarticAngles = {
+    { QuarticAngle(1.1, 2.3, 4.6, 7.8, 9.2, Degrees(87)) }
+};
+
+//! Function types for testing cross bond-bond interaction
+static const std::vector<CrossBondBond> c_InputCrossBondBond = { { CrossBondBond(45.0, 0.8, 0.7) } };
+
+//! Function types for testing cross bond-angle interaction
+static const std::vector<CrossBondAngle> c_InputCrossBondAngle = { { CrossBondAngle(45.0, 0.8, 0.7, 0.3) } };
 
 //! Function types for testing dihedrals
 static const std::vector<ProperDihedral> c_InputDihs = { { ProperDihedral(Degrees(-105.0), 15.0, 2) } };
@@ -108,9 +131,39 @@ TEST(FourCenter, ListedForcesProperDihedralTest)
     checkForcesAndEnergiesWithRefData(c_InputDihs, c_coordinatesForDihTests);
 }
 
+TEST(ThreeCenter, ListedForcesG96AngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputG96Angles, c_coordinatesForAngleTests);
+}
+
 TEST(ThreeCenter, ListedForcesHarmonicAngleTest)
 {
     checkForcesAndEnergiesWithRefData(c_InputHarmonicAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesLinearAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputLinearAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesCrossBondBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputCrossBondBond, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesCrossBondAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputCrossBondAngle, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesQuarticAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputQuarticAngles, c_coordinatesForAngleTests);
+}
+
+TEST(ThreeCenter, ListedForcesRestrictedAngleTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputRestrictedAngles, c_coordinatesForAngleTests);
 }
 
 TEST(TwoCenter, ListedForcesHarmonicBondTest)
@@ -126,6 +179,11 @@ TEST(TwoCenter, ListedForcesG96BondTest)
 TEST(TwoCenter, ListedForcesCubicBondTest)
 {
     checkForcesAndEnergiesWithRefData(c_InputCubicBonds, c_coordinatesForBondTests);
+}
+
+TEST(TwoCenter, ListedForcesMorseBondTest)
+{
+    checkForcesAndEnergiesWithRefData(c_InputMorseBonds, c_coordinatesForBondTests);
 }
 
 TEST(TwoCenter, ListedForcesFeneBondTest)

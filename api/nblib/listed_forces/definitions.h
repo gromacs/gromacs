@@ -66,8 +66,9 @@ namespace nblib
  */
 
 using SupportedTwoCenterTypes =
-        TypeList<HarmonicBondType, G96BondType, CubicBondType, FENEBondType, HalfAttractiveQuarticBondType>;
-using SupportedThreeCenterTypes = TypeList<HarmonicAngle>;
+        TypeList<HarmonicBondType, G96BondType, CubicBondType, MorseBondType, FENEBondType, HalfAttractiveQuarticBondType, PairLJType>;
+using SupportedThreeCenterTypes =
+        TypeList<HarmonicAngle, G96Angle, QuarticAngle, RestrictedAngle, CrossBondBond, CrossBondAngle, LinearAngle>;
 using SupportedFourCenterTypes = TypeList<ProperDihedral, ImproperDihedral, RyckaertBellemanDihedral>;
 using SupportedFiveCenterTypes = TypeList<Default5Center>;
 
@@ -131,10 +132,10 @@ struct ListedTypeData
 {
     using type = InteractionType;
 
-    // tuple format: <particleID i, particleID j, ..., InteractionInstanceIndex>
-    std::vector<InteractionIndex<InteractionType>> indices;
     // vector of unique TwoCenterType instances
     std::vector<InteractionType> parameters;
+    // tuple format: <particleID i, particleID j, ..., InteractionInstanceIndex>
+    std::vector<InteractionIndex<InteractionType>> indices;
 };
 
 using TwoCenterInteraction   = Reduce<std::variant, SupportedTwoCenterTypes>;
