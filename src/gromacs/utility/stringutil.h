@@ -450,6 +450,25 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target);
  */
 bool equalCaseInsensitive(const std::string& source, const std::string& target, size_t maxLengthOfComparison);
 
+/*! \brief
+ * Makes the string uppercase.
+ *
+ * \param[in] text  Input text.
+ * \returns   \p text with all characters transformed to uppercase.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::string toUpperCase(const std::string& text);
+
+/*! \brief
+ * Makes the string lowercase.
+ *
+ * \param[in] text  Input text.
+ * \returns   \p text with all characters transformed to lowercase.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::string toLowerCase(const std::string& text);
+
+
 class TextLineWrapper;
 
 /*! \brief

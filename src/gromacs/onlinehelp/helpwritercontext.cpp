@@ -206,19 +206,6 @@ private:
     std::vector<std::string> result_;
 };
 
-/*! \brief
- * Makes the string uppercase.
- *
- * \param[in] text  Input text.
- * \returns   \p text with all characters transformed to uppercase.
- * \throws    std::bad_alloc if out of memory.
- */
-std::string toUpperCase(const std::string& text)
-{
-    std::string result(text);
-    std::transform(result.begin(), result.end(), result.begin(), toupper);
-    return result;
-}
 
 /*! \brief
  * Removes extra newlines from reStructuredText.

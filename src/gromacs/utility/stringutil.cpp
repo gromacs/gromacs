@@ -333,6 +333,20 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target, 
     });
 }
 
+std::string toUpperCase(const std::string& text)
+{
+    std::string result(text);
+    std::transform(result.begin(), result.end(), result.begin(), toupper);
+    return result;
+}
+
+std::string toLowerCase(const std::string& text)
+{
+    std::string result(text);
+    std::transform(result.begin(), result.end(), result.begin(), tolower);
+    return result;
+}
+
 /********************************************************************
  * TextLineWrapperSettings
  */
