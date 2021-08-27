@@ -1803,18 +1803,20 @@ static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
  * state with other run parameters and settings. As a result, the initial state
  * may be altered or an error may be thrown if incompatibility of options is detected.
  *
- * \param [in] mdlog       Logger.
- * \param [in] dlbOption   Enum value for the DLB option.
- * \param [in] bRecordLoad True if the load balancer is recording load information.
- * \param [in] mdrunOptions  Options for mdrun.
- * \param [in] inputrec    Pointer mdrun to input parameters.
- * \returns                DLB initial/startup state.
+ * \param [in] mdlog                Logger.
+ * \param [in] dlbOption            Enum value for the DLB option.
+ * \param [in] bRecordLoad          True if the load balancer is recording load information.
+ * \param [in] mdrunOptions         Options for mdrun.
+ * \param [in] inputrec             Pointer mdrun to input parameters.
+ * \param [in] directGpuCommUsedWithGpuUpdate     Direct GPU halo exchange and GPU update enabled
+ * \returns                         DLB initial/startup state.
  */
 static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
                                          DlbOption                dlbOption,
                                          gmx_bool                 bRecordLoad,
                                          const gmx::MdrunOptions& mdrunOptions,
-                                         const t_inputrec&        inputrec)
+                                         const t_inputrec&        inputrec,
+                                         const bool               directGpuCommUsedWithGpuUpdate)
 {
     DlbState dlbState = DlbState::offCanTurnOn;
 
@@ -1824,6 +1826,15 @@ static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
         case DlbOption::no: dlbState = DlbState::offUser; break;
         case DlbOption::yes: dlbState = DlbState::onUser; break;
         default: gmx_incons("Invalid dlbOption enum value");
+    }
+
+    // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple timesteps
+    // DLB needs to be disabled in that case
+    if (directGpuCommUsedWithGpuUpdate)
+    {
+        std::string reasonStr =
+                "it is not supported with GPU direct communication + GPU update enabled.";
+        return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
     /* Reruns don't support DLB: bail or override auto mode */
@@ -2775,7 +2786,8 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
 static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
                                 const DomdecOptions&     options,
                                 const gmx::MdrunOptions& mdrunOptions,
-                                const t_inputrec&        ir)
+                                const t_inputrec&        ir,
+                                const bool               directGpuCommUsedWithGpuUpdate)
 {
     DDSettings ddSettings;
 
@@ -2808,8 +2820,8 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
         ddSettings.recordLoad = (wallcycle_have_counter() && recload > 0);
     }
 
-    ddSettings.initialDlbState =
-            determineInitialDlbState(mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, ir);
+    ddSettings.initialDlbState = determineInitialDlbState(
+            mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, ir, directGpuCommUsedWithGpuUpdate);
     GMX_LOG(mdlog.info)
             .appendTextFormatted("Dynamic load balancing: %s",
                                  enumValueToString(ddSettings.initialDlbState));
@@ -2844,7 +2856,8 @@ public:
          real                              maxUpdateGroupRadius,
          ArrayRef<const RVec>              xGlobal,
          bool                              useGpuForNonbonded,
-         bool                              useGpuForPme);
+         bool                              useGpuForPme,
+         bool                              directGpuCommUsedWithGpuUpdate);
 
     //! Build the resulting DD manager
     gmx_domdec_t* build(LocalAtomSetManager* atomSets);
@@ -2899,12 +2912,13 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
                                        const real                        maxUpdateGroupRadius,
                                        ArrayRef<const RVec>              xGlobal,
                                        bool                              useGpuForNonbonded,
-                                       bool                              useGpuForPme) :
+                                       bool                              useGpuForPme,
+                                       bool directGpuCommUsedWithGpuUpdate) :
     mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir), notifiers_(notifiers)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
 
-    ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_);
+    ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_, directGpuCommUsedWithGpuUpdate);
 
     if (ddSettings_.eFlop > 1)
     {
@@ -3038,7 +3052,8 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
                                                        const real           maxUpdateGroupRadius,
                                                        ArrayRef<const RVec> xGlobal,
                                                        const bool           useGpuForNonbonded,
-                                                       const bool           useGpuForPme) :
+                                                       const bool           useGpuForPme,
+                                                       const bool directGpuCommUsedWithGpuUpdate) :
     impl_(new Impl(mdlog,
                    cr,
                    options,
@@ -3052,7 +3067,8 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
                    maxUpdateGroupRadius,
                    xGlobal,
                    useGpuForNonbonded,
-                   useGpuForPme))
+                   useGpuForPme,
+                   directGpuCommUsedWithGpuUpdate))
 {
 }
 

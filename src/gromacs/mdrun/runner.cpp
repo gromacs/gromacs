@@ -1298,6 +1298,45 @@ int Mdrunner::mdrunner()
                                                  systemHasConstraintsOrVsites(mtop),
                                                  cutoffMargin);
 
+    try
+    {
+        const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
+
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
+                                                         updateGroups.useUpdateGroups(),
+                                                         pmeRunMode,
+                                                         domdecOptions.numPmeRanks > 0,
+                                                         useGpuForNonbonded,
+                                                         updateTarget,
+                                                         gpusWereDetected,
+                                                         *inputrec,
+                                                         mtop,
+                                                         doEssentialDynamics,
+                                                         gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                                                         haveFrozenAtoms,
+                                                         doRerun,
+                                                         devFlags,
+                                                         mdlog);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+
+    bool useGpuDirectHalo = false;
+
+    if (useGpuForNonbonded)
+    {
+        // cr->npmenodes is not yet initialized.
+        // domdecOptions.numPmeRanks == -1 results in 0 separate PME ranks when useGpuForNonbonded is true.
+        // Todo: remove this assumption later once auto mode has support for separate PME rank
+        const int numPmeRanks = domdecOptions.numPmeRanks > 0 ? domdecOptions.numPmeRanks : 0;
+        bool      havePPDomainDecomposition = (cr->sizeOfDefaultCommunicator - numPmeRanks) > 1;
+        useGpuDirectHalo                    = decideWhetherToUseGpuForHalo(devFlags,
+                                                        havePPDomainDecomposition,
+                                                        useGpuForNonbonded,
+                                                        useModularSimulator,
+                                                        doRerun,
+                                                        EI_ENERGY_MINIMIZATION(inputrec->eI));
+    }
+
     // This builder is necessary while we have multi-part construction
     // of DD. Before DD is constructed, we use the existence of
     // the builder object to indicate that further construction of DD
@@ -1305,7 +1344,10 @@ int Mdrunner::mdrunner()
     std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
     if (useDomainDecomposition)
     {
-        ddBuilder = std::make_unique<DomainDecompositionBuilder>(
+        // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple
+        // timesteps. DLB needs to be disabled in that case
+        const bool directGpuCommUsedWithGpuUpdate = GMX_THREAD_MPI && useGpuDirectHalo && useGpuForUpdate;
+        ddBuilder                                 = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
                 cr,
                 domdecOptions,
@@ -1319,7 +1361,8 @@ int Mdrunner::mdrunner()
                 updateGroups.maxUpdateGroupRadius(),
                 positionsFromStatePointer(globalState.get()),
                 useGpuForNonbonded,
-                useGpuForPme);
+                useGpuForPme,
+                directGpuCommUsedWithGpuUpdate);
     }
     else
     {
@@ -1403,32 +1446,6 @@ int Mdrunner::mdrunner()
         }
     }
 
-    // The GPU update is decided here because we need to know whether the constraints or
-    // SETTLEs can span across the domain borders (i.e. whether or not update groups are
-    // defined). This is only known after DD is initialized, hence decision on using GPU
-    // update is done so late.
-    try
-    {
-        const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
-
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
-                                                         updateGroups.useUpdateGroups(),
-                                                         pmeRunMode,
-                                                         domdecOptions.numPmeRanks > 0,
-                                                         useGpuForNonbonded,
-                                                         updateTarget,
-                                                         gpusWereDetected,
-                                                         *inputrec,
-                                                         mtop,
-                                                         doEssentialDynamics,
-                                                         gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                                                         haveFrozenAtoms,
-                                                         doRerun,
-                                                         devFlags,
-                                                         mdlog);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 
@@ -1444,13 +1461,6 @@ int Mdrunner::mdrunner()
     }
 
     MdrunScheduleWorkload runScheduleWork;
-
-    bool useGpuDirectHalo = decideWhetherToUseGpuForHalo(devFlags,
-                                                         havePPDomainDecomposition(cr),
-                                                         useGpuForNonbonded,
-                                                         useModularSimulator,
-                                                         doRerun,
-                                                         EI_ENERGY_MINIMIZATION(inputrec->eI));
 
     // Also populates the simulation constant workload description.
     // Note: currently the default duty is DUTY_PP | DUTY_PME for all simulations, including those without PME,
