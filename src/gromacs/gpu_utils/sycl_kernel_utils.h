@@ -44,52 +44,29 @@
  *  \author Andrey Alekseenko <al42and@gmail.com>
  */
 
-/*! \brief Access mode to use for atomic accessors.
- *
- * Intel DPCPP compiler has \c sycl::atomic_ref, but has no \c sycl::atomic_fetch_add for floats.
- * However, \c atomic_ref can not be constructed from \c sycl::atomic, so we can not use
- * atomic accessors. Thus, we use \c mode::read_write accessors and \c atomic_ref.
- *
- * hipSYCL does not have \c sycl::atomic_ref, but has \c sycl::atomic_fetch_add for floats, which
- * requires using atomic accessors. Thus, we use \c mode::atomic accessors.
- *
- * The \ref atomicFetchAdd function could be used for doing operations on such accessors.
- */
-static constexpr auto mode_atomic = GMX_SYCL_DPCPP ? cl::sycl::access::mode::read_write :
-                                                   /* GMX_SYCL_HIPSYCL */ cl::sycl::access::mode::atomic;
-
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
 /*! \brief Convenience wrapper to do atomic addition to a global buffer.
- *
- * The implementation differences between DPCPP and hipSYCL are explained in \ref mode_atomic.
  */
-template<class IndexType>
-static inline void atomicFetchAdd(DeviceAccessor<float, mode_atomic> acc, const IndexType idx, const float val)
+template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
+static inline void atomicFetchAdd(T& val, const T delta)
 {
-#if GMX_SYCL_DPCPP
-    sycl_2020::atomic_ref<float, sycl_2020::memory_order::relaxed, sycl_2020::memory_scope::device, cl::sycl::access::address_space::global_space>
-            fout_atomic(acc[idx]);
-    fout_atomic.fetch_add(val);
-#elif GMX_SYCL_HIPSYCL
-#    ifdef SYCL_DEVICE_ONLY
-    /* While there is support for float atomics on device, the host implementation uses
-     * Clang's __atomic_fetch_add intrinsic, that, at least in Clang 11, does not support
-     * floats. Luckily, we don't want to run on host. */
-    // The pragmas below can be removed once we switch to sycl::atomic
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    acc[idx].fetch_add(val);
-#        pragma clang diagnostic push
-#    else
-    GMX_ASSERT(false, "hipSYCL host codepath not supported");
-    GMX_UNUSED_VALUE(val);
-    GMX_UNUSED_VALUE(acc);
-    GMX_UNUSED_VALUE(idx);
-#    endif
-#endif
+    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, cl::sycl::access::address_space::global_space> ref(
+            val);
+    ref.fetch_add(delta);
 }
+
+/*! \brief Convenience wrapper to do atomic loads from a global buffer.
+ */
+template<typename T, sycl_2020::memory_scope MemoryScope = sycl_2020::memory_scope::device>
+static inline T atomicLoad(T& val)
+{
+    sycl_2020::atomic_ref<T, sycl_2020::memory_order::relaxed, MemoryScope, cl::sycl::access::address_space::global_space> ref(
+            val);
+    return ref.load();
+}
+
 
 /*! \brief Issue an intra sub-group barrier.
  *

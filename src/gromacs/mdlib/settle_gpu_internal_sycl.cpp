@@ -69,7 +69,7 @@ auto settleKernel(cl::sycl::handler&                                           c
                   DeviceAccessor<Float3, mode::read_write>                     a_xp,
                   float                                                        invdt,
                   OptionalAccessor<Float3, mode::read_write, updateVelocities> a_v,
-                  OptionalAccessor<float, mode_atomic, computeVirial>          a_virialScaled,
+                  OptionalAccessor<float, mode::read_write, computeVirial>     a_virialScaled,
                   PbcAiuc                                                      pbcAiuc)
 {
     cgh.require(a_settles);
@@ -340,7 +340,7 @@ auto settleKernel(cl::sycl::handler&                                           c
             // First 6 threads in the block add the 6 components of virial to the global memory address
             if (threadIdx < 6)
             {
-                atomicFetchAdd(a_virialScaled, threadIdx, sm_threadVirial[threadIdx * blockSize]);
+                atomicFetchAdd(a_virialScaled[threadIdx], sm_threadVirial[threadIdx * blockSize]);
             }
         }
     };

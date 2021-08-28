@@ -132,7 +132,7 @@ auto group_reduce(Args&&... args) -> decltype(detail::origin::reduce(std::forwar
     return detail::origin::reduce(std::forward<Args>(args)...);
 }
 #elif GMX_SYCL_HIPSYCL
-// No atomic_ref in hipSYCL yet (2021-02-22)
+using detail::origin::atomic_ref;
 using detail::origin::group_any_of;
 using detail::origin::group_reduce;
 #else
