@@ -752,21 +752,7 @@ void init_forcerec(FILE*                            fplog,
         if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec)
             && (useEwaldSurfaceCorrection || haveOrientationRestraints))
         {
-            GMX_RELEASE_ASSERT(
-                    !havePPDomainDecomposition(commrec),
-                    "WholeMoleculesTransform only works when all atoms are in the same domain");
-            forcerec->wholeMoleculeTransform = std::make_unique<gmx::WholeMoleculeTransform>(
-                    mtop, inputrec.pbcType, DOMAINDECOMP(commrec));
-        }
-        else
-        {
-            /* With Ewald surface correction it is useful to support e.g. running water
-             * in parallel with update groups.
-             * With orientation restraints there is no sensible use case supported with DD.
-             */
-            if ((useEwaldSurfaceCorrection
-                 && !(DOMAINDECOMP(commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd)))
-                || haveOrientationRestraints)
+            if (havePPDomainDecomposition(commrec))
             {
                 gmx_fatal(FARGS,
                           "You requested Ewald surface correction or orientation restraints, "
@@ -774,7 +760,12 @@ void init_forcerec(FILE*                            fplog,
                           "over periodic boundary conditions by the domain decomposition. "
                           "Run without domain decomposition instead.");
             }
+
+            forcerec->wholeMoleculeTransform = std::make_unique<gmx::WholeMoleculeTransform>(
+                    mtop, inputrec.pbcType, DOMAINDECOMP(commrec));
         }
+
+        forcerec->bMolPBC = !DOMAINDECOMP(commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType);
 
         if (useEwaldSurfaceCorrection)
         {

@@ -122,7 +122,7 @@ public:
                        gmx::ArrayRef<const rvec>                        invMassPerDim,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                       const t_fcdata&                                  fcdata,
+                       t_fcdata*                                        fcdata,
                        const gmx_ekindata_t*                            ekind,
                        const matrix                                     M,
                        int                                              UpdatePart,
@@ -218,7 +218,7 @@ void Update::update_coords(const t_inputrec&                 inputRecord,
                            gmx::ArrayRef<const rvec>         invMassPerDim,
                            t_state*                          state,
                            const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                           const t_fcdata&                                  fcdata,
+                           t_fcdata*                                        fcdata,
                            const gmx_ekindata_t*                            ekind,
                            const matrix                                     M,
                            int                                              updatePart,
@@ -1522,7 +1522,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  gmx::ArrayRef<const rvec>         invMassPerDim,
                                  t_state*                          state,
                                  const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                                 const t_fcdata&                                  fcdata,
+                                 t_fcdata*                                        fcdata,
                                  const gmx_ekindata_t*                            ekind,
                                  const matrix                                     M,
                                  int                                              updatePart,
@@ -1541,11 +1541,12 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & enumValueToBitMask(StateEntry::DisreRm3Tav))
     {
-        update_disres_history(*fcdata.disres, &state->hist);
+        update_disres_history(*fcdata->disres, &state->hist);
     }
     if (state->flags & enumValueToBitMask(StateEntry::OrireDtav))
     {
-        update_orires_history(*fcdata.orires, &state->hist);
+        GMX_ASSERT(fcdata, "Need valid fcdata");
+        fcdata->orires->updateHistory();
     }
 
     /* ############# START The update of velocities and positions ######### */

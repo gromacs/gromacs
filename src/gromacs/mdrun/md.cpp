@@ -276,7 +276,7 @@ void gmx::LegacySimulator::do_md()
     }
     const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
 
-    const t_fcdata& fcdata = *fr->fcdata;
+    t_fcdata& fcdata = *fr->fcdata;
 
     bool simulationsShareState = false;
     int  nstSignalComm         = nstglobalcomm;
@@ -1218,7 +1218,7 @@ void gmx::LegacySimulator::do_md()
                                  cr,
                                  state,
                                  mdAtoms->mdatoms(),
-                                 fcdata,
+                                 &fcdata,
                                  &MassQ,
                                  &vcm,
                                  top,
@@ -1466,7 +1466,7 @@ void gmx::LegacySimulator::do_md()
                                   cr,
                                   state,
                                   mdAtoms->mdatoms(),
-                                  fcdata,
+                                  &fcdata,
                                   &MassQ,
                                   &vcm,
                                   pull_work,
@@ -1599,7 +1599,7 @@ void gmx::LegacySimulator::do_md()
                                   gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
                                   state,
                                   forceCombined,
-                                  fcdata,
+                                  &fcdata,
                                   ekind,
                                   M,
                                   etrtPOSITION,

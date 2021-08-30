@@ -67,6 +67,11 @@ template<typename>
 class ArrayRef;
 } // namespace gmx
 
+/*! \brief Extends \p globalState with orientation restraint history
+ * when there are restraints and time averaging is used.
+ */
+void extendStateWithOriresHistory(const gmx_mtop_t& mtop, const t_inputrec& ir, t_state* globalState);
+
 /*! \brief
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  *
@@ -76,12 +81,10 @@ real calc_orires_dev(const gmx_multisim_t*          ms,
                      int                            nfa,
                      const t_iatom                  fa[],
                      const t_iparams                ip[],
-                     const t_mdatoms*               md,
                      gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
                      const rvec                     x[],
                      const t_pbc*                   pbc,
-                     t_oriresdata*                  oriresdata,
-                     const history_t*               hist);
+                     t_oriresdata*                  oriresdata);
 
 /*! \brief
  * Diagonalizes the order tensor(s) of the orienation restraints.

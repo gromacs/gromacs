@@ -854,12 +854,10 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                                        idef.il[F_ORIRES].size(),
                                                        idef.il[F_ORIRES].iatoms.data(),
                                                        idef.iparams.data(),
-                                                       md,
                                                        xWholeMolecules,
                                                        x,
                                                        fr->bMolPBC ? pbc : nullptr,
-                                                       fcdata->orires.get(),
-                                                       hist);
+                                                       fcdata->orires.get());
         }
         if (fcdata->disres->nres > 0)
         {

@@ -42,6 +42,8 @@
 #include <climits>
 #include <cmath>
 
+#include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
@@ -69,13 +71,51 @@ using gmx::RVec;
 // TODO This implementation of ensemble orientation restraints is nasty because
 // a user can't just do multi-sim with single-sim orientation restraints.
 
-t_oriresdata::t_oriresdata(FILE*                 fplog,
-                           const gmx_mtop_t&     mtop,
-                           const t_inputrec&     ir,
-                           const t_commrec*      cr,
-                           const gmx_multisim_t* ms,
-                           t_state*              globalState) :
-    numRestraints(gmx_mtop_ftype_count(mtop, F_ORIRES))
+void extendStateWithOriresHistory(const gmx_mtop_t& mtop, const t_inputrec& ir, t_state* globalState)
+{
+    GMX_RELEASE_ASSERT(globalState != nullptr,
+                       "We need a valid global state in extendStateWithOriresHistory()");
+
+    const int numRestraints = gmx_mtop_ftype_count(mtop, F_ORIRES);
+    if (numRestraints > 0 && ir.orires_tau > 0)
+    {
+        /* Extend the state with the orires history */
+        globalState->flags |= enumValueToBitMask(StateEntry::OrireInitF);
+        globalState->hist.orire_initf = 1;
+        globalState->flags |= enumValueToBitMask(StateEntry::OrireDtav);
+        globalState->hist.orire_Dtav.resize(numRestraints * 5);
+    }
+}
+
+namespace
+{
+
+//! Creates and returns a list of global atom indices of the orientation restraint fit group
+std::vector<gmx::index> fitGlobalAtomIndices(const gmx_mtop_t& mtop)
+{
+    std::vector<gmx::index> indices;
+
+    for (int i = 0; i < mtop.natoms; i++)
+    {
+        if (getGroupType(mtop.groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
+        {
+            indices.push_back(i);
+        }
+    }
+
+    return indices;
+}
+
+} // namespace
+
+t_oriresdata::t_oriresdata(FILE*                     fplog,
+                           const gmx_mtop_t&         mtop,
+                           const t_inputrec&         ir,
+                           const gmx_multisim_t*     ms,
+                           t_state*                  globalState,
+                           gmx::LocalAtomSetManager* localAtomSetManager) :
+    numRestraints(gmx_mtop_ftype_count(mtop, F_ORIRES)),
+    fitLocalAtomSet_(localAtomSetManager->add(fitGlobalAtomIndices(mtop)))
 {
     GMX_RELEASE_ASSERT(numRestraints > 0,
                        "orires() should only be called with orientation restraints present");
@@ -100,13 +140,6 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
         GMX_THROW(gmx::InvalidInputError(
                 "Orientation restraints can not be applied when periodic molecules are present "
                 "in the system"));
-    }
-
-    if (cr && PAR(cr))
-    {
-        GMX_THROW(gmx::InvalidInputError(
-                "Orientation restraints do not work with MPI parallelization. Choose 1 MPI rank, "
-                "if possible."));
     }
 
     GMX_RELEASE_ASSERT(globalState != nullptr, "We need a valid global state in t_oriresdata()");
@@ -177,11 +210,8 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
         edt   = std::exp(-ir.delta_t / ir.orires_tau);
         edt_1 = 1.0 - edt;
 
-        /* Extend the state with the orires history */
-        globalState->flags |= enumValueToBitMask(StateEntry::OrireInitF);
-        globalState->hist.orire_initf = 1;
-        globalState->flags |= enumValueToBitMask(StateEntry::OrireDtav);
-        globalState->hist.orire_Dtav.resize(numRestraints * 5);
+        timeAveragingInitFactor_     = std::reference_wrapper<real>(globalState->hist.orire_initf);
+        DTensorsTimeAveragedHistory_ = globalState->hist.orire_Dtav;
     }
 
     orientations.resize(numRestraints);
@@ -205,25 +235,13 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
     }
     tmpEq.resize(numExperiments);
 
-    numReferenceAtoms = 0;
-    for (int i = 0; i < mtop.natoms; i++)
-    {
-        if (getGroupType(mtop.groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
-        {
-            numReferenceAtoms++;
-        }
-    }
-    mref.resize(numReferenceAtoms);
-    xref.resize(numReferenceAtoms);
-    xtmp.resize(numReferenceAtoms);
-
     eigenOutput.resize(numExperiments * c_numEigenRealsPerExperiment);
 
     /* Determine the reference structure on the master node.
      * Copy it to the other nodes after checking multi compatibility,
      * so we are sure the subsystems match before copying.
      */
-    auto   x    = makeArrayRef(globalState->x);
+    auto   x    = makeConstArrayRef(globalState->x);
     rvec   com  = { 0, 0, 0 };
     double mtot = 0.0;
     int    j    = 0;
@@ -231,32 +249,37 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
     {
         const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
-        if (mtop.groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit].empty()
-            || mtop.groups.groupNumbers[SimulationAtomGroupType::OrientationRestraintsFit][i] == 0)
+        if (getGroupType(mtop.groups, SimulationAtomGroupType::OrientationRestraintsFit, i) == 0)
         {
-            /* Not correct for free-energy with changing masses */
-            mref[j] = local.m;
+            // Not correct for free-energy with changing masses
+            const real mass = local.m;
             // Note that only one rank per sim is supported.
             if (isMasterSim(ms))
             {
-                copy_rvec(x[i], xref[j]);
+                referenceCoordinates_.push_back(x[i]);
                 for (int d = 0; d < DIM; d++)
                 {
-                    com[d] += mref[j] * x[i][d];
+                    com[d] += mass * x[i][d];
                 }
             }
-            mtot += mref[j];
+            fitMasses_.push_back(mass);
+            mtot += mass;
             j++;
         }
     }
+
     svmul(1.0 / mtot, com, com);
     if (isMasterSim(ms))
     {
-        for (int j = 0; j < numReferenceAtoms; j++)
+        for (auto& refCoord : referenceCoordinates_)
         {
-            rvec_dec(xref[j], com);
+            refCoord -= com;
         }
     }
+
+    const size_t numFitAtoms = referenceCoordinates_.size();
+    fitLocalAtomIndices_.resize(numFitAtoms);
+    xTmp_.resize(numFitAtoms);
 
     if (fplog)
     {
@@ -266,7 +289,7 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
             fprintf(fplog, "  experiment %d has %d restraints\n", i + 1, nr_ex[i]);
         }
 
-        fprintf(fplog, "  the fit group consists of %d atoms and has total mass %g\n", numReferenceAtoms, mtot);
+        fprintf(fplog, "  the fit group consists of %zu atoms and has total mass %g\n", numFitAtoms, mtot);
     }
 
     if (ms)
@@ -280,10 +303,10 @@ t_oriresdata::t_oriresdata(FILE*                 fplog,
 
         check_multi_int(fplog, ms, numRestraints, "the number of orientation restraints", FALSE);
         check_multi_int(
-                fplog, ms, numReferenceAtoms, "the number of fit atoms for orientation restraining", FALSE);
+                fplog, ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
         check_multi_int(fplog, ms, ir.nsteps, "nsteps", FALSE);
         /* Copy the reference coordinates from the master to the other nodes */
-        gmx_sum_sim(DIM * numReferenceAtoms, xref[0], ms);
+        gmx_sum_sim(DIM * referenceCoordinates_.size(), as_rvec_array(referenceCoordinates_.data())[0], ms);
     }
 
     please_cite(fplog, "Hess2003");
@@ -380,30 +403,24 @@ real calc_orires_dev(const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom         forceatoms[],
                      const t_iparams       ip[],
-                     const t_mdatoms*      md,
                      ArrayRef<const RVec>  xWholeMolecules,
                      const rvec            x[],
                      const t_pbc*          pbc,
-                     t_oriresdata*         od,
-                     const history_t*      hist)
+                     t_oriresdata*         od)
 {
     real       invn, pfac, r2, invr, corrfac, wsv2, sw, dev;
-    double     mtot;
     rvec       com, r_unrot, r;
     const real two_thr = 2.0 / 3.0;
 
-    const bool                     bTAV  = (od->edt != 0);
-    const real                     edt   = od->edt;
-    const real                     edt_1 = od->edt_1;
-    gmx::ArrayRef<OriresMatEq>     matEq = od->tmpEq;
-    const int                      nref  = od->numReferenceAtoms;
-    gmx::ArrayRef<real>            mref  = od->mref;
-    gmx::ArrayRef<const gmx::RVec> xref  = od->xref;
-    gmx::ArrayRef<gmx::RVec>       xtmp  = od->xtmp;
+    const bool                 bTAV  = (od->edt != 0);
+    const real                 edt   = od->edt;
+    const real                 edt_1 = od->edt_1;
+    gmx::ArrayRef<OriresMatEq> matEq = od->tmpEq;
+    gmx::ArrayRef<gmx::RVec>   xFit  = od->xTmp();
 
     if (bTAV)
     {
-        od->exp_min_t_tau = hist->orire_initf * edt;
+        od->exp_min_t_tau = od->timeAveragingInitFactor() * edt;
 
         /* Correction factor to correct for the lack of history
          * at short times.
@@ -424,32 +441,41 @@ real calc_orires_dev(const gmx_multisim_t* ms,
         invn = 1.0;
     }
 
+    // Extract the local atom indices involved in the fit group
+    const auto fitLocalAtomIndices = od->fitLocalAtomSet().localIndex();
+    // We need all atoms in the fit group to be local available. This means that
+    // orientation restraining is limited to one PP-rank. This should be ensured
+    // by the mdrun setup code. We assert here to catch incorrect setup code.
+    GMX_RELEASE_ASSERT(fitLocalAtomIndices.size() == od->referenceCoordinates().size(),
+                       "All fit atoms should be locally available");
+
     clear_rvec(com);
-    mtot        = 0;
-    int   j     = 0;
-    auto* massT = md->massT;
-    auto* cORF  = md->cORF;
-    for (int i = 0; i < md->nr; i++)
+    double     mtot               = 0.0;
+    gmx::index referenceListIndex = 0;
+    for (const int fitLocalAtomIndex : fitLocalAtomIndices)
     {
-        if (cORF[i] == 0)
+        const gmx::RVec& x       = xWholeMolecules[fitLocalAtomIndex];
+        const real       mass    = od->fitMasses()[referenceListIndex];
+        xFit[referenceListIndex] = x;
+        for (int d = 0; d < DIM; d++)
         {
-            copy_rvec(xWholeMolecules[i], xtmp[j]);
-            mref[j] = massT[i];
-            for (int d = 0; d < DIM; d++)
-            {
-                com[d] += mref[j] * xtmp[j][d];
-            }
-            mtot += mref[j];
-            j++;
+            com[d] += mass * x[d];
         }
+        mtot += mass;
+        referenceListIndex++;
     }
     svmul(1.0 / mtot, com, com);
-    for (int j = 0; j < nref; j++)
+    for (auto& xFitCoord : xFit)
     {
-        rvec_dec(xtmp[j], com);
+        xFitCoord -= com;
     }
     /* Calculate the rotation matrix to rotate x to the reference orientation */
-    calc_fit_R(DIM, nref, mref.data(), as_rvec_array(xref.data()), as_rvec_array(xtmp.data()), od->rotationMatrix);
+    calc_fit_R(DIM,
+               xFit.size(),
+               od->fitMasses().data(),
+               as_rvec_array(od->referenceCoordinates().data()),
+               as_rvec_array(xFit.data()),
+               od->rotationMatrix);
 
     for (int fa = 0; fa < nfa; fa += 3)
     {
@@ -519,7 +545,7 @@ real calc_orires_dev(const gmx_multisim_t* ms,
              */
             for (int i = 0; i < 5; i++)
             {
-                Dtav[i] = edt * hist->orire_Dtav[restraintIndex * 5 + i]
+                Dtav[i] = edt * od->DTensorsTimeAveragedHistory()[restraintIndex * 5 + i]
                           + edt_1 * od->DTensorsEnsembleAv[restraintIndex][i];
             }
         }
@@ -737,19 +763,19 @@ real orires(int             nfa,
     /* Approx. 80*nfa/3 flops */
 }
 
-void update_orires_history(const t_oriresdata& od, history_t* hist)
+void t_oriresdata::updateHistory()
 {
-    if (od.edt != 0)
+    if (edt != 0)
     {
         /* Copy the new time averages that have been calculated
          *  in calc_orires_dev.
          */
-        hist->orire_initf = od.exp_min_t_tau;
-        for (int pair = 0; pair < od.numRestraints; pair++)
+        *timeAveragingInitFactor_ = exp_min_t_tau;
+        for (int pair = 0; pair < numRestraints; pair++)
         {
             for (int i = 0; i < 5; i++)
             {
-                hist->orire_Dtav[pair * 5 + i] = od.DTensorsTimeAndEnsembleAv[pair][i];
+                DTensorsTimeAveragedHistory_[pair * 5 + i] = DTensorsTimeAndEnsembleAv[pair][i];
             }
         }
     }

@@ -87,7 +87,7 @@ void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
                                                  : gmx::ArrayRef<rvec>{},
                 &testData->state_,
                 testData->f_,
-                testData->forceCalculationData_,
+                &testData->forceCalculationData_,
                 &testData->kineticEnergyData_,
                 testData->velocityScalingMatrix_,
                 etrtNONE,

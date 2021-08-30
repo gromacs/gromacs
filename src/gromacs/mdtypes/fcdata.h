@@ -38,9 +38,12 @@
 #ifndef GMX_MDTYPES_FCDATA_H
 #define GMX_MDTYPES_FCDATA_H
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
@@ -48,11 +51,16 @@
 #include "gromacs/utility/real.h"
 
 enum class DistanceRestraintWeighting : int;
+class gmx_ga2la_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
-struct t_commrec;
 struct t_inputrec;
 class t_state;
+
+namespace gmx
+{
+class LocalAtomSetManager;
+}
 
 typedef real rvec5[5];
 
@@ -99,22 +107,49 @@ struct t_oriresdata
      * \param[in] fplog  Log file, can be nullptr
      * \param[in] mtop   The global topology
      * \param[in] ir     The input record
-     * \param[in] cr     The commrec, can be nullptr when not running in parallel
      * \param[in] ms     The multisim communicator, pass nullptr to avoid ensemble averaging
-     * \param[in,out] globalState  The global state, orientation restraint entires are added
+     * \param[in] globalState  The global state, references are set to members
+     * \param[in,out] localAtomSetManager  The local atom set manager
      *
      * \throws InvalidInputError when there is domain decomposition, fewer than 5 restraints,
      *         periodic molecules or more than 1 molecule for a moleculetype with restraints.
      */
-    t_oriresdata(FILE*                 fplog,
-                 const gmx_mtop_t&     mtop,
-                 const t_inputrec&     ir,
-                 const t_commrec*      cr,
-                 const gmx_multisim_t* ms,
-                 t_state*              globalState);
+    t_oriresdata(FILE*                     fplog,
+                 const gmx_mtop_t&         mtop,
+                 const t_inputrec&         ir,
+                 const gmx_multisim_t*     ms,
+                 t_state*                  globalState,
+                 gmx::LocalAtomSetManager* localAtomSetManager);
 
     //! Destructor
     ~t_oriresdata();
+
+    //! Returns the local atom set for fitting
+    const gmx::LocalAtomSet& fitLocalAtomSet() const { return fitLocalAtomSet_; }
+
+    //! Returns the list of reference coordinates
+    gmx::ArrayRef<const gmx::RVec> referenceCoordinates() const { return referenceCoordinates_; }
+
+    //! Returns the list of masses for fitting
+    gmx::ArrayRef<const real> fitMasses() const { return fitMasses_; }
+
+    //! Returns the list of local atoms for fitting, matching the order of referenceCoordinates
+    gmx::ArrayRef<const int> fitLocalAtomIndices() const { return fitLocalAtomIndices_; }
+
+    //! Returns the list of coordinates for temporary use, size matches referenceCoordinates
+    gmx::ArrayRef<gmx::RVec> xTmp() { return xTmp_; }
+
+    //! Returns the factor for initializing the time averaging
+    real timeAveragingInitFactor() const { return *timeAveragingInitFactor_; }
+
+    //! Returns a const view on the time averaged D tensor history
+    gmx::ArrayRef<const real> DTensorsTimeAveragedHistory() const
+    {
+        return DTensorsTimeAveragedHistory_;
+    }
+
+    //! Updates the history with the current values
+    void updateHistory();
 
     //! Force constant for the restraints
     real fc;
@@ -130,14 +165,25 @@ struct t_oriresdata
     int numExperiments;
     //! The minimum iparam type index for restraints
     int typeMin;
-    //! The number of atoms for the fit
-    int numReferenceAtoms;
-    //! The masses of the reference atoms
-    std::vector<real> mref;
+
+private:
+    //! List of local atom corresponding to the fit group
+    gmx::LocalAtomSet fitLocalAtomSet_;
     //! The reference coordinates for the fit
-    std::vector<gmx::RVec> xref;
-    //! Temporary array for fitting
-    std::vector<gmx::RVec> xtmp;
+    std::vector<gmx::RVec> referenceCoordinates_;
+    //! The masses for fitting
+    std::vector<real> fitMasses_;
+    //! List of reference atoms for fitting
+    std::vector<int> fitLocalAtomIndices_;
+    //! Temporary array, used for fitting
+    std::vector<gmx::RVec> xTmp_;
+    //! The factor for initializing the time averaging, only present when time averaging is used
+    //! This references the value stored in the global state, which depends on time.
+    std::optional<std::reference_wrapper<real>> timeAveragingInitFactor_;
+    //! View on the time averaged history of the orientation tensors
+    gmx::ArrayRef<real> DTensorsTimeAveragedHistory_;
+
+public:
     //! Rotation matrix to rotate to the reference coordinates
     matrix rotationMatrix;
     //! Array of order tensors, one for each experiment
