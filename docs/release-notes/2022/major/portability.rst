@@ -19,3 +19,9 @@ options is subject to change, but users generally should not need to manually se
 ``GMXAPI`` and ``GMX_INSTALL_NBLIB_API``.
 
 :issue:`4053`
+
+Bundle muparser
+"""""""""""""""
+
+|Gromacs| now bundles MuParser version 2.3. It is also possible
+to link to an external provided library.
