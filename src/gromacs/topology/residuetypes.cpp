@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
@@ -52,31 +53,27 @@
 #include "gromacs/utility/strdb.h"
 
 //! Definition for residue type that is not known.
-const std::string c_undefinedResidueType = "Other";
+const ResidueType c_undefinedResidueType = "Other";
 
-//! Single ResidueType entry object
-struct ResidueTypeEntry
+//! Function object for comparisons used in std::unordered_map
+class EqualCaseInsensitive
 {
-    //! Default constructor creates complete object.
-    ResidueTypeEntry(const std::string& rName, const std::string& rType) :
-        residueName(rName), residueType(rType)
+public:
+    bool operator()(const ResidueName& lhs, const ResidueName& rhs) const
     {
+        return gmx::equalCaseInsensitive(lhs, rhs);
     }
-    //! Name of the residue in the entry.
-    std::string residueName;
-    //! Type of the residue in the entry.
-    std::string residueType;
 };
 
-//! Implementation detail for ResidueTypes
-class ResidueType::Impl
+//! Implementation detail for ResidueTypeMap
+class ResidueTypeMap::Impl
 {
 public:
     //! Storage object for entries.
-    std::vector<ResidueTypeEntry> entry;
+    std::unordered_map<ResidueName, ResidueType, std::hash<ResidueName>, EqualCaseInsensitive> entries;
 };
 
-ResidueType::ResidueType() : impl_(new Impl)
+ResidueTypeMap::ResidueTypeMap() : impl_(new Impl)
 {
     char line[STRLEN];
     char resname[STRLEN], restype[STRLEN], dum[STRLEN];
@@ -100,64 +97,53 @@ ResidueType::ResidueType() : impl_(new Impl)
     }
 }
 
-ResidueType::~ResidueType() {}
+ResidueTypeMap::~ResidueTypeMap() = default;
 
-/*! \brief
- * Return an optional const iterator to a residue entry that matches the given name.
- *
- * \param[in] entries Currently registered residue entries in the database.
- * \param[in] residueName Name of a residue to compare to database.
- * \returns An optional iterator to the residue entry that was found.
- */
-static std::optional<gmx::ArrayRef<const ResidueTypeEntry>::const_iterator>
-findResidueEntryWithName(gmx::ArrayRef<const ResidueTypeEntry> entries, const std::string& residueName)
+bool ResidueTypeMap::nameIndexedInResidueTypeMap(const ResidueName& residueName)
 {
-    auto foundIt =
-            std::find_if(entries.begin(), entries.end(), [&residueName](const ResidueTypeEntry& old) {
-                return gmx::equalCaseInsensitive(residueName, old.residueName);
-            });
-    return (foundIt != entries.end()) ? std::make_optional(foundIt) : std::nullopt;
+    return impl_->entries.find(residueName) != impl_->entries.end();
 }
 
-bool ResidueType::nameIndexedInResidueTypes(const std::string& residueName)
+void ResidueTypeMap::addResidue(const ResidueName& residueName, const ResidueType& residueType)
 {
-    return findResidueEntryWithName(impl_->entry, residueName).has_value();
-}
-
-void ResidueType::addResidue(const std::string& residueName, const std::string& residueType)
-{
-    if (auto foundIt = findResidueEntryWithName(impl_->entry, residueName))
+    if (auto [foundIt, insertionTookPlace] = impl_->entries.insert({ residueName, residueType });
+        !insertionTookPlace)
     {
-        if (!gmx::equalCaseInsensitive((*foundIt)->residueType, residueType))
+        if (!gmx::equalCaseInsensitive(foundIt->second, residueType))
         {
             fprintf(stderr,
                     "Warning: Residue '%s' already present with type '%s' in database, ignoring "
                     "new type '%s'.\n",
                     residueName.c_str(),
-                    (*foundIt)->residueType.c_str(),
+                    foundIt->second.c_str(),
                     residueType.c_str());
         }
     }
-    else
+}
+
+bool ResidueTypeMap::namedResidueHasType(const ResidueName& residueName, const ResidueType& residueType)
+{
+    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
     {
-        impl_->entry.emplace_back(residueName, residueType);
+        return gmx::equalCaseInsensitive(residueType, foundIt->second);
     }
+    return false;
 }
 
-bool ResidueType::namedResidueHasType(const std::string& residueName, const std::string& residueType)
+ResidueType ResidueTypeMap::typeOfNamedDatabaseResidue(const ResidueName& residueName)
 {
-    auto foundIt = findResidueEntryWithName(impl_->entry, residueName);
-    return foundIt ? gmx::equalCaseInsensitive(residueType, (*foundIt)->residueType) : false;
+    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
+    {
+        return foundIt->second;
+    }
+    return c_undefinedResidueType;
 }
 
-std::string ResidueType::typeOfNamedDatabaseResidue(const std::string& residueName)
+std::optional<ResidueType> ResidueTypeMap::optionalTypeOfNamedDatabaseResidue(const ResidueName& residueName)
 {
-    auto foundIt = findResidueEntryWithName(impl_->entry, residueName);
-    return foundIt ? (*foundIt)->residueType : c_undefinedResidueType;
-}
-
-std::optional<std::string> ResidueType::optionalTypeOfNamedDatabaseResidue(const std::string& residueName)
-{
-    auto foundIt = findResidueEntryWithName(impl_->entry, residueName);
-    return foundIt ? std::make_optional((*foundIt)->residueType) : std::nullopt;
+    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
+    {
+        return std::make_optional(foundIt->second);
+    }
+    return std::nullopt;
 }

@@ -562,7 +562,7 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
-    ResidueType rt;
+    ResidueTypeMap rt;
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;

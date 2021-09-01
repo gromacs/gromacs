@@ -521,7 +521,7 @@ static void histogramming(FILE*                    log,
     // Build a list of unique residue names found in the dihedral
     // list, so we can loop over those unique names conveniently. The
     // names are the same as the residue names found in rt in the
-    // caller, but ResidueType doesn't yet have a way to loop over its
+    // caller, but ResidueTypeMap doesn't yet have a way to loop over its
     // contents.
     std::unordered_set<std::string> uniqueResidueNames;
     for (const auto& dihedral : dlist)
@@ -1530,7 +1530,7 @@ int gmx_chi(int argc, char* argv[])
     }
     fprintf(log, "Title: %s\n", name);
 
-    ResidueType          rt;
+    ResidueTypeMap       rt;
     std::vector<t_dlist> dlist = mk_dlist(log, &atoms, bPhi, bPsi, bChi, bHChi, maxchi, r0, &rt);
     fprintf(stderr, "%zu residues with dihedrals found\n", dlist.size());
 

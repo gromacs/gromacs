@@ -44,7 +44,7 @@
 #include "gromacs/topology/index.h"
 
 struct gmx_output_env_t;
-class ResidueType;
+class ResidueTypeMap;
 
 /* must correspond with 'leg' g_chi.c:727 */
 enum
@@ -247,15 +247,15 @@ void do_pp2shifts(FILE* fp, int nframes, gmx::ArrayRef<const t_dlist> dlist, rea
 
 gmx_bool has_dihedral(int Dih, const t_dlist& dlist);
 
-std::vector<t_dlist> mk_dlist(FILE*          log,
-                              const t_atoms* atoms,
-                              gmx_bool       bPhi,
-                              gmx_bool       bPsi,
-                              gmx_bool       bChi,
-                              gmx_bool       bHChi,
-                              int            maxchi,
-                              int            r0,
-                              ResidueType*   rt);
+std::vector<t_dlist> mk_dlist(FILE*           log,
+                              const t_atoms*  atoms,
+                              gmx_bool        bPhi,
+                              gmx_bool        bPsi,
+                              gmx_bool        bChi,
+                              gmx_bool        bHChi,
+                              int             maxchi,
+                              int             r0,
+                              ResidueTypeMap* rt);
 
 void pr_dlist(FILE*                        fp,
               gmx::ArrayRef<const t_dlist> dlist,

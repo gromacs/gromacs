@@ -41,18 +41,22 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct ResidueTypeEntry;
+/*! \brief Convenience type aliases
+ *
+ * These are not as useful as strong types, but they will
+ * help clarify usage to humans in some cases. */
+//! \{
+using ResidueName = std::string;
+using ResidueType = std::string;
+//! \}
 
-class ResidueType
+class ResidueTypeMap
 {
 public:
     //! Default constructor.
-    ResidueType();
+    ResidueTypeMap();
     //! Default destructor.
-    ~ResidueType();
-
-    //! Get handle to underlying residue type data.
-    ResidueTypeEntry* ResidueTypes();
+    ~ResidueTypeMap();
 
     /*! \brief
      * Return true if residue \p residueName is found or false otherwise.
@@ -60,14 +64,14 @@ public:
      * \param[in] residueName Residue name to search database for.
      * \returns true if successful.
      */
-    bool nameIndexedInResidueTypes(const std::string& residueName);
+    bool nameIndexedInResidueTypeMap(const ResidueName& residueName);
     /*! \brief
-     * Add entry to ResidueTypes if unique.
+     * Add entry to ResidueTypeMap if unique.
      *
      * \param[in] residueName Name of new residue.
      * \param[in] residueType Type of new residue.
      */
-    void addResidue(const std::string& residueName, const std::string& residueType);
+    void addResidue(const ResidueName& residueName, const ResidueType& residueType);
     /*! \brief
      * Checks if the indicated \p residueName if of \p residueType.
      *
@@ -75,21 +79,21 @@ public:
      * \param[in] residueType Which ResidueType the residue should have.
      * \returns If the check was successful.
      */
-    bool namedResidueHasType(const std::string& residueName, const std::string& residueType);
+    bool namedResidueHasType(const ResidueName& residueName, const ResidueType& residueType);
     /*! \brief
      * Return the residue type if a residue with that name exists, or "Other"
      *
      * \param[in] residueName Name of the residue to search for.
      * \returns The residue type of any matching residue, or "Other"
      */
-    std::string typeOfNamedDatabaseResidue(const std::string& residueName);
+    ResidueType typeOfNamedDatabaseResidue(const ResidueName& residueName);
     /*! \brief
      * Return an optional residue type if a residue with that name exists
      *
      * \param[in] residueName Name of the residue to search for.
      * \returns An optional containing the residue type of any matching residue
      */
-    std::optional<std::string> optionalTypeOfNamedDatabaseResidue(const std::string& residueName);
+    std::optional<ResidueType> optionalTypeOfNamedDatabaseResidue(const ResidueName& residueName);
 
 private:
     //! Implementation pointer.

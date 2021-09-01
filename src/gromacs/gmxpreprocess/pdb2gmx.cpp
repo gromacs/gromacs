@@ -657,7 +657,7 @@ int read_pdball(const char*     inf,
                 matrix          box,
                 bool            bRemoveH,
                 t_symtab*       symtab,
-                ResidueType*    rt,
+                ResidueTypeMap* rt,
                 const char*     watres,
                 AtomProperties* aps,
                 bool            bVerbose)
@@ -984,7 +984,7 @@ int remove_duplicate_atoms(t_atoms* pdba, gmx::ArrayRef<gmx::RVec> x, bool bVerb
     return pdba->nr;
 }
 
-void checkResidueTypeSanity(t_atoms* pdba, int r0, int r1, ResidueType* rt)
+void checkResidueTypeSanity(t_atoms* pdba, int r0, int r1, ResidueTypeMap* rt)
 {
     std::string startResidueString =
             gmx::formatString("%s%d", *pdba->resinfo[r0].name, pdba->resinfo[r0].nr);
@@ -1058,7 +1058,7 @@ void checkResidueTypeSanity(t_atoms* pdba, int r0, int r1, ResidueType* rt)
     }
 }
 
-void find_nc_ter(t_atoms* pdba, int r0, int r1, int* r_start, int* r_end, ResidueType* rt, const gmx::MDLogger& logger)
+void find_nc_ter(t_atoms* pdba, int r0, int r1, int* r_start, int* r_end, ResidueTypeMap* rt, const gmx::MDLogger& logger)
 {
     int                        i;
     std::optional<std::string> startrestype;
@@ -2014,7 +2014,7 @@ int pdb2gmx::run()
     open_symtab(&symtab);
 
     /* Residue type database */
-    ResidueType rt;
+    ResidueTypeMap rt;
 
     /* Read residue renaming database(s), if present */
     std::vector<std::string> rrn = fflib_search_file_end(ffdir_, ".r2b", FALSE);

@@ -462,7 +462,7 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, 
 static int name2type(t_atoms*                               at,
                      int**                                  cgnr,
                      gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
-                     ResidueType*                           rt,
+                     ResidueTypeMap*                        rt,
                      const gmx::MDLogger&                   logger)
 {
     int    i, j, prevresind, i0, prevcg, cg, curcg;
@@ -1563,7 +1563,7 @@ void pdb2top(FILE*                                  top_file,
     int                                     i, nmissat;
     gmx::EnumerationArray<BondedTypes, int> bts;
 
-    ResidueType rt;
+    ResidueTypeMap rt;
 
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, cyclicBondsIndex, logger);

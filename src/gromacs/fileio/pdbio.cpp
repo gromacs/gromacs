@@ -330,7 +330,7 @@ void write_pdbfile_indexed(FILE*          out,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    ResidueType rt;
+    ResidueTypeMap rt;
     for (int ii = 0; ii < nindex; ii++)
     {
         int         i      = index[ii];

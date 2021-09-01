@@ -578,7 +578,7 @@ print_bonds(FILE* fp, int o2n[], int nrHatoms, const int Hatoms[], int Heavy, in
     fprintf(fp, "\n");
 }
 
-static int get_atype(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueType* rt)
+static int get_atype(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueTypeMap* rt)
 {
     int  type;
     bool bNterm;
@@ -610,7 +610,7 @@ static int vsite_nm2type(const char* name, PreprocessingAtomTypes* atype)
     return *tp;
 }
 
-static real get_amass(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueType* rt)
+static real get_amass(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueTypeMap* rt)
 {
     real mass;
     bool bNterm;
@@ -1799,7 +1799,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     /* make index to tell which residues were already processed */
     std::vector<bool> bResProcessed(at->nres);
 
-    ResidueType rt;
+    ResidueTypeMap rt;
 
     /* generate vsite constructions */
     /* loop over all atoms */
