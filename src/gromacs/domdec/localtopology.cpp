@@ -614,11 +614,6 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
                              int                                izone,
                              const gmx::Range<int>&             atomRange)
 {
-    int mb                  = 0;
-    int mt                  = 0;
-    int mol                 = 0;
-    int atomIndexInMolecule = 0;
-
     const auto ddBondedChecking = rt->options().ddBondedChecking;
 
     int numBondedInteractions = 0;
@@ -626,21 +621,22 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
     for (int i : atomRange)
     {
         /* Get the global atom number */
-        const int globalAtomIndex = globalAtomIndices[i];
-        global_atomnr_to_moltype_ind(
-                rt->molblockIndices(), globalAtomIndex, &mb, &mt, &mol, &atomIndexInMolecule);
+        const int                          globalAtomIndex = globalAtomIndices[i];
+        const MolecularTopologyAtomIndices mtai =
+                globalAtomIndexToMoltypeIndices(rt->molblockIndices(), globalAtomIndex);
         /* Check all intramolecular interactions assigned to this atom */
-        gmx::ArrayRef<const int>     index = rt->interactionListForMoleculeType(mt).index;
-        gmx::ArrayRef<const t_iatom> rtil  = rt->interactionListForMoleculeType(mt).il;
+        const auto&              ilistMol = rt->interactionListForMoleculeType(mtai.moleculeType);
+        gmx::ArrayRef<const int> index    = ilistMol.index;
+        gmx::ArrayRef<const t_iatom> rtil = ilistMol.il;
 
         numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intramolecular>(
                 i,
                 globalAtomIndex,
-                atomIndexInMolecule,
+                mtai.atomIndex,
                 index,
                 rtil,
-                index[atomIndexInMolecule],
-                index[atomIndexInMolecule + 1],
+                index[mtai.atomIndex],
+                index[mtai.atomIndex + 1],
                 ga2la,
                 zones,
                 checkDistanceMultiBody,
@@ -656,24 +652,24 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
         // Assign position restraints, when present, for the home zone
         if (izone == 0 && rt->hasPositionRestraints())
         {
-            numBondedInteractions += assignPositionRestraintsForAtom(
-                    i,
-                    mol,
-                    atomIndexInMolecule,
-                    rt->interactionListForMoleculeType(mt).numAtomsInMolecule,
-                    rtil,
-                    index[atomIndexInMolecule],
-                    index[atomIndexInMolecule + 1],
-                    molb[mb],
-                    ip_in,
-                    idef);
+            numBondedInteractions += assignPositionRestraintsForAtom(i,
+                                                                     mtai.moleculeIndex,
+                                                                     mtai.atomIndex,
+                                                                     ilistMol.numAtomsInMolecule,
+                                                                     rtil,
+                                                                     index[mtai.atomIndex],
+                                                                     index[mtai.atomIndex + 1],
+                                                                     molb[mtai.blockIndex],
+                                                                     ip_in,
+                                                                     idef);
         }
 
         if (rt->hasIntermolecularInteractions())
         {
             /* Check all intermolecular interactions assigned to this atom */
-            index = rt->interactionListForIntermolecularInteractions().index;
-            rtil  = rt->interactionListForIntermolecularInteractions().il;
+            const auto& ilistIntermol = rt->interactionListForIntermolecularInteractions();
+            index                     = ilistIntermol.index;
+            rtil                      = ilistIntermol.il;
 
             numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intermolecular>(
                     i,
@@ -724,18 +720,15 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 
         if (atomInfo[at] & gmx::sc_atomInfo_Exclusion)
         {
-            int mb    = 0;
-            int mt    = 0;
-            int mol   = 0;
-            int a_mol = 0;
-
             /* Copy the exclusions from the global top */
-            int a_gl = globalAtomIndices[at];
-            global_atomnr_to_moltype_ind(molblockIndices, a_gl, &mb, &mt, &mol, &a_mol);
-            const auto excls = moltype[mt].excls[a_mol];
-            for (const int aj_mol : excls)
+            const int                          globalAtomIndex = globalAtomIndices[at];
+            const MolecularTopologyAtomIndices mtai =
+                    globalAtomIndexToMoltypeIndices(molblockIndices, globalAtomIndex);
+            const auto& excls = moltype[mtai.moleculeType].excls[mtai.atomIndex];
+            for (const int excludedAtomIndexInMolecule : excls)
             {
-                if (const auto* jEntry = ga2la.find(a_gl + aj_mol - a_mol))
+                if (const auto* jEntry =
+                            ga2la.find(globalAtomIndex + excludedAtomIndexInMolecule - mtai.atomIndex))
                 {
                     /* This check is not necessary, but it can reduce
                      * the number of exclusions in the list, which in turn

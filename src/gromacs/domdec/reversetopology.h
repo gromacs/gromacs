@@ -167,13 +167,22 @@ int nral_rt(int ftype);
 /*! \brief Return whether interactions of type \p ftype need to be assigned exactly once */
 bool dd_check_ftype(int ftype, const ReverseTopOptions& rtOptions);
 
-/*! \brief Return global topology molecule information for global atom index \p i_gl */
-void global_atomnr_to_moltype_ind(gmx::ArrayRef<const MolblockIndices> molblockIndices,
-                                  int                                  i_gl,
-                                  int*                                 mb,
-                                  int*                                 mt,
-                                  int*                                 mol,
-                                  int*                                 i_mol);
+//! Molecular topology indices of a global molecule a global atom belongs to
+struct MolecularTopologyAtomIndices
+{
+    //! The index of the molecule block
+    int blockIndex;
+    //! The molecule type
+    int moleculeType;
+    //! The index of the molecule in the block
+    int moleculeIndex;
+    //! The index of the atom in the molecule
+    int atomIndex;
+};
+
+//! Return global topology molecule information for global atom index \p globalAtomIndex
+MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(gmx::ArrayRef<const MolblockIndices> molblockIndices,
+                                                             int globalAtomIndex);
 
 /*! \brief Make the reverse ilist: a list of bonded interactions linked to atoms */
 void make_reverse_ilist(const InteractionLists&  ilist,

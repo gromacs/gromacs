@@ -128,27 +128,22 @@ bool dd_check_ftype(const int ftype, const ReverseTopOptions& rtOptions)
             || (rtOptions.includeSettles && ftype == F_SETTLE));
 }
 
-void global_atomnr_to_moltype_ind(ArrayRef<const MolblockIndices> molblockIndices,
-                                  int                             i_gl,
-                                  int*                            mb,
-                                  int*                            mt,
-                                  int*                            mol,
-                                  int*                            i_mol)
+MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef<const MolblockIndices> molblockIndices,
+                                                             const int globalAtomIndex)
 {
-    const MolblockIndices* mbi   = molblockIndices.data();
-    int                    start = 0;
-    int                    end   = molblockIndices.size(); /* exclusive */
-    int                    mid   = 0;
+    // Find the molblock the atom belongs to using bisection
+    int start = 0;
+    int end   = molblockIndices.size(); /* exclusive */
+    int mid   = 0;
 
-    /* binary search for molblock_ind */
-    while (TRUE)
+    while (true)
     {
         mid = (start + end) / 2;
-        if (i_gl >= mbi[mid].a_end)
+        if (globalAtomIndex >= molblockIndices[mid].a_end)
         {
             start = mid + 1;
         }
-        else if (i_gl < mbi[mid].a_start)
+        else if (globalAtomIndex < molblockIndices[mid].a_start)
         {
             end = mid;
         }
@@ -158,12 +153,16 @@ void global_atomnr_to_moltype_ind(ArrayRef<const MolblockIndices> molblockIndice
         }
     }
 
-    *mb = mid;
-    mbi += mid;
+    const MolblockIndices& mbi = molblockIndices[mid];
 
-    *mt    = mbi->type;
-    *mol   = (i_gl - mbi->a_start) / mbi->natoms_mol;
-    *i_mol = (i_gl - mbi->a_start) - (*mol) * mbi->natoms_mol;
+    MolecularTopologyAtomIndices mtai;
+
+    mtai.blockIndex    = mid;
+    mtai.moleculeType  = mbi.type;
+    mtai.moleculeIndex = (globalAtomIndex - mbi.a_start) / mbi.natoms_mol;
+    mtai.atomIndex     = (globalAtomIndex - mbi.a_start) - mtai.moleculeIndex * mbi.natoms_mol;
+
+    return mtai;
 }
 
 /*! \brief Returns the maximum number of exclusions per atom */
