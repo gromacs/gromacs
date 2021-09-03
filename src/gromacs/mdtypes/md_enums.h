@@ -685,6 +685,7 @@ enum class PullGroupGeometry : int
     Angle,
     Dihedral,
     AngleAxis,
+    Transformation,
     Count,
     Default = Distance
 };

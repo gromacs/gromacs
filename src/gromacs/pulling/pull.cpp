@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -84,6 +85,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "pull_internal.h"
+#include "transformationcoordinate.h"
 
 namespace gmx
 {
@@ -339,6 +341,9 @@ static void apply_forces_coord(const pull_coord_work_t&          pcrd,
      * region instead of potential parallel regions within apply_forces_grp.
      * But there could be overlap between pull groups and this would lead
      * to data races.
+     *
+     * This may also lead to potential issues with force redistribution
+     * for transformation pull coordinates
      */
 
     if (pcrd.params.eGeom == PullGroupGeometry::Cylinder)
@@ -353,6 +358,10 @@ static void apply_forces_coord(const pull_coord_work_t&          pcrd,
             f_tot[m] = forces.force01[m] + pcrd.scalarForce * pcrd.spatialData.ffrad[m];
         }
         apply_forces_grp(pullGroups[pcrd.params.group[1]], masses, f_tot, 1, f);
+    }
+    else if (pcrd.params.eGeom == PullGroupGeometry::Transformation)
+    {
+        return;
     }
     else
     {
@@ -746,6 +755,11 @@ static void get_pull_coord_distance(const pull_t& pull, pull_coord_work_t* pcrd,
         case PullGroupGeometry::AngleAxis:
             spatialData.value = gmx_angle_between_dvecs(spatialData.dr01, spatialData.vec);
             break;
+        case PullGroupGeometry::Transformation:
+            // Note that we would only need to pass the part of coord up to coord_ind
+            spatialData.value = gmx::getTransformationPullCoordinateValue(
+                    pcrd, ArrayRef<const pull_coord_work_t>(pull.coord).subArray(0, pcrd->params.coordIndex));
+            break;
         default: gmx_incons("Unsupported pull type in get_pull_coord_distance");
     }
 }
@@ -998,6 +1012,9 @@ static void do_constraint(struct pull_t* pull,
                     dsvmul(-lambda * rm * pgrp1->invtm, vec, dr1);
                     dsvmul(lambda * rm * pgrp0->invtm, vec, dr0);
                     dr_tot[c] += -lambda;
+                    break;
+                case PullGroupGeometry::Transformation:
+                    GMX_RELEASE_ASSERT(false, "transformation with constraints should never occur");
                     break;
                 default: gmx_incons("Invalid enumeration value for eGeom");
             }
@@ -1520,6 +1537,40 @@ static void check_external_potential_registration(const struct pull_t* pull)
     }
 }
 
+/*! \brief Applies a force of any non-transformation pull coordinate
+ *
+ * \param[in] pull         The pull struct, we can't pass only the coord because of cylinder pulling
+ * \param[in] coord_index  The index of the coord to apply to force for
+ * \param[in] coord_force  The force working on this coord
+ * \param[in] masses       Atom masses
+ * \param[in] forceWithVirial  Atom force and virial object
+ */
+static void apply_default_pull_coord_force(pull_t*                   pull,
+                                           const int                 coord_index,
+                                           const double              coord_force,
+                                           gmx::ArrayRef<const real> masses,
+                                           gmx::ForceWithVirial*     forceWithVirial)
+{
+    pull_coord_work_t* pcrd = &pull->coord[coord_index];
+    /* Set the force */
+    pcrd->scalarForce = coord_force;
+    /* Calculate the forces on the pull groups */
+    PullCoordVectorForces pullCoordForces = calculateVectorForces(*pcrd);
+
+    /* Add the forces for this coordinate to the total virial and force */
+    if (forceWithVirial->computeVirial_ && pull->comm.isMasterRank)
+    {
+        matrix virial = { { 0 } };
+        add_virial_coord(virial, *pcrd, pullCoordForces);
+        forceWithVirial->addVirialContribution(virial);
+    }
+    apply_forces_coord(pull->coord[coord_index],
+                       pull->group,
+                       pullCoordForces,
+                       masses,
+                       as_rvec_array(forceWithVirial->force_.data()));
+}
+
 /* Pull takes care of adding the forces of the external potential.
  * The external potential module  has to make sure that the corresponding
  * potential energy is added either to the pull term or to a term
@@ -1547,24 +1598,18 @@ void apply_external_pull_coord_force(struct pull_t*        pull,
         GMX_ASSERT(pcrd->bExternalPotentialProviderHasBeenRegistered,
                    "apply_external_pull_coord_force called for an unregistered pull coordinate");
 
-        /* Set the force */
-        pcrd->scalarForce = coord_force;
-
-        /* Calculate the forces on the pull groups */
-        PullCoordVectorForces pullCoordForces = calculateVectorForces(*pcrd);
-
-        /* Add the forces for this coordinate to the total virial and force */
-        if (forceWithVirial->computeVirial_ && pull->comm.isMasterRank)
+        if (pcrd->params.eGeom == PullGroupGeometry::Transformation)
         {
-            matrix virial = { { 0 } };
-            add_virial_coord(virial, *pcrd, pullCoordForces);
-            forceWithVirial->addVirialContribution(virial);
+            gmx::applyTransformationPullCoordForce(
+                    pcrd,
+                    gmx::ArrayRef<pull_coord_work_t>(pull->coord).subArray(0, pcrd->params.coordIndex),
+                    coord_force);
         }
-
-        apply_forces_coord(
-                *pcrd, pull->group, pullCoordForces, masses, as_rvec_array(forceWithVirial->force_.data()));
+        else
+        {
+            apply_default_pull_coord_force(pull, coord_index, coord_force, masses, forceWithVirial);
+        }
     }
-
     pull->numExternalPotentialsStillToBeAppliedThisStep--;
 }
 
@@ -1631,12 +1676,21 @@ real pull_potential(struct pull_t*        pull,
             {
                 continue;
             }
-
             PullCoordVectorForces pullCoordForces = do_pull_pot_coord(
                     *pull, &pcrd, pbc, t, lambda, &V, computeVirial ? virial : nullptr, &dVdl);
 
-            /* Distribute the force over the atoms in the pulled groups */
-            apply_forces_coord(pcrd, pull->group, pullCoordForces, masses, f);
+            if (pcrd.params.eGeom == PullGroupGeometry::Transformation)
+            {
+                gmx::applyTransformationPullCoordForce(
+                        &pcrd,
+                        gmx::ArrayRef<pull_coord_work_t>(pull->coord).subArray(0, pcrd.params.coordIndex),
+                        pcrd.scalarForce);
+            }
+            else
+            {
+                /* Distribute the force over the atoms in the pulled groups */
+                apply_forces_coord(pcrd, pull->group, pullCoordForces, masses, f);
+            }
         }
 
         if (MASTER(cr))
@@ -2039,6 +2093,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             case PullGroupGeometry::Direction:
             case PullGroupGeometry::DirectionPBC:
             case PullGroupGeometry::Cylinder:
+            case PullGroupGeometry::Transformation:
             case PullGroupGeometry::AngleAxis:
                 copy_rvec_to_dvec(pull_params->coord[c].vec, pcrd->spatialData.vec);
                 break;

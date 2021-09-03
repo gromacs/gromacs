@@ -4551,7 +4551,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         bWarned = FALSE;
         for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
         {
-            if (ir->pull->coord[i].group[0] == 0 || ir->pull->coord[i].group[1] == 0)
+            if (ir->pull->coord[i].eGeom != PullGroupGeometry::Transformation
+                && (ir->pull->coord[i].group[0] == 0 || ir->pull->coord[i].group[1] == 0))
             {
                 const auto absRef     = haveAbsoluteReference(*ir);
                 const auto havePosres = havePositionRestraints(*sys);

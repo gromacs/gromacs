@@ -340,8 +340,8 @@ const char* enumValueToString(PullingAlgorithm enumValue)
 const char* enumValueToString(PullGroupGeometry enumValue)
 {
     static constexpr gmx::EnumerationArray<PullGroupGeometry, const char*> pullGroupControlNames = {
-        "distance",           "direction", "cylinder", "direction-periodic",
-        "direction-relative", "angle",     "dihedral", "angle-axis"
+        "distance", "direction", "cylinder",   "direction-periodic", "direction-relative",
+        "angle",    "dihedral",  "angle-axis", "transformation"
     };
     return pullGroupControlNames[enumValue];
 }

@@ -137,6 +137,7 @@ enum tpxv
     tpxv_VSite1,                                  /**< Added 1 type virtual site */
     tpxv_MTS,                                     /**< Added multiple time stepping */
     tpxv_RemovedConstantAcceleration, /**< Removed support for constant acceleration NEMD. */
+    tpxv_TransformationPullCoord,     /**< Support for transformation pull coordinates */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -301,17 +302,7 @@ static void do_pull_coord(gmx::ISerializer* serializer,
         {
             if (pcrd->eType == PullingAlgorithm::External)
             {
-                std::string buf;
-                if (serializer->reading())
-                {
-                    serializer->doString(&buf);
-                    pcrd->externalPotentialProvider = gmx_strdup(buf.c_str());
-                }
-                else
-                {
-                    buf = pcrd->externalPotentialProvider;
-                    serializer->doString(&buf);
-                }
+                serializer->doString(&pcrd->externalPotentialProvider);
             }
             else
             {
@@ -350,6 +341,17 @@ static void do_pull_coord(gmx::ISerializer* serializer,
             pcrd->ngroup = 0;
         }
         serializer->doIvec(&pcrd->dim.as_vec());
+        if (file_version >= tpxv_TransformationPullCoord)
+        {
+            serializer->doString(&pcrd->expression);
+        }
+        else
+        {
+            if (serializer->reading())
+            {
+                pcrd->expression.clear();
+            }
+        }
     }
     else
     {
