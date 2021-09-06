@@ -95,14 +95,20 @@ The GROMACS project `defines many labels <https://gitlab.com/gromacs/gromacs/-/l
 
 .. Note: labeling guidelines TBD. See https://gitlab.com/gromacs/gromacs/-/issues/3949 and open new issues as appropriate.
 
-In general:
-
-* Ongoing categorizations to help specify the GROMACS component or development area use the ``#7F8C8D`` color.
-* Specific features or subproject areas targeting an upcoming release use the ``#8E44AD`` background color.
+To minimize duplicated documentation, refer to the
+`GROMACS Labels <https://gitlab.com/gromacs/gromacs/-/labels>`__ web interface for label descriptions.
 
 When creating a new label, please provide a short description
 so that people can understand what the label is intended to convey,
 and when they should apply it to their own issues or merge requests.
+
+In general:
+
+* Ongoing categorizations to help specify the GROMACS component or development area use the ``#7F8C8D`` color.
+* Specific features or subproject areas targeting an upcoming release use the ``#8E44AD`` background color.
+* Status labels use ``#428BCA``. Note that Status labels are also used for Issues,
+  and are used according to
+  :ref:`status label guidelines <status label guidelines>`
 
 .. Best practices and labeling policies can be proposed as changes to this document. See https://gitlab.com/gromacs/gromacs/-/issues/3949
 
@@ -155,6 +161,44 @@ Guide for reviewing
    -  If no current issue is currently present and the change
       would benefit of one for future explanation on why it was
       added, a new issue should be created.
+
+.. _status label guidelines:
+
+Update the Status label
+"""""""""""""""""""""""
+
+-  Please update the Status label :ref:`for the issue <issue workflow>` when a merge request is under review.
+-  Please update the Status label :ref:`for the merge request <merge request status>` when it is closed.
+
+.. _merge request status:
+
+Closing Merge Requests
+----------------------
+
+A merge request that has had no updates for six months or more can acquire the status label "Status::Stale"
+If the proposed change still seems important and the next steps are unclear,
+contributors with stale issues *are encouraged...*
+
+- to contact existing reviewers (or potential reviewers),
+- to participate in the developer mailing list, and
+- to attend the biweekly teleconference to coordinate.
+
+If the future of the merge request has not become clear within a month
+(especially if it has become stale multiple times),
+developers may close the merge request with a label indicating why it has entered a "closed" state.
+`"Status::MR::..." labels <https://gitlab.com/gromacs/gromacs/-/labels?subscribed=&search=status%3A%3Amr>`__
+do not indicate that the merge request has been reviewed
+unless it is explicitly rejected.
+
+See :issue:`4126` for background discussion.
+
+- `Status::MR::Inactive <https://gitlab.com/gromacs/gromacs/-/merge_requests?label_name%5B%5D=Status%3A%3AMR%3A%3AInactive>`__: No response from contributor or no reviewers available for over six months.
+- `Status::MR::Superseded <https://gitlab.com/gromacs/gromacs/-/merge_requests?label_name%5B%5D=Status%3A%3AMR%3A%3ASuperseded>`__: This merge request is no longer necessary.
+- `Status::MR::Rejected <https://gitlab.com/gromacs/gromacs/-/merge_requests?label_name%5B%5D=Status%3A%3AMR%3A%3ARejected>`__: The solution (or its associated issue) will not be accepted.
+- `Status::MR::Needs discussion <https://gitlab.com/gromacs/gromacs/-/merge_requests?label_name%5B%5D=Status%3A%3AMR%3A%3ANeeds+discussion>`__: More discussion must take place at the tracked issue before a MR is opened.
+- `Status::Stale <https://gitlab.com/gromacs/gromacs/-/labels?subscribed=&search=status%3A%3AStale>`__: No activity for over six months.
+
+.. seealso:: :ref:`issue workflow` for use of Status labels in Issue management.
 
 Moving code from gerrit to gitlab
 =================================
