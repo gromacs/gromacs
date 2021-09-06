@@ -37,16 +37,6 @@ while [[ "$1" != "--" ]] ; do
     extra_opts="$extra_opts $1"
     shift
 done
-for opt in $ASAN_OPTIONS ; do
-    if [[ "$opt" == log_path=* ]] ; then
-        # CTest gives errors if the file does not exist, but AddressSanitizer
-        # only produces it if it finds issues...
-        log_path="${opt#log_path=}"
-        log_path="${log_path%\"}"
-        log_path="${log_path#\"}"
-        touch ${log_path}.99999
-    fi
-done
 # Suppressions are not currently necessary, but can be introduced like this.
 #path=`dirname $0`
 #export LSAN_OPTIONS="suppressions=$path/../admin/lsan-suppressions.txt"
