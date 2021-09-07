@@ -60,7 +60,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -519,10 +518,7 @@ static void histogramming(FILE*                    log,
     }
 
     // Build a list of unique residue names found in the dihedral
-    // list, so we can loop over those unique names conveniently. The
-    // names are the same as the residue names found in residueTypeMap in the
-    // caller, but ResidueTypeMap doesn't yet have a way to loop over its
-    // contents.
+    // list, so we can loop over those unique names conveniently.
     std::unordered_set<std::string> uniqueResidueNames;
     for (const auto& dihedral : dlist)
     {
@@ -1530,9 +1526,7 @@ int gmx_chi(int argc, char* argv[])
     }
     fprintf(log, "Title: %s\n", name);
 
-    ResidueTypeMap       residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
-    std::vector<t_dlist> dlist =
-            mk_dlist(log, &atoms, bPhi, bPsi, bChi, bHChi, maxchi, r0, residueTypeMap);
+    std::vector<t_dlist> dlist = mk_dlist(log, &atoms, bPhi, bPsi, bChi, bHChi, maxchi, r0);
     fprintf(stderr, "%zu residues with dihedrals found\n", dlist.size());
 
     if (dlist.empty())

@@ -7,8 +7,8 @@ Improvements to |Gromacs| tools
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
-gmx msd has been migrated to the trajectoryanalysis framework
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+``gmx msd`` has been migrated to the trajectoryanalysis framework
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The tool now uses the |Gromacs| selection syntax. Rather than piping selections via stdin,
 selections are now made using the "-sel" option.
@@ -24,3 +24,9 @@ Some rarely used features have yet to be migrated, including:
 - B-factor writing using the -pdb option is not yet supported.
 
 :issue:`2368`
+
+``gmx chi`` no longer needs ``residuetypes.dat`` entries for custom residues
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The need to add the names of custom residues to ``residuetypes.dat`` has been
+removed, because it served no purpose. This makes ``gmx chi`` easier to use.

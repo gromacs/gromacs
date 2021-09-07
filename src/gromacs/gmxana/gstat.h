@@ -42,7 +42,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
-#include "gromacs/topology/residuetypes.h"
 
 struct gmx_output_env_t;
 
@@ -255,15 +254,14 @@ gmx_bool has_dihedral(int Dih, const t_dlist& dlist);
  * the residues, and a mapping from chemical peptide atom names to
  * atom indices based on the atom names. Many fields of t_dlist are
  * not yet filled. */
-std::vector<t_dlist> mk_dlist(FILE*                 log,
-                              const t_atoms*        atoms,
-                              gmx_bool              bPhi,
-                              gmx_bool              bPsi,
-                              gmx_bool              bChi,
-                              gmx_bool              bHChi,
-                              int                   maxchi,
-                              int                   r0,
-                              const ResidueTypeMap& rt);
+std::vector<t_dlist> mk_dlist(FILE*          log,
+                              const t_atoms* atoms,
+                              gmx_bool       bPhi,
+                              gmx_bool       bPsi,
+                              gmx_bool       bChi,
+                              gmx_bool       bHChi,
+                              int            maxchi,
+                              int            r0);
 
 void pr_dlist(FILE*                        fp,
               gmx::ArrayRef<const t_dlist> dlist,
