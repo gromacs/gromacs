@@ -562,20 +562,20 @@ void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
-    ResidueTypeMap rt;
+    ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;
     if (atoms->nres > 0)
     {
         const char* resnm = *atoms->resinfo[0].name;
-        restype.emplace_back(rt.typeOfNamedDatabaseResidue(resnm));
+        restype.emplace_back(typeOfNamedDatabaseResidue(residueTypeMap, resnm));
         previousTypename.push_back(restype.back());
 
         for (int i = 1; i < atoms->nres; i++)
         {
             const char* resnm = *atoms->resinfo[i].name;
-            restype.emplace_back(rt.typeOfNamedDatabaseResidue(resnm));
+            restype.emplace_back(typeOfNamedDatabaseResidue(residueTypeMap, resnm));
 
             /* Note that this does not lead to a N*N loop, but N*K, where
              * K is the number of residue _types_, which is small and independent of N.

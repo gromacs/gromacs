@@ -578,7 +578,10 @@ print_bonds(FILE* fp, int o2n[], int nrHatoms, const int Hatoms[], int Heavy, in
     fprintf(fp, "\n");
 }
 
-static int get_atype(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueTypeMap* rt)
+static int get_atype(int                                    atom,
+                     t_atoms*                               at,
+                     gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+                     const ResidueTypeMap&                  residueTypeMap)
 {
     int  type;
     bool bNterm;
@@ -591,7 +594,8 @@ static int get_atype(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidu
     {
         /* get type from rtpFFDB */
         auto localPpResidue = getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
-        bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein")
+        bNterm              = namedResidueHasType(
+                         residueTypeMap, *(at->resinfo[at->atom[atom].resind].name), "Protein")
                  && (at->atom[atom].resind == 0);
         int j = search_jtype(*localPpResidue, *(at->atomname[atom]), bNterm);
         type  = localPpResidue->atom[j].type;
@@ -610,7 +614,10 @@ static int vsite_nm2type(const char* name, PreprocessingAtomTypes* atype)
     return *tp;
 }
 
-static real get_amass(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResidue> rtpFFDB, ResidueTypeMap* rt)
+static real get_amass(int                                    atom,
+                      t_atoms*                               at,
+                      gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+                      const ResidueTypeMap&                  residueTypeMap)
 {
     real mass;
     bool bNterm;
@@ -623,7 +630,8 @@ static real get_amass(int atom, t_atoms* at, gmx::ArrayRef<const PreprocessResid
     {
         /* get mass from rtpFFDB */
         auto localPpResidue = getDatabaseEntry(*(at->resinfo[at->atom[atom].resind].name), rtpFFDB);
-        bNterm = rt->namedResidueHasType(*(at->resinfo[at->atom[atom].resind].name), "Protein")
+        bNterm              = namedResidueHasType(
+                         residueTypeMap, *(at->resinfo[at->atom[atom].resind].name), "Protein")
                  && (at->atom[atom].resind == 0);
         int j = search_jtype(*localPpResidue, *(at->atomname[atom]), bNterm);
         mass  = localPpResidue->atom[j].m;
@@ -1799,7 +1807,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     /* make index to tell which residues were already processed */
     std::vector<bool> bResProcessed(at->nres);
 
-    ResidueTypeMap rt;
+    ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* generate vsite constructions */
     /* loop over all atoms */
@@ -1818,7 +1826,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
          * N-terminus that must be treated first.
          */
         if (bVsiteAromatics && (strcmp(*(at->atomname[i]), "CA") == 0) && !bResProcessed[resind]
-            && rt.namedResidueHasType(*(at->resinfo[resind].name), "Protein"))
+            && namedResidueHasType(residueTypeMap, *(at->resinfo[resind].name), "Protein"))
         {
             /* mark this residue */
             bResProcessed[resind] = TRUE;
@@ -1960,7 +1968,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
             count_bonds(i, &plist[F_BONDS], at->atomname, &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
             /* get Heavy atom type */
-            tpHeavy = get_atype(Heavy, at, rtpFFDB, &rt);
+            tpHeavy = get_atype(Heavy, at, rtpFFDB, residueTypeMap);
             strcpy(tpname, *atype->atomNameFromAtomType(tpHeavy));
 
             bWARNING       = FALSE;
@@ -2059,7 +2067,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     /* get dummy mass type from first char of heavy atom type (N or C) */
 
                     strcpy(nexttpname,
-                           *atype->atomNameFromAtomType(get_atype(heavies[0], at, rtpFFDB, &rt)));
+                           *atype->atomNameFromAtomType(get_atype(heavies[0], at, rtpFFDB, residueTypeMap)));
                     std::string ch = get_dummymass_name(vsiteconflist, tpname, nexttpname);
                     std::string name;
                     if (ch.empty())
@@ -2118,10 +2126,10 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     /* get atom masses, and set Heavy and Hatoms mass to zero */
                     for (int j = 0; j < nrHatoms; j++)
                     {
-                        mHtot += get_amass(Hatoms[j], at, rtpFFDB, &rt);
+                        mHtot += get_amass(Hatoms[j], at, rtpFFDB, residueTypeMap);
                         at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
                     }
-                    mtot              = mHtot + get_amass(Heavy, at, rtpFFDB, &rt);
+                    mtot              = mHtot + get_amass(Heavy, at, rtpFFDB, residueTypeMap);
                     at->atom[Heavy].m = at->atom[Heavy].mB = 0;
                     if (mHmult != 1.0)
                     {

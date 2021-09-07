@@ -42,9 +42,9 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/residuetypes.h"
 
 struct gmx_output_env_t;
-class ResidueTypeMap;
 
 /* must correspond with 'leg' g_chi.c:727 */
 enum
@@ -247,15 +247,23 @@ void do_pp2shifts(FILE* fp, int nframes, gmx::ArrayRef<const t_dlist> dlist, rea
 
 gmx_bool has_dihedral(int Dih, const t_dlist& dlist);
 
-std::vector<t_dlist> mk_dlist(FILE*           log,
-                              const t_atoms*  atoms,
-                              gmx_bool        bPhi,
-                              gmx_bool        bPsi,
-                              gmx_bool        bChi,
-                              gmx_bool        bHChi,
-                              int             maxchi,
-                              int             r0,
-                              ResidueTypeMap* rt);
+/*! \brief Describe the dihedrals in the residues of the \c atoms
+ * structure
+ *
+ * Return a vector with a t_dlist entry for each residue in \c
+ * atoms. The entry for a residue contains its name, its index within
+ * the residues, and a mapping from chemical peptide atom names to
+ * atom indices based on the atom names. Many fields of t_dlist are
+ * not yet filled. */
+std::vector<t_dlist> mk_dlist(FILE*                 log,
+                              const t_atoms*        atoms,
+                              gmx_bool              bPhi,
+                              gmx_bool              bPsi,
+                              gmx_bool              bChi,
+                              gmx_bool              bHChi,
+                              int                   maxchi,
+                              int                   r0,
+                              const ResidueTypeMap& rt);
 
 void pr_dlist(FILE*                        fp,
               gmx::ArrayRef<const t_dlist> dlist,

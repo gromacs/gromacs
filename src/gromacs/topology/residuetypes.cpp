@@ -37,76 +37,19 @@
 
 #include "residuetypes.h"
 
-#include <cassert>
-#include <cstdio>
-
-#include <algorithm>
-#include <optional>
 #include <string>
-#include <unordered_map>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
 //! Definition for residue type that is not known.
 const ResidueType c_undefinedResidueType = "Other";
 
-//! Function object for comparisons used in std::unordered_map
-class EqualCaseInsensitive
+void addResidue(ResidueTypeMap* residueTypeMap, const ResidueName& residueName, const ResidueType& residueType)
 {
-public:
-    bool operator()(const ResidueName& lhs, const ResidueName& rhs) const
-    {
-        return gmx::equalCaseInsensitive(lhs, rhs);
-    }
-};
-
-//! Implementation detail for ResidueTypeMap
-class ResidueTypeMap::Impl
-{
-public:
-    //! Storage object for entries.
-    std::unordered_map<ResidueName, ResidueType, std::hash<ResidueName>, EqualCaseInsensitive> entries;
-};
-
-ResidueTypeMap::ResidueTypeMap() : impl_(new Impl)
-{
-    char line[STRLEN];
-    char resname[STRLEN], restype[STRLEN], dum[STRLEN];
-
-    gmx::FilePtr db = gmx::openLibraryFile("residuetypes.dat");
-
-    while (get_a_line(db.get(), line, STRLEN))
-    {
-        strip_comment(line);
-        trim(line);
-        if (line[0] != '\0')
-        {
-            if (sscanf(line, "%1000s %1000s %1000s", resname, restype, dum) != 2)
-            {
-                gmx_fatal(
-                        FARGS,
-                        "Incorrect number of columns (2 expected) for line in residuetypes.dat  ");
-            }
-            addResidue(resname, restype);
-        }
-    }
-}
-
-ResidueTypeMap::~ResidueTypeMap() = default;
-
-bool ResidueTypeMap::nameIndexedInResidueTypeMap(const ResidueName& residueName)
-{
-    return impl_->entries.find(residueName) != impl_->entries.end();
-}
-
-void ResidueTypeMap::addResidue(const ResidueName& residueName, const ResidueType& residueType)
-{
-    if (auto [foundIt, insertionTookPlace] = impl_->entries.insert({ residueName, residueType });
+    if (auto [foundIt, insertionTookPlace] = residueTypeMap->insert({ residueName, residueType });
         !insertionTookPlace)
     {
         if (!gmx::equalCaseInsensitive(foundIt->second, residueType))
@@ -121,29 +64,48 @@ void ResidueTypeMap::addResidue(const ResidueName& residueName, const ResidueTyp
     }
 }
 
-bool ResidueTypeMap::namedResidueHasType(const ResidueName& residueName, const ResidueType& residueType)
+ResidueTypeMap residueTypeMapFromLibraryFile(const std::string& residueTypesDatFilename)
 {
-    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
+    char line[STRLEN];
+    char resname[STRLEN], restype[STRLEN], dum[STRLEN];
+
+    gmx::FilePtr db = gmx::openLibraryFile(residueTypesDatFilename);
+
+    ResidueTypeMap residueTypeMap;
+    while (get_a_line(db.get(), line, STRLEN))
+    {
+        strip_comment(line);
+        trim(line);
+        if (line[0] != '\0')
+        {
+            if (sscanf(line, "%1000s %1000s %1000s", resname, restype, dum) != 2)
+            {
+                gmx_fatal(
+                        FARGS,
+                        "Incorrect number of columns (2 expected) for line in residuetypes.dat  ");
+            }
+            addResidue(&residueTypeMap, resname, restype);
+        }
+    }
+    return residueTypeMap;
+}
+
+bool namedResidueHasType(const ResidueTypeMap& residueTypeMap,
+                         const ResidueName&    residueName,
+                         const ResidueType&    residueType)
+{
+    if (auto foundIt = residueTypeMap.find(residueName); foundIt != residueTypeMap.end())
     {
         return gmx::equalCaseInsensitive(residueType, foundIt->second);
     }
     return false;
 }
 
-ResidueType ResidueTypeMap::typeOfNamedDatabaseResidue(const ResidueName& residueName)
+ResidueType typeOfNamedDatabaseResidue(const ResidueTypeMap& residueTypeMap, const ResidueName& residueName)
 {
-    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
+    if (auto foundIt = residueTypeMap.find(residueName); foundIt != residueTypeMap.end())
     {
         return foundIt->second;
     }
     return c_undefinedResidueType;
-}
-
-std::optional<ResidueType> ResidueTypeMap::optionalTypeOfNamedDatabaseResidue(const ResidueName& residueName)
-{
-    if (auto foundIt = impl_->entries.find(residueName); foundIt != impl_->entries.end())
-    {
-        return std::make_optional(foundIt->second);
-    }
-    return std::nullopt;
 }

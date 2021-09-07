@@ -462,7 +462,7 @@ void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, 
 static int name2type(t_atoms*                               at,
                      int**                                  cgnr,
                      gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
-                     ResidueTypeMap*                        rt,
+                     const ResidueTypeMap&                  residueTypeMap,
                      const gmx::MDLogger&                   logger)
 {
     int    i, j, prevresind, i0, prevcg, cg, curcg;
@@ -487,7 +487,7 @@ static int name2type(t_atoms*                               at,
         if (at->atom[i].resind != resind)
         {
             resind     = at->atom[i].resind;
-            bool bProt = rt->namedResidueHasType(*(at->resinfo[resind].name), "Protein");
+            bool bProt = namedResidueHasType(residueTypeMap, *(at->resinfo[resind].name), "Protein");
             bNterm     = bProt && (resind == 0);
             if (resind > 0)
             {
@@ -1563,7 +1563,7 @@ void pdb2top(FILE*                                  top_file,
     int                                     i, nmissat;
     gmx::EnumerationArray<BondedTypes, int> bts;
 
-    ResidueTypeMap rt;
+    ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, cyclicBondsIndex, logger);
@@ -1571,7 +1571,7 @@ void pdb2top(FILE*                                  top_file,
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, usedPpResidues, &rt, logger);
+    nmissat = name2type(atoms, &cgnr, usedPpResidues, residueTypeMap, logger);
     if (nmissat)
     {
         if (bAllowMissing)

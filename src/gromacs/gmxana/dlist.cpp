@@ -43,19 +43,18 @@
 #include <vector>
 
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 
-std::vector<t_dlist> mk_dlist(FILE*           log,
-                              const t_atoms*  atoms,
-                              gmx_bool        bPhi,
-                              gmx_bool        bPsi,
-                              gmx_bool        bChi,
-                              gmx_bool        bHChi,
-                              int             maxchi,
-                              int             r0,
-                              ResidueTypeMap* rt)
+std::vector<t_dlist> mk_dlist(FILE*                 log,
+                              const t_atoms*        atoms,
+                              gmx_bool              bPhi,
+                              gmx_bool              bPsi,
+                              gmx_bool              bChi,
+                              gmx_bool              bHChi,
+                              int                   maxchi,
+                              int                   r0,
+                              const ResidueTypeMap& residueTypeMap)
 {
     int       i, j, ii;
     t_dihatms atm, prev;
@@ -231,7 +230,7 @@ std::vector<t_dlist> mk_dlist(FILE*           log,
             /* Prevent use of unknown residues. If one adds a custom residue to
              * residuetypes.dat but somehow loses it, changes it, or does analysis on
              * another machine, the residue type will be unknown. */
-            if (!rt->nameIndexedInResidueTypeMap(thisres))
+            if (residueTypeMap.find(thisres) == residueTypeMap.end())
             {
                 gmx_fatal(FARGS,
                           "Unknown residue %s when searching for residue type.\n"

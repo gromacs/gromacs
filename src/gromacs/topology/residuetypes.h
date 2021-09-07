@@ -35,11 +35,11 @@
 #ifndef GMX_TOPOLOGY_RESIDUETYPES_H
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
-#include <memory>
-#include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 /*! \brief Convenience type aliases
  *
@@ -50,56 +50,52 @@ using ResidueName = std::string;
 using ResidueType = std::string;
 //! \}
 
-class ResidueTypeMap
-{
-public:
-    //! Default constructor.
-    ResidueTypeMap();
-    //! Default destructor.
-    ~ResidueTypeMap();
+/*! \brief Maps residue names to residue types
+ *
+ * The contents are typically loaded from share/top/residuetypes.dat
+ * or similar file provided in the users's working directory.
+ */
+using ResidueTypeMap =
+        std::unordered_map<ResidueName, ResidueType, std::hash<ResidueName>, gmx::EqualCaseInsensitive>;
 
-    /*! \brief
-     * Return true if residue \p residueName is found or false otherwise.
-     *
-     * \param[in] residueName Residue name to search database for.
-     * \returns true if successful.
-     */
-    bool nameIndexedInResidueTypeMap(const ResidueName& residueName);
-    /*! \brief
-     * Add entry to ResidueTypeMap if unique.
-     *
-     * \param[in] residueName Name of new residue.
-     * \param[in] residueType Type of new residue.
-     */
-    void addResidue(const ResidueName& residueName, const ResidueType& residueType);
-    /*! \brief
-     * Checks if the indicated \p residueName if of \p residueType.
-     *
-     * \param[in] residueName Residue that should be checked.
-     * \param[in] residueType Which ResidueType the residue should have.
-     * \returns If the check was successful.
-     */
-    bool namedResidueHasType(const ResidueName& residueName, const ResidueType& residueType);
-    /*! \brief
-     * Return the residue type if a residue with that name exists, or "Other"
-     *
-     * \param[in] residueName Name of the residue to search for.
-     * \returns The residue type of any matching residue, or "Other"
-     */
-    ResidueType typeOfNamedDatabaseResidue(const ResidueName& residueName);
-    /*! \brief
-     * Return an optional residue type if a residue with that name exists
-     *
-     * \param[in] residueName Name of the residue to search for.
-     * \returns An optional containing the residue type of any matching residue
-     */
-    std::optional<ResidueType> optionalTypeOfNamedDatabaseResidue(const ResidueName& residueName);
+/*! \brief
+ * Add entry to ResidueTypeMap if unique.
+ *
+ * \param[in] residueTypeMap Map to which to add new name+type entry
+ * \param[in] residueName    Name of new residue.
+ * \param[in] residueType    Type of new residue.
+ */
+void addResidue(ResidueTypeMap* residueTypeMap, const ResidueName& residueName, const ResidueType& residueType);
 
-private:
-    //! Implementation pointer.
-    class Impl;
+/*! \brief Returns a ResidueTypeMap filled from a file
+ *
+ * The value of the parameter is typically "residuetypes.dat" which
+ * treats that as a GROMACS library file, ie. loads it from the working
+ * directory or from "share/top" corresponding to the sourced GMXRC.
+ *
+ * \param[in] residueTypesDatFilename Library file to read and from which to fill the returned map
+ */
+ResidueTypeMap residueTypeMapFromLibraryFile(const std::string& residueTypesDatFilename);
 
-    std::unique_ptr<Impl> impl_;
-};
+/*! \brief
+ * Checks if the indicated \p residueName is of \p residueType.
+ *
+ * \param[in] residueTypeMap Map to search
+ * \param[in] residueName    Residue that should be checked.
+ * \param[in] residueType    Which ResidueType the residue should have.
+ * \returns If the check was successful.
+ */
+bool namedResidueHasType(const ResidueTypeMap& residueTypeMap,
+                         const ResidueName&    residueName,
+                         const ResidueType&    residueType);
+
+/*! \brief
+ * Return the residue type if a residue with that name exists, or "Other"
+ *
+ * \param[in] residueTypeMap Map to search
+ * \param[in] residueName    Name of the residue to search for.
+ * \returns The residue type of any matching residue, or "Other"
+ */
+ResidueType typeOfNamedDatabaseResidue(const ResidueTypeMap& residueTypeMap, const ResidueName& residueName);
 
 #endif

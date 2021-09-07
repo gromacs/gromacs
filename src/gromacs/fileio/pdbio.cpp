@@ -54,7 +54,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
@@ -330,7 +329,6 @@ void write_pdbfile_indexed(FILE*          out,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    ResidueTypeMap rt;
     for (int ii = 0; ii < nindex; ii++)
     {
         int         i      = index[ii];

@@ -109,7 +109,7 @@ public:
     //! The different atom properties.
     AtomProperty prop[epropNR];
     //! The residue types.
-    ResidueTypeMap residueTypeMap;
+    ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 };
 
 /*! \brief
@@ -157,15 +157,15 @@ static int compareToDatabase(const std::string& search, const std::string& datab
  * \param[in] bExact Do we have the correct match.
  * \returns The index for the property.
  */
-static int findPropertyIndex(AtomProperty*      ap,
-                             ResidueTypeMap*    residueTypeMap,
-                             const std::string& residueName,
-                             const std::string& atomName,
-                             gmx_bool*          bExact)
+static int findPropertyIndex(AtomProperty*         ap,
+                             const ResidueTypeMap& residueTypeMap,
+                             const std::string&    residueName,
+                             const std::string&    atomName,
+                             gmx_bool*             bExact)
 {
     int j = NOTFOUND;
 
-    bool bProtein  = residueTypeMap->namedResidueHasType(residueName, "Protein");
+    bool bProtein  = namedResidueHasType(residueTypeMap, residueName, "Protein");
     bool bProtWild = residueName == "AAA";
     int  malen     = NOTFOUND;
     int  mrlen     = NOTFOUND;
@@ -227,12 +227,12 @@ static int findPropertyIndex(AtomProperty*      ap,
  * \param[in] propValue Value of property.
  * \param[in] line Where to add property.
  */
-static void addProperty(AtomProperty*      ap,
-                        ResidueTypeMap*    residueTypeMap,
-                        const std::string& residueName,
-                        const std::string& atomName,
-                        real               propValue,
-                        int                line)
+static void addProperty(AtomProperty*         ap,
+                        const ResidueTypeMap& residueTypeMap,
+                        const std::string&    residueName,
+                        const std::string&    atomName,
+                        real                  propValue,
+                        int                   line)
 {
     bool bExact = false;
     int  j      = findPropertyIndex(ap, residueTypeMap, residueName, atomName, &bExact);
@@ -284,7 +284,7 @@ static void addProperty(AtomProperty*      ap,
  * \param[in] residueTypeMap Library of residue types.
  * \param[in] factor Scaling factor for property.
  */
-static void readProperty(AtomProperty* ap, ResidueTypeMap* residueTypeMap, double factor)
+static void readProperty(AtomProperty* ap, const ResidueTypeMap& residueTypeMap, double factor)
 {
     char line[STRLEN], resnm[32], atomnm[32];
 
@@ -316,7 +316,7 @@ static void readProperty(AtomProperty* ap, ResidueTypeMap* residueTypeMap, doubl
  * \param[in] haveBeenWarned If we already set a warning before
  * \returns True of warning should be printed.
  */
-static bool setProperties(AtomProperty* ap, ResidueTypeMap* residueTypeMap, int eprop, bool haveBeenWarned)
+static bool setProperties(AtomProperty* ap, const ResidueTypeMap& residueTypeMap, int eprop, bool haveBeenWarned)
 {
     const char* fns[epropNR] = {
         "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat"
@@ -353,11 +353,6 @@ AtomProperty* AtomProperties::prop(int eprop)
     return &impl_->prop[eprop];
 }
 
-ResidueTypeMap* AtomProperties::residueTypeMap()
-{
-    return &impl_->residueTypeMap;
-}
-
 //! Print warning that vdW radii and masses are guessed.
 static void printWarning()
 {
@@ -391,7 +386,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
     std::string tmpAtomName, tmpResidueName;
     bool        bExact = false;
 
-    if (setProperties(prop(eprop), residueTypeMap(), eprop, impl_->bWarned))
+    if (setProperties(prop(eprop), impl_->residueTypeMap, eprop, impl_->bWarned))
     {
         printWarning();
         impl_->bWarned = true;
@@ -407,7 +402,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
         tmpAtomName = atomName;
     }
     const int j = findPropertyIndex(
-            &(impl_->prop[eprop]), &impl_->residueTypeMap, residueName, tmpAtomName, &bExact);
+            &(impl_->prop[eprop]), impl_->residueTypeMap, residueName, tmpAtomName, &bExact);
 
     if (eprop == epropVDW && !impl_->bWarnVDW)
     {
@@ -429,7 +424,7 @@ bool AtomProperties::setAtomProperty(int                eprop,
 
 std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 {
-    if (setProperties(prop(epropElement), residueTypeMap(), epropElement, impl_->bWarned))
+    if (setProperties(prop(epropElement), impl_->residueTypeMap, epropElement, impl_->bWarned))
     {
         printWarning();
         impl_->bWarned = true;
@@ -446,7 +441,7 @@ std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 
 int AtomProperties::atomNumberFromElement(const char* element)
 {
-    if (setProperties(prop(epropElement), residueTypeMap(), epropElement, impl_->bWarned))
+    if (setProperties(prop(epropElement), impl_->residueTypeMap, epropElement, impl_->bWarned))
     {
         printWarning();
         impl_->bWarned = true;

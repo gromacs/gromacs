@@ -431,6 +431,16 @@ std::string replaceAllWords(const std::string& input, const std::string& from, c
  */
 bool equalCaseInsensitive(const std::string& source, const std::string& target);
 
+//! Function object for comparisons with \c equalCaseInsensitive
+class EqualCaseInsensitive
+{
+public:
+    bool operator()(const std::string& lhs, const std::string& rhs) const
+    {
+        return gmx::equalCaseInsensitive(lhs, rhs);
+    }
+};
+
 /*! \brief
  * Checks if at most \p maxLengthOfComparison characters of two strings match case insensitive.
  *

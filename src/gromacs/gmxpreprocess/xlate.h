@@ -38,7 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
-class ResidueTypeMap;
+#include "gromacs/topology/residuetypes.h"
+
 struct t_atoms;
 struct PreprocessResidue;
 struct t_symtab;
@@ -58,7 +59,7 @@ void rename_atoms(const char*                            xlfile,
                   t_symtab*                              symtab,
                   gmx::ArrayRef<const PreprocessResidue> restp,
                   bool                                   bResname,
-                  ResidueTypeMap*                        rt,
+                  const ResidueTypeMap&                  rt,
                   bool                                   bReorderNum,
                   bool                                   bVerbose);
 
