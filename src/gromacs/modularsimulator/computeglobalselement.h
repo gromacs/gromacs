@@ -62,6 +62,7 @@ class FreeEnergyPerturbationData;
 class LegacySimulatorData;
 class MDAtoms;
 class MDLogger;
+class ObservablesReducer;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -119,7 +120,8 @@ public:
                           gmx_wallcycle*              wcycle,
                           t_forcerec*                 fr,
                           const gmx_mtop_t&           global_top,
-                          Constraints*                constr);
+                          Constraints*                constr,
+                          ObservablesReducer*         observablesReducer);
 
     //! Destructor
     ~ComputeGlobalsElement() override;
@@ -152,7 +154,8 @@ public:
      * \param statePropagatorData  Pointer to the \c StatePropagatorData object
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
-     * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
+     * \param observablesReducer          Pointer to the \c ObservablesReducer object
      *
      * \throws std::bad_any_cast  on internal error in VelocityVerlet algorithm builder.
      * \throws std::bad_alloc  when out of memory.
@@ -164,7 +167,8 @@ public:
                                                     StatePropagatorData*        statePropagatorData,
                                                     EnergyData*                 energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                    GlobalCommunicationHelper* globalCommunicationHelper);
+                                                    GlobalCommunicationHelper* globalCommunicationHelper,
+                                                    ObservablesReducer*        observablesReducer);
 
 private:
     //! ITopologyClient implementation
@@ -263,6 +267,8 @@ private:
     gmx_wallcycle* wcycle_;
     //! Parameters for force calculations.
     t_forcerec* fr_;
+    //! Coordinates reduction for observables
+    ObservablesReducer* observablesReducer_;
 };
 
 //! \}

@@ -552,7 +552,8 @@ ISimulatorElement* EnergyData::Element::getElementPointerImpl(
         StatePropagatorData gmx_unused* statePropagatorData,
         EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        ObservablesReducer* /*observablesReducer*/)
 {
     return energyData->element();
 }

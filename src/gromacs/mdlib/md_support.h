@@ -38,6 +38,8 @@
 #ifndef GMX_MDLIB_MD_SUPPORT_H
 #define GMX_MDLIB_MD_SUPPORT_H
 
+#include <cstdint>
+
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
@@ -60,6 +62,7 @@ template<typename T>
 class ArrayRef;
 class Constraints;
 class MDLogger;
+class ObservablesReducer;
 class SimulationSignaller;
 } // namespace gmx
 
@@ -133,6 +136,8 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
                      gmx_bool*                      bSumEkinhOld,
-                     int                            flags);
+                     int                            flags,
+                     int64_t                        step,
+                     gmx::ObservablesReducer*       observablesReducer);
 
 #endif

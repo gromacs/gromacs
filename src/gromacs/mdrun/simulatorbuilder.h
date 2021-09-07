@@ -77,6 +77,7 @@ class MDAtoms;
 class MDLogger;
 struct MDModulesNotifiers;
 struct MdrunOptions;
+class ObservablesReducerBuilder;
 class ReadCheckpointDataHolder;
 enum class StartingBehavior;
 class StopHandlerBuilder;
@@ -148,12 +149,13 @@ class SimulatorEnv
 {
 public:
     //! Build from current simulation environment.
-    SimulatorEnv(FILE*             fplog,
-                 t_commrec*        commRec,
-                 gmx_multisim_t*   multisimCommRec,
-                 const MDLogger&   logger,
-                 gmx_output_env_t* outputEnv) :
-        fplog_{ fplog }, commRec_{ commRec }, multisimCommRec_{ multisimCommRec }, logger_{ logger }, outputEnv_{ outputEnv }
+    SimulatorEnv(FILE*                      fplog,
+                 t_commrec*                 commRec,
+                 gmx_multisim_t*            multisimCommRec,
+                 const MDLogger&            logger,
+                 gmx_output_env_t*          outputEnv,
+                 ObservablesReducerBuilder* observablesReducerBuilder) :
+        fplog_{ fplog }, commRec_{ commRec }, multisimCommRec_{ multisimCommRec }, logger_{ logger }, outputEnv_{ outputEnv }, observablesReducerBuilder_{ observablesReducerBuilder }
     {
     }
 
@@ -167,6 +169,8 @@ public:
     const MDLogger& logger_;
     //! Handle to file output handling.
     const gmx_output_env_t* outputEnv_;
+    //! Builder for coordinator of reduction for observables
+    ObservablesReducerBuilder* observablesReducerBuilder_;
 };
 
 /*! \brief

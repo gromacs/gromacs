@@ -741,10 +741,11 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        Offset                                offset,
-        UseFullStepKE                         useFullStepKE,
-        ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy,
-        const PropagatorTag&                  propagatorTag)
+        ObservablesReducer* /*observablesReducer*/,
+        Offset                            offset,
+        UseFullStepKE                     useFullStepKE,
+        ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy,
+        const PropagatorTag&              propagatorTag)
 {
     // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(

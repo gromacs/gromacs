@@ -126,6 +126,7 @@
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
@@ -360,7 +361,8 @@ void gmx::LegacySimulator::do_md()
     std::unique_ptr<t_state> stateInstance;
     t_state*                 state;
 
-    gmx_localtop_t top(top_global.ffparams);
+    gmx_localtop_t     top(top_global.ffparams);
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
 
     ForceBuffers     f(simulationWork.useMts,
                    ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
@@ -632,6 +634,9 @@ void gmx::LegacySimulator::do_md()
     t_vcm vcm(top_global.groups, *ir);
     reportComRemovalInfo(fplog, vcm);
 
+    int64_t step     = ir->init_step;
+    int64_t step_rel = 0;
+
     /* To minimize communication, compute_globals computes the COM velocity
      * and the kinetic energy for the velocities without COM motion removed.
      * Thus to get the kinetic energy without the COM contribution, we need
@@ -671,7 +676,9 @@ void gmx::LegacySimulator::do_md()
                         &nullSignaller,
                         state->box,
                         &bSumEkinhOld,
-                        cglo_flags_iteration);
+                        cglo_flags_iteration,
+                        step,
+                        &observablesReducer);
         if (cglo_flags_iteration & CGLO_STOPCM)
         {
             /* At initialization, do not pass x with acceleration-correction mode
@@ -718,7 +725,9 @@ void gmx::LegacySimulator::do_md()
                         &nullSignaller,
                         state->box,
                         &bSumEkinhOld,
-                        cglo_flags & ~CGLO_PRESSURE);
+                        cglo_flags & ~CGLO_PRESSURE,
+                        step,
+                        &observablesReducer);
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -800,9 +809,6 @@ void gmx::LegacySimulator::do_md()
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
-
-    int64_t step     = ir->init_step;
-    int64_t step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
@@ -1066,7 +1072,9 @@ void gmx::LegacySimulator::do_md()
                             &nullSignaller,
                             state->box,
                             &bSumEkinhOld,
-                            cglo_flags);
+                            cglo_flags,
+                            step,
+                            &observablesReducer);
             if (DOMAINDECOMP(cr))
             {
                 dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
@@ -1223,6 +1231,7 @@ void gmx::LegacySimulator::do_md()
                                  &vcm,
                                  top,
                                  enerd,
+                                 &observablesReducer,
                                  ekind,
                                  gstat,
                                  &last_ekin,
@@ -1471,6 +1480,7 @@ void gmx::LegacySimulator::do_md()
                                   &vcm,
                                   pull_work,
                                   enerd,
+                                  &observablesReducer,
                                   ekind,
                                   gstat,
                                   &dvdl_constr,
@@ -1700,7 +1710,9 @@ void gmx::LegacySimulator::do_md()
                                 | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
                                 | (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions()
                                            ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                           : 0));
+                                           : 0),
+                        step,
+                        &observablesReducer);
                 if (DOMAINDECOMP(cr))
                 {
                     dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(

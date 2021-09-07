@@ -100,6 +100,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -901,7 +902,7 @@ public:
      * unsuited for aggregate initialization. When the types
      * improve, the call signature of this method can be reduced.
      */
-    void run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst);
+    void run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst, int64_t step);
     //! Handles logging (deprecated).
     FILE* fplog;
     //! Handles logging.
@@ -924,8 +925,10 @@ public:
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.
     gmx_wallcycle* wcycle;
-    //! Coordinates global reduction.
+    //! Legacy coordinator of global reduction.
     gmx_global_stat_t gstat;
+    //! Coordinates reduction for observables
+    gmx::ObservablesReducer* observablesReducer;
     //! Handles virtual sites.
     VirtualSitesHandler* vsite;
     //! Handles constraints.
@@ -944,7 +947,7 @@ public:
     std::vector<RVec> pairSearchCoordinates;
 };
 
-void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst)
+void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst, int64_t step)
 {
     real     t;
     gmx_bool bNS;
@@ -1047,7 +1050,9 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                     nullptr,
                     std::vector<real>(1, terminate),
                     FALSE,
-                    CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
+                    CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT,
+                    step,
+                    observablesReducer);
 
         wallcycle_stop(wcycle, WallCycleCounter::MoveE);
     }
@@ -1285,6 +1290,8 @@ void LegacySimulator::do_cg()
     em_state_t* s_b   = &s2;
     em_state_t* s_c   = &s3;
 
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+
     /* Init em and store the local state in s_min */
     init_em(fplog,
             mdlog,
@@ -1344,15 +1351,32 @@ void LegacySimulator::do_cg()
         sp_header(fplog, CG, inputrec->em_tol, number_steps);
     }
 
-    EnergyEvaluator energyEvaluator{ fplog,  mdlog,           cr,         ms,        top_global,
-                                     &top,   inputrec,        imdSession, pull_work, nrnb,
-                                     wcycle, gstat,           vsite,      constr,    mdAtoms,
-                                     fr,     runScheduleWork, enerd,      -1,        {} };
+    EnergyEvaluator energyEvaluator{ fplog,
+                                     mdlog,
+                                     cr,
+                                     ms,
+                                     top_global,
+                                     &top,
+                                     inputrec,
+                                     imdSession,
+                                     pull_work,
+                                     nrnb,
+                                     wcycle,
+                                     gstat,
+                                     &observablesReducer,
+                                     vsite,
+                                     constr,
+                                     mdAtoms,
+                                     fr,
+                                     runScheduleWork,
+                                     enerd,
+                                     -1,
+                                     {} };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE);
+    energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE, step);
 
     if (MASTER(cr))
     {
@@ -1545,7 +1569,7 @@ void LegacySimulator::do_cg()
 
         neval++;
         /* Calculate energy for the trial step */
-        energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE);
+        energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE, step);
 
         /* Calc derivative along line */
         const rvec*                    pc  = s_c->s.cg_p.rvec_array();
@@ -1660,7 +1684,7 @@ void LegacySimulator::do_cg()
 
                 neval++;
                 /* Calculate energy for the trial step */
-                energyEvaluator.run(s_b, mu_tot, vir, pres, -1, FALSE);
+                energyEvaluator.run(s_b, mu_tot, vir, pres, -1, FALSE, step);
 
                 /* p does not change within a step, but since the domain decomposition
                  * might change, we have to use cg_p of s_b here.
@@ -1984,6 +2008,8 @@ void LegacySimulator::do_lbfgs()
     int step  = 0;
     int neval = 0;
 
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+
     /* Init em */
     init_em(fplog,
             mdlog,
@@ -2081,13 +2107,29 @@ void LegacySimulator::do_lbfgs()
      * We do not unshift, so molecules are always whole
      */
     neval++;
-    EnergyEvaluator energyEvaluator{ fplog,    mdlog,      cr,        ms,   top_global,      &top,
-                                     inputrec, imdSession, pull_work, nrnb, wcycle,          gstat,
-                                     vsite,    constr,     mdAtoms,   fr,   runScheduleWork, enerd };
+    EnergyEvaluator energyEvaluator{ fplog,
+                                     mdlog,
+                                     cr,
+                                     ms,
+                                     top_global,
+                                     &top,
+                                     inputrec,
+                                     imdSession,
+                                     pull_work,
+                                     nrnb,
+                                     wcycle,
+                                     gstat,
+                                     &observablesReducer,
+                                     vsite,
+                                     constr,
+                                     mdAtoms,
+                                     fr,
+                                     runScheduleWork,
+                                     enerd };
     rvec            mu_tot;
     tensor          vir;
     tensor          pres;
-    energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
+    energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE, step);
 
     if (MASTER(cr))
     {
@@ -2317,7 +2359,7 @@ void LegacySimulator::do_lbfgs()
 
         neval++;
         // Calculate energy for the trial step in position C
-        energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE);
+        energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE, step);
 
         // Calc line gradient in position C
         real*  fc  = static_cast<real*>(sc->f.view().force()[0]);
@@ -2401,7 +2443,7 @@ void LegacySimulator::do_lbfgs()
 
                 neval++;
                 // Calculate energy for the trial step in point B
-                energyEvaluator.run(sb, mu_tot, vir, pres, step, FALSE);
+                energyEvaluator.run(sb, mu_tot, vir, pres, step, FALSE, step);
                 fnorm = sb->fnorm;
 
                 // Calculate gradient in point B
@@ -2761,6 +2803,8 @@ void LegacySimulator::do_steep()
     em_state_t* s_min = &s0;
     em_state_t* s_try = &s1;
 
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+
     /* Init em and store the local state in s_try */
     init_em(fplog,
             mdlog,
@@ -2826,9 +2870,25 @@ void LegacySimulator::do_steep()
     {
         sp_header(fplog, SD, inputrec->em_tol, nsteps);
     }
-    EnergyEvaluator energyEvaluator{ fplog,    mdlog,      cr,        ms,   top_global,      &top,
-                                     inputrec, imdSession, pull_work, nrnb, wcycle,          gstat,
-                                     vsite,    constr,     mdAtoms,   fr,   runScheduleWork, enerd };
+    EnergyEvaluator energyEvaluator{ fplog,
+                                     mdlog,
+                                     cr,
+                                     ms,
+                                     top_global,
+                                     &top,
+                                     inputrec,
+                                     imdSession,
+                                     pull_work,
+                                     nrnb,
+                                     wcycle,
+                                     gstat,
+                                     &observablesReducer,
+                                     vsite,
+                                     constr,
+                                     mdAtoms,
+                                     fr,
+                                     runScheduleWork,
+                                     enerd };
 
     /**** HERE STARTS THE LOOP ****
      * count is the counter for the number of steps
@@ -2853,7 +2913,7 @@ void LegacySimulator::do_steep()
 
         if (validStep)
         {
-            energyEvaluator.run(s_try, mu_tot, vir, pres, count, count == 0);
+            energyEvaluator.run(s_try, mu_tot, vir, pres, count, count == 0, count);
         }
         else
         {
@@ -3087,6 +3147,8 @@ void LegacySimulator::do_nm()
 
     em_state_t state_work{};
 
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+
     /* Init em and store the local state in state_minimum */
     init_em(fplog,
             mdlog,
@@ -3199,10 +3261,26 @@ void LegacySimulator::do_nm()
 
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
-    EnergyEvaluator energyEvaluator{ fplog,    mdlog,      cr,        ms,   top_global,      &top,
-                                     inputrec, imdSession, pull_work, nrnb, wcycle,          gstat,
-                                     vsite,    constr,     mdAtoms,   fr,   runScheduleWork, enerd };
-    energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE);
+    EnergyEvaluator energyEvaluator{ fplog,
+                                     mdlog,
+                                     cr,
+                                     ms,
+                                     top_global,
+                                     &top,
+                                     inputrec,
+                                     imdSession,
+                                     pull_work,
+                                     nrnb,
+                                     wcycle,
+                                     gstat,
+                                     &observablesReducer,
+                                     vsite,
+                                     constr,
+                                     mdAtoms,
+                                     fr,
+                                     runScheduleWork,
+                                     enerd };
+    energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE, 0);
     cr->nnodes = nnodes;
 
     /* if forces are not small, warn user */
@@ -3296,7 +3374,7 @@ void LegacySimulator::do_nm()
                 }
                 else
                 {
-                    energyEvaluator.run(&state_work, mu_tot, vir, pres, aid * 2 + dx, FALSE);
+                    energyEvaluator.run(&state_work, mu_tot, vir, pres, aid * 2 + dx, FALSE, step);
                 }
 
                 cr->nnodes = nnodes;

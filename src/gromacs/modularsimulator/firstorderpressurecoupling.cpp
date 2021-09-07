@@ -239,8 +239,9 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        int                                   offset,
-        ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy)
+        ObservablesReducer* /*observablesReducer*/,
+        int                               offset,
+        ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)
 {
     return builderHelper->storeElement(std::make_unique<FirstOrderPressureCoupling>(
             legacySimulatorData->inputrec->nstpcouple,

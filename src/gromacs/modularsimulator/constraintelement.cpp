@@ -238,7 +238,8 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(
             std::make_unique<ConstraintsElement<variable>>(legacySimulatorData->constr,

@@ -67,6 +67,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -302,7 +303,9 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
                      gmx_bool*                      bSumEkinhOld,
-                     const int                      flags)
+                     const int                      flags,
+                     int64_t                        step,
+                     gmx::ObservablesReducer*       observablesReducer)
 {
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
@@ -345,7 +348,8 @@ void compute_globals(gmx_global_stat*               gstat,
         calc_vcm_grp(*mdatoms, x, v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions)
+    if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions
+        || !observablesReducer->communicationBuffer().empty())
     {
         if (!bGStat)
         {
@@ -371,7 +375,9 @@ void compute_globals(gmx_global_stat*               gstat,
                             bStopCM ? vcm : nullptr,
                             signalBuffer,
                             *bSumEkinhOld,
-                            flags);
+                            flags,
+                            step,
+                            observablesReducer);
                 wallcycle_stop(wcycle, WallCycleCounter::MoveE);
             }
             signalCoordinator->finalizeSignals();

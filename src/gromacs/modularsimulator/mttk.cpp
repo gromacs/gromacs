@@ -594,7 +594,8 @@ ISimulatorElement* MttkElement::getElementPointerImpl(
         StatePropagatorData gmx_unused* statePropagatorData,
         EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused*  globalCommunicationHelper,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        ObservablesReducer gmx_unused*         observablesReducer,
         Offset                                 offset,
         ScheduleOnInitStep                     scheduleOnInitStep,
         const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
@@ -665,7 +666,8 @@ ISimulatorElement* MttkBoxScaling::getElementPointerImpl(
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused*  globalCommunicationHelper,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        ObservablesReducer gmx_unused*         observablesReducer,
         const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)

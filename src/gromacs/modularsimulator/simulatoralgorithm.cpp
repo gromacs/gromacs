@@ -411,6 +411,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                                 legacySimulatorData->inputrec,
                                                                 legacySimulatorData->cr),
                                signals_.get()),
+    observablesReducer_(legacySimulatorData->observablesReducerBuilder->build()),
     checkpointHelperBuilder_(std::move(checkpointDataHolder),
                              legacySimulatorData->startingBehavior,
                              legacySimulatorData->cr)

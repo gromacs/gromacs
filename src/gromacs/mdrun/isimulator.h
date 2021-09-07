@@ -75,6 +75,7 @@ struct MDModulesNotifiers;
 class ImdSession;
 class MDLogger;
 class MDAtoms;
+class ObservablesReducerBuilder;
 class StopHandlerBuilder;
 struct MdrunOptions;
 class VirtualSitesHandler;
@@ -136,6 +137,7 @@ public:
                         gmx_wallcycle*                      wcycle,
                         t_forcerec*                         fr,
                         gmx_enerdata_t*                     enerd,
+                        ObservablesReducerBuilder*          observablesReducerBuilder,
                         gmx_ekindata_t*                     ekind,
                         MdrunScheduleWorkload*              runScheduleWork,
                         const ReplicaExchangeParameters&    replExParams,
@@ -170,6 +172,7 @@ public:
         wcycle(wcycle),
         fr(fr),
         enerd(enerd),
+        observablesReducerBuilder(observablesReducerBuilder),
         ekind(ekind),
         runScheduleWork(runScheduleWork),
         replExParams(replExParams),
@@ -234,6 +237,8 @@ public:
     t_forcerec* fr;
     //! Data for energy output.
     gmx_enerdata_t* enerd;
+    //! Builder for coordinator of reduction for observables
+    ObservablesReducerBuilder* observablesReducerBuilder;
     //! Kinetic energy data.
     gmx_ekindata_t* ekind;
     //! Schedule of work for each MD step for this task.

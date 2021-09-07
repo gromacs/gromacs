@@ -55,6 +55,7 @@
 #include <typeinfo>
 
 #include "gromacs/mdrun/isimulator.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -287,7 +288,7 @@ private:
  *
  * This includes data that needs to be shared between elements involved in
  * global communication. This will become obsolete as soon as global
- * communication is moved to a client system (#3421).
+ * communication is moved to a client system (#3421 and #3887).
  */
 class GlobalCommunicationHelper
 {
@@ -438,8 +439,10 @@ private:
     std::unique_ptr<SimulationSignals> signals_;
     //! Helper object passed to element factory functions
     ModularSimulatorAlgorithmBuilderHelper elementAdditionHelper_;
-    //! Container for global computation data
+    //! Container for minor aspects of global computation data
     GlobalCommunicationHelper globalCommunicationHelper_;
+    //! Coordinates reduction for observables
+    ObservablesReducer observablesReducer_;
 
     /*! \brief Set arbitrary data in the ModularSimulatorAlgorithm
      *
@@ -565,7 +568,8 @@ private:
  *             StatePropagatorData*                    statePropagatorData,
  *             EnergyData*                             energyData,
  *             FreeEnergyPerturbationData*             freeEnergyPerturbationData,
- *             GlobalCommunicationHelper*              globalCommunicationHelper)
+ *             GlobalCommunicationHelper*              globalCommunicationHelper,
+ *             ObservablesReducer*                     observablesReducer)
  *
  * This function may also accept additional parameters which are passed using the variadic
  * template parameter pack forwarded in getElementPointer.
@@ -595,7 +599,8 @@ private:
  * \param statePropagatorData  Pointer to the \c StatePropagatorData object
  * \param energyData  Pointer to the \c EnergyData object
  * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
- * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+ * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
+ * \param observablesReducer          Pointer to the \c ObservablesReducer object
  * \param args  Variable number of additional parameters to be forwarded
  *
  * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
@@ -607,6 +612,7 @@ ISimulatorElement* getElementPointer(LegacySimulatorData*                    leg
                                      EnergyData*                             energyData,
                                      FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                      GlobalCommunicationHelper*  globalCommunicationHelper,
+                                     ObservablesReducer*         observablesReducer,
                                      Args&&... args)
 {
     return Element::getElementPointerImpl(legacySimulatorData,
@@ -615,6 +621,7 @@ ISimulatorElement* getElementPointer(LegacySimulatorData*                    leg
                                           energyData,
                                           freeEnergyPerturbationData,
                                           globalCommunicationHelper,
+                                          observablesReducer,
                                           std::forward<Args>(args)...);
 }
 
@@ -634,6 +641,7 @@ void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
                                                                      energyData_.get(),
                                                                      freeEnergyPerturbationData_.get(),
                                                                      &globalCommunicationHelper_,
+                                                                     &observablesReducer_,
                                                                      std::forward<Args>(args)...));
 
     // Make sure returned element pointer is owned by *this

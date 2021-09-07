@@ -796,7 +796,8 @@ ISimulatorElement* StatePropagatorData::Element::getElementPointerImpl(
         StatePropagatorData*                               statePropagatorData,
         EnergyData gmx_unused*      energyData,
         FreeEnergyPerturbationData* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        ObservablesReducer* /*observablesReducer*/)
 {
     statePropagatorData->element()->setFreeEnergyPerturbationData(freeEnergyPerturbationData);
     return statePropagatorData->element();

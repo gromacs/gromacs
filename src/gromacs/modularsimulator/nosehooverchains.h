@@ -60,6 +60,7 @@ class ModularSimulatorAlgorithmBuilderHelper;
 struct MttkPropagatorConnectionDetails;
 class MttkData;
 class NoseHooverGroup;
+class ObservablesReducer;
 class StatePropagatorData;
 enum class UseFullStepKE;
 
@@ -207,7 +208,8 @@ public:
      * \param statePropagatorData  Pointer to the \c StatePropagatorData object
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
-     * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
+     * \param observablesReducer          Pointer to the \c ObservablesReducer object
      * \param nhcUsage  What the NHC is connected to - system or barostat
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
@@ -223,6 +225,7 @@ public:
                           EnergyData*                             energyData,
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
+                          ObservablesReducer*                     observablesReducer,
                           NhcUsage                                nhcUsage,
                           Offset                                  offset,
                           UseFullStepKE                           useFullStepKE,
@@ -236,7 +239,8 @@ public:
      * \param statePropagatorData  Pointer to the \c StatePropagatorData object
      * \param energyData  Pointer to the \c EnergyData object
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
-     * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param globalCommunicationHelper   Pointer to the \c GlobalCommunicationHelper object
+     * \param observablesReducer          Pointer to the \c ObservablesReducer object
      * \param nhcUsage  What the NHC is connected to - system or barostat
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
@@ -251,6 +255,7 @@ public:
                                                     EnergyData*                 energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
+                                                    ObservablesReducer*        observablesReducer,
                                                     NhcUsage                   nhcUsage,
                                                     Offset                     offset,
                                                     UseFullStepKE              useFullStepKE,

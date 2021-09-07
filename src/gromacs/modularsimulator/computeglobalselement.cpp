@@ -70,18 +70,19 @@ template<ComputeGlobalsAlgorithm algorithm>
 ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* statePropagatorData,
                                                         EnergyData*          energyData,
                                                         FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                        SimulationSignals* signals,
-                                                        int                nstglobalcomm,
-                                                        FILE*              fplog,
-                                                        const MDLogger&    mdlog,
-                                                        t_commrec*         cr,
-                                                        const t_inputrec*  inputrec,
-                                                        const MDAtoms*     mdAtoms,
-                                                        t_nrnb*            nrnb,
-                                                        gmx_wallcycle*     wcycle,
-                                                        t_forcerec*        fr,
-                                                        const gmx_mtop_t&  global_top,
-                                                        Constraints*       constr) :
+                                                        SimulationSignals*  signals,
+                                                        int                 nstglobalcomm,
+                                                        FILE*               fplog,
+                                                        const MDLogger&     mdlog,
+                                                        t_commrec*          cr,
+                                                        const t_inputrec*   inputrec,
+                                                        const MDAtoms*      mdAtoms,
+                                                        t_nrnb*             nrnb,
+                                                        gmx_wallcycle*      wcycle,
+                                                        t_forcerec*         fr,
+                                                        const gmx_mtop_t&   global_top,
+                                                        Constraints*        constr,
+                                                        ObservablesReducer* observablesReducer) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
     vvSchedulingStep_(-1),
@@ -106,7 +107,8 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     constr_(constr),
     nrnb_(nrnb),
     wcycle_(wcycle),
-    fr_(fr)
+    fr_(fr),
+    observablesReducer_(observablesReducer)
 {
     reportComRemovalInfo(fplog, vcm_);
     gstat_ = global_stat_init(inputrec_);
@@ -310,7 +312,9 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     signaller,
                     lastbox,
                     energyData_->needToSumEkinhOld(),
-                    flags);
+                    flags,
+                    step,
+                    observablesReducer_);
     if (DOMAINDECOMP(cr_))
     {
         dd_localTopologyChecker(cr_->dd)->checkNumberOfBondedInteractions(localTopology_, x, box);
@@ -366,7 +370,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
-        GlobalCommunicationHelper*              globalCommunicationHelper)
+        GlobalCommunicationHelper*              globalCommunicationHelper,
+        ObservablesReducer*                     observablesReducer)
 {
     auto* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
@@ -384,7 +389,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
                     legacySimulatorData->wcycle,
                     legacySimulatorData->fr,
                     legacySimulatorData->top_global,
-                    legacySimulatorData->constr));
+                    legacySimulatorData->constr,
+                    observablesReducer));
 
     return element;
 }
@@ -396,7 +402,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
-        GlobalCommunicationHelper*              globalCommunicationHelper)
+        GlobalCommunicationHelper*              globalCommunicationHelper,
+        ObservablesReducer*                     observablesReducer)
 {
     // We allow this element to be added multiple times to the call list, but we only want one
     // actual element built
@@ -426,7 +433,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         simulator->wcycle,
                         simulator->fr,
                         simulator->top_global,
-                        simulator->constr));
+                        simulator->constr,
+                        observablesReducer));
         builderHelper->storeBuilderData(key, vvComputeGlobalsElement);
         return vvComputeGlobalsElement;
     }

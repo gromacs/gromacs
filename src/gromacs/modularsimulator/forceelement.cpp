@@ -171,7 +171,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
         //       Think about unifying this responsibility, could this be done in one place?
-        auto box = statePropagatorData_->box();
+        auto* box = statePropagatorData_->box();
         correct_box(fplog_, step, box);
     }
 
@@ -180,10 +180,10 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
      * This is parallelized as well, and does communication too.
      * Check comments in sim_util.c
      */
-    auto       x      = statePropagatorData_->positionsView();
-    auto&      forces = statePropagatorData_->forcesView();
-    auto       box    = statePropagatorData_->constBox();
-    history_t* hist   = nullptr; // disabled
+    auto        x      = statePropagatorData_->positionsView();
+    auto&       forces = statePropagatorData_->forcesView();
+    const auto* box    = statePropagatorData_->constBox();
+    history_t*  hist   = nullptr; // disabled
 
     tensor force_vir = { { 0 } };
     // TODO: Make lambda const (needs some adjustments in lower force routines)
@@ -307,7 +307,8 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                     StatePropagatorData*                    statePropagatorData,
                                     EnergyData*                             energyData,
                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                    GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+                                    GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+                                    ObservablesReducer* /*observablesReducer*/)
 {
     const bool isVerbose    = legacySimulatorData->mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData->inputrec);

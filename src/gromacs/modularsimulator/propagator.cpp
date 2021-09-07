@@ -915,19 +915,19 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->velocityScalingCallback();
         };
     }
-    if constexpr (hasStartVelocityScaling<integrationStage>())
+    if constexpr (hasStartVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
     {
         propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
             return propagator->viewOnStartVelocityScaling();
         };
     }
-    if constexpr (hasEndVelocityScaling<integrationStage>())
+    if constexpr (hasEndVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
     {
         propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
             return propagator->viewOnEndVelocityScaling();
         };
     }
-    if constexpr (hasPositionScaling<integrationStage>())
+    if constexpr (hasPositionScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
     {
         propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
             propagator->setNumPositionScalingVariables(num);
@@ -939,7 +939,7 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->positionScalingCallback();
         };
     }
-    if constexpr (hasParrinelloRahmanScaling<integrationStage>())
+    if constexpr (hasParrinelloRahmanScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
     {
         propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
             return propagator->viewOnPRScalingMatrix();
@@ -949,7 +949,7 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
         };
     }
 
-    return propagatorConnection;
+    return propagatorConnection; // NOLINT(readability-misleading-indentation)
 }
 
 // doxygen is confused by the two definitions
@@ -962,8 +962,9 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         EnergyData gmx_unused*     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        const PropagatorTag&                  propagatorTag,
-        TimeStep                              timestep)
+        ObservablesReducer* /* observablesReducer */,
+        const PropagatorTag& propagatorTag,
+        TimeStep             timestep)
 {
     GMX_RELEASE_ASSERT(!(integrationStage == IntegrationStage::ScaleVelocities
                          || integrationStage == IntegrationStage::ScalePositions)
@@ -984,6 +985,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper,
+        ObservablesReducer*                     observablesReducer,
         const PropagatorTag&                    propagatorTag)
 {
     GMX_RELEASE_ASSERT(
@@ -996,6 +998,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
                                  energyData,
                                  freeEnergyPerturbationData,
                                  globalCommunicationHelper,
+                                 observablesReducer,
                                  propagatorTag,
                                  TimeStep(0.0));
 }

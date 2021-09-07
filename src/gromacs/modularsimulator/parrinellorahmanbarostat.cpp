@@ -331,8 +331,9 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        Offset                                offset,
-        const PropagatorTag&                  propagatorTag)
+        ObservablesReducer* /*observablesReducer*/,
+        Offset               offset,
+        const PropagatorTag& propagatorTag)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
             legacySimulatorData->inputrec->nstpcouple,

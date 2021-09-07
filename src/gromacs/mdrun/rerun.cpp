@@ -113,6 +113,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/utilities.h"
@@ -268,6 +269,8 @@ void gmx::LegacySimulator::do_rerun()
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
+    ObservablesReducer observablesReducer = observablesReducerBuilder->build();
+
     const SimulationGroups* groups = &top_global.groups;
     if (ir->eI == IntegrationAlgorithm::Mimic)
     {
@@ -384,6 +387,9 @@ void gmx::LegacySimulator::do_rerun()
         doFreeEnergyPerturbation = true;
     }
 
+    int64_t step     = ir->init_step;
+    int64_t step_rel = 0;
+
     {
         int cglo_flags = CGLO_GSTAT;
         if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
@@ -413,7 +419,9 @@ void gmx::LegacySimulator::do_rerun()
                         &nullSignaller,
                         state->box,
                         &bSumEkinhOld,
-                        cglo_flags);
+                        cglo_flags,
+                        step,
+                        &observablesReducer);
         if (DOMAINDECOMP(cr))
         {
             dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
@@ -509,9 +517,6 @@ void gmx::LegacySimulator::do_rerun()
          */
         calc_shifts(rerun_fr.box, fr->shift_vec);
     }
-
-    int64_t step     = ir->init_step;
-    int64_t step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
@@ -766,7 +771,9 @@ void gmx::LegacySimulator::do_rerun()
                             &signaller,
                             state->box,
                             &bSumEkinhOld,
-                            cglo_flags);
+                            cglo_flags,
+                            step,
+                            &observablesReducer);
             if (DOMAINDECOMP(cr))
             {
                 dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(

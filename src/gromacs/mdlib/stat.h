@@ -54,6 +54,7 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 class Constraints;
+class ObservablesReducer;
 } // namespace gmx
 
 typedef struct gmx_global_stat* gmx_global_stat_t;
@@ -63,18 +64,20 @@ gmx_global_stat_t global_stat_init(const t_inputrec* ir);
 void global_stat_destroy(gmx_global_stat_t gs);
 
 /*! \brief All-reduce energy-like quantities over cr->mpi_comm_mysim  */
-void global_stat(const gmx_global_stat& gs,
-                 const t_commrec*       cr,
-                 gmx_enerdata_t*        enerd,
-                 tensor                 fvir,
-                 tensor                 svir,
-                 const t_inputrec&      inputrec,
-                 gmx_ekindata_t*        ekind,
-                 gmx::ArrayRef<real>    constraintsRmsdData,
-                 t_vcm*                 vcm,
-                 gmx::ArrayRef<real>    sig,
-                 bool                   bSumEkinhOld,
-                 int                    flags);
+void global_stat(const gmx_global_stat&   gs,
+                 const t_commrec*         cr,
+                 gmx_enerdata_t*          enerd,
+                 tensor                   fvir,
+                 tensor                   svir,
+                 const t_inputrec&        inputrec,
+                 gmx_ekindata_t*          ekind,
+                 gmx::ArrayRef<real>      constraintsRmsdData,
+                 t_vcm*                   vcm,
+                 gmx::ArrayRef<real>      sig,
+                 bool                     bSumEkinhOld,
+                 int                      flags,
+                 int64_t                  step,
+                 gmx::ObservablesReducer* observablesReducer);
 
 /*! \brief Returns TRUE if io should be done */
 inline bool do_per_step(int64_t step, int64_t nstep)

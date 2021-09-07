@@ -69,6 +69,7 @@ namespace gmx
 class Constraints;
 class ForceBuffers;
 class MDLogger;
+class ObservablesReducer;
 class SimulationSignaller;
 class Update;
 enum class StartingBehavior : int;
@@ -91,6 +92,7 @@ enum class StartingBehavior : int;
  * \param[in]  vcm               Center of mass motion removal.
  * \param[in]  top               Local topology.
  * \param[in]  enerd             Energy data.
+ * \param[in]  observablesReducer Pointer to the \c ObservablesReducer object
  * \param[in]  ekind             Kinetic energy data.
  * \param[in]  gstat             Storage of thermodynamic parameters data.
  * \param[out] last_ekin         Kinetic energies of the last step.
@@ -133,6 +135,7 @@ void integrateVVFirstStep(int64_t                   step,
                           t_vcm*                    vcm,
                           const gmx_localtop_t&     top,
                           gmx_enerdata_t*           enerd,
+                          gmx::ObservablesReducer*  observablesReducer,
                           gmx_ekindata_t*           ekind,
                           gmx_global_stat*          gstat,
                           real*                     last_ekin,
@@ -174,6 +177,7 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  vcm               Center of mass motion removal.
  * \param[in]  pull_work         Pulling data.
  * \param[in]  enerd             Energy data.
+ * \param[in]  observablesReducer Pointer to the \c ObservablesReducer object
  * \param[in]  ekind             Kinetic energy data.
  * \param[in]  gstat             Storage of thermodynamic parameters data.
  * \param[out] dvdl_constr       FEP data for constraints.
@@ -197,36 +201,37 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  nrnb              Cycle counters.
  * \param[in]  wcycle            Wall-clock cycle counter.
  */
-void integrateVVSecondStep(int64_t                                                  step,
-                           const t_inputrec*                                        ir,
-                           t_forcerec*                                              fr,
-                           t_commrec*                                               cr,
-                           t_state*                                                 state,
-                           t_mdatoms*                                               mdatoms,
-                           t_fcdata*                                                fcdata,
-                           t_extmass*                                               MassQ,
-                           t_vcm*                                                   vcm,
-                           pull_t*                                                  pull_work,
-                           gmx_enerdata_t*                                          enerd,
-                           gmx_ekindata_t*                                          ekind,
-                           gmx_global_stat*                                         gstat,
-                           real*                                                    dvdl_constr,
-                           bool                                                     bCalcVir,
-                           tensor                                                   total_vir,
-                           tensor                                                   shake_vir,
-                           tensor                                                   force_vir,
-                           tensor                                                   pres,
-                           matrix                                                   M,
-                           matrix                                                   lastbox,
-                           bool                                                     do_log,
-                           bool                                                     do_ene,
-                           bool                                                     bGStat,
-                           bool*                                                    bSumEkinhOld,
-                           gmx::ForceBuffers*                                       f,
-                           std::vector<gmx::RVec>*                                  cbuf,
-                           gmx::Update*                                             upd,
-                           gmx::Constraints*                                        constr,
-                           gmx::SimulationSignaller*                                nullSignaller,
+void integrateVVSecondStep(int64_t                   step,
+                           const t_inputrec*         ir,
+                           t_forcerec*               fr,
+                           t_commrec*                cr,
+                           t_state*                  state,
+                           t_mdatoms*                mdatoms,
+                           t_fcdata*                 fcdata,
+                           t_extmass*                MassQ,
+                           t_vcm*                    vcm,
+                           pull_t*                   pull_work,
+                           gmx_enerdata_t*           enerd,
+                           gmx::ObservablesReducer*  observablesReducer,
+                           gmx_ekindata_t*           ekind,
+                           gmx_global_stat*          gstat,
+                           real*                     dvdl_constr,
+                           bool                      bCalcVir,
+                           tensor                    total_vir,
+                           tensor                    shake_vir,
+                           tensor                    force_vir,
+                           tensor                    pres,
+                           matrix                    M,
+                           matrix                    lastbox,
+                           bool                      do_log,
+                           bool                      do_ene,
+                           bool                      bGStat,
+                           bool*                     bSumEkinhOld,
+                           gmx::ForceBuffers*        f,
+                           std::vector<gmx::RVec>*   cbuf,
+                           gmx::Update*              upd,
+                           gmx::Constraints*         constr,
+                           gmx::SimulationSignaller* nullSignaller,
                            gmx::EnumerationArray<TrotterSequence, std::vector<int>> trotter_seq,
                            t_nrnb*                                                  nrnb,
                            gmx_wallcycle*                                           wcycle);
