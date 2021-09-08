@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,51 +34,67 @@
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for SYCL.
+ *  \brief Declares the GPU 3D FFT routines.
  *
- *  \author Andrey Alekseenko <al42and@gmail.com>
+ *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Gaurav Garg <gaugarg@nvidia.com>
  *  \ingroup module_fft
  */
 
-#include "gmxpre.h"
+#ifndef GMX_FFT_GPU_3DFFT_CUFFT_H
+#define GMX_FFT_GPU_3DFFT_CUFFT_H
 
-#include "gpu_3dfft_sycl.h"
+#include <memory>
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
+#include "gromacs/fft/fft.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gpu_3dfft_impl.h"
+
+#include <cufft.h>
+
+class DeviceContext;
+class DeviceStream;
 
 namespace gmx
 {
 
-// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-
-Gpu3dFft::ImplSycl::ImplSycl(bool /*allocateGrids*/,
-                             MPI_Comm /*comm*/,
-                             ArrayRef<const int> /*gridSizesInXForEachRank*/,
-                             ArrayRef<const int> /*gridSizesInYForEachRank*/,
-                             const int /*nz*/,
-                             bool /*performOutOfPlaceFFT*/,
-                             const DeviceContext& /*context*/,
-                             const DeviceStream& /*pmeStream*/,
-                             ivec /*realGridSize*/,
-                             ivec /*realGridSizePadded*/,
-                             ivec /*complexGridSizePadded*/,
-                             DeviceBuffer<float>* /*realGrid*/,
-                             DeviceBuffer<float>* /*complexGrid*/)
+/*! \internal \brief
+ * A 3D FFT wrapper class for performing R2C/C2R transforms using cuFFT
+ */
+class Gpu3dFft::ImplCuFft : public Gpu3dFft::Impl
 {
-    GMX_THROW(NotImplementedError("GPU 3DFFT is not implemented in SYCL"));
-}
+public:
+    //! \copydoc Gpu3dFft::Impl::Impl
+    ImplCuFft(bool                 allocateGrids,
+              MPI_Comm             comm,
+              ArrayRef<const int>  gridSizesInXForEachRank,
+              ArrayRef<const int>  gridSizesInYForEachRank,
+              int                  nz,
+              bool                 performOutOfPlaceFFT,
+              const DeviceContext& context,
+              const DeviceStream&  pmeStream,
+              ivec                 realGridSize,
+              ivec                 realGridSizePadded,
+              ivec                 complexGridSizePadded,
+              DeviceBuffer<float>* realGrid,
+              DeviceBuffer<float>* complexGrid);
 
-Gpu3dFft::ImplSycl::~ImplSycl() = default;
+    //! \copydoc Gpu3dFft::Impl::~Impl
+    ~ImplCuFft() override;
 
-void Gpu3dFft::ImplSycl::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
-{
-    GMX_THROW(NotImplementedError("Not implemented on SYCL yet"));
-}
+    //! \copydoc Gpu3dFft::Impl::perform3dFft
+    void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) override;
 
-#pragma clang diagnostic pop
+private:
+    cufftHandle   planR2C_;
+    cufftHandle   planC2R_;
+    cufftReal*    realGrid_;
+    cufftComplex* complexGrid_;
+};
 
 } // namespace gmx
+
+#endif

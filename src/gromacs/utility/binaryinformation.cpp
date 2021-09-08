@@ -204,8 +204,8 @@ void printCopyright(gmx::TextWriter* writer)
     }
 }
 
-// Construct a string that describes the library that provides FFT support to this build
-const char* getFftDescriptionString()
+//! Construct a string that describes the library that provides CPU FFT support to this build
+const char* getCpuFftDescriptionString()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -227,6 +227,35 @@ const char* getFftDescriptionString()
 #if GMX_FFT_FFTPACK
     return "fftpack (built-in)";
 #endif
+};
+
+//! Construct a string that describes the library that provides GPU FFT support to this build
+const char* getGpuFftDescriptionString()
+{
+    if (GMX_GPU)
+    {
+        if (GMX_GPU_CUDA)
+        {
+            return "cuFFT";
+        }
+        else if (GMX_GPU_OPENCL)
+        {
+            return "clFFT";
+        }
+        else if (GMX_GPU_SYCL)
+        {
+            return "unknown";
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
+            return "impossible";
+        }
+    }
+    else
+    {
+        return "none";
+    }
 };
 
 void gmx_print_version_info(gmx::TextWriter* writer)
@@ -309,7 +338,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
-    writer->writeLine(formatString("FFT library:        %s", getFftDescriptionString()));
+    writer->writeLine(formatString("CPU FFT library:    %s", getCpuFftDescriptionString()));
+    writer->writeLine(formatString("GPU FFT library:    %s", getGpuFftDescriptionString()));
 #if GMX_TARGET_X86
     writer->writeLine(formatString("RDTSCP usage:       %s", GMX_USE_RDTSCP ? "enabled" : "disabled"));
 #endif

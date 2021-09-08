@@ -36,53 +36,33 @@
 /*! \internal \file
  *  \brief Declares the GPU 3D FFT routines.
  *
- *  \author Aleksei Iupinov <a.yupinov@gmail.com>
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \author Gaurav Garg <gaugarg@nvidia.com>
  *  \ingroup module_fft
  */
 
-#ifndef GMX_FFT_GPU_3DFFT_H
-#define GMX_FFT_GPU_3DFFT_H
-
-#include <memory>
+#ifndef GMX_FFT_GPU_3DFFT_IMPL_H
+#define GMX_FFT_GPU_3DFFT_IMPL_H
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/utility/gmxmpi.h"
 
-class DeviceContext;
-class DeviceStream;
 
 namespace gmx
 {
-
-template<typename T>
-class ArrayRef;
-
 /*! \internal \brief
- * Enum specifying all GPU FFT backends supported by GROMACS
- * Some of the backends support only single GPU, some only multi-node, multi-GPU
+ * Impl base class for all FFT backends
  */
-enum class FftBackend
-{
-    Cufft, // supports only single-GPU
-    Ocl,   // supports only single-GPU
-    Sycl,  // Not supported currently
-    Count
-};
-
-/*! \internal \brief
- * A 3D FFT class for performing R2C/C2R transforms
- */
-class Gpu3dFft
+class Gpu3dFft::Impl
 {
 public:
+    //! Default constructor
+    Impl() = default;
+
     /*! \brief
-     * Construct 3D FFT object for given backend
+     * Constructs GPU FFT plans for performing 3D FFT on a PME grid.
      *
-     * \param[in]  backend                      FFT backend to be instantiated
      * \param[in]  allocateGrids                True if fft grids are to be allocated, false if pre-allocated
      * \param[in]  comm                         MPI communicator, used with distributed-FFT backends
      * \param[in]  gridSizesInXForEachRank      Number of grid points used with each rank in X-dimension
@@ -97,37 +77,25 @@ public:
      * \param[in,out]  realGrid                 Device buffer of floats for the local real grid, out if allocateGrids=true
      * \param[in,out]  complexGrid              Device buffer of complex floats for the local complex grid, out if allocateGrids=true
      */
-    Gpu3dFft(FftBackend           backend,
-             bool                 allocateGrids,
-             MPI_Comm             comm,
-             ArrayRef<const int>  gridSizesInXForEachRank,
-             ArrayRef<const int>  gridSizesInYForEachRank,
-             int                  nz,
-             bool                 performOutOfPlaceFFT,
-             const DeviceContext& context,
-             const DeviceStream&  pmeStream,
-             ivec                 realGridSize,
-             ivec                 realGridSizePadded,
-             ivec                 complexGridSizePadded,
-             DeviceBuffer<float>* realGrid,
-             DeviceBuffer<float>* complexGrid);
+    Impl(bool                 allocateGrids,
+         MPI_Comm             comm,
+         ArrayRef<const int>  gridSizesInXForEachRank,
+         ArrayRef<const int>  gridSizesInYForEachRank,
+         int                  nz,
+         bool                 performOutOfPlaceFFT,
+         const DeviceContext& context,
+         const DeviceStream&  pmeStream,
+         ivec                 realGridSize,
+         ivec                 realGridSizePadded,
+         ivec                 complexGridSizePadded,
+         DeviceBuffer<float>* realGrid,
+         DeviceBuffer<float>* complexGrid);
 
-    /*! \brief Destroys the FFT plans. */
-    ~Gpu3dFft();
-    /*! \brief Performs the FFT transform in given direction
-     *
-     * \param[in]  dir           FFT transform direction specifier
-     * \param[out] timingEvent   pointer to the timing event where timing data is recorded
-     */
-    void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent);
+    /*! \brief Default destructor */
+    virtual ~Impl() = default;
 
-private:
-    class Impl;
-    class ImplCuFft;
-    class ImplOcl;
-    class ImplSycl;
-
-    std::unique_ptr<Impl> impl_;
+    //! \copydoc Gpu3dFft::perform3dFft
+    virtual void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) = 0;
 };
 
 } // namespace gmx

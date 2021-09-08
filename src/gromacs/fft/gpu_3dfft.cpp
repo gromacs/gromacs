@@ -37,13 +37,24 @@
  *  \brief Implements stub GPU 3D FFT routines for CPU-only builds
  *
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Gaurav Garg <gaugarg@nvidia.com>
  *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
 #include "gpu_3dfft.h"
+#include "gpu_3dfft_impl.h"
 
+#if GMX_GPU_CUDA
+#    include "gpu_3dfft_cufft.h"
+#elif GMX_GPU_OPENCL
+#    include "gpu_3dfft_ocl.h"
+#elif GMX_GPU_SYCL
+#    include "gpu_3dfft_sycl.h"
+#endif
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
@@ -55,29 +66,114 @@ namespace gmx
 #    pragma clang diagnostic ignored "-Wmissing-noreturn"
 #endif
 
-class Gpu3dFft::Impl
-{
-};
+#if (GMX_GPU_CUDA || GMX_GPU_OPENCL || GMX_GPU_SYCL)
 
-Gpu3dFft::Gpu3dFft(ivec /*realGridSize*/,
-                   ivec /*realGridSizePadded*/,
-                   ivec /*complexGridSizePadded*/,
-                   const bool /*useDecomposition*/,
-                   const bool /*performOutOfPlaceFFT*/,
+Gpu3dFft::Gpu3dFft(FftBackend           backend,
+                   bool                 allocateGrids,
+                   MPI_Comm             comm,
+                   ArrayRef<const int>  gridSizesInXForEachRank,
+                   ArrayRef<const int>  gridSizesInYForEachRank,
+                   const int            nz,
+                   bool                 performOutOfPlaceFFT,
+                   const DeviceContext& context,
+                   const DeviceStream&  pmeStream,
+                   ivec                 realGridSize,
+                   ivec                 realGridSizePadded,
+                   ivec                 complexGridSizePadded,
+                   DeviceBuffer<float>* realGrid,
+                   DeviceBuffer<float>* complexGrid)
+{
+#    if GMX_GPU_CUDA
+    switch (backend)
+    {
+        case FftBackend::Cufft:
+            impl_ = std::make_unique<Gpu3dFft::ImplCuFft>(allocateGrids,
+                                                          comm,
+                                                          gridSizesInXForEachRank,
+                                                          gridSizesInYForEachRank,
+                                                          nz,
+                                                          performOutOfPlaceFFT,
+                                                          context,
+                                                          pmeStream,
+                                                          realGridSize,
+                                                          realGridSizePadded,
+                                                          complexGridSizePadded,
+                                                          realGrid,
+                                                          complexGrid);
+            break;
+        default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
+    }
+#    elif GMX_GPU_OPENCL
+    switch (backend)
+    {
+        case FftBackend::Ocl:
+            impl_ = std::make_unique<Gpu3dFft::ImplOcl>(allocateGrids,
+                                                        comm,
+                                                        gridSizesInXForEachRank,
+                                                        gridSizesInYForEachRank,
+                                                        nz,
+                                                        performOutOfPlaceFFT,
+                                                        context,
+                                                        pmeStream,
+                                                        realGridSize,
+                                                        realGridSizePadded,
+                                                        complexGridSizePadded,
+                                                        realGrid,
+                                                        complexGrid);
+            break;
+        default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
+    }
+#    elif GMX_GPU_SYCL
+    switch (backend)
+    {
+        case FftBackend::Sycl:
+            impl_ = std::make_unique<Gpu3dFft::ImplSycl>(allocateGrids,
+                                                         comm,
+                                                         gridSizesInXForEachRank,
+                                                         gridSizesInYForEachRank,
+                                                         nz,
+                                                         performOutOfPlaceFFT,
+                                                         context,
+                                                         pmeStream,
+                                                         realGridSize,
+                                                         realGridSizePadded,
+                                                         complexGridSizePadded,
+                                                         realGrid,
+                                                         complexGrid);
+            break;
+        default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
+    }
+#    endif
+}
+
+#else
+
+Gpu3dFft::Gpu3dFft(FftBackend /*backend */,
+                   bool /*allocateGrids*/,
+                   MPI_Comm /*comm*/,
+                   ArrayRef<const int> /*gridSizesInXForEachRank*/,
+                   ArrayRef<const int> /*gridSizesInYForEachRank*/,
+                   const int /*nz*/,
+                   bool /*performOutOfPlaceFFT*/,
                    const DeviceContext& /*context*/,
                    const DeviceStream& /*pmeStream*/,
-                   DeviceBuffer<float> /*realGrid*/,
-                   DeviceBuffer<float> /*complexGrid*/)
+                   ivec /*realGridSize*/,
+                   ivec /*realGridSizePadded*/,
+                   ivec /*complexGridSizePadded*/,
+                   DeviceBuffer<float>* /*realGrid*/,
+                   DeviceBuffer<float>* /*complexGrid*/)
 {
     GMX_THROW(InternalError("Cannot run GPU routines in a CPU-only configuration"));
 }
 
+#endif
+
 Gpu3dFft::~Gpu3dFft() = default;
 
-// NOLINTNEXTLINE readability-convert-member-functions-to-static
-void Gpu3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent)
 {
-    GMX_THROW(InternalError("Cannot run GPU routines in a CPU-only configuration"));
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Cannot run GPU routines in a CPU-only configuration");
+    impl_->perform3dFft(dir, timingEvent);
 }
 
 #ifdef __clang__

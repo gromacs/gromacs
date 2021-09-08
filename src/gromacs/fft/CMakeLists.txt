@@ -40,6 +40,7 @@ gmx_add_libgromacs_sources(
      fft.cpp
      fft5d.cpp
      parallel_3dfft.cpp
+     gpu_3dfft.cpp
      )
 
 if (GMX_FFT_FFTPACK)
@@ -57,7 +58,11 @@ endif()
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
-        gpu_3dfft.cu
+        gpu_3dfft_cufft.cu
+        )
+    _gmx_add_files_to_property(CUDA_SOURCES
+        # Must add these files so they can include cuda_runtime.h
+        gpu_3dfft.cpp
         )
 elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
@@ -71,12 +76,8 @@ elseif (GMX_GPU_SYCL)
         gpu_3dfft_sycl.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
-        gpu_3dfft_sycl.cpp
-        )
-else()
-    gmx_add_libgromacs_sources(
-        # Stub sources for CPU-only build
         gpu_3dfft.cpp
+        gpu_3dfft_sycl.cpp
         )
 endif()
 
