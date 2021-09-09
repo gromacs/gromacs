@@ -197,174 +197,6 @@ bool isPairInteraction(int ftype)
     return ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB);
 }
 
-/*! \brief Zero thread-local output buffers */
-void zero_thread_output(f_thread_t* f_t)
-{
-    constexpr int nelem_fa = sizeof(f_t->f[0]) / sizeof(real);
-
-    for (int i = 0; i < f_t->nblock_used; i++)
-    {
-        int a0 = f_t->block_index[i] * reduction_block_size;
-        int a1 = a0 + reduction_block_size;
-        for (int a = a0; a < a1; a++)
-        {
-            for (int d = 0; d < nelem_fa; d++)
-            {
-                f_t->f[a][d] = 0;
-            }
-        }
-    }
-
-    for (int i = 0; i < gmx::c_numShiftVectors; i++)
-    {
-        clear_rvec(f_t->fshift[i]);
-    }
-    for (int i = 0; i < F_NRE; i++)
-    {
-        f_t->ener[i] = 0;
-    }
-    for (int i = 0; i < static_cast<int>(NonBondedEnergyTerms::Count); i++)
-    {
-        for (int j = 0; j < f_t->grpp.nener; j++)
-        {
-            f_t->grpp.energyGroupPairTerms[i][j] = 0;
-        }
-    }
-    for (auto i : keysOf(f_t->dvdl))
-    {
-        f_t->dvdl[i] = 0;
-    }
-}
-
-/*! \brief The max thread number is arbitrary, we used a fixed number
- * to avoid memory management.  Using more than 16 threads is probably
- * never useful performance wise. */
-#define MAX_BONDED_THREADS 256
-
-/*! \brief Reduce thread-local force buffers */
-void reduce_thread_forces(gmx::ArrayRef<gmx::RVec> force, const bonded_threading_t* bt, int nthreads)
-{
-    if (nthreads > MAX_BONDED_THREADS)
-    {
-        gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads", MAX_BONDED_THREADS);
-    }
-
-    rvec* gmx_restrict f = as_rvec_array(force.data());
-
-    const int numAtomsForce = bt->numAtomsForce;
-
-    /* This reduction can run on any number of threads,
-     * independently of bt->nthreads.
-     * But if nthreads matches bt->nthreads (which it currently does)
-     * the uniform distribution of the touched blocks over nthreads will
-     * match the distribution of bonded over threads well in most cases,
-     * which means that threads mostly reduce their own data which increases
-     * the number of cache hits.
-     */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int b = 0; b < bt->nblock_used; b++)
-    {
-        try
-        {
-            int    ind = bt->block_index[b];
-            rvec4* fp[MAX_BONDED_THREADS];
-
-            /* Determine which threads contribute to this block */
-            int nfb = 0;
-            for (int ft = 0; ft < bt->nthreads; ft++)
-            {
-                if (bitmask_is_set(bt->mask[ind], ft))
-                {
-                    fp[nfb++] = bt->f_t[ft]->f;
-                }
-            }
-            if (nfb > 0)
-            {
-                /* Reduce force buffers for threads that contribute */
-                int a0 = ind * reduction_block_size;
-                int a1 = (ind + 1) * reduction_block_size;
-                /* It would be nice if we could pad f to avoid this min */
-                a1 = std::min(a1, numAtomsForce);
-                for (int a = a0; a < a1; a++)
-                {
-                    for (int fb = 0; fb < nfb; fb++)
-                    {
-                        rvec_inc(f[a], fp[fb][a]);
-                    }
-                }
-            }
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-}
-
-/*! \brief Reduce thread-local forces, shift forces and energies */
-void reduce_thread_output(gmx::ForceWithShiftForces* forceWithShiftForces,
-                          real*                      ener,
-                          gmx_grppairener_t*         grpp,
-                          gmx::ArrayRef<real>        dvdl,
-                          const bonded_threading_t*  bt,
-                          const gmx::StepWorkload&   stepWork)
-{
-    assert(bt->haveBondeds);
-
-    if (bt->nblock_used > 0)
-    {
-        /* Reduce the bonded force buffer */
-        reduce_thread_forces(forceWithShiftForces->force(), bt, bt->nthreads);
-    }
-
-    rvec* gmx_restrict fshift = as_rvec_array(forceWithShiftForces->shiftForces().data());
-
-    /* When necessary, reduce energy and virial using one thread only */
-    if ((stepWork.computeEnergy || stepWork.computeVirial || stepWork.computeDhdl) && bt->nthreads > 1)
-    {
-        gmx::ArrayRef<const std::unique_ptr<f_thread_t>> f_t = bt->f_t;
-
-        if (stepWork.computeVirial)
-        {
-            for (int i = 0; i < gmx::c_numShiftVectors; i++)
-            {
-                for (int t = 1; t < bt->nthreads; t++)
-                {
-                    rvec_inc(fshift[i], f_t[t]->fshift[i]);
-                }
-            }
-        }
-        if (stepWork.computeEnergy)
-        {
-            for (int i = 0; i < F_NRE; i++)
-            {
-                for (int t = 1; t < bt->nthreads; t++)
-                {
-                    ener[i] += f_t[t]->ener[i];
-                }
-            }
-            for (int i = 0; i < static_cast<int>(NonBondedEnergyTerms::Count); i++)
-            {
-                for (int j = 0; j < f_t[1]->grpp.nener; j++)
-                {
-                    for (int t = 1; t < bt->nthreads; t++)
-                    {
-                        grpp->energyGroupPairTerms[i][j] += f_t[t]->grpp.energyGroupPairTerms[i][j];
-                    }
-                }
-            }
-        }
-        if (stepWork.computeDhdl)
-        {
-            for (auto i : keysOf(f_t[1]->dvdl))
-            {
-
-                for (int t = 1; t < bt->nthreads; t++)
-                {
-                    dvdl[static_cast<int>(i)] += f_t[t]->dvdl[i];
-                }
-            }
-        }
-    }
-}
-
 /*! \brief Returns the bonded kernel flavor
  *
  * Note that energies are always requested when the virial
@@ -557,18 +389,16 @@ static void calcBondedForces(const InteractionDefinitions& idef,
     {
         try
         {
-            f_thread_t& threadBuffers = *bt->f_t[thread];
-            int         ftype;
-            real        v;
+            auto& threadBuffer = bt->threadedForceBuffer.threadForceBuffer(thread);
             /* thread stuff */
             rvec*               fshift;
             gmx::ArrayRef<real> dvdlt;
             gmx::ArrayRef<real> epot;
             gmx_grppairener_t*  grpp;
 
-            zero_thread_output(&threadBuffers);
+            threadBuffer.clearForcesAndEnergies();
 
-            rvec4* ft = threadBuffers.f;
+            rvec4* ft = threadBuffer.forceBuffer();
 
             /* Thread 0 writes directly to the main output buffers.
              * We might want to reconsider this.
@@ -582,37 +412,38 @@ static void calcBondedForces(const InteractionDefinitions& idef,
             }
             else
             {
-                fshift = as_rvec_array(threadBuffers.fshift.data());
-                epot   = threadBuffers.ener;
-                grpp   = &threadBuffers.grpp;
-                dvdlt  = threadBuffers.dvdl;
+                fshift = as_rvec_array(threadBuffer.shiftForces().data());
+                epot   = threadBuffer.energyTerms();
+                grpp   = &threadBuffer.groupPairEnergies();
+                dvdlt  = threadBuffer.dvdl();
             }
             /* Loop over all bonded force types to calculate the bonded forces */
-            for (ftype = 0; (ftype < F_NRE); ftype++)
+            for (int ftype = 0; (ftype < F_NRE); ftype++)
             {
                 const InteractionList& ilist = idef.il[ftype];
                 if (!ilist.empty() && ftype_is_bonded_potential(ftype))
                 {
                     ArrayRef<const int> iatoms = gmx::makeConstArrayRef(ilist.iatoms);
-                    v                          = calc_one_bond(thread,
-                                      ftype,
-                                      idef,
-                                      iatoms,
-                                      idef.numNonperturbedInteractions[ftype],
-                                      bt->workDivision,
-                                      x,
-                                      ft,
-                                      fshift,
-                                      fr,
-                                      pbc_null,
-                                      grpp,
-                                      nrnb,
-                                      lambda,
-                                      dvdlt,
-                                      md,
-                                      fcd,
-                                      stepWork,
-                                      global_atom_index);
+
+                    real v = calc_one_bond(thread,
+                                           ftype,
+                                           idef,
+                                           iatoms,
+                                           idef.numNonperturbedInteractions[ftype],
+                                           bt->workDivision,
+                                           x,
+                                           ft,
+                                           fshift,
+                                           fr,
+                                           pbc_null,
+                                           grpp,
+                                           nrnb,
+                                           lambda,
+                                           dvdlt,
+                                           md,
+                                           fcd,
+                                           stepWork,
+                                           global_atom_index);
                     epot[ftype] += v;
                 }
             }
@@ -683,7 +514,8 @@ void calc_listed(struct gmx_wallcycle*         wcycle,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::Listed);
 
         wallcycle_sub_start(wcycle, WallCycleSubCounter::ListedBufOps);
-        reduce_thread_output(&forceWithShiftForces, enerd->term.data(), &enerd->grpp, dvdl, bt, stepWork);
+        bt->threadedForceBuffer.reduce(
+                &forceWithShiftForces, enerd->term.data(), &enerd->grpp, dvdl, stepWork, 1);
 
         if (stepWork.computeDhdl)
         {

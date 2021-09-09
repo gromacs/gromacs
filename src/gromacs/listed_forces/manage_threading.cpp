@@ -328,11 +328,11 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
 }
 
 //! Construct a reduction mask for which parts (blocks) of the force array are touched on which thread task
-static void calc_bonded_reduction_mask(int                           natoms,
-                                       f_thread_t*                   f_thread,
-                                       const InteractionDefinitions& idef,
-                                       int                           thread,
-                                       const bonded_threading_t&     bondedThreading)
+static void calc_bonded_reduction_mask(int                            natoms,
+                                       gmx::ThreadForceBuffer<rvec4>* f_thread,
+                                       const InteractionDefinitions&  idef,
+                                       int                            thread,
+                                       const bonded_threading_t&      bondedThreading)
 {
     static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS,
                   "For the error message below we assume these two are equal.");
@@ -349,20 +349,8 @@ static void calc_bonded_reduction_mask(int                           natoms,
     GMX_ASSERT(bondedThreading.nthreads <= BITMASK_SIZE,
                "We need at least nthreads bits in the mask");
 
-    const int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
 
-    f_thread->mask.resize(nblock);
-    f_thread->block_index.resize(nblock);
-    // NOTE: It seems f_thread->f does not need to be aligned
-    f_thread->fBuffer.resize(nblock * reduction_block_size * sizeof(rvec4) / sizeof(real));
-    f_thread->f = reinterpret_cast<rvec4*>(f_thread->fBuffer.data());
-
-    for (gmx_bitmask_t& mask : f_thread->mask)
-    {
-        bitmask_clear(&mask);
-    }
-
-    gmx::ArrayRef<gmx_bitmask_t> mask = f_thread->mask;
+    f_thread->resizeBufferAndClearMask(natoms);
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -380,24 +368,14 @@ static void calc_bonded_reduction_mask(int                           natoms,
                 {
                     for (int a = 1; a < nat1; a++)
                     {
-                        bitmask_set_bit(&mask[idef.il[ftype].iatoms[i + a] >> reduction_block_bits], thread);
+                        f_thread->addAtomToMask(idef.il[ftype].iatoms[i + a]);
                     }
                 }
             }
         }
     }
 
-    /* Make an index of the blocks our thread touches, so we can do fast
-     * force buffer clearing.
-     */
-    f_thread->nblock_used = 0;
-    for (int b = 0; b < nblock; b++)
-    {
-        if (bitmask_is_set(mask[b], thread))
-        {
-            f_thread->block_index[f_thread->nblock_used++] = b;
-        }
-    }
+    f_thread->processMask();
 }
 
 void setup_bonded_threading(bonded_threading_t*           bt,
@@ -405,11 +383,7 @@ void setup_bonded_threading(bonded_threading_t*           bt,
                             bool                          useGpuForBondeds,
                             const InteractionDefinitions& idef)
 {
-    int ctot = 0;
-
     assert(bt->nthreads >= 1);
-
-    bt->numAtomsForce = numAtomsForce;
 
     /* Divide the bonded interaction over the threads */
     divide_bondeds_over_threads(bt, useGpuForBondeds, idef);
@@ -428,101 +402,29 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     {
         try
         {
-            calc_bonded_reduction_mask(numAtomsForce, bt->f_t[t].get(), idef, t, *bt);
+            calc_bonded_reduction_mask(
+                    numAtomsForce, &bt->threadedForceBuffer.threadForceBuffer(t), idef, t, *bt);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    /* Reduce the masks over the threads and determine which blocks
-     * we need to reduce over.
-     */
-    int nblock_tot = (numAtomsForce + reduction_block_size - 1) >> reduction_block_bits;
-    /* Ensure we have sufficient space for all blocks */
-    if (static_cast<size_t>(nblock_tot) > bt->block_index.size())
-    {
-        bt->block_index.resize(nblock_tot);
-    }
-    if (static_cast<size_t>(nblock_tot) > bt->mask.size())
-    {
-        bt->mask.resize(nblock_tot);
-    }
-    bt->nblock_used = 0;
-    for (int b = 0; b < nblock_tot; b++)
-    {
-        gmx_bitmask_t* mask = &bt->mask[b];
-
-        /* Generate the union over the threads of the bitmask */
-        bitmask_clear(mask);
-        for (int t = 0; t < bt->nthreads; t++)
-        {
-            bitmask_union(mask, bt->f_t[t]->mask[b]);
-        }
-        if (!bitmask_is_zero(*mask))
-        {
-            bt->block_index[bt->nblock_used++] = b;
-        }
-
-        if (debug)
-        {
-            int c = 0;
-            for (int t = 0; t < bt->nthreads; t++)
-            {
-                if (bitmask_is_set(*mask, t))
-                {
-                    c++;
-                }
-            }
-            ctot += c;
-
-            if (gmx_debug_at)
-            {
-                fprintf(debug, "block %d flags %s count %d\n", b, to_hex_string(*mask).c_str(), c);
-            }
-        }
-    }
-    if (debug)
-    {
-        fprintf(debug, "Number of %d atom blocks to reduce: %d\n", reduction_block_size, bt->nblock_used);
-        fprintf(debug,
-                "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot * reduction_block_size / static_cast<double>(numAtomsForce),
-                ctot / static_cast<double>(bt->nblock_used));
-    }
-}
-
-f_thread_t::f_thread_t(int numEnergyGroups) : fshift(gmx::c_numShiftVectors), grpp(numEnergyGroups)
-{
+    bt->threadedForceBuffer.setupReduction();
 }
 
 bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups, FILE* fplog) :
     nthreads(numThreads),
-    nblock_used(0),
+    threadedForceBuffer(numThreads, numEnergyGroups),
     haveBondeds(false),
     workDivision(nthreads),
     foreignLambdaWorkDivision(1)
 {
-    /* These thread local data structures are used for bondeds only.
-     *
-     * Note that we also use there structures when running single-threaded.
+    /* Note that we also use threadedForceBuffer when running single-threaded.
      * This is because the bonded force buffer uses type rvec4, whereas
      * the normal force buffer is uses type rvec. This leads to a little
      * reduction overhead, but the speed gain in the bonded calculations
      * of doing transposeScatterIncr/DecrU with aligment 4 instead of 3
      * is much larger than the reduction overhead.
      */
-    f_t.resize(numThreads);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int t = 0; t < nthreads; t++)
-    {
-        try
-        {
-            /* Note that thread 0 uses the global fshift and energy arrays,
-             * but to keep the code simple, we initialize all data here.
-             */
-            f_t[t] = std::make_unique<f_thread_t>(numEnergyGroups);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
 
     /* The optimal value after which to switch from uniform to localized
      * bonded interaction distribution is 3, 4 or 5 depending on the system

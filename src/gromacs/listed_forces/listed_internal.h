@@ -49,19 +49,13 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/threaded_force_buffer.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
-
-/* We reduce the force array in blocks of 32 atoms. This is large enough
- * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
- * size on all systems.
- */
-static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
-static const int reduction_block_bits = 5;  /**< log2(reduction_block_size) */
 
 /*! \internal \brief The division of bonded interactions of the threads */
 class WorkDivision
@@ -92,37 +86,6 @@ private:
     std::vector<int> packedBounds_;
 };
 
-/*! \internal \brief struct with output for bonded forces, used per thread */
-struct f_thread_t
-{
-    //! Constructor
-    f_thread_t(int numEnergyGroups);
-
-    ~f_thread_t() = default;
-
-    //! Force array pointer, equals fBuffer.data(), needed because rvec4 is not a C++ type
-    rvec4* f = nullptr;
-    //! Force array buffer
-    std::vector<real, gmx::AlignedAllocator<real>> fBuffer;
-    //! Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t
-    std::vector<gmx_bitmask_t> mask;
-    //! Number of blocks touched by our thread
-    int nblock_used = 0;
-    //! Index to touched blocks
-    std::vector<int> block_index;
-
-    //! Shift force array, size c_numShiftVectors
-    std::vector<gmx::RVec> fshift;
-    //! Energy array
-    real ener[F_NRE];
-    //! Group pair energy data for pairs
-    gmx_grppairener_t grpp;
-    //! Free-energy dV/dl output
-    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl;
-
-    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(f_thread_t);
-};
-
 /*! \internal \brief struct contain all data for bonded force threading */
 struct bonded_threading_t
 {
@@ -131,18 +94,10 @@ struct bonded_threading_t
 
     //! Number of threads to be used for bondeds
     int nthreads = 0;
-    //! Force/energy data per thread, size nthreads, stored in unique_ptr to allow thread local allocation
-    std::vector<std::unique_ptr<f_thread_t>> f_t;
-    //! The number of force blocks to reduce
-    int nblock_used = 0;
-    //! Index of size nblock_used into mask
-    std::vector<int> block_index;
-    //! Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block
-    std::vector<gmx_bitmask_t> mask;
+    //! The thread parallel force and energy buffers
+    gmx::ThreadedForceBuffer<rvec4> threadedForceBuffer;
     //! true if we have and thus need to reduce bonded forces
     bool haveBondeds = false;
-    //! The number of atoms forces are computed for
-    int numAtomsForce = 0;
 
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We decide which to use based on the number of threads.
