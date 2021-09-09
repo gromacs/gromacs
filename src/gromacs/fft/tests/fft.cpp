@@ -406,7 +406,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         const FftBackend backend = FftBackend::Ocl;
 #    endif
         const bool         performOutOfPlaceFFT    = true;
-        const MPI_Comm     comm                    = MPI_COMM_NULL;
+        MPI_Comm           comm                    = MPI_COMM_NULL;
         const bool         allocateGrid            = false;
         std::array<int, 1> gridSizesInXForEachRank = { 0 };
         std::array<int, 1> gridSizesInYForEachRank = { 0 };
