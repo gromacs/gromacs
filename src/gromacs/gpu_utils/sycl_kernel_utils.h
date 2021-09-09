@@ -73,7 +73,8 @@ static inline T atomicLoad(T& val)
  * Equivalent with CUDA's \c syncwarp(c_cudaFullWarpMask).
  *
  */
-static inline void subGroupBarrier(const cl::sycl::nd_item<1> itemIdx)
+template<int Dim>
+static inline void subGroupBarrier(const cl::sycl::nd_item<Dim> itemIdx)
 {
 #if GMX_SYCL_HIPSYCL
     cl::sycl::group_barrier(itemIdx.get_sub_group(), cl::sycl::memory_scope::sub_group);

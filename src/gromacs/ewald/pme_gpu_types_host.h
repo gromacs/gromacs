@@ -62,11 +62,6 @@
 #include "pme_gpu_settings.h"
 #include "pme_gpu_staging.h"
 
-namespace gmx
-{
-class PmeDeviceBuffers;
-} // namespace gmx
-
 #if GMX_GPU
 struct PmeGpuSpecific;
 #else

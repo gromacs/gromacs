@@ -195,6 +195,8 @@ struct EmptyClassThatIgnoresConstructorArguments
     [[maybe_unused]] EmptyClassThatIgnoresConstructorArguments(Args&&... /*args*/)
     {
     }
+    //! Allow casting to nullptr
+    constexpr operator std::nullptr_t() const { return nullptr; }
 };
 } // namespace gmx::internal
 
