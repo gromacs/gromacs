@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
- * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -438,7 +438,7 @@ private:
  * data.  Each frame contains the histogram(s) for the points in that frame,
  * interpreted such that the first column passed to pointsAdded() determines
  * the bin and the rest give weights to be added to that bin (input data should
- * have at least two colums, and at least two columns should be added at the
+ * have at least two columns, and at least two columns should be added at the
  * same time).
  * Each input data set is processed independently into the corresponding output
  * data set.
@@ -502,7 +502,7 @@ private:
  * that bin.
  * The input data is interpreted such that the first column passed to
  * pointsAdded() determines the bin and the rest give values to be added to
- * that bin (input data should have at least two colums, and at least two
+ * that bin (input data should have at least two columns, and at least two
  * columns should be added at the same time).
  * All input columns for a data set are averaged into the same histogram.
  *

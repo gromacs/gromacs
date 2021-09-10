@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -467,7 +467,7 @@ int gmx_trjconv(int argc, char* argv[])
           FALSE,
           etBOOL,
           { &bCONECT },
-          "Add conect records when writing [REF].pdb[ref] files. Useful "
+          "Add CONECT PDB records when writing [REF].pdb[ref] files. Useful "
           "for visualization of non-standard molecules, e.g. "
           "coarse grained ones" }
     };
@@ -593,7 +593,7 @@ int gmx_trjconv(int argc, char* argv[])
                 fprintf(stderr,
                         "WARNING: Option for unitcell representation (-ur %s)\n"
                         "         only has effect in combination with -pbc %s, %s or %s.\n"
-                        "         Ingoring unitcell representation.\n\n",
+                        "         Ignoring unitcell representation.\n\n",
                         unitcell_opt[0], pbc_opt[2], pbc_opt[3], pbc_opt[4]);
             }
         }

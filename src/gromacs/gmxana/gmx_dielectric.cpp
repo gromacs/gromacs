@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -334,7 +334,7 @@ int gmx_dielectric(int argc, char* argv[])
     dt     = yd[0][1] - yd[0][0];
     nxtail = std::min(static_cast<int>(tail / dt), nx);
 
-    printf("Read data set containing %d colums and %d rows\n", ny, nx);
+    printf("Read data set containing %d columns and %d rows\n", ny, nx);
     printf("Assuming (from data) that timestep is %g, nxtail = %d\n", dt, nxtail);
     snew(y, 6);
     for (i = 0; (i < ny); i++)

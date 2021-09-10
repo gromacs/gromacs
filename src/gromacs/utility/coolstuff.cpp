@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -295,7 +295,7 @@ std::string getCoolQuote()
         { "With a Lead Filled Snowshoe", "F. Zappa" },
         { "Right Between the Eyes", "F. Zappa" },
         { "BioBeat is Not Available In Regular Shops", "P.J. Meulenhoff" },
-        { "Rub It Right Accross Your Eyes", "F. Zappa" },
+        { "Rub It Right Across Your Eyes", "F. Zappa" },
         { "Shake Yourself", "YES" },
         { "I Am a Wonderful Thing", "Kid Creole" },
         { "Way to Go Dude", "Beavis and Butthead" },

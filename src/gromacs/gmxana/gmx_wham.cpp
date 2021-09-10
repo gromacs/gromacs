@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,7 +135,7 @@ enum
     bsMethod_trajGauss
 };
 
-//! Parameters of one pull coodinate
+//! Parameters of one pull coordinate
 typedef struct
 {
     int  pull_type;       //!< such as constraint, umbrella, ...
@@ -187,8 +187,8 @@ typedef struct
     double*  k;     //!< force constants for the nPull coords
     double*  pos;   //!< umbrella positions for the nPull coords
     double* z; //!< z=(-Fi/kT) for the nPull coords. These values are iteratively computed during wham
-    int* N;    //!< nr of data points in nPull histograms.
-    int* Ntot; //!< also nr of data points. N and Ntot only differ if bHistEq==TRUE
+    int*    N;    //!< nr of data points in nPull histograms.
+    int*    Ntot; //!< also nr of data points. N and Ntot only differ if bHistEq==TRUE
 
     /*! \brief  g = 1 + 2*tau[int]/dt where tau is the integrated autocorrelation time.
      *
@@ -244,10 +244,10 @@ typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Paddin
      * \name Basic WHAM options
      */
     /*!\{*/
-    int      bins; //!< nr of bins, min, max, and dz of profile
-    real     min, max, dz;
-    real     Temperature, Tolerance; //!< temperature, converged when probability changes less than Tolerance
-    gmx_bool bCycl;                  //!< generate cyclic (periodic) PMF
+    int  bins; //!< nr of bins, min, max, and dz of profile
+    real min, max, dz;
+    real Temperature, Tolerance; //!< temperature, converged when probability changes less than Tolerance
+    gmx_bool bCycl;              //!< generate cyclic (periodic) PMF
     /*!\}*/
     /*!
      * \name Output control
@@ -2123,7 +2123,7 @@ static void read_tpr_header(const char* fn, t_UmbrellaHeader* header, t_Umbrella
                 gmx_fatal(FARGS,
                           "%s: Pull coordinate %d is of type \"%s\", expected \"umbrella\". Only "
                           "umbrella coodinates can enter WHAM.\n"
-                          "If you have umrella and non-umbrella coordinates, you can select the "
+                          "If you have umbrella and non-umbrella coordinates, you can select the "
                           "umbrella coordinates with gmx wham -is\n",
                           fn, i + 1, epull_names[header->pcrd[i].pull_type]);
             }
