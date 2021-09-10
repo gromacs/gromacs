@@ -13,6 +13,13 @@ undetectable.
 
 :issue:`3866`
 
+Correct dVremain/dl when nstdhdl > nstcalcenergy
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+When nstcalcenergy was not a multiple of nstdhdl, incorrect dVremain/dl
+terms were written in the energy file. Note that all dH/dl output in
+both dhdl.xvg and the energy file, which is used by e.g. gmx bar, was correct.
+
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.

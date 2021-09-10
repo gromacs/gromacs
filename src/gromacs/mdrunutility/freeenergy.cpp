@@ -61,9 +61,13 @@ int computeFepPeriod(const t_inputrec& inputrec, const ReplicaExchangeParameters
     }
 
     // Set free energy calculation period as the greatest common
-    // denominator of nstdhdl, nstexpanded, replica exchange interval,
+    // denominator of nstdhdl, nstcalcenergy, nstexpanded, replica exchange interval,
     // and AWH nstSampleCoord.
     int nstfep = inputrec.fepvals->nstdhdl;
+    if (inputrec.nstcalcenergy > 0)
+    {
+        nstfep = std::gcd(inputrec.nstcalcenergy, nstfep);
+    }
     if (inputrec.bExpanded)
     {
         nstfep = std::gcd(inputrec.expandedvals->nstexpanded, nstfep);

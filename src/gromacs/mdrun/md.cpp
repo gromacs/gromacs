@@ -171,7 +171,7 @@ void gmx::LegacySimulator::do_md()
     double       t, t0 = ir->init_t;
     gmx_bool     bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
     gmx_bool     bNS = FALSE, bNStList, bStopCM, bFirstStep, bInitStep, bLastStep = FALSE;
-    gmx_bool     bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
+    gmx_bool     bDoExpanded = FALSE;
     gmx_bool     do_ene, do_log, do_verbose;
     gmx_bool     bMasterState;
     unsigned int force_flags;
@@ -896,8 +896,6 @@ void gmx::LegacySimulator::do_md()
             /* find and set the current lambdas */
             state->lambda = currentLambdas(step, *(ir->fepvals), state->fep_state);
 
-            bDoDHDL = do_per_step(step, ir->fepvals->nstdhdl);
-            bDoFEP  = ((ir->efep != FreeEnergyPerturbationType::No) && do_per_step(step, nstfep));
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
                            && (!bFirstStep));
         }
@@ -1111,13 +1109,17 @@ void gmx::LegacySimulator::do_md()
             bCalcEner = TRUE;
         }
 
+        // bCalcEner is only here for when the last step is not a mulitple of nstfep
+        const bool computeDHDL = ((ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp)
+                                  && (do_per_step(step, nstfep) || bCalcEner));
+
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM || do_per_step(step, nstglobalcomm)
                   || (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step - 1, nstglobalcomm)));
 
         force_flags = (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
                        | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
-                       | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (bDoFEP ? GMX_FORCE_DHDL : 0));
+                       | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
         if (simulationWork.useMts && !do_per_step(step, ir->nstfout))
         {
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
@@ -1842,7 +1844,9 @@ void gmx::LegacySimulator::do_md()
             }
             if (bCalcEner)
             {
-                energyOutput.addDataAtEnergyStep(bDoDHDL,
+                const bool outputDHDL = (computeDHDL && do_per_step(step, ir->fepvals->nstdhdl));
+
+                energyOutput.addDataAtEnergyStep(outputDHDL,
                                                  bCalcEnerStep,
                                                  t,
                                                  md->tmass,

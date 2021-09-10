@@ -24,29 +24,6 @@
     <Real Name="Time 0.019000 Step 19 in frame 19">30.810368968245555</Real>
     <Real Name="Time 0.020000 Step 20 in frame 20">30.091952842926048</Real>
   </Energy>
-  <Energy Name="dVcoul/dl">
-    <Real Name="Time 0.000000 Step 0 in frame 0">-77.8723566401097</Real>
-    <Real Name="Time 0.001000 Step 1 in frame 1">-77.918582136826871</Real>
-    <Real Name="Time 0.002000 Step 2 in frame 2">-78.124028618156075</Real>
-    <Real Name="Time 0.003000 Step 3 in frame 3">-78.494137096512077</Real>
-    <Real Name="Time 0.004000 Step 4 in frame 4">-79.031570998273594</Real>
-    <Real Name="Time 0.005000 Step 5 in frame 5">-79.737380506903918</Real>
-    <Real Name="Time 0.006000 Step 6 in frame 6">-80.609921965073937</Real>
-    <Real Name="Time 0.007000 Step 7 in frame 7">-81.641203629735571</Real>
-    <Real Name="Time 0.008000 Step 8 in frame 8">-82.812078546976551</Real>
-    <Real Name="Time 0.009000 Step 9 in frame 9">-84.088865310692285</Real>
-    <Real Name="Time 0.010000 Step 10 in frame 10">-85.423667967862372</Real>
-    <Real Name="Time 0.011000 Step 11 in frame 11">-86.759022507510224</Real>
-    <Real Name="Time 0.012000 Step 12 in frame 12">-88.035827369731862</Real>
-    <Real Name="Time 0.013000 Step 13 in frame 13">-89.202559066450505</Real>
-    <Real Name="Time 0.014000 Step 14 in frame 14">-90.223739445468937</Real>
-    <Real Name="Time 0.015000 Step 15 in frame 15">-91.086115035376309</Real>
-    <Real Name="Time 0.016000 Step 16 in frame 16">-91.801438920119665</Real>
-    <Real Name="Time 0.017000 Step 17 in frame 17">-92.405181063462749</Real>
-    <Real Name="Time 0.018000 Step 18 in frame 18">-92.950836665173227</Real>
-    <Real Name="Time 0.019000 Step 19 in frame 19">-93.500176168343785</Real>
-    <Real Name="Time 0.020000 Step 20 in frame 20">-94.110809201461151</Real>
-  </Energy>
   <Energy Name="Potential">
     <Real Name="Time 0.000000 Step 0 in frame 0">-1525.248411374062</Real>
     <Real Name="Time 0.001000 Step 1 in frame 1">-1525.0825593635209</Real>
@@ -69,6 +46,29 @@
     <Real Name="Time 0.018000 Step 18 in frame 18">-1463.8891863801446</Real>
     <Real Name="Time 0.019000 Step 19 in frame 19">-1464.4471138446297</Real>
     <Real Name="Time 0.020000 Step 20 in frame 20">-1465.9785237943797</Real>
+  </Energy>
+  <Energy Name="dVcoul/dl">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-77.8723566401097</Real>
+    <Real Name="Time 0.001000 Step 1 in frame 1">-77.918582136826871</Real>
+    <Real Name="Time 0.002000 Step 2 in frame 2">-78.124028618156075</Real>
+    <Real Name="Time 0.003000 Step 3 in frame 3">-78.494137096512077</Real>
+    <Real Name="Time 0.004000 Step 4 in frame 4">-79.031570998273594</Real>
+    <Real Name="Time 0.005000 Step 5 in frame 5">-79.737380506903918</Real>
+    <Real Name="Time 0.006000 Step 6 in frame 6">-80.609921965073937</Real>
+    <Real Name="Time 0.007000 Step 7 in frame 7">-81.641203629735571</Real>
+    <Real Name="Time 0.008000 Step 8 in frame 8">-82.812078546976551</Real>
+    <Real Name="Time 0.009000 Step 9 in frame 9">-84.088865310692285</Real>
+    <Real Name="Time 0.010000 Step 10 in frame 10">-85.423667967862372</Real>
+    <Real Name="Time 0.011000 Step 11 in frame 11">-86.759022507510224</Real>
+    <Real Name="Time 0.012000 Step 12 in frame 12">-88.035827369731862</Real>
+    <Real Name="Time 0.013000 Step 13 in frame 13">-89.202559066450505</Real>
+    <Real Name="Time 0.014000 Step 14 in frame 14">-90.223739445468937</Real>
+    <Real Name="Time 0.015000 Step 15 in frame 15">-91.086115035376309</Real>
+    <Real Name="Time 0.016000 Step 16 in frame 16">-91.801438920119665</Real>
+    <Real Name="Time 0.017000 Step 17 in frame 17">-92.405181063462749</Real>
+    <Real Name="Time 0.018000 Step 18 in frame 18">-92.950836665173227</Real>
+    <Real Name="Time 0.019000 Step 19 in frame 19">-93.500176168343785</Real>
+    <Real Name="Time 0.020000 Step 20 in frame 20">-94.110809201461151</Real>
   </Energy>
   <Sequence Name="Time 0.000000 Step 0 F">
     <Int Name="Length">177</Int>
