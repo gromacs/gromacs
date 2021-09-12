@@ -65,8 +65,8 @@ set_target_properties(gmxapi PROPERTIES
 if (GMX_LIB_MPI)
     # GROMACS is built against an MPI library.
     set(_gmx_mpi_type "library")
-    # TODO: Normative solution with #3672.
-    # Do not target_link_options(gmxapi PRIVATE ${MPI_LINKER_FLAGS})
+    # TODO(#3672): Normative solution with #3672.
+    # Do not target_link_options(gmxapi PRIVATE ${MPI_CXX_LINK_FLAGS})
     # because the root CMakeLists.txt sets CMAKE_SHARED_LINKER_FLAGS.
     target_compile_options(gmxapi PUBLIC ${MPI_COMPILE_FLAGS})
     target_link_libraries(gmxapi PUBLIC ${MPI_CXX_LIBRARIES})

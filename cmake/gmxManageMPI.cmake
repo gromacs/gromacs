@@ -59,10 +59,6 @@ if (GMX_LIB_MPI)
     elseif (MPI_CXX_VERSION VERSION_LESS 2.0)
         message(FATAL_ERROR "MPI version 2.0 or higher is required. Please update your MPI library.")
     endif ()
-    # TODO(#3672): Replace usage of `MPI_LINKER_FLAGS` with MPI_LINK_FLAGS,
-    #   MPI_<lang>_LINK_FLAGS, or target_link_libraries(... MPI::MPI_CXX)
-    set(MPI_LINKER_FLAGS ${MPI_CXX_LINK_FLAGS})
-    separate_arguments(MPI_CXX_LINK_FLAGS)
     #TODO(#3672, #3776): These should be acquired through the MPI::MPI_CXX target.
     include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
     list(APPEND GMX_COMMON_LIBRARIES ${MPI_CXX_LIBRARIES})
