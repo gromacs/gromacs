@@ -187,8 +187,8 @@ typedef struct
     double*  k;     //!< force constants for the nPull coords
     double*  pos;   //!< umbrella positions for the nPull coords
     double* z; //!< z=(-Fi/kT) for the nPull coords. These values are iteratively computed during wham
-    int*    N;    //!< nr of data points in nPull histograms.
-    int*    Ntot; //!< also nr of data points. N and Ntot only differ if bHistEq==TRUE
+    int* N;    //!< nr of data points in nPull histograms.
+    int* Ntot; //!< also nr of data points. N and Ntot only differ if bHistEq==TRUE
 
     /*! \brief  g = 1 + 2*tau[int]/dt where tau is the integrated autocorrelation time.
      *
@@ -244,10 +244,10 @@ typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Paddin
      * \name Basic WHAM options
      */
     /*!\{*/
-    int  bins; //!< nr of bins, min, max, and dz of profile
-    real min, max, dz;
-    real Temperature, Tolerance; //!< temperature, converged when probability changes less than Tolerance
-    gmx_bool bCycl;              //!< generate cyclic (periodic) PMF
+    int      bins; //!< nr of bins, min, max, and dz of profile
+    real     min, max, dz;
+    real     Temperature, Tolerance; //!< temperature, converged when probability changes less than Tolerance
+    gmx_bool bCycl;                  //!< generate cyclic (periodic) PMF
     /*!\}*/
     /*!
      * \name Output control
