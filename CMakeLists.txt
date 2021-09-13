@@ -181,6 +181,13 @@ option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMAC
 
 option(GMX_MIMIC "Enable MiMiC QM/MM interface (CPMD is required)" OFF)
 
+option(GMX_CP2K "Enable CP2K QM/MM interface (CP2K 8.1 or later is required)" OFF)
+
+# We need to enable Fortran, because CP2K will be linked
+if(GMX_CP2K)
+    enable_language(Fortran)
+endif()
+
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
@@ -392,6 +399,11 @@ include(gmxManageMPI)
 #Process MiMiC settings
 ########################################################################
 include(gmxManageMimic)
+
+########################################################################
+#Process CP2K settings
+########################################################################
+include(gmxManageCP2K)
 
 ########################################################################
 #Process shared/static library settings
