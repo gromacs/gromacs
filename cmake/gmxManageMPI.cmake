@@ -47,13 +47,14 @@ endif ()
 # Manage the MPI setup.
 # Note that we may want to execute tests or Python with MPI,
 # even if we are not using an MPI-enabled GROMACS build.
+set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
 set(GMX_REQUIRED_MPI_COMPONENTS)
 if (GMX_LIB_MPI OR GMXAPI)
     # If we are building GROMACS against an MPI library, we need the CXX component.
     # If the gmxapi interfaces are to be installed, we want to try to help client
     # software to find a compatible MPI toolchain, regardless of the libgromacs configuration.
     list(APPEND GMX_REQUIRED_MPI_COMPONENTS "CXX")
-endif()
+endif ()
 if (GMX_LIB_MPI AND GMX_CP2K)
     list(APPEND GMX_REQUIRED_MPI_COMPONENTS "Fortran")
 endif ()
@@ -61,6 +62,7 @@ endif ()
 # when we can't find a required component, but the MPI target is optional
 # in some build configurations (e.g. thread-MPI gmxapi installations).
 find_package(MPI QUIET COMPONENTS ${GMX_REQUIRED_MPI_COMPONENTS})
+
 if (GMX_LIB_MPI)
     if (NOT MPI_CXX_FOUND)
         message(FATAL_ERROR
@@ -76,85 +78,54 @@ if (GMX_LIB_MPI)
     list(APPEND GMX_COMMON_LIBRARIES ${MPI_CXX_LIBRARIES})
 endif ()
 
-if (GMX_LIB_MPI)
-    # Test for and warn about unsuitable MPI versions
-    # Find path of the mpi compilers
-    if (${MPI_CXX_FOUND})
-        get_filename_component(_mpi_c_compiler_path "${MPI_CXX_COMPILER}" PATH)
-        get_filename_component(_mpiexec_path "${MPIEXEC_EXECUTABLE}" PATH)
-    else ()
-        get_filename_component(_cmake_c_compiler_path "${CMAKE_C_COMPILER}" PATH)
-        get_filename_component(_cmake_cxx_compiler_path "${CMAKE_CXX_COMPILER}" PATH)
+# Identify particular MPI implementations of interest (for compatibility checks).
+if (MPI_CXX_FOUND)
+    string(REGEX MATCH ".*Open MPI[:]? [v]?\([0-9]+\\.[0-9]*\\.?[0-9]*\).*" _openmpi_version ${MPI_CXX_LIBRARY_VERSION_STRING})
+    if (_openmpi_version)
+        string(REGEX REPLACE ".*Open MPI[:]? [v]?\([0-9]+\\.[0-9]*\\.?[0-9]*\).*" "\\1" OPENMPI_VERSION
+               ${_openmpi_version})
     endif ()
+    string(REGEX MATCH ".*MVAPICH2[:]? [v]?\([0-9]+\\.[0-9]*[a-z]?\\.?[0-9]*\).*" _mvapich2_version ${MPI_CXX_LIBRARY_VERSION_STRING})
+    if (_mvapich2_version)
+        string(REGEX REPLACE ".*MVAPICH2[:]? [v]?\([0-9]+\\.[0-9]*[a-z]?\\.?[0-9]*\).*" "\\1" MVAPICH2_VERSION
+               ${_mvapich2_version})
+    endif ()
+    unset(_mvapich2_version)
+    unset(_openmpi_version)
+endif ()
 
-    # Execute the ompi_info binary with the full path of the compiler wrapper
-    # found, otherwise we run the risk of false positives.
-    find_file(MPI_INFO_BIN ompi_info
-              HINTS ${_mpi_c_compiler_path} ${_mpiexec_path}
-              ${_cmake_c_compiler_path} ${_cmake_cxx_compiler_path}
-              NO_DEFAULT_PATH
-              NO_SYSTEM_ENVIRONMENT_PATH
-              NO_CMAKE_SYSTEM_PATH)
-    if (MPI_INFO_BIN)
-        exec_program(${MPI_INFO_BIN}
-                     ARGS -v ompi full
-                     OUTPUT_VARIABLE OPENMPI_TYPE
-                     RETURN_VALUE OPENMPI_EXEC_RETURN)
-        if (OPENMPI_EXEC_RETURN EQUAL 0)
-            string(REGEX REPLACE ".*Open MPI: \([0-9]+\\.[0-9]*\\.?[0-9]*\).*" "\\1" OPENMPI_VERSION ${OPENMPI_TYPE})
-            if (OPENMPI_VERSION VERSION_LESS "1.4.1")
-                MESSAGE(WARNING
-                        "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
-                        "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
-                        "Please consider updating your OpenMPI if your MPI wrapper compilers "
-                        "are using the above OpenMPI version.")
-            endif ()
-            if (OPENMPI_VERSION VERSION_EQUAL "1.8.6")
-                MESSAGE(WARNING
-                        "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
-                        "This OpenMPI version is known to leak memory with GROMACS,"
-                        "please update to a more recent version. ")
-            endif ()
-            unset(OPENMPI_VERSION)
-            unset(OPENMPI_TYPE)
-            unset(OPENMPI_EXEC_RETURN)
-        endif ()
+# Test for and warn about unsuitable OpenMPI versions.
+# TODO(#4093): Update tests with respect to required (compatible) OpenMPI versions.
+if (GMX_LIB_MPI AND OPENMPI_VERSION)
+    if (OPENMPI_VERSION VERSION_LESS "1.4.1")
+        MESSAGE(WARNING
+                "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
+                "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
+                "Please consider updating your OpenMPI if your MPI wrapper compilers "
+                "are using the above OpenMPI version.")
     endif ()
-    unset(MPI_INFO_BIN CACHE)
+    if (OPENMPI_VERSION VERSION_EQUAL "1.8.6")
+        MESSAGE(WARNING
+                "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
+                "This OpenMPI version is known to leak memory with GROMACS,"
+                "please update to a more recent version. ")
+    endif ()
+    MESSAGE(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
+endif ()
 
-    # Execute the mpiname binary with the full path of the compiler wrapper
-    # found, otherwise we run the risk of false positives.
-    find_file(MPINAME_BIN mpiname
-              HINTS ${_mpi_c_compiler_path}
-              ${_cmake_c_compiler_path} ${_cmake_cxx_compiler_path}
-              NO_DEFAULT_PATH
-              NO_SYSTEM_ENVIRONMENT_PATH
-              NO_CMAKE_SYSTEM_PATH)
-    if (MPINAME_BIN)
-        exec_program(${MPINAME_BIN}
-                     ARGS -n -v
-                     OUTPUT_VARIABLE MVAPICH2_TYPE
-                     RETURN_VALUE MVAPICH2_EXEC_RETURN)
-        if (MVAPICH2_EXEC_RETURN EQUAL 0)
-            string(REGEX MATCH "MVAPICH2" MVAPICH2_NAME ${MVAPICH2_TYPE})
-            # Want to check for MVAPICH2 in case some other library supplies mpiname
-            string(REGEX REPLACE "MVAPICH2 \([0-9]+\\.[0-9]*[a-z]?\\.?[0-9]*\)" "\\1" MVAPICH2_VERSION ${MVAPICH2_TYPE})
-            if (${MVAPICH2_NAME} STREQUAL "MVAPICH2" AND MVAPICH2_VERSION VERSION_LESS "1.5")
-                # This test works correctly even with 1.5a1
-                MESSAGE(WARNING
-                        "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
-                        "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
-                        "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
-                        "are using the above MVAPICH2 version.")
-            endif ()
-            unset(MVAPICH2_VERSION)
-            unset(MVAPICH2_NAME)
-            unset(MVAPICH2_TYPE)
-            unset(MVAPICH2_EXEC_RETURN)
-        endif ()
+# Test for and warn about unsuitable MPVAPICH2 versions
+# TODO(#4093): Update tests with respect to required (compatible) MVAPICH2 versions.
+if (GMX_LIB_MPI AND MVAPICH2_VERSION)
+    if (MVAPICH2_VERSION VERSION_LESS "1.5")
+        # This test works correctly even with 1.5a1
+        MESSAGE(WARNING
+                "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
+                "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
+                "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
+                "are using the above MVAPICH2 version.")
     endif ()
-    unset(MPINAME_BIN CACHE)
-endif () # end if(GMX_LIB_MPI)
+    MESSAGE(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
+endif ()
 
 # Look for MPI process launchers that may be missed, especially if we didn't
 # need to find the full MPI library build system support.
