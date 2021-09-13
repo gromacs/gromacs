@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,6 +132,8 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
     /* Thread index w.r.t. block */
     assert((get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0) + get_local_id(0)
            < MAX_INT);
+    assert(numGrids == 1 || numGrids == 2);
+    assert(numGrids == 1 || c_skipNeutralAtoms == false);
     const int threadLocalIndex =
             (int)((get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0)
                   + get_local_id(0));
@@ -238,7 +240,8 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
         /* B-spline calculation */
 
         const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
-        if (chargeCheck)
+        /* With FEP (numGrids == 2), we might have 0 charge in state A, but !=0 in state B, so we always calculate splines */
+        if (numGrids == 2 || chargeCheck)
         {
             int o = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
 
