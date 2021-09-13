@@ -47,8 +47,20 @@ endif ()
 # Manage the MPI setup.
 # Note that we may want to execute tests or Python with MPI,
 # even if we are not using an MPI-enabled GROMACS build.
-#TODO(#3672): find_package(MPI COMPONENTS ...)
-find_package(MPI)
+set(GMX_REQUIRED_MPI_COMPONENTS)
+if (GMX_LIB_MPI OR GMXAPI)
+    # If we are building GROMACS against an MPI library, we need the CXX component.
+    # If the gmxapi interfaces are to be installed, we want to try to help client
+    # software to find a compatible MPI toolchain, regardless of the libgromacs configuration.
+    list(APPEND GMX_REQUIRED_MPI_COMPONENTS "CXX")
+endif()
+if (GMX_LIB_MPI AND GMX_CP2K)
+    list(APPEND GMX_REQUIRED_MPI_COMPONENTS "Fortran")
+endif ()
+# We can perform the find_package quietly because we report errors elsewhere
+# when we can't find a required component, but the MPI target is optional
+# in some build configurations (e.g. thread-MPI gmxapi installations).
+find_package(MPI QUIET COMPONENTS ${GMX_REQUIRED_MPI_COMPONENTS})
 if (GMX_LIB_MPI)
     if (NOT MPI_CXX_FOUND)
         message(FATAL_ERROR
