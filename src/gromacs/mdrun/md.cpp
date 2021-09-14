@@ -402,6 +402,7 @@ void gmx::LegacySimulator::do_md()
                                              : gmx::ArrayRef<const unsigned short>(),
                                  md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
                                          : gmx::ArrayRef<const unsigned short>());
+        fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
     else
     {
@@ -417,6 +418,7 @@ void gmx::LegacySimulator::do_md()
                                              : gmx::ArrayRef<const unsigned short>(),
                                  md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
                                          : gmx::ArrayRef<const unsigned short>());
+        fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
 
     std::unique_ptr<UpdateConstrainGpu> integrator;
@@ -1016,6 +1018,7 @@ void gmx::LegacySimulator::do_md()
                                                      : gmx::ArrayRef<const unsigned short>(),
                                          md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
                                                  : gmx::ArrayRef<const unsigned short>());
+                fr->longRangeNonbondeds->updateAfterPartition(*md);
             }
         }
 
@@ -1152,6 +1155,7 @@ void gmx::LegacySimulator::do_md()
                                 &f.view(),
                                 force_vir,
                                 *md,
+                                fr->longRangeNonbondeds.get(),
                                 nrnb,
                                 wcycle,
                                 shellfc,
@@ -1208,6 +1212,7 @@ void gmx::LegacySimulator::do_md()
                      mu_tot,
                      t,
                      ed ? ed->getLegacyED() : nullptr,
+                     fr->longRangeNonbondeds.get(),
                      (bNS ? GMX_FORCE_NS : 0) | force_flags,
                      ddBalanceRegionHandler);
         }
@@ -1989,6 +1994,7 @@ void gmx::LegacySimulator::do_md()
                                                  : gmx::ArrayRef<const unsigned short>(),
                                      md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
                                              : gmx::ArrayRef<const unsigned short>());
+            fr->longRangeNonbondeds->updateAfterPartition(*md);
         }
 
         bFirstStep = FALSE;

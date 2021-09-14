@@ -59,6 +59,7 @@ struct bonded_threading_t;
 class DeviceContext;
 class DispersionCorrection;
 class ListedForces;
+class CpuPpLongRangeNonbondeds;
 struct t_fcdata;
 struct t_forcetable;
 struct interaction_const_t;
@@ -84,8 +85,6 @@ real cutoff_inf(real cutoff);
 
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
-
-struct ewald_corr_thread_t;
 
 /*! \brief Helper force buffers for ForceOutputs
  *
@@ -216,9 +215,6 @@ struct t_forcerec
     gmx_pme_t*   pmedata                = nullptr;
     LongRangeVdW ljpme_combination_rule = LongRangeVdW::Geom;
 
-    /* PME/Ewald stuff */
-    std::unique_ptr<gmx_ewald_tab_t> ewald_table;
-
     /* Non bonded Parameter lists */
     int               ntype          = 0; /* Number of atom types */
     bool              haveBuckingham = false;
@@ -260,9 +256,8 @@ struct t_forcerec
     // The listed forces calculation data for GPU
     std::unique_ptr<gmx::ListedForcesGpu> listedForcesGpu;
 
-    /* Ewald correction thread local virial and energy data */
-    int                              nthread_ewc = 0;
-    std::vector<ewald_corr_thread_t> ewc_t;
+    // The long range non-bonded forces
+    std::unique_ptr<CpuPpLongRangeNonbondeds> longRangeNonbondeds;
 
     gmx::ForceProviders* forceProviders = nullptr;
 

@@ -751,6 +751,7 @@ void LegacySimulator::do_tpi()
 
             /* Note: NonLocal refers to the inserted molecule */
             fr->nbv->convertCoordinates(AtomLocality::NonLocal, x);
+            fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
             /* Clear some matrix variables  */
             clear_mat(force_vir);
@@ -794,6 +795,7 @@ void LegacySimulator::do_tpi()
                      mu_tot,
                      t,
                      nullptr,
+                     fr->longRangeNonbondeds.get(),
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY | (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DDBalanceRegionHandler(nullptr));
             std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);

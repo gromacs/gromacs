@@ -956,6 +956,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                          gmx::ForceBuffersView*        f,
                          tensor                        force_vir,
                          const t_mdatoms&              md,
+                         CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
                          t_nrnb*                       nrnb,
                          gmx_wallcycle*                wcycle,
                          gmx_shellfc_t*                shfc,
@@ -1084,6 +1085,7 @@ void relax_shell_flexcon(FILE*                         fplog,
              mu_tot,
              t,
              nullptr,
+             longRangeNonbondeds,
              (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
              ddBalanceRegionHandler);
 
@@ -1224,6 +1226,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                  mu_tot,
                  t,
                  nullptr,
+                 longRangeNonbondeds,
                  shellfc_flags,
                  ddBalanceRegionHandler);
         accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals.get());

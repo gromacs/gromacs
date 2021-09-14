@@ -374,6 +374,7 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     auto* mdatoms = mdAtoms->mdatoms();
+    fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
@@ -626,6 +627,8 @@ void gmx::LegacySimulator::do_rerun()
             update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
+        fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
+
         force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
                        | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 and #3400 are solved
                        GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
@@ -656,6 +659,7 @@ void gmx::LegacySimulator::do_rerun()
                                 &f.view(),
                                 force_vir,
                                 *mdatoms,
+                                fr->longRangeNonbondeds.get(),
                                 nrnb,
                                 wcycle,
                                 shellfc,
@@ -701,6 +705,7 @@ void gmx::LegacySimulator::do_rerun()
                      mu_tot,
                      t,
                      ed,
+                     fr->longRangeNonbondeds.get(),
                      GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
         }

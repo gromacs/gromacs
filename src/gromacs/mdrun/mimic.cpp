@@ -336,6 +336,7 @@ void gmx::LegacySimulator::do_mimic()
     // (Global topology should persist.)
 
     update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+    fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
     if (ir->efep != FreeEnergyPerturbationType::No && ir->fepvals->nstdhdl != 0)
     {
@@ -515,6 +516,8 @@ void gmx::LegacySimulator::do_mimic()
             update_mdatoms(mdatoms, state->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
+        fr->longRangeNonbondeds->updateAfterPartition(*mdatoms);
+
         force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
                        | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 is solved
                        GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
@@ -545,6 +548,7 @@ void gmx::LegacySimulator::do_mimic()
                                 &f.view(),
                                 force_vir,
                                 *mdatoms,
+                                fr->longRangeNonbondeds.get(),
                                 nrnb,
                                 wcycle,
                                 shellfc,
@@ -590,6 +594,7 @@ void gmx::LegacySimulator::do_mimic()
                      mu_tot,
                      t,
                      ed,
+                     fr->longRangeNonbondeds.get(),
                      GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
         }

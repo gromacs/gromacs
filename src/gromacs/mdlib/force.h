@@ -40,7 +40,12 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 class DDBalanceRegionHandler;
 struct gmx_edsam;
@@ -50,6 +55,7 @@ struct SimulationGroups;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
+struct gmx_pme_t;
 class history_t;
 class InteractionDefinitions;
 struct pull_t;
@@ -59,11 +65,11 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
+struct gmx_ewald_tab_t;
+class CpuPpLongRangeNonbondeds;
 
 namespace gmx
 {
-template<typename>
-class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 class Awh;
@@ -75,6 +81,15 @@ class MDLogger;
 class StepWorkload;
 class VirtualSitesHandler;
 } // namespace gmx
+
+struct ewald_corr_thread_t
+{
+    real                                                            Vcorr_q;
+    real                                                            Vcorr_lj;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl;
+    tensor                                                          vir_q;
+    tensor                                                          vir_lj;
+};
 
 /* Perform the force and, if requested, energy computation
  *
@@ -115,6 +130,7 @@ void do_force(FILE*                               log,
               rvec                                mu_tot,
               double                              t,
               gmx_edsam*                          ed,
+              CpuPpLongRangeNonbondeds*           longRangeNonbondeds,
               int                                 legacyFlags,
               const DDBalanceRegionHandler&       ddBalanceRegionHandler);
 
@@ -128,24 +144,93 @@ void do_force(FILE*                               log,
  */
 
 
-/* Calculate CPU Ewald or PME-mesh forces when done on this rank and Ewald corrections, when used
- *
- * Note that Ewald dipole and net charge corrections are always computed here, independently
- * on whether the PME-mesh contribution is computed on a separate PME rank or on a GPU.
- */
-void calculateLongRangeNonbondeds(t_forcerec*                    fr,
-                                  const t_inputrec&              ir,
-                                  const t_commrec*               cr,
-                                  t_nrnb*                        nrnb,
-                                  gmx_wallcycle*                 wcycle,
-                                  const t_mdatoms*               md,
-                                  gmx::ArrayRef<const gmx::RVec> coordinates,
-                                  gmx::ForceWithVirial*          forceWithVirial,
-                                  gmx_enerdata_t*                enerd,
-                                  const matrix                   box,
-                                  gmx::ArrayRef<const real>      lambda,
-                                  gmx::ArrayRef<const gmx::RVec> mu_tot,
-                                  const gmx::StepWorkload&       stepWork,
-                                  const DDBalanceRegionHandler&  ddBalanceRegionHandler);
+class CpuPpLongRangeNonbondeds
+{
+public:
+    /* \brief Constructor
+     *
+     * Should be called after init_forcerec if params come from a populated forcerec
+     */
+    CpuPpLongRangeNonbondeds(int                         numberOfTestPaticles,
+                             real                        ewaldCoeffQ,
+                             real                        epsilonR,
+                             gmx::ArrayRef<const double> chargeC6Sum,
+                             CoulombInteractionType      eeltype,
+                             VanDerWaalsType             vdwtype,
+                             const t_inputrec&           inputrec,
+                             t_nrnb*                     nrnb,
+                             gmx_wallcycle*              wcycle,
+                             FILE*                       fplog);
+
+    ~CpuPpLongRangeNonbondeds();
+
+    void updateAfterPartition(const t_mdatoms& md);
+
+    /* Calculate CPU Ewald or PME-mesh forces when done on this rank and Ewald corrections, when used
+     *
+     * Note that Ewald dipole and net charge corrections are always computed here, independently
+     * of whether the PME-mesh contribution is computed on a separate PME rank or on a GPU.
+     */
+    void calculate(gmx_pme_t*                     pmedata,
+                   const t_commrec*               commrec,
+                   gmx::ArrayRef<const gmx::RVec> coordinates,
+                   gmx::ForceWithVirial*          forceWithVirial,
+                   gmx_enerdata_t*                enerd,
+                   const matrix                   box,
+                   gmx::ArrayRef<const real>      lambda,
+                   gmx::ArrayRef<const gmx::RVec> mu_tot,
+                   const gmx::StepWorkload&       stepWork,
+                   const DDBalanceRegionHandler&  ddBalanceRegionHandler);
+
+private:
+    //! Number of particles for test particle insertion
+    int numTpiAtoms_;
+    //! Ewald charge coefficient
+    real ewaldCoeffQ_;
+    //! Dielectric constant
+    real epsilonR_;
+    //! [0]: sum of charges; [1]: sum of C6's
+    gmx::ArrayRef<const double> chargeC6Sum_;
+    //! Cut-off treatment for Coulomb
+    CoulombInteractionType coulombInteractionType_;
+    //! Van der Waals interaction treatment
+    VanDerWaalsType vanDerWaalsType_;
+    //! Ewald geometry
+    EwaldGeometry ewaldGeometry_;
+    //! Epsilon for PME dipole correction
+    real epsilonSurface_;
+    //! Whether a long range correction is used
+    bool haveEwaldSurfaceTerm_;
+    //! Scaling factor for the box for Ewald
+    real wallEwaldZfac_;
+    //! Whether the simulation is 2D periodic with two walls
+    bool havePbcXY2Walls_;
+    //! Free energy perturbation type
+    FreeEnergyPerturbationType freeEnergyPerturbationType_;
+    //! Number of atoms on this node
+    int homenr_;
+    //! Whether there are perturbed interactions
+    bool havePerturbed_;
+    //! State A charge
+    gmx::ArrayRef<const real> chargeA_;
+    //! State B charge
+    gmx::ArrayRef<const real> chargeB_;
+    //! State A LJ c6
+    gmx::ArrayRef<const real> sqrt_c6A_;
+    //! State B LJ c6
+    gmx::ArrayRef<const real> sqrt_c6B_;
+    //! State A LJ sigma
+    gmx::ArrayRef<const real> sigmaA_;
+    //! State B LJ sigma
+    gmx::ArrayRef<const real> sigmaB_;
+    //! Ewald correction thread local virial and energy data
+    std::vector<ewald_corr_thread_t> outputPerThread_;
+    //! Ewald table
+    std::unique_ptr<gmx_ewald_tab_t> ewaldTable_;
+    //! Non bonded kernel flop counters
+    t_nrnb* nrnb_;
+    //! Wall cycle counters
+    gmx_wallcycle* wcycle_;
+};
 
 #endif

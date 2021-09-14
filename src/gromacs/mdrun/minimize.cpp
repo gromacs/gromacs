@@ -996,6 +996,8 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         setCoordinates(&pairSearchCoordinates, localCoordinates);
     }
 
+    fr->longRangeNonbondeds->updateAfterPartition(*mdAtoms->mdatoms());
+
     /* Calc force & energy on new trial position  */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
@@ -1026,6 +1028,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              mu_tot,
              t,
              nullptr,
+             fr->longRangeNonbondeds.get(),
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY
                      | (bNS ? GMX_FORCE_NS : 0),
              DDBalanceRegionHandler(cr));
@@ -3147,6 +3150,7 @@ void LegacySimulator::do_nm()
 
     em_state_t state_work{};
 
+    fr->longRangeNonbondeds->updateAfterPartition(*mdAtoms->mdatoms());
     ObservablesReducer observablesReducer = observablesReducerBuilder->build();
 
     /* Init em and store the local state in state_minimum */
@@ -3360,6 +3364,7 @@ void LegacySimulator::do_nm()
                                         &state_work.f.view(),
                                         vir,
                                         *mdatoms,
+                                        fr->longRangeNonbondeds.get(),
                                         nrnb,
                                         wcycle,
                                         shellfc,

@@ -60,6 +60,7 @@
 struct gmx_enfrot;
 struct gmx_shellfc_t;
 struct gmx_wallcycle;
+class CpuPpLongRangeNonbondeds;
 struct pull_t;
 struct t_nrnb;
 
@@ -89,7 +90,8 @@ class ForceElement final :
     public ISimulatorElement,
     public ITopologyHolderClient,
     public INeighborSearchSignallerClient,
-    public IEnergySignallerClient
+    public IEnergySignallerClient,
+    public IDomDecHelperClient
 {
 public:
     //! Constructor
@@ -146,6 +148,9 @@ public:
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
                                                     ObservablesReducer*        observablesReducer);
 
+    //! Callback on domain decomposition repartitioning
+    DomDecCallback registerDomDecCallback() override;
+
 private:
     //! ITopologyHolderClient implementation
     void setTopology(const gmx_localtop_t* top) override;
@@ -191,6 +196,8 @@ private:
 
     //! DD / DLB helper object
     const DDBalanceRegionHandler ddBalanceRegionHandler_;
+    //! Long range force calculator
+    std::unique_ptr<CpuPpLongRangeNonbondeds> longRangeNonbondeds_;
 
     /* \brief The FEP lambda vector
      *

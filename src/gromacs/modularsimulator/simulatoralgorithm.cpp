@@ -585,7 +585,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                              simulationsShareState);
     registerWithInfrastructureAndSignallers(trajectoryElement.get());
 
-    // Build domdec helper
+    // Build domdec helper (free energy element is a client, so keep this after it is built)
     if (DOMAINDECOMP(legacySimulatorData_->cr))
     {
         algorithm.domDecHelper_ =

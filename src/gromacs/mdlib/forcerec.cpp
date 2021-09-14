@@ -65,7 +65,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/forcerec_threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/wall.h"
@@ -790,12 +789,6 @@ void init_forcerec(FILE*                            fplog,
 
     const interaction_const_t* interactionConst = forcerec->ic.get();
 
-    /* TODO: Replace this Ewald table or move it into interaction_const_t */
-    if (inputrec.coulombtype == CoulombInteractionType::Ewald)
-    {
-        forcerec->ewald_table = std::make_unique<gmx_ewald_tab_t>(inputrec, fplog);
-    }
-
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
     switch (interactionConst->eeltype)
     {
@@ -1069,9 +1062,6 @@ void init_forcerec(FILE*                            fplog,
     }
 
     forcerec->print_force = print_force;
-
-    forcerec->nthread_ewc = gmx_omp_nthreads_get(ModuleMultiThread::Bonded);
-    forcerec->ewc_t.resize(forcerec->nthread_ewc);
 
     if (inputrec.eDispCorr != DispersionCorrectionType::No)
     {

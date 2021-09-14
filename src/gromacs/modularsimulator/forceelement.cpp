@@ -51,7 +51,9 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/forcebuffers.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -81,15 +83,14 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            const MDAtoms*              mdAtoms,
                            t_nrnb*                     nrnb,
                            t_forcerec*                 fr,
-
-                           gmx_wallcycle*         wcycle,
-                           MdrunScheduleWorkload* runScheduleWork,
-                           VirtualSitesHandler*   vsite,
-                           ImdSession*            imdSession,
-                           pull_t*                pull_work,
-                           Constraints*           constr,
-                           const gmx_mtop_t&      globalTopology,
-                           gmx_enfrot*            enforcedRotation) :
+                           gmx_wallcycle*              wcycle,
+                           MdrunScheduleWorkload*      runScheduleWork,
+                           VirtualSitesHandler*        vsite,
+                           ImdSession*                 imdSession,
+                           pull_t*                     pull_work,
+                           Constraints*                constr,
+                           const gmx_mtop_t&           globalTopology,
+                           gmx_enfrot*                 enforcedRotation) :
     shellfc_(init_shell_flexcon(fplog,
                                 globalTopology,
                                 constr ? constr->numFlexibleConstraints() : 0,
@@ -109,6 +110,16 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     isVerbose_(isVerbose),
     nShellRelaxationSteps_(0),
     ddBalanceRegionHandler_(cr),
+    longRangeNonbondeds_(std::make_unique<CpuPpLongRangeNonbondeds>(fr->n_tpi,
+                                                                    fr->ic->ewaldcoeff_q,
+                                                                    fr->ic->epsilon_r,
+                                                                    fr->qsum,
+                                                                    fr->ic->eeltype,
+                                                                    fr->ic->vdwtype,
+                                                                    *inputrec,
+                                                                    nrnb,
+                                                                    wcycle,
+                                                                    fplog)),
     lambda_(),
     fplog_(fplog),
     cr_(cr),
@@ -190,6 +201,8 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     ArrayRef<real> lambda =
             freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->lambdaView() : lambda_;
 
+    longRangeNonbondeds_->updateAfterPartition(*mdAtoms_->mdatoms());
+
     if (doShellFC)
     {
         auto v = statePropagatorData_->velocitiesView();
@@ -217,6 +230,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                             &forces,
                             force_vir,
                             *mdAtoms_->mdatoms(),
+                            longRangeNonbondeds_.get(),
                             nrnb_,
                             wcycle_,
                             shellfc_,
@@ -260,6 +274,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                  energyData_->muTot(),
                  time,
                  ed,
+                 longRangeNonbondeds_.get(),
                  static_cast<int>(flags),
                  ddBalanceRegionHandler_);
     }
@@ -299,6 +314,11 @@ std::optional<SignallerCallback> ForceElement::registerEnergyCallback(EnergySign
         return [this](Step step, Time /*unused*/) { nextFreeEnergyCalculationStep_ = step; };
     }
     return std::nullopt;
+}
+
+DomDecCallback ForceElement::registerDomDecCallback()
+{
+    return [this]() { longRangeNonbondeds_->updateAfterPartition(*mdAtoms_->mdatoms()); };
 }
 
 ISimulatorElement*

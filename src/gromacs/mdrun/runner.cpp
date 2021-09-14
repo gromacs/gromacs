@@ -1712,6 +1712,16 @@ int Mdrunner::mdrunner()
                     deviceStreamManager->bondedStream(havePPDomainDecomposition(cr)),
                     wcycle.get());
         }
+        fr->longRangeNonbondeds = std::make_unique<CpuPpLongRangeNonbondeds>(fr->n_tpi,
+                                                                             fr->ic->ewaldcoeff_q,
+                                                                             fr->ic->epsilon_r,
+                                                                             fr->qsum,
+                                                                             fr->ic->eeltype,
+                                                                             fr->ic->vdwtype,
+                                                                             *inputrec,
+                                                                             &nrnb,
+                                                                             wcycle.get(),
+                                                                             fplog);
 
         /* Initialize the mdAtoms structure.
          * mdAtoms is not filled with atom data,
