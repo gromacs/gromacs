@@ -123,7 +123,7 @@ public:
     }
 
     //! Checks whether this object encapsulates an underlying event.
-    inline bool isMarked() { return event_ != sc_nullEvent; }
+    inline bool isMarked() const { return event_ != sc_nullEvent; }
 
     //! Reset (release) the event to unmarked state.
     inline void reset()

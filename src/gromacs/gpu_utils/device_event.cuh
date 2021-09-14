@@ -52,7 +52,7 @@
 class DeviceEvent
 {
 public:
-    DeviceEvent()
+    DeviceEvent() : isMarked_(false)
     {
         cudaError_t stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
         if (stat != cudaSuccess)
@@ -77,6 +77,7 @@ public:
         {
             GMX_THROW(gmx::InternalError("cudaEventRecord failed: " + gmx::getDeviceErrorString(stat)));
         }
+        isMarked_ = true;
     }
     //! Synchronizes the host thread on the marked event.
     inline void wait()
@@ -97,6 +98,8 @@ public:
         }
         return (stat == cudaSuccess);
     }
+    //! Check if this event was marked
+    inline bool isMarked() const { return isMarked_; }
     //! Enqueues a wait for the recorded event in stream \p stream
     inline void enqueueWait(const DeviceStream& deviceStream)
     {
@@ -106,11 +109,12 @@ public:
             GMX_THROW(gmx::InternalError("cudaStreamWaitEvent failed: " + gmx::getDeviceErrorString(stat)));
         }
     }
-    //! Reset the event (not needed in CUDA)
-    inline void reset() {}
+    //! Reset the event
+    inline void reset() { isMarked_ = false; }
 
 private:
     cudaEvent_t event_;
+    bool        isMarked_;
 };
 
 #endif

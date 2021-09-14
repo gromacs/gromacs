@@ -53,17 +53,50 @@
 
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
- * The event can be put into the stream with \ref markEvent() and then later waited on with \ref waitForEvent().
- * This can be repeated as necessary, but the current implementation does not allow waiting on
- * completed event more than once, expecting only exact pairs of markEvent(stream); waitForEvent().
- * The class generally attempts to track the correctness of its state transitions, but
- * please note that calling waitForEvent() right after the construction will fail with OpenCL but succeed with CUDA.
+ *
+ * The event can be put into the stream with \ref markEvent and then later waited on with \ref
+ * waitForEvent or \ref enqueueWaitEvent.
+ *
+ * Additionally, this class offers facilities for runtime checking of correctness by counting
+ * how many times each marked event is used as a synchronization point.
+ *
+ * - When the class is constructed, a required minimal (\c minConsumptionCount) and maximal (\c maxConsumptionCount) number of
+ * consumptions can be specified. By default, both are set to 1.
+ * - The event is considered <em>fully consumed</em> if its current number of consumptions \c c equals
+ * \c maxConsumptionCount.
+ * - The event is considered <em>sufficiently consumed</em> if <tt>minConsumptionCount <= c <= maxConsumptionCount</tt>.
+ * - The class is initialized in the <em>fully consumed</em> state, so it can not be consumed right away.
+ * - Consuming the event is only possible if it is not <em>fully consumed</em> (<tt>c < maxConsumptionCount</tt>).
+ * Consuming the event increments \c c by 1. Trying to consume <em>fully consumed</em> event
+ * throws \ref gmx::InternalError.
+ * - \ref reset returns object into the initial <em>fully consumed</em> state.
+ * This function is intended to manually override the consumption limits.
+ * - \ref consume \em consumes the event, without doing anything else.
+ * This function is intended to manually override the consumption limits.
+ * - \ref markEvent enqueues new event into the provided stream, and sets \c to 0. Marking is only
+ * possible if the event is <em>sufficiently consumed</em>, otherwise \ref gmx::InternalError
+ * is thrown.
+ * - \ref waitForEvent \em consumes the event and blocks the host thread until the event
+ * is ready (complete).
+ * - \ref enqueueWaitEvent \em consumes the event and blocks the inserts a blocking barrier
+ * into the provided stream which blocks the execution of all tasks later submitted to this
+ * stream until the event is ready (completes).
+ *
+ * Default <tt>minConsumptionCount=maxConsumptionCount=1</tt> limits mean that each call to \ref markEvent must be followed
+ * by exactly one \ref enqueueWaitEvent or \ref enqueueWaitEvent. This is the recommended pattern
+ * for most use cases. By providing other constructor arguments, this requirement can be relaxed
+ * as needed.
  */
 class GpuEventSynchronizer
 {
 public:
     //! A constructor
-    GpuEventSynchronizer() = default;
+    GpuEventSynchronizer(int minConsumptionCount, int maxConsumptionCount) :
+        minConsumptionCount_(minConsumptionCount), maxConsumptionCount_(maxConsumptionCount)
+    {
+        reset();
+    }
+    GpuEventSynchronizer() : GpuEventSynchronizer(1, 1) {}
     //! A destructor
     ~GpuEventSynchronizer() = default;
     //! Remove copy assignment, because we can not copy the underlying event object.
@@ -75,72 +108,93 @@ public:
     //! Remove move constructor, because we don't allow moving the underlying event object.
     GpuEventSynchronizer(GpuEventSynchronizer&&) = delete;
 
-    /*! \brief Marks the synchronization point in the \p stream.
-     * Should be called first and then followed by \ref waitForEvent().
+    /*! \brief Marks the synchronization point in the \p stream and reset the consumption counter.
+     *
+     * Should be called before implicitly consuming actions (\ref waitForEvent() or \ref enqueueWaitEvent()) are executed or explicit \ref consume() calls are made.
+     *
+     * If the event has been marked before and not fully consumed, throws \ref gmx::InternalError.
      */
     inline void markEvent(const DeviceStream& deviceStream)
     {
 #if !GMX_GPU_CUDA // For now, we have relaxed conditions for CUDA
-        if (event_.isMarked())
+        if (consumptionCount_ < minConsumptionCount_)
         {
-            GMX_THROW(gmx::InternalError("Trying to mark event before first consuming it"));
+            GMX_THROW(gmx::InternalError("Trying to mark event before fully consuming it"));
         }
 #endif
         event_.mark(deviceStream);
+        consumptionCount_ = 0;
     }
-    /*! \brief Synchronizes the host thread on the marked event. */
+    /*! \brief Synchronizes the host thread on the marked event.
+     *
+     * Consumes the event if able, otherwise throws \ref gmx::InternalError.
+     */
     inline void waitForEvent()
     {
-#if !GMX_GPU_CUDA // For now, we have relaxed conditions for CUDA
-        if (!event_.isMarked())
-        {
-            GMX_THROW(gmx::InternalError(
-                    "Trying to wait for event before marking it or after fully consuming it"));
-        }
-#endif
+        consume();
         event_.wait();
-        reset();
+        resetIfFullyConsumed();
     }
-    /*! \brief Checks the completion of the underlying event and resets the object if it was. */
+    //! Checks the completion of the underlying event and consumes the event if it is ready.
     inline bool isReady()
     {
-#if !GMX_GPU_CUDA // For now, we have relaxed conditions for CUDA
-        if (!event_.isMarked())
-        {
-            GMX_THROW(gmx::InternalError("Trying to check the status of event before marking it"));
-        }
-#endif
         bool isReady = event_.isReady();
         if (isReady)
         {
-            reset();
+            consume();
+            resetIfFullyConsumed();
         }
         return isReady;
     }
-    /*! \brief Enqueues a wait for the recorded event in stream \p stream
+    //! Checks whether the event was marked (and was not reset since then).
+    inline bool isMarked() const { return event_.isMarked(); }
+    /*! \brief Manually consume the event without waiting for it.
      *
-     *  After enqueue, the associated event is released, so this method should
-     *  be only called once per \ref markEvent() call (not enforced in CUDA yet).
+     * If the event is already fully consumed, throws \ref gmx::InternalError.
+     */
+    inline void consume()
+    {
+#if !GMX_GPU_CUDA // For now, we have relaxed conditions for CUDA
+        if (consumptionCount_ >= maxConsumptionCount_)
+        {
+            GMX_THROW(gmx::InternalError(
+                    "Trying to consume an event before marking it or after fully consuming it"));
+        }
+#endif
+        consumptionCount_++;
+    }
+    //! Helper function to reset the event when it is fully consumed.
+    inline void resetIfFullyConsumed()
+    {
+        if (consumptionCount_ == maxConsumptionCount_)
+        {
+            event_.reset();
+        }
+    }
+    /*! \brief Enqueues a wait for the recorded event in stream \p deviceStream.
+     *
+     * Consumes the event if able, otherwise throws \ref gmx::InternalError.
      */
     inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
-#if !GMX_GPU_CUDA // For now, we have relaxed conditions for CUDA
-        if (!event_.isMarked())
-        {
-            GMX_THROW(
-                    gmx::InternalError("Trying to enqueue wait for event before marking it or "
-                                       "after fully consuming it"));
-        }
-#endif
+        consume();
         event_.enqueueWait(deviceStream);
-        reset();
+        resetIfFullyConsumed();
     }
 
     //! Resets the event to unmarked state, releasing the underlying event object if needed.
-    inline void reset() { event_.reset(); }
+    inline void reset()
+    {
+        // Set such that we can mark new event without triggering an exception, but can not consume.
+        consumptionCount_ = maxConsumptionCount_;
+        event_.reset();
+    }
 
 private:
     DeviceEvent event_;
+    int         consumptionCount_;
+    int         minConsumptionCount_;
+    int         maxConsumptionCount_;
 };
 
 #endif

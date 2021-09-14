@@ -85,7 +85,8 @@ public:
     {
 #    if GMX_SYCL_HIPSYCL
         // Relies on HIPSYCL_EXT_QUEUE_WAIT_LIST extension
-        events_ = deviceStream.stream().get_wait_list();
+        events_   = deviceStream.stream().get_wait_list();
+        isMarked_ = true;
 #    else
         // Relies on SYCL_INTEL_enqueue_barrier
         events_ = { deviceStream.stream().submit_barrier() };
@@ -132,13 +133,33 @@ public:
     }
 
     //! Checks whether this object encapsulates an underlying event.
-    inline bool isMarked() { return !events_.empty(); }
+    inline bool isMarked() const
+    {
+#    if GMX_SYCL_HIPSYCL
+        return isMarked_;
+#    else
+        return !events_.empty();
+#    endif
+    }
 
     //! Reset the event to unmarked state.
-    inline void reset() { events_.clear(); }
+    inline void reset()
+    {
+        events_.clear();
+#    if GMX_SYCL_HIPSYCL
+        isMarked_ = false;
+#    endif
+    }
 
 private:
     std::vector<cl::sycl::event> events_;
+#    if GMX_SYCL_HIPSYCL
+    /*! \brief Flag to track event marking in hipSYCL.
+     *
+     * In hipSYCL, we can have empty \ref events_ after marking if there were no pending tasks in
+     * the queue. So, we use an explicit flag to check the event state. */
+    bool isMarked_ = false;
+#    endif
     /*! \brief Dev. setting to no-op enqueueWait
      *
      * In SYCL, dependencies between the GPU tasks are managed by the runtime, so manual

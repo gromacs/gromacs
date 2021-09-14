@@ -94,8 +94,8 @@ public:
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
-    //! Checks whether this object encapsulates an underlying event.
-    inline bool isMarked() // NOLINT readability-convert-member-functions-to-static
+    //! Checks whether the underlying event was marked.
+    inline bool isMarked() const // NOLINT readability-convert-member-functions-to-static
     {
         GMX_THROW(gmx::NotImplementedError("Not implemented for non-GPU build"));
     }
