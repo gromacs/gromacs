@@ -58,7 +58,7 @@ __device__ __forceinline__ T LDG(const T* ptr)
 
 /*! \brief Fetch the value by \p index from the texture object.
  *
- * \tparam[in] T        Raw data type
+ * \tparam T            Raw data type
  * \param[in] texObj    Table texture object
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
@@ -77,7 +77,7 @@ static __forceinline__ __device__ T fetchFromTexture(const cudaTextureObject_t t
  *  Depending on what is supported, it fetches parameters either
  *  using direct load or texture objects.
  *
- * \tparam[in] T        Raw data type
+ * \tparam T            Raw data type
  * \param[in] d_ptr     Device pointer to the raw table memory
  * \param[in] texObj    Table texture object
  * \param[in] index     Non-negative element index

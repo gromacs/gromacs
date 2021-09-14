@@ -140,10 +140,10 @@ __device__ inline void assertIsFinite(T gmx_unused arg)
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *
- * \tparam[in] T                  Data type (float/int/...)
- * \tparam[in] atomsPerBlock      Number of atoms processed by a block - should be accounted for in
+ * \tparam     T                  Data type (float/int/...)
+ * \tparam     atomsPerBlock      Number of atoms processed by a block - should be accounted for in
  * the size of the shared memory array.
- * \tparam[in] dataCountPerAtom   Number of data elements per single atom (e.g. DIM for an rvec
+ * \tparam     dataCountPerAtom   Number of data elements per single atom (e.g. DIM for an rvec
  * coordinates array).
  * \param[out] sm_destination     Shared memory array for output.
  * \param[in]  gm_source          Global memory array for input.
@@ -169,16 +169,16 @@ __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_desti
  * This corresponds to the CPU functions calc_interpolation_idx() and make_bsplines().
  * First stage of the whole kernel.
  *
- * \tparam[in] order                PME interpolation order.
- * \tparam[in] atomsPerBlock        Number of atoms processed by a block - should be accounted for
+ * \tparam     order                PME interpolation order.
+ * \tparam     atomsPerBlock        Number of atoms processed by a block - should be accounted for
  *                                  in the sizes of the shared memory arrays.
- * \tparam[in] atomsPerWarp         Number of atoms processed by a warp
- * \tparam[in] writeSmDtheta        Bool controlling if the theta derivative should be written to
+ * \tparam     atomsPerWarp         Number of atoms processed by a warp
+ * \tparam     writeSmDtheta        Bool controlling if the theta derivative should be written to
  *                                  shared memory. Enables calculation of dtheta if set.
- * \tparam[in] writeGlobal          A boolean which tells if the theta values and gridlines should
+ * \tparam     writeGlobal          A boolean which tells if the theta values and gridlines should
  *                                  be written to global memory. Enables calculation of dtheta if
  *                                  set.
- * \tparam[in] numGrids             The number of grids using the splines.
+ * \tparam     numGrids             The number of grids using the splines.
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
  * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
  * \param[in]  atomX                Atom coordinate of atom processed by thread.

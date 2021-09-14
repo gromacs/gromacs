@@ -52,9 +52,9 @@
 /*! \brief
  * PME complex grid solver kernel function.
  *
- * \tparam[in] gridOrdering             Specifies the dimension ordering of the complex grid.
- * \tparam[in] computeEnergyAndVirial   Tells if the reciprocal energy and virial should be computed.
- * \tparam[in] gridIndex                The index of the grid to use in the kernel.
+ * \tparam     gridOrdering             Specifies the dimension ordering of the complex grid.
+ * \tparam     computeEnergyAndVirial   Tells if the reciprocal energy and virial should be computed.
+ * \tparam     gridIndex                The index of the grid to use in the kernel.
  * \param[in]  kernelParams             Input PME CUDA data in constant memory.
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex>

@@ -68,10 +68,10 @@ __device__ __forceinline__ float read_grid_size(const float* realGridSizeFP, con
 
 /*! \brief Reduce the partial force contributions.
  *
- * \tparam[in] order              The PME order (must be 4).
- * \tparam[in] atomDataSize       The number of partial force contributions for each atom (currently
+ * \tparam     order              The PME order (must be 4).
+ * \tparam     atomDataSize       The number of partial force contributions for each atom (currently
  *                                order^2 == 16)
- * \tparam[in] blockSize          The CUDA block size
+ * \tparam     blockSize          The CUDA block size
  *
  * \param[out] sm_forces          Shared memory array with the output forces (number of elements
  *                                is number of atoms per block)
@@ -220,10 +220,10 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
 
 /*! \brief Calculate the sum of the force partial components (in X, Y and Z)
  *
- * \tparam[in] order              The PME order (must be 4).
- * \tparam[in] atomsPerWarp       The number of atoms per GPU warp.
- * \tparam[in] wrapX              Tells if the grid is wrapped in the X dimension.
- * \tparam[in] wrapY              Tells if the grid is wrapped in the Y dimension.
+ * \tparam     order              The PME order (must be 4).
+ * \tparam     atomsPerWarp       The number of atoms per GPU warp.
+ * \tparam     wrapX              Tells if the grid is wrapped in the X dimension.
+ * \tparam     wrapY              Tells if the grid is wrapped in the Y dimension.
  * \param[out] fx                 The force partial component in the X dimension.
  * \param[out] fy                 The force partial component in the Y dimension.
  * \param[out] fz                 The force partial component in the Z dimension.
@@ -335,12 +335,12 @@ __device__ __forceinline__ void calculateAndStoreGridForces(float3* __restrict__
  * A CUDA kernel which gathers the atom forces from the grid.
  * The grid is assumed to be wrapped in dimension Z.
  *
- * \tparam[in] order                The PME order (must be 4 currently).
- * \tparam[in] wrapX                Tells if the grid is wrapped in the X dimension.
- * \tparam[in] wrapY                Tells if the grid is wrapped in the Y dimension.
- * \tparam[in] numGrids             The number of grids to use in the kernel. Can be 1 or 2.
- * \tparam[in] readGlobal           Tells if we should read spline values from global memory
- * \tparam[in] threadsPerAtom       How many threads work on each atom
+ * \tparam     order                The PME order (must be 4 currently).
+ * \tparam     wrapX                Tells if the grid is wrapped in the X dimension.
+ * \tparam     wrapY                Tells if the grid is wrapped in the Y dimension.
+ * \tparam     numGrids             The number of grids to use in the kernel. Can be 1 or 2.
+ * \tparam     readGlobal           Tells if we should read spline values from global memory
+ * \tparam     threadsPerAtom       How many threads work on each atom
  *
  * \param[in]  kernelParams         All the PME GPU data.
  */

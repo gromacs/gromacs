@@ -69,11 +69,11 @@
  * This corresponds to the CPU function spread_coefficients_bsplines_thread().
  * Optional second stage of the spline_and_spread_kernel.
  *
- * \tparam[in] order                PME interpolation order.
- * \tparam[in] wrapX                Whether the grid overlap in dimension X should be wrapped.
- * \tparam[in] wrapY                Whether the grid overlap in dimension Y should be wrapped.
- * \tparam[in] gridIndex            The index of the grid to use in the kernel.
- * \tparam[in] threadsPerAtom       How many threads work on each atom
+ * \tparam     order                PME interpolation order.
+ * \tparam     wrapX                Whether the grid overlap in dimension X should be wrapped.
+ * \tparam     wrapY                Whether the grid overlap in dimension Y should be wrapped.
+ * \tparam     gridIndex            The index of the grid to use in the kernel.
+ * \tparam     threadsPerAtom       How many threads work on each atom
  *
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
  * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
@@ -169,15 +169,15 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kern
  * writeGlobal should be used removing the need to recalculate the theta values in the gather kernel.
  * Similarly for useOrderThreads large systems order threads per atom gives higher performance than order*order threads
  *
- * \tparam[in] order                PME interpolation order.
- * \tparam[in] computeSplines       A boolean which tells if the spline parameter and
+ * \tparam     order                PME interpolation order.
+ * \tparam     computeSplines       A boolean which tells if the spline parameter and
  *                                  gridline indices' computation should be performed.
- * \tparam[in] spreadCharges        A boolean which tells if the charge spreading should be performed.
- * \tparam[in] wrapX                A boolean which tells if the grid overlap in dimension X should be wrapped.
- * \tparam[in] wrapY                A boolean which tells if the grid overlap in dimension Y should be wrapped.
- * \tparam[in] numGrids             The number of grids to use in the kernel. Can be 1 or 2.
- * \tparam[in] writeGlobal          A boolean which tells if the theta values and gridlines should be written to global memory.
- * \tparam[in] threadsPerAtom       How many threads work on each atom
+ * \tparam     spreadCharges        A boolean which tells if the charge spreading should be performed.
+ * \tparam     wrapX                A boolean which tells if the grid overlap in dimension X should be wrapped.
+ * \tparam     wrapY                A boolean which tells if the grid overlap in dimension Y should be wrapped.
+ * \tparam     numGrids             The number of grids to use in the kernel. Can be 1 or 2.
+ * \tparam     writeGlobal          A boolean which tells if the theta values and gridlines should be written to global memory.
+ * \tparam     threadsPerAtom       How many threads work on each atom
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
  */
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom>
