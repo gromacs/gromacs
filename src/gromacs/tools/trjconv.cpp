@@ -470,7 +470,7 @@ int gmx_trjconv(int argc, char* argv[])
           FALSE,
           etBOOL,
           { &bCONECT },
-          "Add conect records when writing [REF].pdb[ref] files. Useful "
+          "Add CONECT PDB records when writing [REF].pdb[ref] files. Useful "
           "for visualization of non-standard molecules, e.g. "
           "coarse grained ones" }
     };

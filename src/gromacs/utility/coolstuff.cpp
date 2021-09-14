@@ -295,7 +295,7 @@ std::string getCoolQuote()
         { "With a Lead Filled Snowshoe", "F. Zappa" },
         { "Right Between the Eyes", "F. Zappa" },
         { "BioBeat is Not Available In Regular Shops", "P.J. Meulenhoff" },
-        { "Rub It Right Accross Your Eyes", "F. Zappa" },
+        { "Rub It Right Across Your Eyes", "F. Zappa" },
         { "Shake Yourself", "YES" },
         { "I Am a Wonderful Thing", "Kid Creole" },
         { "Way to Go Dude", "Beavis and Butthead" },

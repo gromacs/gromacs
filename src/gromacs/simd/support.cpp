@@ -237,7 +237,7 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
     if (compiled == SimdType::X86_Avx2 && wanted == SimdType::X86_Avx512)
     {
         logMsg  = wrapper.wrapToString(formatString(
-                "Highest SIMD level requested by all nodes in run: %s\n"
+                "Highest SIMD level supported by all nodes in run: %s\n"
                 "SIMD instructions selected at compile time:       %s\n"
                 "This program was compiled for different hardware than you are running on, "
                 "which could influence performance. This build might have been configured on "
@@ -254,9 +254,9 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
              && identifyAvx512FmaUnits() == 1)
     {
         // The reason for explicitly checking the number of FMA units above is to avoid triggering
-        // this conditional if the AVX2 SIMD was requested by some other node in a heterogeneous MPI run.
+        // this conditional if the AVX2 SIMD was supported by some other node in a heterogeneous MPI run.
         logMsg  = wrapper.wrapToString(formatString(
-                "Highest SIMD level requested by all nodes in run: %s\n"
+                "Highest SIMD level supported by all nodes in run: %s\n"
                 "SIMD instructions selected at compile time:       %s\n"
                 "This program was compiled for different hardware than you are running on, "
                 "which could influence performance."
@@ -282,9 +282,9 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
         // the supported one, but AVX128Fma is an exception: AMD CPUs will (strongly) prefer
         // AVX128Fma, but they will work fine with AVX too. Thus, make an exception for this.
         logMsg = wrapper.wrapToString(
-                formatString("Highest SIMD level requested by all nodes in run: %s\n"
+                formatString("Highest SIMD level supported by all nodes in run: %s\n"
                              "SIMD instructions selected at compile time:       %s\n"
-                             "Compiled SIMD newer than requested; program might crash.",
+                             "Compiled SIMD newer than supported; program might crash.",
                              simdString(wanted).c_str(),
                              simdString(compiled).c_str()));
         warnMsg = logMsg;
@@ -293,7 +293,7 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
     {
         // This warning will also occur if compiled is X86_Avx and wanted is X86_Avx128Fma
         logMsg  = wrapper.wrapToString(formatString(
-                "Highest SIMD level requested by all nodes in run: %s\n"
+                "Highest SIMD level supported by all nodes in run: %s\n"
                 "SIMD instructions selected at compile time:       %s\n"
                 "This program was compiled for different hardware than you are running on, "
                 "which could influence performance.",
@@ -308,7 +308,7 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
     else if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8))
     {
         logMsg  = wrapper.wrapToString(formatString(
-                "Longest SVE length requested by all nodes in run: %d\n"
+                "Longest SVE length supported by all nodes in run: %d\n"
                 "SVE length selected at compile time:               %ld\n"
                 "This program was compiled for different hardware than you are running on, "
                 "which will lead to incorrect behavior.\n"

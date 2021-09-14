@@ -4342,7 +4342,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
 
     set_warning_line(wi, mdparin, -1);
 
-    if (allTrue(haveAbsoluteReference(*ir)) && allTrue(havePositionRestraints(*sys)))
+    if (ir->comm_mode != ComRemovalAlgorithm::No && allTrue(havePositionRestraints(*sys)))
     {
         warning_note(wi,
                      "Removing center of mass motion in the presence of position restraints might "

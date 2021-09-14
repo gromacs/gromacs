@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team.
+ * Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
  * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -1223,6 +1223,7 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
             {
                 kernelPtr = pmeGpu->programHandle_->impl_->spreadKernelThPerAtom4Dual;
             }
+            else
             {
                 kernelPtr = pmeGpu->programHandle_->impl_->spreadKernelThPerAtom4Single;
             }

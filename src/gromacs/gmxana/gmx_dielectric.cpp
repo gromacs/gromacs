@@ -337,7 +337,7 @@ int gmx_dielectric(int argc, char* argv[])
     dt     = yd[0][1] - yd[0][0];
     nxtail = std::min(static_cast<int>(tail / dt), nx);
 
-    printf("Read data set containing %d colums and %d rows\n", ny, nx);
+    printf("Read data set containing %d columns and %d rows\n", ny, nx);
     printf("Assuming (from data) that timestep is %g, nxtail = %d\n", dt, nxtail);
     snew(y, 6);
     for (i = 0; (i < ny); i++)

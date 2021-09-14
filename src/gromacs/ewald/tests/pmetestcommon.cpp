@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -910,7 +911,7 @@ const char* codePathToString(CodePath codePath)
 PmeTestHardwareContext::PmeTestHardwareContext() : codePath_(CodePath::CPU) {}
 
 PmeTestHardwareContext::PmeTestHardwareContext(TestDevice* testDevice) :
-    codePath_(CodePath::CPU), testDevice_(testDevice)
+    codePath_(CodePath::GPU), testDevice_(testDevice)
 {
     setActiveDevice(testDevice_->deviceInfo());
     pmeGpuProgram_ = buildPmeGpuProgram(testDevice_->deviceContext());

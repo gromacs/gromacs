@@ -922,7 +922,7 @@ The Wallcycle module is used for runtime performance measurement of :ref:`gmx md
 At the end of the log file of each run, the "Real cycle and time accounting" section
 provides a table with runtime statistics for different parts of the :ref:`gmx mdrun` code
 in rows of the table.
-The table contains colums indicating the number of ranks and threads that
+The table contains columns indicating the number of ranks and threads that
 executed the respective part of the run, wall-time and cycle
 count aggregates (across all threads and ranks) averaged over the entire run.
 The last column also shows what precentage of the total runtime each row represents.

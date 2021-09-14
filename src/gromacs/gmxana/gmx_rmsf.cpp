@@ -213,7 +213,7 @@ int gmx_rmsf(int argc, char* argv[])
         "respect to the reference structure is calculated.[PAR]",
         "With the option [TT]-aniso[tt], [THISMODULE] will compute anisotropic",
         "temperature factors and then it will also output average coordinates",
-        "and a [REF].pdb[ref] file with ANISOU records (corresonding to the [TT]-oq[tt]",
+        "and a [REF].pdb[ref] file with ANISOU records (corresponding to the [TT]-oq[tt]",
         "or [TT]-ox[tt] option). Please note that the U values",
         "are orientation-dependent, so before comparison with experimental data",
         "you should verify that you fit to the experimental coordinates.[PAR]",
@@ -228,7 +228,7 @@ int gmx_rmsf(int argc, char* argv[])
     static gmx_bool bRes = FALSE, bAniso = FALSE, bFit = TRUE;
     t_pargs         pargs[] = {
         { "-res", FALSE, etBOOL, { &bRes }, "Calculate averages for each residue" },
-        { "-aniso", FALSE, etBOOL, { &bAniso }, "Compute anisotropic termperature factors" },
+        { "-aniso", FALSE, etBOOL, { &bAniso }, "Compute anisotropic temperature factors" },
         { "-fit",
           FALSE,
           etBOOL,

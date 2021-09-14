@@ -373,7 +373,7 @@ static void read_vsite_database(const char*                            ddbname,
                     break;
                     default:
                         gmx_fatal(FARGS,
-                                  "Didnt find a case for directive %s in read_vsite_database\n",
+                                  "Didn't find a case for directive %s in read_vsite_database\n",
                                   dirstr);
                 }
             }

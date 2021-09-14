@@ -229,6 +229,15 @@ else()
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 
+set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+set(REGRESSIONTEST_BRANCH "master")
+# Run the regressiontests packaging job with the correct pakage
+# version string, and the release box checked, in order to have it
+# build the regressiontests tarball with all the right naming. The
+# naming affects the md5sum that has to go here, and if it isn't right
+# release workflow will report a failure.
+set(REGRESSIONTEST_MD5SUM "93956ea42c4d16fdd541518c05972989" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of
 # GMX_VERSION_STRING_OF_FORK here. This string will appear in the
@@ -256,20 +265,11 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
     set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
 endif()
 
-set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "master")
-# Run the regressiontests packaging job with the correct pakage
-# version string, and the release box checked, in order to have it
-# build the regressiontests tarball with all the right naming. The
-# naming affects the md5sum that has to go here, and if it isn't right
-# release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "93956ea42c4d16fdd541518c05972989" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
-
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
 set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
 
-# If run with cmake -P from releng scripts, print out necessary version info
+# If run with cmake -P from GitLab scripts, print out necessary version info
 # as JSON.
 if (CMAKE_SCRIPT_MODE_FILE)
     message("{ \"version\": \"${GMX_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")

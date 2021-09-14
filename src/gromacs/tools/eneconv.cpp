@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -445,7 +445,7 @@ int gmx_eneconv(int argc, char* argv[])
         "Reads one energy file and writes another, applying the [TT]-dt[tt],",
         "[TT]-offset[tt], [TT]-t0[tt] and [TT]-settime[tt] options and",
         "converting to a different format if necessary (indicated by file",
-        "extentions).[PAR]",
+        "extensions).[PAR]",
         "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
         "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
     };
