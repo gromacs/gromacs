@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of MM atoms">10</Int>
+  <Int Name="Number of QM atoms">2</Int>
+  <Real Name="MM charge">0.40999999999999998</Real>
+  <Real Name="QM charge">-0.40999999999999998</Real>
+  <Int Name="Exclusions Made">2</Int>
+  <Int Name="Removed bonds">0</Int>
+  <Int Name="Removed angles">0</Int>
+  <Int Name="Removed dihedrals">0</Int>
+  <Int Name="Removed settles">1</Int>
+  <Int Name="Generated CONNBONDS">2</Int>
+  <Int Name="Removed vsites">0</Int>
+  <Int Name="QM Constraints Found">0</Int>
+  <Int Name="Link-atom sites">1</Int>
+  <Int Name="Molblocks in topology">2</Int>
+</ReferenceData>

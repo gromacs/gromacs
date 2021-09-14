@@ -34,6 +34,7 @@
 
 gmx_add_libgromacs_sources(
     qmmminputgenerator.cpp
+    qmmmtopologypreprocessor.cpp
     )
 
 if (BUILD_TESTING)
