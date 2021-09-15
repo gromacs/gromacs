@@ -74,6 +74,19 @@ also now work.
 
 :issue:`4148`
 
+Static selections of index groups with repeated indices now work
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Static groups from index files referenced in selections (e.g. ``gmx
+tool -select "group \"Contacts\""``) only worked correctly if they
+never had adjacent repeats of the same index within the
+group. Repeating the same index can be meaningful e.g. in lists of
+inter-atomic distances to analyze with ``gmx distance`` to analyze
+``"1 2 2 3"``. Previously, the index group had to be written like
+``"2 3 1 2"`` in order to work.
+
+:issue:`4149`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

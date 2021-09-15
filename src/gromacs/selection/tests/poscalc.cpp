@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -350,7 +350,17 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
 
 TEST_F(PositionCalculationTest, ComputesAtomPositions)
 {
-    const int group[] = { 0, 1, 2, 3 };
+    const int group[] = { 1, 3, 0, 1 };
+    topManager_.requestVelocities();
+    topManager_.requestForces();
+    topManager_.initAtoms(4);
+    testSingleStatic(POS_ATOM, 0, false, group);
+}
+
+TEST_F(PositionCalculationTest, ComputesAtomPositionsWithRepeatedIndex)
+{
+    // Ensures bug #4149 is fixed
+    const int group[] = { 0, 1, 1, 3 };
     topManager_.requestVelocities();
     topManager_.requestForces();
     topManager_.initAtoms(4);
