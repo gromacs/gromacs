@@ -68,14 +68,14 @@ constexpr static int c_threadsPerBlock = 256;
  * \param computeVirial Whether to compute the virial.
  * \param deviceStream Device stream for kernel launch.
  */
-void launchLincsGpuKernel(const LincsGpuKernelParameters& kernelParams,
-                          const DeviceBuffer<Float3>&     d_x,
-                          DeviceBuffer<Float3>            d_xp,
-                          bool                            updateVelocities,
-                          DeviceBuffer<Float3>            d_v,
-                          real                            invdt,
-                          bool                            computeVirial,
-                          const DeviceStream&             deviceStream);
+void launchLincsGpuKernel(LincsGpuKernelParameters&   kernelParams,
+                          const DeviceBuffer<Float3>& d_x,
+                          DeviceBuffer<Float3>        d_xp,
+                          bool                        updateVelocities,
+                          DeviceBuffer<Float3>        d_v,
+                          real                        invdt,
+                          bool                        computeVirial,
+                          const DeviceStream&         deviceStream);
 
 } // namespace gmx
 

@@ -76,8 +76,6 @@ void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
                      tensor                      virialScaled,
                      const PbcAiuc&              pbcAiuc)
 {
-    GMX_ASSERT(GMX_GPU_CUDA, "LINCS GPU is only implemented in CUDA.");
-
     // Early exit if no constraints
     if (kernelParams_.numConstraintsThreads == 0)
     {
@@ -128,7 +126,8 @@ LincsGpu::LincsGpu(int                  numIterations,
                    const DeviceStream&  deviceStream) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
-    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "LINCS GPU is only implemented in CUDA.");
+    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
+                       "LINCS GPU is only implemented in CUDA and SYCL.");
     kernelParams_.numIterations  = numIterations;
     kernelParams_.expansionOrder = expansionOrder;
 
@@ -343,7 +342,8 @@ bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 
 void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const real* invmass)
 {
-    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "LINCS GPU is only implemented in CUDA.");
+    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
+                       "LINCS GPU is only implemented in CUDA and SYCL.");
     // List of constrained atoms (CPU memory)
     std::vector<AtomPair> constraintsHost;
     // Equilibrium distances for the constraints (CPU)
@@ -450,6 +450,8 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
             maxCoupledConstraintsHasIncreased = true;
         }
     }
+
+    kernelParams_.haveCoupledConstraints = (maxCoupledConstraints > 0);
 
     coupledConstraintsCountsHost.resize(kernelParams_.numConstraintsThreads, 0);
     coupledConstraintsIndicesHost.resize(maxCoupledConstraints * kernelParams_.numConstraintsThreads, -1);
