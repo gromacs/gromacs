@@ -193,8 +193,11 @@ public:
 private:
     DeviceEvent event_;
     int         consumptionCount_;
-    int         minConsumptionCount_;
-    int         maxConsumptionCount_;
+#if defined(__clang__) && GMX_GPU_CUDA
+    [[maybe_unused]]
+#endif
+    int minConsumptionCount_; // Unused in CUDA builds, yet
+    int maxConsumptionCount_;
 };
 
 #endif
