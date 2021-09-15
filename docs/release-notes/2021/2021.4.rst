@@ -24,6 +24,19 @@ grompp now prints a note again when combining center of mass motion removal and 
 
 :issue:`4128`
 
+Static selections of large index groups now work
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Commands like ``gmx distance -f traj.xtc -n ndx.ndx -select "group
+\"Contacts\""`` only worked if the size of ``Contacts`` was less than
+the number of atoms. This restriction was a bug, and has been fixed so
+that ``Contacts`` make take any size.
+
+Other similar uses of static selections derived from index groups will
+also now work.
+
+:issue:`4148`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

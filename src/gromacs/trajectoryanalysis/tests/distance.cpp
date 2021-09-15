@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,6 +86,22 @@ TEST_F(DistanceModuleTest, HandlesDynamicSelections)
     const char* const cmdline[] = { "distance", "-select", "atomname S1 S2 and res_cog x < 2.8",
                                     "-len",     "2",       "-binw",
                                     "0.5" };
+    setTopology("simple.gro");
+    runTest(CommandLine(cmdline));
+}
+
+TEST_F(DistanceModuleTest, HandlesSelectionFromGroup)
+{
+    const char* const cmdline[] = { "distance", "-select", "group \"Contacts\"" };
+    setInputFile("-n", "simple.ndx");
+    setTopology("simple.gro");
+    runTest(CommandLine(cmdline));
+}
+
+TEST_F(DistanceModuleTest, HandlesSelectionFromLargeGroup)
+{
+    const char* const cmdline[] = { "distance", "-select", "group \"ManyContacts\"" };
+    setInputFile("-n", "simple.ndx");
     setTopology("simple.gro");
     runTest(CommandLine(cmdline));
 }
