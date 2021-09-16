@@ -452,7 +452,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (MASTER(cr))
         {
-            MimicCommunicator::getCoords(&state_global->x, state_global->natoms);
+            MimicCommunicator::getCoords(state_global->x, state_global->natoms);
         }
 
         if (ir->efep != FreeEnergyPerturbationType::No)

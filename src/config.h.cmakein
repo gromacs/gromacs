@@ -401,9 +401,6 @@
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 
-/* Use MiMiC QM/MM interface */
-#cmakedefine01 GMX_MIMIC
-
 /* Use Interactive Molecular Dynamics */
 #cmakedefine01 GMX_IMD
 

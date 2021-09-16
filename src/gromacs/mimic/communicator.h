@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,14 +36,16 @@
 #ifndef GMX_MIMIC_COMMUNICATOR_H
 #define GMX_MIMIC_COMMUNICATOR_H
 
-#include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 
 namespace gmx
 {
+
+template<class T>
+class ArrayRef;
+
 /**
  * \inlibraryapi
  * \internal \brief
@@ -73,7 +75,7 @@ public:
      * @param mtop global topology data
      * @param coords coordinates of all atoms
      */
-    static void sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx::RVec> coords);
+    static void sendInitData(gmx_mtop_t* mtop, ArrayRef<const RVec> coords);
 
     /*! \brief
      * Gets the number of MD steps to perform from MiMiC
@@ -88,7 +90,7 @@ public:
      * @param x array of coordinates to fill
      * @param natoms number of atoms in the system
      */
-    static void getCoords(PaddedHostVector<RVec>* x, int natoms);
+    static void getCoords(ArrayRef<RVec> x, int natoms);
 
     /*! \brief
      * Send the potential energy value to MiMiC

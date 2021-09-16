@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,17 @@
 
 # Set up the module library
 add_library(mimic INTERFACE)
-file(GLOB MIMIC_SOURCES *.cpp)
+if (GMX_MIMIC)
+    file(GLOB MIMIC_SOURCES
+        communicator.cpp
+        utilities.cpp
+        )
+else()
+    file(GLOB MIMIC_SOURCES
+        communicator_stub.cpp
+        utilities.cpp
+        )
+endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MIMIC_SOURCES} PARENT_SCOPE)
 
 # Source files have the following dependencies on library infrastructure.
