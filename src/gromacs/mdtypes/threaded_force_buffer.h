@@ -185,7 +185,7 @@ public:
     //! Sets up the reduction, should be called after generating the masks on each thread
     void setupReduction();
 
-    /*! Reduces forces and energies, as requested by \p stepWork
+    /*! \brief Reduces forces and energies, as requested by \p stepWork
      *
      * The reduction of all output starts at the output from thread \p reductionBeginIndex,
      * except for the normal force buffer, which always starts at 0.

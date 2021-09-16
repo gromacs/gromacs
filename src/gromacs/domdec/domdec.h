@@ -239,12 +239,12 @@ void dd_move_x_and_v_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x, r
  */
 gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 
-/*! Const getter for the local topology checker
+/*! \brief Const getter for the local topology checker
  *
  * \returns Const handle to local topology checker */
 const gmx::LocalTopologyChecker& dd_localTopologyChecker(const gmx_domdec_t& dd);
 
-/*! Getter for the local topology checker
+/*! \brief Getter for the local topology checker
  *
  * \returns Handle to local topology checker */
 gmx::LocalTopologyChecker* dd_localTopologyChecker(gmx_domdec_t* dd);

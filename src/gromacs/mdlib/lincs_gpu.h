@@ -96,7 +96,7 @@ struct LincsGpuKernelParameters
     DeviceBuffer<AtomPair> d_constraints;
     //! Equilibrium distances for the constraints (GPU)
     DeviceBuffer<float> d_constraintsTargetLengths;
-    /*! Whether there are coupled constraints.
+    /*! \brief Whether there are coupled constraints.
      *
      * In SYCL, the accessors can not be initialized with an empty buffer.
      * In case there are no coupled constraints, the respective buffers below are

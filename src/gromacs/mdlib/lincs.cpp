@@ -85,8 +85,6 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
 
-using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
-
 namespace gmx
 {
 

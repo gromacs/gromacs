@@ -52,7 +52,7 @@ namespace Nbnxm
 {
 using gmx::InteractionLocality;
 
-/*! Launch SYCL NBNXM prune-only kernel.
+/*! \brief Launch SYCL NBNXM prune-only kernel.
  *
  * \param nb Non-bonded parameters.
  * \param iloc Interaction locality.

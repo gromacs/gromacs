@@ -53,7 +53,7 @@ namespace Nbnxm
 {
 using gmx::InteractionLocality;
 
-/*! Launch SYCL NBNXM kernel.
+/*! \brief Launch SYCL NBNXM kernel.
  *
  * \param nb Non-bonded parameters.
  * \param stepWork Workload flags for the current step.
