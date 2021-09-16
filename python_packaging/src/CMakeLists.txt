@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python
 # package version, but is likely to do so.
-project(gmxapi VERSION 0.2.0)
+project(gmxapi VERSION 0.2.1)
 
 # Check if Python package is being built directly or via add_subdirectory
 set(GMXAPI_MASTER_PROJECT OFF)
@@ -76,10 +76,13 @@ if(POLICY CMP0074) #3.12
 endif()
 
 if(GMXAPI_MASTER_PROJECT)
-    # TODO: Retain compatibility with libgmxapi 0.1 and back down the requirement.
-    find_package(gmxapi 0.2.0 REQUIRED
+    find_package(gmxapi 0.2 REQUIRED
                  HINTS "$ENV{GROMACS_DIR}"
                  )
+    if (gmxapi_VERSION VERSION_LESS 0.2.1)
+        message(WARNING "Your GROMACS installation does not support custom MD plugins. "
+                "If you need this feature, please install GROMACS 2021.3 or higher.")
+    endif ()
 endif()
 if(gmxapi_FOUND)
     set(_suffix "")
@@ -132,6 +135,12 @@ set(GMXAPI_PYTHON_EXTENSION_SOURCES
 pybind11_add_module(_gmxapi
                     ${GMXAPI_PYTHON_EXTENSION_SOURCES}
                     )
+
+if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
+    target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/launch_020.cpp)
+endif()
 
 target_include_directories(_gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi
@@ -252,5 +261,7 @@ endif()
 # to the `check` target. Normal usage is to first install the Python package,
 # then run `pytest` on the `tests` directory. Refer to gmxapi package documentation.
 if(NOT GMXAPI_MASTER_PROJECT)
-    add_subdirectory(test)
+	if (BUILD_TESTING)
+		add_subdirectory(test)
+	endif()
 endif()

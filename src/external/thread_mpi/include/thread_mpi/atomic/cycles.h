@@ -1,5 +1,5 @@
 /*
- * define GMX_USE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
+ * define GMX_USE_RDTSCP=1 to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
 
@@ -48,7 +48,7 @@ static __inline__ tMPI_Cycles_t tMPI_Cycles_read(void)
 typedef __int64 tMPI_Cycles_t;
 static __inline tMPI_Cycles_t tMPI_Cycles_read(void)
 {
-#ifdef GMX_USE_RDTSCP
+#if GMX_USE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
 #else

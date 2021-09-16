@@ -1232,6 +1232,19 @@ int Mdrunner::mdrunner()
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
     }
+    // Ensure that all atoms within the same update group are in the
+    // same periodic image. Otherwise, a simulation that did not use
+    // update groups (e.g. a single-rank simulation) cannot always be
+    // correctly restarted in a way that does use update groups
+    // (e.g. a multi-rank simulation).
+    if (isSimulationMasterRank)
+    {
+        const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
+        if (useUpdateGroups)
+        {
+            putUpdateGroupAtomsInSamePeriodicImage(*cr->dd, mtop, globalState->box, globalState->x);
+        }
+    }
 
     // The GPU update is decided here because we need to know whether the constraints or
     // SETTLEs can span accross the domain borders (i.e. whether or not update groups are

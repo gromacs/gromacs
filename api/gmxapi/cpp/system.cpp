@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,6 @@
 #include "gmxapi/md.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
-#include "gmxapi/system.h"
 
 #include "system_impl.h"
 #include "workflow.h"
@@ -77,6 +76,10 @@ std::shared_ptr<Session> System::launch(const std::shared_ptr<Context>& context)
 System::System(std::unique_ptr<Impl> implementation) : impl_{ std::move(implementation) }
 {
     GMX_ASSERT(impl_, "Constructor requires valid implementation object.");
+}
+System::Impl* System::get() const
+{
+    return impl_.get();
 }
 
 System::~System() = default;
@@ -114,6 +117,11 @@ System fromTprFile(const std::string& filename)
     // introspection and user runtime options.
 
     return system;
+}
+
+std::shared_ptr<Workflow> getWork(const System::Impl& system)
+{
+    return system.workflow_;
 }
 
 System::Impl::Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept :

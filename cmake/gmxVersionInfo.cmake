@@ -198,7 +198,7 @@
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
 set(GMX_VERSION_MAJOR 2021)
-set(GMX_VERSION_PATCH 2)
+set(GMX_VERSION_PATCH 3)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
@@ -262,7 +262,7 @@ set(REGRESSIONTEST_BRANCH "release-2021")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "62606f5f6ea37f6114b6e9cf58218f13" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "93956ea42c4d16fdd541518c05972989" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -285,8 +285,8 @@ if (GMX_VERSION_STRING_OF_FORK)
     set(GMX_MANUAL_DOI_INTERNAL "")
     set(GMX_SOURCE_DOI_INTERNAL "")
 else()
-    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
-    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_MANUAL_DOI_INTERNAL "10.5281/zenodo.5053220") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "10.5281/zenodo.5053201") # Set correct doi string here
 endif()
 set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
 set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
@@ -323,7 +323,7 @@ if (GMX_GIT_VERSION_INFO)
 endif()
 
 include(gmxCustomCommandUtilities)
-
+include(FindPythonModule)
 # The first two are also for use outside this file, encapsulating the details
 # of how to use the generated VersionInfo.cmake.
 set(VERSION_INFO_CMAKE_FILE   ${PROJECT_BINARY_DIR}/VersionInfo.cmake)
@@ -365,6 +365,20 @@ string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_C
 #          step 1, so they get regenerated only when the static version info
 #          changes.
 
+# Check if we have all necessary python modules available
+if (Python3_Interpreter_FOUND)
+    set(HAVE_FULL_FUNCTIONING_PYTHON Python3_Interpreter_FOUND)
+    foreach(module argparse hashlib hmac os stat re) # add further modules if necessary
+        find_python_module(${module} QUIET)
+        string(TOUPPER ${module} module_upper)
+        if(NOT PYTHONMODULE_${module_upper})
+            message(STATUS
+                "Python module ${module} not found - disabling checksum validation")
+            unset(HAVE_FULL_FUNCTIONING_PYTHON)
+        endif()
+    endforeach()
+endif()
+
 # Configure information known at this time into a partially filled
 # version info file.
 set(VERSION_INFO_CMAKEIN_FILE_PARTIAL
@@ -405,6 +419,7 @@ else()
         OUTPUT ${VERSION_INFO_CMAKE_FILE}
         COMMAND ${CMAKE_COMMAND}
             -D PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
+            -D HAVE_FULL_FUNCTIONING_PYTHON=${HAVE_FULL_FUNCTIONING_PYTHON}
             -D PROJECT_VERSION=${GMX_VERSION_STRING}
             -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
             -D DIRECTORIES_TO_CHECKSUM=${DIRECTORIES_TO_CHECKSUM_STRING}
@@ -435,7 +450,7 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (Python3_Interpreter_FOUND)
+if (HAVE_FULL_FUNCTIONING_PYTHON)
     # We need the full path to the directories after passing it through
     set(FULL_PATH_DIRECTORIES "")
     foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})

@@ -25,49 +25,35 @@
 namespace plugin
 {
 
-// Stop-gap for cross-language data exchange pending SharedData implementation and inclusion of Eigen.
-// Adapted from pybind docs.
+// Stop-gap for cross-language data exchange pending SharedData implementation and inclusion of
+// Eigen. Adapted from pybind docs.
 template<class T>
 class Matrix
 {
-    public:
-        Matrix(size_t rows,
-               size_t cols) :
-            rows_(rows),
-            cols_(cols),
-            data_(rows_ * cols_,
-                  0)
-        {
-        }
+public:
+    Matrix(size_t rows, size_t cols) : rows_(rows), cols_(cols), data_(rows_ * cols_, 0) {}
 
-        explicit Matrix(std::vector<T>&& captured_data) :
-            rows_{1},
-            cols_{captured_data.size()},
-            data_{std::move(captured_data)}
-        {
-        }
+    explicit Matrix(std::vector<T>&& captured_data) :
+        rows_{ 1 }, cols_{ captured_data.size() }, data_{ std::move(captured_data) }
+    {
+    }
 
-        std::vector<T>* vector()
-        { return &data_; }
+    std::vector<T>* vector() { return &data_; }
 
-        T* data()
-        { return data_.data(); };
+    T* data() { return data_.data(); };
 
-        size_t rows() const
-        { return rows_; }
+    [[nodiscard]] size_t rows() const { return rows_; }
 
-        size_t cols() const
-        { return cols_; }
+    [[nodiscard]] size_t cols() const { return cols_; }
 
-    private:
-        size_t rows_;
-        size_t cols_;
-        std::vector<T> data_;
+private:
+    size_t         rows_;
+    size_t         cols_;
+    std::vector<T> data_;
 };
 
 // Defer implicit instantiation to ensemblepotential.cpp
-extern template
-class Matrix<double>;
+extern template class Matrix<double>;
 
 /*!
  * \brief An active handle to ensemble resources provided by the Context.
@@ -107,29 +93,27 @@ class Matrix<double>;
  */
 class ResourcesHandle
 {
-    public:
-        /*!
-         * \brief Ensemble reduce.
-         *
-         * \param send Matrices to be summed across the ensemble using Context resources.
-         * \param receive destination of reduced data instead of updating internal Matrix.
-         */
-        void reduce(const Matrix<double>& send,
-                    Matrix<double>* receive) const;
+public:
+    /*!
+     * \brief Ensemble reduce.
+     *
+     * \param send Matrices to be summed across the ensemble using Context resources.
+     * \param receive destination of reduced data instead of updating internal Matrix.
+     */
+    void reduce(const Matrix<double>& send, Matrix<double>* receive) const;
 
-        /*!
-         * \brief Issue a stop condition event.
-         *
-         * Can be called on any or all ranks. Sets a condition that will cause the current simulation to shut down
-         * after the current step.
-         */
-        void stop();
+    /*!
+     * \brief Issue a stop condition event.
+     *
+     * Can be called on any or all ranks. Sets a condition that will cause the current simulation to
+     * shut down after the current step.
+     */
+    void stop();
 
-        // to be abstracted and hidden...
-        const std::function<void(const Matrix<double>&,
-                                 Matrix<double>*)>* reduce_;
+    // to be abstracted and hidden...
+    const std::function<void(const Matrix<double>&, Matrix<double>*)>* reduce_;
 
-        gmxapi::SessionResources* session_;
+    gmxapi::SessionResources* session_;
 };
 
 /*!
@@ -143,55 +127,51 @@ class ResourcesHandle
  */
 class Resources
 {
-    public:
-        /*!
-         * \brief Create a new resources object.
-         *
-         * This constructor is called by the framework during Session launch to provide the plugin
-         * potential with external resources.
-         *
-         * \note If getHandle() is going to be used, setSession() must be called first.
-         *
-         * \param reduce ownership of a function object providing ensemble averaging of a 2D matrix.
-         */
-        explicit Resources(std::function<void(const Matrix<double>&,
-                                              Matrix<double>*)>&& reduce) :
-            reduce_(reduce),
-            session_(nullptr)
-        {};
+public:
+    /*!
+     * \brief Create a new resources object.
+     *
+     * This constructor is called by the framework during Session launch to provide the plugin
+     * potential with external resources.
+     *
+     * \note If getHandle() is going to be used, setSession() must be called first.
+     *
+     * \param reduce ownership of a function object providing ensemble averaging of a 2D matrix.
+     */
+    explicit Resources(std::function<void(const Matrix<double>&, Matrix<double>*)>&& reduce) :
+        reduce_(reduce), session_(nullptr){};
 
-        /*!
-         * \brief Grant the caller an active handle for the currently executing block of code.
-         *
-         * Objects should not keep resource handles open for longer than a single block of code.
-         * calculate() and callback() functions get a handle to the resources for the current time step
-         * by calling getHandle().
-         *
-         * \note setSession() must be called before this function can be used.
-         * This clumsy protocol requires other infrastructure before it can be
-         * cleaned up for gmxapi 0.1
-         *
-         * \return resource handle
-         *
-         * In this release, the only facility provided by the resources is a function object for
-         * the ensemble averaging function provided by the Context.
-         */
-        ResourcesHandle getHandle() const;
+    /*!
+     * \brief Grant the caller an active handle for the currently executing block of code.
+     *
+     * Objects should not keep resource handles open for longer than a single block of code.
+     * calculate() and callback() functions get a handle to the resources for the current time step
+     * by calling getHandle().
+     *
+     * \note setSession() must be called before this function can be used.
+     * This clumsy protocol requires other infrastructure before it can be
+     * cleaned up for gmxapi 0.1
+     *
+     * \return resource handle
+     *
+     * In this release, the only facility provided by the resources is a function object for
+     * the ensemble averaging function provided by the Context.
+     */
+    [[nodiscard]] ResourcesHandle getHandle() const;
 
-        /*!
-         * \brief Acquires a pointer to a Session managing these resources.
-         *
-         * \param session non-owning pointer to Session resources.
-         */
-        void setSession(gmxapi::SessionResources* session);
+    /*!
+     * \brief Acquires a pointer to a Session managing these resources.
+     *
+     * \param session non-owning pointer to Session resources.
+     */
+    void setSession(gmxapi::SessionResources* session);
 
-    private:
-        //! bound function object to provide ensemble reduce facility.
-        std::function<void(const Matrix<double>&,
-                           Matrix<double>*)> reduce_;
+private:
+    //! bound function object to provide ensemble reduce facility.
+    std::function<void(const Matrix<double>&, Matrix<double>*)> reduce_;
 
-        // Raw pointer to the session in which these resources live.
-        gmxapi::SessionResources* session_;
+    // Raw pointer to the session in which these resources live.
+    gmxapi::SessionResources* session_;
 };
 
 /*!
@@ -202,190 +182,175 @@ class Resources
  *
  * \tparam R a class implementing the gmx::IRestraintPotential interface.
  *
- * The template type parameter should define a ``input_param_type`` member type.
+ * The template type parameter is a class that defines a ``input_param_type`` member type
+ * and which implements a constructor with the signature
+ * ``R(std::vector<int>, const R::input_param_type&, std::shared_ptr<Resources>)``.
  *
  * \todo move this to a template header in gmxapi */
 template<class R>
 class RestraintModule : public gmxapi::MDModule // consider names
 {
-    public:
-        using param_t = typename R::input_param_type;
+public:
+    using param_t = typename R::input_param_type;
 
-        /*!
-         * \brief Construct a named restraint module.
-         *
-         * Objects of this type are created during Session launch, so this code really doesn't belong
-         * here. The Director / Builder for the restraint uses a generic interface to pass standard
-         * parameters for pair restraints: a list of sites, a (custom) parameters structure, and
-         * resources provided by the Session.
-         *
-         * \param name
-         * \param sites
-         * \param params
-         * \param resources
-         */
-        RestraintModule(std::string name,
-                        std::vector<int> sites,
-                        const typename R::input_param_type& params,
-                        std::shared_ptr<Resources> resources) :
-            sites_{std::move(sites)},
-            params_{params},
-            resources_{std::move(resources)},
-            name_{std::move(name)}
-        {
+    /*!
+     * \brief Construct a named restraint module.
+     *
+     * Objects of this type are created during Session launch, so this code really doesn't belong
+     * here. The Director / Builder for the restraint uses a generic interface to pass standard
+     * parameters for pair restraints: a list of sites, a (custom) parameters structure, and
+     * resources provided by the Session.
+     *
+     * \param name
+     * \param sites
+     * \param params
+     * \param resources
+     */
+    RestraintModule(std::string                         name,
+                    std::vector<int>                    sites,
+                    const typename R::input_param_type& params,
+                    std::shared_ptr<Resources>          resources) :
+        sites_{ std::move(sites) },
+        params_{ params },
+        resources_{ std::move(resources) },
+        name_{ std::move(name) } {
 
         };
 
-        ~RestraintModule() override = default;
+    ~RestraintModule() override = default;
 
-        /*!
-         * \brief Implement gmxapi::MDModule interface to get module name.
-         *
-         * name is provided during the building stage.
-         * \return
-         */
-        // \todo make member function const
-        const char* name() const override
+    /*!
+     * \brief Implement gmxapi::MDModule interface to get module name.
+     *
+     * name is provided during the building stage.
+     * \return
+     */
+    // \todo make member function const
+    [[nodiscard]] const char* name() const override { return name_.c_str(); }
+
+    /*!
+     * \brief Implement gmxapi::MDModule interface to create a restraint for libgromacs.
+     *
+     * \return (Possibly shared) Ownership of a restraint instance
+     *
+     * Creates the restraint instance if it does not already exist. Only creates one restraint
+     * instance in the lifetime of the RestraintModule.
+     *
+     * Note this interface is not stable but requires other GROMACS and gmxapi infrastructure
+     * to mature before it is clear whether we will be creating a new instance or sharing ownership
+     * of the object. A future version may use a std::unique_ptr.
+     */
+    std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
+    {
+        std::lock_guard<std::mutex> lock(restraintInstantiation_);
+        if (!restraint_)
         {
-            return name_.c_str();
+            restraint_ = std::make_shared<R>(sites_, params_, resources_);
         }
+        return restraint_;
+    }
 
-        /*!
-         * \brief Implement gmxapi::MDModule interface to create a restraint for libgromacs.
-         *
-         * \return (Possibly shared) Ownership of a restraint instance
-         *
-         * Creates the restraint instance if it does not already exist. Only creates one restraint
-         * instance in the lifetime of the RestraintModule.
-         * 
-         * Note this interface is not stable but requires other GROMACS and gmxapi infrastructure
-         * to mature before it is clear whether we will be creating a new instance or sharing ownership
-         * of the object. A future version may use a std::unique_ptr.
-         */
-        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
-        {
-            std::lock_guard<std::mutex> lock(restraintInstantiation_);
-            if (!restraint_)
-            {
-                restraint_ = std::make_shared<R>(sites_,
-                                                 params_,
-                                                 resources_);
-            }
-            return restraint_;
-        }
+private:
+    std::vector<int> sites_;
+    param_t          params_;
 
-    private:
-        std::vector<int> sites_;
-        param_t params_;
+    // Need to figure out if this is copyable or who owns it.
+    std::shared_ptr<Resources> resources_;
 
-        // Need to figure out if this is copyable or who owns it.
-        std::shared_ptr<Resources> resources_;
-
-        const std::string name_;
-        std::shared_ptr<R> restraint_{nullptr};
-        std::mutex restraintInstantiation_;
+    const std::string  name_;
+    std::shared_ptr<R> restraint_{ nullptr };
+    std::mutex         restraintInstantiation_;
 };
 
 /*!
  * \brief Filehandle management helper class.
  *
- * Use the RAII pattern to make sure that a (newly) constructed object has an open filehandle and that
- * a the filehandle for a destructed object is closed. Closing a file is not guaranteed to be error-free,
- * so the programmer should explicitly call close() and check for errors (see the C library docs
- * for fclose()).
+ * Use the RAII pattern to make sure that a (newly) constructed object has an open filehandle and
+ * that a the filehandle for a destructed object is closed. Closing a file is not guaranteed to be
+ * error-free, so the programmer should explicitly call close() and check for errors (see the C
+ * library docs for fclose()).
  *
  * RAIIFile makes sure that fclose() is called exactly once, whether client code issues close()
  * or not.
  */
 class RAIIFile
 {
-    public:
+public:
+    /*!
+     * \brief Open a file in the chosen access mode.
+     *
+     * \param filename Name of file to be opened.
+     * \param mode access mode as described for the fopen C library call.
+     */
+    RAIIFile(const char* filename, const char* mode) : fh_{ fopen(filename, mode) } {}
 
-        /*!
-         * \brief Open a file in the chosen access mode.
-         *
-         * \param filename Name of file to be opened.
-         * \param mode access mode as described for the fopen C library call.
-         */
-        RAIIFile(const char* filename,
-                 const char* mode) :
-            fh_{fopen(filename,
-                      mode)}
-        {}
+    /*!
+     * \brief Open a file for writing.
+     *
+     * \param filename Name of file to be opened.
+     *
+     * File is opened in mode "w", which truncates data if the file already exists.
+     * For other file access modes, use RAIIFile(const char* filename, const char* mode)
+     */
+    explicit RAIIFile(const char* filename) : RAIIFile(filename, "w") {}
 
-        /*!
-         * \brief Open a file for writing.
-         *
-         * \param filename Name of file to be opened.
-         *
-         * File is opened in mode "w", which truncates data if the file already exists.
-         * For other file access modes, use RAIIFile(const char* filename, const char* mode)
-         */
-        explicit RAIIFile(const char* filename) :
-            RAIIFile(filename,
-                     "w")
-        {}
-
-        /*!
-         * \brief Explicitly close the associated filehandle.
-         *
-         * It is good practice to explicitly close the file at a known point in the client code, though
-         * it is not strictly necessary. If the filehandle is still open when the RAIIFile object is
-         * destroyed, the fclose will be called then.
-         *
-         * Calling close() additional times on the same RAIIFile object is fine and has no effect in
-         * single-threaded code. However, the destructor and close() routines are not thread-safe, so
-         * the client code should make sure that close() is not called at the same time by multiple threads.
-         * Standard reference-counting constructs, like std::shared_ptr, can be used to make sure the
-         * object destructor is called exactly once if it needs to be shared.
-         *
-         * Refer to documentation on fclose() on checking for and interpreting `errno`.
-         */
-        void close()
+    /*!
+     * \brief Explicitly close the associated filehandle.
+     *
+     * It is good practice to explicitly close the file at a known point in the client code, though
+     * it is not strictly necessary. If the filehandle is still open when the RAIIFile object is
+     * destroyed, the fclose will be called then.
+     *
+     * Calling close() additional times on the same RAIIFile object is fine and has no effect in
+     * single-threaded code. However, the destructor and close() routines are not thread-safe, so
+     * the client code should make sure that close() is not called at the same time by multiple
+     * threads. Standard reference-counting constructs, like std::shared_ptr, can be used to make
+     * sure the object destructor is called exactly once if it needs to be shared.
+     *
+     * Refer to documentation on fclose() on checking for and interpreting `errno`.
+     */
+    void close()
+    {
+        if (fh_ != nullptr)
         {
-            if (fh_ != nullptr)
-            {
-                fclose(fh_);
-            }
-            fh_ = nullptr;
+            fclose(fh_);
         }
+        fh_ = nullptr;
+    }
 
-        /*!
-         * \brief RAII destructor.
-         *
-         * Make sure the filehandle gets closed exactly once.
-         */
-        ~RAIIFile()
+    /*!
+     * \brief RAII destructor.
+     *
+     * Make sure the filehandle gets closed exactly once.
+     */
+    ~RAIIFile()
+    {
+        if (fh_ != nullptr)
         {
-            if (fh_ != nullptr)
-            {
-                fclose(fh_);
-            }
+            fclose(fh_);
         }
+    }
 
-        RAIIFile(const RAIIFile&) = delete;
+    RAIIFile(const RAIIFile&) = delete;
 
-        RAIIFile& operator=(const RAIIFile&) = delete;
+    RAIIFile& operator=(const RAIIFile&) = delete;
 
-        RAIIFile(RAIIFile&&) = default;
+    RAIIFile(RAIIFile&&) = default;
 
-        RAIIFile& operator=(RAIIFile&&) = default;
+    RAIIFile& operator=(RAIIFile&&) = default;
 
-        /*!
-         * \brief Get the managed filehandle.
-         *
-         * \return raw pointer to the underlying filehandle.
-         */
-        FILE* fh() const noexcept
-        {
-            return fh_;
-        }
+    /*!
+     * \brief Get the managed filehandle.
+     *
+     * \return raw pointer to the underlying filehandle.
+     */
+    [[nodiscard]] FILE* fh() const noexcept { return fh_; }
 
-    private:
-        /// file handle
-        FILE* fh_{nullptr};
+private:
+    /// file handle
+    FILE* fh_{ nullptr };
 };
 
 } // end namespace plugin
 
-#endif //RESTRAINT_SESSIONRESOURCES_H
+#endif // RESTRAINT_SESSIONRESOURCES_H

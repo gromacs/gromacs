@@ -4,7 +4,7 @@
  * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -721,7 +721,8 @@ static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
         }
         else
         {
-            if (cr->dd->comm->ddRankSetup.usePmeOnlyRanks)
+            const DDRankSetup& rankSetup = cr->dd->comm->ddRankSetup;
+            if (rankSetup.rankOrder != DdRankOrder::pp_pme && rankSetup.usePmeOnlyRanks)
             {
                 nodeid = ddindex + gmx_ddcoord2pmeindex(cr, x, y, z);
             }
@@ -1448,13 +1449,14 @@ static void receive_ddindex2simnodeid(gmx_domdec_t* dd, t_commrec* cr)
 
 static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
                                              t_commrec*           cr,
-                                             const DdRankOrder    ddRankOrder,
                                              bool gmx_unused    reorder,
                                              const DDRankSetup& ddRankSetup,
                                              ivec               ddCellIndex,
                                              std::vector<int>*  pmeRanks)
 {
     CartesianRankSetup cartSetup;
+
+    const DdRankOrder ddRankOrder = ddRankSetup.rankOrder;
 
     cartSetup.bCartesianPP     = (ddRankOrder == DdRankOrder::cartesian);
     cartSetup.bCartesianPP_PME = false;
@@ -1605,7 +1607,6 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
  */
 static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
                                                  const DDSettings&    ddSettings,
-                                                 const DdRankOrder    ddRankOrder,
                                                  const DDRankSetup&   ddRankSetup,
                                                  t_commrec*           cr,
                                                  ivec                 ddCellIndex,
@@ -1623,8 +1624,8 @@ static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
     if (ddRankSetup.usePmeOnlyRanks)
     {
         /* Split the communicator into a PP and PME part */
-        cartSetup = split_communicator(mdlog, cr, ddRankOrder, ddSettings.useCartesianReorder,
-                                       ddRankSetup, ddCellIndex, pmeRanks);
+        cartSetup = split_communicator(mdlog, cr, ddSettings.useCartesianReorder, ddRankSetup,
+                                       ddCellIndex, pmeRanks);
     }
     else
     {
@@ -2307,6 +2308,7 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
 /*! \brief Set the cell size and interaction limits, as well as the DD grid */
 static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
                                   int                  numNodes,
+                                  const DdRankOrder    rankOrder,
                                   const DDGridSetup&   ddGridSetup,
                                   const t_inputrec&    ir)
 {
@@ -2316,6 +2318,8 @@ static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
                                  ddGridSetup.numDomains[ZZ], ddGridSetup.numPmeOnlyRanks);
 
     DDRankSetup ddRankSetup;
+
+    ddRankSetup.rankOrder = rankOrder;
 
     ddRankSetup.numPPRanks = numNodes - ddGridSetup.numPmeOnlyRanks;
     copy_ivec(ddGridSetup.numDomains, ddRankSetup.numPPCells);
@@ -3008,11 +3012,11 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
 
     cr_->npmenodes = ddGridSetup_.numPmeOnlyRanks;
 
-    ddRankSetup_ = getDDRankSetup(mdlog_, cr_->sizeOfDefaultCommunicator, ddGridSetup_, ir_);
+    ddRankSetup_ = getDDRankSetup(mdlog_, cr_->sizeOfDefaultCommunicator, options_.rankOrder,
+                                  ddGridSetup_, ir_);
 
     /* Generate the group communicator, also decides the duty of each rank */
-    cartSetup_ = makeGroupCommunicators(mdlog_, ddSettings_, options_.rankOrder, ddRankSetup_, cr_,
-                                        ddCellIndex_, &pmeRanks_);
+    cartSetup_ = makeGroupCommunicators(mdlog_, ddSettings_, ddRankSetup_, cr_, ddCellIndex_, &pmeRanks_);
 }
 
 gmx_domdec_t* DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomSets)
@@ -3214,6 +3218,45 @@ void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces)
         for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
         {
             cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces);
+        }
+    }
+}
+
+void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
+                                            const gmx_mtop_t&        mtop,
+                                            const matrix             box,
+                                            gmx::ArrayRef<gmx::RVec> positions)
+{
+    int atomOffset = 0;
+    for (const gmx_molblock_t& molblock : mtop.molblock)
+    {
+        const auto& updateGrouping = dd.comm->systemInfo.updateGroupingPerMoleculetype[molblock.type];
+
+        for (int mol = 0; mol < molblock.nmol; mol++)
+        {
+            for (int g = 0; g < updateGrouping.numBlocks(); g++)
+            {
+                const auto& block     = updateGrouping.block(g);
+                const int   atomBegin = atomOffset + block.begin();
+                const int   atomEnd   = atomOffset + block.end();
+                for (int a = atomBegin + 1; a < atomEnd; a++)
+                {
+                    // Make sure that atoms in the same update group
+                    // are in the same periodic image after restarts.
+                    for (int d = DIM - 1; d >= 0; d--)
+                    {
+                        while (positions[a][d] - positions[atomBegin][d] > 0.5_real * box[d][d])
+                        {
+                            positions[a] -= box[d];
+                        }
+                        while (positions[a][d] - positions[atomBegin][d] < -0.5_real * box[d][d])
+                        {
+                            positions[a] += box[d];
+                        }
+                    }
+                }
+            }
+            atomOffset += updateGrouping.fullRange().end();
         }
     }
 }

@@ -157,11 +157,22 @@ cmake_platform_hints = '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)
 cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'.format(gmxapi_DIR)
 cmake_args = [cmake_platform_hints, cmake_gmxapi_hint]
 
+long_description = """gmxapi provides Python access to GROMACS molecular simulation tools.
+Operations can be connected flexibly to allow high performance simulation and
+analysis with complex control and data flows. Users can define new operations
+in C++ or Python with the same tool kit used to implement this package.
+
+This Python package requires a compatible GROMACS installation with the API
+libraries and headers.
+
+See http://gmxapi.org/ for details on installation and usage.
+"""
+
 setup(
     name='gmxapi',
 
     # TODO: single-source version information (currently repeated in gmxapi/version.py and CMakeLists.txt)
-    version='0.2.0',
+    version='0.2.2',
     python_requires='>=3.6',
     install_requires=['networkx>=2.0',
                       'numpy>=1'],
@@ -174,6 +185,7 @@ setup(
     author='M. Eric Irrgang',
     author_email='info@gmxapi.org',
     description='gmxapi Python interface for GROMACS',
+    long_description=long_description,
     license='LGPL',
     url='http://gmxapi.org/',
 

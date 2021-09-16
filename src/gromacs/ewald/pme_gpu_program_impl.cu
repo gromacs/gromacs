@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,74 +60,74 @@ constexpr int c_stateB = 1;
 
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int mode, bool writeGlobal, ThreadsPerAtom threadsPerAtom>
-void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
 // clang-format off
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::Order>(const PmeGpuCudaKernelParams);
-extern template void
+extern template __global__ void
 pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
 
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex> /* It is significantly slower to pass gridIndex as a kernel parameter */
-void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
 // clang-format off
-extern template void pme_solve_kernel<GridOrdering::XYZ, false, c_stateA>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::XYZ, true, c_stateA>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::YZX, false, c_stateA>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::YZX, true, c_stateA>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::XYZ, false, c_stateB>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::XYZ, true, c_stateB>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::YZX, false, c_stateB>(const PmeGpuCudaKernelParams);
-extern template void pme_solve_kernel<GridOrdering::YZX, true, c_stateB>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, c_stateA>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, c_stateA>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::YZX, false, c_stateA>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::YZX, true, c_stateA>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, c_stateB>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, c_stateB>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::YZX, false, c_stateB>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_solve_kernel<GridOrdering::YZX, true, c_stateB>(const PmeGpuCudaKernelParams);
 // clang-format on
 
 template<int order, bool wrapX, bool wrapY, int nGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom>
-void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
+__global__ void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
 // clang-format off
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>        (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::Order>       (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared> (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>          (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::Order>         (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>   (const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared>  (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::Order>        (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::Order>       (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, true, ThreadsPerAtom::OrderSquared> (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 1, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::Order>          (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::Order>         (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, true, ThreadsPerAtom::OrderSquared>   (const PmeGpuCudaKernelParams);
+extern template __global__ void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, 2, false, ThreadsPerAtom::OrderSquared>  (const PmeGpuCudaKernelParams);
 // clang-format on
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :

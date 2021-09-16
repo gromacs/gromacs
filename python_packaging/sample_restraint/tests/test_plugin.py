@@ -9,6 +9,11 @@
 import logging
 import os
 
+try:
+    import mpi4py.MPI as _MPI
+except (ImportError, ModuleNotFoundError):
+    _MPI = None
+
 import gmxapi as gmx
 from gmxapi.simulation.context import Context
 from gmxapi.simulation.workflow import WorkElement, from_tpr
@@ -35,11 +40,48 @@ def test_import():
 
 
 @pytest.mark.usefixtures("cleandir")
+def test_binding_protocol(spc_water_box, mdrun_kwargs):
+    """Test that gmxapi successfully attaches MD plugins."""
+    import myplugin
+
+    if _MPI is not None:
+        _size = _MPI.COMM_WORLD.Get_size()
+        _rank = _MPI.COMM_WORLD.Get_rank()
+    else:
+        _size = 1
+        _rank = 0
+
+    tpr_filename = spc_water_box
+    logger.info("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
+
+    assert gmx.version.api_is_at_least(0, 2, 1)
+    md = from_tpr([tpr_filename] * _size, append_output=False, **mdrun_kwargs)
+
+    potential = WorkElement(namespace="myplugin",
+                            operation="null_restraint",
+                            params={'sites': [1, 4]})
+    potential.name = "null restraint"
+    md.add_dependency(potential)
+
+    context = Context(md)
+
+    with context as session:
+        session.run()
+
+    # See also #3038, #3145, #4079
+    assert isinstance(context.potentials, list)
+    assert len(context.potentials) > 0
+    for restraint in context.potentials:
+        if isinstance(restraint, myplugin.NullRestraint):
+            assert restraint.count() > 1
+
+
+@pytest.mark.usefixtures("cleandir")
 def test_ensemble_potential_nompi(spc_water_box, mdrun_kwargs):
     """Test ensemble potential without an ensemble.
     """
     tpr_filename = spc_water_box
-    print("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
+    logger.info("Testing plugin potential with input file {}".format(os.path.abspath(tpr_filename)))
 
     assert gmx.version.api_is_at_least(0, 0, 5)
     md = from_tpr([tpr_filename], append_output=False, **mdrun_kwargs)

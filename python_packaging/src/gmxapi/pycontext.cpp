@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,12 @@
  */
 #include "pycontext.h"
 
+#include "gmxapi/exceptions.h"
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
-
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/version.h"
 
 namespace py = pybind11;
 
@@ -58,7 +61,23 @@ void PyContext::setMDArgs(const MDArgs& mdArgs)
 std::shared_ptr<gmxapi::Session> PyContext::launch(const gmxapi::Workflow& work)
 {
     assert(context_);
-    return context_->launch(work);
+    std::shared_ptr<gmxapi::Session> session = nullptr;
+
+    // TODO: gmxapi::Workflow, gmxapi::MDWorkSpec, and gmxapi::MDModule need sensible consolidation.
+    session = gmxapi::launchSession(context_.get(), work);
+    if (!session)
+    {
+        throw gmxapi::ProtocolError("Context::launch() expected to produce non-null session.");
+    }
+
+    for (auto&& module : workNodes_->getModules())
+    {
+        // TODO: This should be the job of the launching code that produces the Session.
+        // Configure the restraints in a restraint manager made available to the session launcher.
+        auto status = gmxapi::addSessionRestraint(session.get(), module);
+    }
+
+    return session;
 }
 
 std::shared_ptr<gmxapi::MDWorkSpec> PyContext::getSpec() const
@@ -81,8 +100,12 @@ PyContext::PyContext() :
     assert(workNodes_);
 }
 
-void PyContext::addMDModule(pybind11::object force_object)
+void PyContext::addMDModule(const pybind11::object& force_object) const
 {
+    if (!::gmxapi::Version::isAtLeast(0, 2, 1))
+    {
+        throw ::gmxapi::NotImplementedError("Feature requires gmxapi 0.2.1 with GROMACS 2021.3.");
+    }
     // If force_object has a bind method, give it a PyCapsule with a pointer
     // to our C++ object.
     if (py::hasattr(force_object, "bind"))

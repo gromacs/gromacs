@@ -606,7 +606,7 @@ static void clearDDStateIndices(gmx_domdec_t* dd, const bool keepLocalAtomIndice
     if (!keepLocalAtomIndices)
     {
         /* Clear the whole list without the overhead of searching */
-        ga2la.clear();
+        ga2la.clear(true);
     }
     else
     {
@@ -3019,7 +3019,7 @@ void dd_partition_system(FILE*                     fplog,
         state_change_natoms(state_local, comm->atomRanges.numHomeAtoms());
 
         /* Rebuild all the indices */
-        dd->ga2la->clear();
+        dd->ga2la->clear(false);
         ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);

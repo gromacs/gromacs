@@ -44,7 +44,7 @@ Other options:
  -until  <time>             (0)
            Extend runtime until this ending time (ps)
  -nsteps <int>              (0)
-           Change the number of steps
+           Change the number of steps remaining to be made
  -[no]zeroq                 (no)
            Set the charges of a group (from the index) to zero
 ]]></String>

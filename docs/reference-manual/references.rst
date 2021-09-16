@@ -2600,8 +2600,41 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. _refBernetti2020:
 
-:sup:`184` Bernetti, M. and Bussi, G.,
+:sup:`184` Bernetti, M. and Bussi G.,
 "Pressure control using stochastic cell rescaling", *J. Chem. Phys.*, **153**, 114107 (2020).
+
+.. raw:: html
+
+   </div>
+
+  <div id="ref-Lidmar2012">
+
+.. _refLidmar2012:
+
+:sup:`185` Lidmar J.,
+"Improving the efficiency of extended ensemble simulations: The accelerated weight histogram method", *Phys. Rev. E*, **85**, 0256708 (2012).
+
+.. raw:: html
+
+   </div>
+
+   <div id="ref-Lindahl2018">
+
+.. _refLindahl2018:
+
+:sup:`186` Lindahl V., Lidmar J. and Hess B.,
+"Riemann metric approach to optimal sampling of multidimensional free-energy landscapes", *Phys. Rev. E*, **98**, 023312 (2018).
+
+.. raw:: html
+
+   </div>
+
+   <div id="ref-LundBorg2021">
+
+.. _refLundborg2021:
+
+:sup:`187` Lundborg M., Lidmar J. and Hess B.,
+"The accelerated weight histogram method for alchemical free energy calculations", *J. Chem. Phys.*, **154**, 204103 (2021).
 
 .. raw:: html
 

@@ -51,7 +51,7 @@
 # release string. For roadmap details, see https://gitlab.com/gromacs/gromacs/-/issues/2585
 set(GMXAPI_MAJOR 0)
 set(GMXAPI_MINOR 2)
-set(GMXAPI_PATCH 0)
+set(GMXAPI_PATCH 1)
 set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 
 add_library(gmxapi)

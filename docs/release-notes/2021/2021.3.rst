@@ -1,0 +1,130 @@
+GROMACS 2021.3 release notes
+----------------------------
+
+This version was released on August 18th, 2021. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2021.2 version, to fix known issues. It also incorporates all
+fixes made in version 2020.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix mdrun -ddorder pp_pme
+"""""""""""""""""""""""""
+
+When rank ordering PP-PME, mdrun would deadlock during the initialization
+phase.
+
+:issue:`4114`
+
+Fixed gmxapi MD plugin binding
+""""""""""""""""""""""""""""""
+
+Molecular Dynamics extension code was not properly handled when added to a
+simulation through the gmxapi Python interface.
+This meant that restraint potentials would silently fail to be applied with
+gmxapi versions >= 0.1.
+Updates have been applied internally to gmxapi.
+
+The gmxapi 0.2.2 Python package supports the updated GROMACS API and will
+issue errors if a simulation attempts to bind external plugin code with
+a compatible-but-broken API (GROMACS 2021 through 2021.2).
+
+Third party code should not need to be updated, but developers will
+note an additional "null restraint" in
+https://gitlab.com/gromacs/gromacs/-/tree/master/python_packaging/sample_restraint
+(for illustration and testing purposes).
+
+:issue:`4078` and :issue:`4102`
+
+Fixed multi-rank restarts from checkpoints written by single-rank simulations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Currently a single-rank simulation never uses update groups, however a
+multi-rank run can do so. This fix ensures that the atoms within
+update groups always start in the same periodic image, which was not
+guaranteed if the checkpoint was written by a single-rank simulation.
+
+:issue:`4016`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix gmx nmr -viol option
+""""""""""""""""""""""""
+
+The tool would previously fail with a cryptic error.
+Also enforces that this option is exclusive with other analysis modes.
+
+:issue:`4060`
+
+Fixed gmx dipoles -quad option
+""""""""""""""""""""""""""""""
+
+The tool now reports correct values.
+
+:issue:`4080`
+
+Make sure gmx convert-tpr -until works
+""""""""""""""""""""""""""""""""""""""
+
+This got broken during reworking the internals of the tool and didn't
+calculate the number of remaining steps correctly.
+
+:issue:`4056`
+
+Fixed dihedral transition counting in gmx chi and gmx angle
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When a trajectory of only 1 frame is passed, transition counting is
+avoided (formerly it was attempted and crashed).
+
+When a trajectory of multiple frames is passed, transition counting is
+correct (formerly it did not take place).
+
+Fixed possible crash in gmx chi histogramming
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly an invalid reference to a temporary string was used for a
+residue name, which might have caused a crash.
+
+Fixed gmx chi -chi_prod
+"""""""""""""""""""""""
+
+Formerly it could crash or produce garbage results when the number of
+relevant dihedrals differed from the number of residues
+with dihedrals.
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Check that necessary python modules are available
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+The source code validation could otherwise fail a build with cryptic errors.
+
+:issue:`3985`
+
+Ensure that NB-LIB and gmxapi can be build even without tests enabled
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Could otherwise lead to cryptic build errors.
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Removed performance loss in the mdrun domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With 16 or more so-called PP MPI ranks, the domain decomposition
+repartitioning could incur large performance overheads due to a sub-optimally
+sized hash table. This has now been fixed.
+
+:issue:`4054`

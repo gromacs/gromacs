@@ -58,8 +58,8 @@ Under the hood |Gromacs| implements some more fitting functions, namely a
 function to estimate the error in time-correlated data due to Hess \ :ref:`149 <refHess2002a>`:
 
 .. math:: \varepsilon^2(t) =
-          \alpha\tau_1\left(1+\frac{\tau_1}{t}\left(e^{-t/\tau_1}-1\right)\right)
-                + (1-\alpha)\tau_2\left(1+\frac{\tau_2}{t}\left(e^{-t/\tau_2}-1\right)\right)
+          2 \alpha\tau_1\left(1+\frac{\tau_1}{t}\left(e^{-t/\tau_1}-1\right)\right)
+                + 2 (1-\alpha)\tau_2\left(1+\frac{\tau_2}{t}\left(e^{-t/\tau_2}-1\right)\right)
           :label: eqntimecorrerror
 
 where :math:`\tau_1` and :math:`\tau_2` are time constants (with

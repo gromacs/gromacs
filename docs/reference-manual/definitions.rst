@@ -275,7 +275,7 @@ many parts of the code we managed to avoid double precision for
 arithmetic, by paying attention to summation order or reorganization of
 mathematical expressions. The default configuration uses mixed
 precision, but it is easy to turn on double precision by adding the
-option ``-DGMX\_DOUBLE=on`` to ``cmake``. Double precision will be 20 to 100%
+option ``-DGMX_DOUBLE=on`` to ``cmake``. Double precision will be 20 to 100%
 slower than mixed precision depending on the architecture you are
 running on. Double precision will use somewhat more memory and run
 input, energy and full-precision trajectory files will be almost twice
