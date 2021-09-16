@@ -92,7 +92,7 @@ void LincsGpu::apply(const DeviceBuffer<Float3>& d_x,
     kernelParams_.pbcAiuc = pbcAiuc;
 
     launchLincsGpuKernel(
-            kernelParams_, d_x, d_xp, updateVelocities, d_v, invdt, computeVirial, deviceStream_);
+            &kernelParams_, d_x, d_xp, updateVelocities, d_v, invdt, computeVirial, deviceStream_);
 
     if (computeVirial)
     {

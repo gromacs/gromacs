@@ -514,7 +514,7 @@ launchLincsKernel(bool updateVelocities, bool computeVirial, bool haveCoupledCon
 }
 
 
-void launchLincsGpuKernel(LincsGpuKernelParameters&   kernelParams,
+void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                           const DeviceBuffer<Float3>& d_x,
                           DeviceBuffer<Float3>        d_xp,
                           const bool                  updateVelocities,
@@ -531,24 +531,24 @@ void launchLincsGpuKernel(LincsGpuKernelParameters&   kernelParams,
 
     launchLincsKernel(updateVelocities,
                       computeVirial,
-                      kernelParams.haveCoupledConstraints,
+                      kernelParams->haveCoupledConstraints,
                       deviceStream,
-                      kernelParams.numConstraintsThreads,
-                      kernelParams.d_constraints,
-                      kernelParams.d_constraintsTargetLengths,
-                      kernelParams.d_coupledConstraintsCounts,
-                      kernelParams.d_coupledConstraintsIndices,
-                      kernelParams.d_massFactors,
-                      kernelParams.d_matrixA,
-                      kernelParams.d_inverseMasses,
-                      kernelParams.numIterations,
-                      kernelParams.expansionOrder,
+                      kernelParams->numConstraintsThreads,
+                      kernelParams->d_constraints,
+                      kernelParams->d_constraintsTargetLengths,
+                      kernelParams->d_coupledConstraintsCounts,
+                      kernelParams->d_coupledConstraintsIndices,
+                      kernelParams->d_massFactors,
+                      kernelParams->d_matrixA,
+                      kernelParams->d_inverseMasses,
+                      kernelParams->numIterations,
+                      kernelParams->expansionOrder,
                       d_x,
                       d_xpAsFloat,
                       invdt,
                       d_vAsFloat,
-                      kernelParams.d_virialScaled,
-                      kernelParams.pbcAiuc);
+                      kernelParams->d_virialScaled,
+                      kernelParams->pbcAiuc);
     return;
 }
 

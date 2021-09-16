@@ -68,7 +68,7 @@ constexpr static int c_threadsPerBlock = 256;
  * \param computeVirial Whether to compute the virial.
  * \param deviceStream Device stream for kernel launch.
  */
-void launchLincsGpuKernel(LincsGpuKernelParameters&   kernelParams,
+void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                           const DeviceBuffer<Float3>& d_x,
                           DeviceBuffer<Float3>        d_xp,
                           bool                        updateVelocities,
