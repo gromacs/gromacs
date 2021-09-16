@@ -156,7 +156,9 @@ public:
         // initialize correction tables
         interaction_const_t tmp;
         tmp.ewaldcoeff_q       = calc_ewaldcoeff_q(1.0, 1.0e-5);
+        coulEwaldCoeff_        = tmp.ewaldcoeff_q;
         tmp.ewaldcoeff_lj      = calc_ewaldcoeff_lj(1.0, 1.0e-5);
+        vdwEwaldCoeff_         = tmp.ewaldcoeff_lj;
         tmp.eeltype            = coulType;
         tmp.vdwtype            = vdwType;
         tmp.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
@@ -192,6 +194,8 @@ public:
         ic->epsfac                   = gmx::c_one4PiEps0 * 0.25;
         ic->reactionFieldCoefficient = 0.0; // former k_rf
         ic->reactionFieldShift       = 1.0; // former c_rf
+        ic->ewaldcoeff_q             = coulEwaldCoeff_;
+        ic->ewaldcoeff_lj            = vdwEwaldCoeff_;
         ic->sh_ewald                 = 1.0e-5;
         ic->sh_lj_ewald              = -1.0;
         ic->dispersion_shift.cpot    = -1.0;
@@ -205,8 +209,10 @@ private:
 
     //! coulomb and vdw type specifiers
     CoulombInteractionType coulType_;
+    real                   coulEwaldCoeff_;
     VanDerWaalsType        vdwType_;
     InteractionModifiers   vdwMod_;
+    real                   vdwEwaldCoeff_;
 };
 
 
