@@ -389,6 +389,9 @@
 /* Define if we have fedisableexcept */
 #cmakedefine01 HAVE_FEDISABLEEXCEPT
 
+/* Define if we have MKL available */
+#cmakedefine01 HAVE_LIBMKL
+
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,5 +41,10 @@
 #                    some compiler-provided information
 #
 macro(get_compiler_info LANGUAGE BUILD_COMPILER)
-    set(${BUILD_COMPILER} "${CMAKE_${LANGUAGE}_COMPILER} ${CMAKE_${LANGUAGE}_COMPILER_ID} ${CMAKE_${LANGUAGE}_COMPILER_VERSION}")
+    if(GMX_INTEL_LLVM AND NOT CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+        # Manually set compiler info for Intel LLVM. Can be removed after we require CMake 3.20+.
+        set(${BUILD_COMPILER} "${CMAKE_${LANGUAGE}_COMPILER} IntelLLVM ${GMX_INTEL_LLVM_VERSION}")
+    else()
+        set(${BUILD_COMPILER} "${CMAKE_${LANGUAGE}_COMPILER} ${CMAKE_${LANGUAGE}_COMPILER_ID} ${CMAKE_${LANGUAGE}_COMPILER_VERSION}")
+    endif()
 endmacro()
