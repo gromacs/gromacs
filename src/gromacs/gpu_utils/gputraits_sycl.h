@@ -64,9 +64,13 @@ using Float3 = gmx::RVec;
 using Float2 = cl::sycl::float2;
 
 /*! \internal \brief
- * GPU kernels scheduling description. This is same in OpenCL/CUDA.
- * Provides reasonable defaults, one typically only needs to set the GPU stream
- * and non-1 work sizes.
+ * GPU kernels scheduling description.
+ * One typically only needs to set non-1 work sizes.
+ *
+ * \note This struct uses CUDA/OpenCL layout, with the first dimension being contiguous.
+ *       It is different from the SYCL standard, where the last dimension is contiguous.
+ *       The transpose is to be performed internally in ISyclKernelFunctor::launch.
+ * \note \c sharedMemorySize is ignored in SYCL.
  */
 struct KernelLaunchConfig
 {
@@ -79,8 +83,13 @@ struct KernelLaunchConfig
 };
 
 /*! \brief Sets whether device code can use arrays that are embedded in structs.
- * \todo Probably can, must check
+ *
+ * That is not technically true for SYCL: the device code needs dedicated
+ * \c sycl::buffer/accessor objects.
+ * But our \c prepareGpuKernelArguments and \c launchGpuKernel functions deal
+ * with that, so we can pass embedded buffers to them, which is what this
+ * constant actually controls.
  */
-#define c_canEmbedBuffers false
+#define c_canEmbedBuffers true
 
 #endif

@@ -67,10 +67,67 @@ struct gmx_device_runtime_data_t
 
 #ifndef DOXYGEN
 
-/* To properly mark function as [[noreturn]], we must do it everywhere it is declared, which
- * will pollute common headers.*/
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmissing-noreturn"
+//! \brief Interface for SYCL kernel function objects.
+class ISyclKernelFunctor
+{
+public:
+    //! \brief Virtual destructor.
+    virtual ~ISyclKernelFunctor() = default;
+    /*! \brief Set the kernel argument number \p argIndex to \p arg.
+     *
+     * \param argIndex Index of the argument. Maximum allowed value depends
+     *                 on the specific concrete class implementing this interface.
+     * \param arg      Pointer to the argument value.
+     *
+     * \note Valid values of \p argIndex and types of \p arg depend on the
+     *       specific concrete class implementing this interface. Passing
+     *       illegal values is undefined behavior.
+     * \note Similar to \c clSetKernelArg, it is not safe to call this
+     *       function on the same kernel object from multiple host threads.
+     */
+    virtual void setArg(size_t argIndex, void* arg) = 0;
+    /*! \brief Launch the kernel.
+     *
+     * \param config       Work-group configuration.
+     * \param deviceStream \c DeviceStream to use.
+     */
+    virtual cl::sycl::event launch(const KernelLaunchConfig& /*config*/,
+                                   const DeviceStream& /*deviceStream*/) = 0;
+};
+
+
+/*! \brief
+ * A function for setting up a single SYCL kernel argument.
+ * This is the tail of the compile-time recursive function below.
+ * It has to be seen by the compiler first.
+ *
+ * \param[in]     kernel          Kernel function handle
+ * \param[in]     argIndex        Index of the current argument
+ */
+void inline prepareGpuKernelArgument(ISyclKernelFunctor* /*kernel*/, size_t /*argIndex*/) {}
+
+/*! \brief
+ * Compile-time recursive function for setting up a single SYCL kernel argument.
+ * This function uses one kernel argument pointer \p argPtr to call
+ * \c ISyclKernelFunctor::setArg, and calls itself on the next argument, eventually
+ * calling the tail function above.
+ *
+ * \tparam        CurrentArg      Type of the current argument
+ * \tparam        RemainingArgs   Types of remaining arguments after the current one
+ * \param[in]     kernel          Kernel function handle
+ * \param[in]     argIndex        Index of the current argument
+ * \param[in]     argPtr          Pointer to the current argument
+ * \param[in]     otherArgsPtrs   Pack of pointers to arguments remaining to process after the current one
+ */
+template<typename CurrentArg, typename... RemainingArgs>
+void prepareGpuKernelArgument(ISyclKernelFunctor* kernel,
+                              size_t              argIndex,
+                              const CurrentArg*   argPtr,
+                              const RemainingArgs*... otherArgsPtrs)
+{
+    kernel->setArg(argIndex, const_cast<void*>(reinterpret_cast<const void*>(argPtr)));
+    prepareGpuKernelArgument(kernel, argIndex + 1, otherArgsPtrs...);
+}
 
 /*! \brief
  * A wrapper function for setting up all the SYCL kernel arguments.
@@ -80,12 +137,14 @@ struct gmx_device_runtime_data_t
  * \param[in] kernel          Kernel function handle
  * \param[in] config          Kernel configuration for launching
  * \param[in] argsPtrs        Pointers to all the kernel arguments
- * \returns A handle for the prepared parameter pack to be used with launchGpuKernel() as the last argument.
+ * \returns A dummy value to be used with launchGpuKernel() as the last argument.
  */
 template<typename... Args>
-void* prepareGpuKernelArguments(void* /*kernel*/, const KernelLaunchConfig& /*config*/, const Args*... /*argsPtrs*/)
+void* prepareGpuKernelArguments(void* kernel, const KernelLaunchConfig& /*config*/, const Args*... argsPtrs)
 {
-    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+    auto* kernelFunctor = reinterpret_cast<ISyclKernelFunctor*>(kernel);
+    prepareGpuKernelArgument(kernelFunctor, 0, argsPtrs...);
+    return nullptr;
 }
 
 /*! \brief Launches the SYCL kernel and handles the errors.
@@ -93,19 +152,26 @@ void* prepareGpuKernelArguments(void* /*kernel*/, const KernelLaunchConfig& /*co
  * \param[in] kernel          Kernel function handle
  * \param[in] config          Kernel configuration for launching
  * \param[in] deviceStream    GPU stream to launch kernel in
- * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer
- * \param[in] kernelName      Human readable kernel description, for error handling only
+ * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer. Unused.
+ * \param[in] kernelName      Human readable kernel description, for error handling only. Unused.
+ * \param[in] kernelArgs      Unused.
  * \throws gmx::InternalError on kernel launch failure
  */
-inline void launchGpuKernel(void* /*kernel*/,
-                            const KernelLaunchConfig& /*config*/,
-                            const DeviceStream& /*deviceStream*/,
+inline void launchGpuKernel(void*                     kernel,
+                            const KernelLaunchConfig& config,
+                            const DeviceStream&       deviceStream,
                             CommandEvent* /*timingEvent*/,
                             const char* /*kernelName*/,
                             const void* /*kernelArgs*/)
 {
-    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+    auto*           kernelFunctor = reinterpret_cast<ISyclKernelFunctor*>(kernel);
+    cl::sycl::event event         = kernelFunctor->launch(config, deviceStream);
 }
+
+/* To properly mark function as [[noreturn]], we must do it everywhere it is declared, which
+ * will pollute common headers.*/
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wmissing-noreturn"
 
 /*! \brief Pretend to check a SYCL stream for unfinished work (dummy implementation).
  *

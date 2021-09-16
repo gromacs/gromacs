@@ -57,6 +57,7 @@
 
 #if GMX_GPU_SYCL
 #    include "sycl/nbnxm_sycl_types.h"
+#    include "gromacs/gpu_utils/syclutils.h"
 #endif
 
 #include "gromacs/gpu_utils/gpu_utils.h"
