@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -300,8 +301,8 @@ bool_t xdr_u_char(XDR* xdrs, unsigned char* cp)
  */
 bool_t xdr_bool(XDR* xdrs, int* bp)
 {
-#    define XDR_FALSE ((xdr_int32_t)0)
-#    define XDR_TRUE ((xdr_int32_t)1)
+#    define XDR_FALSE static_cast<xdr_int32_t>(0)
+#    define XDR_TRUE static_cast<xdr_int32_t>(1)
 
     xdr_int32_t lb;
 
@@ -493,7 +494,7 @@ bool_t xdr_float(XDR* xdrs, float* fp)
 bool_t xdr_double(XDR* xdrs, double* dp)
 {
 
-    /* Windows and some other systems dont define double-precision
+    /* Windows and some other systems don't define double-precision
      * word order in the header files, so unfortunately we have
      * to calculate it!
      *
@@ -581,7 +582,7 @@ bool_t xdr_double(XDR* xdrs, double* dp)
  */
 bool_t xdr_vector(XDR* xdrs, char* basep, unsigned int nelem, unsigned int elemsize, xdrproc_t xdr_elem)
 {
-#    define LASTUNSIGNED ((unsigned int)0 - 1)
+#    define LASTUNSIGNED (static_cast<unsigned int>(0) - 1)
     unsigned int i;
     char*        elptr;
 
