@@ -411,8 +411,12 @@ protected:
         softcoreAlpha_   = std::get<3>(GetParam());
         softcoreCoulomb_ = std::get<4>(GetParam());
 
+        // Note that the reference data for Ewald type interactions has been generated
+        // with accurate analytical approximations for the long-range corrections.
+        // When the free-energy kernel switches from tabulated to analytical corrections,
+        // the double precision tolerance can be tightend to 1e-11.
         test::FloatingPointTolerance tolerance(
-                input_.floatToler, input_.doubleToler, 1.0e-6, 1.0e-12, 10000, 100, false);
+                input_.floatToler, input_.doubleToler, 1.0e-6, 1.0e-6, 10000, 100, false);
         checker_.setDefaultTolerance(tolerance);
     }
 

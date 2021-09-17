@@ -2,37 +2,37 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Real Name="EVdw ">11.244864181870648</Real>
-  <Real Name="ECoul ">-91.43161122279804</Real>
-  <Real Name="dVdlCoul ">60.44738282828024</Real>
+  <Real Name="ECoul ">-91.431611236311795</Real>
+  <Real Name="dVdlCoul ">60.447382846936364</Real>
   <Real Name="dVdlVdw ">-7.1291612299081022</Real>
   <Sequence Name="Forces">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">-209.02699861275136</Real>
-      <Real Name="Y">-313.54049791912666</Real>
-      <Real Name="Z">418.05399722550226</Real>
+      <Real Name="X">-209.02696105480408</Real>
+      <Real Name="Y">-313.5404415822058</Real>
+      <Real Name="Z">418.05392210960781</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-40.828136036689216</Real>
-      <Real Name="Y">-61.242204055033739</Real>
-      <Real Name="Z">-81.656272073378346</Real>
+      <Real Name="X">-40.82809656232098</Real>
+      <Real Name="Y">-61.242144843481384</Real>
+      <Real Name="Z">-81.656193124641874</Real>
     </Vector>
     <Vector>
-      <Real Name="X">40.828136036689173</Real>
-      <Real Name="Y">61.242204055033781</Real>
-      <Real Name="Z">81.656272073378346</Real>
+      <Real Name="X">40.828096562320937</Real>
+      <Real Name="Y">61.242144843481427</Real>
+      <Real Name="Z">81.656193124641874</Real>
     </Vector>
     <Vector>
-      <Real Name="X">209.02699861275138</Real>
-      <Real Name="Y">313.54049791912661</Real>
-      <Real Name="Z">-418.05399722550226</Real>
+      <Real Name="X">209.02696105480413</Real>
+      <Real Name="Y">313.54044158220574</Real>
+      <Real Name="Z">-418.05392210960781</Real>
     </Vector>
   </Sequence>
   <Shift-Forces Name="Shift-forces">
     <Vector Name="Central">
-      <Real Name="X">-209.02699861275136</Real>
-      <Real Name="Y">-313.54049791912666</Real>
-      <Real Name="Z">418.05399722550226</Real>
+      <Real Name="X">-209.02696105480408</Real>
+      <Real Name="Y">-313.5404415822058</Real>
+      <Real Name="Z">418.05392210960781</Real>
     </Vector>
   </Shift-Forces>
 </ReferenceData>

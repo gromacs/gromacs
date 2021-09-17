@@ -3,36 +3,36 @@
 <ReferenceData>
   <Real Name="EVdw ">7.6802835669165956</Real>
   <Real Name="ECoul ">-61.20791980865792</Real>
-  <Real Name="dVdlCoul ">60.44738282828024</Real>
+  <Real Name="dVdlCoul ">60.447382846936364</Real>
   <Real Name="dVdlVdw ">-7.1291612299081022</Real>
   <Sequence Name="Forces">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">-124.92756732472033</Real>
-      <Real Name="Y">-187.39135098708019</Real>
-      <Real Name="Z">418.05399722550231</Real>
+      <Real Name="X">-124.92752880856258</Real>
+      <Real Name="Y">-187.39129321284355</Real>
+      <Real Name="Z">418.05392210960781</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-20.414068018344608</Real>
-      <Real Name="Y">-30.621102027516869</Real>
-      <Real Name="Z">-40.828136036689173</Real>
+      <Real Name="X">-20.41404828116049</Real>
+      <Real Name="Y">-30.621072421740692</Real>
+      <Real Name="Z">-40.828096562320937</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-21.635647625670902</Real>
-      <Real Name="Y">-32.453471438506362</Real>
-      <Real Name="Z">-43.271295251341805</Real>
+      <Real Name="X">-21.63566784196027</Real>
+      <Real Name="Y">-32.453501762940419</Real>
+      <Real Name="Z">-43.27133568392054</Real>
     </Vector>
     <Vector>
-      <Real Name="X">166.97728296873584</Real>
-      <Real Name="Y">250.46592445310341</Real>
-      <Real Name="Z">-333.95456593747133</Real>
+      <Real Name="X">166.97724493168334</Real>
+      <Real Name="Y">250.46586739752468</Real>
+      <Real Name="Z">-333.95448986336635</Real>
     </Vector>
   </Sequence>
   <Shift-Forces Name="Shift-forces">
     <Vector Name="Central">
-      <Real Name="X">-124.92756732472033</Real>
-      <Real Name="Y">-187.39135098708019</Real>
-      <Real Name="Z">418.05399722550231</Real>
+      <Real Name="X">-124.92752880856258</Real>
+      <Real Name="Y">-187.39129321284355</Real>
+      <Real Name="Z">418.05392210960781</Real>
     </Vector>
   </Shift-Forces>
 </ReferenceData>

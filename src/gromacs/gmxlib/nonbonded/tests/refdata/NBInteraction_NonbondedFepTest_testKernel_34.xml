@@ -3,14 +3,14 @@
 <ReferenceData>
   <Real Name="EVdw ">4.1157029519625468</Real>
   <Real Name="ECoul ">-30.9842283945178</Real>
-  <Real Name="dVdlCoul ">72.786031951350168</Real>
+  <Real Name="dVdlCoul ">72.78603197000632</Real>
   <Real Name="dVdlVdw ">-1.6552057559765398</Real>
   <Sequence Name="Forces">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">-40.828136036689301</Real>
-      <Real Name="Y">-61.242204055033611</Real>
-      <Real Name="Z">418.05399722550243</Real>
+      <Real Name="X">-40.828096562321036</Real>
+      <Real Name="Y">-61.242144843481228</Real>
+      <Real Name="Z">418.05392210960792</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -18,21 +18,21 @@
       <Real Name="Z">0</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-84.099431288031028</Real>
-      <Real Name="Y">-126.14914693204661</Real>
-      <Real Name="Z">-168.19886257606206</Real>
+      <Real Name="X">-84.099432246241534</Real>
+      <Real Name="Y">-126.14914836936235</Real>
+      <Real Name="Z">-168.19886449248307</Real>
     </Vector>
     <Vector>
-      <Real Name="X">124.92756732472033</Real>
-      <Real Name="Y">187.39135098708022</Real>
-      <Real Name="Z">-249.85513464944037</Real>
+      <Real Name="X">124.92752880856257</Real>
+      <Real Name="Y">187.39129321284358</Real>
+      <Real Name="Z">-249.85505761712488</Real>
     </Vector>
   </Sequence>
   <Shift-Forces Name="Shift-forces">
     <Vector Name="Central">
-      <Real Name="X">-40.828136036689301</Real>
-      <Real Name="Y">-61.242204055033611</Real>
-      <Real Name="Z">418.05399722550243</Real>
+      <Real Name="X">-40.828096562321036</Real>
+      <Real Name="Y">-61.242144843481228</Real>
+      <Real Name="Z">418.05392210960792</Real>
     </Vector>
   </Shift-Forces>
 </ReferenceData>

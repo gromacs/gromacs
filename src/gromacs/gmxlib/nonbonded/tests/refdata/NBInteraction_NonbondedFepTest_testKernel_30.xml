@@ -3,36 +3,36 @@
 <ReferenceData>
   <Real Name="EVdw ">5.7877856110730166</Real>
   <Real Name="ECoul ">-63.863612325243423</Real>
-  <Real Name="dVdlCoul ">59.732379057290416</Real>
+  <Real Name="dVdlCoul ">59.73237907594654</Real>
   <Real Name="dVdlVdw ">-5.7498617329574744</Real>
   <Sequence Name="Forces">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">-53.906398242222338</Real>
-      <Real Name="Y">-80.859597363333336</Real>
-      <Real Name="Z">281.95880023408944</Real>
+      <Real Name="X">-53.906359726064579</Real>
+      <Real Name="Y">-80.859539589096698</Real>
+      <Real Name="Z">281.95872511819493</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-21.900853311740317</Real>
-      <Real Name="Y">-32.851279967610424</Real>
-      <Real Name="Z">-43.801706623480584</Real>
+      <Real Name="X">-21.900833574556199</Real>
+      <Real Name="Y">-32.851250361834246</Real>
+      <Real Name="Z">-43.801667149112347</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-21.635647625670948</Real>
-      <Real Name="Y">-32.453471438506433</Real>
-      <Real Name="Z">-43.271295251341897</Real>
+      <Real Name="X">-21.635667841960316</Real>
+      <Real Name="Y">-32.453501762940483</Real>
+      <Real Name="Z">-43.271335683920633</Real>
     </Vector>
     <Vector>
-      <Real Name="X">97.442899179633599</Real>
-      <Real Name="Y">146.16434876945019</Real>
-      <Real Name="Z">-194.88579835926697</Real>
+      <Real Name="X">97.442861142581094</Real>
+      <Real Name="Y">146.16429171387142</Real>
+      <Real Name="Z">-194.88572228516199</Real>
     </Vector>
   </Sequence>
   <Shift-Forces Name="Shift-forces">
     <Vector Name="Central">
-      <Real Name="X">-53.906398242222338</Real>
-      <Real Name="Y">-80.859597363333336</Real>
-      <Real Name="Z">281.95880023408944</Real>
+      <Real Name="X">-53.906359726064579</Real>
+      <Real Name="Y">-80.859539589096698</Real>
+      <Real Name="Z">281.95872511819493</Real>
     </Vector>
   </Shift-Forces>
 </ReferenceData>
