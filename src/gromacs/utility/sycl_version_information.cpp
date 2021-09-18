@@ -51,11 +51,15 @@ namespace gmx
 std::string getSyclCompilerVersion()
 {
 #if GMX_SYCL_DPCPP
+#    ifdef __LIBSYCL_MAJOR_VERSION
     return formatString("%d (libsycl %d.%d.%d)",
                         __SYCL_COMPILER_VERSION,
                         __LIBSYCL_MAJOR_VERSION,
                         __LIBSYCL_MINOR_VERSION,
                         __LIBSYCL_PATCH_VERSION);
+#    else
+    return formatString("%d", __SYCL_COMPILER_VERSION);
+#    endif
 #elif GMX_SYCL_HIPSYCL
     return hipsycl::sycl::detail::version_string();
 #else
