@@ -59,12 +59,12 @@ static inline void quadraticApproximationCoulomb(const RealType qq,
     RealType quadrFac = linFac * r * rInvQ;
 
     /* Computing Coulomb force and potential energy */
-    *force = -2. * quadrFac + 3. * linFac;
+    *force = -2 * quadrFac + 3 * linFac;
 
-    *potential = quadrFac - 3. * (linFac - constFac);
+    *potential = quadrFac - 3 * (linFac - constFac);
 
     RealType lambdaFacRevInv = gmx::maskzInv(1.0 - lambdaFac, dvdlMask);
-    *dvdl = dLambdaFac * 0.5 * (lambdaFac * lambdaFacRevInv) * (quadrFac - 2. * linFac + constFac);
+    *dvdl = dLambdaFac * 0.5_real * (lambdaFac * lambdaFacRevInv) * (quadrFac - 2 * linFac + constFac);
 }
 
 /* reaction-field linearized electrostatics */
@@ -87,10 +87,10 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
     BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
     if (gmx::anyTrue(computeValues))
     {
-        RealType lambdaFacRev = gmx::selectByMask(1.0 - lambdaFac, computeValues);
+        RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);
 
         RealType rQ = gmx::cbrt(lambdaFacRev);
-        rQ          = gmx::sqrt(rQ) * (1.0 + gmx::abs(qq / facel));
+        rQ          = gmx::sqrt(rQ) * (1 + gmx::abs(qq / facel));
         rQ          = rQ * alphaEff;
 
         // ensure that the linearization point doesn't go beyond rCutoff
@@ -114,7 +114,7 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
                     qq, rInvQ, r, lambdaFac, dLambdaFac, &forceQuad, &potentialQuad, &dvdlQuad, computeValues);
 
             // rf modification
-            forceQuad     = forceQuad - qq * 2.0 * krf * r * r;
+            forceQuad     = forceQuad - qq * 2 * krf * r * r;
             potentialQuad = potentialQuad + qq * (krf * r * r - potentialShift);
 
             // update
@@ -145,10 +145,10 @@ static inline void ewaldQuadraticPotential(const RealType qq,
     BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
     if (gmx::anyTrue(computeValues))
     {
-        RealType lambdaFacRev = gmx::selectByMask(1.0 - lambdaFac, computeValues);
+        RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);
 
         RealType rQ = gmx::cbrt(lambdaFacRev);
-        rQ          = gmx::sqrt(rQ) * (1.0 + gmx::abs(qq / facel));
+        rQ          = gmx::sqrt(rQ) * (1 + gmx::abs(qq / facel));
         rQ          = rQ * alphaEff;
 
         // ensure that the linearization point doesn't go beyond rCutoff
@@ -199,16 +199,17 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
                                                   RealType*      dvdl,
                                                   BoolType       mask)
 {
-    constexpr real c_twentySixSeventh = 26.0 / 7.0;
-    constexpr real c_oneSixth         = 1.0 / 6.0;
-    constexpr real c_oneTwelth        = 1.0 / 12.0;
+    constexpr real c_twentySixSeventh = 26.0_real / 7.0_real;
+    constexpr real c_oneSixth         = 1.0_real / 6.0_real;
+    constexpr real c_oneTwelth        = 1.0_real / 12.0_real;
+    constexpr real c_half             = 1.0_real / 2.0_real;
 
     /* check if we have to use the hardcore values */
     BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
     if (gmx::anyTrue(computeValues))
     {
-        RealType lambdaFacRev    = gmx::selectByMask(1.0 - lambdaFac, computeValues);
-        RealType lambdaFacRevInv = gmx::maskzInv(1.0 - lambdaFac, computeValues);
+        RealType lambdaFacRev    = gmx::selectByMask(1 - lambdaFac, computeValues);
+        RealType lambdaFacRevInv = gmx::maskzInv(1 - lambdaFac, computeValues);
 
         RealType rQ = gmx::cbrt(c_twentySixSeventh * sigma6 * lambdaFacRev);
         rQ          = gmx::sqrt(rQ);
@@ -238,16 +239,16 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
 
             /* Temporary variables for A and B */
             RealType quadrFac, linearFac, constFac;
-            quadrFac  = 156. * rInv14C - 42. * rInv8C;
-            linearFac = 168. * rInv13C - 48. * rInv7C;
-            constFac  = 91. * rInv12C - 28. * rInv6C;
+            quadrFac  = 156 * rInv14C - 42 * rInv8C;
+            linearFac = 168 * rInv13C - 48 * rInv7C;
+            constFac  = 91 * rInv12C - 28 * rInv6C;
 
             /* Computing LJ force and potential energy */
             RealType forceQuad     = -quadrFac + linearFac;
-            RealType potentialQuad = 0.5 * quadrFac - linearFac + constFac;
-            RealType dvdlQuad      = dLambdaFac * 28. * (lambdaFac * lambdaFacRevInv)
-                                * ((6.5 * rInv14C - rInv8C) - (13. * rInv13C - 2. * rInv7C)
-                                   + (6.5 * rInv12C - rInv6C));
+            RealType potentialQuad = c_half * quadrFac - linearFac + constFac;
+            RealType dvdlQuad      = dLambdaFac * 28 * (lambdaFac * lambdaFacRevInv)
+                                * ((6.5_real * rInv14C - rInv8C) - (13 * rInv13C - 2. * rInv7C)
+                                   + (6.5_real * rInv12C - rInv6C));
 
             *potential = *potential
                          + gmx::selectByMask(((c12s * repulsionShift) - (c6s * dispersionShift)),

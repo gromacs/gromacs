@@ -295,31 +295,31 @@ static real free_energy_evaluate_single(real                                    
 
             if (softcoreType == SoftcoreType::Gapsys)
             {
-                rQ = gmx::sixthroot(1. - LFC[i]) * (1. + std::fabs(qq[i] / facel));
+                rQ = gmx::sixthroot(one - LFC[i]) * (one + std::fabs(qq[i] / facel));
                 rQ *= alpha_coul_eff;
-                scaleDvdlRCoul = 1.0;
+                scaleDvdlRCoul = 1;
                 if (rQ > rCoulCutoff)
                 {
                     rQ             = rCoulCutoff;
-                    scaleDvdlRCoul = 0.0;
+                    scaleDvdlRCoul = 0;
                 }
             }
 
             if ((softcoreType == SoftcoreType::Gapsys) && (r < rQ))
             {
-                real rInvQ    = 1.0 / rQ;
+                real rInvQ    = one / rQ;
                 real constFac = qq[i] * rInvQ;
                 real linFac   = constFac * r * rInvQ;
                 real quadrFac = linFac * r * rInvQ;
 
                 /* Computing Coulomb force and potential energy */
-                fscal_elec[i] = 2. * quadrFac - 3. * linFac;
+                fscal_elec[i] = 2 * quadrFac - 3 * linFac;
                 fscal_elec[i] *= rpinv;
 
-                velec[i] = quadrFac - 3. * (linFac - constFac);
+                velec[i] = quadrFac - 3 * (linFac - constFac);
 
-                dvdl_elec[i] += scaleDvdlRCoul * DLF[i] * 0.5 * (LFC[i] / (1. - LFC[i]))
-                                * (quadrFac - 2. * linFac + constFac);
+                dvdl_elec[i] += scaleDvdlRCoul * DLF[i] * half * (LFC[i] / (1 - LFC[i]))
+                                * (quadrFac - 2 * linFac + constFac);
             }
             else // Beutler, resp. hardcore
             {
@@ -355,9 +355,9 @@ static real free_energy_evaluate_single(real                                    
 
             if (softcoreType == SoftcoreType::Gapsys)
             {
-                constexpr real c_twentySixSeventh = 26.0 / 7.0;
+                constexpr real c_twentySixSeventh = 26.0_real / 7.0_real;
 
-                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6[i] * (1. - LFV[i]));
+                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6[i] * (one - LFV[i]));
                 rLJ *= alpha_vdw_eff;
             }
 
@@ -365,11 +365,11 @@ static real free_energy_evaluate_single(real                                    
             {
                 // scaled values for c6 and c12
                 real c6s, c12s;
-                c6s  = c6[i] / 6.0;
-                c12s = c12[i] / 12.0;
+                c6s  = c6[i] / 6.0_real;
+                c12s = c12[i] / 12.0_real;
 
                 /* Temporary variables for inverted values */
-                real rInvLJ = 1.0 / rLJ;
+                real rInvLJ = one / rLJ;
                 real rInv14, rInv13, rInv12;
                 real rInv8, rInv7, rInv6;
                 rInv6 = rInvLJ * rInvLJ * rInvLJ;
@@ -385,9 +385,9 @@ static real free_energy_evaluate_single(real                                    
 
                 /* Temporary variables for A and B */
                 real quadrFac, linearFac, constFac;
-                quadrFac  = 156. * rInv14 - 42. * rInv8;
-                linearFac = 168. * rInv13 - 48. * rInv7;
-                constFac  = 91. * rInv12 - 28. * rInv6;
+                quadrFac  = 156 * rInv14 - 42 * rInv8;
+                linearFac = 168 * rInv13 - 48 * rInv7;
+                constFac  = 91 * rInv12 - 28 * rInv6;
 
                 /* Computing LJ force and potential energy*/
                 fscal_vdw[i] = quadrFac - linearFac;
@@ -395,9 +395,9 @@ static real free_energy_evaluate_single(real                                    
 
                 vvdw[i] = 0.5 * quadrFac - linearFac + constFac;
 
-                dvdl_vdw[i] += DLF[i] * 28. * (LFV[i] / (1. - LFV[i]))
-                               * ((6.5 * rInv14 - rInv8) - (13. * rInv13 - 2. * rInv7)
-                                  + (6.5 * rInv12 - rInv6));
+                dvdl_vdw[i] += DLF[i] * 28 * (LFV[i] / (one - LFV[i]))
+                               * ((6.5_real * rInv14 - rInv8) - (13 * rInv13 - 2 * rInv7)
+                                  + (6.5_real * rInv12 - rInv6));
             }
             else // Beutler, resp. hardcore
             {
