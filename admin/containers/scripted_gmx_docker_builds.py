@@ -53,6 +53,7 @@ Authors:
     * Eric Irrgang <ericirrgang@gmail.com>
     * Joe Jordan <e.jjordan12@gmail.com>
     * Mark Abraham <mark.j.abraham@gmail.com>
+    * Gaurav Garg <gaugarg@nvidia.com>
 
 Usage::
 
@@ -348,6 +349,19 @@ def get_clfft(args):
         return hpccm.building_blocks.generic_cmake(
             repository='https://github.com/clMathLibraries/clFFT.git',
             prefix='/usr/local', recursive=True, branch=args.clfft, directory='clFFT/src')
+    else:
+        return None
+
+def get_heffte(args):
+    if (args.heffte is not None):
+        return hpccm.building_blocks.generic_cmake(
+            cmake_opts=['-D CMAKE_BUILD_TYPE=Release',
+                                    '-D CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda',
+                                    '-D Heffte_ENABLE_CUDA=ON',
+                                    '-D Heffte_ENABLE_FFTW=OFF',
+                                    '-D BUILD_SHARED_LIBS=ON'],
+            repository='https://bitbucket.org/icl/heffte.git',
+            prefix='/usr/local', recursive=True, commit=args.heffte, directory='heffte')
     else:
         return None
 
@@ -710,6 +724,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
             ])
 
     building_blocks['clfft'] = get_clfft(args)
+
+    building_blocks['heffte'] = get_heffte(args)
 
     building_blocks['hipSYCL'] = get_hipsycl(args)
 

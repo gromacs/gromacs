@@ -69,6 +69,7 @@ Authors:
     * Eric Irrgang <ericirrgang@gmail.com>
     * Joe Jordan <e.jjordan12@gmail.com>
     * Mark Abraham <mark.j.abraham@gmail.com>
+    * Gaurav Garg <gaugarg@nvidia.com>
 
 """
 
@@ -130,6 +131,9 @@ parser.add_argument('--intel-compute-runtime', type=str, nargs='?', default=None
 
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
                     help='Add external clFFT libraries to the build image')
+
+parser.add_argument('--heffte', type=str, nargs='?', default=None,
+                    help='Select heffte repository tag/commit/branch.')
 
 parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
                     help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')

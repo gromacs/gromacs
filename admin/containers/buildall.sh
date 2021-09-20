@@ -10,7 +10,7 @@ SCRIPT=$PWD/scripted_gmx_docker_builds.py
 # thread and no MPI configurations.
 
 args[${#args[@]}]="--gcc 11 --clfft --mpi openmpi --rocm"
-args[${#args[@]}]="--gcc 11 --cuda 11.4.1 --clfft --mpi openmpi"
+args[${#args[@]}]="--gcc 11 --cuda 11.4.1 --clfft --mpi openmpi --heffte v2.1.0"
 args[${#args[@]}]="--gcc 7 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 11 --cuda 11.4.1"
 args[${#args[@]}]="--llvm 11 --tsan"
