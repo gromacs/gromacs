@@ -230,7 +230,7 @@ static real free_energy_evaluate_single(real                                    
                  * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
                  */
                 sigma6[i] = half * c12[i] / c6[i];
-                if ((sigma6[i] < scParams.sigma6Minimum) && softcoreType == SoftcoreType::Beutler) /* for disappearing coul and vdw with soft core at the same time */
+                if (softcoreType == SoftcoreType::Beutler && (sigma6[i] < scParams.sigma6Minimum)) /* for disappearing coul and vdw with soft core at the same time */
                 {
                     sigma6[i] = scParams.sigma6Minimum;
                 }
