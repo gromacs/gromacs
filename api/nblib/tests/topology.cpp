@@ -64,9 +64,7 @@ namespace
 using ::testing::Eq;
 using ::testing::Pointwise;
 
-//! Compares all element between two lists of lists
-//! Todo: unify this with the identical function in nbkernelsystem test make this a method
-//!       of ListOfLists<>
+//! \brief Compares all element between two lists of lists
 template<typename T>
 void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
 {
@@ -354,8 +352,6 @@ TEST(NBlibTest, TopologyListedInteractions)
 
 TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
 {
-    // Todo: add an angle type here
-
     Molecule water    = WaterMoleculeBuilder{}.waterMolecule();
     Molecule methanol = MethanolMoleculeBuilder{}.methanolMolecule();
 

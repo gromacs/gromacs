@@ -47,6 +47,8 @@ target_sources(nblib
 if(GMX_INSTALL_NBLIB_API)
     install(FILES
             setup.h
+            traits.hpp
+            util.hpp
             DESTINATION include/nblib/util)
 endif()
 

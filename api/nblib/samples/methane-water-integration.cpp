@@ -52,9 +52,6 @@
 
 using namespace nblib;
 
-// Main function to write the MD program.
-int main(); // Keep the compiler happy
-
 int main()
 {
     // Create the particles

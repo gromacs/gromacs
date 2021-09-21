@@ -138,10 +138,12 @@ if(GMX_INSTALL_NBLIB_API)
             molecules.h
             kerneloptions.h
             nblib.h
+            nbnxmsetuphelpers.h
             particlesequencer.h
             particletype.h
             simulationstate.h
             topology.h
+            vector.h
             DESTINATION include/nblib)
 endif()
 

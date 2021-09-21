@@ -39,22 +39,12 @@
 #
 
 set(argon "argon-forces-integration")
-add_executable(${argon} "")
-
-target_sources(${argon}
-        PRIVATE
-        argon-forces-integration.cpp
-        )
+add_executable(${argon} argon-forces-integration.cpp)
 
 target_link_libraries(${argon} PRIVATE nblib)
 
 set(methane "methane-water-integration")
-add_executable(${methane} "")
-
-target_sources(${methane}
-        PRIVATE
-        methane-water-integration.cpp
-        )
+add_executable(${methane} methane-water-integration.cpp)
 
 target_link_libraries(${methane} PRIVATE nblib)
 

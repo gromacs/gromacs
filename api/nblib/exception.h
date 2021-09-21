@@ -77,7 +77,7 @@ private:
  *
  * The message should give users some hint as to how to remedy the error.
  */
-class InputException final : NbLibException
+class InputException final : public NbLibException
 {
 public:
     using NbLibException::NbLibException;

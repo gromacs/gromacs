@@ -292,9 +292,9 @@ struct Contains
 
 /*! \brief implementation of the Contains trait to look for T in TL
  *
- * @tparam T   type to look for in TL
- * @tparam TL  a variadic type, such as std::tuple or TypeList
- * @tparam Ts  the template parameters of TL
+ * \tparam T   type to look for in TL
+ * \tparam TL  a variadic type, such as std::tuple or TypeList
+ * \tparam Ts  the template parameters of TL
  *
  * Note that this clang-format enforced formatting is unfortunate, it should be:
  * struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>

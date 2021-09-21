@@ -93,20 +93,14 @@ struct NBKernelOptions final
     SimdKernels nbnxmSimd = SimdKernels::SimdAuto;
     //! The LJ combination rule
     CombinationRule ljCombinationRule = CombinationRule::Geometric;
-    //! Use i-cluster half-LJ optimization for clusters with <= half LJ
-    bool useHalfLJOptimization = false;
     //! The pairlist and interaction cut-off
     real pairlistCutoff = 1.0;
-    //! Whether to compute energies (shift forces for virial are always computed on CPU)
-    bool computeVirialAndEnergy = false;
     //! The Coulomb interaction function
     CoulombType coulombType = CoulombType::Pme;
     //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
     bool useTabulatedEwaldCorr = false;
     //! The number of iterations for each kernel
     int numIterations = 100;
-    //! Print cycles/pair instead of pairs/cycle
-    bool cyclesPerPair = false;
     //! The time step
     real timestep = 0.001;
 };

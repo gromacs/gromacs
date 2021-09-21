@@ -50,9 +50,6 @@
 // can be included via their respective headers.
 #include "nblib/nblib.h"
 
-// Main function to write the MD program.
-int main(); // Keep the compiler happy
-
 int main()
 {
     // Create an argon particle with a name and a mass.
