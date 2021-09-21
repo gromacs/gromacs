@@ -60,10 +60,15 @@ namespace gmx
 static constexpr int s_maxNumThreadsForReduction = 256;
 
 template<typename ForceBufferElementType>
-ThreadForceBuffer<ForceBufferElementType>::ThreadForceBuffer(const int threadIndex,
-                                                             const int numEnergyGroups) :
+ThreadForceBuffer<ForceBufferElementType>::ThreadForceBuffer(const int  threadIndex,
+                                                             const bool useEnergyTerms,
+                                                             const int  numEnergyGroups) :
     threadIndex_(threadIndex), shiftForces_(c_numShiftVectors), groupPairEnergies_(numEnergyGroups)
 {
+    if (useEnergyTerms)
+    {
+        energyTerms_.resize(F_NRE);
+    }
 }
 
 template<typename ForceBufferElementType>
@@ -207,7 +212,10 @@ void reduceThreadForceBuffers(ArrayRef<gmx::RVec> force,
 } // namespace
 
 template<typename ForceBufferElementType>
-ThreadedForceBuffer<ForceBufferElementType>::ThreadedForceBuffer(const int numThreads, const int numEnergyGroups)
+ThreadedForceBuffer<ForceBufferElementType>::ThreadedForceBuffer(const int  numThreads,
+                                                                 const bool useEnergyTerms,
+                                                                 const int  numEnergyGroups) :
+    useEnergyTerms_(useEnergyTerms)
 {
     threadForceBuffers_.resize(numThreads);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
@@ -218,8 +226,8 @@ ThreadedForceBuffer<ForceBufferElementType>::ThreadedForceBuffer(const int numTh
             /* Note that thread 0 uses the global fshift and energy arrays,
              * but to keep the code simple, we initialize all data here.
              */
-            threadForceBuffers_[t] =
-                    std::make_unique<ThreadForceBuffer<ForceBufferElementType>>(t, numEnergyGroups);
+            threadForceBuffers_[t] = std::make_unique<ThreadForceBuffer<ForceBufferElementType>>(
+                    t, useEnergyTerms_, numEnergyGroups);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -307,14 +315,14 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
                                                          const gmx::StepWorkload& stepWork,
                                                          const int reductionBeginIndex)
 {
-    if (!usedBlockIndices_.empty())
+    if (stepWork.computeForces && !usedBlockIndices_.empty())
     {
-        /* Reduce the bonded force buffer */
+        /* Reduce the force buffer */
+        GMX_ASSERT(forceWithShiftForces, "Need a valid force buffer for reduction");
+
         reduceThreadForceBuffers<ForceBufferElementType>(
                 forceWithShiftForces->force(), threadForceBuffers_, reductionMask_, usedBlockIndices_);
     }
-
-    rvec* gmx_restrict fshift = as_rvec_array(forceWithShiftForces->shiftForces().data());
 
     const int numBuffers = numThreadBuffers();
 
@@ -327,6 +335,10 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
 
         if (stepWork.computeVirial)
         {
+            GMX_ASSERT(forceWithShiftForces, "Need a valid force buffer for reduction");
+
+            rvec* gmx_restrict fshift = as_rvec_array(forceWithShiftForces->shiftForces().data());
+
             for (int i = 0; i < gmx::c_numShiftVectors; i++)
             {
                 for (int t = reductionBeginIndex; t < numBuffers; t++)
@@ -335,8 +347,10 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
                 }
             }
         }
-        if (stepWork.computeEnergy)
+        if (stepWork.computeEnergy && useEnergyTerms_)
         {
+            GMX_ASSERT(ener, "Need a valid energy buffer for reduction");
+
             for (int i = 0; i < F_NRE; i++)
             {
                 for (int t = reductionBeginIndex; t < numBuffers; t++)
@@ -344,6 +358,12 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
                     ener[i] += f_t[t]->energyTerms()[i];
                 }
             }
+        }
+
+        if (stepWork.computeEnergy)
+        {
+            GMX_ASSERT(grpp, "Need a valid group pair energy buffer for reduction");
+
             for (int i = 0; i < static_cast<int>(NonBondedEnergyTerms::Count); i++)
             {
                 for (int j = 0; j < f_t[0]->groupPairEnergies().nener; j++)
@@ -358,6 +378,8 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
         }
         if (stepWork.computeDhdl)
         {
+            GMX_ASSERT(!dvdl.empty(), "Need a valid dV/dl buffer for reduction");
+
             for (auto i : keysOf(f_t[0]->dvdl()))
             {
 
@@ -369,6 +391,9 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForc
         }
     }
 }
+
+template class ThreadForceBuffer<RVec>;
+template class ThreadedForceBuffer<RVec>;
 
 template class ThreadForceBuffer<rvec4>;
 template class ThreadedForceBuffer<rvec4>;

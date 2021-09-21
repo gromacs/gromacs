@@ -413,7 +413,7 @@ void setup_bonded_threading(bonded_threading_t*           bt,
 
 bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups, FILE* fplog) :
     nthreads(numThreads),
-    threadedForceBuffer(numThreads, numEnergyGroups),
+    threadedForceBuffer(numThreads, true, numEnergyGroups),
     haveBondeds(false),
     workDivision(nthreads),
     foreignLambdaWorkDivision(1)

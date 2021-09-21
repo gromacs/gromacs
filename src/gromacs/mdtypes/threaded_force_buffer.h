@@ -64,7 +64,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/simulation_workload.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
@@ -95,8 +94,12 @@ public:
     //! Force buffer block size in atoms
     static constexpr int s_reductionBlockSize = (1 << s_numReductionBlockBits);
 
-    //! Constructor
-    ThreadForceBuffer(int threadIndex, int numEnergyGroups);
+    /*! \brief Constructor
+     * \param[in] threadIndex  The index of the thread that will fill the buffers in this object
+     * \param[in] useEnergyTerms   Whether the list of energy terms will be used
+     * \param[in] numEnergyGroups  The number of non-bonded energy groups
+     */
+    ThreadForceBuffer(int threadIndex, bool useEnergyTerms, int numEnergyGroups);
 
     //! Resizes the buffer to \p numAtoms and clears the mask
     void resizeBufferAndClearMask(int numAtoms);
@@ -150,8 +153,8 @@ private:
 
     //! Shift force array, size c_numShiftVectors
     std::vector<RVec> shiftForces_;
-    //! Energy array
-    std::array<real, F_NRE> energyTerms_;
+    //! Energy array, can be empty
+    std::vector<real> energyTerms_;
     //! Group pair energy data for pairs
     gmx_grppairener_t groupPairEnergies_;
     //! Free-energy dV/dl output
@@ -170,8 +173,12 @@ template<typename ForceBufferElementType>
 class ThreadedForceBuffer
 {
 public:
-    //! Constructor
-    ThreadedForceBuffer(int numThreads, int numEnergyGroups);
+    /*! \brief Constructor
+     * \param[in] numThreads       The number of threads that will use the buffers and reduce
+     * \param[in] useEnergyTerms   Whether the list of energy terms will be used
+     * \param[in] numEnergyGroups  The number of non-bonded energy groups
+     */
+    ThreadedForceBuffer(int numThreads, bool useEnergyTerms, int numEnergyGroups);
 
     //! Returns the number of thread buffers
     int numThreadBuffers() const { return threadForceBuffers_.size(); }
@@ -189,6 +196,9 @@ public:
      *
      * The reduction of all output starts at the output from thread \p reductionBeginIndex,
      * except for the normal force buffer, which always starts at 0.
+     *
+     * Buffers that will not be used as indicated by the flags in \p stepWork
+     * are allowed to be nullptr or empty.
      */
     void reduce(gmx::ForceWithShiftForces* forceWithShiftForces,
                 real*                      ener,
@@ -198,6 +208,8 @@ public:
                 int                        reductionBeginIndex);
 
 private:
+    //! Whether the energy buffer is used
+    bool useEnergyTerms_;
     //! Force/energy data per thread, size nthreads, stored in unique_ptr to allow thread local allocation
     std::vector<std::unique_ptr<ThreadForceBuffer<ForceBufferElementType>>> threadForceBuffers_;
     //! Indices of blocks that are used, i.e. have force contributions.
@@ -211,7 +223,11 @@ private:
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ThreadedForceBuffer);
 };
 
-// Instantiate for rvec4. Can also be instantiated for rvec.
+// Instantiate for RVec
+extern template class ThreadForceBuffer<RVec>;
+extern template class ThreadedForceBuffer<RVec>;
+
+// Instantiate for rvec4
 extern template class ThreadForceBuffer<rvec4>;
 extern template class ThreadedForceBuffer<rvec4>;
 
