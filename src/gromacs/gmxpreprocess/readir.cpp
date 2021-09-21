@@ -2323,12 +2323,12 @@ void get_ir(const char*     mdparin,
     fep->lambda_neighbors = get_eint(&inp, "calc-lambda-neighbors", 1, wi);
     setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambda_weights, nullptr);
     fep->edHdLPrintEnergy   = getEnum<FreeEnergyPrintEnergy>(&inp, "dhdl-print-energy", wi);
+    fep->softcoreFunction   = getEnum<SoftcoreType>(&inp, "sc-function", wi);
     fep->sc_alpha           = get_ereal(&inp, "sc-alpha", 0.0, wi);
     fep->sc_power           = get_eint(&inp, "sc-power", 1, wi);
     fep->sc_r_power         = get_ereal(&inp, "sc-r-power", 6.0, wi);
     fep->sc_sigma           = get_ereal(&inp, "sc-sigma", 0.3, wi);
     fep->bScCoul            = (getEnum<Boolean>(&inp, "sc-coul", wi) != Boolean::No);
-    fep->softcoreFunction   = getEnum<SoftcoreType>(&inp, "sc-function", wi);
     fep->dh_hist_size       = get_eint(&inp, "dh_hist_size", 0, wi);
     fep->dh_hist_spacing    = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
     fep->separate_dhdl_file = getEnum<SeparateDhdlFile>(&inp, "separate-dhdl-file", wi);
