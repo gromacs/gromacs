@@ -2482,6 +2482,7 @@ void get_ir(const char*     mdparin,
     ir->userreal4 = get_ereal(&inp, "userreal4", 0, wi);
 #undef CTYPE
 
+    if (mdparout)
     {
         gmx::TextOutputFile stream(mdparout);
         write_inpfile(&stream, mdparout, &inp, FALSE, writeMdpHeader, wi);

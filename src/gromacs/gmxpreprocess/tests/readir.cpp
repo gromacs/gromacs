@@ -82,30 +82,58 @@ public:
         sfree(opts_.include);
         sfree(opts_.define);
     }
+
+    //! Tells whether warnings and/or errors are expected from inputrec parsing and checking, and whether we should compare the output
+    enum class TestBehavior
+    {
+        NoErrorAndCompareOutput,   //!< Expect no warnings/error and compare output
+        ErrorAndCompareOutput,     //!< Expect at least one warning/error and compare output
+        ErrorAndDoNotCompareOutput //!< Expect at least one warning/error and do not compare output
+    };
+
     /*! \brief Test mdp reading and writing
      *
      * \todo Modernize read_inp and write_inp to use streams,
      * which will make these tests run faster, because they don't
      * use disk files. */
-    void runTest(const std::string& inputMdpFileContents)
+    void runTest(const std::string& inputMdpFileContents,
+                 const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput)
     {
-        auto inputMdpFilename  = fileManager_.getTemporaryFilePath("input.mdp");
-        auto outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp");
+        const bool expectError   = testBehavior != TestBehavior::NoErrorAndCompareOutput;
+        const bool compareOutput = testBehavior != TestBehavior::ErrorAndDoNotCompareOutput;
+
+        std::string inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp");
+        std::string outputMdpFilename;
+        if (compareOutput)
+        {
+            outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp");
+        }
 
         TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
 
-        get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(), &mdModules_, &ir_, &opts_, WriteMdpHeader::no, wi_);
+        get_ir(inputMdpFilename.c_str(),
+               outputMdpFilename.empty() ? nullptr : outputMdpFilename.c_str(),
+               &mdModules_,
+               &ir_,
+               &opts_,
+               WriteMdpHeader::no,
+               wi_);
 
         check_ir(inputMdpFilename.c_str(), mdModules_.notifiers(), &ir_, &opts_, wi_);
         // Now check
-        bool                 failure = warning_errors_exist(wi_);
-        TestReferenceData    data;
-        TestReferenceChecker checker(data.rootChecker());
-        checker.checkBoolean(failure, "Error parsing mdp file");
-        warning_reset(wi_);
+        bool failure = warning_errors_exist(wi_);
+        EXPECT_EQ(failure, expectError);
 
-        auto outputMdpContents = TextReader::readFileToString(outputMdpFilename);
-        checker.checkString(outputMdpContents, "OutputMdpFile");
+        if (compareOutput)
+        {
+            TestReferenceData    data;
+            TestReferenceChecker checker(data.rootChecker());
+            checker.checkBoolean(failure, "Error parsing mdp file");
+            warning_reset(wi_);
+
+            auto outputMdpContents = TextReader::readFileToString(outputMdpFilename);
+            checker.checkString(outputMdpContents, "OutputMdpFile");
+        }
     }
 
     TestFileManager                    fileManager_;
@@ -172,6 +200,40 @@ TEST_F(GetIrTest, AcceptsEmptyLines)
 {
     const char* inputMdpFile = "";
     runTest(inputMdpFile);
+}
+
+TEST_F(GetIrTest, MtsCheckNstcalcenergy)
+{
+    const char* inputMdpFile[] = {
+        "mts = yes", "mts-levels = 2", "mts-level2-factor = 2", "nstcalcenergy = 5"
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, MtsCheckNstenergy)
+{
+    const char* inputMdpFile[] = {
+        "mts = yes", "mts-levels = 2", "mts-level2-factor = 2", "nstenergy = 5"
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, MtsCheckNstpcouple)
+{
+    const char* inputMdpFile[] = { "mts = yes",
+                                   "mts-levels = 2",
+                                   "mts-level2-factor = 2",
+                                   "pcoupl = Berendsen",
+                                   "nstpcouple = 5" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, MtsCheckNstdhdl)
+{
+    const char* inputMdpFile[] = {
+        "mts = yes", "mts-level2-factor = 2", "free-energy = yes", "nstdhdl = 5"
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
 }
 
 // These tests observe how the electric-field keys behave, since they
