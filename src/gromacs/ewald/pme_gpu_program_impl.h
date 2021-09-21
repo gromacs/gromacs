@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/utility/classhelpers.h"
 
+class ISyclKernelFunctor;
 class DeviceContext;
 struct DeviceInformation;
 
@@ -86,7 +87,7 @@ struct PmeGpuProgramImpl
 #elif GMX_GPU_OPENCL
     using PmeKernelHandle = cl_kernel;
 #else
-    using PmeKernelHandle = void*;
+    using PmeKernelHandle = ISyclKernelFunctor*;
 #endif
 
     /*! \brief

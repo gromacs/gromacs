@@ -75,6 +75,18 @@ enum class GpuTaskCompletion;
 class PmeGpuProgram;
 class GpuEventSynchronizer;
 
+/*! \brief Hack to selectively enable some parts of PME during unit testing.
+ *
+ * Set to \c false by default. If any of the tests sets it to \c true, it will
+ * make the compatibility check consider PME to be supported in SYCL builds.
+ *
+ * Currently we don't have proper PME implementation with SYCL, but we still want
+ * to run tests for some of the kernels.
+ *
+ * \todo Remove after #3927 is done and PME is fully enabled in SYCL builds.
+ */
+extern bool g_allowPmeWithSyclForTesting;
+
 namespace gmx
 {
 template<typename>

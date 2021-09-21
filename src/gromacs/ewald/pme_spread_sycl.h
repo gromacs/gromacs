@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,34 @@
  */
 
 /*! \internal \file
- * \brief Implements stubs of high-level PME GPU functions for SYCL.
+ *  \brief Implements PME GPU spline calculation and charge spreading in SYCL.
+ *  TODO: consider always pre-sorting particles (as in DD case).
  *
- * \author Andrey Alekseenko <al42and@gmail.com>
- *
- * \ingroup module_ewald
+ *  \author Andrey Alekseenko <al42and@gmail.com>
  */
-#include "gmxpre.h"
 
-#include "gromacs/ewald/ewald_utils.h"
+#include "gromacs/gpu_utils/gmxsycl.h"
 
-#include "pme_gpu_program_impl.h"
+#include "gromacs/gpu_utils/syclutils.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
-    deviceContext_(deviceContext),
-    warpSize_(0),
-    spreadWorkGroupSize(0),
-    gatherWorkGroupSize(0),
-    solveMaxWorkGroupSize(0)
+#include "pme_grid.h"
+#include "pme_gpu_types_host.h"
+
+struct PmeGpuGridParams;
+struct PmeGpuAtomParams;
+struct PmeGpuDynamicParams;
+
+template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
+class PmeSplineAndSpreadKernel : public ISyclKernelFunctor
 {
-    // SYCL-TODO
-}
+public:
+    PmeSplineAndSpreadKernel();
+    void            setArg(size_t argIndex, void* arg) override;
+    cl::sycl::event launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
 
-PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;
+private:
+    PmeGpuGridParams*    gridParams_;
+    PmeGpuAtomParams*    atomParams_;
+    PmeGpuDynamicParams* dynamicParams_;
+    void                 reset();
+};

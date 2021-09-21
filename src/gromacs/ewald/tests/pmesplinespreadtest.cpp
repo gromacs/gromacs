@@ -85,7 +85,17 @@ public:
     PmeSplineAndSpreadTest() = default;
 
     //! Sets the programs once
-    static void SetUpTestSuite() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
+    static void SetUpTestSuite()
+    {
+        s_pmeTestHardwareContexts    = createPmeTestHardwareContextList();
+        g_allowPmeWithSyclForTesting = true; // We support PmeSplineAndSpread with SYCL
+    }
+
+    static void TearDownTestSuite()
+    {
+        // Revert the value back.
+        g_allowPmeWithSyclForTesting = false;
+    }
 
     //! The test
     static void runTest()

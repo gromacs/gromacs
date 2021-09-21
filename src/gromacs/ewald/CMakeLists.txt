@@ -88,20 +88,21 @@ elseif (GMX_GPU_OPENCL)
 elseif (GMX_GPU_SYCL)
     # SYCL-TODO: proper implementation
     gmx_add_libgromacs_sources(
-        # Files that implement stubs
-        pme_gpu_sycl_stubs.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
+        pme_gpu_program_impl_sycl.cpp
+        pme_spread_sycl.cpp
         pme_gpu_timings.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
-        pme_gpu_sycl_stubs.cpp
+        pme_gpu_program_impl_sycl.cpp
         pme_gpu_3dfft_sycl.cpp
         pme_gpu_timings.cpp
-        )
+        pme_spread_sycl.cpp
+      )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
