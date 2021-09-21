@@ -58,10 +58,15 @@ endif ()
 if (GMX_LIB_MPI AND GMX_CP2K)
     list(APPEND GMX_REQUIRED_MPI_COMPONENTS "Fortran")
 endif ()
-# We can perform the find_package quietly because we report errors elsewhere
-# when we can't find a required component, but the MPI target is optional
+# We don't require MPI components here because we report errors elsewhere
+# when we can't find a required component, and the MPI target is optional
 # in some build configurations (e.g. thread-MPI gmxapi installations).
-find_package(MPI QUIET COMPONENTS ${GMX_REQUIRED_MPI_COMPONENTS})
+if (MPI_ALREADY_SEARCHED)
+    set(MPI_FIND_QUIETLY ON)
+endif()
+find_package(MPI COMPONENTS ${GMX_REQUIRED_MPI_COMPONENTS})
+set(MPI_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for MPI has already been done")
+mark_as_advanced(MPI_ALREADY_SEARCHED)
 
 if (GMX_LIB_MPI)
     if (NOT MPI_CXX_FOUND)
@@ -110,7 +115,9 @@ if (GMX_LIB_MPI AND OPENMPI_VERSION)
                 "This OpenMPI version is known to leak memory with GROMACS,"
                 "please update to a more recent version. ")
     endif ()
-    MESSAGE(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
+    if (NOT MPI_FIND_QUIETLY)
+        MESSAGE(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
+    endif ()
 endif ()
 
 # Test for and warn about unsuitable MPVAPICH2 versions
@@ -124,7 +131,9 @@ if (GMX_LIB_MPI AND MVAPICH2_VERSION)
                 "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
                 "are using the above MVAPICH2 version.")
     endif ()
-    MESSAGE(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
+    if (NOT MPI_FIND_QUIETLY)
+        MESSAGE(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
+    endif ()
 endif ()
 
 # Look for MPI process launchers that may be missed, especially if we didn't
