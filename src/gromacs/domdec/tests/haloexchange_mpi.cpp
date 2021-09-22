@@ -164,6 +164,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
             gpuHaloExchange[d][pulse].communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
         }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     GpuEventSynchronizer haloCompletedEvent;
     haloCompletedEvent.markEvent(deviceStream);
