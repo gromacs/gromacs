@@ -131,23 +131,24 @@ void NbvSetupUtil::constructPairList(ExclusionLists<int> exclusionLists)
 }
 
 
-std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(const SimulationState& system,
-                                                                              const NBKernelOptions& options)
+std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const Topology&          topology,
+                                                            const std::vector<Vec3>& coordinates,
+                                                            const Box&               box,
+                                                            const NBKernelOptions&   options)
 {
     NbvSetupUtil nbvSetupUtil;
     nbvSetupUtil.setExecutionContext(options);
-    nbvSetupUtil.setNonBondedParameters(system.topology().getParticleTypes(),
-                                        system.topology().getNonBondedInteractionMap());
-    nbvSetupUtil.setParticleInfoAllVdv(system.topology().numParticles());
+    nbvSetupUtil.setNonBondedParameters(topology.getParticleTypes(),
+                                        topology.getNonBondedInteractionMap());
+    nbvSetupUtil.setParticleInfoAllVdv(topology.numParticles());
 
     nbvSetupUtil.setupInteractionConst(options);
     nbvSetupUtil.setupStepWorkload(options);
-    nbvSetupUtil.setupNbnxmInstance(system.topology().getParticleTypes().size(), options);
-    nbvSetupUtil.setParticlesOnGrid(system.coordinates(), system.box());
-    nbvSetupUtil.constructPairList(system.topology().exclusionLists());
-    nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(),
-                                   system.topology().getCharges());
-    nbvSetupUtil.setupForceRec(system.box().legacyMatrix());
+    nbvSetupUtil.setupNbnxmInstance(topology.getParticleTypes().size(), options);
+    nbvSetupUtil.setParticlesOnGrid(coordinates, box);
+    nbvSetupUtil.constructPairList(topology.exclusionLists());
+    nbvSetupUtil.setAtomProperties(topology.getParticleTypeIdOfAllParticles(), topology.getCharges());
+    nbvSetupUtil.setupForceRec(box.legacyMatrix());
 
     return nbvSetupUtil.getGmxForceCalculator();
 }

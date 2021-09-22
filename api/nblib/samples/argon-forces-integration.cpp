@@ -107,14 +107,15 @@ int main()
     // Some performance flags can be set a run time
     options.nbnxmSimd = nblib::SimdKernels::SimdNo;
     // The force calculator contains all the data needed to compute forces.
-    nblib::ForceCalculator forceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
     // Integration requires masses, positions, and forces
     nblib::LeapFrog integrator(simState.topology(), simState.box());
     // Print some diagnostic info
     printf("initial forces on particle 0: x %4f y %4f z %4f\n", forces[0][0], forces[0][1], forces[0][2]);
     // The forces are computed for the user
     gmx::ArrayRef<nblib::Vec3> userForces(simState.forces());
-    forceCalculator.compute(simState.coordinates(), userForces);
+    forceCalculator->compute(simState.coordinates(), userForces);
     // Print some diagnostic info
     printf("  final forces on particle 0: x %4f y %4f z %4f\n",
            userForces[0][0],

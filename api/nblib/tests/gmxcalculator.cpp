@@ -61,8 +61,9 @@ TEST(NBlibTest, GmxForceCalculatorCanCompute)
     SimulationState             simState = argonSystemBuilder.setupSimulationState();
     NBKernelOptions             options  = NBKernelOptions();
     options.nbnxmSimd                    = SimdKernels::SimdNo;
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator =
-            nblib::GmxSetupDirector::setupGmxForceCalculator(simState, options);
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
+    ;
     EXPECT_NO_THROW(gmxForceCalculator->compute(simState.coordinates(), simState.forces()));
 }
 

@@ -45,7 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/exclusionblocks.h"
-#include "nblib/forcecalculator.h"
+#include "nblib/gmxcalculator.h"
 #include "nblib/gmxsetup.h"
 #include "nblib/integrator.h"
 #include "nblib/tests/testhelpers.h"
@@ -69,10 +69,11 @@ TEST(NBlibTest, SpcMethanolForcesAreCorrect)
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     gmx::ArrayRef<Vec3> forces(simState.forces());
-    ASSERT_NO_THROW(forceCalculator.compute(simState.coordinates(), forces));
+    ASSERT_NO_THROW(forceCalculator->compute(simState.coordinates(), forces));
 
     RefDataChecker forcesOutputTest(5e-5);
     forcesOutputTest.testArrays<Vec3>(forces, "SPC-methanol forces");
@@ -86,10 +87,11 @@ TEST(NBlibTest, ExpectedNumberOfForces)
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     gmx::ArrayRef<Vec3> forces(simState.forces());
-    forceCalculator.compute(simState.coordinates(), forces);
+    forceCalculator->compute(simState.coordinates(), forces);
     EXPECT_EQ(simState.topology().numParticles(), forces.size());
 }
 
@@ -102,14 +104,15 @@ TEST(NBlibTest, CanIntegrateSystem)
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     LeapFrog integrator(simState.topology(), simState.box());
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {
         gmx::ArrayRef<Vec3> forces(simState.forces());
-        forceCalculator.compute(simState.coordinates(), simState.forces());
+        forceCalculator->compute(simState.coordinates(), simState.forces());
         EXPECT_NO_THROW(integrator.integrate(
                 1.0, simState.coordinates(), simState.velocities(), simState.forces()));
     }
@@ -137,13 +140,14 @@ TEST(NBlibTest, UpdateChangesForces)
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     LeapFrog integrator(simState.topology(), simState.box());
 
     // step 1
     gmx::ArrayRef<Vec3> forces(simState.forces());
-    forceCalculator.compute(simState.coordinates(), simState.forces());
+    forceCalculator->compute(simState.coordinates(), simState.forces());
 
     // copy computed forces to another array
     std::vector<Vec3> forces_1(forces.size());
@@ -153,7 +157,7 @@ TEST(NBlibTest, UpdateChangesForces)
     zeroCartesianArray(forces);
 
     // check if forces change without update step
-    forceCalculator.compute(simState.coordinates(), forces);
+    forceCalculator->compute(simState.coordinates(), forces);
 
     // check if forces change without update
     for (size_t i = 0; i < forces_1.size(); i++)
@@ -171,7 +175,7 @@ TEST(NBlibTest, UpdateChangesForces)
     zeroCartesianArray(forces);
 
     // step 2
-    forceCalculator.compute(simState.coordinates(), forces);
+    forceCalculator->compute(simState.coordinates(), forces);
     std::vector<Vec3> forces_2(forces.size());
     std::copy(forces.begin(), forces.end(), begin(forces_2));
 
@@ -194,10 +198,11 @@ TEST(NBlibTest, ArgonOplsaForcesAreCorrect)
     ArgonSimulationStateBuilder argonSystemBuilder(fftypes::OPLSA);
 
     auto simState        = argonSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     gmx::ArrayRef<Vec3> testForces(simState.forces());
-    forceCalculator.compute(simState.coordinates(), simState.forces());
+    forceCalculator->compute(simState.coordinates(), simState.forces());
 
     RefDataChecker forcesOutputTest(1e-7);
     forcesOutputTest.testArrays<Vec3>(testForces, "Argon forces");
@@ -212,10 +217,11 @@ TEST(NBlibTest, ArgonGromos43A1ForcesAreCorrect)
     ArgonSimulationStateBuilder argonSystemBuilder(fftypes::GROMOS43A1);
 
     auto simState        = argonSystemBuilder.setupSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
+    auto forceCalculator = nblib::setupGmxForceCalculator(
+            simState.topology(), simState.coordinates(), simState.box(), options);
 
     gmx::ArrayRef<Vec3> testForces(simState.forces());
-    forceCalculator.compute(simState.coordinates(), simState.forces());
+    forceCalculator->compute(simState.coordinates(), simState.forces());
 
     RefDataChecker forcesOutputTest(1e-7);
     forcesOutputTest.testArrays<Vec3>(testForces, "Argon forces");

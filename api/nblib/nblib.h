@@ -47,7 +47,8 @@
 
 #include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
-#include "nblib/forcecalculator.h"
+#include "nblib/gmxcalculator.h"
+#include "nblib/gmxsetup.h"
 #include "nblib/integrator.h"
 #include "nblib/interactions.h"
 #include "nblib/kerneloptions.h"
