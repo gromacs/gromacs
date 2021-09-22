@@ -330,8 +330,8 @@ public:
                     virtualSites.emplace_back(VirtualSite{
                             vsiteType,
                             virtualSiteIdx,
-                            { &interactionList.iatoms[i + 2],
-                              &interactionList.iatoms[i + 2 + numConstructingAtoms] },
+                            { interactionList.iatoms.data() + i + 2,
+                              interactionList.iatoms.data() + i + 2 + numConstructingAtoms },
                             { localTopology.idef.iparams[parameterIdx].generic.buf,
                               localTopology.idef.iparams[parameterIdx].generic.buf + MAXFORCEPARAM } });
                     i += defaultIncrement;
