@@ -258,7 +258,7 @@ static inline RealType potSwitchPotentialMod(const RealType potentialInp, const 
 
 
 //! Templated free-energy non-bonded kernel
-template<typename DataTypes, SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForce>
+template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
 static void nb_free_energy_kernel(const t_nblist&                                  nlist,
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
@@ -528,8 +528,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         {
                             preloadLjPmeC6Grid[i][s] = 0;
                         }
-                        if constexpr (softcoreType == SoftcoreType::Beutler
-                                      || softcoreType == SoftcoreType::Gapsys)
+                        if constexpr (softcoreType == KernelSoftcoreType::Beutler
+                                      || softcoreType == KernelSoftcoreType::Gapsys)
                         {
                             const real c6  = nbfp[2 * typeIndices[i][s]];
                             const real c12 = nbfp[2 * typeIndices[i][s] + 1];
@@ -549,8 +549,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
                         }
                     }
-                    if constexpr (softcoreType == SoftcoreType::Beutler
-                                  || softcoreType == SoftcoreType::Gapsys)
+                    if constexpr (softcoreType == KernelSoftcoreType::Beutler
+                                  || softcoreType == KernelSoftcoreType::Gapsys)
                     {
                         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
                         const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
@@ -562,12 +562,12 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         }
                         else
                         {
-                            if constexpr (softcoreType == SoftcoreType::Beutler)
+                            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                             {
                                 preloadAlphaVdwEff[s]  = alpha_vdw;
                                 preloadAlphaCoulEff[s] = alpha_coul;
                             }
-                            else if constexpr (softcoreType == SoftcoreType::Gapsys)
+                            else if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                             {
                                 preloadAlphaVdwEff[s]  = alpha_vdw;
                                 preloadAlphaCoulEff[s] = gmx::sixthroot(sigma6_def);
@@ -646,12 +646,14 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 gmx::gatherLoadTranspose<2>(nbfp.data(), typeIndices[i], &c6[i], &c12[i]);
                 qq[i]          = gmx::load<RealType>(preloadQq[i]);
                 ljPmeC6Grid[i] = gmx::load<RealType>(preloadLjPmeC6Grid[i]);
-                if constexpr (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
+                if constexpr (softcoreType == KernelSoftcoreType::Beutler
+                              || softcoreType == KernelSoftcoreType::Gapsys)
                 {
                     sigma6[i] = gmx::load<RealType>(preloadSigma6[i]);
                 }
             }
-            if constexpr (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
+            if constexpr (softcoreType == KernelSoftcoreType::Beutler
+                          || softcoreType == KernelSoftcoreType::Gapsys)
             {
                 alphaVdwEff  = gmx::load<RealType>(preloadAlphaVdwEff);
                 alphaCoulEff = gmx::load<RealType>(preloadAlphaCoulEff);
@@ -663,7 +665,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             r    = rSq * rInv;
 
             RealType gmx_unused rp, rpm2;
-            if constexpr (softcoreType == SoftcoreType::Beutler)
+            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
                 rpm2 = rSq * rSq;  /* r4 */
                 rp   = rpm2 * rSq; /* r6 */
@@ -701,7 +703,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                              && bPairIncluded && withinCutoffMask);
                     if (gmx::anyTrue(nonZeroState))
                     {
-                        if constexpr (softcoreType == SoftcoreType::Beutler)
+                        if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                         {
                             RealType divisor = (alphaCoulEff * lFacCoul[i] * sigma6[i] + rp);
                             rPInvC           = gmx::inv(divisor);
@@ -755,7 +757,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                     fScalC[i] = ewaldScalarForce(qq[i], rInvC);
                                 }
 
-                                if constexpr (softcoreType == SoftcoreType::Gapsys)
+                                if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
                                     ewaldQuadraticPotential(qq[i],
                                                             facel,
@@ -779,7 +781,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                     fScalC[i] = reactionFieldScalarForce(qq[i], rInvC, rC, krf, two);
                                 }
 
-                                if constexpr (softcoreType == SoftcoreType::Gapsys)
+                                if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
                                     reactionFieldQuadraticPotential(qq[i],
                                                                     facel,
@@ -822,7 +824,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         if (gmx::anyTrue(computeVdwInteraction))
                         {
                             RealType rInv6;
-                            if constexpr (softcoreType == SoftcoreType::Beutler)
+                            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                             {
                                 rInv6 = rPInvV;
                             }
@@ -846,7 +848,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 fScalV[i] = lennardJonesScalarForce(vVdw6, vVdw12);
                             }
 
-                            if constexpr (softcoreType == SoftcoreType::Gapsys)
+                            if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                             {
                                 lennardJonesQuadraticPotential(c6[i],
                                                                c12[i],
@@ -927,7 +929,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             fScal = fScal + LFV[i] * fScalV[i] * rpm2;
                         }
 
-                        if constexpr (softcoreType == SoftcoreType::Beutler)
+                        if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                         {
                             dvdlCoul = dvdlCoul + vCoul[i] * DLF[i]
                                        + LFC[i] * alphaCoulEff * dlFacCoul[i] * fScalC[i] * sigma6[i];
@@ -1126,7 +1128,7 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                gmx::ArrayRef<real> threadVv,
                                gmx::ArrayRef<real> threadDvdl);
 
-template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
 {
     if (useSimd)
@@ -1143,7 +1145,7 @@ static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
     }
 }
 
-template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
 static KernelFunction dispatchKernelOnComputeForces(const bool computeForces, const bool useSimd)
 {
     if (computeForces)
@@ -1158,7 +1160,7 @@ static KernelFunction dispatchKernelOnComputeForces(const bool computeForces, co
     }
 }
 
-template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwitch,
                                                   const bool computeForces,
                                                   const bool useSimd)
@@ -1175,7 +1177,7 @@ static KernelFunction dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwi
     }
 }
 
-template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
                                                           const bool vdwModifierIsPotSwitch,
                                                           const bool computeForces,
@@ -1193,7 +1195,7 @@ static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInterac
     }
 }
 
-template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer>
 static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteractionTypeIsEwald,
                                                          const bool elecInteractionTypeIsEwald,
                                                          const bool vdwModifierIsPotSwitch,
@@ -1212,7 +1214,7 @@ static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteracti
     }
 }
 
-template<SoftcoreType softcoreType>
+template<KernelSoftcoreType softcoreType>
 static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scLambdasOrAlphasDiffer,
                                                                   const bool vdwInteractionTypeIsEwald,
                                                                   const bool elecInteractionTypeIsEwald,
@@ -1240,21 +1242,21 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
                                      const bool                 useSimd,
                                      const interaction_const_t& ic)
 {
-    if ((ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
-        || ic.softCoreParameters->softcoreType == SoftcoreType::None)
+    if (ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::None>(scLambdasOrAlphasDiffer,
-                                                                                vdwInteractionTypeIsEwald,
-                                                                                elecInteractionTypeIsEwald,
-                                                                                vdwModifierIsPotSwitch,
-                                                                                computeForces,
-                                                                                useSimd));
+        return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
+                scLambdasOrAlphasDiffer,
+                vdwInteractionTypeIsEwald,
+                elecInteractionTypeIsEwald,
+                vdwModifierIsPotSwitch,
+                computeForces,
+                useSimd));
     }
     else
     {
         if (ic.softCoreParameters->softcoreType == SoftcoreType::Beutler)
         {
-            return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::Beutler>(
+            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Beutler>(
                     scLambdasOrAlphasDiffer,
                     vdwInteractionTypeIsEwald,
                     elecInteractionTypeIsEwald,
@@ -1264,7 +1266,7 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
         }
         else
         {
-            return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::Gapsys>(
+            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Gapsys>(
                     scLambdasOrAlphasDiffer,
                     vdwInteractionTypeIsEwald,
                     elecInteractionTypeIsEwald,

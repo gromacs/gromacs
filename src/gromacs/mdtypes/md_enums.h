@@ -607,9 +607,24 @@ const char* enumValueToString(DhDlDerivativeCalculation enumValue);
 
 /*! \brief soft-core function \
  *
- * Distinguishes between soft-core functions.
+ * Distinguishes between soft-core functions in the input.
  */
 enum class SoftcoreType : int
+{
+    Beutler,
+    Gapsys,
+    Count,
+    Default = Beutler
+};
+//! Strings for softcore function names
+const char* enumValueToString(SoftcoreType enumValue);
+
+/*! \brief soft-core function as parameter to the nb-fep kernel/14-interaction.\
+ *
+ * Distinguishes between soft-core functions internally. This is different
+ * from SoftcoreType in that it offers 'None' which is not exposed to the user.
+ */
+enum class KernelSoftcoreType : int
 {
     Beutler,
     Gapsys,
@@ -618,7 +633,7 @@ enum class SoftcoreType : int
     Default = Beutler
 };
 //! Strings for softcore function names
-const char* enumValueToString(SoftcoreType enumValue);
+const char* enumValueToString(KernelSoftcoreType enumValue);
 
 /*! \brief Solvent model
  *

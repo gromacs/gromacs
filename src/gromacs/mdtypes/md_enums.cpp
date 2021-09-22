@@ -291,6 +291,14 @@ const char* enumValueToString(SeparateDhdlFile enumValue)
 const char* enumValueToString(SoftcoreType enumValue)
 {
     static constexpr gmx::EnumerationArray<SoftcoreType, const char*> softcoreTypeNames = {
+        "beutler", "gapsys"
+    };
+    return softcoreTypeNames[enumValue];
+}
+
+const char* enumValueToString(KernelSoftcoreType enumValue)
+{
+    static constexpr gmx::EnumerationArray<KernelSoftcoreType, const char*> softcoreTypeNames = {
         "beutler", "gapsys", "none"
     };
     return softcoreTypeNames[enumValue];
