@@ -584,7 +584,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
 
-    if (ir->bExpanded)
+    if (ir->bExpanded && !useModularSimulator)
     {
         snew(state->dfhist, 1);
         init_df_history(state->dfhist, ir->fepvals->n_lambda);

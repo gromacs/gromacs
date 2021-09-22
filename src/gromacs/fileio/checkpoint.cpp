@@ -1904,9 +1904,11 @@ static int do_cpt_df_hist(XDR* xd, int fflags, int nlambda, df_history_t** dfhis
         return 0;
     }
 
+    std::unique_ptr<df_history_t> localDFHistory = nullptr;
     if (*dfhistPtr == nullptr)
     {
-        snew(*dfhistPtr, 1);
+        localDFHistory        = std::make_unique<df_history_t>();
+        *dfhistPtr            = localDFHistory.get();
         (*dfhistPtr)->nlambda = nlambda;
         init_df_history(*dfhistPtr, nlambda);
     }
