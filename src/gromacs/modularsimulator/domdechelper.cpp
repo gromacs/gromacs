@@ -120,8 +120,8 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
     {
         return;
     }
-    std::unique_ptr<t_state> localState  = statePropagatorData_->localState();
-    t_state*                 globalState = statePropagatorData_->globalState();
+    t_state* localState  = statePropagatorData_->localState();
+    t_state* globalState = statePropagatorData_->globalState();
 
     // constant choices for this call to dd_partition_system
     const bool verbose = isVerbose_ && (step % verbosePrintInterval_ == 0 || step == inputrec_->init_step);
@@ -139,19 +139,19 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
     }
     if (isMasterState)
     {
-        dd_collect_state(cr_->dd, localState.get(), globalState);
+        dd_collect_state(cr_->dd, localState, globalState);
     }
 
     // Distribute the charge groups over the nodes from the master node
-    partitionSystem(verbose, isMasterState, nstglobalcomm_, wcycle_, std::move(localState), globalState);
+    partitionSystem(verbose, isMasterState, nstglobalcomm_, wcycle_, localState, globalState);
 }
 
-void DomDecHelper::partitionSystem(bool                     verbose,
-                                   bool                     isMasterState,
-                                   int                      nstglobalcomm,
-                                   gmx_wallcycle*           wcycle,
-                                   std::unique_ptr<t_state> localState,
-                                   t_state*                 globalState)
+void DomDecHelper::partitionSystem(bool           verbose,
+                                   bool           isMasterState,
+                                   int            nstglobalcomm,
+                                   gmx_wallcycle* wcycle,
+                                   t_state*       localState,
+                                   t_state*       globalState)
 {
     ForceBuffers* forcePointer = statePropagatorData_->forcePointer();
 
@@ -170,17 +170,17 @@ void DomDecHelper::partitionSystem(bool                     verbose,
                         *inputrec_,
                         imdSession_,
                         pull_work_,
-                        localState.get(),
+                        localState,
                         forcePointer,
                         mdAtoms_,
-                        topologyHolder_->localTopology_.get(),
+                        topologyHolder_->localTopology_,
                         fr_,
                         vsite_,
                         constr_,
                         nrnb_,
                         wcycle,
                         verbose);
-    statePropagatorData_->setLocalState(std::move(localState));
+    statePropagatorData_->setLocalState(localState);
     for (const auto& callback : domdecCallbacks_)
     {
         callback();

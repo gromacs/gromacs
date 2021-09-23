@@ -44,7 +44,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
@@ -159,19 +158,18 @@ void global_stat(const gmx_global_stat&   gs,
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
     int ie = 0, ifv = 0, isv = 0, irmsd = 0;
-    int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
+    int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0;
     int isig = -1;
     int icj = -1, ici = -1, icx = -1;
 
-    bool checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
-    bool bVV                             = EI_VV(inputrec.eI);
-    bool bTemp                           = ((flags & CGLO_TEMPERATURE) != 0);
-    bool bEner                           = ((flags & CGLO_ENERGY) != 0);
-    bool bPres                           = ((flags & CGLO_PRESSURE) != 0);
-    bool bConstrVir                      = ((flags & CGLO_CONSTRAINT) != 0);
-    bool bEkinAveVel                     = (inputrec.eI == IntegrationAlgorithm::VV
+    bool bVV         = EI_VV(inputrec.eI);
+    bool bTemp       = ((flags & CGLO_TEMPERATURE) != 0);
+    bool bEner       = ((flags & CGLO_ENERGY) != 0);
+    bool bPres       = ((flags & CGLO_PRESSURE) != 0);
+    bool bConstrVir  = ((flags & CGLO_CONSTRAINT) != 0);
+    bool bEkinAveVel = (inputrec.eI == IntegrationAlgorithm::VV
                         || (inputrec.eI == IntegrationAlgorithm::VVAK && bPres));
-    bool bReadEkin                       = ((flags & CGLO_READEKIN) != 0);
+    bool bReadEkin   = ((flags & CGLO_READEKIN) != 0);
 
     // This structure implements something akin to a vector. As
     // modules add their data into it with add_bin[rd], they save the
@@ -279,15 +277,6 @@ void global_stat(const gmx_global_stat&   gs,
         }
     }
 
-    double nb;
-    if (checkNumberOfBondedInteractions)
-    {
-        GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
-                           "No need to check number of bonded interactions when not using domain "
-                           "decomposition");
-        nb  = cr->dd->localTopologyChecker->numBondedInteractions();
-        inb = add_bind(rb, 1, &nb);
-    }
     if (!sig.empty())
     {
         isig = add_binr(rb, sig);
@@ -383,15 +372,6 @@ void global_stat(const gmx_global_stat&   gs,
             extract_binr(rb, icx, DIM * vcm->nr, vcm->group_x[0]);
             extract_binr(rb, ici, DIM * DIM * vcm->nr, vcm->group_i[0][0]);
         }
-    }
-
-    if (checkNumberOfBondedInteractions)
-    {
-        extract_bind(rb, inb, 1, &nb);
-        GMX_RELEASE_ASSERT(DOMAINDECOMP(cr),
-                           "No need to check number of bonded interactions when not using domain "
-                           "decomposition");
-        cr->dd->localTopologyChecker->setNumberOfBondedInteractionsOverAllDomains(gmx::roundToInt(nb));
     }
 
     if (!sig.empty())

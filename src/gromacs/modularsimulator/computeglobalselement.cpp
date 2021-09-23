@@ -44,7 +44,6 @@
 #include "computeglobalselement.h"
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/domdec/localtopologychecker.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -94,7 +93,6 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     nullSignaller_(std::make_unique<SimulationSignaller>(nullptr, nullptr, nullptr, false, false)),
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
-    localTopology_(nullptr),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
     vcm_(global_top.groups, *inputrec),
     signals_(signals),
@@ -123,8 +121,6 @@ ComputeGlobalsElement<algorithm>::~ComputeGlobalsElement()
 template<ComputeGlobalsAlgorithm algorithm>
 void ComputeGlobalsElement<algorithm>::elementSetup()
 {
-    GMX_ASSERT(localTopology_, "Setup called before local topology was set.");
-
     if (doStopCM_ && !inputrec_->bContinuation)
     {
         // To minimize communication, compute_globals computes the COM velocity
@@ -286,10 +282,6 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
     const auto* lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                                      : statePropagatorData_->constBox();
 
-    if (DOMAINDECOMP(cr_) && dd_localTopologyChecker(*cr_->dd).shouldCheckNumberOfBondedInteractions())
-    {
-        flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
-    }
     compute_globals(gstat_,
                     cr_,
                     inputrec_,
@@ -315,21 +307,11 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     flags,
                     step,
                     observablesReducer_);
-    if (DOMAINDECOMP(cr_))
-    {
-        dd_localTopologyChecker(cr_->dd)->checkNumberOfBondedInteractions(localTopology_, x, box);
-    }
     if (flags & CGLO_STOPCM && !isInit)
     {
         process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
-}
-
-template<ComputeGlobalsAlgorithm algorithm>
-void ComputeGlobalsElement<algorithm>::setTopology(const gmx_localtop_t* top)
-{
-    localTopology_ = top;
 }
 
 template<ComputeGlobalsAlgorithm algorithm>

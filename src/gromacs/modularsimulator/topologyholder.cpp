@@ -52,15 +52,14 @@ namespace gmx
 {
 TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
                                const gmx_mtop_t&                   globalTopology,
+                               gmx_localtop_t*                     localTopology,
                                const t_commrec*                    cr,
                                const t_inputrec*                   inputrec,
                                t_forcerec*                         fr,
                                MDAtoms*                            mdAtoms,
                                Constraints*                        constr,
                                VirtualSitesHandler*                vsite) :
-    globalTopology_(globalTopology),
-    localTopology_(std::make_unique<gmx_localtop_t>(globalTopology.ffparams)),
-    clients_(std::move(clients))
+    globalTopology_(globalTopology), localTopology_(localTopology), clients_(std::move(clients))
 {
     if (!DOMAINDECOMP(cr))
     {
@@ -71,7 +70,7 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
         //       TopologyHolder has no access to the forces, so we are passing a nullptr
         //       TODO: Find a unique approach to resizing the forces in modular simulator (#3461)
         mdAlgorithmsSetupAtomData(
-                cr, *inputrec, globalTopology, localTopology_.get(), fr, nullptr, mdAtoms, constr, vsite, nullptr);
+                cr, *inputrec, globalTopology, localTopology_, fr, nullptr, mdAtoms, constr, vsite, nullptr);
     }
     // Send copy of initial topology to clients
     updateLocalTopology();
@@ -86,7 +85,7 @@ void TopologyHolder::updateLocalTopology()
 {
     for (auto& client : clients_)
     {
-        client->setTopology(localTopology_.get());
+        client->setTopology(localTopology_);
     }
 }
 DomDecCallback TopologyHolder::registerDomDecCallback()

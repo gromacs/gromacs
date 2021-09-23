@@ -428,6 +428,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
             legacySimulatorData->fplog,
             legacySimulatorData->cr,
             legacySimulatorData->state_global,
+            legacySimulatorData->state,
             legacySimulatorData->fr->nbv->useGpu(),
             legacySimulatorData->fr->bMolPBC,
             legacySimulatorData->mdrunOptions.writeConfout,
@@ -544,6 +545,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 
     // Build topology holder
     algorithm.topologyHolder_ = topologyHolderBuilder_.build(legacySimulatorData_->top_global,
+                                                             legacySimulatorData_->top,
                                                              legacySimulatorData_->cr,
                                                              legacySimulatorData_->inputrec,
                                                              legacySimulatorData_->fr,

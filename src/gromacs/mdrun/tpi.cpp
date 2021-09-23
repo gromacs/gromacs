@@ -166,7 +166,6 @@ void LegacySimulator::do_tpi()
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) == 1,
                        "TPI does not support OpenMP");
 
-    gmx_localtop_t    top(top_global.ffparams);
     gmx::ForceBuffers f;
     real              lambda, t, temp, beta, drmax, epot;
     double            embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -222,7 +221,7 @@ void LegacySimulator::do_tpi()
 
     nnodes = cr->nnodes;
 
-    gmx_mtop_generate_local_top(top_global, &top, inputrec->efep != FreeEnergyPerturbationType::No);
+    gmx_mtop_generate_local_top(top_global, top, inputrec->efep != FreeEnergyPerturbationType::No);
 
     const SimulationGroups* groups = &top_global.groups;
 
@@ -698,7 +697,7 @@ void LegacySimulator::do_tpi()
                                            gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
                                            fr->atomInfo);
 
-                fr->nbv->constructPairlist(InteractionLocality::Local, top.excls, step, nrnb);
+                fr->nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 
                 bNS = FALSE;
             }
@@ -780,7 +779,7 @@ void LegacySimulator::do_tpi()
                      step,
                      nrnb,
                      wcycle,
-                     &top,
+                     top,
                      state_global->box,
                      state_global->x.arrayRefWithPadding(),
                      &state_global->hist,

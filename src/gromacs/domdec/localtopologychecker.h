@@ -52,28 +52,31 @@ struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_commrec;
 struct t_inputrec;
+class t_state;
 
 namespace gmx
 {
 class MDLogger;
-template<typename>
-class ArrayRef;
+class ObservablesReducerBuilder;
 } // namespace gmx
 
 namespace gmx
 {
 
-/*! \brief Has responsibility for checking that the local topology
- * distributed across domains describes a total number of bonded
- * interactions that matches the system topology
+/*! \libinternal
+ * \brief Has responsibility for checking that the local topology distributed
+ * across domains describes a total number of bonded interactions that matches
+ * the system topology
  *
- * Because this check is not urgent, the communication that it
- * requires is done at the next opportunity, rather than requiring
- * extra communication. If the check fails, a fatal error stops
- * execution. In principle, if there was a bug, GROMACS might crash in
- * the meantime because of the wrong forces. However as a bug is
- * unlikely, we optimize by avoiding creating extra overhead from
- * communication.
+ * This uses the ObservablesReducer framework to check that the count
+ * of bonded interactions in the local topology made for each domain
+ * sums to the expected value. Because this check is not urgent, the
+ * communication that it requires is done at the next opportunity,
+ * rather than requiring extra communication. If the check fails, a
+ * fatal error stops execution. In principle, if there was a bug,
+ * GROMACS might crash in the meantime because of the wrong
+ * forces. However as a bug is unlikely we optimize by avoiding
+ * creating extra overhead from communication.
  */
 class LocalTopologyChecker
 {
@@ -82,9 +85,18 @@ public:
      * \param[in]    mdlog            Logger
      * \param[in]    cr               Communication object
      * \param[in]    mtop             Global system topology
+     * \param[in]    localTopology    The local topology
+     * \param[in]    localState       The local state
      * \param[in]    useUpdateGroups  Whether update groups are in use
+     * \param[in]    observablesReducerBuilder  Handle to builder for ObservablesReducer
      */
-    LocalTopologyChecker(const MDLogger& mdlog, const t_commrec* cr, const gmx_mtop_t& mtop, bool useUpdateGroups);
+    LocalTopologyChecker(const MDLogger&            mdlog,
+                         const t_commrec*           cr,
+                         const gmx_mtop_t&          mtop,
+                         const gmx_localtop_t&      localTopology,
+                         const t_state&             localState,
+                         bool                       useUpdateGroups,
+                         ObservablesReducerBuilder* observablesReducerBuilder);
     //! Destructor
     ~LocalTopologyChecker();
     //! Move constructor
@@ -96,27 +108,6 @@ public:
      * observables reduction whenever that reduction is required by
      * another module. */
     void scheduleCheckOfLocalTopology(int numBondedInteractionsToReduce);
-
-    /*! \brief Return whether the total bonded interaction count across
-     * domains should be checked in observables reduction this step. */
-    bool shouldCheckNumberOfBondedInteractions() const;
-
-    //! Return the number of bonded interactions in this domain.
-    int numBondedInteractions() const;
-
-    /*! \brief Set total bonded interaction count across domains. */
-    void setNumberOfBondedInteractionsOverAllDomains(int newValue);
-
-    /*! \brief Check whether bonded interactions are missing from the reverse topology
-     * produced by domain decomposition.
-     *
-     * \param[in]    top_local  Local topology for the error message
-     * \param[in]    x          Position vector for the error message
-     * \param[in]    box        Box matrix for the error message
-     */
-    void checkNumberOfBondedInteractions(const gmx_localtop_t* top_local,
-                                         ArrayRef<const RVec>  x,
-                                         const matrix          box);
 
 private:
     class Impl;

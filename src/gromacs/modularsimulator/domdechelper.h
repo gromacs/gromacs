@@ -141,12 +141,12 @@ private:
     TopologyHolder* topologyHolder_;
 
     //! Helper function unifying the DD partitioning calls in setup() and run()
-    void partitionSystem(bool                     verbose,
-                         bool                     isMasterState,
-                         int                      nstglobalcomm,
-                         gmx_wallcycle*           wcycle,
-                         std::unique_ptr<t_state> localState,
-                         t_state*                 globalState);
+    void partitionSystem(bool           verbose,
+                         bool           isMasterState,
+                         int            nstglobalcomm,
+                         gmx_wallcycle* wcycle,
+                         t_state*       localState,
+                         t_state*       globalState);
 
     // Access to ISimulator data
     //! Handles logging.

@@ -434,6 +434,7 @@ static void init_em(FILE*                fplog,
 
     if (DOMAINDECOMP(cr))
     {
+        // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, &ems->s);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -1246,7 +1247,6 @@ void LegacySimulator::do_cg()
 {
     const char* CG = "Polak-Ribiere Conjugate Gradients";
 
-    gmx_localtop_t    top(top_global.ffparams);
     gmx_global_stat_t gstat;
     double            tmp, minstep;
     real              stepsize;
@@ -1306,7 +1306,7 @@ void LegacySimulator::do_cg()
             state_global,
             top_global,
             s_min,
-            &top,
+            top,
             nrnb,
             fr,
             mdAtoms,
@@ -1359,7 +1359,7 @@ void LegacySimulator::do_cg()
                                      cr,
                                      ms,
                                      top_global,
-                                     &top,
+                                     top,
                                      inputrec,
                                      imdSession,
                                      pull_work,
@@ -1558,7 +1558,7 @@ void LegacySimulator::do_cg()
                                    imdSession,
                                    pull_work,
                                    s_min,
-                                   &top,
+                                   top,
                                    mdAtoms,
                                    fr,
                                    vsite,
@@ -1673,7 +1673,7 @@ void LegacySimulator::do_cg()
                                            imdSession,
                                            pull_work,
                                            s_min,
-                                           &top,
+                                           top,
                                            mdAtoms,
                                            fr,
                                            vsite,
@@ -1964,7 +1964,6 @@ void LegacySimulator::do_lbfgs()
 {
     static const char* LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
-    gmx_localtop_t     top(top_global.ffparams);
     gmx_global_stat_t  gstat;
     auto*              mdatoms = mdAtoms->mdatoms();
 
@@ -2024,7 +2023,7 @@ void LegacySimulator::do_lbfgs()
             state_global,
             top_global,
             &ems,
-            &top,
+            top,
             nrnb,
             fr,
             mdAtoms,
@@ -2115,7 +2114,7 @@ void LegacySimulator::do_lbfgs()
                                      cr,
                                      ms,
                                      top_global,
-                                     &top,
+                                     top,
                                      inputrec,
                                      imdSession,
                                      pull_work,
@@ -2781,7 +2780,6 @@ void LegacySimulator::do_lbfgs()
 void LegacySimulator::do_steep()
 {
     const char*       SD = "Steepest Descents";
-    gmx_localtop_t    top(top_global.ffparams);
     gmx_global_stat_t gstat;
     real              stepsize;
     real              ustep;
@@ -2819,7 +2817,7 @@ void LegacySimulator::do_steep()
             state_global,
             top_global,
             s_try,
-            &top,
+            top,
             nrnb,
             fr,
             mdAtoms,
@@ -2878,7 +2876,7 @@ void LegacySimulator::do_steep()
                                      cr,
                                      ms,
                                      top_global,
-                                     &top,
+                                     top,
                                      inputrec,
                                      imdSession,
                                      pull_work,
@@ -3024,7 +3022,7 @@ void LegacySimulator::do_steep()
                                        imdSession,
                                        pull_work,
                                        s_min,
-                                       &top,
+                                       top,
                                        mdAtoms,
                                        fr,
                                        vsite,
@@ -3114,7 +3112,6 @@ void LegacySimulator::do_nm()
 {
     const char*         NM = "Normal Mode Analysis";
     int                 nnodes;
-    gmx_localtop_t      top(top_global.ffparams);
     gmx_global_stat_t   gstat;
     tensor              vir, pres;
     rvec                mu_tot = { 0 };
@@ -3164,7 +3161,7 @@ void LegacySimulator::do_nm()
             state_global,
             top_global,
             &state_work,
-            &top,
+            top,
             nrnb,
             fr,
             mdAtoms,
@@ -3270,7 +3267,7 @@ void LegacySimulator::do_nm()
                                      cr,
                                      ms,
                                      top_global,
-                                     &top,
+                                     top,
                                      inputrec,
                                      imdSession,
                                      pull_work,
@@ -3352,7 +3349,7 @@ void LegacySimulator::do_nm()
                                         pull_work,
                                         bNS,
                                         force_flags,
-                                        &top,
+                                        top,
                                         constr,
                                         enerd,
                                         state_work.s.natoms,

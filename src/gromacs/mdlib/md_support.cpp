@@ -309,19 +309,17 @@ void compute_globals(gmx_global_stat*               gstat,
 {
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
-    gmx_bool bCheckNumberOfBondedInteractions;
     real     dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM                          = ((flags & CGLO_STOPCM) != 0);
-    bGStat                           = ((flags & CGLO_GSTAT) != 0);
-    bReadEkin                        = ((flags & CGLO_READEKIN) != 0);
-    bScaleEkin                       = ((flags & CGLO_SCALEEKIN) != 0);
-    bEner                            = ((flags & CGLO_ENERGY) != 0);
-    bTemp                            = ((flags & CGLO_TEMPERATURE) != 0);
-    bPres                            = ((flags & CGLO_PRESSURE) != 0);
-    bConstrain                       = ((flags & CGLO_CONSTRAINT) != 0);
-    bCheckNumberOfBondedInteractions = ((flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0);
+    bStopCM    = ((flags & CGLO_STOPCM) != 0);
+    bGStat     = ((flags & CGLO_GSTAT) != 0);
+    bReadEkin  = ((flags & CGLO_READEKIN) != 0);
+    bScaleEkin = ((flags & CGLO_SCALEEKIN) != 0);
+    bEner      = ((flags & CGLO_ENERGY) != 0);
+    bTemp      = ((flags & CGLO_TEMPERATURE) != 0);
+    bPres      = ((flags & CGLO_PRESSURE) != 0);
+    bConstrain = ((flags & CGLO_CONSTRAINT) != 0);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -348,7 +346,7 @@ void compute_globals(gmx_global_stat*               gstat,
         calc_vcm_grp(*mdatoms, x, v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain || bCheckNumberOfBondedInteractions
+    if (bTemp || bStopCM || bPres || bEner || bConstrain
         || !observablesReducer->communicationBuffer().empty())
     {
         if (!bGStat)

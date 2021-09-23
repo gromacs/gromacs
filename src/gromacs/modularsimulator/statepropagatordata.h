@@ -105,6 +105,7 @@ public:
                         FILE*              fplog,
                         const t_commrec*   cr,
                         t_state*           globalState,
+                        t_state*           localState,
                         bool               useGPU,
                         bool               canMoleculesBeDistributedOverPBC,
                         bool               writeFinalConfiguration,
@@ -220,10 +221,18 @@ private:
     void doCheckpointData(CheckpointData<operation>* checkpointData);
 
     // Access to legacy state
-    //! Get a deep copy of the current state in legacy format
-    std::unique_ptr<t_state> localState();
-    //! Update the current state with a state in legacy format
-    void setLocalState(std::unique_ptr<t_state> state);
+    //! Give ownership of local state resources in legacy format
+    t_state* localState();
+    //! Take ownership of local state resources in legacy format
+    void setLocalState(t_state* state);
+    /*! \brief Deep copy the local state into the provided copy and
+     * return it
+     *
+     * In order to minimize reallocations, this function takes as a sink
+     * a local state object owned by the caller, copies the current local
+     * state into it, and returns the same object via a move.
+     */
+    std::unique_ptr<t_state> copyLocalState(std::unique_ptr<t_state> copy);
     //! Get a pointer to the global state
     t_state* globalState();
     //! Get a force pointer
@@ -244,6 +253,8 @@ private:
     // Access to ISimulator data
     //! Full simulation state (only non-nullptr on master rank).
     t_state* globalState_;
+    //! Local simulation state
+    t_state* localState_;
 };
 
 /*! \internal
@@ -362,6 +373,11 @@ private:
 
     //! Pointer to keep a backup of the state for later writeout
     std::unique_ptr<t_state> localStateBackup_;
+    /*! \brief Whether the contents of localStateBackup_ are logically valid
+     *
+     * This ensures that we don't make a second backup without consuming the
+     * first. */
+    bool localStateBackupValid_ = false;
     //! Step at which next writeout occurs
     Step writeOutStep_;
     //! Backup current state

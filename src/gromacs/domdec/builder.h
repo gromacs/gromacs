@@ -53,8 +53,10 @@
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
+struct gmx_localtop_t;
 struct t_commrec;
 struct t_inputrec;
+class t_state;
 
 namespace gmx
 {
@@ -64,6 +66,7 @@ class RangePartitioning;
 struct DomdecOptions;
 struct MdrunOptions;
 struct MDModulesNotifiers;
+class ObservablesReducerBuilder;
 
 template<typename T>
 class ArrayRef;
@@ -96,7 +99,10 @@ public:
     //! Destructor
     ~DomainDecompositionBuilder();
     //! Build the resulting DD manager
-    gmx_domdec_t* build(LocalAtomSetManager* atomSets);
+    gmx_domdec_t* build(LocalAtomSetManager*       atomSets,
+                        const gmx_localtop_t&      localTopology,
+                        const t_state&             localState,
+                        ObservablesReducerBuilder* observablesReducerBuilder);
 
 private:
     class Impl;

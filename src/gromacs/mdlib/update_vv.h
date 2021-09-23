@@ -50,8 +50,6 @@
 class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
-struct gmx_localtop_t;
-struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct pull_t;
 struct t_commrec;
@@ -68,7 +66,6 @@ namespace gmx
 {
 class Constraints;
 class ForceBuffers;
-class MDLogger;
 class ObservablesReducer;
 class SimulationSignaller;
 class Update;
@@ -90,7 +87,6 @@ enum class StartingBehavior : int;
  * \param[in]  fcdata            Force calculation data.
  * \param[in]  MassQ             Mass/pressure data.
  * \param[in]  vcm               Center of mass motion removal.
- * \param[in]  top               Local topology.
  * \param[in]  enerd             Energy data.
  * \param[in]  observablesReducer Pointer to the \c ObservablesReducer object
  * \param[in]  ekind             Kinetic energy data.
@@ -133,7 +129,6 @@ void integrateVVFirstStep(int64_t                   step,
                           t_fcdata*                 fcdata,
                           t_extmass*                MassQ,
                           t_vcm*                    vcm,
-                          const gmx_localtop_t&     top,
                           gmx_enerdata_t*           enerd,
                           gmx::ObservablesReducer*  observablesReducer,
                           gmx_ekindata_t*           ekind,

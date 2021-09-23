@@ -47,6 +47,7 @@ class energyhistory_t;
 class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
+struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_multisim_t;
@@ -130,7 +131,9 @@ public:
                         pull_t*                             pull_work,
                         t_swap*                             swap,
                         const gmx_mtop_t&                   top_global,
+                        gmx_localtop_t*                     top,
                         t_state*                            state_global,
+                        t_state*                            state,
                         ObservablesHistory*                 observablesHistory,
                         MDAtoms*                            mdAtoms,
                         t_nrnb*                             nrnb,
@@ -165,7 +168,9 @@ public:
         pull_work(pull_work),
         swap(swap),
         top_global(top_global),
+        top(top),
         state_global(state_global),
+        state(state),
         observablesHistory(observablesHistory),
         mdAtoms(mdAtoms),
         nrnb(nrnb),
@@ -223,8 +228,12 @@ public:
     t_swap* swap;
     //! Full system topology.
     const gmx_mtop_t& top_global;
+    //! Handle to local simulation topology.
+    gmx_localtop_t* top;
     //! Full simulation state (only non-nullptr on master rank).
     t_state* state_global;
+    //! Handle to local state of the simulation.
+    t_state* state;
     //! History of simulation observables.
     ObservablesHistory* observablesHistory;
     //! Atom parameters for this domain.

@@ -76,6 +76,7 @@ public:
     //! Constructor
     TopologyHolder(std::vector<ITopologyHolderClient*> clients,
                    const gmx_mtop_t&                   globalTopology,
+                   gmx_localtop_t*                     localTopology,
                    const t_commrec*                    cr,
                    const t_inputrec*                   inputrec,
                    t_forcerec*                         fr,
@@ -99,7 +100,7 @@ private:
     //! Constant reference to the global topology
     const gmx_mtop_t& globalTopology_;
     //! Pointer to the currently valid local topology
-    std::unique_ptr<gmx_localtop_t> localTopology_;
+    gmx_localtop_t* localTopology_;
 
     //! List of clients to be updated if local topology changes
     std::vector<ITopologyHolderClient*> clients_;

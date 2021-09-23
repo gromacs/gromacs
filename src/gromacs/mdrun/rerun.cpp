@@ -183,7 +183,6 @@ void gmx::LegacySimulator::do_rerun()
     t_trxstatus*      status = nullptr;
     rvec              mu_tot;
     t_trxframe        rerun_fr;
-    gmx_localtop_t    top(top_global.ffparams);
     ForceBuffers      f;
     gmx_global_stat_t gstat;
     gmx_shellfc_t*    shellfc;
@@ -331,14 +330,9 @@ void gmx::LegacySimulator::do_rerun()
         }
     }
 
-    // Local state only becomes valid now.
-    std::unique_ptr<t_state> stateInstance;
-    t_state*                 state;
-
     if (DOMAINDECOMP(cr))
     {
-        stateInstance = std::make_unique<t_state>();
-        state         = stateInstance.get();
+        // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -356,7 +350,7 @@ void gmx::LegacySimulator::do_rerun()
                             state,
                             &f,
                             mdAtoms,
-                            &top,
+                            top,
                             fr,
                             vsite,
                             constr,
@@ -370,7 +364,7 @@ void gmx::LegacySimulator::do_rerun()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, *ir, top_global, &top, fr, &f, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, *ir, top_global, top, fr, &f, mdAtoms, constr, vsite, shellfc);
     }
 
     auto* mdatoms = mdAtoms->mdatoms();
@@ -392,11 +386,7 @@ void gmx::LegacySimulator::do_rerun()
     int64_t step_rel = 0;
 
     {
-        int cglo_flags = CGLO_GSTAT;
-        if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
-        {
-            cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
-        }
+        int    cglo_flags   = CGLO_GSTAT;
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
@@ -423,11 +413,6 @@ void gmx::LegacySimulator::do_rerun()
                         cglo_flags,
                         step,
                         &observablesReducer);
-        if (DOMAINDECOMP(cr))
-        {
-            dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
-                    &top, makeConstArrayRef(state->x), state->box);
-        }
     }
 
     if (MASTER(cr))
@@ -608,7 +593,7 @@ void gmx::LegacySimulator::do_rerun()
                                 state,
                                 &f,
                                 mdAtoms,
-                                &top,
+                                top,
                                 fr,
                                 vsite,
                                 constr,
@@ -647,7 +632,7 @@ void gmx::LegacySimulator::do_rerun()
                                 pull_work,
                                 bNS,
                                 force_flags,
-                                &top,
+                                top,
                                 constr,
                                 enerd,
                                 state->natoms,
@@ -690,7 +675,7 @@ void gmx::LegacySimulator::do_rerun()
                      step,
                      nrnb,
                      wcycle,
-                     &top,
+                     top,
                      state->box,
                      state->x.arrayRefWithPadding(),
                      &state->hist,
@@ -751,10 +736,6 @@ void gmx::LegacySimulator::do_rerun()
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
-            if (DOMAINDECOMP(cr) && dd_localTopologyChecker(*cr->dd).shouldCheckNumberOfBondedInteractions())
-            {
-                cglo_flags |= CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
-            }
             compute_globals(gstat,
                             cr,
                             ir,
@@ -779,11 +760,6 @@ void gmx::LegacySimulator::do_rerun()
                             cglo_flags,
                             step,
                             &observablesReducer);
-            if (DOMAINDECOMP(cr))
-            {
-                dd_localTopologyChecker(cr->dd)->checkNumberOfBondedInteractions(
-                        &top, makeConstArrayRef(state->x), state->box);
-            }
         }
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of

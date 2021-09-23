@@ -1425,15 +1425,33 @@ int Mdrunner::mdrunner()
     // requires it (e.g. pull, CompEl, density fitting), so that we
     // don't update the local atom sets unilaterally every step.
     LocalAtomSetManager atomSets;
+
+    // Local state and topology are declared (and perhaps constructed)
+    // now, because DD needs them for the LocalTopologyChecker, but
+    // they do not contain valid data until after the first DD
+    // partition.
+    std::unique_ptr<t_state> localStateInstance;
+    t_state*                 localState;
+    gmx_localtop_t           localTopology(mtop.ffparams);
+
     if (ddBuilder)
     {
+        localStateInstance = std::make_unique<t_state>();
+        localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        cr->dd = ddBuilder->build(&atomSets);
+        cr->dd = ddBuilder->build(&atomSets, localTopology, *localState, &observablesReducerBuilder);
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
     }
+    else
+    {
+        // Without DD, the local state is merely an alias to the global state,
+        // so we don't need to allocate anything.
+        localState = globalState.get();
+    }
+
     // Ensure that all atoms within the same update group are in the
     // same periodic image. Otherwise, a simulation that did not use
     // update groups (e.g. a single-rank simulation) cannot always be
@@ -2023,7 +2041,8 @@ int Mdrunner::mdrunner()
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
 
-        simulatorBuilder.add(SimulatorStateData(globalState.get(), &observablesHistory, &enerd, &ekind));
+        simulatorBuilder.add(SimulatorStateData(
+                globalState.get(), localState, &observablesHistory, &enerd, &ekind));
         simulatorBuilder.add(std::move(membedHolder));
         simulatorBuilder.add(std::move(stopHandlerBuilder_));
         simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));
@@ -2042,7 +2061,7 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(CenterOfMassPulling(pull_work));
         // Todo move to an MDModule
         simulatorBuilder.add(IonSwapping(swap));
-        simulatorBuilder.add(TopologyData(mtop, mdAtoms.get()));
+        simulatorBuilder.add(TopologyData(mtop, &localTopology, mdAtoms.get()));
         simulatorBuilder.add(BoxDeformationHandle(deform.get()));
         simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
 
@@ -2109,6 +2128,7 @@ int Mdrunner::mdrunner()
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
+    localStateInstance.reset(nullptr);
     mdModules_.reset(nullptr); // destruct force providers here as they might also use the GPU
     fr.reset(nullptr);         // destruct forcerec before gpu
     // TODO convert to C++ so we can get rid of these frees
