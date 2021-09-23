@@ -54,7 +54,10 @@ interaction_const_t::SoftCoreParameters::SoftCoreParameters(const t_lambda& fepv
     lambdaPower(fepvals.sc_power),
     sigma6WithInvalidSigma(gmx::power6(fepvals.sc_sigma)),
     sigma6Minimum(fepvals.bScCoul ? gmx::power6(fepvals.sc_sigma_min) : 0),
-    softcoreType(fepvals.softcoreFunction)
+    softcoreType(fepvals.softcoreFunction),
+    scaleLinpointVdWGapsys(fepvals.scScaleLinpointLJGapsys),
+    scaleLinpointCoulGapsys(fepvals.scScaleLinpointQGapsys),
+    sigma6VdWGapsys(gmx::power6(fepvals.scSigmaLJGapsys))
 {
     // This is checked during tpr reading, so we can assert here
     GMX_RELEASE_ASSERT(fepvals.sc_r_power == 6.0, "We only support soft-core r-power 6");

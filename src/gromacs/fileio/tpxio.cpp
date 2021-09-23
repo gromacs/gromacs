@@ -626,10 +626,16 @@ static void do_fepvals(gmx::ISerializer* serializer, t_lambda* fepvals, int file
     if (file_version >= tpxv_SoftcoreGapsys)
     {
         serializer->doInt(reinterpret_cast<int*>(&fepvals->softcoreFunction));
+        serializer->doReal(&fepvals->scScaleLinpointLJGapsys);
+        serializer->doReal(&fepvals->scScaleLinpointQGapsys);
+        serializer->doReal(&fepvals->scSigmaLJGapsys);
     }
     else
     {
-        fepvals->softcoreFunction = SoftcoreType::Beutler;
+        fepvals->softcoreFunction        = SoftcoreType::Beutler;
+        fepvals->scScaleLinpointLJGapsys = 0.85;
+        fepvals->scScaleLinpointQGapsys  = 0.3;
+        fepvals->scSigmaLJGapsys         = 0.3;
     }
 
     /* handle lambda_neighbors */

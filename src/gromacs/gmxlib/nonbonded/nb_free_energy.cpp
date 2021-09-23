@@ -304,14 +304,21 @@ static void nb_free_energy_kernel(const t_nblist&                               
     gmx::ArrayRef<const int> shift  = nlist.shift;
     gmx::ArrayRef<const int> gid    = nlist.gid;
 
-    const real  lambda_coul = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
-    const real  lambda_vdw  = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
-    const auto& scParams    = *ic.softCoreParameters;
-    const real gmx_unused alpha_coul    = scParams.alphaCoulomb;
-    const real gmx_unused alpha_vdw     = scParams.alphaVdw;
-    const real            lam_power     = scParams.lambdaPower;
-    const real gmx_unused sigma6_def    = scParams.sigma6WithInvalidSigma;
-    const real gmx_unused sigma6_min    = scParams.sigma6Minimum;
+    const real lambda_coul = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
+    const real lambda_vdw  = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
+
+    // Extract softcore parameters
+    const auto&           scParams   = *ic.softCoreParameters;
+    const real            lam_power  = scParams.lambdaPower;
+    const real gmx_unused alpha_coul = scParams.alphaCoulomb;
+    const real gmx_unused alpha_vdw  = scParams.alphaVdw;
+    const real gmx_unused sigma6_def = scParams.sigma6WithInvalidSigma;
+    const real gmx_unused sigma6_min = scParams.sigma6Minimum;
+
+    const real gmx_unused scaleLinpointCoulGapsys = scParams.scaleLinpointCoulGapsys;
+    const real gmx_unused scaleLinpointVdWGapsys  = scParams.scaleLinpointVdWGapsys;
+    const real gmx_unused sigma6VdWGapsys         = scParams.sigma6VdWGapsys;
+
     const bool gmx_unused doShiftForces = ((flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
     const bool            doPotential   = ((flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
 
@@ -492,6 +499,12 @@ static void nb_free_energy_kernel(const t_nblist&                               
             alignas(GMX_SIMD_ALIGNMENT) real gmx_unused preloadSigma6[NSTATES][DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real gmx_unused preloadAlphaVdwEff[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real gmx_unused preloadAlphaCoulEff[DataTypes::simdRealWidth];
+            alignas(GMX_SIMD_ALIGNMENT)
+                    real gmx_unused preloadScaleLinpointVdWGapsys[DataTypes::simdRealWidth];
+            alignas(GMX_SIMD_ALIGNMENT)
+                    real gmx_unused preloadScaleLinpointCoulGapsys[DataTypes::simdRealWidth];
+            alignas(GMX_SIMD_ALIGNMENT)
+                    real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #else
             real            preloadPairIsValid[DataTypes::simdRealWidth];
@@ -502,6 +515,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
             real gmx_unused preloadSigma6[NSTATES][DataTypes::simdRealWidth];
             real gmx_unused preloadAlphaVdwEff[DataTypes::simdRealWidth];
             real gmx_unused preloadAlphaCoulEff[DataTypes::simdRealWidth];
+            real gmx_unused preloadScaleLinpointVdWGapsys[DataTypes::simdRealWidth];
+            real gmx_unused preloadScaleLinpointCoulGapsys[DataTypes::simdRealWidth];
+            real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
             real            preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #endif
             for (int s = 0; s < DataTypes::simdRealWidth; s++)
@@ -528,8 +544,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         {
                             preloadLjPmeC6Grid[i][s] = 0;
                         }
-                        if constexpr (softcoreType == KernelSoftcoreType::Beutler
-                                      || softcoreType == KernelSoftcoreType::Gapsys)
+                        if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                         {
                             const real c6  = nbfp[2 * typeIndices[i][s]];
                             const real c12 = nbfp[2 * typeIndices[i][s] + 1];
@@ -548,9 +563,26 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 preloadSigma6[i][s] = sigma6_def;
                             }
                         }
+                        if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+                        {
+                            const real c6  = nbfp[2 * typeIndices[i][s]];
+                            const real c12 = nbfp[2 * typeIndices[i][s] + 1];
+                            if (c6 > 0 && c12 > 0)
+                            {
+                                /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
+                                preloadSigma6VdWGapsys[i][s] = 0.5_real * c12 / c6;
+                                if (preloadSigma6VdWGapsys[i][s] < sigma6VdWGapsys)
+                                {
+                                    preloadSigma6VdWGapsys[i][s] = sigma6VdWGapsys;
+                                }
+                            }
+                            else
+                            {
+                                preloadSigma6VdWGapsys[i][s] = sigma6VdWGapsys;
+                            }
+                        }
                     }
-                    if constexpr (softcoreType == KernelSoftcoreType::Beutler
-                                  || softcoreType == KernelSoftcoreType::Gapsys)
+                    if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                     {
                         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
                         const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
@@ -562,34 +594,45 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         }
                         else
                         {
-                            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
-                            {
-                                preloadAlphaVdwEff[s]  = alpha_vdw;
-                                preloadAlphaCoulEff[s] = alpha_coul;
-                            }
-                            else if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
-                            {
-                                preloadAlphaVdwEff[s]  = alpha_vdw;
-                                preloadAlphaCoulEff[s] = gmx::sixthroot(sigma6_def);
-                            }
+                            preloadAlphaVdwEff[s]  = alpha_vdw;
+                            preloadAlphaCoulEff[s] = alpha_coul;
+                        }
+                    }
+                    if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+                    {
+                        /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
+                        const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
+                        const real c12B = nbfp[2 * typeIndices[STATE_B][s] + 1];
+                        if (c12A > 0 && c12B > 0)
+                        {
+                            preloadScaleLinpointVdWGapsys[s]  = 0;
+                            preloadScaleLinpointCoulGapsys[s] = 0;
+                        }
+                        else
+                        {
+                            preloadScaleLinpointVdWGapsys[s]  = scaleLinpointVdWGapsys;
+                            preloadScaleLinpointCoulGapsys[s] = scaleLinpointCoulGapsys;
                         }
                     }
                 }
                 else
                 {
-                    preloadJnr[s]          = jjnr[k];
-                    preloadPairIsValid[s]  = false;
-                    preloadPairIncluded[s] = false;
-                    preloadAlphaVdwEff[s]  = 0;
-                    preloadAlphaCoulEff[s] = 0;
+                    preloadJnr[s]                     = jjnr[k];
+                    preloadPairIsValid[s]             = false;
+                    preloadPairIncluded[s]            = false;
+                    preloadAlphaVdwEff[s]             = 0;
+                    preloadAlphaCoulEff[s]            = 0;
+                    preloadScaleLinpointVdWGapsys[s]  = 0;
+                    preloadScaleLinpointCoulGapsys[s] = 0;
 
                     for (int i = 0; i < NSTATES; i++)
                     {
-                        typeIndices[STATE_A][s]  = ntiA + typeA[jjnr[k]];
-                        typeIndices[STATE_B][s]  = ntiB + typeB[jjnr[k]];
-                        preloadLjPmeC6Grid[i][s] = 0;
-                        preloadQq[i][s]          = 0;
-                        preloadSigma6[i][s]      = 0;
+                        typeIndices[STATE_A][s]      = ntiA + typeA[jjnr[k]];
+                        typeIndices[STATE_B][s]      = ntiB + typeB[jjnr[k]];
+                        preloadLjPmeC6Grid[i][s]     = 0;
+                        preloadQq[i][s]              = 0;
+                        preloadSigma6[i][s]          = 0;
+                        preloadSigma6VdWGapsys[i][s] = 0;
                     }
                 }
             }
@@ -641,22 +684,32 @@ static void nb_free_energy_kernel(const t_nblist&                               
             RealType gmx_unused ljPmeC6Grid[NSTATES];
             RealType gmx_unused alphaVdwEff;
             RealType gmx_unused alphaCoulEff;
+            RealType gmx_unused scaleLinpointVdWGapsysEff;
+            RealType gmx_unused scaleLinpointCoulGapsysEff;
+            RealType gmx_unused sigmaVdWGapsysEff[NSTATES];
             for (int i = 0; i < NSTATES; i++)
             {
                 gmx::gatherLoadTranspose<2>(nbfp.data(), typeIndices[i], &c6[i], &c12[i]);
                 qq[i]          = gmx::load<RealType>(preloadQq[i]);
                 ljPmeC6Grid[i] = gmx::load<RealType>(preloadLjPmeC6Grid[i]);
-                if constexpr (softcoreType == KernelSoftcoreType::Beutler
-                              || softcoreType == KernelSoftcoreType::Gapsys)
+                if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                 {
                     sigma6[i] = gmx::load<RealType>(preloadSigma6[i]);
                 }
+                if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+                {
+                    sigmaVdWGapsysEff[i] = gmx::load<RealType>(preloadSigma6VdWGapsys[i]);
+                }
             }
-            if constexpr (softcoreType == KernelSoftcoreType::Beutler
-                          || softcoreType == KernelSoftcoreType::Gapsys)
+            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
                 alphaVdwEff  = gmx::load<RealType>(preloadAlphaVdwEff);
                 alphaCoulEff = gmx::load<RealType>(preloadAlphaCoulEff);
+            }
+            if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+            {
+                scaleLinpointVdWGapsysEff  = gmx::load<RealType>(preloadScaleLinpointVdWGapsys);
+                scaleLinpointCoulGapsysEff = gmx::load<RealType>(preloadScaleLinpointCoulGapsys);
             }
 
             // Avoid overflow of r^-12 at distances near zero
@@ -765,7 +818,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                             rCutoffCoul,
                                                             LFC[i],
                                                             DLF[i],
-                                                            alphaCoulEff,
+                                                            scaleLinpointCoulGapsysEff,
                                                             sh_ewald,
                                                             &fScalC[i],
                                                             &vCoul[i],
@@ -789,7 +842,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                                     rCutoffCoul,
                                                                     LFC[i],
                                                                     DLF[i],
-                                                                    alphaCoulEff,
+                                                                    scaleLinpointCoulGapsysEff,
                                                                     krf,
                                                                     crf,
                                                                     &fScalC[i],
@@ -856,8 +909,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                                rSq,
                                                                LFV[i],
                                                                DLF[i],
-                                                               sigma6[i],
-                                                               alphaVdwEff,
+                                                               sigmaVdWGapsysEff[i],
+                                                               scaleLinpointVdWGapsysEff,
                                                                repulsionShift,
                                                                dispersionShift,
                                                                &fScalV[i],
@@ -1242,9 +1295,20 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
                                      const bool                 useSimd,
                                      const interaction_const_t& ic)
 {
-    if (ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
+    const auto& scParams = *ic.softCoreParameters;
+    if (scParams.softcoreType == SoftcoreType::Beutler)
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
+        if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
+        {
+            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
+                    scLambdasOrAlphasDiffer,
+                    vdwInteractionTypeIsEwald,
+                    elecInteractionTypeIsEwald,
+                    vdwModifierIsPotSwitch,
+                    computeForces,
+                    useSimd));
+        }
+        return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Beutler>(
                 scLambdasOrAlphasDiffer,
                 vdwInteractionTypeIsEwald,
                 elecInteractionTypeIsEwald,
@@ -1252,11 +1316,11 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
                 computeForces,
                 useSimd));
     }
-    else
+    else // Gapsys
     {
-        if (ic.softCoreParameters->softcoreType == SoftcoreType::Beutler)
+        if (scParams.scaleLinpointCoulGapsys == 0 && scParams.scaleLinpointVdWGapsys == 0)
         {
-            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Beutler>(
+            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
                     scLambdasOrAlphasDiffer,
                     vdwInteractionTypeIsEwald,
                     elecInteractionTypeIsEwald,
@@ -1264,16 +1328,13 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
                     computeForces,
                     useSimd));
         }
-        else
-        {
-            return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Gapsys>(
-                    scLambdasOrAlphasDiffer,
-                    vdwInteractionTypeIsEwald,
-                    elecInteractionTypeIsEwald,
-                    vdwModifierIsPotSwitch,
-                    computeForces,
-                    useSimd));
-        }
+        return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Gapsys>(
+                scLambdasOrAlphasDiffer,
+                vdwInteractionTypeIsEwald,
+                elecInteractionTypeIsEwald,
+                vdwModifierIsPotSwitch,
+                computeForces,
+                useSimd));
     }
 }
 

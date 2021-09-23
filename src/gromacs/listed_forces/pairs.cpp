@@ -201,6 +201,7 @@ static real free_energy_evaluate_single(real                                    
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     real       dvdl_elec[2], dvdl_vdw[2];
+    real       scaleLinpointCoulGapsys, scaleLinpointVdWGapsys, sigma6VdWGapsys[2];
     real       rQ, rLJ;
     real       scaleDvdlRCoul;
     int        i, ntab;
@@ -222,7 +223,7 @@ static real free_energy_evaluate_single(real                                    
     /* Loop over state A(0) and B(1) */
     for (i = 0; i < 2; i++)
     {
-        if (softcoreType == KernelSoftcoreType::Beutler || softcoreType == KernelSoftcoreType::Gapsys)
+        if constexpr (softcoreType == KernelSoftcoreType::Beutler)
         {
             if ((c6[i] > 0) && (c12[i] > 0))
             {
@@ -230,7 +231,7 @@ static real free_energy_evaluate_single(real                                    
                  * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
                  */
                 sigma6[i] = half * c12[i] / c6[i];
-                if (softcoreType == KernelSoftcoreType::Beutler && (sigma6[i] < scParams.sigma6Minimum)) /* for disappearing coul and vdw with soft core at the same time */
+                if (sigma6[i] < scParams.sigma6Minimum) /* for disappearing coul and vdw with soft core at the same time */
                 {
                     sigma6[i] = scParams.sigma6Minimum;
                 }
@@ -241,9 +242,28 @@ static real free_energy_evaluate_single(real                                    
             }
             sigma_pow[i] = sigma6[i];
         }
+        if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+        {
+            if ((c6[i] > 0) && (c12[i] > 0))
+            {
+                /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
+                 * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
+                 */
+                sigma6VdWGapsys[i] = half * c12[i] / c6[i];
+                if (sigma6VdWGapsys[i]
+                    < scParams.sigma6VdWGapsys) /* for disappearing coul and vdw with soft core at the same time */
+                {
+                    sigma6VdWGapsys[i] = scParams.sigma6VdWGapsys;
+                }
+            }
+            else
+            {
+                sigma6VdWGapsys[i] = scParams.sigma6VdWGapsys;
+            }
+        }
     }
 
-    if (softcoreType == KernelSoftcoreType::Beutler || softcoreType == KernelSoftcoreType::Gapsys)
+    if constexpr (softcoreType == KernelSoftcoreType::Beutler)
     {
         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
         if ((c12[0] > 0) && (c12[1] > 0))
@@ -253,16 +273,22 @@ static real free_energy_evaluate_single(real                                    
         }
         else
         {
-            if (softcoreType == KernelSoftcoreType::Beutler)
-            {
-                alpha_vdw_eff  = scParams.alphaVdw;
-                alpha_coul_eff = scParams.alphaCoulomb;
-            }
-            else if (softcoreType == KernelSoftcoreType::Gapsys)
-            {
-                alpha_vdw_eff  = scParams.alphaVdw;
-                alpha_coul_eff = gmx::sixthroot(scParams.sigma6WithInvalidSigma);
-            }
+            alpha_vdw_eff  = scParams.alphaVdw;
+            alpha_coul_eff = scParams.alphaCoulomb;
+        }
+    }
+    if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
+    {
+        /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
+        if ((c12[0] > 0) && (c12[1] > 0))
+        {
+            scaleLinpointVdWGapsys  = 0;
+            scaleLinpointCoulGapsys = 0;
+        }
+        else
+        {
+            scaleLinpointVdWGapsys  = scParams.scaleLinpointVdWGapsys;
+            scaleLinpointCoulGapsys = scParams.scaleLinpointCoulGapsys;
         }
     }
 
@@ -282,7 +308,7 @@ static real free_energy_evaluate_single(real                                    
         if ((qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0))
         {
             /* Coulomb */
-            if (softcoreType == KernelSoftcoreType::Beutler)
+            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
                 rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
                 r_coul = sixthRoot(rpinv);
@@ -293,10 +319,10 @@ static real free_energy_evaluate_single(real                                    
                 r_coul = r;
             }
 
-            if (softcoreType == KernelSoftcoreType::Gapsys)
+            if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
             {
                 rQ = gmx::sixthroot(one - LFC[i]) * (one + std::fabs(qq[i] / facel));
-                rQ *= alpha_coul_eff;
+                rQ *= scaleLinpointCoulGapsys;
                 scaleDvdlRCoul = 1;
                 if (rQ > rCoulCutoff)
                 {
@@ -342,7 +368,7 @@ static real free_energy_evaluate_single(real                                    
             }
 
             /* Vdw */
-            if (softcoreType == KernelSoftcoreType::Beutler)
+            if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
                 rpinv = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
                 r_vdw = sixthRoot(rpinv);
@@ -353,12 +379,12 @@ static real free_energy_evaluate_single(real                                    
                 r_vdw = r;
             }
 
-            if (softcoreType == KernelSoftcoreType::Gapsys)
+            if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
             {
                 constexpr real c_twentySixSeventh = 26.0_real / 7.0_real;
 
-                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6[i] * (one - LFV[i]));
-                rLJ *= alpha_vdw_eff;
+                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6VdWGapsys[i] * (one - LFV[i]));
+                rLJ *= scaleLinpointVdWGapsys;
             }
 
             if ((softcoreType == KernelSoftcoreType::Gapsys) && (r < rLJ))
@@ -446,14 +472,14 @@ static real free_energy_evaluate_single(real                                    
 
         fscal += (LFC[i] * fscal_elec[i] + LFV[i] * fscal_vdw[i]) * rpm2;
 
-        if (softcoreType == KernelSoftcoreType::Gapsys)
+        if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
         {
             dvdl_coul_sum += dvdl_elec[i];
             dvdl_vdw_sum += dvdl_vdw[i];
         }
         dvdl_coul_sum += velec[i] * DLF[i];
         dvdl_vdw_sum += vvdw[i] * DLF[i];
-        if (softcoreType == KernelSoftcoreType::Beutler)
+        if constexpr (softcoreType == KernelSoftcoreType::Beutler)
         {
             dvdl_coul_sum += LFC[i] * alpha_coul_eff * dlfac_coul[i] * fscal_elec[i] * sigma_pow[i];
             dvdl_vdw_sum += LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
@@ -638,86 +664,119 @@ static real do_pairs_general(int                           ftype,
             c12B = iparams[itype].lj14.c12B * 12.0;
 
             const auto& scParams = *fr->ic->softCoreParameters;
-            if (scParams.softcoreType == SoftcoreType::Gapsys)
+            if (scParams.softcoreType == SoftcoreType::Beutler)
             {
-                fscal = free_energy_evaluate_single<KernelSoftcoreType::Gapsys>(
-                        r2,
-                        fr->ic->rcoulomb,
-                        *fr->ic->softCoreParameters,
-                        fr->pairsTable->scale,
-                        fr->pairsTable->data.data(),
-                        fr->pairsTable->stride,
-                        qq,
-                        c6,
-                        c12,
-                        qqB,
-                        c6B,
-                        c12B,
-                        epsfac,
-                        LFC,
-                        LFV,
-                        DLF,
-                        lfac_coul,
-                        lfac_vdw,
-                        dlfac_coul,
-                        dlfac_vdw,
-                        &velec,
-                        &vvdw,
-                        dvdl);
+                if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
+                {
+                    fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
+                            r2,
+                            fr->ic->rcoulomb,
+                            *fr->ic->softCoreParameters,
+                            fr->pairsTable->scale,
+                            fr->pairsTable->data.data(),
+                            fr->pairsTable->stride,
+                            qq,
+                            c6,
+                            c12,
+                            qqB,
+                            c6B,
+                            c12B,
+                            epsfac,
+                            LFC,
+                            LFV,
+                            DLF,
+                            lfac_coul,
+                            lfac_vdw,
+                            dlfac_coul,
+                            dlfac_vdw,
+                            &velec,
+                            &vvdw,
+                            dvdl);
+                }
+                else
+                {
+                    fscal = free_energy_evaluate_single<KernelSoftcoreType::Beutler>(
+                            r2,
+                            fr->ic->rcoulomb,
+                            *fr->ic->softCoreParameters,
+                            fr->pairsTable->scale,
+                            fr->pairsTable->data.data(),
+                            fr->pairsTable->stride,
+                            qq,
+                            c6,
+                            c12,
+                            qqB,
+                            c6B,
+                            c12B,
+                            epsfac,
+                            LFC,
+                            LFV,
+                            DLF,
+                            lfac_coul,
+                            lfac_vdw,
+                            dlfac_coul,
+                            dlfac_vdw,
+                            &velec,
+                            &vvdw,
+                            dvdl);
+                }
             }
-            else if (scParams.softcoreType == SoftcoreType::Beutler)
+            else // Gapsys
             {
-                fscal = free_energy_evaluate_single<KernelSoftcoreType::Beutler>(
-                        r2,
-                        fr->ic->rcoulomb,
-                        *fr->ic->softCoreParameters,
-                        fr->pairsTable->scale,
-                        fr->pairsTable->data.data(),
-                        fr->pairsTable->stride,
-                        qq,
-                        c6,
-                        c12,
-                        qqB,
-                        c6B,
-                        c12B,
-                        epsfac,
-                        LFC,
-                        LFV,
-                        DLF,
-                        lfac_coul,
-                        lfac_vdw,
-                        dlfac_coul,
-                        dlfac_vdw,
-                        &velec,
-                        &vvdw,
-                        dvdl);
-            }
-            else
-            {
-                fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
-                        r2,
-                        fr->ic->rcoulomb,
-                        *fr->ic->softCoreParameters,
-                        fr->pairsTable->scale,
-                        fr->pairsTable->data.data(),
-                        fr->pairsTable->stride,
-                        qq,
-                        c6,
-                        c12,
-                        qqB,
-                        c6B,
-                        c12B,
-                        epsfac,
-                        LFC,
-                        LFV,
-                        DLF,
-                        lfac_coul,
-                        lfac_vdw,
-                        dlfac_coul,
-                        dlfac_vdw,
-                        &velec,
-                        &vvdw,
-                        dvdl);
+                if (scParams.scaleLinpointCoulGapsys == 0 && scParams.scaleLinpointVdWGapsys == 0)
+                {
+                    fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
+                            r2,
+                            fr->ic->rcoulomb,
+                            *fr->ic->softCoreParameters,
+                            fr->pairsTable->scale,
+                            fr->pairsTable->data.data(),
+                            fr->pairsTable->stride,
+                            qq,
+                            c6,
+                            c12,
+                            qqB,
+                            c6B,
+                            c12B,
+                            epsfac,
+                            LFC,
+                            LFV,
+                            DLF,
+                            lfac_coul,
+                            lfac_vdw,
+                            dlfac_coul,
+                            dlfac_vdw,
+                            &velec,
+                            &vvdw,
+                            dvdl);
+                }
+                else
+                {
+                    fscal = free_energy_evaluate_single<KernelSoftcoreType::Gapsys>(
+                            r2,
+                            fr->ic->rcoulomb,
+                            *fr->ic->softCoreParameters,
+                            fr->pairsTable->scale,
+                            fr->pairsTable->data.data(),
+                            fr->pairsTable->stride,
+                            qq,
+                            c6,
+                            c12,
+                            qqB,
+                            c6B,
+                            c12B,
+                            epsfac,
+                            LFC,
+                            LFV,
+                            DLF,
+                            lfac_coul,
+                            lfac_vdw,
+                            dlfac_coul,
+                            dlfac_vdw,
+                            &velec,
+                            &vvdw,
+                            dvdl);
+                }
             }
         }
         else

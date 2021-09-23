@@ -601,6 +601,9 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PS("separate-dhdl-file", enumValueToString(fep->separate_dhdl_file));
     PS("dhdl-derivatives", enumValueToString(fep->dhdl_derivatives));
     PS("sc-function", enumValueToString(fep->softcoreFunction));
+    PR("sc-scale-linpoint-LJ-gapsys", fep->scScaleLinpointLJGapsys);
+    PR("sc-scale-linpoint-Q-gapsys", fep->scScaleLinpointQGapsys);
+    PR("sc-sigma-LJ-gapsys", fep->scSigmaLJGapsys);
 };
 
 static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
@@ -1347,9 +1350,24 @@ static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, re
     cmp_bool(fp, "inputrec->fepvals->bScCoul", -1, fep1->bScCoul, fep1->bScCoul);
     cmpEnum(fp, "inputrec->separate_dhdl_file", fep1->separate_dhdl_file, fep2->separate_dhdl_file);
     cmpEnum(fp, "inputrec->dhdl_derivatives", fep1->dhdl_derivatives, fep2->dhdl_derivatives);
-    cmpEnum(fp, "inputrec->softcoreFunction", fep1->softcoreFunction, fep2->softcoreFunction);
     cmp_int(fp, "inputrec->dh_hist_size", -1, fep1->dh_hist_size, fep2->dh_hist_size);
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
+    cmpEnum(fp, "inputrec->fepvals->softcoreFunction", fep1->softcoreFunction, fep2->softcoreFunction);
+    cmp_real(fp,
+             "inputrec->fepvals->scScaleLinpointLJGapsys",
+             -1,
+             fep1->scScaleLinpointLJGapsys,
+             fep2->scScaleLinpointLJGapsys,
+             ftol,
+             abstol);
+    cmp_real(fp,
+             "inputrec->fepvals->scScaleLinpointQGapsys",
+             -1,
+             fep1->scScaleLinpointQGapsys,
+             fep2->scScaleLinpointQGapsys,
+             ftol,
+             abstol);
+    cmp_real(fp, "inputrec->fepvals->scSigmaLJGapsys", -1, fep1->scSigmaLJGapsys, fep2->scSigmaLJGapsys, ftol, abstol);
 }
 
 void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol)
