@@ -37,6 +37,18 @@ gmx_add_libgromacs_sources(
     qmmmtopologypreprocessor.cpp
     )
 
+# If we have libcp2k linked then compile qmmmforceprovider.cpp
+# In other case compile stub implementation qmmmforceprovider_stub.cpp
+if (GMX_CP2K)
+gmx_add_libgromacs_sources(
+    qmmmforceprovider.cpp
+    )
+else()
+gmx_add_libgromacs_sources(
+    qmmmforceprovider_stub.cpp
+    )
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

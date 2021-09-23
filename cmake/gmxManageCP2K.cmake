@@ -41,6 +41,9 @@ if(GMX_CP2K)
         message(FATAL_ERROR "To build GROMACS with CP2K Interface both CP2K_DIR and CP2K_LINKER_FLAGS should be defined")
     endif()
 
+    # Add directory with libcp2k.h into system include directories
+    include_directories(SYSTEM "${CP2K_DIR}/../../../src/start")
+
     # Add libcp2k and DBCSR for linking 
     set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
 

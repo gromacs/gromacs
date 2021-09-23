@@ -86,9 +86,16 @@ static const EnumerationArray<QMMMQMMethod, const char*> c_qmmmQMMethodNames = {
 
 //! symbols of the elements in periodic table
 const std::vector<std::string> periodic_system = {
-    "X  ", "H  ", "He ", "Li ", "Be ", "B  ", "C  ", "N  ", "O  ", "F  ", "Ne ", "Na ", "Mg ",
-    "Al ", "Si ", "P  ", "S  ", "Cl ", "Ar ", "K  ", "Ca ", "Sc ", "Ti ", "V  ", "Cr ", "Mn ",
-    "Fe ", "Co ", "Ni ", "Cu ", "Zn ", "Ga ", "Ge ", "As ", "Se ", "Br ", "Kr "
+    "X  ", "H  ", "He ", "Li ", "Be ", "B  ", "C  ", "N  ", "O  ", "F  ", "Ne ", "Na ",
+    "Mg ", "Al ", "Si ", "P  ", "S  ", "Cl ", "Ar ", "K  ", "Ca ", "Sc ", "Ti ", "V  ",
+    "Cr ", "Mn ", "Fe ", "Co ", "Ni ", "Cu ", "Zn ", "Ga ", "Ge ", "As ", "Se ", "Br ",
+    "Kr ", "Rb ", "Sr ", "Y  ", "Zr ", "Nb ", "Mo ", "Tc ", "Ru ", "Rh ", "Pd ", "Ag ",
+    "Cd ", "In ", "Sn ", "Sb ", "Te ", "I  ", "Xe ", "Cs ", "Ba ", "La ", "Ce ", "Pr ",
+    "Nd ", "Pm ", "Sm ", "Eu ", "Gd ", "Tb ", "Dy ", "Ho ", "Er ", "Tm ", "Yb ", "Lu ",
+    "Hf ", "Ta ", "W  ", "Re ", "Os ", "Ir ", "Pt ", "Au ", "Hg ", "Tl ", "Pb ", "Bi ",
+    "Po ", "At ", "Rn ", "Fr ", "Ra ", "Ac ", "Th ", "Pa ", "U  ", "Np ", "Pu ", "Am ",
+    "Cm ", "Bk ", "Cf ", "Es ", "Fm ", "Md ", "No ", "Lr ", "Rf ", "Db ", "Sg ", "Bh ",
+    "Hs ", "Mt ", "Ds ", "Rg ", "Cn ", "Nh ", "Fl ", "Mc ", "Lv ", "Ts ", "Og "
 };
 
 /*! \internal
@@ -113,17 +120,17 @@ struct QMMMParameters
     int qmMult_ = 1;
     //! Method used for QM calculation (default DFT with PBE functional)
     QMMMQMMethod qmMethod_ = QMMMQMMethod::PBE;
-    //! String containing name of the input file for CP2K (default "topol-qmmm.inp")
-    std::string qmInputFileName_ = "topol-qmmm.inp";
-    //! String containing name of the PDB file for CP2K input (default "topol-qmmm.pdb")
-    std::string qmPdbFileName_ = "topol-qmmm.pdb";
+    /*! \brief String containing name of the CP2K files (*.inp, *.out, *.pdb)
+     * default value empty, means will be deduced from *.tpr name during mdrun
+     */
+    std::string qmFileNameBase_;
     //! String containing whole CP2K input which can be stored inside *.tpr
     std::string qmInput_;
     //! String containing PDB file for CP2K input which can be stored inside *.tpr
     std::string qmPdb_;
     //! Matrix that contains vectors defining QM box
     matrix qmBox_;
-    //! Matrix that contains vectors defining QM box
+    //! Translation vector to center QM subsystem inside the QM Box
     RVec qmTrans_;
 
     //! Constructor with default initializers for arrays
