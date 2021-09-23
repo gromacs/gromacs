@@ -54,7 +54,6 @@
 struct gmx_enfrot;
 struct gmx_enfrotgrp;
 struct pull_params_t;
-enum class ComRemovalAlgorithm : int;
 
 namespace gmx
 {
@@ -64,50 +63,48 @@ class KeyValueTreeObject;
 struct MtsLevel;
 } // namespace gmx
 
-enum class PbcType;
-
 struct t_grpopts
 {
     //! Number of T-Coupl groups
-    int ngtc;
+    int ngtc = 0;
     //! Number of of Nose-Hoover chains per group
-    int nhchainlength;
+    int nhchainlength = 0;
     //! Number of Freeze groups
-    int ngfrz;
+    int ngfrz = 0;
     //! Number of Energy groups
-    int ngener;
+    int ngener = 0;
     //! Number of degrees of freedom in a group
-    real* nrdf;
+    real* nrdf = nullptr;
     //! Coupling temperature	per group
-    real* ref_t;
+    real* ref_t = nullptr;
     //! No/simple/periodic simulated annealing for each group
-    SimulatedAnnealing* annealing;
+    SimulatedAnnealing* annealing = nullptr;
     //! Number of annealing time points per group
-    int* anneal_npoints;
+    int* anneal_npoints = nullptr;
     //! For each group: Time points
-    real** anneal_time;
+    real** anneal_time = nullptr;
     //! For each group: Temperature at these times. Final temp after all intervals is ref_t
-    real** anneal_temp;
+    real** anneal_temp = nullptr;
     //! Tau coupling time
-    real* tau_t;
+    real* tau_t = nullptr;
     //! Whether the group will be frozen in each direction
-    ivec* nFreeze;
+    ivec* nFreeze = nullptr;
     //! Exclusions/tables of energy group pairs
-    int* egp_flags;
+    int* egp_flags = nullptr;
 
     /* QMMM stuff */
     //! Number of QM groups
-    int ngQM;
+    int ngQM = 0;
 };
 
 struct t_simtemp
 {
     //! Simulated temperature scaling; linear or exponential
-    SimulatedTempering eSimTempScale;
+    SimulatedTempering eSimTempScale = SimulatedTempering::Default;
     //! The low temperature for simulated tempering
-    real simtemp_low;
+    real simtemp_low = 0;
     //! The high temperature for simulated tempering
-    real simtemp_high;
+    real simtemp_high = 0;
     //! The range of temperatures used for simulated tempering
     std::vector<real> temperatures;
 };
@@ -115,101 +112,101 @@ struct t_simtemp
 struct t_lambda
 {
     //! The frequency for calculating dhdl
-    int nstdhdl;
+    int nstdhdl = 0;
     //! Fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code. Only has a valid value if positive)
-    double init_lambda;
+    double init_lambda = 0;
     //! The initial number of the state
-    int init_fep_state;
+    int init_fep_state = 0;
     //! Change of lambda per time step (fraction of (0.1)
-    double delta_lambda;
+    double delta_lambda = 0;
     //! Print no, total or potential energies in dhdl
-    FreeEnergyPrintEnergy edHdLPrintEnergy;
+    FreeEnergyPrintEnergy edHdLPrintEnergy = FreeEnergyPrintEnergy::Default;
     //! The number of foreign lambda points
-    int n_lambda;
+    int n_lambda = 0;
     //! The array of all lambda values
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>> all_lambda;
     //! The number of neighboring lambda states to calculate the energy for in up and down directions (-1 for all)
-    int lambda_neighbors;
+    int lambda_neighbors = 0;
     //! The first lambda to calculate energies for
-    int lambda_start_n;
+    int lambda_start_n = 0;
     //! The last lambda +1 to calculate energies for
-    int lambda_stop_n;
+    int lambda_stop_n = 0;
     //! Free energy soft-core parameter
-    real sc_alpha;
+    real sc_alpha = 0;
     //! Lambda power for soft-core interactions
-    int sc_power;
+    int sc_power = 0;
     //! R power for soft-core interactions
-    real sc_r_power;
+    real sc_r_power = 0;
     //! Free energy soft-core sigma when c6 or c12=0
-    real sc_sigma;
+    real sc_sigma = 0;
     //! Free energy soft-core sigma for ?????
-    real sc_sigma_min;
+    real sc_sigma_min = 0;
     //! Use softcore for the coulomb portion as well (default FALSE)
-    bool bScCoul;
+    bool bScCoul = false;
     //! Whether to print the dvdl term associated with this term; if it is not specified as separate, it is lumped with the FEP term
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, bool> separate_dvdl;
     //! Whether to write a separate dhdl.xvg file note: NOT a gmx_bool, but an enum
-    SeparateDhdlFile separate_dhdl_file;
+    SeparateDhdlFile separate_dhdl_file = SeparateDhdlFile::Default;
     //! Whether to calculate+write dhdl derivatives note: NOT a gmx_bool, but an enum
-    DhDlDerivativeCalculation dhdl_derivatives;
+    DhDlDerivativeCalculation dhdl_derivatives = DhDlDerivativeCalculation::Default;
     //! The maximum table size for the dH histogram
-    int dh_hist_size;
+    int dh_hist_size = 0;
     //! The spacing for the dH histogram
-    double dh_hist_spacing;
+    double dh_hist_spacing = 0;
 };
 
 struct t_expanded
 {
     //! The frequency of expanded ensemble state changes
-    int nstexpanded;
+    int nstexpanded = 0;
     //! Which type of move updating do we use for lambda monte carlo (or no for none)
-    LambdaWeightCalculation elamstats;
+    LambdaWeightCalculation elamstats = LambdaWeightCalculation::Default;
     //! What move set will be we using for state space moves
-    LambdaMoveCalculation elmcmove;
+    LambdaMoveCalculation elmcmove = LambdaMoveCalculation::Default;
     //! The method we use to decide of we have equilibrated the weights
-    LambdaWeightWillReachEquilibrium elmceq;
+    LambdaWeightWillReachEquilibrium elmceq = LambdaWeightWillReachEquilibrium::Default;
     //! The minumum number of samples at each lambda for deciding whether we have reached a minimum
-    int equil_n_at_lam;
+    int equil_n_at_lam = 0;
     //! Wang-Landau delta at which we stop equilibrating weights
-    real equil_wl_delta;
+    real equil_wl_delta = 0;
     //! Use the ratio of weights (ratio of minimum to maximum) to decide when to stop equilibrating
-    real equil_ratio;
+    real equil_ratio = 0;
     //! After equil_steps steps we stop equilibrating the weights
-    int equil_steps;
+    int equil_steps = 0;
     //! After equil_samples total samples (steps/nstfep), we stop equilibrating the weights
-    int equil_samples;
+    int equil_samples = 0;
     //! Random number seed for lambda mc switches
-    int lmc_seed;
+    int lmc_seed = 0;
     //! Whether to use minumum variance weighting
-    bool minvar;
+    bool minvar = false;
     //! The number of samples needed before kicking into minvar routine
-    int minvarmin;
+    int minvarmin = 0;
     //! The offset for the variance in MinVar
-    real minvar_const;
+    real minvar_const = 0;
     //! Range of cvalues used for BAR
-    int c_range;
+    int c_range = 0;
     //! Whether to print symmetrized matrices
-    bool bSymmetrizedTMatrix;
+    bool bSymmetrizedTMatrix = false;
     //! How frequently to print the transition matrices
-    int nstTij;
+    int nstTij = 0;
     //! Number of repetitions in the MC lambda jumps MRS -- VERIFY THIS
-    int lmc_repeats;
+    int lmc_repeats = 0;
     //! Minimum number of samples for each state before free sampling MRS -- VERIFY THIS!
-    int lmc_forced_nstart;
+    int lmc_forced_nstart = 0;
     //! Distance in lambda space for the gibbs interval
-    int gibbsdeltalam;
+    int gibbsdeltalam = 0;
     //! Scaling factor for Wang-Landau
-    real wl_scale;
+    real wl_scale = 0;
     //! Ratio between largest and smallest number for freezing the weights
-    real wl_ratio;
+    real wl_ratio = 0;
     //! Starting delta for Wang-Landau
-    real init_wl_delta;
+    real init_wl_delta = 0;
     //! Use one over t convergence for Wang-Landau when the delta get sufficiently small
-    bool bWLoneovert;
+    bool bWLoneovert = false;
     //! Did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic
-    bool bInit_weights;
+    bool bInit_weights = false;
     //! To override the main temperature, or define it if it's not defined
-    real mc_temp;
+    real mc_temp = 0;
     //! User-specified initial weights to start with
     std::vector<real> init_lambda_weights;
 };
@@ -314,258 +311,258 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     ~t_inputrec();
 
     //! Integration method
-    IntegrationAlgorithm eI;
+    IntegrationAlgorithm eI = IntegrationAlgorithm::Default;
     //! Number of steps to be taken
-    int64_t nsteps;
+    int64_t nsteps = 0;
     //! Used in checkpointing to separate chunks
-    int simulation_part;
+    int simulation_part = 0;
     //! Start at a stepcount >0 (used w. convert-tpr)
-    int64_t init_step;
+    int64_t init_step = 0;
     //! Frequency of energy calc. and T/P coupl. upd.
-    int nstcalcenergy;
+    int nstcalcenergy = 0;
     //! Group or verlet cutoffs
-    CutoffScheme cutoff_scheme;
+    CutoffScheme cutoff_scheme = CutoffScheme::Default;
     //! Number of steps before pairlist is generated
-    int nstlist;
+    int nstlist = 0;
     //! Number of steps after which center of mass motion is removed
-    int nstcomm;
+    int nstcomm = 0;
     //! Center of mass motion removal algorithm
-    ComRemovalAlgorithm comm_mode;
+    ComRemovalAlgorithm comm_mode = ComRemovalAlgorithm::Default;
     //! Number of steps after which print to logfile
-    int nstlog;
+    int nstlog = 0;
     //! Number of steps after which X is output
-    int nstxout;
+    int nstxout = 0;
     //! Number of steps after which V is output
-    int nstvout;
+    int nstvout = 0;
     //! Number of steps after which F is output
-    int nstfout;
+    int nstfout = 0;
     //! Number of steps after which energies printed
-    int nstenergy;
+    int nstenergy = 0;
     //! Number of steps after which compressed trj (.xtc,.tng) is output
-    int nstxout_compressed;
+    int nstxout_compressed = 0;
     //! Initial time (ps)
-    double init_t;
+    double init_t = 0;
     //! Time step (ps)
-    double delta_t;
+    double delta_t = 0;
     //! Whether we use multiple time stepping
-    bool useMts;
+    bool useMts = false;
     //! The multiple time stepping levels
     std::vector<gmx::MtsLevel> mtsLevels;
     //! Precision of x in compressed trajectory file
-    real x_compression_precision;
+    real x_compression_precision = 0;
     //! Requested fourier_spacing, when nk? not set
-    real fourier_spacing;
+    real fourier_spacing = 0;
     //! Number of k vectors in x dimension for fourier methods for long range electrost.
-    int nkx;
+    int nkx = 0;
     //! Number of k vectors in y dimension for fourier methods for long range electrost.
-    int nky;
+    int nky = 0;
     //! Number of k vectors in z dimension for fourier methods for long range electrost.
-    int nkz;
+    int nkz = 0;
     //! Interpolation order for PME
-    int pme_order;
+    int pme_order = 0;
     //! Real space tolerance for Ewald, determines the real/reciprocal space relative weight
-    real ewald_rtol;
+    real ewald_rtol = 0;
     //! Real space tolerance for LJ-Ewald
-    real ewald_rtol_lj;
+    real ewald_rtol_lj = 0;
     //! Normal/3D ewald, or pseudo-2D LR corrections
-    EwaldGeometry ewald_geometry;
+    EwaldGeometry ewald_geometry = EwaldGeometry::Default;
     //! Epsilon for PME dipole correction
-    real epsilon_surface;
+    real epsilon_surface = 0;
     //! Type of combination rule in LJ-PME
-    LongRangeVdW ljpme_combination_rule;
+    LongRangeVdW ljpme_combination_rule = LongRangeVdW::Default;
     //! Type of periodic boundary conditions
-    PbcType pbcType;
+    PbcType pbcType = PbcType::Default;
     //! Periodic molecules
-    bool bPeriodicMols;
+    bool bPeriodicMols = false;
     //! Continuation run: starting state is correct (ie. constrained)
-    bool bContinuation;
+    bool bContinuation = false;
     //! Temperature coupling
-    TemperatureCoupling etc;
+    TemperatureCoupling etc = TemperatureCoupling::Default;
     //! Interval in steps for temperature coupling
-    int nsttcouple;
+    int nsttcouple = 0;
     //! Whether to print nose-hoover chains
-    bool bPrintNHChains;
+    bool bPrintNHChains = false;
     //! Pressure coupling
-    PressureCoupling epc;
+    PressureCoupling epc = PressureCoupling::Default;
     //! Pressure coupling type
-    PressureCouplingType epct;
+    PressureCouplingType epct = PressureCouplingType::Default;
     //! Interval in steps for pressure coupling
-    int nstpcouple;
+    int nstpcouple = 0;
     //! Pressure coupling time (ps)
-    real tau_p;
+    real tau_p = 0;
     //! Reference pressure (kJ/(mol nm^3))
-    tensor ref_p;
+    tensor ref_p = { { 0 } };
     //! Compressibility ((mol nm^3)/kJ)
-    tensor compress;
+    tensor compress = { { 0 } };
     //! How to scale absolute reference coordinates
-    RefCoordScaling refcoord_scaling;
+    RefCoordScaling refcoord_scaling = RefCoordScaling::Default;
     //! The COM of the posres atoms
-    rvec posres_com;
+    rvec posres_com = { 0, 0, 0 };
     //! The B-state COM of the posres atoms
-    rvec posres_comB;
+    rvec posres_comB = { 0, 0, 0 };
     //! Random seed for Andersen thermostat (obsolete)
-    int andersen_seed;
+    int andersen_seed = 0;
     //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for list buffer
-    real verletbuf_tol;
+    real verletbuf_tol = 0;
     //! Short range pairlist cut-off (nm)
-    real rlist;
+    real rlist = 0;
     //! Radius for test particle insertion
-    real rtpi;
+    real rtpi = 0;
     //! Type of electrostatics treatment
-    CoulombInteractionType coulombtype;
+    CoulombInteractionType coulombtype = CoulombInteractionType::Default;
     //! Modify the Coulomb interaction
-    InteractionModifiers coulomb_modifier;
+    InteractionModifiers coulomb_modifier = InteractionModifiers::Default;
     //! Coulomb switch range start (nm)
-    real rcoulomb_switch;
+    real rcoulomb_switch = 0;
     //! Coulomb cutoff (nm)
-    real rcoulomb;
+    real rcoulomb = 0;
     //! Relative dielectric constant
-    real epsilon_r;
+    real epsilon_r = 0;
     //! Relative dielectric constant of the RF
-    real epsilon_rf;
+    real epsilon_rf = 0;
     //! Always false (no longer supported)
-    bool implicit_solvent;
+    bool implicit_solvent = false;
     //! Type of Van der Waals treatment
-    VanDerWaalsType vdwtype;
+    VanDerWaalsType vdwtype = VanDerWaalsType::Default;
     //! Modify the Van der Waals interaction
-    InteractionModifiers vdw_modifier;
+    InteractionModifiers vdw_modifier = InteractionModifiers::Default;
     //! Van der Waals switch range start (nm)
-    real rvdw_switch;
+    real rvdw_switch = 0;
     //! Van der Waals cutoff (nm)
-    real rvdw;
+    real rvdw = 0;
     //! Perform Long range dispersion corrections
-    DispersionCorrectionType eDispCorr;
+    DispersionCorrectionType eDispCorr = DispersionCorrectionType::Default;
     //! Extension of the table beyond the cut-off, as well as the table length for 1-4 interac.
-    real tabext;
+    real tabext = 0;
     //! Tolerance for shake
-    real shake_tol;
+    real shake_tol = 0;
     //! Free energy calculations
-    FreeEnergyPerturbationType efep;
+    FreeEnergyPerturbationType efep = FreeEnergyPerturbationType::Default;
     //! Data for the FEP state
     std::unique_ptr<t_lambda> fepvals;
     //! Whether to do simulated tempering
-    bool bSimTemp;
+    bool bSimTemp = false;
     //! Variables for simulated tempering
     std::unique_ptr<t_simtemp> simtempvals;
     //! Whether expanded ensembles are used
-    bool bExpanded;
+    bool bExpanded = false;
     //! Expanded ensemble parameters
     std::unique_ptr<t_expanded> expandedvals;
     //! Type of distance restraining
-    DistanceRestraintRefinement eDisre;
+    DistanceRestraintRefinement eDisre = DistanceRestraintRefinement::Default;
     //! Force constant for time averaged distance restraints
-    real dr_fc;
+    real dr_fc = 0;
     //! Type of weighting of pairs in one restraints
-    DistanceRestraintWeighting eDisreWeighting;
+    DistanceRestraintWeighting eDisreWeighting = DistanceRestraintWeighting::Default;
     //! Use combination of time averaged and instantaneous violations
-    bool bDisreMixed;
+    bool bDisreMixed = false;
     //! Frequency of writing pair distances to enx
-    int nstdisreout;
+    int nstdisreout = 0;
     //! Time constant for memory function in disres
-    real dr_tau;
+    real dr_tau = 0;
     //! Force constant for orientational restraints
-    real orires_fc;
+    real orires_fc = 0;
     //! Time constant for memory function in orires
-    real orires_tau;
+    real orires_tau = 0;
     //! Frequency of writing tr(SD) to energy output
-    int nstorireout;
+    int nstorireout = 0;
     //! The stepsize for updating
-    real em_stepsize;
+    real em_stepsize = 0;
     //! The tolerance
-    real em_tol;
+    real em_tol = 0;
     //! Number of iterations for convergence of steepest descent in relax_shells
-    int niter;
+    int niter = 0;
     //! Stepsize for directional minimization in relax_shells
-    real fc_stepsize;
+    real fc_stepsize = 0;
     //! Number of steps after which a steepest descents step is done while doing cg
-    int nstcgsteep;
+    int nstcgsteep = 0;
     //! Number of corrections to the Hessian to keep
-    int nbfgscorr;
+    int nbfgscorr = 0;
     //! Type of constraint algorithm
-    ConstraintAlgorithm eConstrAlg;
+    ConstraintAlgorithm eConstrAlg = ConstraintAlgorithm::Default;
     //! Order of the LINCS Projection Algorithm
-    int nProjOrder;
+    int nProjOrder = 0;
     //! Warn if any bond rotates more than this many degrees
-    real LincsWarnAngle;
+    real LincsWarnAngle = 0;
     //! Number of iterations in the final LINCS step
-    int nLincsIter;
+    int nLincsIter = 0;
     //! Use successive overrelaxation for shake
-    bool bShakeSOR;
+    bool bShakeSOR = false;
     //! Friction coefficient for BD (amu/ps)
-    real bd_fric;
+    real bd_fric = 0;
     //! Random seed for SD and BD
-    int64_t ld_seed;
+    int64_t ld_seed = 0;
     //! The number of walls
-    int nwall;
+    int nwall = 0;
     //! The type of walls
-    WallType wall_type;
+    WallType wall_type = WallType::Default;
     //! The potentail is linear for r<=wall_r_linpot
-    real wall_r_linpot;
+    real wall_r_linpot = 0;
     //! The atom type for walls
-    int wall_atomtype[2];
+    int wall_atomtype[2] = { 0, 0 };
     //! Number density for walls
-    real wall_density[2];
+    real wall_density[2] = { 0, 0 };
     //! Scaling factor for the box for Ewald
-    real wall_ewald_zfac;
+    real wall_ewald_zfac = 0;
 
     /* COM pulling data */
     //! Do we do COM pulling?
-    bool bPull;
+    bool bPull = false;
     //! The data for center of mass pulling
     std::unique_ptr<pull_params_t> pull;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
-    bool bDoAwh;
+    bool bDoAwh = false;
     //! AWH biasing parameters
     std::unique_ptr<gmx::AwhParams> awhParams;
 
     /* Enforced rotation data */
     //! Whether to calculate enforced rotation potential(s)
-    bool bRot;
+    bool bRot = false;
     //! The data for enforced rotation potentials
-    t_rot* rot;
+    t_rot* rot = nullptr;
 
     //! Whether to do ion/water position exchanges (CompEL)
-    SwapType eSwapCoords;
+    SwapType eSwapCoords = SwapType::Default;
     //! Swap data structure.
-    t_swapcoords* swap;
+    t_swapcoords* swap = nullptr;
 
     //! Whether the tpr makes an interactive MD session possible.
-    bool bIMD;
+    bool bIMD = false;
     //! Interactive molecular dynamics
-    t_IMD* imd;
+    t_IMD* imd = nullptr;
 
     //! Acceleration for viscosity calculation
-    real cos_accel;
+    real cos_accel = 0;
     //! Triclinic deformation velocities (nm/ps)
-    tensor deform;
+    tensor deform = { { 0 } };
     /*! \brief User determined parameters */
     /**@{*/
-    int  userint1;
-    int  userint2;
-    int  userint3;
-    int  userint4;
-    real userreal1;
-    real userreal2;
-    real userreal3;
-    real userreal4;
+    int  userint1  = 0;
+    int  userint2  = 0;
+    int  userint3  = 0;
+    int  userint4  = 0;
+    real userreal1 = 0;
+    real userreal2 = 0;
+    real userreal3 = 0;
+    real userreal4 = 0;
     /**@}*/
     //! Group options
     t_grpopts opts;
     //! QM/MM calculation
-    bool bQMMM;
+    bool bQMMM = false;
 
     /* Fields for removed features go here (better caching) */
     //! Whether AdResS is enabled - always false if a valid .tpr was read
-    bool bAdress;
+    bool bAdress = false;
     //! Whether twin-range scheme is active - always false if a valid .tpr was read
-    bool useTwinRange;
+    bool useTwinRange = false;
     //! Whether we have constant acceleration - removed in GROMACS 2022
-    bool useConstantAcceleration;
+    bool useConstantAcceleration = false;
 
     //! KVT object that contains input parameters converted to the new style.
-    gmx::KeyValueTreeObject* params;
+    gmx::KeyValueTreeObject* params = nullptr;
 
     //! KVT for storing simulation parameters that are not part of the mdp file.
     std::unique_ptr<gmx::KeyValueTreeObject> internalParameters;

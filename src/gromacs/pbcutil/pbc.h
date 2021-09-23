@@ -43,6 +43,7 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
@@ -55,17 +56,6 @@ namespace gmx
 template<typename>
 class ArrayRef;
 } // namespace gmx
-
-//! Enumeration that contains all supported periodic boundary setups.
-enum class PbcType : int
-{
-    Xyz   = 0, //!< Periodic boundaries in all dimensions.
-    No    = 1, //!< No periodic boundaries.
-    XY    = 2, //!< Only two dimensions are periodic.
-    Screw = 3, //!< Screw.
-    Unset = 4, //!< The type of PBC is not set or invalid.
-    Count = 5
-};
 
 //! Names for all values in PBC types enumeration
 extern const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames;

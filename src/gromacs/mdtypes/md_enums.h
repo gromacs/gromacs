@@ -797,4 +797,29 @@ enum class NbkernelVdwType : int
 //! String corresponding to VdW kernels
 const char* enumValueToString(NbkernelVdwType enumValue);
 
+//! Center of mass motion removal algorithm.
+enum class ComRemovalAlgorithm : int
+{
+    Linear,
+    Angular,
+    No,
+    LinearAccelerationCorrection,
+    Count,
+    Default = Linear
+};
+//! String corresponding to COM removal
+const char* enumValueToString(ComRemovalAlgorithm enumValue);
+
+//! Enumeration that contains all supported periodic boundary setups.
+enum class PbcType : int
+{
+    Xyz     = 0, //!< Periodic boundaries in all dimensions.
+    No      = 1, //!< No periodic boundaries.
+    XY      = 2, //!< Only two dimensions are periodic.
+    Screw   = 3, //!< Screw.
+    Unset   = 4, //!< The type of PBC is not set or invalid.
+    Count   = 5,
+    Default = Xyz
+};
+
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

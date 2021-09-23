@@ -87,14 +87,11 @@ const int nstmin_harmonic          = 20;
 constexpr int c_defaultNstTCouple = 10;
 constexpr int c_defaultNstPCouple = 10;
 
-t_inputrec::t_inputrec()
+t_inputrec::t_inputrec() :
+    fepvals(std::make_unique<t_lambda>()),
+    simtempvals(std::make_unique<t_simtemp>()),
+    expandedvals(std::make_unique<t_expanded>())
 {
-    // TODO When this memset is removed, remove the suppression of
-    // gcc -Wno-class-memaccess in a CMakeLists.txt file.
-    std::memset(this, 0, sizeof(*this)); // NOLINT(bugprone-undefined-memory-manipulation)
-    fepvals      = std::make_unique<t_lambda>();
-    expandedvals = std::make_unique<t_expanded>();
-    simtempvals  = std::make_unique<t_simtemp>();
 }
 
 t_inputrec::~t_inputrec()

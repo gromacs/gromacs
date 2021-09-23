@@ -204,9 +204,6 @@ target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:legacy_modules>)
 add_subdirectory(fileio)
 add_subdirectory(selection)
 
-# Suppress a warning about our abuse of t_inputrec
-gmx_source_file_warning_suppression(mdtypes/inputrec.cpp -Wno-class-memaccess HAS_NO_CLASS_MEMACCESS)
-
 # Handle the object libraries that contain the source file
 # dependencies that need special handling because they are generated
 # or external code.
