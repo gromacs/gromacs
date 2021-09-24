@@ -339,7 +339,7 @@ static real free_energy_evaluate_single(real                                    
                 real quadrFac = linFac * r * rInvQ;
 
                 /* Computing Coulomb force and potential energy */
-                fscal_elec[i] = 2 * quadrFac - 3 * linFac;
+                fscal_elec[i] = -2 * quadrFac + 3 * linFac;
                 fscal_elec[i] *= rpinv;
 
                 velec[i] = quadrFac - 3 * (linFac - constFac);
@@ -416,7 +416,7 @@ static real free_energy_evaluate_single(real                                    
                 constFac  = 91 * rInv12 - 28 * rInv6;
 
                 /* Computing LJ force and potential energy*/
-                fscal_vdw[i] = quadrFac - linearFac;
+                fscal_vdw[i] = -quadrFac + linearFac;
                 fscal_vdw[i] *= rpinv;
 
                 vvdw[i] = 0.5 * quadrFac - linearFac + constFac;
