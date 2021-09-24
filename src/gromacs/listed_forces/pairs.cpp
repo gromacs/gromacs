@@ -250,11 +250,6 @@ static real free_energy_evaluate_single(real                                    
                  * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
                  */
                 sigma6VdWGapsys[i] = half * c12[i] / c6[i];
-                if (sigma6VdWGapsys[i]
-                    < scParams.sigma6VdWGapsys) /* for disappearing coul and vdw with soft core at the same time */
-                {
-                    sigma6VdWGapsys[i] = scParams.sigma6VdWGapsys;
-                }
             }
             else
             {

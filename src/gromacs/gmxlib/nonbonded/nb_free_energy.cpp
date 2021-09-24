@@ -571,10 +571,6 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             {
                                 /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
                                 preloadSigma6VdWGapsys[i][s] = 0.5_real * c12 / c6;
-                                if (preloadSigma6VdWGapsys[i][s] < sigma6VdWGapsys)
-                                {
-                                    preloadSigma6VdWGapsys[i][s] = sigma6VdWGapsys;
-                                }
                             }
                             else
                             {

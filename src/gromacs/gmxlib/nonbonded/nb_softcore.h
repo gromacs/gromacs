@@ -250,9 +250,9 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
                                 * ((6.5_real * rInv14C - rInv8C) - (13 * rInv13C - 2. * rInv7C)
                                    + (6.5_real * rInv12C - rInv6C));
 
-            *potential = *potential
-                         + gmx::selectByMask(((c12s * repulsionShift) - (c6s * dispersionShift)),
-                                             computeValues);
+            potentialQuad = potentialQuad
+                             + gmx::selectByMask(((c12s * repulsionShift) - (c6s * dispersionShift)),
+                                                 computeValues);
             *force     = gmx::blend(*force, forceQuad, computeValues);
             *potential = gmx::blend(*potential, potentialQuad, computeValues);
             *dvdl      = *dvdl + gmx::selectByMask(dvdlQuad, computeValues);
