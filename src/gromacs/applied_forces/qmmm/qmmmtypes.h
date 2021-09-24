@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
@@ -117,7 +118,7 @@ struct QMMMParameters
     //! Total charge of QM system (default 0)
     int qmCharge_ = 0;
     //! Total multiplicity of QM system (default 1)
-    int qmMult_ = 1;
+    int qmMultiplicity_ = 1;
     //! Method used for QM calculation (default DFT with PBE functional)
     QMMMQMMethod qmMethod_ = QMMMQMMethod::PBE;
     /*! \brief String containing name of the CP2K files (*.inp, *.out, *.pdb)

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Bool Name="Active">false</Bool>
+  <Int Name="Size of atomNumbers">0</Int>
+  <Int Name="Size of link">0</Int>
+  <Int Name="Size of mmIndices">0</Int>
+  <Int Name="Size of qmIndices">0</Int>
+  <Int Name="QM charge">0</Int>
+  <Int Name="QM multiplicity">1</Int>
+  <Int Name="QM method">0</Int>
+  <Vector Name="QM Translation">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 1">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 2">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <Vector Name="QM Box Vector 3">
+    <Real Name="X">0</Real>
+    <Real Name="Y">0</Real>
+    <Real Name="Z">0</Real>
+  </Vector>
+  <String Name="QM filename base"></String>
+  <String Name="Input"></String>
+  <String Name="PDB"></String>
+</ReferenceData>

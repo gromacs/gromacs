@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Size of qmIndices">3</Int>
+  <Int Name="Size of mmIndices">0</Int>
+</ReferenceData>

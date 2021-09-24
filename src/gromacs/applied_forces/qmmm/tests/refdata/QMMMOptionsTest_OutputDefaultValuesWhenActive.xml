@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Mdp output">
+; QM/MM with CP2K
+qmmm-cp2k-active         = true
+; Index group with QM atoms
+qmmm-cp2k-qmgroup        = System
+; DFT functional for QM calculations
+qmmm-cp2k-qmmethod       = PBE
+; QM charge
+qmmm-cp2k-qmcharge       = 0
+; QM multiplicity
+qmmm-cp2k-qmmultiplicity = 1
+; Names of CP2K files during simulation
+qmmm-cp2k-qmfilenames    = 
+</String>
+</ReferenceData>

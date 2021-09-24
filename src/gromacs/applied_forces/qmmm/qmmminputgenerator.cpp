@@ -175,10 +175,10 @@ std::string QMMMInputGenerator::generateDFTSection() const
 
     // write charge and multiplicity
     res += formatString("    CHARGE %d\n", parameters_.qmCharge_);
-    res += formatString("    MULTIPLICITY %d\n", parameters_.qmMult_);
+    res += formatString("    MULTIPLICITY %d\n", parameters_.qmMultiplicity_);
 
     // If multiplicity is not 1 then we should use unrestricted Kohn-Sham
-    if (parameters_.qmMult_ > 1)
+    if (parameters_.qmMultiplicity_ > 1)
     {
         res += "    UKS\n";
     }
