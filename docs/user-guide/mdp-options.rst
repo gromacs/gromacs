@@ -2531,16 +2531,31 @@ Free energy calculations
    written out. For normal BAR such as with :ref:`gmx bar`, a value of
    1 is sufficient, while for MBAR -1 should be used.
 
+.. mdp:: sc-function
+
+   (beutler)
+
+   .. mdp-value:: beutler
+
+   Beutler *et al.* soft-core function
+
+   .. mdp-value:: gapsys
+
+   Gapsys *et al.* soft-core function
+
 .. mdp:: sc-alpha
 
    (0)
-   the soft-core alpha parameter, a value of 0 results in linear
-   interpolation of the LJ and Coulomb interactions
+   for `sc-function=beutler` the soft-core alpha parameter,
+   a value of 0 results in linear interpolation of the
+   LJ and Coulomb interactions.
+   Used only with `sc-function=beutler`
 
 .. mdp:: sc-r-power
 
    (6)
    power 6 for the radial term in the soft-core equation.
+   Used only with `sc-function=beutler`
 
 .. mdp:: sc-coul
 
@@ -2553,18 +2568,47 @@ Free energy calculations
    states are used, not with :mdp:`couple-lambda0` /
    :mdp:`couple-lambda1`, and you can still turn off soft-core
    interactions by setting :mdp:`sc-alpha` to 0.
+   Used only with `sc-function=beutler`
 
 .. mdp:: sc-power
 
    (0)
    the power for lambda in the soft-core function, only the values 1
-   and 2 are supported
+   and 2 are supported. Used only with `sc-function=beutler`
 
 .. mdp:: sc-sigma
 
    (0.3) [nm]
-   the soft-core sigma for particles which have a C6 or C12 parameter
-   equal to zero or a sigma smaller than :mdp:`sc-sigma`
+   for `sc-function=beutler` the soft-core sigma for particles
+   which have a C6 or C12 parameter equal to zero or a sigma smaller
+   than :mdp:`sc-sigma`.
+   Used only with `sc-function=beutler`
+
+.. mdp:: sc-linpoint-LJ-gapsys
+
+   (0.85)
+   for `sc-function=gapsys` it is the unitless alphaLJ parameter.
+   It controls the softness of the van der Waals interactions
+   by scaling the point for linearizing the vdw force.
+   Setting it to 0 will result in the standard hard-core
+   van der Waals interactions.
+   Used only with `sc-function=gapsys`
+
+.. mdp:: sc-linpoint-Q-gapsys
+
+   (0.3) [nm/e^2]
+   For `sc-function=gapsys` the alphaQ parameter
+   with the unit of [nm/e^2] and default value of 0.3. It controls
+   the softness of the Coulombic interactions. Setting it to 0 will
+   result in the standard hard-core Coulombic interactions.
+   Used only with `sc-function=gapsys`
+
+.. mdp:: sc-sigma-LJ-gapsys
+
+   (0.3) [nm]
+   for `sc-function=gapsys` the soft-core sigma for particles
+   which have a C6 or C12 parameter equal to zero.
+   Used only with `sc-function=gapsys`
 
 .. mdp:: couple-moltype
 

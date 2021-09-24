@@ -338,10 +338,10 @@ the soft-cored non-bonded interactions using the formalism by Gapsys *et al.*\ :
 The Gapsys *et al.* soft-core is formulated to act on the level of van der Waals and electrostatic forces:
 the non-bonded interactions are linearized at a point defined as, :math:`r_{scLJ}` or :math:`r_{scQ}`, respectively.
 The linearization point depends on the state of the system as controlled by the :math:`\lambda` parameter and 
-two parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`.
+two parameters :math:`\alpha_Q` (set with ``sc-scale-linpoint-Q-gapsys``) and :math:`\alpha_{LJ}` (set with ``sc-scale-linpoint-LJ-gapsys``).
 The dependence on :math:`\lambda` guarantees that the end-states are properly represented by their hard-core potentials.
 :numref:`Fig. %s <fig-gapsyssc>` illustrates the behaviour of the linearization point, forces and integrated potential energies with respect
-to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`.
+to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`. The optimal choices of the parameter values have been systematically explored in :ref:`185 <refGapsys2012>`. These recommended values are set by default when ``sc-function=gapsys`` is selected: ``sc-scale-linpoint-Q-gapsys=0.3`` and ``sc-scale-linpoint-LJ-gapsys=0.85``.
 
 .. _fig-gapsyssc:
 
@@ -359,7 +359,7 @@ to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`.
 The parameter :math:`\alpha_{LJ}` is a unitless scaling factor in the range :math:`[0,1)`.
 It scales the position of the point from which the van der Waals force will be linearized.
 The linearization of the force is allowed in the range :math:`[0,F_{min}^{LJ})`,
-where setting :math:`\alpha_{LJ}=0` results in a standard hard-core interaction.
+where setting :math:`\alpha_{LJ}=0` results in a standard hard-core van der Waals interaction.
 Setting :math:`\alpha_{LJ}` closer to 1 brings the force linearization point towards 
 the minimum in the Lennard-Jones force curve (:math:`F_{min}^{LJ}`).
 This construct allows retaining the repulsion between two particles with non-zero C12 parameter at any :math:`\lambda` value.
@@ -368,7 +368,7 @@ The parameter :math:`\alpha_{Q}` has a unit of :math:`\frac{nm}{e^2}` and is def
 It scales the position of the point from which the Coulombic force will be linearized.
 Even though in theory :math:`\alpha_{Q}` can be set to an arbitrarily large value,
 algorithmically the linearization point for the force is bound in the range :math:`[0,F_{rcoul}^{Q})`,
-where setting :math:`\alpha_{Q}=0` results in a standard hard-core interaction.
+where setting :math:`\alpha_{Q}=0` results in a standard hard-core Coulombic interaction.
 Setting :math:`\alpha_{Q}` to a larger value softens the Coulombic force.
 
 In all the notations below, for simplicity, the distance between two atoms :math:`i` and :math:`j` is noted as :math:`r`, i.e. :math:`r=r_{ij}`.
@@ -385,8 +385,10 @@ Forces: van der Waals interactions
           :label: eqvdwforces
 
 where the switching point between the soft and hard-core Lennard-Jones forces
-:math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\frac{C_{ij}^{(12)}}{C_{ij}^{(6)}}\lambda)^{\frac{1}{6}}` for state A, and
-:math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\frac{C_{ij}^{(12)}}{C_{ij}^{(6)}}(1-\lambda))^{\frac{1}{6}}` for state B.
+:math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\sigma^6\lambda)^{\frac{1}{6}}` for state A, and
+:math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\sigma^6(1-\lambda))^{\frac{1}{6}}` for state B.
+In analogy to the Beutler *et al.* soft core version, :math:`\sigma` is the radius of the interaction, which is :math:`(C_{12}/C_6)^{1/6}`
+or an input parameter (set with ``sc-sigma-LJ-gapsys``) when C6 or C12 is zero. The default value for this parameter is ``sc-sigma-LJ-gapsys=0.3``.
 
 Explicit expression:
 
