@@ -68,6 +68,11 @@ linearly changing with time.
    value. This is useful for restraining e.g. the distance between two
    molecules to a certain region.
 
+#. **External potential** This takes the potential acting on the reaction
+   coordinate from another module. Current only the Accelerated Weight
+   Histogram method (see sec. :doc:`awh`) is supported, which provides
+   adaptive biasing of pull coordinates.
+
 In addition, there are different types of reaction coordinates,
 so-called pull geometries. These are set with the :ref:`mdp`
 option ``pull-coord?-geometry``.
@@ -237,6 +242,30 @@ distance vector from group 8 to 1, the second vector is the COM distance
 vector from group 1 to 5, and the third vector is the COM distance
 vector from group 5 to 9. The dihedral angle takes values in the
 interval (-180, 180] deg and has periodic boundaries.
+
+The transformation pull coordinate
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The transformation pull coordinate is a "meta" pull coordinate type that
+can transform one or more other pull coordinates using an arbitrary
+mathematical expression. This is a powerful tool for generating
+complex reaction coordinates like a contact coordinate
+using a non-linear transformation of a distance, a sum of contacts or
+arbitrary (non-)linear combinations of two or more pull coordinates.
+A simple example is a contact coordinate using a non-linear transformation
+of a distance. More complex examples are a (non-)linear combination of
+two or more pull coordinates or a sum of contacts.
+
+Typically, the force constant for pull coordinate(s) the transformation
+coordinates acts on should be zero. This avoids
+unintended addition of direct forces on the pull coordinate(s)
+to the indirect forces from the transition pull coordinate. This is not
+a requirement, but have both a direct and indirect, from the tranformation
+coordinate, force working on them is almost never desirable.
+If the transformation is a linear combination of multiple distances,
+it is useful to normalize the coefficients
+such that the transformation coordinate also has units of nanometer.
+That makes both the choice of the force constant and the interpretation easier.
 
 Limitations
 ^^^^^^^^^^^
