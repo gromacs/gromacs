@@ -853,20 +853,21 @@ void check_ir(const char*                    mdparin,
 
         if (fep->softcoreFunction == SoftcoreType::Gapsys)
         {
-            if (fep->sc_alpha < 0.0)
+            if (fep->scScaleLinpointQGapsys < 0.0)
             {
                 sprintf(warn_buf,
-                        "sc_alpha is equal %g but must be >= 0 when used with sc_function=gapsys.",
-                        fep->sc_alpha);
+                        "sc_scale_linpoint_Q_gapsys is equal %g but must be >= 0",
+                        fep->scScaleLinpointQGapsys);
                 warning_note(wi, warn_buf);
             }
 
-            if ((fep->sc_sigma < 0.0) || (fep->sc_sigma >= 1.0))
+            if ((fep->scScaleLinpointLJGapsys < 0.0) || (fep->scScaleLinpointLJGapsys >= 1.0))
             {
                 sprintf(warn_buf,
-                        "sc_sigma is equal %g but must be in [0,1) when used with "
+                        "sc_scale_linpoint_LJ_gapsys is equal %g but must be in [0,1) when used "
+                        "with "
                         "sc_function=gapsys.",
-                        fep->sc_sigma);
+                        fep->scScaleLinpointLJGapsys);
                 warning_note(wi, warn_buf);
             }
         }
