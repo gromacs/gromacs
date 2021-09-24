@@ -62,11 +62,23 @@ ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 # Prepare some local variables so CUDA and non-CUDA code in targets
 # works the same way.
 function(gmx_target_compile_options_inner)
-    set (CFLAGS "${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}" PARENT_SCOPE)
+    set(CFLAGS
+            ${SIMD_C_FLAGS}
+            ${MPI_C_COMPILE_OPTIONS}
+            ${EXTRA_C_FLAGS}
+            ${GMXC_CFLAGS}
+         PARENT_SCOPE)
+
     # When SYCL support has been enabled (so the flag is non-empty), we still *disable* things
     # by default to avoid running each file three passes through the compiler. Then we'll explicitly
     # enable SYCL for the few files using it, as well as the linker.
-    set (CXXFLAGS "${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${DISABLE_SYCL_CXX_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}" PARENT_SCOPE)
+    set(CXXFLAGS
+            ${SIMD_CXX_FLAGS}
+            ${MPI_CXX_COMPILE_OPTIONS}
+            ${DISABLE_SYCL_CXX_FLAGS}
+            ${EXTRA_CXX_FLAGS}
+            ${GMXC_CXXFLAGS}
+        PARENT_SCOPE)
 endfunction()
 
 # Implementation function to add compiler flags expected for all
