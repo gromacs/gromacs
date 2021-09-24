@@ -85,6 +85,7 @@ class GpuEventSynchronizer;
  *
  * \todo Remove after #3927 is done and PME is fully enabled in SYCL builds.
  */
+//NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 extern bool g_allowPmeWithSyclForTesting;
 
 namespace gmx

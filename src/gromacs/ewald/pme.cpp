@@ -127,6 +127,7 @@
 #include "pme_spline_work.h"
 #include "pme_spread.h"
 
+//NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 bool g_allowPmeWithSyclForTesting = false;
 
 bool pme_gpu_supports_build(std::string* error)

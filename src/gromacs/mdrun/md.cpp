@@ -1506,16 +1506,13 @@ void gmx::LegacySimulator::do_md()
                     }
                 }
 
-                if (simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
+                if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
+                    || (!runScheduleWork->stepWork.useGpuFBufferOps))
                 {
-                    // The PME forces were recieved to the host, and reduced on the CPU with the rest of the
-                    // forces computed on the GPU, so the final forces have to be copied back to the GPU
-                    stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
-                }
-                else if (!runScheduleWork->stepWork.useGpuFBufferOps)
-                {
-                    // The buffer ops were not offloaded this step, so the forces are on the
-                    // host and have to be copied
+                    // The PME forces were recieved to the host, and reduced on the CPU with the
+                    // rest of the forces computed on the GPU, so the final forces have to be copied
+                    // back to the GPU. Or the buffer ops were not offloaded this step, so the
+                    // forces are on the host and have to be copied
                     stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
                 }
                 const bool doTemperatureScaling =
