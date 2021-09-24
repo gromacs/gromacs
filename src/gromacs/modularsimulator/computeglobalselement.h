@@ -137,9 +137,6 @@ public:
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
-    //! Get callback to request checking of bonded interactions
-    CheckBondedInteractionsCallback getCheckNumberOfBondedInteractionsCallback();
-
     //! No element teardown needed
     void elementTeardown() override {}
 
