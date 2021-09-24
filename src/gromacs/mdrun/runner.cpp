@@ -974,12 +974,17 @@ int Mdrunner::mdrunner()
             "Linear acceleration has been removed in GROMACS 2022, and was broken for many years "
             "before that. Use GROMACS 4.5 or earlier if you need this feature.");
 
+    // Now we decide whether to use the domain decomposition machinery.
+    // Note that this does not necessarily imply actually using multiple domains.
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the master rank. The ranks can now all run
     // the task-deciding functions and will agree on the result
     // without needing to communicate.
+    // The LBFGS minimizer, test-particle insertion, normal modes and shell dynamics don't support DD
     const bool useDomainDecomposition =
-            (PAR(cr) && !(EI_TPI(inputrec->eI) || inputrec->eI == IntegrationAlgorithm::NM));
+            !(inputrec->eI == IntegrationAlgorithm::LBFGS || EI_TPI(inputrec->eI)
+              || inputrec->eI == IntegrationAlgorithm::NM
+              || gmx_mtop_particletype_count(mtop)[ParticleType::Shell] > 0);
 
     // Note that these variables describe only their own node.
     //
@@ -1502,7 +1507,7 @@ int Mdrunner::mdrunner()
 
     if (deviceInfo != nullptr)
     {
-        if (DOMAINDECOMP(cr) && thisRankHasDuty(cr, DUTY_PP))
+        if (runScheduleWork.simulationWork.havePpDomainDecomposition && thisRankHasDuty(cr, DUTY_PP))
         {
             dd_setup_dlb_resource_sharing(cr, deviceId);
         }

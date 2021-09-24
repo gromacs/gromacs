@@ -480,25 +480,36 @@ LocalTopologyChecker& LocalTopologyChecker::operator=(LocalTopologyChecker&& oth
 
 void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInteractionsToReduce)
 {
-    // Fill the reduction buffer with the value from this domain to reduce
-    impl_->reductionBuffer_[0] = double(numBondedInteractionsToReduce);
+    // When we have a single domain, we don't need to reduce and we algorithmically can not miss
+    // any interactions, so we can assert here.
+    if (!havePPDomainDecomposition(impl_->cr_))
+    {
+        GMX_RELEASE_ASSERT(numBondedInteractionsToReduce == impl_->expectedNumGlobalBondedInteractions_,
+                           "With a single domain the number of assigned bonded interactions should "
+                           "always match the global number");
+    }
+    else
+    {
+        // Fill the reduction buffer with the value from this domain to reduce
+        impl_->reductionBuffer_[0] = double(numBondedInteractionsToReduce);
 
-    // Pass the post-reduction callback to the ObservablesReducer via
-    // the callback it gave us for the purpose.
-    //
-    // Note that it's possible that the callbackAfterReduction is already
-    // outstanding, e.g. if repartitioning was triggered before
-    // observables were reduced. This could happen for example when
-    // replica exchange took place soon after a partition. If so, the
-    // callback will be called again. So long as there is no race
-    // between the calls to this function and the calls to
-    // ObservablesReducer for reduction, this will work correctly. It
-    // could be made safer e.g. with checks against duplicate
-    // callbacks, but there is no problem to solve.
-    //
-    // There is no need to check the return value from this callback,
-    // as it is not an error to request reduction at a future step.
-    impl_->callbackToRequireReduction_(ReductionRequirement::Eventually);
+        // Pass the post-reduction callback to the ObservablesReducer via
+        // the callback it gave us for the purpose.
+        //
+        // Note that it's possible that the callbackAfterReduction is already
+        // outstanding, e.g. if repartitioning was triggered before
+        // observables were reduced. This could happen for example when
+        // replica exchange took place soon after a partition. If so, the
+        // callback will be called again. So long as there is no race
+        // between the calls to this function and the calls to
+        // ObservablesReducer for reduction, this will work correctly. It
+        // could be made safer e.g. with checks against duplicate
+        // callbacks, but there is no problem to solve.
+        //
+        // There is no need to check the return value from this callback,
+        // as it is not an error to request reduction at a future step.
+        impl_->callbackToRequireReduction_(ReductionRequirement::Eventually);
+    }
 }
 
 } // namespace gmx

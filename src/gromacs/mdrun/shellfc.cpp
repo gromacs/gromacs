@@ -287,7 +287,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                   "not supported in combination with shell particles.\nPlease make a new tpr file.",
                   nstcalcenergy);
     }
-    if (usingDomainDecomposition)
+    if (nshell > 0 && usingDomainDecomposition)
     {
         gmx_fatal(
                 FARGS,

@@ -1975,6 +1975,10 @@ void LegacySimulator::do_lbfgs()
                     "be available in a different form in a future version of GROMACS, "
                     "e.g. gmx minimize and an .mdp option.");
 
+    if (DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "L_BFGS is currently not supported");
+    }
     if (PAR(cr))
     {
         gmx_fatal(FARGS, "L-BFGS minimization only supports a single rank");

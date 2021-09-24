@@ -1268,7 +1268,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
         }
     }
 
-    if (!PAR(cr))
+    if (!DOMAINDECOMP(cr))
     {
         nat_loc = nat;
         ind_loc = ind;
@@ -1281,7 +1281,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
     }
 
     /* Communicate initial coordinates xa_old to all processes */
-    if (PAR(cr))
+    if (cr && havePPDomainDecomposition(cr))
     {
         gmx_bcast(nat * sizeof(xa_old[0]), xa_old, cr->mpi_comm_mygroup);
     }

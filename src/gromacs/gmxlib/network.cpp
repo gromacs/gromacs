@@ -87,11 +87,12 @@ CommrecHandle init_commrec(MPI_Comm communicator)
 
     // For now, we want things to go horribly wrong if this is used too early...
     // TODO: Remove when communicators are removed from commrec (#2395)
-    cr->nnodes           = -1;
-    cr->nodeid           = -1;
-    cr->sim_nodeid       = -1;
-    cr->mpi_comm_mysim   = MPI_COMM_NULL;
-    cr->mpi_comm_mygroup = MPI_COMM_NULL;
+    cr->nnodes                    = -1;
+    cr->sizeOfMyGroupCommunicator = -1;
+    cr->nodeid                    = -1;
+    cr->sim_nodeid                = -1;
+    cr->mpi_comm_mysim            = MPI_COMM_NULL;
+    cr->mpi_comm_mygroup          = MPI_COMM_NULL;
 
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
@@ -221,6 +222,10 @@ void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)
 
 void gmx_barrier(MPI_Comm gmx_unused communicator)
 {
+    if (communicator == MPI_COMM_NULL)
+    {
+        return;
+    }
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_barrier");
 #else
@@ -239,6 +244,11 @@ void gmx_bcast(int gmx_unused nbytes, void gmx_unused* b, MPI_Comm gmx_unused co
 
 void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unused* cr)
 {
+    if (cr->sizeOfMyGroupCommunicator == 1)
+    {
+        return;
+    }
+
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumd");
 #else
@@ -268,6 +278,11 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
 
 void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unused* cr)
 {
+    if (cr->sizeOfMyGroupCommunicator == 1)
+    {
+        return;
+    }
+
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumf");
 #else
@@ -297,6 +312,11 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
 
 void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused* cr)
 {
+    if (cr->sizeOfMyGroupCommunicator == 1)
+    {
+        return;
+    }
+
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumi");
 #else

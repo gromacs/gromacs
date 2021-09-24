@@ -77,11 +77,14 @@ struct t_commrec
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
      */
-    int sim_nodeid, nnodes, npmenodes;
+    //! The rank-id in mpi_comm_mysim;
+    int sim_nodeid;
+    //! The number of ranks in mpi_comm_mysim
+    int nnodes;
+    //! The number of separate PME ranks, 0 when no separate PME ranks are used
+    int npmenodes;
 
-    /* thread numbers: */
-    /* Not used yet: int threadid, nthreads; */
-    /* The nodeid in the PP/PME, PP or PME group */
+    //! The rank-id in mpi_comm_mygroup;
     int nodeid;
 
     /* MPI communicators within a single simulation
@@ -91,6 +94,9 @@ struct t_commrec
                                   a single simulation */
     MPI_Comm mpi_comm_mygroup; /* subset of mpi_comm_mysim including only
                                   the ranks in the same group (PP or PME) */
+    //! The number of ranks in mpi_comm_mygroup
+    int sizeOfMyGroupCommunicator;
+
     //! The communicator used before DD was initialized
     MPI_Comm mpiDefaultCommunicator;
     int      sizeOfDefaultCommunicator;
@@ -152,21 +158,16 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 //! The node id for the master
 #define MASTERRANK(cr) (0)
 
-/*! \brief Do we decompose the work of this simulation?
+/*! \brief Returns whether the domain decomposition machinery is active
  *
- * True if this simulation uses more than one PP rank, or if this simulation
- * uses at least one PME-only rank.
- *
- * PAR(cr) is true if this is true, but the converse does not apply (see docs
- * of PAR(cr)).
- *
- * This is true if havePPDomainDecomposition is true, but the converse does not
- * apply (see docs of havePpDomainDecomposition()).
- *
- * \todo As part of Issue #2395, replace calls to this with
- * havePPDomainDecomposition or a call of some other/new function, as
- * appropriate to each case. Then eliminate this macro. */
-#define DOMAINDECOMP(cr) (((cr)->dd != nullptr) && PAR(cr))
+ * Note that when the return value is true, there are not necessarily
+ * multiple domains. The domain decomposition machinery is also active and
+ * reorders the atoms also with a single MPI rank, or 1 PP and 1 PME rank,
+ * with most integrators. Only a few special non-integrator "integrators"
+ * do not (yet) support the domain decomposition machinery and therefore
+ * this macro is still needed.
+ */
+#define DOMAINDECOMP(cr) ((cr)->dd != nullptr)
 
 /*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
  *

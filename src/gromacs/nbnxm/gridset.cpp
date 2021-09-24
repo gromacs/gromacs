@@ -83,7 +83,8 @@ GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
                                   const gmx_domdec_zones_t* ddZones) :
     pbcType(pbcType),
     doTestParticleInsertion(doTestParticleInsertion),
-    haveMultipleDomains(numDDCells != nullptr),
+    haveMultipleDomains(numDDCells != nullptr
+                        && (*numDDCells)[XX] * (*numDDCells)[YY] * (*numDDCells)[ZZ] > 1),
     zones(ddZones)
 {
     for (int d = 0; d < DIM; d++)

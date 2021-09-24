@@ -170,7 +170,7 @@ struct gmx_domdec_t
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
      */
-    int      nnodes       = 0;
+    int      nnodes       = 1;
     MPI_Comm mpi_comm_all = MPI_COMM_NULL;
     /* The local DD cell index and rank */
     gmx::IVec ci         = { 0, 0, 0 };

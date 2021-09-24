@@ -1063,7 +1063,7 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
 {
 #if GMX_MPI
-    MPI_Comm mpi_comm_pp_physicalnode = MPI_COMM_NULL;
+    gmx_domdec_t* dd = cr->dd;
 
     if (!thisRankHasDuty(cr, DUTY_PP) || gpu_id < 0)
     {
@@ -1073,9 +1073,14 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
         return;
     }
 
-    const int physicalnode_id_hash = gmx_physicalnode_id_hash();
+    if (cr->nnodes == 1)
+    {
+        dd->comm->nrank_gpu_shared = 1;
 
-    gmx_domdec_t* dd = cr->dd;
+        return;
+    }
+
+    const int physicalnode_id_hash = gmx_physicalnode_id_hash();
 
     if (debug)
     {
@@ -1088,6 +1093,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
      */
     // TODO PhysicalNodeCommunicator could be extended/used to handle
     // the need for per-node per-group communicators.
+    MPI_Comm mpi_comm_pp_physicalnode;
     MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
     MPI_Comm_split(mpi_comm_pp_physicalnode, gpu_id, dd->rank, &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
@@ -1528,6 +1534,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
                        getThisRankDuties(cr),
                        dd_index(cartSetup.ntot, ddCellIndex),
                        &cr->mpi_comm_mygroup);
+        MPI_Comm_size(cr->mpi_comm_mygroup, &cr->sizeOfMyGroupCommunicator);
 #else
         GMX_UNUSED_VALUE(ddCellIndex);
 #endif
@@ -1559,6 +1566,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
 #if GMX_MPI
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm_split(cr->mpi_comm_mysim, getThisRankDuties(cr), cr->nodeid, &cr->mpi_comm_mygroup);
+        MPI_Comm_size(cr->mpi_comm_mygroup, &cr->sizeOfMyGroupCommunicator);
         MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
 #endif
     }
@@ -1628,14 +1636,18 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
 
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        /* Copy or make a new PP communicator */
+        if (dd->nnodes > 1)
+        {
+            /* Copy or make a new PP communicator */
 
-        /* We (possibly) reordered the nodes in split_communicator,
-         * so it is no longer required in make_pp_communicator.
-         */
-        const bool useCartesianReorder = (ddSettings.useCartesianReorder && !cartSetup.bCartesianPP_PME);
+            /* We (possibly) reordered the nodes in split_communicator,
+             * so it is no longer required in make_pp_communicator.
+             */
+            const bool useCartesianReorder =
+                    (ddSettings.useCartesianReorder && !cartSetup.bCartesianPP_PME);
 
-        make_pp_communicator(mdlog, dd, cr, useCartesianReorder);
+            make_pp_communicator(mdlog, dd, cr, useCartesianReorder);
+        }
     }
     else
     {
