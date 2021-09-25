@@ -86,9 +86,9 @@ elseif (GMX_GPU_OPENCL)
         pme_gpu_timings.cpp
         )
 elseif (GMX_GPU_SYCL)
-    # SYCL-TODO: proper implementation
     gmx_add_libgromacs_sources(
         # GPU-specific sources
+        pme_gather_sycl.cpp
         pme_gpu.cpp
         pme_gpu_internal.cpp
         pme_gpu_program_impl_sycl.cpp
@@ -96,6 +96,7 @@ elseif (GMX_GPU_SYCL)
         pme_gpu_timings.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
+        pme_gather_sycl.cpp
         pme_gpu_internal.cpp
         pme_gpu_program.cpp
         pme_gpu_program_impl_sycl.cpp

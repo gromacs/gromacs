@@ -310,8 +310,6 @@ __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
  * \param[in] gm_coefficients     Global memory array of the coefficients to use for an unperturbed
  * or FEP in state A if a single grid is used (\p multiCoefficientsSingleGrid == true).If two
  * separate grids are used this should be the coefficients of the grid in question.
- * \param[in] gm_coefficientsB    Global memory array of the coefficients to use for FEP in state B.
- * Should be nullptr if two separate grids are used.
  */
 __device__ __forceinline__ void calculateAndStoreGridForces(float3* __restrict__ sm_forces,
                                                             const int   forceIndexLocal,
