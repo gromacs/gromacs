@@ -132,7 +132,7 @@ public:
         // Center of mass to return for the site. Currently the only form of site
         // implemented is as a global atomic coordinate.
         gmx::RVec r = { 0, 0, 0 };
-        if (DOMAINDECOMP(&cr)) // Domain decomposition
+        if (haveDDAtomOrdering(cr)) // Domain decomposition
         {
             // Get global-to-local indexing structure
             auto* crossRef = cr.dd->ga2la;

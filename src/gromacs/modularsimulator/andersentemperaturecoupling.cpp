@@ -100,7 +100,7 @@ void AndersenTemperatureCoupling::apply(Step step)
     UniformRealDistribution<real>         uniformDist;
     TabulatedNormalDistribution<real, 14> normalDist;
 
-    const bool doDomainDecomposition = DOMAINDECOMP(cr_);
+    const bool atomOrderingIsDD = haveDDAtomOrdering(*cr_);
 
     auto velocities = statePropagatorData_->velocitiesView().unpaddedArrayRef();
 
@@ -112,7 +112,7 @@ void AndersenTemperatureCoupling::apply(Step step)
             continue;
         }
 
-        const int globalAtomIdx = doDomainDecomposition ? cr_->dd->globalAtomIndices[atomIdx] : atomIdx;
+        const int globalAtomIdx = atomOrderingIsDD ? cr_->dd->globalAtomIndices[atomIdx] : atomIdx;
         rng.restart(step, globalAtomIdx);
 
         // For massive Andersen, this function is only called periodically, but we apply each time

@@ -61,7 +61,7 @@ TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
                                VirtualSitesHandler*                vsite) :
     globalTopology_(globalTopology), localTopology_(localTopology), clients_(std::move(clients))
 {
-    if (!DOMAINDECOMP(cr))
+    if (!haveDDAtomOrdering(*cr))
     {
         // Generate and initialize new topology
         // Note that most of the data needed for the constructor is used here -

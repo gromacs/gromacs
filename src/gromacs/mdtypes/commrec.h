@@ -158,16 +158,22 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 //! The node id for the master
 #define MASTERRANK(cr) (0)
 
-/*! \brief Returns whether the domain decomposition machinery is active
+/*! \brief Returns whether the domain decomposition machinery is active and reorders atoms
+ *
+ * This tells whether atoms are reordered at pair search steps. When the return value
+ * is true, atoms are not in the order of the input and mtop.
  *
  * Note that when the return value is true, there are not necessarily
  * multiple domains. The domain decomposition machinery is also active and
  * reorders the atoms also with a single MPI rank, or 1 PP and 1 PME rank,
  * with most integrators. Only a few special non-integrator "integrators"
  * do not (yet) support the domain decomposition machinery and therefore
- * this macro is still needed.
+ * this function is still needed.
  */
-#define DOMAINDECOMP(cr) ((cr)->dd != nullptr)
+static bool inline haveDDAtomOrdering(const t_commrec& cr)
+{
+    return cr.dd != nullptr;
+}
 
 /*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
  *

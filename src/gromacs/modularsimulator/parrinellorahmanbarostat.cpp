@@ -303,7 +303,7 @@ void ParrinelloRahmanBarostat::restoreCheckpointState(std::optional<ReadCheckpoi
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd, sizeof(boxVelocity_), boxVelocity_);
         dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);

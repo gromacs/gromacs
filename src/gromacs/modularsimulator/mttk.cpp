@@ -79,7 +79,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
     // When using domain decomposition, statePropagatorData might not have the initial
     // box yet, so we get it from the legacy state_global instead.
     // TODO: Make sure we have a valid state in statePropagatorData at all times (#3421)
-    if (DOMAINDECOMP(legacySimulatorData->cr))
+    if (haveDDAtomOrdering(*legacySimulatorData->cr))
     {
         if (MASTER(legacySimulatorData->cr))
         {
@@ -307,7 +307,7 @@ void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpoi
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd, int(sizeof(real)), &etaVelocity_);
         dd_bcast(cr->dd, int(sizeof(real)), &invMass_);

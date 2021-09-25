@@ -378,7 +378,7 @@ void calc_disres_R_6(const t_commrec*      cr,
     }
 
     /* NOTE: Rt_6 and Rtav_6 are stored consecutively in memory */
-    if (cr && DOMAINDECOMP(cr))
+    if (cr && haveDDAtomOrdering(*cr))
     {
         gmx_sum(2 * dd->nres, dd->Rt_6, cr);
     }
@@ -397,7 +397,7 @@ void calc_disres_R_6(const t_commrec*      cr,
         GMX_ASSERT(cr != nullptr && ms != nullptr, "We need multisim with nsystems>1");
         gmx_sum_sim(2 * dd->nres, dd->Rt_6, ms);
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             gmx_bcast(2 * dd->nres, dd->Rt_6, cr->mpi_comm_mygroup);
         }

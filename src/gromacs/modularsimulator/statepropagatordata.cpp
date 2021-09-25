@@ -179,7 +179,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
 {
     bool stateHasVelocities;
     // Local state only becomes valid now.
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_init_local_state(*cr->dd, globalState, localState);
         stateHasVelocities = ((localState->flags & enumValueToBitMask(StateEntry::V)) != 0);
@@ -203,7 +203,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
         changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
     }
 
-    if (DOMAINDECOMP(cr) && MASTER(cr))
+    if (haveDDAtomOrdering(*cr) && MASTER(cr))
     {
         xGlobal_.resizeWithPadding(totalNumAtoms_);
         previousXGlobal_.resizeWithPadding(totalNumAtoms_);
@@ -605,7 +605,7 @@ void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpoint
 void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
                                                        const t_commrec*                   cr)
 {
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         // Collect state from all ranks into global vectors
         dd_collect_vec(cr->dd,
@@ -670,7 +670,7 @@ void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadChec
     }
 
     // Copy data to global state to be distributed by DD at setup stage
-    if (DOMAINDECOMP(cr) && MASTER(cr))
+    if (haveDDAtomOrdering(*cr) && MASTER(cr))
     {
         updateGlobalState(statePropagatorData_->globalState_,
                           statePropagatorData_->xGlobal_,
@@ -681,7 +681,7 @@ void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadChec
                           statePropagatorData_->cgGl_);
     }
     // Everything is local - copy global vectors to local ones
-    if (!DOMAINDECOMP(cr))
+    if (!haveDDAtomOrdering(*cr))
     {
         statePropagatorData_->x_.resizeWithPadding(statePropagatorData_->totalNumAtoms_);
         statePropagatorData_->v_.resizeWithPadding(statePropagatorData_->totalNumAtoms_);
@@ -712,7 +712,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     GMX_ASSERT(localStateBackupValid_, "Final trajectory writing called, but no state saved.");
 
     wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
-    if (DOMAINDECOMP(cr_))
+    if (haveDDAtomOrdering(*cr_))
     {
         auto globalXRef =
                 MASTER(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();

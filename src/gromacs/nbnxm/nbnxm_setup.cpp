@@ -223,7 +223,7 @@ const char* lookup_kernel_name(const KernelType kernelType)
         case KernelType::Cpu4xN_Simd_2xNN:
 #if GMX_SIMD
             return "SIMD";
-#else // GMX_SIMD
+#else  // GMX_SIMD
             return "not available";
 #endif // GMX_SIMD
         case KernelType::Gpu8x8x8: return "GPU";
@@ -458,15 +458,15 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     auto pairlistSets = std::make_unique<PairlistSets>(
             pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing);
 
-    auto pairSearch =
-            std::make_unique<PairSearch>(inputrec.pbcType,
-                                         EI_TPI(inputrec.eI),
-                                         DOMAINDECOMP(commrec) ? &commrec->dd->numCells : nullptr,
-                                         DOMAINDECOMP(commrec) ? domdec_zones(commrec->dd) : nullptr,
-                                         pairlistParams.pairlistType,
-                                         bFEP_NonBonded,
-                                         gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
-                                         pinPolicy);
+    auto pairSearch = std::make_unique<PairSearch>(
+            inputrec.pbcType,
+            EI_TPI(inputrec.eI),
+            haveDDAtomOrdering(*commrec) ? &commrec->dd->numCells : nullptr,
+            haveDDAtomOrdering(*commrec) ? domdec_zones(commrec->dd) : nullptr,
+            pairlistParams.pairlistType,
+            bFEP_NonBonded,
+            gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
+            pinPolicy);
 
     return std::make_unique<nonbonded_verlet_t>(
             std::move(pairlistSets), std::move(pairSearch), std::move(nbat), kernelSetup, gpu_nbv, wcycle);

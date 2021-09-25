@@ -1268,7 +1268,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
         }
     }
 
-    if (!DOMAINDECOMP(cr))
+    if (!haveDDAtomOrdering(*cr))
     {
         nat_loc = nat;
         ind_loc = ind;

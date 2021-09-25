@@ -187,7 +187,7 @@ void FirstOrderPressureCoupling::restoreCheckpointState(std::optional<ReadCheckp
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd, sizeof(conservedEnergyContribution_), &conservedEnergyContribution_);
         dd_bcast(cr->dd, sizeof(conservedEnergyContributionStep_), &conservedEnergyContributionStep_);

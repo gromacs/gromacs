@@ -1176,22 +1176,23 @@ static void do_update_sd(int                                 start,
     }
     else
     {
-        doSDUpdateGeneral<SDUpdate::Combined>(sd,
-                                              start,
-                                              nrend,
-                                              dt,
-                                              nFreeze,
-                                              invmass,
-                                              ptype,
-                                              cFREEZE,
-                                              cTC,
-                                              x,
-                                              xprime,
-                                              v,
-                                              f,
-                                              step,
-                                              seed,
-                                              DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+        doSDUpdateGeneral<SDUpdate::Combined>(
+                sd,
+                start,
+                nrend,
+                dt,
+                nFreeze,
+                invmass,
+                ptype,
+                cFREEZE,
+                cTC,
+                x,
+                xprime,
+                v,
+                f,
+                step,
+                seed,
+                haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     }
 }
 
@@ -1431,7 +1432,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                         nullptr,
                         step,
                         inputRecord.ld_seed,
-                        DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+                        haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1625,7 +1626,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  inputRecord.bd_fric,
                                  sd_.bd_rf.data(),
                                  inputRecord.ld_seed,
-                                 DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+                                 haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (IntegrationAlgorithm::VV):
                 case (IntegrationAlgorithm::VVAK):

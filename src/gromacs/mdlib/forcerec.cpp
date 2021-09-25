@@ -739,14 +739,15 @@ void init_forcerec(FILE*                            fplog,
     }
     else
     {
-        forcerec->bMolPBC = (!DOMAINDECOMP(commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType));
+        forcerec->bMolPBC =
+                (!haveDDAtomOrdering(*commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType));
 
         // Check and set up PBC for Ewald surface corrections or orientation restraints
         const bool useEwaldSurfaceCorrection =
                 (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
         const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
         const bool moleculesAreAlwaysWhole =
-                (DOMAINDECOMP(commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
+                (haveDDAtomOrdering(*commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
         // WholeMoleculeTransform is only supported with a single PP rank
         if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec)
             && (useEwaldSurfaceCorrection || haveOrientationRestraints))
@@ -761,10 +762,11 @@ void init_forcerec(FILE*                            fplog,
             }
 
             forcerec->wholeMoleculeTransform = std::make_unique<gmx::WholeMoleculeTransform>(
-                    mtop, inputrec.pbcType, DOMAINDECOMP(commrec));
+                    mtop, inputrec.pbcType, haveDDAtomOrdering(*commrec));
         }
 
-        forcerec->bMolPBC = !DOMAINDECOMP(commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType);
+        forcerec->bMolPBC =
+                !haveDDAtomOrdering(*commrec) || dd_bonded_molpbc(*commrec->dd, forcerec->pbcType);
 
         if (useEwaldSurfaceCorrection)
         {
@@ -1051,12 +1053,12 @@ void init_forcerec(FILE*                            fplog,
 
     /* Set all the static charge group info */
     forcerec->atomInfoForEachMoleculeBlock = makeAtomInfoForEachMoleculeBlock(mtop, forcerec);
-    if (!DOMAINDECOMP(commrec))
+    if (!haveDDAtomOrdering(*commrec))
     {
         forcerec->atomInfo = expandAtomInfo(mtop.molblock.size(), forcerec->atomInfoForEachMoleculeBlock);
     }
 
-    if (!DOMAINDECOMP(commrec))
+    if (!haveDDAtomOrdering(*commrec))
     {
         forcerec_set_ranges(forcerec, mtop.natoms, mtop.natoms, mtop.natoms);
     }

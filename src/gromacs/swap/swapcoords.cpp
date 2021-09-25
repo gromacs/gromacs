@@ -1555,7 +1555,7 @@ t_swap* init_swapcoords(FILE*                       fplog,
     swapstateIons_t* gs;
     swaphistory_t*   swapstate = nullptr;
 
-    if ((PAR(cr)) && !DOMAINDECOMP(cr))
+    if ((PAR(cr)) && !haveDDAtomOrdering(*cr))
     {
         gmx_fatal(FARGS, "Position swapping is only implemented for domain decomposition!");
     }

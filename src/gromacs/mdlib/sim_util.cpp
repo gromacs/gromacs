@@ -1277,7 +1277,7 @@ void do_force(FILE*                               fplog,
         }
 
         const bool fillGrid = (stepWork.doNeighborSearch && stepWork.stateChanged);
-        const bool calcCGCM = (fillGrid && !DOMAINDECOMP(cr));
+        const bool calcCGCM = (fillGrid && !haveDDAtomOrdering(*cr));
         if (calcCGCM)
         {
             put_atoms_in_box_omp(fr->pbcType,
@@ -1394,7 +1394,7 @@ void do_force(FILE*                               fplog,
         }
 
         wallcycle_start(wcycle, WallCycleCounter::NS);
-        if (!DOMAINDECOMP(cr))
+        if (!haveDDAtomOrdering(*cr))
         {
             const rvec vzero       = { 0.0_real, 0.0_real, 0.0_real };
             const rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
@@ -1704,7 +1704,7 @@ void do_force(FILE*                               fplog,
     /* Reset energies */
     reset_enerdata(enerd);
 
-    if (DOMAINDECOMP(cr) && simulationWork.haveSeparatePmeRank)
+    if (haveDDAtomOrdering(*cr) && simulationWork.haveSeparatePmeRank)
     {
         wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
         dd_force_flop_start(cr->dd, nrnb);
@@ -1911,7 +1911,7 @@ void do_force(FILE*                               fplog,
             /* Since all atoms are in the rectangular or triclinic unit-cell,
              * only single box vector shifts (2 in x) are required.
              */
-            set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
+            set_pbc_dd(&pbc, fr->pbcType, haveDDAtomOrdering(*cr) ? cr->dd->numCells : nullptr, TRUE, box);
         }
 
         for (int mtsIndex = 0; mtsIndex < (simulationWork.useMts && stepWork.computeSlowForces ? 2 : 1);
@@ -1935,7 +1935,7 @@ void do_force(FILE*                               fplog,
                                    nrnb,
                                    lambda,
                                    mdatoms,
-                                   DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr,
+                                   haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                                    stepWork);
         }
     }
@@ -2197,7 +2197,7 @@ void do_force(FILE*                               fplog,
                      enerd,
                      stepWork,
                      InteractionLocality::Local,
-                     DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
+                     haveDDAtomOrdering(*cr) ? enbvClearFNo : enbvClearFYes,
                      step,
                      nrnb,
                      wcycle);
@@ -2264,7 +2264,7 @@ void do_force(FILE*                               fplog,
             // NOTE: If there are virtual sites, the forces are modified on host after this D2H copy. Hence,
             //       they should not be copied in do_md(...) for the output.
             if (!simulationWork.useGpuUpdate
-                || (simulationWork.useGpuUpdate && DOMAINDECOMP(cr) && simulationWork.useCpuPmePpCommunication)
+                || (simulationWork.useGpuUpdate && haveDDAtomOrdering(*cr) && simulationWork.useCpuPmePpCommunication)
                 || vsite)
             {
                 stateGpu->copyForcesFromGpu(forceWithShift, AtomLocality::Local);
@@ -2281,7 +2281,7 @@ void do_force(FILE*                               fplog,
     launchGpuEndOfStepTasks(
             nbv, fr->listedForcesGpu.get(), fr->pmedata, enerd, *runScheduleWork, step, wcycle);
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
     }

@@ -3980,7 +3980,7 @@ void do_rotation(const t_commrec*               cr,
 
     /**************************************************************************/
     /* Done communicating, we can start to count cycles for the load balancing now ... */
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         ddReopenBalanceRegionCpu(cr->dd);
     }

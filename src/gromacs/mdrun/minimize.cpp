@@ -315,7 +315,7 @@ static void get_f_norm_max(const t_commrec*               cr,
         }
     }
 
-    if (la_max >= 0 && DOMAINDECOMP(cr))
+    if (la_max >= 0 && haveDDAtomOrdering(*cr))
     {
         a_max = cr->dd->globalAtomIndices[la_max];
     }
@@ -414,7 +414,7 @@ static void init_em(FILE*                fplog,
                                       top_global,
                                       constr ? constr->numFlexibleConstraints() : 0,
                                       ir->nstcalcenergy,
-                                      DOMAINDECOMP(cr),
+                                      haveDDAtomOrdering(*cr),
                                       thisRankHasDuty(cr, DUTY_PME));
     }
     else
@@ -432,7 +432,7 @@ static void init_em(FILE*                fplog,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, &ems->s);
@@ -596,7 +596,7 @@ static void write_em_traj(FILE*               fplog,
 
     if (confout != nullptr)
     {
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             /* If bX=true, x was collected to state_global in the call above */
             if (!bX)
@@ -614,7 +614,7 @@ static void write_em_traj(FILE*               fplog,
 
         if (MASTER(cr))
         {
-            if (ir->pbcType != PbcType::No && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+            if (ir->pbcType != PbcType::No && !ir->bPeriodicMols && haveDDAtomOrdering(*cr))
             {
                 /* Make molecules whole only for confout writing */
                 do_pbc_mtop(ir->pbcType, state->s.box, &top_global, state_global->x.rvec_array());
@@ -655,7 +655,7 @@ static bool do_em_step(const t_commrec*                          cr,
     s1 = &ems1->s;
     s2 = &ems2->s;
 
-    if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
+    if (haveDDAtomOrdering(*cr) && s1->ddp_count != cr->dd->ddp_count)
     {
         gmx_incons("state mismatch in do_em_step");
     }
@@ -667,7 +667,7 @@ static bool do_em_step(const t_commrec*                          cr,
         state_change_natoms(s2, s1->natoms);
         ems2->f.resize(s2->natoms);
     }
-    if (DOMAINDECOMP(cr) && s2->cg_gl.size() != s1->cg_gl.size())
+    if (haveDDAtomOrdering(*cr) && s2->cg_gl.size() != s1->cg_gl.size())
     {
         s2->cg_gl.resize(s1->cg_gl.size());
     }
@@ -725,7 +725,7 @@ static bool do_em_step(const t_commrec*                          cr,
             }
         }
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             /* OpenMP does not supported unsigned loop variables */
 #pragma omp for schedule(static) nowait
@@ -736,7 +736,7 @@ static bool do_em_step(const t_commrec*                          cr,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         s2->ddp_count       = s1->ddp_count;
         s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
@@ -967,7 +967,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     // Compute the buffer size of the pair list
     const real bufferSize = inputrec->rlist - std::max(inputrec->rcoulomb, inputrec->rvdw);
 
-    if (bFirst || bufferSize <= 0 || (DOMAINDECOMP(cr) && ems->s.ddp_count != ddpCountPairSearch))
+    if (bFirst || bufferSize <= 0 || (haveDDAtomOrdering(*cr) && ems->s.ddp_count != ddpCountPairSearch))
     {
         /* This is the first state or an old state used before the last ns */
         bNS = TRUE;
@@ -981,7 +981,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
               > bufferSize;
     }
 
-    if (DOMAINDECOMP(cr) && bNS)
+    if (haveDDAtomOrdering(*cr) && bNS)
     {
         /* Repartition the domain decomposition */
         em_dd_partition_system(
@@ -1202,7 +1202,7 @@ static real pr_beta(const t_commrec*  cr,
      * and might have to sum it in parallel runs.
      */
 
-    if (!DOMAINDECOMP(cr)
+    if (!haveDDAtomOrdering(*cr)
         || (s_min->s.ddp_count == cr->dd->ddp_count && s_b->s.ddp_count == cr->dd->ddp_count))
     {
         auto fm = s_min->f.view().force();
@@ -1548,7 +1548,7 @@ void LegacySimulator::do_cg()
         a         = 0.0;
         c         = a + stepsize; /* reference position along line is zero */
 
-        if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count)
+        if (haveDDAtomOrdering(*cr) && s_min->s.ddp_count < cr->dd->ddp_count)
         {
             em_dd_partition_system(fplog,
                                    mdlog,
@@ -1663,7 +1663,7 @@ void LegacySimulator::do_cg()
                     b = 0.5 * (a + c);
                 }
 
-                if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
+                if (haveDDAtomOrdering(*cr) && s_min->s.ddp_count != cr->dd->ddp_count)
                 {
                     /* Reload the old state */
                     em_dd_partition_system(fplog,
@@ -1978,7 +1978,7 @@ void LegacySimulator::do_lbfgs()
                     "be available in a different form in a future version of GROMACS, "
                     "e.g. gmx minimize and an .mdp option.");
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         gmx_fatal(FARGS, "L_BFGS is currently not supported");
     }
@@ -3017,7 +3017,7 @@ void LegacySimulator::do_steep()
             /* If energy is not smaller make the step smaller...  */
             ustep *= 0.5;
 
-            if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count)
+            if (haveDDAtomOrdering(*cr) && s_min->s.ddp_count != cr->dd->ddp_count)
             {
                 /* Reload the old state */
                 em_dd_partition_system(fplog,

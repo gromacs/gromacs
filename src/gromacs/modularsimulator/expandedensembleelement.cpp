@@ -155,7 +155,7 @@ void ExpandedEnsembleElement::restoreCheckpointState(std::optional<ReadCheckpoin
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_distribute_dfhist(cr->dd, dfhist_.get());
     }

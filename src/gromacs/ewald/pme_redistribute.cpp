@@ -497,7 +497,7 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
         atc.pd.resize(xRef.size());
         pme_calc_pidx_wrapper(xRef, pme->recipbox, &atc);
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             dd_pmeredist_pos_coeffs(pme, bFirst, xRef, param_d, &atc);
         }

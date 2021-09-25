@@ -739,7 +739,7 @@ static void finish_run(FILE*                     fplog,
         print_flop(fplog, nrnb_tot, &nbfs, &mflop);
     }
 
-    if (thisRankHasDuty(cr, DUTY_PP) && DOMAINDECOMP(cr))
+    if (thisRankHasDuty(cr, DUTY_PP) && haveDDAtomOrdering(*cr))
     {
         print_dd_statistics(cr, inputrec, fplog);
     }
@@ -1113,7 +1113,7 @@ int Mdrunner::mdrunner()
             globalState = std::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(
-                cr->mpiDefaultCommunicator, DOMAINDECOMP(cr), PAR(cr), globalState.get());
+                cr->mpiDefaultCommunicator, haveDDAtomOrdering(*cr), PAR(cr), globalState.get());
     }
 
     /* A parallel command line option consistency check that we can
@@ -1595,7 +1595,7 @@ int Mdrunner::mdrunner()
     // Enable Peer access between GPUs where available
     // Only for DD, only master PP rank needs to perform setup, and only if thread MPI plus
     // any of the GPU communication features are active.
-    if (DOMAINDECOMP(cr) && MASTER(cr) && thisRankHasDuty(cr, DUTY_PP) && GMX_THREAD_MPI
+    if (haveDDAtomOrdering(*cr) && MASTER(cr) && thisRankHasDuty(cr, DUTY_PP) && GMX_THREAD_MPI
         && (runScheduleWork.simulationWork.useGpuHaloExchange
             || runScheduleWork.simulationWork.useGpuPmePpCommunication))
     {
@@ -1788,7 +1788,7 @@ int Mdrunner::mdrunner()
             }
         }
         // Make the DD reverse topology, now that any vsites that are present are available
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             dd_make_reverse_top(fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking);
         }
@@ -2006,7 +2006,7 @@ int Mdrunner::mdrunner()
                                          mdrunOptions.imdOptions,
                                          startingBehavior);
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             GMX_RELEASE_ASSERT(fr, "fr was NULL while cr->duty was DUTY_PP");
             /* This call is not included in init_domain_decomposition

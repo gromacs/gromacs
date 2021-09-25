@@ -115,7 +115,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     }
     // All ranks wait for the update to finish.
     // tMPI ranks are depending on structures that may have just been updated.
-    if (DOMAINDECOMP(&cr))
+    if (haveDDAtomOrdering(cr))
     {
         // Note: this assumes that all ranks are hitting this line, which is not generally true.
         // I need to find the right subcommunicator. What I really want is a _scoped_ communicator...

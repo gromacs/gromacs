@@ -429,7 +429,7 @@ void NoseHooverChainsData::restoreCheckpointState(std::optional<ReadCheckpointDa
     }
     for (auto& group : noseHooverGroups_)
     {
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             group.broadcastCheckpointValues(cr->dd);
         }

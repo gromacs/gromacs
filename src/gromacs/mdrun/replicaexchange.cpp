@@ -235,7 +235,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
          * is true!
          *
          * Since we are using a dynamical integrator, the only
-         * decomposition is DD, so PAR(cr) and DOMAINDECOMP(cr) are
+         * decomposition is DD, so PAR(cr) and haveDDAtomOrdering(*cr) are
          * synonymous. The only way for cr->nnodes > 1 to be true is
          * if we are using DD. */
     }
@@ -1286,7 +1286,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
      * each simulation know whether they need to participate in
      * collecting the state. Otherwise, they might as well get on with
      * the next thing to do. */
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
 #if GMX_MPI
         MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mygroup);
@@ -1297,7 +1297,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     {
         /* Exchange the states */
         /* Collect the global state on the master node */
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             dd_collect_state(cr->dd, state_local, state);
         }
@@ -1338,7 +1338,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
         }
 
         /* With domain decomposition the global state is distributed later */
-        if (!DOMAINDECOMP(cr))
+        if (!haveDDAtomOrdering(*cr))
         {
             /* Copy the global state to the local state data structure */
             copy_state_serial(state, state_local);

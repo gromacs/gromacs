@@ -303,7 +303,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
     }
 
     double cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
-    if (DOMAINDECOMP(cr) && wcycle)
+    if (haveDDAtomOrdering(*cr) && wcycle)
     {
         dd_cycles_add(cr->dd, static_cast<float>(cycles), ddCyclStep);
     }
@@ -588,7 +588,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
     registerWithInfrastructureAndSignallers(trajectoryElement.get());
 
     // Build domdec helper (free energy element is a client, so keep this after it is built)
-    if (DOMAINDECOMP(legacySimulatorData_->cr))
+    if (haveDDAtomOrdering(*legacySimulatorData_->cr))
     {
         algorithm.domDecHelper_ =
                 domDecHelperBuilder_.build(legacySimulatorData_->mdrunOptions.verbose,

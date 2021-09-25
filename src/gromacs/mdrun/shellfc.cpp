@@ -540,7 +540,7 @@ void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellf
     int           a0, a1;
     gmx_domdec_t* dd = nullptr;
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd = cr->dd;
         a0 = 0;
@@ -833,7 +833,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
     double dt, w_dt;
     int    n, d;
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         n = dd_ac1;
     }
@@ -983,7 +983,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     ArrayRef<t_shell> shells       = shfc->shells;
     const int         nflexcon     = shfc->nflexcon;
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         nat = dd_natoms_vsite(*cr->dd);
         if (nflexcon > 0)
@@ -1019,7 +1019,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     ArrayRef<RVec> x = xPadded.unpaddedArrayRef();
     ArrayRef<RVec> v = vPadded.unpaddedArrayRef();
 
-    if (bDoNS && inputrec->pbcType != PbcType::No && !DOMAINDECOMP(cr))
+    if (bDoNS && inputrec->pbcType != PbcType::No && !haveDDAtomOrdering(*cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all

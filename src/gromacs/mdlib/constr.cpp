@@ -269,7 +269,7 @@ static void write_constr_pdb(const char*          fn,
     const char *  anm, *resnm;
 
     dd = nullptr;
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd = cr->dd;
         dd_get_constraint_range(*dd, &dd_ac0, &dd_ac1);
@@ -479,7 +479,8 @@ bool Constraints::Impl::apply(bool                      bLog,
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir.pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(
+                &pbc, ir.pbcType, haveDDAtomOrdering(*cr) ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -1157,7 +1158,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
         // When there are multiple PP domains and update groups are
         // not in use, the constraints might be split across the
         // domains, needing particular handling.
-        const bool mayHaveSplitConstraints = DOMAINDECOMP(cr) && !useUpdateGroups;
+        const bool mayHaveSplitConstraints = haveDDAtomOrdering(*cr) && !useUpdateGroups;
 
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {

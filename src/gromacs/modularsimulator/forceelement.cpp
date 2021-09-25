@@ -95,7 +95,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                                 globalTopology,
                                 constr ? constr->numFlexibleConstraints() : 0,
                                 inputrec->nstcalcenergy,
-                                DOMAINDECOMP(cr),
+                                haveDDAtomOrdering(*cr),
                                 runScheduleWork->simulationWork.useGpuPme)),
     doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
@@ -137,7 +137,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
 {
     std::fill(lambda_.begin(), lambda_.end(), 0);
 
-    if (doShellFC_ && !DOMAINDECOMP(cr))
+    if (doShellFC_ && !haveDDAtomOrdering(*cr))
     {
         // This was done in mdAlgorithmsSetupAtomData(), but shellfc
         // won't be available outside this element.
@@ -178,7 +178,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     gmx_multisim_t* ms = nullptr;
 
 
-    if (!DOMAINDECOMP(cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
+    if (!haveDDAtomOrdering(*cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
         //       Think about unifying this responsibility, could this be done in one place?

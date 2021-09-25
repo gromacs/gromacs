@@ -229,7 +229,7 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
                 &checkpointData.value());
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
         dd_bcast(cr->dd,

@@ -1099,13 +1099,13 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
 
     for (int iter = 0; iter < lincsd->nIter; iter++)
     {
-        if ((lincsd->bCommIter && DOMAINDECOMP(cr) && cr->dd->constraints))
+        if ((lincsd->bCommIter && haveDDAtomOrdering(*cr) && cr->dd->constraints))
         {
 #pragma omp barrier
 #pragma omp master
             {
                 /* Communicate the corrected non-local coordinates */
-                if (DOMAINDECOMP(cr))
+                if (haveDDAtomOrdering(*cr))
                 {
                     dd_move_x_constraints(cr->dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>(), FALSE);
                 }
@@ -1894,7 +1894,7 @@ void set_lincs(const InteractionDefinitions& idef,
     }
 
     int natoms;
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         if (cr->dd->constraints)
         {
@@ -1928,7 +1928,7 @@ void set_lincs(const InteractionDefinitions& idef,
     li->blnr.resize(numEntries + 1);
     li->bllen.resize(numEntries);
     li->tmpv.resizeWithPadding(numEntries);
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         li->nlocat.resize(numEntries);
     }
@@ -2078,7 +2078,7 @@ void set_lincs(const InteractionDefinitions& idef,
     /* Without DD we order the blbnb matrix to optimize memory access.
      * With DD the overhead of sorting is more than the gain during access.
      */
-    bSortMatrix = !DOMAINDECOMP(cr);
+    bSortMatrix = !haveDDAtomOrdering(*cr);
 
     li->blbnb.resize(li->ncc);
 

@@ -346,7 +346,7 @@ void gmx::LegacySimulator::do_md()
                                  top_global,
                                  constr ? constr->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
-                                 DOMAINDECOMP(cr),
+                                 haveDDAtomOrdering(*cr),
                                  useGpuForPme);
 
     {
@@ -364,7 +364,7 @@ void gmx::LegacySimulator::do_md()
                                ? PinningPolicy::PinnedIfSupported
                                : PinningPolicy::CannotBePinned);
     const t_mdatoms* md = mdAtoms->mdatoms();
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, state);
@@ -420,8 +420,8 @@ void gmx::LegacySimulator::do_md()
     // TODO: the assertions below should be handled by UpdateConstraintsBuilder.
     if (useGpuForUpdate)
     {
-        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr) || ddUsesUpdateGroups(*cr->dd) || constr == nullptr
-                                   || constr->numConstraintsTotal() == 0,
+        GMX_RELEASE_ASSERT(!haveDDAtomOrdering(*cr) || ddUsesUpdateGroups(*cr->dd)
+                                   || constr == nullptr || constr->numConstraintsTotal() == 0,
                            "Constraints in domain decomposition are only supported with update "
                            "groups if using GPU update.\n");
         GMX_RELEASE_ASSERT(ir->eConstrAlg != ConstraintAlgorithm::Shake || constr == nullptr
@@ -971,12 +971,12 @@ void gmx::LegacySimulator::do_md()
                     }
                 }
             }
-            if (DOMAINDECOMP(cr) && bMasterState)
+            if (haveDDAtomOrdering(*cr) && bMasterState)
             {
                 dd_collect_state(cr->dd, state, state_global);
             }
 
-            if (DOMAINDECOMP(cr))
+            if (haveDDAtomOrdering(*cr))
             {
                 /* Repartition the domain decomposition */
                 dd_partition_system(fplog,
@@ -1492,7 +1492,7 @@ void gmx::LegacySimulator::do_md()
         {
             if (useGpuForUpdate)
             {
-                if (bNS && (bFirstStep || DOMAINDECOMP(cr)))
+                if (bNS && (bFirstStep || haveDDAtomOrdering(*cr)))
                 {
                     integrator->set(stateGpu->getCoordinates(),
                                     stateGpu->getVelocities(),
@@ -1919,7 +1919,7 @@ void gmx::LegacySimulator::do_md()
                                              MASTER(cr) && mdrunOptions.verbose,
                                              bRerunMD);
 
-            if (bNeedRepartition && DOMAINDECOMP(cr))
+            if (bNeedRepartition && haveDDAtomOrdering(*cr))
             {
                 dd_collect_state(cr->dd, state, state_global);
             }
@@ -1932,7 +1932,7 @@ void gmx::LegacySimulator::do_md()
             bExchanged = replica_exchange(fplog, cr, ms, repl_ex, state_global, enerd, state, step, t);
         }
 
-        if ((bExchanged || bNeedRepartition) && DOMAINDECOMP(cr))
+        if ((bExchanged || bNeedRepartition) && haveDDAtomOrdering(*cr))
         {
             dd_partition_system(fplog,
                                 mdlog,
@@ -1987,7 +1987,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
-        if (DOMAINDECOMP(cr) && wcycle)
+        if (haveDDAtomOrdering(*cr) && wcycle)
         {
             dd_cycles_add(cr->dd, cycles, ddCyclStep);
         }

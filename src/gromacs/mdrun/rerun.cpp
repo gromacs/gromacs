@@ -319,7 +319,7 @@ void gmx::LegacySimulator::do_rerun()
                                  top_global,
                                  constr ? constr->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
-                                 DOMAINDECOMP(cr),
+                                 haveDDAtomOrdering(*cr),
                                  runScheduleWork->simulationWork.useGpuPme);
 
     {
@@ -330,7 +330,7 @@ void gmx::LegacySimulator::do_rerun()
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         // Local state only becomes valid now.
         dd_init_local_state(*cr->dd, state_global, state);
@@ -565,7 +565,7 @@ void gmx::LegacySimulator::do_rerun()
         if (MASTER(cr))
         {
             const bool constructVsites = ((vsite != nullptr) && mdrunOptions.rerunConstructVsites);
-            if (constructVsites && DOMAINDECOMP(cr))
+            if (constructVsites && haveDDAtomOrdering(*cr))
             {
                 gmx_fatal(FARGS,
                           "Vsite recalculation with -rerun is not implemented with domain "
@@ -577,7 +577,7 @@ void gmx::LegacySimulator::do_rerun()
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             /* Repartition the domain decomposition */
             const bool bMasterState = true;
@@ -867,7 +867,7 @@ void gmx::LegacySimulator::do_rerun()
         }
 
         cycles = wallcycle_stop(wcycle, WallCycleCounter::Step);
-        if (DOMAINDECOMP(cr) && wcycle)
+        if (haveDDAtomOrdering(*cr) && wcycle)
         {
             dd_cycles_add(cr->dd, cycles, ddCyclStep);
         }

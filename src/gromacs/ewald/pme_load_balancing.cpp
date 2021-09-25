@@ -306,7 +306,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
     // only master ranks do timing
-    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMASTER(cr->dd)))
     {
         pme_lb->startTime = gmx_gettime();
     }
@@ -335,7 +335,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->step_rel_stop = PMETunePeriod * ir.nstlist;
 
     /* Delay DD load balancing when GPUs are used */
-    if (pme_lb->bActive && DOMAINDECOMP(cr) && cr->dd->nnodes > 1 && bUseGPU)
+    if (pme_lb->bActive && haveDDAtomOrdering(*cr) && cr->dd->nnodes > 1 && bUseGPU)
     {
         /* Lock DLB=auto to off (does nothing when DLB=yes/no.
          * With GPUs and separate PME nodes, we want to first
@@ -651,7 +651,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     {
         pme_lb->fastest = pme_lb->cur;
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             /* We found a new fastest setting, ensure that with subsequent
              * shorter cut-off's the dynamic load balancing does not make
@@ -726,7 +726,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
             {
                 pme_lb->cur++;
 
-                if (DOMAINDECOMP(cr))
+                if (haveDDAtomOrdering(*cr))
                 {
                     OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter);
                     if (!OK)
@@ -793,7 +793,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         }
     }
 
-    if (DOMAINDECOMP(cr) && pme_lb->stage > 0)
+    if (haveDDAtomOrdering(*cr) && pme_lb->stage > 0)
     {
         OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter);
         if (!OK)
@@ -960,11 +960,11 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
-    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    if (!PAR(cr) || (haveDDAtomOrdering(*cr) && DDMASTER(cr->dd)))
     {
         pme_lb->startupTimeDelayElapsed = (gmx_gettime() - pme_lb->startTime < c_startupTimeDelay);
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd, sizeof(bool), &pme_lb->startupTimeDelayElapsed);
     }
@@ -997,7 +997,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          */
         else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
         {
-            GMX_ASSERT(DOMAINDECOMP(cr), "Domain decomposition should be active here");
+            GMX_ASSERT(haveDDAtomOrdering(*cr), "Domain decomposition should be active here");
             if (DDMASTER(cr->dd))
             {
                 /* If PME rank load is too high, start tuning. If
@@ -1027,7 +1027,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
     {
         pme_lb->bBalance = FALSE;
 
-        if (DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
+        if (haveDDAtomOrdering(*cr) && dd_dlb_is_locked(cr->dd))
         {
             /* Unlock the DLB=auto, DLB is allowed to activate */
             dd_dlb_unlock(cr->dd);
@@ -1048,7 +1048,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
             pme_lb->bActive = FALSE;
         }
 
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             /* Set the cut-off limit to the final selected cut-off,
              * so we don't have artificial DLB limits.
@@ -1096,7 +1096,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
         pme_lb->bActive = FALSE;
     }
 
-    if (!(pme_lb->bActive) && DOMAINDECOMP(cr) && dd_dlb_is_locked(cr->dd))
+    if (!(pme_lb->bActive) && haveDDAtomOrdering(*cr) && dd_dlb_is_locked(cr->dd))
     {
         /* Make sure DLB is allowed when we deactivate PME tuning */
         dd_dlb_unlock(cr->dd);

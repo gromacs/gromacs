@@ -280,12 +280,12 @@ void increaseNstlist(FILE*               fp,
         /* Does rlist fit in the box? */
         bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
         bDD  = true;
-        if (bBox && DOMAINDECOMP(cr))
+        if (bBox && haveDDAtomOrdering(*cr))
         {
             /* Currently (as of July 2020), the code in this if clause is never executed.
              * increaseNstlist(...) is only called from prepare_verlet_scheme, which in turns
-             * gets called by the runner _before_ setting up DD. DOMAINDECOMP(cr) will therefore
-             * always be false here. See #3334.
+             * gets called by the runner _before_ setting up DD. haveDDAtomOrdering(*cr) will
+             * therefore always be false here. See #3334.
              */
             /* Check if rlist fits in the domain decomposition */
             if (inputrec2nboundeddim(ir) < DIM)

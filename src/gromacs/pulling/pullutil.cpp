@@ -542,7 +542,7 @@ void pull_calc_coms(const t_commrec*     cr,
     {
         pull_set_pbcatoms(cr, pull, x, comm->pbcAtomBuffer);
 
-        if (cr != nullptr && DOMAINDECOMP(cr))
+        if (cr != nullptr && haveDDAtomOrdering(*cr))
         {
             /* We can keep these PBC reference coordinates fixed for nstlist
              * steps, since atoms won't jump over PBC.

@@ -1278,11 +1278,11 @@ void andersen_tcoupl(const t_inputrec*                   ir,
                      const std::vector<bool>&            randomize,
                      gmx::ArrayRef<const real>           boltzfac)
 {
-    const int*           gatindex = (DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
-    int                  i;
-    int                  gc = 0;
-    gmx::ThreeFry2x64<0> rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
-    gmx::UniformRealDistribution<real>         uniformDist;
+    const int* gatindex = (haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+    int        i;
+    int        gc = 0;
+    gmx::ThreeFry2x64<0>               rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
+    gmx::UniformRealDistribution<real> uniformDist;
     gmx::TabulatedNormalDistribution<real, 14> normalDist;
 
     /* randomize the velocities of the selected particles */

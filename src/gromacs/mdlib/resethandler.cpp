@@ -193,7 +193,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
 
         wallcycle_stop(wcycle, WallCycleCounter::Run);
         wallcycle_reset_all(wcycle);
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             reset_dd_statistics_counters(cr->dd);
         }

@@ -452,7 +452,7 @@ public:
         {
             doCheckpointData(&checkpointData.value());
         }
-        if (DOMAINDECOMP(cr))
+        if (haveDDAtomOrdering(*cr))
         {
             dd_bcast(cr->dd, xi_.size() * sizeof(real), xi_.data());
             dd_bcast(cr->dd, xiVelocities_.size() * sizeof(real), xiVelocities_.data());
@@ -702,7 +702,7 @@ void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<Re
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (DOMAINDECOMP(cr))
+    if (haveDDAtomOrdering(*cr))
     {
         dd_bcast(cr->dd,
                  ssize(temperatureCouplingIntegral_) * int(sizeof(double)),

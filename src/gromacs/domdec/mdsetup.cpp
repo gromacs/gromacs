@@ -77,7 +77,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
                                VirtualSitesHandler* vsite,
                                gmx_shellfc_t*       shellfc)
 {
-    bool usingDomDec = DOMAINDECOMP(cr);
+    bool usingDomDec = haveDDAtomOrdering(*cr);
 
     int numAtomIndex;
     int numHomeAtoms;

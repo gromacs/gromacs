@@ -2048,7 +2048,7 @@ struct pull_t* init_pull(FILE*                     fplog,
                                  maxNumThreads);
     }
 
-    if (cr != nullptr && DOMAINDECOMP(cr))
+    if (cr != nullptr && haveDDAtomOrdering(*cr))
     {
         /* Set up the global to local atom mapping for PBC atoms */
         for (pull_group_work_t& group : pull->group)
@@ -2398,7 +2398,7 @@ struct pull_t* init_pull(FILE*                     fplog,
      * when we have an external pull potential, since then the external
      * potential provider expects each rank to have the coordinate.
      */
-    comm->bParticipateAll = (cr == nullptr || !DOMAINDECOMP(cr) || cr->dd->nnodes <= 32
+    comm->bParticipateAll = (cr == nullptr || !haveDDAtomOrdering(*cr) || cr->dd->nnodes <= 32
                              || pull->numCoordinatesWithExternalPotential > 0
                              || getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
