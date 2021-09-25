@@ -129,6 +129,8 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         // to call compute_globals twice.
 
         compute(-1, CGLO_GSTAT | CGLO_STOPCM, nullSignaller_.get(), false, true);
+        // Clean up after pre-step use of compute()
+        observablesReducer_->markAsReadyToReduce();
 
         auto v = statePropagatorData_->velocitiesView();
         // At initialization, do not pass x with acceleration-correction mode
@@ -156,6 +158,9 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
     {
         copy_mat(energyData_->ekindata()->tcstat[i].ekinh, energyData_->ekindata()->tcstat[i].ekinh_old);
     }
+
+    // Clean up after pre-step use of compute()
+    observablesReducer_->markAsReadyToReduce();
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
@@ -339,6 +344,32 @@ ComputeGlobalsElement<algorithm>::registerTrajectorySignallerCallback(Trajectory
     return std::nullopt;
 }
 
+namespace
+{
+
+/*! \brief Schedule a function for actions that must happen at the end of each step
+ *
+ * After reduction, an ObservablesReducer is marked as unavailable for
+ * further reduction this step. This needs to be reset in order to be
+ * used on the next step.
+ *
+ * \param[in]  observablesReducer The ObservablesReducer to mark as ready for use
+ */
+SchedulingFunction registerPostStepSchedulingFunction(ObservablesReducer* observablesReducer)
+{
+    SchedulingFunction postStepSchedulingFunction =
+            [observablesReducer](
+                    Step /*step*/, Time /*time*/, const RegisterRunFunction& registerRunFunction) {
+                SimulatorRunFunction completeObservablesReducerStep = [&observablesReducer]() {
+                    observablesReducer->markAsReadyToReduce();
+                };
+                registerRunFunction(completeObservablesReducerStep);
+            };
+    return postStepSchedulingFunction;
+}
+
+} // namespace
+
 //! Explicit template instantiation
 //! \{
 template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>;
@@ -355,7 +386,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
         GlobalCommunicationHelper*              globalCommunicationHelper,
         ObservablesReducer*                     observablesReducer)
 {
-    auto* element = builderHelper->storeElement(
+    ComputeGlobalsElement* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
                     statePropagatorData,
                     energyData,
@@ -373,6 +404,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
                     legacySimulatorData->top_global,
                     legacySimulatorData->constr,
                     observablesReducer));
+    builderHelper->registerPostStepScheduling(
+            registerPostStepSchedulingFunction(element->observablesReducer_));
 
     return element;
 }
@@ -395,11 +428,11 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
 
     if (cachedValue)
     {
-        return std::any_cast<ISimulatorElement*>(cachedValue.value());
+        return std::any_cast<ComputeGlobalsElement*>(cachedValue.value());
     }
     else
     {
-        ISimulatorElement* vvComputeGlobalsElement = builderHelper->storeElement(
+        ComputeGlobalsElement* vvComputeGlobalsElement = builderHelper->storeElement(
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
                         statePropagatorData,
                         energyData,
@@ -418,6 +451,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         simulator->constr,
                         observablesReducer));
         builderHelper->storeBuilderData(key, vvComputeGlobalsElement);
+        builderHelper->registerPostStepScheduling(
+                registerPostStepSchedulingFunction(vvComputeGlobalsElement->observablesReducer_));
         return vvComputeGlobalsElement;
     }
 }

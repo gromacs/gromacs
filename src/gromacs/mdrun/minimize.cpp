@@ -1380,6 +1380,7 @@ void LegacySimulator::do_cg()
      * We do not unshift, so molecules are always whole in congrad.c
      */
     energyEvaluator.run(s_min, mu_tot, vir, pres, -1, TRUE, step);
+    observablesReducer.markAsReadyToReduce();
 
     if (MASTER(cr))
     {
@@ -1573,6 +1574,7 @@ void LegacySimulator::do_cg()
         neval++;
         /* Calculate energy for the trial step */
         energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE, step);
+        observablesReducer.markAsReadyToReduce();
 
         /* Calc derivative along line */
         const rvec*                    pc  = s_c->s.cg_p.rvec_array();
@@ -1688,6 +1690,7 @@ void LegacySimulator::do_cg()
                 neval++;
                 /* Calculate energy for the trial step */
                 energyEvaluator.run(s_b, mu_tot, vir, pres, -1, FALSE, step);
+                observablesReducer.markAsReadyToReduce();
 
                 /* p does not change within a step, but since the domain decomposition
                  * might change, we have to use cg_p of s_b here.
@@ -1880,7 +1883,7 @@ void LegacySimulator::do_cg()
          * If we have reached machine precision, converged is already set to true.
          */
         converged = converged || (s_min->fmax < inputrec->em_tol);
-
+        observablesReducer.markAsReadyToReduce();
     } /* End of the loop */
 
     if (converged)
@@ -2712,7 +2715,7 @@ void LegacySimulator::do_lbfgs()
          * If we have reached machine precision, converged is already set to true.
          */
         converged = converged || (ems.fmax < inputrec->em_tol);
-
+        observablesReducer.markAsReadyToReduce();
     } /* End of the loop */
 
     if (converged)
@@ -3072,6 +3075,7 @@ void LegacySimulator::do_steep()
         }
 
         count++;
+        observablesReducer.markAsReadyToReduce();
     } /* End of the loop  */
 
     /* Print some data...  */

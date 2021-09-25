@@ -73,6 +73,7 @@ TEST(ObservablesReducerTest, CanMoveConstruct)
     ObservablesReducer        observablesReducer(std::move(observablesReducerOriginal));
     EXPECT_TRUE(observablesReducer.communicationBuffer().empty())
             << "no buffer available when no subscribers requested reduction";
+    observablesReducer.markAsReadyToReduce();
 }
 
 TEST(ObservablesReducerTest, CanBuildAndUseWithNoSubscribers)
@@ -86,7 +87,7 @@ TEST(ObservablesReducerTest, CanBuildAndUseWithNoSubscribers)
 
     EXPECT_TRUE(observablesReducer.communicationBuffer().empty())
             << "no buffer available after reductionComplete()";
-    observablesReducer.stepComplete();
+    observablesReducer.markAsReadyToReduce();
 }
 
 TEST(ObservablesReducerTest, CanBuildAndUseWithOneSubscriber)
@@ -138,7 +139,7 @@ TEST(ObservablesReducerTest, CanBuildAndUseWithOneSubscriber)
 
         // Note that there's nothing else to check here, because the
         // empty buffer means that no reduction should take place.
-        observablesReducer.stepComplete();
+        observablesReducer.markAsReadyToReduce();
     }
     {
         SCOPED_TRACE("Test that ReductionRequirement::Soon does trigger behavior");
@@ -161,7 +162,7 @@ TEST(ObservablesReducerTest, CanBuildAndUseWithOneSubscriber)
                 << "reduction step is passed through correctly";
         EXPECT_THAT(bufferView, testing::AllOf(testing::SizeIs(requiredBufferSize), testing::Each(0.0)))
                 << "buffer is zeroed after reduction";
-        observablesReducer.stepComplete();
+        observablesReducer.markAsReadyToReduce();
     }
 }
 
@@ -369,7 +370,7 @@ TEST_P(ObservablesReducerIntegrationTest, CanBuildAndUseSimply)
         rankData.observablesReducer.value().reductionComplete(step);
         EXPECT_TRUE(rankData.observablesReducer.value().communicationBuffer().empty())
                 << "no buffer available after reductionComplete()";
-        rankData.observablesReducer.value().stepComplete();
+        rankData.observablesReducer.value().markAsReadyToReduce();
     }
 }
 
@@ -405,7 +406,7 @@ TEST_P(ObservablesReducerIntegrationTest, CanBuildAndUseOverMultipleSteps)
             rankData.observablesReducer.value().reductionComplete(step);
             EXPECT_TRUE(rankData.observablesReducer.value().communicationBuffer().empty())
                     << "no buffer available after reductionComplete()";
-            rankData.observablesReducer.value().stepComplete();
+            rankData.observablesReducer.value().markAsReadyToReduce();
         }
     }
 }
@@ -460,7 +461,7 @@ TEST_P(ObservablesReducerIntegrationTest, CanBuildAndUseWithoutAllNeedingReducti
         rankData.observablesReducer.value().reductionComplete(step);
         EXPECT_TRUE(rankData.observablesReducer.value().communicationBuffer().empty())
                 << "no buffer available after reductionComplete()";
-        rankData.observablesReducer.value().stepComplete();
+        rankData.observablesReducer.value().markAsReadyToReduce();
     }
 }
 
@@ -522,7 +523,7 @@ TEST_P(ObservablesReducerIntegrationTest, CanBuildAndUseWhenASubscriberUsesEvent
         rankData.observablesReducer.value().reductionComplete(step);
         EXPECT_TRUE(rankData.observablesReducer.value().communicationBuffer().empty())
                 << "no buffer available after reductionComplete()";
-        rankData.observablesReducer.value().stepComplete();
+        rankData.observablesReducer.value().markAsReadyToReduce();
     }
 }
 

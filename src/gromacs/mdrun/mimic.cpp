@@ -364,6 +364,8 @@ void gmx::LegacySimulator::do_mimic()
                         cglo_flags,
                         step,
                         &observablesReducer);
+        // Clean up after pre-step use of compute_globals()
+        observablesReducer.markAsReadyToReduce();
     }
 
     if (MASTER(cr))
@@ -750,6 +752,7 @@ void gmx::LegacySimulator::do_mimic()
         /* increase the MD step number */
         step++;
         step_rel++;
+        observablesReducer.markAsReadyToReduce();
     }
     /* End of main MD loop */
 

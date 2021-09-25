@@ -668,6 +668,9 @@ void gmx::LegacySimulator::do_md()
                         cglo_flags_iteration,
                         step,
                         &observablesReducer);
+        // Clean up after pre-step use of compute_globals()
+        observablesReducer.markAsReadyToReduce();
+
         if (cglo_flags_iteration & CGLO_STOPCM)
         {
             /* At initialization, do not pass x with acceleration-correction mode
@@ -712,6 +715,8 @@ void gmx::LegacySimulator::do_md()
                         cglo_flags & ~CGLO_PRESSURE,
                         step,
                         &observablesReducer);
+        // Clean up after pre-step use of compute_globals()
+        observablesReducer.markAsReadyToReduce();
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -1990,6 +1995,7 @@ void gmx::LegacySimulator::do_md()
         /* increase the MD step number */
         step++;
         step_rel++;
+        observablesReducer.markAsReadyToReduce();
 
 #if GMX_FAHCORE
         if (MASTER(cr))

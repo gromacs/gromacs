@@ -148,6 +148,9 @@ moduleB =>> observablesReducer [label="returns"];
 observablesReducer =>> observablesReducer [label="zeroes reduction buffer"];
 observablesReducer =>> compute_globals [label="returns"];
 
+runner =>> observablesReducer [label="notifies at end of step"];
+
+
 \endmsc
  *
  * Three callbacks are produced and called per participating module:
@@ -440,7 +443,8 @@ public:
      * problematic output after reduction.
      */
     void reductionComplete(Step step);
-    /*! \brief Notify the ObservablesReducer that this MD step is complete
+    /*! \brief Notify the ObservablesReducer that it should make
+     * ready to receive new values to reduce
      *
      * Any runner using the ObservablesReducer must call this method
      * whenever a step completes, so that subscribed modules can use
@@ -452,8 +456,12 @@ public:
      * reduction it can notify them of that status. This permits them
      * to check their own requirements, e.g. that
      * ReductionRequirement::Soon will operate this step or next
-     * step. */
-    void stepComplete();
+     * step.
+     *
+     * For the same reason, it is also necessary to call this method
+     * at a suitable point after uses of an ObservablesReducer before
+     * the regular steps of a runner. */
+    void markAsReadyToReduce();
     //! The builder needs to be able to make the Impl object
     friend class ObservablesReducerBuilder;
 };

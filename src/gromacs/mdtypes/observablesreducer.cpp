@@ -152,7 +152,7 @@ void ObservablesReducer::reductionComplete(Step step)
     impl_->reduceSoon_ = false;
 }
 
-void ObservablesReducer::stepComplete()
+void ObservablesReducer::markAsReadyToReduce()
 {
     impl_->status_ = ObservablesReducerStatus::ReadyToReduce;
 }

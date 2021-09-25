@@ -413,6 +413,8 @@ void gmx::LegacySimulator::do_rerun()
                         cglo_flags,
                         step,
                         &observablesReducer);
+        // Clean up after pre-step use of compute_globals()
+        observablesReducer.markAsReadyToReduce();
     }
 
     if (MASTER(cr))
@@ -760,6 +762,8 @@ void gmx::LegacySimulator::do_rerun()
                             cglo_flags,
                             step,
                             &observablesReducer);
+            // Clean up after pre-step use of compute_globals()
+            observablesReducer.markAsReadyToReduce();
         }
 
         /* Note: this is OK, but there are some numerical precision issues with using the convergence of
@@ -874,6 +878,7 @@ void gmx::LegacySimulator::do_rerun()
             step++;
             step_rel++;
         }
+        observablesReducer.markAsReadyToReduce();
     }
     /* End of main MD loop */
 
