@@ -414,7 +414,7 @@ static real free_energy_evaluate_single(real                                    
                 fscal_vdw[i] = -quadrFac + linearFac;
                 fscal_vdw[i] *= rpinv;
 
-                vvdw[i] = 0.5 * quadrFac - linearFac + constFac;
+                vvdw[i] = 0.5_real * quadrFac - linearFac + constFac;
 
                 dvdl_vdw[i] += DLF[i] * 28 * (LFV[i] / (one - LFV[i]))
                                * ((6.5_real * rInv14 - rInv8) - (13 * rInv13 - 2 * rInv7)

@@ -63,7 +63,7 @@ static inline void quadraticApproximationCoulomb(const RealType qq,
 
     *potential = quadrFac - 3 * (linFac - constFac);
 
-    RealType lambdaFacRevInv = gmx::maskzInv(1.0 - lambdaFac, dvdlMask);
+    RealType lambdaFacRevInv = gmx::maskzInv(1 - lambdaFac, dvdlMask);
     *dvdl = dLambdaFac * 0.5_real * (lambdaFac * lambdaFacRevInv) * (quadrFac - 2 * linFac + constFac);
 }
 
@@ -247,7 +247,7 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
             RealType forceQuad     = -quadrFac + linearFac;
             RealType potentialQuad = c_half * quadrFac - linearFac + constFac;
             RealType dvdlQuad      = dLambdaFac * 28 * (lambdaFac * lambdaFacRevInv)
-                                * ((6.5_real * rInv14C - rInv8C) - (13 * rInv13C - 2. * rInv7C)
+                                * ((6.5_real * rInv14C - rInv8C) - (13 * rInv13C - 2 * rInv7C)
                                    + (6.5_real * rInv12C - rInv6C));
 
             potentialQuad = potentialQuad
