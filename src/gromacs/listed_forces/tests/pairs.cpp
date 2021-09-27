@@ -163,13 +163,16 @@ class ForcerecHelper
 public:
     ForcerecHelper()
     {
-        fepVals_.sc_alpha         = 0.3;
-        fepVals_.sc_power         = 1;
-        fepVals_.sc_r_power       = 6.0;
-        fepVals_.sc_sigma         = 0.3;
-        fepVals_.sc_sigma_min     = 0.3;
-        fepVals_.bScCoul          = true;
-        fepVals_.softcoreFunction = SoftcoreType::Beutler;
+        fepVals_.sc_alpha                = 0.3;
+        fepVals_.sc_power                = 1;
+        fepVals_.sc_r_power              = 6.0;
+        fepVals_.sc_sigma                = 0.3;
+        fepVals_.sc_sigma_min            = 0.3;
+        fepVals_.bScCoul                 = true;
+        fepVals_.scScaleLinpointLJGapsys = 0.3;
+        fepVals_.scScaleLinpointQGapsys  = 0.3;
+        fepVals_.scSigmaLJGapsys         = 0.3;
+        fepVals_.softcoreFunction        = SoftcoreType::Beutler;
 
         fr_.ic = std::make_unique<interaction_const_t>();
         // set data in ic
