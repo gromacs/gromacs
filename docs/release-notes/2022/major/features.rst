@@ -34,3 +34,10 @@ Replica-exchange molecular dynamics simulations with GPU update
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Replica-exchange molecular dynamics now works with GPU update.
+
+A new formulation of soft-core interactions for free energy calculations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With this addition Gromacs allows to choose from two schemes to soften
+non-bonded interactions during alchemical perturbations:
+`beutler` and `gapsys` soft-core functions.
