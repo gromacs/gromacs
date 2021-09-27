@@ -987,7 +987,7 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
     flags.useGpuPmeFReduction    = flags.computeSlowForces && flags.useGpuFBufferOps
                                 && (rankHasGpuPmeTask || simulationWork.useGpuPmePpCommunication);
-    flags.useGpuXHalo          = simulationWork.useGpuHaloExchange;
+    flags.useGpuXHalo          = simulationWork.useGpuHaloExchange && !flags.doNeighborSearch;
     flags.useGpuFHalo          = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
     flags.haveGpuPmeOnThisRank = rankHasGpuPmeTask && flags.computeSlowForces;
     flags.combineMtsForcesBeforeHaloExchange =
