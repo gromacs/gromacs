@@ -53,7 +53,6 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
-class Constraints;
 class ObservablesReducer;
 } // namespace gmx
 
@@ -71,7 +70,6 @@ void global_stat(const gmx_global_stat&   gs,
                  tensor                   svir,
                  const t_inputrec&        inputrec,
                  gmx_ekindata_t*          ekind,
-                 gmx::ArrayRef<real>      constraintsRmsdData,
                  t_vcm*                   vcm,
                  gmx::ArrayRef<real>      sig,
                  bool                     bSumEkinhOld,

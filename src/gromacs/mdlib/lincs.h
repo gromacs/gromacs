@@ -69,7 +69,7 @@ enum class ConstraintVariable : int;
 class Lincs;
 template<typename>
 class ListOfLists;
-
+class ObservablesReducerBuilder;
 
 /*! \brief Return the data for determining constraint RMS relative deviations. */
 ArrayRef<real> lincs_rmsdData(Lincs* lincsd);
@@ -84,7 +84,8 @@ Lincs* init_lincs(FILE*                            fplog,
                   ArrayRef<const ListOfLists<int>> atomsToConstraintsPerMolType,
                   bool                             bPLINCS,
                   int                              nIter,
-                  int                              nProjOrder);
+                  int                              nProjOrder,
+                  ObservablesReducerBuilder*       observablesReducerBuilder);
 
 /*! \brief Destructs the lincs object when it is not nullptr. */
 void done_lincs(Lincs* li);

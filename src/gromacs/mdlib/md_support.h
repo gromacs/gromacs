@@ -60,7 +60,6 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
-class Constraints;
 class MDLogger;
 class ObservablesReducer;
 class SimulationSignaller;
@@ -128,7 +127,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      tensor                         shake_vir,
                      tensor                         total_vir,
                      tensor                         pres,
-                     gmx::ArrayRef<real>            constraintsRmsdData,
                      gmx::SimulationSignaller*      signalCoordinator,
                      const matrix                   lastbox,
                      gmx_bool*                      bSumEkinhOld,

@@ -138,7 +138,8 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
                         at2con_mt,
                         false,
                         testData->ir_.nLincsIter,
-                        testData->ir_.nProjOrder);
+                        testData->ir_.nProjOrder,
+                        nullptr);
     set_lincs(*testData->idef_,
               testData->numAtoms_,
               testData->invmass_,

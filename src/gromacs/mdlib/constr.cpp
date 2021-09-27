@@ -99,18 +99,19 @@ namespace gmx
 class Constraints::Impl
 {
 public:
-    Impl(const gmx_mtop_t&     mtop_p,
-         const t_inputrec&     ir_p,
-         pull_t*               pull_work,
-         FILE*                 log_p,
-         const t_commrec*      cr_p,
-         bool                  useUpdateGroups,
-         const gmx_multisim_t* ms,
-         t_nrnb*               nrnb,
-         gmx_wallcycle*        wcycle_p,
-         bool                  pbcHandlingRequired,
-         int                   numConstraints,
-         int                   numSettles);
+    Impl(const gmx_mtop_t&          mtop_p,
+         const t_inputrec&          ir_p,
+         pull_t*                    pull_work,
+         FILE*                      log_p,
+         const t_commrec*           cr_p,
+         bool                       useUpdateGroups,
+         const gmx_multisim_t*      ms,
+         t_nrnb*                    nrnb,
+         gmx_wallcycle*             wcycle_p,
+         bool                       pbcHandlingRequired,
+         ObservablesReducerBuilder* observablesReducerBuilder,
+         int                        numConstraints,
+         int                        numSettles);
     ~Impl();
     void setConstraints(gmx_localtop_t*                     top,
                         int                                 numAtoms,
@@ -819,18 +820,6 @@ bool Constraints::Impl::apply(bool                      bLog,
     return bOK;
 } // namespace gmx
 
-ArrayRef<real> Constraints::rmsdData() const
-{
-    if (impl_->lincsd)
-    {
-        return lincs_rmsdData(impl_->lincsd);
-    }
-    else
-    {
-        return {};
-    }
-}
-
 real Constraints::rmsd() const
 {
     if (impl_->lincsd)
@@ -1077,34 +1066,36 @@ static std::vector<ListOfLists<int>> makeAtomToConstraintMappings(const gmx_mtop
     return mapping;
 }
 
-Constraints::Constraints(const gmx_mtop_t&     mtop,
-                         const t_inputrec&     ir,
-                         pull_t*               pull_work,
-                         FILE*                 log,
-                         const t_commrec*      cr,
-                         const bool            useUpdateGroups,
-                         const gmx_multisim_t* ms,
-                         t_nrnb*               nrnb,
-                         gmx_wallcycle*        wcycle,
-                         bool                  pbcHandlingRequired,
-                         int                   numConstraints,
-                         int                   numSettles) :
-    impl_(new Impl(mtop, ir, pull_work, log, cr, useUpdateGroups, ms, nrnb, wcycle, pbcHandlingRequired, numConstraints, numSettles))
+Constraints::Constraints(const gmx_mtop_t&          mtop,
+                         const t_inputrec&          ir,
+                         pull_t*                    pull_work,
+                         FILE*                      log,
+                         const t_commrec*           cr,
+                         const bool                 useUpdateGroups,
+                         const gmx_multisim_t*      ms,
+                         t_nrnb*                    nrnb,
+                         gmx_wallcycle*             wcycle,
+                         bool                       pbcHandlingRequired,
+                         ObservablesReducerBuilder* observablesReducerBuilder,
+                         int                        numConstraints,
+                         int                        numSettles) :
+    impl_(new Impl(mtop, ir, pull_work, log, cr, useUpdateGroups, ms, nrnb, wcycle, pbcHandlingRequired, observablesReducerBuilder, numConstraints, numSettles))
 {
 }
 
-Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
-                        const t_inputrec&     ir_p,
-                        pull_t*               pull_work,
-                        FILE*                 log_p,
-                        const t_commrec*      cr_p,
-                        const bool            useUpdateGroups,
-                        const gmx_multisim_t* ms_p,
-                        t_nrnb*               nrnb_p,
-                        gmx_wallcycle*        wcycle_p,
-                        bool                  pbcHandlingRequired,
-                        int                   numConstraints,
-                        int                   numSettles) :
+Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
+                        const t_inputrec&          ir_p,
+                        pull_t*                    pull_work,
+                        FILE*                      log_p,
+                        const t_commrec*           cr_p,
+                        const bool                 useUpdateGroups,
+                        const gmx_multisim_t*      ms_p,
+                        t_nrnb*                    nrnb_p,
+                        gmx_wallcycle*             wcycle_p,
+                        bool                       pbcHandlingRequired,
+                        ObservablesReducerBuilder* observablesReducerBuilder,
+                        int                        numConstraints,
+                        int                        numSettles) :
     ncon_tot(numConstraints),
     mtop(mtop_p),
     pbcHandlingRequired_(pbcHandlingRequired),
@@ -1163,7 +1154,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             lincsd = init_lincs(
-                    log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder);
+                    log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder, observablesReducerBuilder);
         }
 
         if (ir.eConstrAlg == ConstraintAlgorithm::Shake)

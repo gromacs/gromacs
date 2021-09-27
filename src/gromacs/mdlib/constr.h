@@ -76,6 +76,7 @@ template<typename T>
 class ArrayRefWithPadding;
 template<typename>
 class ListOfLists;
+class ObservablesReducerBuilder;
 
 //! Describes supported flavours of constrained updates.
 enum class ConstraintVariable : int
@@ -101,18 +102,19 @@ private:
      *
      * Private to enforce use of makeConstraints() factory
      * function. */
-    Constraints(const gmx_mtop_t&     mtop,
-                const t_inputrec&     ir,
-                pull_t*               pull_work,
-                FILE*                 log,
-                const t_commrec*      cr,
-                bool                  useUpdateGroups,
-                const gmx_multisim_t* ms,
-                t_nrnb*               nrnb,
-                gmx_wallcycle*        wcycle,
-                bool                  pbcHandlingRequired,
-                int                   numConstraints,
-                int                   numSettles);
+    Constraints(const gmx_mtop_t&          mtop,
+                const t_inputrec&          ir,
+                pull_t*                    pull_work,
+                FILE*                      log,
+                const t_commrec*           cr,
+                bool                       useUpdateGroups,
+                const gmx_multisim_t*      ms,
+                t_nrnb*                    nrnb,
+                gmx_wallcycle*             wcycle,
+                bool                       pbcHandlingRequired,
+                ObservablesReducerBuilder* observablesReducerBuilder,
+                int                        numConstraints,
+                int                        numSettles);
 
 public:
     /*! \brief This member type helps implement a factory
@@ -197,10 +199,6 @@ public:
     //! Getter for use by domain decomposition.
     ArrayRef<const std::vector<int>> atom2settle_moltype() const;
 
-    /*! \brief Return the data for reduction for determining
-     * constraint RMS relative deviations, or an empty ArrayRef
-     * when not supported for any active constraints. */
-    ArrayRef<real> rmsdData() const;
     /*! \brief Return the RMSD of the constraints when available. */
     real rmsd() const;
 

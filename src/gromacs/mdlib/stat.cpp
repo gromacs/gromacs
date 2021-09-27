@@ -148,7 +148,6 @@ void global_stat(const gmx_global_stat&   gs,
                  tensor                   svir,
                  const t_inputrec&        inputrec,
                  gmx_ekindata_t*          ekind,
-                 gmx::ArrayRef<real>      constraintsRmsdData,
                  t_vcm*                   vcm,
                  gmx::ArrayRef<real>      sig,
                  bool                     bSumEkinhOld,
@@ -157,7 +156,7 @@ void global_stat(const gmx_global_stat&   gs,
                  gmx::ObservablesReducer* observablesReducer)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
-    int ie = 0, ifv = 0, isv = 0, irmsd = 0;
+    int ie = 0, ifv = 0, isv = 0;
     int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0;
     int isig = -1;
     int icj = -1, ici = -1, icx = -1;
@@ -244,10 +243,6 @@ void global_stat(const gmx_global_stat&   gs,
     if (bEner)
     {
         ie = add_binr(rb, nener, copyenerd.data());
-        if (!constraintsRmsdData.empty())
-        {
-            irmsd = add_binr(rb, 2, constraintsRmsdData.data());
-        }
         for (auto key : gmx::keysOf(inn))
         {
             inn[key] = add_binr(rb, enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[key].data());
@@ -338,10 +333,6 @@ void global_stat(const gmx_global_stat&   gs,
     if (bEner)
     {
         extract_binr(rb, ie, nener, copyenerd.data());
-        if (!constraintsRmsdData.empty())
-        {
-            extract_binr(rb, irmsd, constraintsRmsdData);
-        }
         for (auto key : gmx::keysOf(inn))
         {
             extract_binr(rb, inn[key], enerd->grpp.nener, enerd->grpp.energyGroupPairTerms[key].data());

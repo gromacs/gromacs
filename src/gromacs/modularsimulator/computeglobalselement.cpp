@@ -304,8 +304,6 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     energyData_->constraintVirial(step),
                     energyData_->totalVirial(step),
                     energyData_->pressure(step),
-                    (((flags & CGLO_ENERGY) != 0) && constr_ != nullptr) ? constr_->rmsdData()
-                                                                         : gmx::ArrayRef<real>{},
                     signaller,
                     lastbox,
                     energyData_->needToSumEkinhOld(),
