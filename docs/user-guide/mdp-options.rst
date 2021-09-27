@@ -1519,6 +1519,7 @@ Walls
 COM pulling
 ^^^^^^^^^^^
 
+Sets whether pulling on collective variables is active.
 Note that where pulling coordinates are applicable, there can be more
 than one (set with :mdp:`pull-ncoords`) and multiple related :ref:`mdp`
 variables will exist accordingly. Documentation references to things

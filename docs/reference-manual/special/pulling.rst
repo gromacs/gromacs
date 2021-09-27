@@ -19,14 +19,16 @@ canonical ensemble of the initial state A and :math:`\beta=1/k_B T`.
 
 .. _pull:
 
-The pull code
--------------
+Collective variables: the pull code
+-----------------------------------
 
-:ref:`pull` The pull code applies forces or constraints between the
-centers of mass of one or more pairs of groups of atoms. Each pull
-reaction coordinate is called a “coordinate” and it operates on usually
-two, but sometimes more, pull groups. A pull group can be part of one or
-more pull coordinates. Furthermore, a coordinate can also operate on a
+The pull code applies forces or constraints on
+collective variables (sometimes referred to as reaction coordinates). The basic collective pull coordinates are
+a distance, angle and dihedral angle between centers of mass of groups
+atoms, the so-called "pull groups". More complex collective variables
+can be defined using :ref:`transformationcoord`.
+A pull group can be part of one or more pull coordinates.
+Furthermore, a coordinate can also operate on a
 single group and an absolute reference position in space. The distance
 between a pair of groups can be determined in 1, 2 or 3 dimensions, or
 can be along a user-defined vector. The reference distance can be
@@ -243,15 +245,16 @@ vector from group 1 to 5, and the third vector is the COM distance
 vector from group 5 to 9. The dihedral angle takes values in the
 interval (-180, 180] deg and has periodic boundaries.
 
+.. _transformationcoord:
+
 The transformation pull coordinate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The transformation pull coordinate is a "meta" pull coordinate type that
-can transform one or more other pull coordinates using an arbitrary
+The transformation pull coordinate is a "meta" pull coordinate that can
+be used to define more complex collective variables.
+It can transform one or more other pull coordinates using an arbitrary
 mathematical expression. This is a powerful tool for generating
-complex reaction coordinates like a contact coordinate
-using a non-linear transformation of a distance, a sum of contacts or
-arbitrary (non-)linear combinations of two or more pull coordinates.
+complex collective variables.
 A simple example is a contact coordinate using a non-linear transformation
 of a distance. More complex examples are a (non-)linear combination of
 two or more pull coordinates or a sum of contacts.
@@ -260,7 +263,7 @@ Typically, the force constant for pull coordinate(s) the transformation
 coordinates acts on should be zero. This avoids
 unintended addition of direct forces on the pull coordinate(s)
 to the indirect forces from the transition pull coordinate. This is not
-a requirement, but have both a direct and indirect, from the tranformation
+a requirement, but having both a direct and indirect, from the tranformation
 coordinate, force working on them is almost never desirable.
 If the transformation is a linear combination of multiple distances,
 it is useful to normalize the coefficients
