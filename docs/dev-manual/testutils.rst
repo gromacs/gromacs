@@ -18,7 +18,7 @@ make sense to test that individual file in isolation.  Focus of the tests is on
 functionality exposed outside the module.  Some of the tests, in particular for
 higher-level modules, are more like integration tests, and test the
 functionality of multiple modules.
-Shared code used to implement the tests is in ``src/external/gmock-1.7.0/`` and
+Shared code used to implement the tests is in ``src/external/googletest/`` and
 ``src/testutils/`` (see below).
 
 The tests are built if ``BUILD_TESTING=ON`` (the default) and
@@ -57,9 +57,9 @@ The tests can be executed in a few different ways:
 
 When executed using CTest, the tests produce XML output in
 ``Testing/Temporary/``, containing the result of each test as well as failure
-messages.  This XML is used by Jenkins for reporting the test status for
+messages.  This XML is used by GitLab CI for reporting the test status for
 individual tests.  Note that if a test crashes or fails because of an assert or
-a gmx_fatal() call, no XML is produced for the binary, and Jenkins does not
+a gmx_fatal() call, no XML is produced for the binary, and CI does not
 report anything for the test binary.  The actual error is only visible in the
 console output.
 
@@ -72,7 +72,7 @@ line options provided by the test binaries are implemented by Google Test.  See
 the `Google Test Primer`_ for an introduction.
 Some tests also use `Google Mock`_, which provides a framework for creating
 mock implementations of C++ classes.  Both components are included in the
-source tree under ``src/external/gmock-1.7.0/``, and are compiled as part of the
+source tree under ``src/external/googletest/``, and are compiled as part of the
 unit test build.
 
 ``src/testutils/`` contains |Gromacs|-specific shared test code.  This includes
@@ -163,8 +163,9 @@ Here are some things to keep in mind when working with the unit tests:
   should take seconds instead of minutes to run, so that no one needs to
   hesitate before running the tests after they have done some changes.
   Long-running tests should go somewhere else than in the unit test set.
-  Note that Jenkins runs many of the tests under Valgrind, so heavy tests are
-  going to slow down also that part of the verification.
+  Note that CI will run the tests in several build configuration and
+  slow tests will significantly slow down the pipelines and can even cause
+  them to timeout.
 - Try to produce useful messages when a test assertion fails.  The assertion
   message should tell what went wrong, with no need to run the *test itself*
   under a debugger (e.g., if the assertion is within a loop, and the loop

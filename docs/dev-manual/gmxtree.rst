@@ -35,8 +35,8 @@ This representation is then used for various purposes:
 The checks are run as part of a single ``check-source`` target, but are described
 in separate sections below.  In addition to printing the issues to ``stderr``,
 the script also writes them into ``docs/doxygen/check-source.log`` for later
-inspection.  Jenkins runs the checks as part of the Documentation job, and the
-build is marked unstable if any issues are found.
+inspection.  CI runs the checks as part of all pipelines and CI will fail
+if any issues are found.
 
 For correct functionality, the scripts depend on correct usage of Doxygen
 annotations described in :doc:`doxygen`, in particular the visibility and

@@ -297,8 +297,7 @@ variable.  For example, ::
 
     NO_FORMAT_CHECK=1 git commit -a
 
-You can also run ``git commit --no-verify``, but that also disables other hooks,
-such as the Change-Id ``commit-msg`` hook used by Gerrit.
+You can also run ``git commit --no-verify``, but that also disables other hooks.
 
 Note that when you run ``git commit --amend``, the hook is only run for the
 changes that are getting amended, not for the whole commit.  During a rebase,

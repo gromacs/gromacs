@@ -32,8 +32,7 @@ See `gmx-codeformatting` for help meeting and testing the style guidelines.
 Setting up login credentials with gitlab
 ----------------------------------------
 
-You will need a public ssh key. If you were using Gerrit, you probably 
-already have one and you can ignore the first line::
+You will need a public ssh key::
 
     ssh-keygen -t rsa -C "your.email@address.com"
     cat ~/.ssh/id_rsa.pub
@@ -199,66 +198,6 @@ See :issue:`4126` for background discussion.
 - `Status::Stale <https://gitlab.com/gromacs/gromacs/-/labels?subscribed=&search=status%3A%3AStale>`__: No activity for over six months.
 
 .. seealso:: :ref:`issue workflow` for use of Status labels in Issue management.
-
-Moving code from gerrit to gitlab
-=================================
-
-Create a local repository that is connected to both Gerrit and Gitlab::
-
-    git clone git@gitlab.com:gromacs/gromacs.git -o gitlab gromacs-migrate
-    cd gromacs-migrate/
-    git remote add gerrit ssh://<gerrit-username>@gerrit.gromacs.org/gromacs.git
-    git fetch --all
- 
-Checkout the current gitlab master::
-
-    git checkout gitlab/master
-
-Go to your commit on https://gerrit.gromacs.org/ , select Download->Cherry-Pick
-
-``git fetch "https://gerrit.gromacs.org/gromacs" refs/changes/XX/YYYY/ZZ && git cherry-pick FETCH_HEAD``
-
-Resolve conflicts, if any. If you need to do further changes to your patch, 
-feel free to ammend them at this point. Remove the Gerrit commit-id line from
-the bottom of the commit message, but keep the issue (ex. redmine) references - 
-they match the gitlab issues. 
-
-Do not forget to run clang-format script (``admin/clang-format.sh update -f --rev=HEAD^``)
-and copyright script (``admin/copyright.sh update -f --rev=HEAD^``). 
-
-When ready, move the patch to a new branch::
-
-    git branch <branch-name>
-
-Make sure to select a unique branch name that it is easy for you to connect to
-a specific patch. You will need it later to make changes to your merge request. 
-Keep in mind that your branch name is going to be exposed to everyone while 
-your patch is under review. Push the branch to GitLab::
-
-    git push gitlab <branch-name>
-
-Go to https://gitlab.com/gromacs/gromacs and create a merge request.
-Copy-paste your commit message from Gerrit into the merge request description 
-text box, use the first line as a title. If your branch has only one commit,
-this will be done automatically. Add "From: https://gerrit.gromacs.org/#/c/gromacs/+/XXXXX/"
-to the end of your commit message.
-Select "Delete source branch when merge request is accepted." check-box.
-Select "Squash commits when merge request is accepted" check-box.
-Check and that squash commit message is correct. If necessary, update it.
-
-If your change in Gerrit depends on another Gerrit change:
-
-Make sure that you transfer the parent change to GitLab first.
-When transferring the child change, specify the parent in the "Merge request dependencies" text field.
-In GitLab menu, go to Repository -> Compare. Select the branch that correspond 
-to the child change as a Source in the drop-down menu, choose parent change as
-the Target. Click Compare button and copy the link from the browser address bar.
-Add "Compare to the parent: https://gitlab.com/gromacs/gromacs/-/compare/PARENT_BRANCH...CHILD_BRANCH"
-to the description of the merge request. You will have to keep this dependency
-up to date for the link to work properly. For example, if you update the parent,
-you will need to merge its branch to the child branch right away.
-Otherwise your recent updates will show up in comparison.
-
 
 More git tips
 =============

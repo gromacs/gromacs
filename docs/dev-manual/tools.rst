@@ -67,7 +67,7 @@ packaging for distribution (CPack)
 
 unit testing (CTest)
   |Gromacs| uses a unit testing framework based on Google C++ Testing
-  Framework (gtest) and CTest.  All unit tests are automatically run on Jenkins
+  Framework (gtest) and CTest.  All unit tests are automatically run in GitLab CI
   for each commit.
   Details can be found on a separate page on :doc:`testutils`.
 

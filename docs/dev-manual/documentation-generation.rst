@@ -89,9 +89,9 @@ Doxygen issue checker
   This is most easily invoked through a ``check-source`` target in the build system.
   The script also checks that documentation for a header matches its use in the
   source code (e.g., that a header documented as internal to a module is not
-  actually used from outside the module).  These checks are run in Jenkins as
-  part of the Documentation job.  Details for the custom checker are on a
-  separate page (common for several checkers): :doc:`gmxtree`.
+  actually used from outside the module).  These checks are run in CI.
+  Details for the custom checker are on a separate page (common for several
+  checkers): :doc:`gmxtree`.
 
 module dependency graphs
   |Gromacs| uses a custom Python script to generate an annotated dependency

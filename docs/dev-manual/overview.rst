@@ -172,8 +172,7 @@ defined in ``config.h`` or requiring other headers to be included before it.
 Not installed headers are allowed to include ``config.h``. Cyclic include dependencies
 prevent this, and must be avoided because of this. This is best guaranteed
 by including every header in some source file as the first header,
-even before ``config.h``. This is partly enforced by :doc:`gmxtree`,
-which is run by Jenkins and votes accordingly in Gerrit.
+even before ``config.h``.
 
 Code inside the library should not unnecessarily include headers. In
 particular, headers should not include other headers if a forward

@@ -142,7 +142,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
         if (minimizer == "l-bfgs" && getNumberOfTestMpiRanks() > 1)
         {
             // Ideally we would use this death test, but it is not
-            // stable enough in Jenkins, so we just skip it.
+            // stable enough in CI, so we just skip it.
             // EXPECT_DEATH_IF_SUPPORTED(runner_.callMdrun(mdrunCaller),
             //                          "L-BFGS minimization only supports a single rank");
             return;

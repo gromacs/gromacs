@@ -787,7 +787,7 @@ if (HTML_BUILD_IS_POSSIBLE)
     # to).
 
     # Add a top-level target that builds everything related to the webpage,
-    # for Jenkins (and possibly others) to use
+    # for CI (and possibly others) to use
     add_custom_target(webpage ${_webpage_target_properties}
         COMMENT "Building webpage"
         VERBATIM)

@@ -1,4 +1,3 @@
 # Only recent versions of git support pattern matching rules that would allow
 # the first to be conveniently specified in the main .gitattributes file.
 *                               -filter -gmx-doxygen
-gmock-1.7.0/CMakeLists.txt      filter=copyright
