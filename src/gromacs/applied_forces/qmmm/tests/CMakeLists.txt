@@ -38,6 +38,7 @@ gmx_add_unit_test(QMMMAppliedForcesUnitTest qmmm_applied_forces-test
         qmmmtopologypreprocessor.cpp
         qmmmoptions.cpp
         qmmmforceprovider.cpp
+        qmmm.cpp
         )
 
 # For QMMMForceProvider test we need to define wether libcp2k linked

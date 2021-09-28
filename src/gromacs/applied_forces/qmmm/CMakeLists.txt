@@ -36,6 +36,7 @@ gmx_add_libgromacs_sources(
     qmmminputgenerator.cpp
     qmmmtopologypreprocessor.cpp
     qmmmoptions.cpp
+    qmmm.cpp
     )
 
 # If we have libcp2k linked then compile qmmmforceprovider.cpp

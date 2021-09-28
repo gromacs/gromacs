@@ -53,6 +53,7 @@
 
 struct t_commrec;
 struct gmx_mtop_t;
+struct warninp;
 enum class PbcType : int;
 
 namespace gmx
@@ -252,26 +253,28 @@ notifier =>> moduleC [label="returns"];
 struct MDModulesNotifiers
 {
     /*! \brief Pre-processing callback functions.
-     * const CoordinatesAndBoxPreprocessed Allows modules to access coordinates,
+     * CoordinatesAndBoxPreprocessed Allows modules to access coordinates,
      *                                box and pbc during grompp
-     * const MDLogger& Allows MdModule to use standard logging class for messages output
+     * MDLogger Allows MdModule to use standard logging class for messages output
+     * warninp* Allows modules to make grompp warnings, notes and errors
      * EnergyCalculationFrequencyErrors* allows modules to check if they match
      *                                   their required calculation frequency
      *                                   and add their error message if needed
      *                                   to the collected error messages
-     * gmx_mtop_t * Allows modules to modify the topology during pre-processing
+     * gmx_mtop_t* Allows modules to modify the topology during pre-processing
      * IndexGroupsAndNames provides modules with atom indices and their names
      * KeyValueTreeObjectBuilder enables writing of module internal data to
      *                           .tpr files.
      * QMInputFileName Allows QMMM module to know if user provided external QM input file
      */
-    BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed,
+    BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed&,
                            const MDLogger&,
+                           warninp*,
                            EnergyCalculationFrequencyErrors*,
                            gmx_mtop_t*,
                            const IndexGroupsAndNames&,
                            KeyValueTreeObjectBuilder,
-                           QMInputFileName>::type preProcessingNotifier_;
+                           const QMInputFileName&>::type preProcessingNotifier_;
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.
      *
@@ -311,7 +314,7 @@ struct MDModulesNotifiers
      *                           time information
      * const t_commrec& provides a communicator to the modules during simulation
      *                  setup
-     * MdRunInputFilename Allows modules to know .tpr filename during mdrun
+     * const MdRunInputFilename& Allows modules to know .tpr filename during mdrun
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -323,7 +326,7 @@ struct MDModulesNotifiers
                            const PbcType&,
                            const SimulationTimeStep&,
                            const t_commrec&,
-                           MdRunInputFilename>::type simulationSetupNotifier_;
+                           const MdRunInputFilename&>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

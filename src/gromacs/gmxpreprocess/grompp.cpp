@@ -1935,6 +1935,9 @@ int gmx_grompp(int argc, char* argv[])
     // Notify MDModules of existing logger
     mdModules.notifiers().preProcessingNotifier_.notify(logger);
 
+    // Notify MDModules of existing warninp
+    mdModules.notifiers().preProcessingNotifier_.notify(wi);
+
     // Notify QMMM MDModule of external QM input file command-line option
     {
         gmx::QMInputFileName qmInputFileName = { ftp2bSet(efQMI, NFILE, fnm), ftp2fn(efQMI, NFILE, fnm) };
