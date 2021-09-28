@@ -48,7 +48,7 @@
 namespace mu
 {
 	/** \file
-		\brief This file contains the class definition of the muParser engine.
+		\brief This file contains the class definition of the muparser engine.
 	*/
 
 	/** \brief Mathematical expressions parser (base parser engine).

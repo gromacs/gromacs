@@ -52,7 +52,7 @@
 using namespace std;
 
 /** \file
-	\brief This file contains the basic implementation of the muParser engine.
+	\brief This file contains the basic implementation of the muparser engine.
 */
 
 namespace mu
@@ -196,7 +196,7 @@ namespace mu
 		\param cDecSep Decimal separator as a character value.
 		\sa SetThousandsSep
 
-		By default muParser uses the "C" locale. The decimal separator of this
+		By default muparser uses the "C" locale. The decimal separator of this
 		locale is overwritten by the one provided here.
 	*/
 	void ParserBase::SetDecSep(char_type cDecSep)
@@ -210,7 +210,7 @@ namespace mu
 		\param cThousandsSep The thousands separator as a character
 		\sa SetDecSep
 
-		By default muParser uses the "C" locale. The thousands separator of this
+		By default muparser uses the "C" locale. The thousands separator of this
 		locale is overwritten by the one provided here.
 	*/
 	void ParserBase::SetThousandsSep(char_type cThousandsSep)
@@ -264,7 +264,7 @@ namespace mu
 	{}
 
 	//---------------------------------------------------------------------------
-	/** \brief Returns the version of muParser.
+	/** \brief Returns the version of muparser.
 		\param eInfo A flag indicating whether the full version info should be
 					 returned or not.
 

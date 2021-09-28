@@ -1,0 +1,14 @@
+version: 1.0.{build}
+os: Visual Studio 2015
+clone_folder: C:\projects\muParser
+test: off
+branches:
+  only:
+    - master
+environment:
+  matrix:
+    - CMAKE_PLATFORM: Visual Studio 14 2015
+build_script:
+  - cmake -LAH -G "%CMAKE_PLATFORM%" -DCMAKE_INSTALL_PREFIX="%CD:\=/%/install" .
+  - cmake --build . --config Release --target install
+  - ctest -C Release --output-on-failure

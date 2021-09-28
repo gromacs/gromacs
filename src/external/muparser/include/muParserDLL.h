@@ -37,7 +37,7 @@ extern "C"
 #endif
 
 	/** \file
-		\brief This file contains the DLL interface of muParser.
+		\brief This file contains the DLL interface of muparser.
 	*/
 
 	// Basic types

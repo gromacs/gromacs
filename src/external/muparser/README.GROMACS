@@ -1,0 +1,15 @@
+Changes by GROMACS to muparser files
+====================================
+Used from https://github.com/beltoforion/muparser/releases/tag/v2.3.2.
+
+ENABLE_SAMPLES is commented out so that we don't build them
+
+ENABLE_OPENMP gets its value from GMX_OPENMP
+
+Minor modifications exist to avoid compiler warnings, e.g. from
+attempting to return a size_t in an int.
+
+target_include_directories() is used so that GROMACS source files
+find the muparser headers.
+
+Test now links OpenMP target explicitly.

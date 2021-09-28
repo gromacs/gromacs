@@ -1,0 +1,68 @@
+
+     _____  __ _____________ _______  ______ ___________
+    /     \|  |  \____ \__  \\_  __ \/  ___// __ \_  __ \
+   |  Y Y  \  |  /  |_> > __ \|  | \/\___ \\  ___/|  | \/
+   |__|_|  /____/|   __(____  /__|  /____  >\___  >__|
+         \/      |__|       \/           \/     \/
+    Copyright (C) 2004 - 2020 Ingo Berg
+
+=======================================================================
+    https://muparser.beltoforion.de
+=======================================================================
+
+ Installation
+ ============
+
+ muParser can be installed just extracting the sources somewhere
+ and then, from a terminal, typing:
+
+   cd [path to muParser]
+   cmake . [-DENABLE_SAMPLES=ON/OFF] [-DENABLE_OPENMP=OFF/ON]
+           [-DBUILD_SHARED_LIBS=ON/OFF]
+   make
+   [sudo*] make install
+   [sudo*] ldconfig
+   cd samples/example1
+   ./example1
+
+ * = this command must be executed with root permissions and thus
+     you have to use 'sudo' or just 'su' to gain root access.
+     Note that installation and ldconfig are not strictly required unless
+     you built in shared mode.
+
+ The "make" step will create the muParser library in 'lib' and the
+ sample binary in samples/example1.
+ The samples/example2 is win32-specific and thus won't be built.
+
+
+
+ Other miscellaneous info Unix-specific
+ ======================================
+
+ If you don't like to have your muParser folder filled by temporary
+ files created by GCC, then you can do the following:
+
+    mkdir mybuild && cd mybuild && cmake .. && make
+
+ to put all object files in the "mybuild" directory.
+
+ If you want to use muParser library in your programs, you can use
+ the pkg-config program (this works only if muParser was installed
+ with 'make install' !). The commands:
+
+   pkg-config muparser --cflags
+   pkg-config muparser --libs
+
+ will return all useful info you need to build your programs against
+ muParser !
+
+
+
+ 3. Where to ask for help
+ ========================
+
+ Please report any bugs or issues at the muparser project page at GitHub:
+
+  https://github.com/beltoforion/muparser/issues
+
+ 
