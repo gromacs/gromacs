@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed crash for large system with virtual sites
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+When large system with virtual sites were ran with domain decomposition
+and OpenMP threading, mdrun would crash when the number of atoms in
+a domain and its halo were more than 200000.
+
+:issue:`4167`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

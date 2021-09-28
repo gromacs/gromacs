@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2335,7 +2335,16 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                                    "a constructing atom that does not belong to our task, such "
                                    "vsites should be assigned to the single 'master' task");
 
-                        task = nthread + thread;
+                        if (tData->useInterdependentTask)
+                        {
+                            // Assign to the interdependent task
+                            task = nthread + thread;
+                        }
+                        else
+                        {
+                            // Assign to the separate, non-parallel task
+                            task = 2 * nthread;
+                        }
                     }
                 }
             }
@@ -2570,12 +2579,13 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
             }
 
             /* To avoid large f_buf allocations of #threads*vsite_atom_range
-             * we don't use task2 with more than 200000 atoms. This doesn't
-             * affect performance, since with such a large range relatively few
-             * vsites will end up in the separate task.
-             * Note that useTask2 should be the same for all threads.
+             * we don't use the interdependent tasks with more than 200000 atoms.
+             * This doesn't affect performance, since with such a large range
+             * relatively few vsites will end up in the separate task.
+             * Note that useInterdependentTask should be the same for all threads.
              */
-            tData.useInterdependentTask = (vsite_atom_range <= 200000);
+            const int c_maxNumLocalAtomsForInterdependentTask = 200000;
+            tData.useInterdependentTask = (vsite_atom_range <= c_maxNumLocalAtomsForInterdependentTask);
             if (tData.useInterdependentTask)
             {
                 size_t              natoms_use_in_vsites = vsite_atom_range;
