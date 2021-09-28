@@ -70,6 +70,7 @@ enum class FftBackend
     Cufft, // supports only single-GPU
     Ocl,   // supports only single-GPU
     Sycl,  // Not supported currently
+    HeFFTe_CUDA,
     Count
 };
 
@@ -126,6 +127,9 @@ private:
     class ImplCuFft;
     class ImplOcl;
     class ImplSycl;
+
+    template<typename backend_tag>
+    class ImplHeFfte;
 
     std::unique_ptr<Impl> impl_;
 };

@@ -54,7 +54,11 @@ endif()
 if (GMX_FFT_MKL)
     gmx_add_libgromacs_sources(fft_mkl.cpp)
 endif()
-
+if(Heffte_FOUND)
+    gmx_add_libgromacs_sources(
+        gpu_3dfft_heffte.cpp
+        )
+endif()
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources

@@ -36,3 +36,10 @@ gmx_add_unit_test(FFTUnitTests fft-test HARDWARE_DETECTION
     GPU_CPP_SOURCE_FILES
         fft.cpp
     )
+
+if(Heffte_FOUND)
+gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
+    GPU_CPP_SOURCE_FILES
+        fft_mpi.cpp
+        )
+endif()

@@ -395,14 +395,14 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     mdpFieldValues["init-lambda-state"] = "3";
     mdpFieldValues["nsteps"]            = "16";
 
-    // Forces on GPUs are generally not reproducible enough for a tight
-    // tolerance. Similarly, the propagation of sd and bd are not as
+    // Forces and update on GPUs are generally not reproducible enough for a tight
+    // tolerance. Similarly, the propagation of bd is not as
     // reproducible as the others. So we use several ULP tolerance
     // in all cases. This is looser than needed e.g. for md and md-vv
     // with forces on CPUs, but there is no real risk of a bug with
     // those propagators that would only be caught with a tighter
     // tolerance in this particular test.
-    int ulpToleranceInMixed  = 32;
+    int ulpToleranceInMixed  = 128;
     int ulpToleranceInDouble = 64;
     if (integrator == "bd")
     {

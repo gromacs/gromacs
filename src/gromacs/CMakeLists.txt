@@ -186,6 +186,10 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
+if (TARGET Heffte::Heffte)
+    target_link_libraries(libgromacs PRIVATE Heffte::Heffte)
+endif()
+
 if (GMX_SYCL_HIPSYCL)
     target_link_libraries(libgromacs PUBLIC roc::rocfft)
 endif()

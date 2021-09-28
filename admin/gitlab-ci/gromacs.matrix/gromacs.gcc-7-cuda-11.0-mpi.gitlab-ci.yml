@@ -1,0 +1,58 @@
+# Test goal: old versions of GCC with CUDA; GPU communications with OpenMPI
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: GCC oldest supported
+#   GPU: CUDA oldest supported
+#   HW: NVIDIA GPU, single NVIDIA GPU
+#   MPI: OpenMPI
+#   Features: GPU direct communications + update (unit tests), HeFFTe support
+#   Scope: configure, build, unit tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: Debug
+#   Compiler: GCC 7
+#   GPU: CUDA 11.0
+#   SIMD: SSE 4.1
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+
+gromacs:gcc-7-cuda-11.0:configureMPI:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-cuda
+    - .use-mpi
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_HEFFTE=ON"
+    COMPILER_MAJOR_VERSION: 7
+
+gromacs:gcc-7-cuda-11.0:buildMPI:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+  needs:
+    - job: gromacs:gcc-7-cuda-11.0:configureMPI
+
+gromacs:gcc-7-cuda-11.0:testMPI:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-11.0:buildMPI

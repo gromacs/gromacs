@@ -15,7 +15,7 @@
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-11-cuda-11.4:configureMPI:
+gromacs:gcc-11-cuda-11.4.1:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
@@ -28,7 +28,7 @@ gromacs:gcc-11-cuda-11.4:configureMPI:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 11
 
-gromacs:gcc-11-cuda-11.4:buildMPI:
+gromacs:gcc-11-cuda-11.4.1:buildMPI:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -39,9 +39,9 @@ gromacs:gcc-11-cuda-11.4:buildMPI:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:gcc-11-cuda-11.4:configureMPI
+    - job: gromacs:gcc-11-cuda-11.4.1:configureMPI
 
-gromacs:gcc-11-cuda-11.4:regressiontest-gpucommupd-MPI:
+gromacs:gcc-11-cuda-11.4.1:regressiontest-gpucommupd-MPI:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
@@ -62,7 +62,7 @@ gromacs:gcc-11-cuda-11.4:regressiontest-gpucommupd-MPI:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-11-cuda-11.4:buildMPI
+    - job: gromacs:gcc-11-cuda-11.4.1:buildMPI
     - job: regressiontests:prepare
   artifacts:
     paths:
