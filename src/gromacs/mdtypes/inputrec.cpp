@@ -601,8 +601,8 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PS("separate-dhdl-file", enumValueToString(fep->separate_dhdl_file));
     PS("dhdl-derivatives", enumValueToString(fep->dhdl_derivatives));
     PS("sc-function", enumValueToString(fep->softcoreFunction));
-    PR("sc-scale-linpoint-LJ-gapsys", fep->scScaleLinpointLJGapsys);
-    PR("sc-scale-linpoint-Q-gapsys", fep->scScaleLinpointQGapsys);
+    PR("sc-gapsys-scale-linpoint-LJ", fep->scGapsysScaleLinpointLJ);
+    PR("sc-gapsys-scale-linpoint-Q", fep->scGapsysScaleLinpointQ);
     PR("sc-sigma-LJ-gapsys", fep->scSigmaLJGapsys);
 };
 
@@ -1354,17 +1354,17 @@ static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, re
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
     cmpEnum(fp, "inputrec->fepvals->softcoreFunction", fep1->softcoreFunction, fep2->softcoreFunction);
     cmp_real(fp,
-             "inputrec->fepvals->scScaleLinpointLJGapsys",
+             "inputrec->fepvals->scGapsysScaleLinpointLJ",
              -1,
-             fep1->scScaleLinpointLJGapsys,
-             fep2->scScaleLinpointLJGapsys,
+             fep1->scGapsysScaleLinpointLJ,
+             fep2->scGapsysScaleLinpointLJ,
              ftol,
              abstol);
     cmp_real(fp,
-             "inputrec->fepvals->scScaleLinpointQGapsys",
+             "inputrec->fepvals->scGapsysScaleLinpointQ",
              -1,
-             fep1->scScaleLinpointQGapsys,
-             fep2->scScaleLinpointQGapsys,
+             fep1->scGapsysScaleLinpointQ,
+             fep2->scGapsysScaleLinpointQ,
              ftol,
              abstol);
     cmp_real(fp, "inputrec->fepvals->scSigmaLJGapsys", -1, fep1->scSigmaLJGapsys, fep2->scSigmaLJGapsys, ftol, abstol);

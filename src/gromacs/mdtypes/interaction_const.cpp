@@ -55,8 +55,8 @@ interaction_const_t::SoftCoreParameters::SoftCoreParameters(const t_lambda& fepv
     sigma6WithInvalidSigma(gmx::power6(fepvals.sc_sigma)),
     sigma6Minimum(fepvals.bScCoul ? gmx::power6(fepvals.sc_sigma_min) : 0),
     softcoreType(fepvals.softcoreFunction),
-    scaleLinpointVdWGapsys(fepvals.scScaleLinpointLJGapsys),
-    scaleLinpointCoulGapsys(fepvals.scScaleLinpointQGapsys),
+    gapsysScaleLinpointVdW(fepvals.scGapsysScaleLinpointLJ),
+    gapsysScaleLinpointCoul(fepvals.scGapsysScaleLinpointQ),
     sigma6VdWGapsys(gmx::power6(fepvals.scSigmaLJGapsys))
 {
     // This is checked during tpr reading, so we can assert here

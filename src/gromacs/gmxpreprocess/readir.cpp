@@ -853,21 +853,21 @@ void check_ir(const char*                    mdparin,
 
         if (fep->softcoreFunction == SoftcoreType::Gapsys)
         {
-            if (fep->scScaleLinpointQGapsys < 0.0)
+            if (fep->scGapsysScaleLinpointQ < 0.0)
             {
                 sprintf(warn_buf,
                         "sc_scale_linpoint_Q_gapsys is equal %g but must be >= 0",
-                        fep->scScaleLinpointQGapsys);
+                        fep->scGapsysScaleLinpointQ);
                 warning_note(wi, warn_buf);
             }
 
-            if ((fep->scScaleLinpointLJGapsys < 0.0) || (fep->scScaleLinpointLJGapsys >= 1.0))
+            if ((fep->scGapsysScaleLinpointLJ < 0.0) || (fep->scGapsysScaleLinpointLJ >= 1.0))
             {
                 sprintf(warn_buf,
                         "sc_scale_linpoint_LJ_gapsys is equal %g but must be in [0,1) when used "
                         "with "
                         "sc_function=gapsys.",
-                        fep->scScaleLinpointLJGapsys);
+                        fep->scGapsysScaleLinpointLJ);
                 warning_note(wi, warn_buf);
             }
         }
@@ -2330,8 +2330,8 @@ void get_ir(const char*     mdparin,
     fep->sc_r_power              = get_ereal(&inp, "sc-r-power", 6.0, wi);
     fep->sc_sigma                = get_ereal(&inp, "sc-sigma", 0.3, wi);
     fep->bScCoul                 = (getEnum<Boolean>(&inp, "sc-coul", wi) != Boolean::No);
-    fep->scScaleLinpointLJGapsys = get_ereal(&inp, "sc-scale-linpoint-LJ-gapsys", 0.85, wi);
-    fep->scScaleLinpointQGapsys  = get_ereal(&inp, "sc-scale-linpoint-Q-gapsys", 0.3, wi);
+    fep->scGapsysScaleLinpointLJ = get_ereal(&inp, "sc-gapsys-scale-linpoint-LJ", 0.85, wi);
+    fep->scGapsysScaleLinpointQ  = get_ereal(&inp, "sc-gapsys-scale-linpoint-Q", 0.3, wi);
     fep->scSigmaLJGapsys         = get_ereal(&inp, "sc-sigma-LJ-gapsys", 0.3, wi);
     fep->dh_hist_size            = get_eint(&inp, "dh_hist_size", 0, wi);
     fep->dh_hist_spacing         = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);

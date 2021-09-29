@@ -315,8 +315,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real gmx_unused sigma6_def = scParams.sigma6WithInvalidSigma;
     const real gmx_unused sigma6_min = scParams.sigma6Minimum;
 
-    const real gmx_unused scaleLinpointCoulGapsys = scParams.scaleLinpointCoulGapsys;
-    const real gmx_unused scaleLinpointVdWGapsys  = scParams.scaleLinpointVdWGapsys;
+    const real gmx_unused gapsysScaleLinpointCoul = scParams.gapsysScaleLinpointCoul;
+    const real gmx_unused gapsysScaleLinpointVdW  = scParams.gapsysScaleLinpointVdW;
     const real gmx_unused sigma6VdWGapsys         = scParams.sigma6VdWGapsys;
 
     const bool gmx_unused doShiftForces = ((flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
@@ -500,9 +500,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
             alignas(GMX_SIMD_ALIGNMENT) real gmx_unused preloadAlphaVdwEff[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real gmx_unused preloadAlphaCoulEff[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT)
-                    real gmx_unused preloadScaleLinpointVdWGapsys[DataTypes::simdRealWidth];
+                    real gmx_unused preloadGapsysScaleLinpointVdW[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT)
-                    real gmx_unused preloadScaleLinpointCoulGapsys[DataTypes::simdRealWidth];
+                    real gmx_unused preloadGapsysScaleLinpointCoul[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT)
                     real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
@@ -515,8 +515,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
             real gmx_unused preloadSigma6[NSTATES][DataTypes::simdRealWidth];
             real gmx_unused preloadAlphaVdwEff[DataTypes::simdRealWidth];
             real gmx_unused preloadAlphaCoulEff[DataTypes::simdRealWidth];
-            real gmx_unused preloadScaleLinpointVdWGapsys[DataTypes::simdRealWidth];
-            real gmx_unused preloadScaleLinpointCoulGapsys[DataTypes::simdRealWidth];
+            real gmx_unused preloadGapsysScaleLinpointVdW[DataTypes::simdRealWidth];
+            real gmx_unused preloadGapsysScaleLinpointCoul[DataTypes::simdRealWidth];
             real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
             real            preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #endif
@@ -601,13 +601,13 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         const real c12B = nbfp[2 * typeIndices[STATE_B][s] + 1];
                         if (c12A > 0 && c12B > 0)
                         {
-                            preloadScaleLinpointVdWGapsys[s]  = 0;
-                            preloadScaleLinpointCoulGapsys[s] = 0;
+                            preloadGapsysScaleLinpointVdW[s]  = 0;
+                            preloadGapsysScaleLinpointCoul[s] = 0;
                         }
                         else
                         {
-                            preloadScaleLinpointVdWGapsys[s]  = scaleLinpointVdWGapsys;
-                            preloadScaleLinpointCoulGapsys[s] = scaleLinpointCoulGapsys;
+                            preloadGapsysScaleLinpointVdW[s]  = gapsysScaleLinpointVdW;
+                            preloadGapsysScaleLinpointCoul[s] = gapsysScaleLinpointCoul;
                         }
                     }
                 }
@@ -618,8 +618,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                     preloadPairIncluded[s]            = false;
                     preloadAlphaVdwEff[s]             = 0;
                     preloadAlphaCoulEff[s]            = 0;
-                    preloadScaleLinpointVdWGapsys[s]  = 0;
-                    preloadScaleLinpointCoulGapsys[s] = 0;
+                    preloadGapsysScaleLinpointVdW[s]  = 0;
+                    preloadGapsysScaleLinpointCoul[s] = 0;
 
                     for (int i = 0; i < NSTATES; i++)
                     {
@@ -680,8 +680,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
             RealType gmx_unused ljPmeC6Grid[NSTATES];
             RealType gmx_unused alphaVdwEff;
             RealType gmx_unused alphaCoulEff;
-            RealType gmx_unused scaleLinpointVdWGapsysEff;
-            RealType gmx_unused scaleLinpointCoulGapsysEff;
+            RealType gmx_unused gapsysScaleLinpointVdWEff;
+            RealType gmx_unused gapsysScaleLinpointCoulEff;
             RealType gmx_unused sigmaVdWGapsysEff[NSTATES];
             for (int i = 0; i < NSTATES; i++)
             {
@@ -704,8 +704,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
             }
             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
             {
-                scaleLinpointVdWGapsysEff  = gmx::load<RealType>(preloadScaleLinpointVdWGapsys);
-                scaleLinpointCoulGapsysEff = gmx::load<RealType>(preloadScaleLinpointCoulGapsys);
+                gapsysScaleLinpointVdWEff  = gmx::load<RealType>(preloadGapsysScaleLinpointVdW);
+                gapsysScaleLinpointCoulEff = gmx::load<RealType>(preloadGapsysScaleLinpointCoul);
             }
 
             // Avoid overflow of r^-12 at distances near zero
@@ -814,7 +814,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                             rCutoffCoul,
                                                             LFC[i],
                                                             DLF[i],
-                                                            scaleLinpointCoulGapsysEff,
+                                                            gapsysScaleLinpointCoulEff,
                                                             sh_ewald,
                                                             &fScalC[i],
                                                             &vCoul[i],
@@ -838,7 +838,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                                     rCutoffCoul,
                                                                     LFC[i],
                                                                     DLF[i],
-                                                                    scaleLinpointCoulGapsysEff,
+                                                                    gapsysScaleLinpointCoulEff,
                                                                     krf,
                                                                     crf,
                                                                     &fScalC[i],
@@ -906,7 +906,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                                LFV[i],
                                                                DLF[i],
                                                                sigmaVdWGapsysEff[i],
-                                                               scaleLinpointVdWGapsysEff,
+                                                               gapsysScaleLinpointVdWEff,
                                                                repulsionShift,
                                                                dispersionShift,
                                                                &fScalV[i],
@@ -1314,7 +1314,7 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
     }
     else // Gapsys
     {
-        if (scParams.scaleLinpointCoulGapsys == 0 && scParams.scaleLinpointVdWGapsys == 0)
+        if (scParams.gapsysScaleLinpointCoul == 0 && scParams.gapsysScaleLinpointVdW == 0)
         {
             return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
                     scLambdasOrAlphasDiffer,

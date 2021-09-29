@@ -201,7 +201,7 @@ static real free_energy_evaluate_single(real                                    
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     real       dvdl_elec[2], dvdl_vdw[2];
-    real       scaleLinpointCoulGapsys, scaleLinpointVdWGapsys, sigma6VdWGapsys[2];
+    real       gapsysScaleLinpointCoul, gapsysScaleLinpointVdW, sigma6VdWGapsys[2];
     real       rQ, rLJ;
     real       scaleDvdlRCoul;
     int        i, ntab;
@@ -277,13 +277,13 @@ static real free_energy_evaluate_single(real                                    
         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
         if ((c12[0] > 0) && (c12[1] > 0))
         {
-            scaleLinpointVdWGapsys  = 0;
-            scaleLinpointCoulGapsys = 0;
+            gapsysScaleLinpointVdW  = 0;
+            gapsysScaleLinpointCoul = 0;
         }
         else
         {
-            scaleLinpointVdWGapsys  = scParams.scaleLinpointVdWGapsys;
-            scaleLinpointCoulGapsys = scParams.scaleLinpointCoulGapsys;
+            gapsysScaleLinpointVdW  = scParams.gapsysScaleLinpointVdW;
+            gapsysScaleLinpointCoul = scParams.gapsysScaleLinpointCoul;
         }
     }
 
@@ -319,7 +319,7 @@ static real free_energy_evaluate_single(real                                    
                 if ((facel != 0) && (LFC[i] < 1))
                 {
                     rQ = gmx::sixthroot(one - LFC[i]) * (one + std::fabs(qq[i] / facel));
-                    rQ *= scaleLinpointCoulGapsys;
+                    rQ *= gapsysScaleLinpointCoul;
                 }
                 else
                 {
@@ -389,7 +389,7 @@ static real free_energy_evaluate_single(real                                    
                 {
 
                     rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6VdWGapsys[i] * (one - LFV[i]));
-                    rLJ *= scaleLinpointVdWGapsys;
+                    rLJ *= gapsysScaleLinpointVdW;
                 }
                 else
                 {
@@ -733,7 +733,7 @@ static real do_pairs_general(int                           ftype,
             }
             else // Gapsys
             {
-                if (scParams.scaleLinpointCoulGapsys == 0 && scParams.scaleLinpointVdWGapsys == 0)
+                if (scParams.gapsysScaleLinpointCoul == 0 && scParams.gapsysScaleLinpointVdW == 0)
                 {
                     fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
                             r2,

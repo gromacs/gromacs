@@ -130,9 +130,9 @@ struct interaction_const_t
         // soft-core function
         SoftcoreType softcoreType;
         // (gapsys sc) linearization point scaling for vdW interactions
-        real scaleLinpointVdWGapsys;
+        real gapsysScaleLinpointVdW;
         // (gapsys sc) linearization point scaling for Coulomb interactions
-        real scaleLinpointCoulGapsys;
+        real gapsysScaleLinpointCoul;
         // (gapsys sc) lower bound/replacement for c12/c6 in vdw interactions
         real sigma6VdWGapsys;
     };

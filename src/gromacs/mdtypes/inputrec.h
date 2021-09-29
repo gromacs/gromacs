@@ -146,9 +146,9 @@ struct t_lambda
     //! The specific soft-core function to use
     SoftcoreType softcoreFunction = SoftcoreType::Beutler;
     //! scale for the linearization point for the vdw interaction with gapsys soft-core
-    real scScaleLinpointLJGapsys = 0.85;
+    real scGapsysScaleLinpointLJ = 0.85;
     //! scale for the linearization point for the coulomb interaction with gapsys soft-core
-    real scScaleLinpointQGapsys = 0.3;
+    real scGapsysScaleLinpointQ = 0.3;
     //! lower bound for c12/c6 in gapsys soft-core
     real scSigmaLJGapsys = 0.3;
     //! Whether to print the dvdl term associated with this term; if it is not specified as separate, it is lumped with the FEP term
