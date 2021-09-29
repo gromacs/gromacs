@@ -2584,7 +2584,7 @@ Free energy calculations
    than :mdp:`sc-sigma`.
    Used only with `sc-function=beutler`
 
-.. mdp:: sc-linpoint-LJ-gapsys
+.. mdp:: sc-gapsys-scale-linpoint-LJ
 
    (0.85)
    for `sc-function=gapsys` it is the unitless alphaLJ parameter.
@@ -2594,7 +2594,7 @@ Free energy calculations
    van der Waals interactions.
    Used only with `sc-function=gapsys`
 
-.. mdp:: sc-linpoint-Q-gapsys
+.. mdp:: sc-gapsys-scale-linpoint-Q
 
    (0.3) [nm/e^2]
    For `sc-function=gapsys` the alphaQ parameter
@@ -2603,7 +2603,7 @@ Free energy calculations
    result in the standard hard-core Coulombic interactions.
    Used only with `sc-function=gapsys`
 
-.. mdp:: sc-sigma-LJ-gapsys
+.. mdp:: sc-gapsys-sigma-LJ
 
    (0.3) [nm]
    for `sc-function=gapsys` the soft-core sigma for particles
