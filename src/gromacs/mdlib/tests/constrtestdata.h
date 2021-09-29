@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,8 +102,6 @@ public:
     bool computeVirial_;
     //! Scaled virial
     tensor virialScaled_;
-    //! Scaled virial (reference values)
-    tensor virialScaledRef_;
     //! If the free energy is computed
     bool compute_dHdLambda_;
     //! If there are atoms with perturbed mass
@@ -154,7 +152,6 @@ public:
      *                                  size of this vector should be equal to the total number of
      *                                  unique types in constraints vector.
      * \param[in]  computeVirial        Whether the virial should be computed.
-     * \param[in]  virialScaledRef      Reference values for scaled virial tensor.
      * \param[in]  compute_dHdLambda    Whether free energy should be computed.
      * \param[in]  dHdLambdaRef         Reference value for dHdLambda.
      * \param[in]  initialTime          Initial time.
@@ -180,7 +177,6 @@ public:
                         std::vector<int>         constraints,
                         std::vector<real>        constraintsR0,
                         bool                     computeVirial,
-                        tensor                   virialScaledRef,
                         bool                     compute_dHdLambda,
                         float                    dHdLambdaRef,
                         real                     initialTime,

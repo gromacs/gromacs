@@ -63,7 +63,6 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
                                          std::vector<int>         constraints,
                                          std::vector<real>        constraintsR0,
                                          bool                     computeVirial,
-                                         tensor                   virialScaledRef,
                                          bool                     compute_dHdLambda,
                                          float                    dHdLambdaRef,
                                          real                     initialTime,
@@ -109,8 +108,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
         {
             for (int j = 0; j < DIM; j++)
             {
-                virialScaled_[i][j]    = 0;
-                virialScaledRef_[i][j] = virialScaledRef[i][j];
+                virialScaled_[i][j] = 0;
             }
         }
     }

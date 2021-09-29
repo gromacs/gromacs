@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalPositions">
+    <Int Name="Length">2</Int>
+    <Atom>
+      <Real Name="XX">0.0021016474</Real>
+      <Real Name="YY">0.087898351</Real>
+      <Real Name="ZZ">0.0099999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.060658198</Real>
+      <Real Name="YY">0.0093418043</Real>
+      <Real Name="ZZ">-0.0099999998</Real>
+    </Atom>
+  </Sequence>
+  <Sequence Name="FinalVelocities">
+    <Int Name="Length">2</Int>
+    <Atom>
+      <Real Name="XX">-6.8983517</Real>
+      <Real Name="YY">9.8983517</Real>
+      <Real Name="ZZ">3</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.658196</Real>
+      <Real Name="YY">1.341804</Real>
+      <Real Name="ZZ">1</Real>
+    </Atom>
+  </Sequence>
+  <VirialScaled>
+    <Real Name="XX">-0.00055849785</Real>
+    <Real Name="XY">0.00055849785</Real>
+    <Real Name="XZ">0</Real>
+    <Real Name="YX">0.00055849785</Real>
+    <Real Name="YY">-0.00055849785</Real>
+    <Real Name="YZ">0</Real>
+    <Real Name="ZX">0</Real>
+    <Real Name="ZY">0</Real>
+    <Real Name="ZZ">0</Real>
+  </VirialScaled>
+</ReferenceData>

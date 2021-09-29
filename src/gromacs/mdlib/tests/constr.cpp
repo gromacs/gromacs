@@ -60,6 +60,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 
@@ -129,9 +130,6 @@ struct ConstraintsTestSystem
     //! Velocities before constraining.
     std::vector<RVec> v;
 
-    //! Reference values for scaled virial tensor.
-    tensor virialScaledRef;
-
     //! Target tolerance for SHAKE.
     real shakeTolerance = 0.0001;
     /*! \brief Use successive over-relaxation method for SHAKE iterations.
@@ -148,10 +146,6 @@ struct ConstraintsTestSystem
     int lincslincsExpansionOrder = 4;
     //! The threshold value for the change in bond angle. When exceeded the program will issue a warning
     real lincsWarnAngle = 30.0;
-
-    FloatingPointTolerance lengthTolerance = absoluteTolerance(0.0002);
-    FloatingPointTolerance comTolerance    = absoluteTolerance(0.0001);
-    FloatingPointTolerance virialTolerance = absoluteTolerance(0.0001);
 };
 
 //! Helper function to convert ConstraintsTestSystem into string and make test failure messages readable
@@ -178,12 +172,6 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystem.xPrime = { { 0.01, 0.08, 0.01 }, { 0.06, 0.01, -0.01 } };
         constraintsTestSystem.v      = { { 1.0, 2.0, 3.0 }, { 3.0, 2.0, 1.0 } };
 
-        tensor virialScaledRef = { { -5.58e-04, 5.58e-04, 0.00e+00 },
-                                   { 5.58e-04, -5.58e-04, 0.00e+00 },
-                                   { 0.00e+00, 0.00e+00, 0.00e+00 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
-
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
     {
@@ -208,12 +196,6 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
 
         constraintsTestSystem.v = { { 0.0, 1.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 0.0, 0.0 } };
 
-        tensor virialScaledRef = { { 3.3e-03, -1.7e-04, 5.6e-04 },
-                                   { -1.7e-04, 8.9e-06, -2.8e-05 },
-                                   { 5.6e-04, -2.8e-05, 8.9e-05 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
-
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
     {
@@ -235,12 +217,6 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystem.xPrime = { { 0.08, 0.07, 0.01 }, { -0.02, 0.01, -0.02 }, { 0.10, 0.12, 0.11 } };
 
         constraintsTestSystem.v = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
-
-        tensor virialScaledRef = { { 4.14e-03, 4.14e-03, 3.31e-03 },
-                                   { 4.14e-03, 4.14e-03, 3.31e-03 },
-                                   { 3.31e-03, 3.31e-03, 3.31e-03 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
 
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
@@ -268,17 +244,9 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
             { 0.0, 0.0, 2.0 }, { 0.0, 0.0, 3.0 }, { 0.0, 0.0, -4.0 }, { 0.0, 0.0, -1.0 }
         };
 
-        tensor virialScaledRef = { { 1.15e-01, -4.20e-03, 2.12e-02 },
-                                   { -4.20e-03, 1.70e-04, -6.41e-04 },
-                                   { 2.12e-02, -6.41e-04, 5.45e-03 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
-
-
         // Overriding default values since LINCS converges slowly for this system.
         constraintsTestSystem.lincsNIter               = 4;
         constraintsTestSystem.lincslincsExpansionOrder = 8;
-        constraintsTestSystem.virialTolerance          = absoluteTolerance(0.01);
 
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
@@ -303,12 +271,6 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
 
         constraintsTestSystem.v = { { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 } };
 
-        tensor virialScaledRef = { { 7.14e-04, 0.00e+00, 0.00e+00 },
-                                   { 0.00e+00, 1.08e-03, 0.00e+00 },
-                                   { 0.00e+00, 0.00e+00, 1.15e-03 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
-
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
     {
@@ -329,12 +291,6 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystem.xPrime = { { 0.09, -0.02, 0.01 }, { -0.02, 0.10, -0.02 }, { 0.03, -0.01, 0.07 } };
 
         constraintsTestSystem.v = { { 1.0, 1.0, 1.0 }, { -2.0, -2.0, -2.0 }, { 1.0, 1.0, 1.0 } };
-
-        tensor virialScaledRef = { { 6.00e-04, -1.61e-03, 1.01e-03 },
-                                   { -1.61e-03, 2.53e-03, -9.25e-04 },
-                                   { 1.01e-03, -9.25e-04, -8.05e-05 } };
-
-        memcpy(constraintsTestSystem.virialScaledRef, virialScaledRef, DIM * DIM * sizeof(real));
 
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
@@ -364,6 +320,49 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
 class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
 {
 public:
+    //! Reference data
+    TestReferenceData refData_;
+    //! Checker for reference data
+    TestReferenceChecker checker_;
+
+    ConstraintsTest() : checker_(refData_.rootChecker()) {}
+
+    /*! \brief Test if the final position correspond to the reference data.
+     *
+     * \param[in] testData        Test data structure.
+     */
+    void checkFinalPositions(const ConstraintsTestData& testData)
+    {
+        TestReferenceChecker finalPositionsRef(
+                checker_.checkSequenceCompound("FinalPositions", testData.numAtoms_));
+        for (int i = 0; i < testData.numAtoms_; i++)
+        {
+            TestReferenceChecker xPrimeRef(finalPositionsRef.checkCompound("Atom", nullptr));
+            const gmx::RVec&     xPrime = testData.xPrime_[i];
+            xPrimeRef.checkReal(xPrime[XX], "XX");
+            xPrimeRef.checkReal(xPrime[YY], "YY");
+            xPrimeRef.checkReal(xPrime[ZZ], "ZZ");
+        }
+    }
+
+    /*! \brief Test if the final velocities correspond to the reference data.
+     *
+     * \param[in] testData        Test data structure.
+     */
+    void checkFinalVelocities(const ConstraintsTestData& testData)
+    {
+        TestReferenceChecker finalVelocitiesRef(
+                checker_.checkSequenceCompound("FinalVelocities", testData.numAtoms_));
+        for (int i = 0; i < testData.numAtoms_; i++)
+        {
+            TestReferenceChecker vRef(finalVelocitiesRef.checkCompound("Atom", nullptr));
+            const gmx::RVec&     v = testData.v_[i];
+            vRef.checkReal(v[XX], "XX");
+            vRef.checkReal(v[YY], "YY");
+            vRef.checkReal(v[ZZ], "ZZ");
+        }
+    }
+
     /*! \brief
      * The test on the final length of constrained bonds.
      *
@@ -518,30 +517,30 @@ public:
      *
      * Checks if the values in the scaled virial tensor are equal to pre-computed values.
      *
-     * \param[in] tolerance       Tolerance for the tensor values.
      * \param[in] testData        Test data structure.
      */
-    static void checkVirialTensor(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
+    void checkVirialTensor(const ConstraintsTestData& testData)
     {
-        for (int i = 0; i < DIM; i++)
-        {
-            for (int j = 0; j < DIM; j++)
-            {
-                EXPECT_REAL_EQ_TOL(testData.virialScaledRef_[i][j], testData.virialScaled_[i][j], tolerance)
-                        << gmx::formatString(
-                                   "Values in virial tensor at [%d][%d] are not within the "
-                                   "tolerance from reference value.",
-                                   i,
-                                   j);
-            }
-        }
+        const tensor&        virialScaled = testData.virialScaled_;
+        TestReferenceChecker virialScaledRef(checker_.checkCompound("VirialScaled", nullptr));
+
+        virialScaledRef.checkReal(virialScaled[XX][XX], "XX");
+        virialScaledRef.checkReal(virialScaled[XX][YY], "XY");
+        virialScaledRef.checkReal(virialScaled[XX][ZZ], "XZ");
+        virialScaledRef.checkReal(virialScaled[YY][XX], "YX");
+        virialScaledRef.checkReal(virialScaled[YY][YY], "YY");
+        virialScaledRef.checkReal(virialScaled[YY][ZZ], "YZ");
+        virialScaledRef.checkReal(virialScaled[ZZ][XX], "ZX");
+        virialScaledRef.checkReal(virialScaled[ZZ][YY], "ZY");
+        virialScaledRef.checkReal(virialScaled[ZZ][ZZ], "ZZ");
     }
+
     //! Before any test is run, work out whether any compatible GPUs exist.
     static std::vector<std::unique_ptr<IConstraintsTestRunner>> getRunners()
     {
         std::vector<std::unique_ptr<IConstraintsTestRunner>> runners;
         // Add runners for CPU versions of SHAKE and LINCS
-        runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
+        // runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
         runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
         // If supported, add runners for the GPU version of LINCS for each available GPU
         const bool addGpuRunners = GPU_CONSTRAINTS_SUPPORTED;
@@ -556,7 +555,7 @@ public:
     }
 };
 
-TEST_P(ConstraintsTest, ConstraintsTest)
+TEST_P(ConstraintsTest, SatisfiesConstraints)
 {
     auto                  params                = GetParam();
     ConstraintsTestSystem constraintsTestSystem = std::get<0>(params);
@@ -568,7 +567,6 @@ TEST_P(ConstraintsTest, ConstraintsTest)
                                  constraintsTestSystem.constraints,
                                  constraintsTestSystem.constraintsR0,
                                  true,
-                                 constraintsTestSystem.virialScaledRef,
                                  false,
                                  0,
                                  real(0.0),
@@ -581,6 +579,31 @@ TEST_P(ConstraintsTest, ConstraintsTest)
                                  constraintsTestSystem.lincsNIter,
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
+
+    float maxX = 0.0F;
+    float maxV = 0.0F;
+    for (int i = 0; i < constraintsTestSystem.numAtoms; i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            maxX = fmax(fabs(constraintsTestSystem.x[i][d]), maxX);
+            maxV = fmax(fabs(constraintsTestSystem.v[i][d]), maxV);
+        }
+    }
+
+    float maxVirialScaled = 0.0F;
+    for (int d1 = 0; d1 < DIM; d1++)
+    {
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            maxVirialScaled = fmax(fabs(testData.virialScaled_[d1][d2]), maxVirialScaled);
+        }
+    }
+
+    FloatingPointTolerance positionsTolerance = relativeToleranceAsFloatingPoint(maxX, 0.002F);
+    FloatingPointTolerance velocityTolerance  = relativeToleranceAsFloatingPoint(maxV, 0.002F);
+    FloatingPointTolerance virialTolerance = relativeToleranceAsFloatingPoint(maxVirialScaled, 0.002F);
+    FloatingPointTolerance lengthTolerance = relativeToleranceAsFloatingPoint(0.1, 0.002F);
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
@@ -595,11 +618,19 @@ TEST_P(ConstraintsTest, ConstraintsTest)
         // Apply constraints
         runner->applyConstraints(&testData, pbc);
 
-        checkConstrainsLength(constraintsTestSystem.lengthTolerance, testData, pbc);
+
+        checker_.setDefaultTolerance(positionsTolerance);
+        checkFinalPositions(testData);
+        checker_.setDefaultTolerance(velocityTolerance);
+        checkFinalVelocities(testData);
+
+        checkConstrainsLength(lengthTolerance, testData, pbc);
         checkConstrainsDirection(testData, pbc);
-        checkCOMCoordinates(constraintsTestSystem.comTolerance, testData);
-        checkCOMVelocity(constraintsTestSystem.comTolerance, testData);
-        checkVirialTensor(constraintsTestSystem.virialTolerance, testData);
+        checkCOMCoordinates(positionsTolerance, testData);
+        checkCOMVelocity(velocityTolerance, testData);
+
+        checker_.setDefaultTolerance(virialTolerance);
+        checkVirialTensor(testData);
     }
 }
 
