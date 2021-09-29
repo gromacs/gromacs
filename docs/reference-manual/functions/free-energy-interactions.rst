@@ -338,10 +338,10 @@ the soft-cored non-bonded interactions using the formalism by Gapsys *et al.*\ :
 The Gapsys *et al.* soft-core is formulated to act on the level of van der Waals and electrostatic forces:
 the non-bonded interactions are linearized at a point defined as, :math:`r_{scLJ}` or :math:`r_{scQ}`, respectively.
 The linearization point depends on the state of the system as controlled by the :math:`\lambda` parameter and 
-two parameters :math:`\alpha_Q` (set with ``sc-gapsys-scale-linpoint-Q``) and :math:`\alpha_{LJ}` (set with ``sc-gapsys-scale-linpoint-LJ``).
+two parameters :math:`\alpha_Q` (set with ``sc-gapsys-scale-linpoint-q``) and :math:`\alpha_{LJ}` (set with ``sc-gapsys-scale-linpoint-lj``).
 The dependence on :math:`\lambda` guarantees that the end-states are properly represented by their hard-core potentials.
 :numref:`Fig. %s <fig-gapsyssc>` illustrates the behaviour of the linearization point, forces and integrated potential energies with respect
-to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`. The optimal choices of the parameter values have been systematically explored in :ref:`185 <refGapsys2012>`. These recommended values are set by default when ``sc-function=gapsys`` is selected: ``sc-gapsys-scale-linpoint-Q=0.3`` and ``sc-gapsys-scale-linpoint-LJ=0.85``.
+to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`. The optimal choices of the parameter values have been systematically explored in :ref:`185 <refGapsys2012>`. These recommended values are set by default when ``sc-function=gapsys`` is selected: ``sc-gapsys-scale-linpoint-q=0.3`` and ``sc-gapsys-scale-linpoint-lj=0.85``.
 
 .. _fig-gapsyssc:
 

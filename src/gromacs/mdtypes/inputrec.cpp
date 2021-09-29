@@ -601,9 +601,9 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PS("separate-dhdl-file", enumValueToString(fep->separate_dhdl_file));
     PS("dhdl-derivatives", enumValueToString(fep->dhdl_derivatives));
     PS("sc-function", enumValueToString(fep->softcoreFunction));
-    PR("sc-gapsys-scale-linpoint-LJ", fep->scGapsysScaleLinpointLJ);
-    PR("sc-gapsys-scale-linpoint-Q", fep->scGapsysScaleLinpointQ);
-    PR("sc-gapsys-sigma-LJ", fep->scGapsysSigmaLJ);
+    PR("sc-gapsys-scale-linpoint-lj", fep->scGapsysScaleLinpointLJ);
+    PR("sc-gapsys-scale-linpoint-q", fep->scGapsysScaleLinpointQ);
+    PR("sc-gapsys-sigma-lj", fep->scGapsysSigmaLJ);
 };
 
 static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)

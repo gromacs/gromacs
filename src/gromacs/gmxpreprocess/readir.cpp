@@ -2330,9 +2330,9 @@ void get_ir(const char*     mdparin,
     fep->sc_r_power              = get_ereal(&inp, "sc-r-power", 6.0, wi);
     fep->sc_sigma                = get_ereal(&inp, "sc-sigma", 0.3, wi);
     fep->bScCoul                 = (getEnum<Boolean>(&inp, "sc-coul", wi) != Boolean::No);
-    fep->scGapsysScaleLinpointLJ = get_ereal(&inp, "sc-gapsys-scale-linpoint-LJ", 0.85, wi);
-    fep->scGapsysScaleLinpointQ  = get_ereal(&inp, "sc-gapsys-scale-linpoint-Q", 0.3, wi);
-    fep->scGapsysSigmaLJ         = get_ereal(&inp, "sc-gapsys-sigma-LJ", 0.3, wi);
+    fep->scGapsysScaleLinpointLJ = get_ereal(&inp, "sc-gapsys-scale-linpoint-lj", 0.85, wi);
+    fep->scGapsysScaleLinpointQ  = get_ereal(&inp, "sc-gapsys-scale-linpoint-q", 0.3, wi);
+    fep->scGapsysSigmaLJ         = get_ereal(&inp, "sc-gapsys-sigma-lj", 0.3, wi);
     fep->dh_hist_size            = get_eint(&inp, "dh_hist_size", 0, wi);
     fep->dh_hist_spacing         = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
     fep->separate_dhdl_file      = getEnum<SeparateDhdlFile>(&inp, "separate-dhdl-file", wi);
