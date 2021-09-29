@@ -62,6 +62,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+#include "freeenergydispatch.h"
 #include "grid.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_simd.h"
@@ -485,12 +486,16 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
     nbat(std::move(nbat_in)),
     kernelSetup_(kernelSetup),
     wcycle_(wcycle),
-    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(nbat->params().nenergrp)),
     gpu_nbv(gpu_nbv_ptr)
 {
     GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
     GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");
     GMX_RELEASE_ASSERT(nbat, "Need valid atomdata object");
+
+    if (pairlistSets_->params().haveFep)
+    {
+        freeEnergyDispatch_ = std::make_unique<FreeEnergyDispatch>(nbat->params().nenergrp);
+    }
 }
 
 nonbonded_verlet_t::~nonbonded_verlet_t()

@@ -142,6 +142,7 @@ enum class WallCycleSubCounter : int
     NonbondedKernel,
     NonbondedClear,
     NonbondedFep,
+    NonbondedFepReduction,
     LaunchGpuNonBonded,
     LaunchGpuBonded,
     LaunchGpuPme,

@@ -12,6 +12,8 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
+* Free-energy kernels are accelerated using SIMD, which make free-energy
+  calculations up to three times as fast when using GPUs
 * New transformation pull coordinate allows arbibrary mathematical transformations of one of more other pull coordinates
 * Cool quotes music play list
 

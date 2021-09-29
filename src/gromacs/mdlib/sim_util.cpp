@@ -1634,6 +1634,15 @@ void do_force(FILE*                               fplog,
         }
     }
 
+    // With FEP we set up the reduction over threads for local+non-local simultaneously,
+    // so we need to do that here after the local and non-local pairlist construction.
+    if (stepWork.doNeighborSearch && fr->efep != FreeEnergyPerturbationType::No)
+    {
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedFep);
+        nbv->setupFepThreadedForceBuffer(fr->natoms_force_constr);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::NonbondedFep);
+    }
+
     if (simulationWork.useGpuNonbonded && stepWork.computeNonbondedForces)
     {
         /* launch D2H copy-back F */
@@ -1776,9 +1785,8 @@ void do_force(FILE*                               fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        nbv->dispatchFreeEnergyKernel(
-                InteractionLocality::Local,
-                x.unpaddedArrayRef(),
+        nbv->dispatchFreeEnergyKernels(
+                x,
                 &forceOutNonbonded->forceWithShiftForces(),
                 fr->use_simd_kernels,
                 fr->ntype,
@@ -1800,34 +1808,6 @@ void do_force(FILE*                               fplog,
                 enerd,
                 stepWork,
                 nrnb);
-
-        if (simulationWork.havePpDomainDecomposition)
-        {
-            nbv->dispatchFreeEnergyKernel(
-                    InteractionLocality::NonLocal,
-                    x.unpaddedArrayRef(),
-                    &forceOutNonbonded->forceWithShiftForces(),
-                    fr->use_simd_kernels,
-                    fr->ntype,
-                    fr->rlist,
-                    *fr->ic,
-                    fr->shift_vec,
-                    fr->nbfp,
-                    fr->ljpme_c6grid,
-                    mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
-                                     : gmx::ArrayRef<real>{},
-                    mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
-                                     : gmx::ArrayRef<real>{},
-                    mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
-                                   : gmx::ArrayRef<int>{},
-                    mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
-                                   : gmx::ArrayRef<int>{},
-                    inputrec.fepvals.get(),
-                    lambda,
-                    enerd,
-                    stepWork,
-                    nrnb);
-        }
     }
 
     if (stepWork.computeNonbondedForces && !useOrEmulateGpuNb)

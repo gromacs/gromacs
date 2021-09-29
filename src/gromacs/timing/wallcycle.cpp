@@ -149,6 +149,7 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Nonbonded F kernel",
         "Nonbonded F clear",
         "Nonbonded FEP",
+        "Nonbonded FEP reduction",
         "Launch NB GPU tasks",
         "Launch Bonded GPU tasks",
         "Launch PME GPU tasks",

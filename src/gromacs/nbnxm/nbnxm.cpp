@@ -258,5 +258,4 @@ bool buildSupportsNonbondedOnGpu(std::string* error)
     return errorReasons.isEmpty();
 }
 
-
 /*! \endcond */

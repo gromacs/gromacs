@@ -121,6 +121,7 @@
 #include "gromacs/utility/real.h"
 
 struct DeviceInformation;
+class FreeEnergyDispatch;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
@@ -144,6 +145,8 @@ class GpuEventSynchronizer;
 
 namespace gmx
 {
+template<typename>
+class ArrayRefWithPadding;
 class DeviceStreamManager;
 class ForceWithShiftForces;
 class ListedForcesGpu;
@@ -368,26 +371,25 @@ public:
                                  gmx::ArrayRef<real>            CoulombSR,
                                  t_nrnb*                        nrnb) const;
 
-    //! Executes the non-bonded free-energy kernel, always runs on the CPU
-    void dispatchFreeEnergyKernel(gmx::InteractionLocality       iLocality,
-                                  gmx::ArrayRef<const gmx::RVec> coords,
-                                  gmx::ForceWithShiftForces*     forceWithShiftForces,
-                                  bool                           useSimd,
-                                  int                            ntype,
-                                  real                           rlist,
-                                  const interaction_const_t&     ic,
-                                  gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                  gmx::ArrayRef<const real>      nbfp,
-                                  gmx::ArrayRef<const real>      nbfp_grid,
-                                  gmx::ArrayRef<const real>      chargeA,
-                                  gmx::ArrayRef<const real>      chargeB,
-                                  gmx::ArrayRef<const int>       typeA,
-                                  gmx::ArrayRef<const int>       typeB,
-                                  t_lambda*                      fepvals,
-                                  gmx::ArrayRef<const real>      lambda,
-                                  gmx_enerdata_t*                enerd,
-                                  const gmx::StepWorkload&       stepWork,
-                                  t_nrnb*                        nrnb);
+    //! Executes the non-bonded free-energy kernels, local + non-local, always runs on the CPU
+    void dispatchFreeEnergyKernels(const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
+                                   gmx::ForceWithShiftForces*                forceWithShiftForces,
+                                   bool                                      useSimd,
+                                   int                                       ntype,
+                                   real                                      rlist,
+                                   const interaction_const_t&                ic,
+                                   gmx::ArrayRef<const gmx::RVec>            shiftvec,
+                                   gmx::ArrayRef<const real>                 nbfp,
+                                   gmx::ArrayRef<const real>                 nbfp_grid,
+                                   gmx::ArrayRef<const real>                 chargeA,
+                                   gmx::ArrayRef<const real>                 chargeB,
+                                   gmx::ArrayRef<const int>                  typeA,
+                                   gmx::ArrayRef<const int>                  typeB,
+                                   t_lambda*                                 fepvals,
+                                   gmx::ArrayRef<const real>                 lambda,
+                                   gmx_enerdata_t*                           enerd,
+                                   const gmx::StepWorkload&                  stepWork,
+                                   t_nrnb*                                   nrnb);
 
     /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
      * \param [in] locality         Local or non-local
@@ -418,6 +420,8 @@ public:
     void setupGpuShortRangeWork(const gmx::ListedForcesGpu* listedForcesGpu,
                                 gmx::InteractionLocality    iLocality) const;
 
+    void setupFepThreadedForceBuffer(int numAtomsForce);
+
     // TODO: Make all data members private
     //! All data related to the pair lists
     std::unique_ptr<PairlistSets> pairlistSets_;
@@ -429,10 +433,12 @@ public:
 private:
     //! The non-bonded setup, also affects the pairlist construction kernel
     Nbnxm::KernelSetup kernelSetup_;
+
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
-    //! Temporary array for storing foreign lambda group pair energies
-    std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
+
+    //! \brief The non-bonded free-energy kernel dispatcher
+    std::unique_ptr<FreeEnergyDispatch> freeEnergyDispatch_;
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)

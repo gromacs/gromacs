@@ -47,30 +47,32 @@ struct t_nblist;
 struct interaction_const_t;
 namespace gmx
 {
-class ForceWithShiftForces;
 template<typename>
 class ArrayRef;
+template<typename>
+class ArrayRefWithPadding;
 } // namespace gmx
 
-void gmx_nb_free_energy_kernel(const t_nblist&                nlist,
-                               gmx::ArrayRef<const gmx::RVec> coords,
-                               gmx::ForceWithShiftForces*     forceWithShiftForces,
-                               bool                           useSimd,
-                               int                            ntype,
-                               real                           rlist,
-                               const interaction_const_t&     ic,
-                               gmx::ArrayRef<const gmx::RVec> shiftvec,
-                               gmx::ArrayRef<const real>      nbfp,
-                               gmx::ArrayRef<const real>      nbfp_grid,
-                               gmx::ArrayRef<const real>      chargeA,
-                               gmx::ArrayRef<const real>      chargeB,
-                               gmx::ArrayRef<const int>       typeA,
-                               gmx::ArrayRef<const int>       typeB,
-                               int                            flags,
-                               gmx::ArrayRef<const real>      lambda,
-                               gmx::ArrayRef<real>            dvdl,
-                               gmx::ArrayRef<real>            energygrp_elec,
-                               gmx::ArrayRef<real>            energygrp_vdw,
-                               t_nrnb* gmx_restrict           nrnb);
+void gmx_nb_free_energy_kernel(const t_nblist&                           nlist,
+                               const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
+                               bool                                      useSimd,
+                               int                                       ntype,
+                               real                                      rlist,
+                               const interaction_const_t&                ic,
+                               gmx::ArrayRef<const gmx::RVec>            shiftvec,
+                               gmx::ArrayRef<const real>                 nbfp,
+                               gmx::ArrayRef<const real>                 nbfp_grid,
+                               gmx::ArrayRef<const real>                 chargeA,
+                               gmx::ArrayRef<const real>                 chargeB,
+                               gmx::ArrayRef<const int>                  typeA,
+                               gmx::ArrayRef<const int>                  typeB,
+                               int                                       flags,
+                               gmx::ArrayRef<const real>                 lambda,
+                               t_nrnb* gmx_restrict                      nrnb,
+                               gmx::RVec*                                threadForceBuffer,
+                               rvec*                                     threadForceShiftBuffer,
+                               gmx::ArrayRef<real>                       threadVc,
+                               gmx::ArrayRef<real>                       threadVv,
+                               gmx::ArrayRef<real>                       threadDvdl);
 
 #endif

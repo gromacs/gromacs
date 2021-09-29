@@ -416,7 +416,7 @@ protected:
         // When the free-energy kernel switches from tabulated to analytical corrections,
         // the double precision tolerance can be tightend to 1e-11.
         test::FloatingPointTolerance tolerance(
-                input_.floatToler, input_.doubleToler, 1.0e-6, 1.0e-6, 10000, 100, false);
+                input_.floatToler, input_.doubleToler, 1.0e-6, 1.0e-11, 10000, 100, false);
         checker_.setDefaultTolerance(tolerance);
     }
 
@@ -454,8 +454,7 @@ protected:
 
         // run fep kernel
         gmx_nb_free_energy_kernel(nbl,
-                                  x_.arrayRefWithPadding().unpaddedArrayRef(),
-                                  &forces,
+                                  x_.arrayRefWithPadding(),
                                   fr.use_simd_kernels,
                                   fr.ntype,
                                   fr.rlist,
@@ -469,10 +468,12 @@ protected:
                                   input_.atoms.typeB,
                                   doNBFlags,
                                   lambdas,
-                                  output.dvdLambda,
+                                  &nrnb,
+                                  output.f.arrayRefWithPadding().paddedArrayRef().data(),
+                                  as_rvec_array(output.fShift.data()),
                                   output.energy.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
                                   output.energy.energyGroupPairTerms[NonBondedEnergyTerms::LJSR],
-                                  &nrnb);
+                                  output.dvdLambda);
 
         checkOutput(&checker_, output);
     }
