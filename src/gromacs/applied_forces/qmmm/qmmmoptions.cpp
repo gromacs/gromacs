@@ -298,7 +298,7 @@ void QMMMOptions::processTprFilename(const MdRunInputFilename& tprFilename)
     }
 
     // Provided name should not be empty
-    GMX_RELEASE_ASSERT(tprFilename.mdRunFilename_.empty(),
+    GMX_RELEASE_ASSERT(!tprFilename.mdRunFilename_.empty(),
                        "Filename of the *.tpr simulation file is empty");
 
     // Exit if parameters_.qmFileNameBase_ has been provided
@@ -368,6 +368,22 @@ void QMMMOptions::processExternalInputFile()
                 qmExternalInputFileName_.c_str())));
     }
 
+    // Check if RUN_TYPE in the file present and is ENERGY_FORCE
+    if (cp2kParams.count("RUN_TYPE") == 0)
+    {
+        GMX_THROW(InconsistentInputError(
+                formatString("Parameter RUN_TYPE not found in the external CP2K input file %s",
+                             qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if RUN_TYPE in the file is equal to ENERGY_FORCE
+    if (toUpperCase(cp2kParams["RUN_TYPE"]) != "ENERGY_FORCE")
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter RUN_TYPE should be ENERGY_FORCE in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
     // Set parameters_.qmCharge_ and qmMult_
     parameters_.qmCharge_       = fromStdString<int>(cp2kParams["CHARGE"]);
     parameters_.qmMultiplicity_ = fromStdString<int>(cp2kParams["MULTIPLICITY"]);
@@ -390,9 +406,9 @@ void QMMMOptions::setQMExternalInputFile(const QMInputFileName& qmExternalInputF
         if (qmExternalInputFileName.hasQMInputFileName_)
         {
             // If parameters_.qmMethod_ != INPUT then user should not provide external input file
-            GMX_THROW(
-                    InconsistentInputError("External CP2K Input file has been provided with -qmi "
-                                           "option, but qmmm-qmmethod is not INPUT"));
+            GMX_THROW(InconsistentInputError(
+                    "External CP2K input file has been provided with -qmi option, but "
+                    + c_qmmmCP2KModuleName + "-" + c_qmMethodTag_ + " is not INPUT"));
         }
 
         // Exit if we dont need to process external input file
@@ -402,9 +418,9 @@ void QMMMOptions::setQMExternalInputFile(const QMInputFileName& qmExternalInputF
     // Case where user should provide external input file with -qmi option
     if (parameters_.qmMethod_ == QMMMQMMethod::INPUT && !qmExternalInputFileName.hasQMInputFileName_)
     {
-        GMX_THROW(
-                InconsistentInputError("qmmm-qmmethod = INPUT requested, but external CP2K Input "
-                                       "file is not provided with -qmi option"));
+        GMX_THROW(InconsistentInputError(c_qmmmCP2KModuleName + "-" + c_qmMethodTag_
+                                         + " = INPUT requested, but external CP2K "
+                                           "input file is not provided with -qmi option"));
     }
 
     // If external input is provided by the user then we should process it and save into the parameters_
@@ -440,7 +456,8 @@ void QMMMOptions::processCoordinates(const CoordinatesAndBoxPreprocessed& coord)
                     "One of the box vectors is shorter than 1 nm.\n"
                     "For stable CP2K SCF convergence all simulation box vectors should be "
                     ">= 1 nm. Please consider to increase simulation box or provide custom CP2K "
-                    "input using qmmm-qmmethod = INPUT"));
+                    "input using "
+                    + c_qmmmCP2KModuleName + "-" + c_qmMethodTag_ + " = INPUT"));
         }
 
         parameters_.qmInput_ = inpGen.generateCP2KInput();
@@ -529,7 +546,7 @@ void QMMMOptions::modifyQMMMTopology(gmx_mtop_t* mtop)
         msg += formatString("QM-MM broken bonds found: %d\n", topInfo.numLinkBonds);
     }
 
-    appendLog(msg);
+    appendLog(msg + "\n");
 
     /* We should warn the user if there is inconsistence between removed classical charges
      * on QM atoms and total QM charge
@@ -547,9 +564,9 @@ void QMMMOptions::modifyQMMMTopology(gmx_mtop_t* mtop)
     // If there are many constrained bonds in QM system then we should also warn the user
     if (topInfo.numConstrainedBondsInQMSubsystem > 2)
     {
-        msg += "Your QM subsystem has a lot of constrained bonds. They probably have been "
-               "generated automatically. That could produce an artifacts in the simulation. "
-               "Consider constraints = none in the mdp file.\n";
+        msg = "Your QM subsystem has a lot of constrained bonds. They probably have been "
+              "generated automatically. That could produce an artifacts in the simulation. "
+              "Consider constraints = none in the mdp file.\n";
         appendWarning(msg);
     }
 }

@@ -3312,6 +3312,52 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
    z-axis by :math:`\theta` degress by using following input:
    :math:`(\cos \theta , -\sin \theta , 0 , \sin \theta , \cos \theta , 0 , 0 , 0 , 1)` .
 
+QM/MM simulations with CP2K Interface 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These options enable and control the calculation and application of additional
+QM/MM forces that are computed by the CP2K package if it is linked into |Gromacs|.
+For further details about QM/MM interface implementation follow :ref:`qmmm`. 
+
+.. mdp:: qmmm-cp2k-active
+
+   (false) Activate QM/MM simulations. Requires CP2K to be linked with |Gromacs|
+
+.. mdp:: qmmm-cp2k-qmgroup
+
+   (System) Index group with atoms that are treated with QM.
+
+.. mdp:: qmmm-cp2k-qmmethod
+
+   (PBE) Method used to describe the QM part of the system.
+
+   .. mdp-value:: PBE
+
+      DFT using PBE functional and DZVP-MOLOPT basis set.
+
+   .. mdp-value:: BLYP
+
+      DFT using BLYP functional and DZVP-MOLOPT basis set.
+
+   .. mdp-value:: INPUT
+
+      Provide an external input file for CP2K when running :ref:`gmx grompp` with the ``-qmi`` command-line option.
+      External input files are subject to the limitations that are described in :ref:`qmmm`.
+
+.. mdp:: qmmm-cp2k-qmcharge
+
+   (0) Total charge of the QM part.
+
+.. mdp:: qmmm-cp2k-qmmultiplicity
+
+   (1) Multiplicity or spin-state of QM part. Default value 1 means singlet state.
+
+.. mdp:: qmmm-cp2k-qmfilenames
+
+   () Names of the CP2K files that will be generated during the simulation. 
+   When using the default, empty, value the name of the simulation input file will be used 
+   with an additional ``_cp2k`` suffix.
+
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
 

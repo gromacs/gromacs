@@ -298,5 +298,8 @@ electric-field-z         = 0 0 0 0
 
 ; Density guided simulation
 density-guided-simulation-active = false
+
+; QM/MM with CP2K
+qmmm-cp2k-active         = false
 </String>
 </ReferenceData>

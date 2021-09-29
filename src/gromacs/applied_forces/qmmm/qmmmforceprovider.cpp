@@ -103,7 +103,7 @@ void QMMMForceProvider::appendLog(const std::string& msg)
 void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
 {
     // Check that we have filename either defined in KVT or deduced from *.tpr name
-    GMX_RELEASE_ASSERT(parameters_.qmFileNameBase_.empty(),
+    GMX_RELEASE_ASSERT(!parameters_.qmFileNameBase_.empty(),
                        "Names of CP2K input/output files is not defined in QMMMParameters");
 
 
