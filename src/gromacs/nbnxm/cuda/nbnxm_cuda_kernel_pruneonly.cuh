@@ -141,6 +141,11 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
     unsigned int bidx  = blockIdx.x;
     unsigned int widx  = (threadIdx.y * c_clSize) / warp_size; /* warp index */
 
+    // cj preload is off in the following cases:
+    // - sm_70 (V100), sm_8x (A100, GA100), sm_75 (TU102)
+    // - for future arch (> 8.6 at the time of writing) we assume it is better to keep it off
+    constexpr bool c_preloadCj = (GMX_PTX_ARCH < 700);
+
     /*********************************************************************
      * Set up shared memory pointers.
      * sm_nextSlotPtr should always be updated to point to the "next slot",
@@ -157,9 +162,12 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
 
     /* shmem buffer for cj, for each warp separately */
     int* cjs = reinterpret_cast<int*>(sm_nextSlotPtr);
-    /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
-    cjs += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
-    sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    if (c_preloadCj)
+    {
+        /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
+        cjs += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+        sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
+    }
     /*********************************************************************/
 
 
@@ -211,12 +219,15 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
 
         if (imaskCheck)
         {
-            /* Pre-load cj into shared memory on both warps separately */
-            if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
+            if (c_preloadCj)
             {
-                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = pl_cj4[j4].cj[tidxi];
+                /* Pre-load cj into shared memory on both warps separately */
+                if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
+                {
+                    cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = pl_cj4[j4].cj[tidxi];
+                }
+                __syncwarp(c_fullWarpMask);
             }
-            __syncwarp(c_fullWarpMask);
 
 #    pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
@@ -224,8 +235,8 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
                 if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
                 {
                     unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
-
-                    int cj = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize / c_splitClSize];
+                    int cj = c_preloadCj ? cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize / c_splitClSize]
+                                         : pl_cj4[j4].cj[jm];
                     int aj = cj * c_clSize + tidxj;
 
                     /* load j atom data */
@@ -274,8 +285,11 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
             /* update the imask with only the pairs up to rlistInner */
             plist.cj4[j4].imei[widx].imask = imaskNew;
         }
-        // avoid shared memory WAR hazards between loop iterations
-        __syncwarp(c_fullWarpMask);
+        if (c_preloadCj)
+        {
+            // avoid shared memory WAR hazards on sm_cjs between loop iterations
+            __syncwarp(c_fullWarpMask);
+        }
     }
 }
 #endif /* FUNCTION_DECLARATION_ONLY */

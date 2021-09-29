@@ -75,7 +75,6 @@ static const unsigned __device__ superClInteractionMask =
 static const float __device__ c_oneSixth    = 0.16666667F;
 static const float __device__ c_oneTwelveth = 0.08333333F;
 
-
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__ void
 convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c6, float* c12)
