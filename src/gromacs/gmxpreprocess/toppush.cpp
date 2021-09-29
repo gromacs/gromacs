@@ -385,7 +385,12 @@ void push_at(t_symtab*                  symtab,
     }
     else
     {
-        have_bonded_type   = (isalpha(tmpfield[1][0]) != 0);
+        // Attempt parsing field 1 to integer. If successful, *end == '\0'
+        char* end;
+        strtol(tmpfield[1], &end, 10);
+
+        // If conversion fails, we do not have an atomic number but a bonded type
+        have_bonded_type   = (*end != 0);
         have_atomic_number = !have_bonded_type;
     }
 

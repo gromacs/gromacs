@@ -340,6 +340,8 @@ Description of the file layout:
 
 -  Atoms in the same charge group must be listed consecutively
 
+-  Bonded atom type name must contain at least one non-digit character.
+
 -  The file is parsed only once, which implies that no forward
    references can be treated: items must be defined before they can be
    used

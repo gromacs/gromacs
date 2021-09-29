@@ -40,6 +40,7 @@ gmx_add_gtest_executable(gmxpreprocess-test
         genrestr.cpp
         gpp_atomtype.cpp
         gpp_bond_atomtype.cpp
+        grompp_directives.cpp
         insert_molecules.cpp
         readir.cpp
         solvate.cpp

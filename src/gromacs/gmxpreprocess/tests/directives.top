@@ -1,0 +1,44 @@
+; Minimal topology file to test edge-cases for directive parsing
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+
+[ atomtypes ] 
+; Cover all combinations of optional [bname] [at.num]
+; name  bname     at.num  mass  charge ptype  sigma      epsilon
+2C_     2Cbonded          12.01 0.0000 A     0.339967 0.45773 
+_       _bonded     6     12.01 0.0000 A     0.349967 0.45773 
+4_                  7     12.01 0.0000 A     0.359967 0.45773 
+5_                        12.01 0.0000 A     0.369967 0.45773 
+
+[ bondtypes ]
+;   i         j          func       b0          kb
+2Cbonded _bonded         1    0.10900   284512.0
+
+
+[ moleculetype ]
+; Name            nrexcl
+A                    0
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+     1         2C_      1    RES    N      1         0.0      14.01
+     2           _      1    RES    C      2         0.0      14.01
+     3          4_      1    RES    O      2         0.0      14.01
+     4          5_      1    RES    S      2         0.0      14.01
+
+[ bonds ]
+;  ai    aj funct            c0            c1            c2            c3
+; Bond without values: will result in "No default Bond types" if bonded name were not parsed
+    1     2     1 
+
+[ system ]
+; Name
+minimal edge case system
+
+[ molecules ]
+; Compound  #mols
+A         1
+ 
