@@ -84,7 +84,7 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
                                                    BoolType       mask)
 {
     /* check if we have to use the hardcore values */
-    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
+    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff && facel != 0);
     if (gmx::anyTrue(computeValues))
     {
         RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);
@@ -140,9 +140,8 @@ static inline void ewaldQuadraticPotential(const RealType qq,
                                            RealType*      dvdl,
                                            BoolType       mask)
 {
-
     /* check if we have to use the hardcore values */
-    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
+    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff && facel != 0);
     if (gmx::anyTrue(computeValues))
     {
         RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);

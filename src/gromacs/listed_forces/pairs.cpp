@@ -316,8 +316,15 @@ static real free_energy_evaluate_single(real                                    
 
             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
             {
-                rQ = gmx::sixthroot(one - LFC[i]) * (one + std::fabs(qq[i] / facel));
-                rQ *= scaleLinpointCoulGapsys;
+                if ((facel != 0) && (LFC[i] < 1))
+                {
+                    rQ = gmx::sixthroot(one - LFC[i]) * (one + std::fabs(qq[i] / facel));
+                    rQ *= scaleLinpointCoulGapsys;
+                }
+                else
+                {
+                    rQ = 0;
+                }
                 scaleDvdlRCoul = 1;
                 if (rQ > rCoulCutoff)
                 {
@@ -378,8 +385,16 @@ static real free_energy_evaluate_single(real                                    
             {
                 constexpr real c_twentySixSeventh = 26.0_real / 7.0_real;
 
-                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6VdWGapsys[i] * (one - LFV[i]));
-                rLJ *= scaleLinpointVdWGapsys;
+                if (LFV[i] < 1)
+                {
+
+                    rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6VdWGapsys[i] * (one - LFV[i]));
+                    rLJ *= scaleLinpointVdWGapsys;
+                }
+                else
+                {
+                    rLJ = 0;
+                }
             }
 
             if ((softcoreType == KernelSoftcoreType::Gapsys) && (r < rLJ))
