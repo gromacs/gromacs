@@ -171,7 +171,7 @@ public:
         fepVals_.bScCoul                 = true;
         fepVals_.scGapsysScaleLinpointLJ = 0.3;
         fepVals_.scGapsysScaleLinpointQ  = 0.3;
-        fepVals_.scSigmaLJGapsys         = 0.3;
+        fepVals_.scGapsysSigmaLJ         = 0.3;
         fepVals_.softcoreFunction        = SoftcoreType::Beutler;
 
         fr_.ic = std::make_unique<interaction_const_t>();

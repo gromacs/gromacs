@@ -201,7 +201,7 @@ static real free_energy_evaluate_single(real                                    
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     real       dvdl_elec[2], dvdl_vdw[2];
-    real       gapsysScaleLinpointCoul, gapsysScaleLinpointVdW, sigma6VdWGapsys[2];
+    real       gapsysScaleLinpointCoul, gapsysScaleLinpointVdW, gapsysSigma6VdW[2];
     real       rQ, rLJ;
     real       scaleDvdlRCoul;
     int        i, ntab;
@@ -249,11 +249,11 @@ static real free_energy_evaluate_single(real                                    
                 /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
                  * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
                  */
-                sigma6VdWGapsys[i] = half * c12[i] / c6[i];
+                gapsysSigma6VdW[i] = half * c12[i] / c6[i];
             }
             else
             {
-                sigma6VdWGapsys[i] = scParams.sigma6VdWGapsys;
+                gapsysSigma6VdW[i] = scParams.gapsysSigma6VdW;
             }
         }
     }
@@ -388,7 +388,7 @@ static real free_energy_evaluate_single(real                                    
                 if (LFV[i] < 1)
                 {
 
-                    rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6VdWGapsys[i] * (one - LFV[i]));
+                    rLJ = gmx::sixthroot(c_twentySixSeventh * gapsysSigma6VdW[i] * (one - LFV[i]));
                     rLJ *= gapsysScaleLinpointVdW;
                 }
                 else

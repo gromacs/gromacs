@@ -57,7 +57,7 @@ interaction_const_t::SoftCoreParameters::SoftCoreParameters(const t_lambda& fepv
     softcoreType(fepvals.softcoreFunction),
     gapsysScaleLinpointVdW(fepvals.scGapsysScaleLinpointLJ),
     gapsysScaleLinpointCoul(fepvals.scGapsysScaleLinpointQ),
-    sigma6VdWGapsys(gmx::power6(fepvals.scSigmaLJGapsys))
+    gapsysSigma6VdW(gmx::power6(fepvals.scGapsysSigmaLJ))
 {
     // This is checked during tpr reading, so we can assert here
     GMX_RELEASE_ASSERT(fepvals.sc_r_power == 6.0, "We only support soft-core r-power 6");

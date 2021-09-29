@@ -603,7 +603,7 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PS("sc-function", enumValueToString(fep->softcoreFunction));
     PR("sc-gapsys-scale-linpoint-LJ", fep->scGapsysScaleLinpointLJ);
     PR("sc-gapsys-scale-linpoint-Q", fep->scGapsysScaleLinpointQ);
-    PR("sc-sigma-LJ-gapsys", fep->scSigmaLJGapsys);
+    PR("sc-gapsys-sigma-LJ", fep->scGapsysSigmaLJ);
 };
 
 static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
@@ -1367,7 +1367,7 @@ static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, re
              fep2->scGapsysScaleLinpointQ,
              ftol,
              abstol);
-    cmp_real(fp, "inputrec->fepvals->scSigmaLJGapsys", -1, fep1->scSigmaLJGapsys, fep2->scSigmaLJGapsys, ftol, abstol);
+    cmp_real(fp, "inputrec->fepvals->scGapsysSigmaLJ", -1, fep1->scGapsysSigmaLJ, fep2->scGapsysSigmaLJ, ftol, abstol);
 }
 
 void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol)

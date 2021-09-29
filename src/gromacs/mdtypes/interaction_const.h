@@ -134,7 +134,7 @@ struct interaction_const_t
         // (gapsys sc) linearization point scaling for Coulomb interactions
         real gapsysScaleLinpointCoul;
         // (gapsys sc) lower bound/replacement for c12/c6 in vdw interactions
-        real sigma6VdWGapsys;
+        real gapsysSigma6VdW;
     };
 
     /* VdW */

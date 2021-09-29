@@ -317,7 +317,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
     const real gmx_unused gapsysScaleLinpointCoul = scParams.gapsysScaleLinpointCoul;
     const real gmx_unused gapsysScaleLinpointVdW  = scParams.gapsysScaleLinpointVdW;
-    const real gmx_unused sigma6VdWGapsys         = scParams.sigma6VdWGapsys;
+    const real gmx_unused gapsysSigma6VdW         = scParams.gapsysSigma6VdW;
 
     const bool gmx_unused doShiftForces = ((flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
     const bool            doPotential   = ((flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
@@ -504,7 +504,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             alignas(GMX_SIMD_ALIGNMENT)
                     real gmx_unused preloadGapsysScaleLinpointCoul[DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT)
-                    real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
+                    real gmx_unused preloadGapsysSigma6VdW[NSTATES][DataTypes::simdRealWidth];
             alignas(GMX_SIMD_ALIGNMENT) real preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #else
             real            preloadPairIsValid[DataTypes::simdRealWidth];
@@ -517,7 +517,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             real gmx_unused preloadAlphaCoulEff[DataTypes::simdRealWidth];
             real gmx_unused preloadGapsysScaleLinpointVdW[DataTypes::simdRealWidth];
             real gmx_unused preloadGapsysScaleLinpointCoul[DataTypes::simdRealWidth];
-            real gmx_unused preloadSigma6VdWGapsys[NSTATES][DataTypes::simdRealWidth];
+            real gmx_unused preloadGapsysSigma6VdW[NSTATES][DataTypes::simdRealWidth];
             real            preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #endif
             for (int s = 0; s < DataTypes::simdRealWidth; s++)
@@ -570,11 +570,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             if (c6 > 0 && c12 > 0)
                             {
                                 /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                                preloadSigma6VdWGapsys[i][s] = 0.5_real * c12 / c6;
+                                preloadGapsysSigma6VdW[i][s] = 0.5_real * c12 / c6;
                             }
                             else
                             {
-                                preloadSigma6VdWGapsys[i][s] = sigma6VdWGapsys;
+                                preloadGapsysSigma6VdW[i][s] = gapsysSigma6VdW;
                             }
                         }
                     }
@@ -628,7 +628,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         preloadLjPmeC6Grid[i][s]     = 0;
                         preloadQq[i][s]              = 0;
                         preloadSigma6[i][s]          = 0;
-                        preloadSigma6VdWGapsys[i][s] = 0;
+                        preloadGapsysSigma6VdW[i][s] = 0;
                     }
                 }
             }
@@ -682,7 +682,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             RealType gmx_unused alphaCoulEff;
             RealType gmx_unused gapsysScaleLinpointVdWEff;
             RealType gmx_unused gapsysScaleLinpointCoulEff;
-            RealType gmx_unused sigmaVdWGapsysEff[NSTATES];
+            RealType gmx_unused gapsysSigma6VdWEff[NSTATES];
             for (int i = 0; i < NSTATES; i++)
             {
                 gmx::gatherLoadTranspose<2>(nbfp.data(), typeIndices[i], &c6[i], &c12[i]);
@@ -694,7 +694,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 }
                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                 {
-                    sigmaVdWGapsysEff[i] = gmx::load<RealType>(preloadSigma6VdWGapsys[i]);
+                    gapsysSigma6VdWEff[i] = gmx::load<RealType>(preloadGapsysSigma6VdW[i]);
                 }
             }
             if constexpr (softcoreType == KernelSoftcoreType::Beutler)
@@ -905,7 +905,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                                rSq,
                                                                LFV[i],
                                                                DLF[i],
-                                                               sigmaVdWGapsysEff[i],
+                                                               gapsysSigma6VdWEff[i],
                                                                gapsysScaleLinpointVdWEff,
                                                                repulsionShift,
                                                                dispersionShift,
