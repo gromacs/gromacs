@@ -43,6 +43,8 @@
 #ifndef GMX_PME_PP_COMM_GPU_IMPL_H
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
+#include <atomic>
+
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/math/vectypes.h"
@@ -176,6 +178,10 @@ private:
     GpuEventSynchronizer forcesReadySynchronizer_;
     //! Event recorded when coordinates have been transferred to PME task
     GpuEventSynchronizer pmeCoordinatesSynchronizer_;
+    //! Event recorded by remote PME task when forces have been transferred
+    GpuEventSynchronizer* remotePmeForceSendEvent_;
+    //! Flag to track when remote PP event has been recorded, ready for enqueueing
+    volatile std::atomic<bool>* remotePmeForceSendEventRecorded_;
 };
 
 } // namespace gmx

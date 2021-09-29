@@ -64,6 +64,7 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
     ppRanks_(ppRanks),
     ppCommStream_(ppRanks.size()),
     ppCommEvent_(ppRanks.size()),
+    ppCommEventRecorded_(ppRanks.size()),
     deviceContext_(deviceContext),
     pmeRemoteCpuForcePtr_(ppRanks.size()),
     pmeRemoteGpuForcePtr_(ppRanks.size())
@@ -113,6 +114,15 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
         MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
         // NOLINTNEXTLINE(bugprone-sizeof-expression)
         MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+        // Send address of event and associated flag to PP rank, to allow remote enqueueing
+        // NOLINTNEXTLINE(bugprone-sizeof-expression)
+        MPI_Send(&ppCommEvent_[i], sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
+
+        std::atomic<bool>* tmpPpCommEventRecordedPtr =
+                reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[i]));
+        tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
+        // NOLINTNEXTLINE(bugprone-sizeof-expression)
+        MPI_Send(&tmpPpCommEventRecordedPtr, sizeof(std::atomic<bool>*), MPI_BYTE, receiver.rankId, 0, comm_);
         i++;
     }
 
@@ -142,8 +152,9 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms, bool
                                        ppCommStream_[ppRank]->stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
     ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&ppCommEvent_[ppRank], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
+    std::atomic<bool>* tmpPpCommEventRecordedPtr =
+            reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[ppRank]));
+    tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
 #else
     GMX_UNUSED_VALUE(ppRank);
     GMX_UNUSED_VALUE(numAtoms);

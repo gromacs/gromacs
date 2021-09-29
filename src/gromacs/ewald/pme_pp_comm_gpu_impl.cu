@@ -91,24 +91,27 @@ void PmePpCommGpu::Impl::reinit(int size)
         MPI_Send(&d_pmeForces_, sizeof(float3*), MPI_BYTE, pmeRank_, 0, comm_);
         RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_->data();
         MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, 0, comm_);
+        // Receive address of event and associated flag from PME rank, to allow sync to local stream after force transfer
+        MPI_Recv(&remotePmeForceSendEvent_, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        MPI_Recv(&remotePmeForceSendEventRecorded_, sizeof(std::atomic<bool>*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
     }
 
 #endif
 }
 
-// TODO make this asynchronous by splitting into this into
-// launchRecvForceFromPmeCudaDirect() and sycnRecvForceFromPmeCudaDirect()
 void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu)
 {
 #if GMX_MPI
-    // Remote PME task pushes GPU data directly data to this PP task.
+    // Wait until remote PME task has pushed data, and then enqueue remote event to local stream.
 
-    // Recieve event from PME task after PME->PP force data push has
-    // been scheduled and enqueue this to PP stream.
-    GpuEventSynchronizer* eventptr;
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Recv(&eventptr, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
-    eventptr->enqueueWaitEvent(pmePpCommStream_);
+    // Spin until PME rank sets flag
+    while (!(remotePmeForceSendEventRecorded_->load(std::memory_order_acquire))) {};
+
+    // Enqueue remote event
+    remotePmeForceSendEvent_->enqueueWaitEvent(pmePpCommStream_);
+
+    // Reset the flag
+    remotePmeForceSendEventRecorded_->store(false, std::memory_order_release);
 
     if (receivePmeForceToGpu)
     {

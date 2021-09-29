@@ -101,6 +101,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_gpu_internal.h"
+#include "pme_internal.h"
 #include "pme_output.h"
 #include "pme_pp_communication.h"
 
@@ -546,46 +547,54 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     int                    messages, ind_start, ind_end;
     cve.cycles = cycles;
 
-    /* Now the evaluated forces have to be transferred to the PP nodes */
+    if (pme_pp->useGpuDirectComm)
+    {
+        GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
+                   "The use of GPU direct communication for PME-PP is enabled, "
+                   "but the PME GPU force reciever object does not exist");
+    }
+
     messages = 0;
     ind_end  = 0;
-    for (const auto& receiver : pme_pp->ppRanks)
-    {
-        ind_start = ind_end;
-        ind_end   = ind_start + receiver.numAtoms;
-        if (pme_pp->useGpuDirectComm)
-        {
-            GMX_ASSERT((pme_pp->pmeForceSenderGpu != nullptr),
-                       "The use of GPU direct communication for PME-PP is enabled, "
-                       "but the PME GPU force reciever object does not exist");
 
-            if (GMX_THREAD_MPI)
-            {
-                pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(
-                        receiver.rankId, receiver.numAtoms, pme_pp->sendForcesDirectToPpGpu);
-            }
-            else
+    /* Now the evaluated forces have to be transferred to the PP ranks */
+    if (pme_pp->useGpuDirectComm && GMX_THREAD_MPI)
+    {
+        int numPpRanks = static_cast<int>(pme_pp->ppRanks.size());
+#    pragma omp parallel for num_threads(std::min(numPpRanks, pme.nthread)) schedule(static)
+        for (int i = 0; i < numPpRanks; i++)
+        {
+            auto& receiver = pme_pp->ppRanks[i];
+            pme_pp->pmeForceSenderGpu->sendFToPpCudaDirect(
+                    receiver.rankId, receiver.numAtoms, pme_pp->sendForcesDirectToPpGpu);
+        }
+    }
+    else
+    {
+        for (const auto& receiver : pme_pp->ppRanks)
+        {
+            ind_start = ind_end;
+            ind_end   = ind_start + receiver.numAtoms;
+            if (pme_pp->useGpuDirectComm)
             {
                 pme_pp->pmeForceSenderGpu->sendFToPpCudaMpi(pme_gpu_get_device_f(&pme),
                                                             ind_start,
                                                             receiver.numAtoms * sizeof(rvec),
                                                             receiver.rankId,
                                                             &pme_pp->req[messages]);
-
-                messages++;
             }
-        }
-        else
-        {
-            void* sendbuf = const_cast<void*>(static_cast<const void*>(output.forces_[ind_start]));
-            // Send using MPI
-            MPI_Isend(sendbuf,
-                      receiver.numAtoms * sizeof(rvec),
-                      MPI_BYTE,
-                      receiver.rankId,
-                      0,
-                      pme_pp->mpi_comm_mysim,
-                      &pme_pp->req[messages]);
+            else
+            {
+                void* sendbuf = const_cast<void*>(static_cast<const void*>(output.forces_[ind_start]));
+                // Send using MPI
+                MPI_Isend(sendbuf,
+                          receiver.numAtoms * sizeof(rvec),
+                          MPI_BYTE,
+                          receiver.rankId,
+                          0,
+                          pme_pp->mpi_comm_mysim,
+                          &pme_pp->req[messages]);
+            }
             messages++;
         }
     }

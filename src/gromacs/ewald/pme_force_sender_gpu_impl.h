@@ -43,10 +43,20 @@
 #ifndef GMX_PMEFORCESENDERGPU_IMPL_H
 #define GMX_PMEFORCESENDERGPU_IMPL_H
 
+#include <atomic>
+#include <new>
+
 #include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/arrayref.h"
+
+// Portable definition of cache line size
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_destructive_interference_size;
+#else
+constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
 
 class GpuEventSynchronizer;
 
@@ -54,6 +64,11 @@ namespace gmx
 {
 
 /*! \internal \brief Class with interfaces and data for CUDA version of PME Force sending functionality*/
+
+typedef struct CacheLineAlignedFlag
+{
+    alignas(hardware_destructive_interference_size) bool flag;
+} CacheLineAlignedFlag;
 
 class PmeForceSenderGpu::Impl
 {
@@ -107,6 +122,8 @@ private:
     std::vector<std::unique_ptr<DeviceStream>> ppCommStream_;
     //! Events used for manging sync with remote PP ranks
     std::vector<std::unique_ptr<GpuEventSynchronizer>> ppCommEvent_;
+    //! Vector of flags to track when PP transfer events have been recorded
+    std::vector<std::atomic<CacheLineAlignedFlag>> ppCommEventRecorded_;
     //! Addresses of local force buffers to send to remote PP ranks
     std::vector<DeviceBuffer<RVec>> localForcePtr_;
     //! GPU context handle (not used in CUDA)
