@@ -45,6 +45,7 @@
 #include "gmxpre.h"
 
 #include <map>
+#include <optional>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"

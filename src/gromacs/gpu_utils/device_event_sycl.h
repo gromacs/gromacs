@@ -50,6 +50,7 @@
 #ifndef GMX_GPU_UTILS_DEVICE_EVENT_SYCL_H
 #define GMX_GPU_UTILS_DEVICE_EVENT_SYCL_H
 
+#include <algorithm>
 #include <vector>
 
 #include "gromacs/gpu_utils/device_stream.h"
