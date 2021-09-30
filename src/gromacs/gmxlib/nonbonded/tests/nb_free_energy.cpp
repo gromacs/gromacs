@@ -469,7 +469,7 @@ protected:
                                   doNBFlags,
                                   lambdas,
                                   &nrnb,
-                                  output.f.arrayRefWithPadding().paddedArrayRef().data(),
+                                  output.f.arrayRefWithPadding(),
                                   as_rvec_array(output.fShift.data()),
                                   output.energy.energyGroupPairTerms[NonBondedEnergyTerms::CoulombSR],
                                   output.energy.energyGroupPairTerms[NonBondedEnergyTerms::LJSR],

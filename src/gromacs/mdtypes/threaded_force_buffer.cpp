@@ -109,7 +109,16 @@ void ThreadForceBuffer<ForceBufferElementType>::resizeBufferAndClearMask(const i
     const int numBlocks = (numAtoms + s_reductionBlockSize - 1) >> s_numReductionBlockBits;
 
     reductionMask_.resize(numBlocks);
-    forceBuffer_.resize(numBlocks * s_reductionBlockSize * sizeof(ForceBufferElementType) / sizeof(real));
+
+    constexpr size_t c_numComponentsInElement = sizeof(ForceBufferElementType) / sizeof(real);
+    int              newNumElements           = numBlocks * s_reductionBlockSize;
+    if (c_numComponentsInElement != 4 && newNumElements == numAtoms)
+    {
+        // Pad with one element to allow 4-wide SIMD loads and stores.
+        // Note that actually only one real is needed, but we need a whole element for the ArrayRef.
+        newNumElements += 1;
+    }
+    forceBuffer_.resize(newNumElements * c_numComponentsInElement);
 
     for (gmx_bitmask_t& mask : reductionMask_)
     {
@@ -175,7 +184,8 @@ void reduceThreadForceBuffers(ArrayRef<gmx::RVec> force,
             {
                 if (bitmask_is_set(masks[blockIndex], ft))
                 {
-                    fp[numContributingBuffers++] = threadForceBuffers[ft]->forceBuffer();
+                    fp[numContributingBuffers++] =
+                            threadForceBuffers[ft]->forceBufferWithPadding().paddedArrayRef().data();
                 }
             }
             if (numContributingBuffers > 0)

@@ -61,6 +61,7 @@
 
 #include <memory>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -118,10 +119,25 @@ public:
     //! Clears all force and energy buffers
     void clearForcesAndEnergies();
 
-    //! Returns a plain pointer to the force buffer
-    ForceBufferElementType* forceBuffer()
+    //! Returns an array reference to the force buffer which is aligned for SIMD access
+    ArrayRef<ForceBufferElementType> forceBuffer()
     {
-        return reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data());
+        return ArrayRef<ForceBufferElementType>(
+                reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data()),
+                reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data()) + numAtoms_);
+    }
+
+    /*! \brief Returns an array reference with padding to the force buffer which is aligned for SIMD access
+     *
+     * For RVec there is padding of one real for 4-wide SIMD access.
+     * For both RVec and rvec4 there is padding up to the block size for use in ThreadedForceBuffer.
+     */
+    ArrayRefWithPadding<ForceBufferElementType> forceBufferWithPadding()
+    {
+        return ArrayRefWithPadding<ForceBufferElementType>(
+                reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data()),
+                reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data()) + numAtoms_,
+                reinterpret_cast<ForceBufferElementType*>(forceBuffer_.data() + forceBuffer_.size()));
     }
 
     //! Returns a view of the shift force buffer
@@ -140,9 +156,9 @@ public:
     ArrayRef<const gmx_bitmask_t> reductionMask() const { return reductionMask_; }
 
 private:
-    //! Force array buffer
+    //! Force array buffer, aligned to enable aligned SIMD access
     std::vector<real, AlignedAllocator<real>> forceBuffer_;
-    //! Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t
+    //! Mask for marking which parts of f are filled, working array for constructing mask in setupReduction()
     std::vector<gmx_bitmask_t> reductionMask_;
     //! Index to touched blocks
     std::vector<int> usedBlockIndices_;

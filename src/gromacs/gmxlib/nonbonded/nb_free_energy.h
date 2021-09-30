@@ -69,7 +69,7 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                int                                              flags,
                                gmx::ArrayRef<const real>                        lambda,
                                t_nrnb* gmx_restrict                             nrnb,
-                               gmx::RVec*                                       threadForceBuffer,
+                               gmx::ArrayRefWithPadding<gmx::RVec>              threadForceBuffer,
                                rvec*               threadForceShiftBuffer,
                                gmx::ArrayRef<real> threadVc,
                                gmx::ArrayRef<real> threadVv,

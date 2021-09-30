@@ -398,7 +398,7 @@ static void calcBondedForces(const InteractionDefinitions& idef,
 
             threadBuffer.clearForcesAndEnergies();
 
-            rvec4* ft = threadBuffer.forceBuffer();
+            rvec4* ft = threadBuffer.forceBuffer().data();
 
             /* Thread 0 writes directly to the main output buffers.
              * We might want to reconsider this.
