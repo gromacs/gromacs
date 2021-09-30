@@ -92,6 +92,7 @@ void PmePpCommGpu::Impl::reinit(int size)
         RVec* pmeCpuForceBufferData = pmeCpuForceBuffer_->data();
         MPI_Send(&pmeCpuForceBufferData, sizeof(RVec*), MPI_BYTE, pmeRank_, 0, comm_);
         // Receive address of event and associated flag from PME rank, to allow sync to local stream after force transfer
+        // NOLINTNEXTLINE(bugprone-sizeof-expression)
         MPI_Recv(&remotePmeForceSendEvent_, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
         MPI_Recv(&remotePmeForceSendEventRecorded_, sizeof(std::atomic<bool>*), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
     }

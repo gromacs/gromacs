@@ -67,8 +67,8 @@ class ArrayRef;
  */
 enum class FftBackend
 {
-    Cufft,      // supports only single-GPU
-    Ocl,        // supports only single-GPU
+    Cufft, // supports only single-GPU
+    Ocl,   // supports only single-GPU
     HeFFTe_CUDA,
     SyclMkl,    // supports only single-GPU
     SyclRocfft, // supports only single-GPU
