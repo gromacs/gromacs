@@ -74,14 +74,17 @@ elseif (GMX_GPU_OPENCL)
         gpu_3dfft_ocl.cpp
         )
 elseif (GMX_GPU_SYCL)
-    # SYCL-TODO: proper implementation
+    if (GMX_SYCL_HIPSYCL)
+        set(3dfft_sycl_source gpu_3dfft_sycl_rocfft.cpp)
+    else()
+        set(3dfft_sycl_source gpu_3dfft.cpp gpu_3dfft_sycl.cpp)
+    endif()
     gmx_add_libgromacs_sources(
         # SYCL-specific sources
-        gpu_3dfft_sycl.cpp
+        ${3dfft_sycl_source}
         )
     _gmx_add_files_to_property(SYCL_SOURCES
-        gpu_3dfft.cpp
-        gpu_3dfft_sycl.cpp
+        ${3dfft_sycl_source}
         )
 endif()
 

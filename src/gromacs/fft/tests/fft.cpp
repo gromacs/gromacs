@@ -81,7 +81,7 @@ namespace test
  * initializers, and we would not have to do so much useless copying
  * during the unit tests below.
  */
-const double inputdata[] = {
+const double inputdata[500] = {
     // print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
     -3.5, 6.3,  1.2,  0.3,  1.1,  -5.7, 5.8,  -1.9, -6.3, -1.4, 7.4,  2.4,  -9.9, -7.2, 5.4,  6.1,
     -1.9, -7.6, 1.4,  -3.5, 0.7,  5.6,  -4.2, -1.1, -4.4, -6.3, -7.2, 4.6,  -3.0, -0.9, 7.2,  2.5,
@@ -364,7 +364,7 @@ TEST_F(FFTTest3D, Real5_6_9)
     checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 }
 
-#if GMX_GPU_CUDA || GMX_GPU_OPENCL
+#if GMX_GPU_CUDA || GMX_GPU_OPENCL || (GMX_GPU_SYCL && GMX_SYCL_HIPSYCL)
 TEST_F(FFTTest3D, GpuReal5_6_9)
 {
     // Ensure library resources are managed appropriately
@@ -387,6 +387,8 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
 
         int size = complexGridSizePadded[0] * complexGridSizePadded[1] * complexGridSizePadded[2];
         int sizeInReals = size * 2;
+        GMX_RELEASE_ASSERT(sizeof(inputdata) / sizeof(inputdata[0]) >= size_t(sizeInReals),
+                           "Size of inputdata is too small");
 
         // Set up the complex grid. Complex numbers take twice the
         // memory.
@@ -395,7 +397,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         // Use std::copy to convert from double to real easily
         std::copy(inputdata, inputdata + sizeInReals, in_.begin());
 
-        // Allocate the device buffers
+        SCOPED_TRACE("Allocating the device buffers");
         DeviceBuffer<float> realGrid, complexGrid;
         allocateDeviceBuffer(&realGrid, in_.size(), deviceContext);
         allocateDeviceBuffer(&complexGrid, complexGridValues.size(), deviceContext);
@@ -404,6 +406,10 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         const FftBackend backend = FftBackend::Cufft;
 #    elif GMX_GPU_OPENCL
         const FftBackend backend = FftBackend::Ocl;
+#    elif GMX_GPU_SYCL
+#        if GMX_SYCL_HIPSYCL
+        const FftBackend backend = FftBackend::SyclRocfft;
+#        endif
 #    endif
         const bool         performOutOfPlaceFFT    = true;
         MPI_Comm           comm                    = MPI_COMM_NULL;
@@ -446,12 +452,23 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         checker.checkSequence(
                 complexGridValues.begin(), complexGridValues.end(), "ComplexGridAfterRealToComplex");
 
-        // Do the back transform
+        // Clear the real grid input data for the FFT so we can
+        // compute the back transform into it and observe that it did
+        // the work expected.
+        std::vector<float> outputRealGridValues(in_.size());
+        copyToDeviceBuffer(&realGrid,
+                           outputRealGridValues.data(),
+                           0,
+                           outputRealGridValues.size(),
+                           deviceStream,
+                           GpuApiCallBehavior::Sync,
+                           nullptr);
+
+        SCOPED_TRACE("Doing the back transform");
         gpu3dFft.perform3dFft(GMX_FFT_COMPLEX_TO_REAL, timingEvent);
         deviceStream.synchronize();
 
         // Transfer the real grid back from the device
-        std::vector<float> outputRealGridValues(in_.size());
         copyFromDeviceBuffer(outputRealGridValues.data(),
                              &realGrid,
                              0,
@@ -462,6 +479,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
 
         checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 
+        SCOPED_TRACE("Cleaning up");
         freeDeviceBuffer(&realGrid);
         freeDeviceBuffer(&complexGrid);
     }

@@ -616,7 +616,11 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 #elif GMX_GPU_OPENCL
         const gmx::FftBackend backend = gmx::FftBackend::Ocl;
 #elif GMX_GPU_SYCL
+#    if GMX_SYCL_HIPSYCL
+        const gmx::FftBackend backend = gmx::FftBackend::SyclRocfft;
+#    else
         const gmx::FftBackend backend = gmx::FftBackend::Sycl;
+#    endif
 #else
         GMX_RELEASE_ASSERT(false, "Unknown GPU backend");
         const gmx::FftBackend backend = gmx::FftBackend::Count;
