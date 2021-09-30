@@ -128,6 +128,7 @@ private:
     class Impl;
     class ImplCuFft;
     class ImplOcl;
+    class ImplSyclMkl;
     class ImplSyclRocfft;
     class ImplSycl;
 

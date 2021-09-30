@@ -69,14 +69,14 @@ Gpu3dFft::ImplSycl::ImplSycl(bool /*allocateGrids*/,
                              DeviceBuffer<float>* /*realGrid*/,
                              DeviceBuffer<float>* /*complexGrid*/)
 {
-    GMX_THROW(NotImplementedError("GPU 3DFFT is not implemented in SYCL"));
+    GMX_THROW(NotImplementedError("Using SYCL build without GPU 3DFFT support"));
 }
 
 Gpu3dFft::ImplSycl::~ImplSycl() = default;
 
 void Gpu3dFft::ImplSycl::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
 {
-    GMX_THROW(NotImplementedError("Not implemented on SYCL yet"));
+    GMX_THROW(NotImplementedError("Using SYCL build without GPU 3DFFT support"));
 }
 
 #pragma clang diagnostic pop

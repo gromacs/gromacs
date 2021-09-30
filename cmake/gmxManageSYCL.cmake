@@ -290,6 +290,11 @@ else()
         message(FATAL_ERROR "Cannot compile with SYCL Intel compiler. Try a different compiler or disable SYCL.")
     endif()
 
+    include(gmxManageFFTLibraries)
+    if(NOT GMX_FFT_MKL)
+        message(WARNING "Building SYCL version with ${GMX_FFT_LIBRARY} instead of MKL. GPU FFT is disabled!")
+    endif()
+
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
     function(add_sycl_to_target)
         cmake_parse_arguments(
