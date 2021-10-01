@@ -78,32 +78,6 @@ static constexpr float c_oneSixth = 0.16666667F;
 static constexpr float c_oneTwelfth = 0.08333333F;
 /*! \endcond */
 
-/* The following functions are necessary because on some versions of Intel OpenCL RT, subgroups
- * do not properly work (segfault or create subgroups of size 1) if used in kernels
- * with non-1-dimensional workgroup. */
-//! \brief Convert 3D range to 1D
-static inline cl::sycl::range<1> flattenRange(cl::sycl::range<3> range3d)
-{
-    return { range3d.size() };
-}
-
-//! \brief Convert 3D nd_range to 1D
-static inline cl::sycl::nd_range<1> flattenNDRange(cl::sycl::nd_range<3> nd_range3d)
-{
-    return { flattenRange(nd_range3d.get_global_range()), flattenRange(nd_range3d.get_local_range()) };
-}
-
-//! \brief Convert flattened 1D index to 3D
-template<int rangeX, int rangeY>
-static inline cl::sycl::id<3> unflattenId(cl::sycl::id<1> id1d)
-{
-    constexpr unsigned rangeXY = rangeX * rangeY;
-    const unsigned     id      = id1d[0];
-    const unsigned     z       = id / rangeXY;
-    const unsigned     xy      = id % rangeXY;
-    return { xy % rangeX, xy / rangeX, z };
-}
-
 } // namespace Nbnxm
 
 #endif // GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
