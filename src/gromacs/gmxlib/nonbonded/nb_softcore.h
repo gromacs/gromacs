@@ -68,7 +68,7 @@ static inline void quadraticApproximationCoulomb(const RealType qq,
 }
 
 /* reaction-field linearized electrostatics */
-template<class RealType, class BoolType>
+template<bool computeForces, class RealType, class BoolType>
 static inline void reactionFieldQuadraticPotential(const RealType qq,
                                                    const real     facel,
                                                    const RealType r,
@@ -118,7 +118,10 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
             potentialQuad = potentialQuad + qq * (krf * r * r - potentialShift);
 
             // update
-            *force     = gmx::blend(*force, forceQuad, computeValues);
+            if constexpr (computeForces)
+            {
+                *force     = gmx::blend(*force, forceQuad, computeValues);
+            }
             *potential = gmx::blend(*potential, potentialQuad, computeValues);
             *dvdl      = *dvdl + gmx::selectByMask(dvdlQuad, computeValues && withinCutoff);
         }
@@ -126,7 +129,7 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
 }
 
 /* ewald linearized electrostatics */
-template<class RealType, class BoolType>
+template<bool computeForces, class RealType, class BoolType>
 static inline void ewaldQuadraticPotential(const RealType qq,
                                            const real     facel,
                                            const RealType r,
@@ -174,7 +177,10 @@ static inline void ewaldQuadraticPotential(const RealType qq,
             potentialQuad = potentialQuad - qq * potentialShift;
 
             // update
-            *force     = gmx::blend(*force, forceQuad, computeValues);
+            if constexpr (computeForces)
+            {
+                *force     = gmx::blend(*force, forceQuad, computeValues);
+            }
             *potential = gmx::blend(*potential, potentialQuad, computeValues);
             *dvdl      = *dvdl + gmx::selectByMask(dvdlQuad, computeValues && withinCutoff);
         }
@@ -182,7 +188,7 @@ static inline void ewaldQuadraticPotential(const RealType qq,
 }
 
 /* cutoff LJ with quadratic appximation of lj-potential */
-template<class RealType, class BoolType>
+template<bool computeForces, class RealType, class BoolType>
 static inline void lennardJonesQuadraticPotential(const RealType c6,
                                                   const RealType c12,
                                                   const RealType r,
@@ -252,7 +258,10 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
             potentialQuad = potentialQuad
                             + gmx::selectByMask(((c12s * repulsionShift) - (c6s * dispersionShift)),
                                                 computeValues);
-            *force     = gmx::blend(*force, forceQuad, computeValues);
+            if constexpr (computeForces)
+            {
+                *force     = gmx::blend(*force, forceQuad, computeValues);
+            }
             *potential = gmx::blend(*potential, potentialQuad, computeValues);
             *dvdl      = *dvdl + gmx::selectByMask(dvdlQuad, computeValues);
         }

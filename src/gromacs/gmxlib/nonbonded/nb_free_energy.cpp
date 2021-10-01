@@ -808,18 +808,18 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    ewaldQuadraticPotential(qq[i],
-                                                            facel,
-                                                            rC,
-                                                            rCutoffCoul,
-                                                            LFC[i],
-                                                            DLF[i],
-                                                            gapsysScaleLinpointCoulEff,
-                                                            sh_ewald,
-                                                            &fScalC[i],
-                                                            &vCoul[i],
-                                                            &dvdlCoul,
-                                                            computeElecInteraction);
+                                    ewaldQuadraticPotential<computeForces>(qq[i],
+                                                                           facel,
+                                                                           rC,
+                                                                           rCutoffCoul,
+                                                                           LFC[i],
+                                                                           DLF[i],
+                                                                           gapsysScaleLinpointCoulEff,
+                                                                           sh_ewald,
+                                                                           &fScalC[i],
+                                                                           &vCoul[i],
+                                                                           &dvdlCoul,
+                                                                           computeElecInteraction);
                                 }
                             }
                             else
@@ -832,19 +832,20 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    reactionFieldQuadraticPotential(qq[i],
-                                                                    facel,
-                                                                    rC,
-                                                                    rCutoffCoul,
-                                                                    LFC[i],
-                                                                    DLF[i],
-                                                                    gapsysScaleLinpointCoulEff,
-                                                                    krf,
-                                                                    crf,
-                                                                    &fScalC[i],
-                                                                    &vCoul[i],
-                                                                    &dvdlCoul,
-                                                                    computeElecInteraction);
+                                    reactionFieldQuadraticPotential<computeForces>(
+                                            qq[i],
+                                            facel,
+                                            rC,
+                                            rCutoffCoul,
+                                            LFC[i],
+                                            DLF[i],
+                                            gapsysScaleLinpointCoulEff,
+                                            krf,
+                                            crf,
+                                            &fScalC[i],
+                                            &vCoul[i],
+                                            &dvdlCoul,
+                                            computeElecInteraction);
                                 }
                             }
 
@@ -899,20 +900,20 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                             {
-                                lennardJonesQuadraticPotential(c6[i],
-                                                               c12[i],
-                                                               r,
-                                                               rSq,
-                                                               LFV[i],
-                                                               DLF[i],
-                                                               gapsysSigma6VdWEff[i],
-                                                               gapsysScaleLinpointVdWEff,
-                                                               repulsionShift,
-                                                               dispersionShift,
-                                                               &fScalV[i],
-                                                               &vVdw[i],
-                                                               &dvdlVdw,
-                                                               computeVdwInteraction);
+                                lennardJonesQuadraticPotential<computeForces>(c6[i],
+                                                                              c12[i],
+                                                                              r,
+                                                                              rSq,
+                                                                              LFV[i],
+                                                                              DLF[i],
+                                                                              gapsysSigma6VdWEff[i],
+                                                                              gapsysScaleLinpointVdWEff,
+                                                                              repulsionShift,
+                                                                              dispersionShift,
+                                                                              &fScalV[i],
+                                                                              &vVdw[i],
+                                                                              &dvdlVdw,
+                                                                              computeVdwInteraction);
                             }
 
                             if constexpr (vdwInteractionTypeIsEwald)
