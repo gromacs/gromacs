@@ -270,6 +270,63 @@ it is useful to normalize the coefficients
 such that the transformation coordinate also has units of nanometer.
 That makes both the choice of the force constant and the interpretation easier.
 
+Here are two examples of pull sections of the :ref:`mdp` input that use
+a tranformation coordinate setups. The first is a contact reaction coordinate
+that is 1 at contact and 0 at larger distances:
+
+::
+
+   pull                     = yes
+   pull-ngroups             = 2
+   pull-ncoords             = 2
+
+   pull-group1-name         = groupA
+   pull-group2-name         = groupB
+
+   pull-coord1-type         = umbrella
+   pull-coord1-geometry     = distance
+   pull-coord1-groups       = 1 2
+   pull-coord1-dim          = Y Y Y
+   pull-coord1-k            = 0      ; avoid forces working directly on this distance
+
+   pull-coord2-type         = umbrella
+   pull-coord2-geometry     = transformation
+   pull-coord2-expression   = 1/(1 + exp(50*(x1 - 1.8*0.3)))  ; x1 refers to the value of coord1
+   pull-coord2-init         = 1      ; this restrains the distance to having the contact
+   pull-coord2-k            = 100
+
+The second example is an average of two distances:
+
+::
+
+   pull                     = yes
+   pull-ngroups             = 4
+   pull-ncoords             = 3
+
+   pull-group1-name         = groupA
+   pull-group2-name         = groupB
+   pull-group3-name         = groupC
+   pull-group4-name         = groupD
+
+   pull-coord1-type         = umbrella
+   pull-coord1-geometry     = distance
+   pull-coord1-groups       = 1 2
+   pull-coord1-dim          = Y Y Y
+   pull-coord1-k            = 0      ; avoid forces working directly on this distance
+
+   pull-coord2-type         = umbrella
+   pull-coord2-geometry     = distance
+   pull-coord2-groups       = 3 4
+   pull-coord2-dim          = Y Y Y
+   pull-coord2-k            = 0      ; avoid forces working directly on this distance
+
+   pull-coord3-type         = umbrella
+   pull-coord3-geometry     = transformation
+   pull-coord3-expression   = 0.5*(x1 + x2)  ; x1 and x2 refer to the value of coord1 and coord2
+   pull-coord3-init         = 0.8    ; restrains the average distance to 0.8 nm
+   pull-coord3-k            = 1000
+
+
 Limitations
 ^^^^^^^^^^^
 
