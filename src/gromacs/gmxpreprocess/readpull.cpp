@@ -152,6 +152,12 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
                                   "'transformation'",
                                   coord_index_for_output)));
     }
+    else if (pcrd->expression[0] == '"' || pcrd->expression[0] == '\'')
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString(
+                "pull-coord%d-expression should not start with double quote or a quote",
+                coord_index_for_output)));
+    }
     if (pcrd->dx == 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString(
