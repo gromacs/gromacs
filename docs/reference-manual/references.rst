@@ -2640,6 +2640,29 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+   <div id="refcp2k2020">
+
+.. _refcp2k2020:
+
+:sup:`188` Kühne T., Iannuzzi M., Del Ben M. and Hutter J. *et al.*,
+"CP2K: An electronic structure and molecular dynamics software package - Quickstep: Efficient and accurate electronic structure calculations",
+*J. Chem. Phys.*, **152**, 194103 (2020).
+
+.. raw:: html
+
+   </div>
+
+   <div id="refLaino2005">
+
+.. _refLaino2005:
+
+:sup:`189` Laino T., Mohamed F., Laio A. and Parrinello M.,
+"An Efficient Real Space Multigrid QM/MM Electrostatic Coupling", *J. Chem. Theory Comput.*, **1**, 1176 (2005).
+
+.. raw:: html
+
+   </div>
+
 .. raw:: html
 
    </div>

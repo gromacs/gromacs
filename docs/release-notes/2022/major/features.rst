@@ -7,6 +7,18 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Hybrid Quantum-Classical simulations (QM/MM) with CP2K interface
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Simulations of chemical reactions pathways can provide an atomistic insight into many 
+biological and chemical processes. To perform such kind of modelling in complex systems, 
+that includes solvent and/or proteins Multi-scale Quantum Mechanics / Molecular Mechanics 
+(QM/MM) approaches are often used. Here we introduce a whole new interface to perform QM/MM 
+simulations in fully periodic systems using MDModule that couples |Gromacs| with CP2K 
+quantum chemistry package. This enables hybrid simulations of systems in systems 
+where chemical reactions occurs. The interface supports most of the simulations techniques 
+available in |Gromacs| including energy minimization, classical MD and enhanced sampling methods
+such as umbrella sampling and accelerated weight histogram method.
 
 Transformation pull coordinate for mathematical transformations of pull coordinates
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
