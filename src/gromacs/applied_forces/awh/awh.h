@@ -91,6 +91,7 @@ struct AwhHistory;
 class AwhParams;
 class Bias;
 struct BiasCoupledToSystem;
+class BiasSharing;
 class ForceWithVirial;
 
 /*! \libinternal
@@ -278,9 +279,10 @@ private:
     std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
     const int64_t    seed_;   /**< Random seed for MC jumping with umbrella type bias potential. */
     const int        nstout_; /**< Interval in steps for writing to energy file. */
-    const t_commrec* commRecord_;          /**< Pointer to the communication record. */
-    const gmx_multisim_t* multiSimRecord_; /**< Handler for multi-simulations. */
-    pull_t*               pull_;           /**< Pointer to the pull working data. */
+    const t_commrec* commRecord_; /**< Pointer to the communication record. */
+    //! Object for sharing bias between simulations, only set when needed
+    std::unique_ptr<BiasSharing> biasSharing_;
+    pull_t*                      pull_; /**< Pointer to the pull working data. */
     double potentialOffset_; /**< The offset of the bias potential which changes due to bias updates. */
     const int numFepLambdaStates_; /**< The number of free energy lambda states of the system. */
     int       fepLambdaState_;     /**< The current free energy lambda state. */

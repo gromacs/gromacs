@@ -2102,8 +2102,8 @@ AWH adaptive biasing
       :ref:`gmx mdrun` option ``-multidir`` the bias will also be shared across simulations.
       Sharing may increase convergence initially, although the starting configurations
       can be critical, especially when sharing between many biases.
-      Currently, positive group values should start at 1 and increase
-      by 1 for each subsequent bias that is shared.
+      Currently, the share value should increase with increasing bias index
+      (or be 0).
 
 .. mdp:: awh1-ndim
 

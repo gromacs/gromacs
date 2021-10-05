@@ -134,7 +134,7 @@ public:
                                        params_->dimParams,
                                        params_->beta,
                                        mdTimeStep,
-                                       1,
+                                       nullptr,
                                        "",
                                        Bias::ThisRankWillDoIO::No,
                                        disableUpdateSkips);
@@ -170,7 +170,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
         awh_dvec                    coordValue = { coord, 0, 0, 0 };
         double                      potential  = 0;
         gmx::ArrayRef<const double> biasForce  = bias.calcForceAndUpdateBias(
-                coordValue, {}, {}, &potential, &potentialJump, nullptr, nullptr, step, step, seed_, nullptr);
+                coordValue, {}, {}, &potential, &potentialJump, step, step, seed_, nullptr);
 
         force.push_back(biasForce[0]);
         pot.push_back(potential);
@@ -249,7 +249,7 @@ TEST(BiasTest, DetectsCovering)
               params.dimParams,
               params.beta,
               mdTimeStep,
-              1,
+              nullptr,
               "",
               Bias::ThisRankWillDoIO::No);
 
@@ -272,17 +272,8 @@ TEST(BiasTest, DetectsCovering)
         awh_dvec coordValue    = { coord, 0, 0, 0 };
         double   potential     = 0;
         double   potentialJump = 0;
-        bias.calcForceAndUpdateBias(coordValue,
-                                    {},
-                                    {},
-                                    &potential,
-                                    &potentialJump,
-                                    nullptr,
-                                    nullptr,
-                                    step,
-                                    step,
-                                    params.awhParams.seed(),
-                                    nullptr);
+        bias.calcForceAndUpdateBias(
+                coordValue, {}, {}, &potential, &potentialJump, step, step, params.awhParams.seed(), nullptr);
 
         inInitialStage = bias.state().inInitialStage();
         if (!inInitialStage)

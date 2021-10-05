@@ -66,7 +66,6 @@
 #include "dimparams.h"
 #include "histogramsize.h"
 
-struct gmx_multisim_t;
 struct t_commrec;
 
 namespace gmx
@@ -77,6 +76,7 @@ class ArrayRef;
 struct AwhBiasHistory;
 class BiasParams;
 class BiasGrid;
+class BiasSharing;
 class GridAxis;
 class PointState;
 
@@ -105,11 +105,13 @@ public:
      *                                  entries and grow by a floating-point scaling factor.
      * \param[in] dimParams             The dimension parameters.
      * \param[in] grid                  The bias grid.
+     * \param[in] biasSharing           Multisim bias sharing object, can be nullptrx
      */
     BiasState(const AwhBiasParams&      awhBiasParams,
               double                    histogramSizeInitial,
               ArrayRef<const DimParams> dimParams,
-              const BiasGrid&           grid);
+              const BiasGrid&           grid,
+              const BiasSharing*        biasSharing);
 
     /*! \brief
      * Restore the bias state from history.
@@ -356,15 +358,11 @@ private:
      * \param[in] params        The bias parameters.
      * \param[in] dimParams     Bias dimension parameters.
      * \param[in] grid          The grid.
-     * \param[in] commRecord    Struct for intra-simulation communication.
-     * \param[in] multiSimComm  Struct for multi-simulation communication.
      * \returns true if covered.
      */
     bool isSamplingRegionCovered(const BiasParams&         params,
                                  ArrayRef<const DimParams> dimParams,
-                                 const BiasGrid&           grid,
-                                 const t_commrec*          commRecord,
-                                 const gmx_multisim_t*     multiSimComm) const;
+                                 const BiasGrid&           grid) const;
 
     /*! \brief
      * Return the new reference weight histogram size for the current update.
@@ -408,8 +406,6 @@ public:
      * \param[in]     dimParams   The dimension parameters.
      * \param[in]     grid        The grid.
      * \param[in]     params      The bias parameters.
-     * \param[in]     commRecord  Struct for intra-simulation communication.
-     * \param[in]     ms          Struct for multi-simulation communication.
      * \param[in]     t           Time.
      * \param[in]     step        Time step.
      * \param[in,out] fplog       Log file.
@@ -418,8 +414,6 @@ public:
     void updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParams> dimParams,
                                                   const BiasGrid&           grid,
                                                   const BiasParams&         params,
-                                                  const t_commrec*          commRecord,
-                                                  const gmx_multisim_t*     ms,
                                                   double                    t,
                                                   int64_t                   step,
                                                   FILE*                     fplog,
@@ -545,6 +539,9 @@ private:
     /* Track the part of the grid sampled since the last update. */
     awh_ivec originUpdatelist_; /**< The origin of the rectangular region that has been sampled since last update. */
     awh_ivec endUpdatelist_; /**< The end of the rectangular region that has been sampled since last update. */
+
+    //! Object for sharing biases over multiple simulations, can be nullptr
+    const BiasSharing* biasSharing_;
 };
 
 //! Linewidth used for warning output

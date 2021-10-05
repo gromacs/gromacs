@@ -127,7 +127,7 @@ public:
                                        params_->dimParams,
                                        params_->beta,
                                        mdTimeStep,
-                                       1,
+                                       nullptr,
                                        "",
                                        Bias::ThisRankWillDoIO::No,
                                        disableUpdateSkips);
@@ -177,8 +177,6 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
                                                                             neighborLambdaDhdl,
                                                                             &potential,
                                                                             &potentialJump,
-                                                                            nullptr,
-                                                                            nullptr,
                                                                             step * mdTimeStep,
                                                                             step,
                                                                             seed_,
@@ -256,7 +254,7 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
               params.dimParams,
               params.beta,
               mdTimeStep,
-              1,
+              nullptr,
               "",
               Bias::ThisRankWillDoIO::No);
 
@@ -288,8 +286,6 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
                                     neighborLambdaDhdl,
                                     &potential,
                                     &potentialJump,
-                                    nullptr,
-                                    nullptr,
                                     step,
                                     step,
                                     params.awhParams.seed(),

@@ -173,7 +173,6 @@ Awh::Awh(FILE*                 fplog,
     seed_(awhParams.seed()),
     nstout_(awhParams.nstout()),
     commRecord_(commRecord),
-    multiSimRecord_(multiSimRecord),
     pull_(pull_work),
     potentialOffset_(0),
     numFepLambdaStates_(numFepLambdaStates),
@@ -204,10 +203,29 @@ Awh::Awh(FILE*                 fplog,
                                   "biases is only supported between simulations"));
     }
 
-    int numSharingSimulations = 1;
-    if (awhParams.shareBiasMultisim() && isMultiSim(multiSimRecord_))
+    if (awhParams.shareBiasMultisim() && multiSimRecord != nullptr)
     {
-        numSharingSimulations = multiSimRecord_->numSimulations_;
+        GMX_RELEASE_ASSERT(commRecord, "Need a valid commRecord");
+        biasSharing_ = std::make_unique<BiasSharing>(awhParams, *commRecord, multiSimRecord->mastersComm_);
+        if (fplog)
+        {
+            for (int k = 0; k < awhParams.numBias(); k++)
+            {
+                const int shareGroup = awhParams.awhBiasParams()[k].shareGroup();
+                if (shareGroup > 0)
+                {
+                    fprintf(fplog,
+                            "awh%d: bias with share group %d is shared between %d simulations\n",
+                            1 + k,
+                            shareGroup,
+                            biasSharing_->numSharingSimulations(k));
+                }
+                else
+                {
+                    fprintf(fplog, "awh%d: bias is not shared between simulations\n", 1 + k);
+                }
+            }
+        }
     }
 
     /* Initialize all the biases */
@@ -254,7 +272,7 @@ Awh::Awh(FILE*                 fplog,
                                                dimParams,
                                                beta,
                                                inputRecord.delta_t,
-                                               numSharingSimulations,
+                                               biasSharing_.get(),
                                                biasInitFilename,
                                                thisRankWillDoIO),
                                           pullCoordIndex);
@@ -265,7 +283,7 @@ Awh::Awh(FILE*                 fplog,
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     registerAwhWithPull(awhParams, pull_);
 
-    if (numSharingSimulations > 1 && MASTER(commRecord_))
+    if (biasSharing_ && MASTER(commRecord_))
     {
         std::vector<size_t> pointSize;
         for (auto const& biasCts : biasCoupledToSystem_)
@@ -273,7 +291,7 @@ Awh::Awh(FILE*                 fplog,
             pointSize.push_back(biasCts.bias_.state().points().size());
         }
         /* Ensure that the shared biased are compatible between simulations */
-        biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, multiSimRecord_);
+        biasesAreCompatibleForSharingBetweenSimulations(awhParams, pointSize, *biasSharing_);
     }
 }
 
@@ -346,8 +364,6 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
                                                      neighborLambdaDhdl,
                                                      &biasPotential,
                                                      &biasPotentialJump,
-                                                     commRecord_,
-                                                     multiSimRecord_,
                                                      t,
                                                      step,
                                                      seed_,
