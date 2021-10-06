@@ -295,6 +295,76 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystemList.emplace_back(constraintsTestSystem);
     }
 
+    {
+        ConstraintsTestSystem singleMolecule;
+
+        singleMolecule.title         = "three atoms, connected longitudinally (e.g. CH2)";
+        singleMolecule.numAtoms      = 3;
+        singleMolecule.masses        = { 1.0, 12.0, 16.0 };
+        singleMolecule.constraints   = { 0, 0, 1, 1, 1, 2 };
+        singleMolecule.constraintsR0 = { 0.1, 0.2 };
+
+        real oneTenthOverSqrtTwo    = 0.1_real / std::sqrt(2.0_real);
+        real twoTenthsOverSqrtThree = 0.2_real / std::sqrt(3.0_real);
+
+        singleMolecule.x = { { oneTenthOverSqrtTwo, oneTenthOverSqrtTwo, 0.0 },
+                             { 0.0, 0.0, 0.0 },
+                             { twoTenthsOverSqrtThree, twoTenthsOverSqrtThree, twoTenthsOverSqrtThree } };
+
+        singleMolecule.xPrime = { { 0.08, 0.07, 0.01 }, { -0.02, 0.01, -0.02 }, { 0.10, 0.12, 0.11 } };
+
+        singleMolecule.v = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
+
+        // 150 molecules is 300 constraints, which is larger than the thread block of 256 we are currently using
+        const int numMolecules = 150;
+
+        ConstraintsTestSystem constraintsTestSystem;
+
+        constraintsTestSystem.title    = "system of many molecules";
+        constraintsTestSystem.numAtoms = numMolecules * singleMolecule.numAtoms;
+
+        constraintsTestSystem.masses.resize(numMolecules * singleMolecule.numAtoms);
+        constraintsTestSystem.x.resize(numMolecules * singleMolecule.numAtoms);
+        constraintsTestSystem.xPrime.resize(numMolecules * singleMolecule.numAtoms);
+        constraintsTestSystem.v.resize(numMolecules * singleMolecule.numAtoms);
+
+        constraintsTestSystem.constraints.resize(numMolecules * singleMolecule.constraints.size());
+
+        for (int mol = 0; mol < numMolecules; mol++)
+        {
+            int offsetAtoms = mol * singleMolecule.numAtoms;
+            for (int i = 0; i < singleMolecule.numAtoms; i++)
+            {
+                constraintsTestSystem.masses[offsetAtoms + i] = singleMolecule.masses[i];
+                for (int d = 0; d < DIM; d++)
+                {
+                    constraintsTestSystem.x[offsetAtoms + i][d]      = singleMolecule.x[i][d];
+                    constraintsTestSystem.xPrime[offsetAtoms + i][d] = singleMolecule.xPrime[i][d];
+                    constraintsTestSystem.v[offsetAtoms + i][d]      = singleMolecule.v[i][d];
+                }
+            }
+            int offsetConstraints = mol * singleMolecule.constraints.size();
+            constraintsTestSystem.constraints[offsetConstraints + 0] = singleMolecule.constraints[0];
+            constraintsTestSystem.constraints[offsetConstraints + 1] =
+                    singleMolecule.constraints[1] + offsetAtoms;
+            constraintsTestSystem.constraints[offsetConstraints + 2] =
+                    singleMolecule.constraints[2] + offsetAtoms;
+            constraintsTestSystem.constraints[offsetConstraints + 3] = singleMolecule.constraints[3];
+            constraintsTestSystem.constraints[offsetConstraints + 4] =
+                    singleMolecule.constraints[4] + offsetAtoms;
+            constraintsTestSystem.constraints[offsetConstraints + 5] =
+                    singleMolecule.constraints[5] + offsetAtoms;
+        }
+
+        constraintsTestSystem.constraintsR0.resize(singleMolecule.constraintsR0.size());
+        for (unsigned long i = 0; i < singleMolecule.constraintsR0.size(); i++)
+        {
+            constraintsTestSystem.constraintsR0[i] = singleMolecule.constraintsR0[i];
+        }
+
+        constraintsTestSystemList.emplace_back(constraintsTestSystem);
+    }
+
     return constraintsTestSystemList;
 }();
 
