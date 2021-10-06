@@ -154,7 +154,7 @@ auto lincsKernel(cl::sycl::handler&                   cgh,
     // shmem buffer for right-hand-side values
     auto sm_rhs = [&]() {
         return cl::sycl::accessor<float, 1, mode::read_write, target::local>(
-                cl::sycl::range<1>(c_threadsPerBlock), cgh);
+                cl::sycl::range<1>(c_threadsPerBlock * 2), cgh);
     }();
 
     // shmem buffer for virial components
@@ -223,7 +223,7 @@ auto lincsKernel(cl::sycl::handler&                   cgh,
             rc         = rlen * dx;
         }
 
-        sm_r[threadIndex] = rc;
+        sm_r[threadInBlock] = rc;
         // Make sure that all r's are saved into shared memory
         // before they are accessed in the loop below
         itemIdx.barrier(fence_space::global_and_local);
