@@ -249,7 +249,7 @@ std::enable_if_t<std::is_same_v<T, double>, MPI_Datatype> mpiType()
  */
 template<typename T>
 void sumOverSimulations(ArrayRef<T>      data,
-                        const MPI_Comm   multiSimComm,
+                        MPI_Comm         multiSimComm,
                         const bool       broadcastWithinSimulation,
                         const t_commrec& commRecord)
 {
@@ -265,6 +265,7 @@ void sumOverSimulations(ArrayRef<T>      data,
 #else
     GMX_UNUSED_VALUE(data);
     GMX_UNUSED_VALUE(commRecord);
+    GMX_UNUSED_VALUE(broadcastWithinSimulation);
     GMX_UNUSED_VALUE(multiSimComm);
 #endif // GMX_MPI
 }
