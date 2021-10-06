@@ -32,9 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# For compilers which might require libstdc++ (Clang and Intel), find it and set CMAKE_CXX_FLAGS.
+# For compilers which might require libstdc++ (Clang and Intel), and do
+# not already work, find it and set CMAKE_CXX_FLAGS.
 #
-# Does nothing if compiler includes std-library (e.g. GCC) or compiler uses different std-library
+# Does nothing if compiler includes std-library (e.g. GCC), or already
+# works, or compiler uses different std-library
 # (either because of different defaults (e.g. on MacOS) or user flags (e.g. -stdlib=libc++)).
 # The heuristic by the compiler of how to find libstdc++ is ignored. Any user-provided flags in
 # e.g. CXXFLAGS for the location of libstdc++ are honored. The user can choose the libstdc++ by setting
@@ -42,23 +44,44 @@
 # Gives error if no g++ is found or the g++ found isn't new enough (5.1 is required).
 # The location of g++ is cached as GMX_GPLUSPLUS_PATH making sure that the same libstdc++ is used
 # for builds at different times using the same cache file (so that e.g. module loading is
-# not required for a reproducible build).
+# not required for a reproducible build). Note that GMX_GPLUSPLUS_PATH is ignored if it is
+# not needed because the compiler already found a std library via some other mechanism.
 
 if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Intel") # Compilers supported
     return()
 endif()
 
-# If the compiler isn't using libstdc++ (via its heuristics), then the
-# compiler is set up to use some other standard library (e.g. libc++
-# or the MSVC library). If so, then there is nothing to manage. Note
-# that at this point we don't care *which* libstdc++ (or version) is
-# found.
 include(CheckCXXSourceCompiles)
+
+# Test that required 2017 standard library features work.
+# Note that this check also requires linking to succeed.
+set (SAMPLE_CODE_TO_TEST_CXX17 "
+#include <string>
+#include <string_view>
+#include <optional>
+int main(int argc, char **argv) {
+  std::optional<std::string> input(argv[0]);
+  std::string_view view(input.value());
+  return int(view[0]);
+}")
+check_cxx_source_compiles("${SAMPLE_CODE_TO_TEST_CXX17}" CXX17_COMPILES)
+
+if (CXX17_COMPILES)
+    # The compiler has been set up properly to find a standard
+    # library, and if so GROMACS should leave it alone.
+    return()
+endif()
+
+# The compiler couldn't use the standard libary for an unknown reason.
+# See if the compiler is using libstdc++ (via libstc++ heuristics). If so,
+# then we may be able to help the compiler find the standard library.
 check_cxx_source_compiles("#include <new>
 int main() { return __GLIBCXX__; }" USING_LIBSTDCXX)
 
 if (NOT USING_LIBSTDCXX)
-    return()
+    message(FATAL_ERROR "The C++ compiler cannot find a working standard library and it is "
+            "not libstdc++. The GROMACS build cannot handle this case. Please use a working "
+            "C++17 compiler and standard library.")
 endif()
 
 if (DEFINED GMX_GPLUSGPLUS_PATH)
@@ -141,11 +164,9 @@ endif()
 # Now run a sanity check on the compiler using libstdc++, regardless
 # of how it was specified or found.
 
-# Test required 2017 standard library features.
-check_cxx_source_compiles("
-#include <string_view>
-#include <optional>
-int main() { std::string_view(); std::optional<int>(); }" CXX17_COMPILES)
+# Test required 2017 standard library features again.
+unset(CXX17_COMPILES CACHE)
+check_cxx_source_compiles("${SAMPLE_CODE_TO_TEST_CXX17}" CXX17_COMPILES)
 
 if (NOT CXX17_COMPILES)
     if (NEED_TO_FIND_GPLUSPLUS)
