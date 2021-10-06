@@ -347,6 +347,8 @@ static inline void reduceForceJShuffle(Float3                                   
  * While SYCL has \c sycl::reduce_over_group, it currently (oneAPI 2021.3.0) uses a very large
  * shared memory buffer, which leads to a reduced occupancy.
  *
+ * \note The caller must make sure there are no races when reusing the \p sm_buf.
+ *
  * \tparam subGroupSize Size of a sub-group.
  * \tparam groupSize Size of a work-group.
  * \param itemIdx Current thread's \c sycl::nd_item.
@@ -1046,6 +1048,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
         {
             const float energyVdwGroup =
                     groupReduce<subGroupSize, c_clSizeSq>(itemIdx, tidx, sm_reductionBuffer, energyVdw);
+            itemIdx.barrier(fence_space::local_space); // Prevent the race on sm_reductionBuffer.
             const float energyElecGroup = groupReduce<subGroupSize, c_clSizeSq>(
                     itemIdx, tidx, sm_reductionBuffer, energyElec);
 
