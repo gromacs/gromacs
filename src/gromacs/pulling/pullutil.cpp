@@ -999,17 +999,77 @@ void setPrevStepPullComFromState(struct pull_t* pull, const t_state* state)
     }
 }
 
-void updatePrevStepPullCom(struct pull_t* pull, t_state* state)
+/*! \brief Whether pull functions save a backup to the t_state object
+ *
+ * Saving to the state object is only used for checkpointing in the legacy simulator.
+ * Modular simulator doesn't use the t_state object for checkpointing.
+ */
+enum class PullBackupCOM
 {
-    for (size_t g = 0; g < pull->group.size(); g++)
+    Yes, //<! Save a copy of the previous step COM to state
+    No,  //<! Don't save a copy of the previous step COM to state
+};
+
+/*! \brief Sets the previous step COM in pull to the current COM and optionally
+ *         stores it in the provided ArrayRef
+ *
+ * \tparam     pullBackupToState  Whether we're storing the previous COM to state
+ * \param[in]  pull  The COM pull force calculation data structure
+ * \param[in]   comPreviousStep  The COM of the previous step of each pull group
+ */
+template<PullBackupCOM pullBackupToState>
+static void updatePrevStepPullComImpl(pull_t* pull, gmx::ArrayRef<double> comPreviousStep)
+{
+    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
     {
         if (pull->group[g].needToCalcCom)
         {
             for (int j = 0; j < DIM; j++)
             {
-                pull->group[g].x_prev_step[j]          = pull->group[g].x[j];
-                state->pull_com_prev_step[g * DIM + j] = pull->group[g].x[j];
+                pull->group[g].x_prev_step[j] = pull->group[g].x[j];
+                if (pullBackupToState == PullBackupCOM::Yes)
+                {
+                    comPreviousStep[g * DIM + j] = pull->group[g].x[j];
+                }
             }
+        }
+    }
+}
+
+void updatePrevStepPullCom(pull_t* pull, std::optional<gmx::ArrayRef<double>> comPreviousStep)
+{
+    if (comPreviousStep.has_value())
+    {
+        updatePrevStepPullComImpl<PullBackupCOM::Yes>(pull, comPreviousStep.value());
+    }
+    else
+    {
+        updatePrevStepPullComImpl<PullBackupCOM::No>(pull, gmx::ArrayRef<double>());
+    }
+}
+
+std::vector<double> prevStepPullCom(const pull_t* pull)
+{
+    std::vector<double> pullCom(pull->group.size() * DIM, 0.0);
+    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            pullCom[g * DIM + j] = pull->group[g].x_prev_step[j];
+        }
+    }
+    return pullCom;
+}
+
+void setPrevStepPullCom(pull_t* pull, gmx::ArrayRef<const double> prevStepPullCom)
+{
+    GMX_RELEASE_ASSERT(prevStepPullCom.size() >= pull->group.size() * DIM,
+                       "Pull COM vector size mismatch.");
+    for (gmx::index g = 0; g < gmx::ssize(pull->group); g++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            pull->group[g].x_prev_step[j] = prevStepPullCom[g * DIM + j];
         }
     }
 }

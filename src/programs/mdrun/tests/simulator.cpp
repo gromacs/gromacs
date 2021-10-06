@@ -314,6 +314,22 @@ INSTANTIATE_TEST_SUITE_P(
                         ::testing::Values("no", "Parrinello-Rahman", "berendsen", "c-rescale"),
                         ::testing::Values(MdpParameterDatabase::Default)),
                 ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_SUITE_P(SimulatorsAreEquivalentDefaultModularPull,
+                         SimulatorComparisonTest,
+                         ::testing::Combine(::testing::Combine(::testing::Values("spc2"),
+                                                               ::testing::Values("md-vv"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values(MdpParameterDatabase::Pull)),
+                                            ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_SUITE_P(SimulatorsAreEquivalentDefaultLegacyPull,
+                         SimulatorComparisonTest,
+                         ::testing::Combine(::testing::Combine(::testing::Values("spc2"),
+                                                               ::testing::Values("md"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values(MdpParameterDatabase::Pull)),
+                                            ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
 INSTANTIATE_TEST_SUITE_P(
         DISABLED_SimulatorsAreEquivalentDefaultModular,
@@ -341,6 +357,22 @@ INSTANTIATE_TEST_SUITE_P(
                         ::testing::Values("no", "Parrinello-Rahman", "berendsen", "c-rescale"),
                         ::testing::Values(MdpParameterDatabase::Default)),
                 ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_SUITE_P(DISABLED_SimulatorsAreEquivalentDefaultModularPull,
+                         SimulatorComparisonTest,
+                         ::testing::Combine(::testing::Combine(::testing::Values("spc2"),
+                                                               ::testing::Values("md-vv"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values(MdpParameterDatabase::Pull)),
+                                            ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_SUITE_P(DISABLED_SimulatorsAreEquivalentDefaultLegacyPull,
+                         SimulatorComparisonTest,
+                         ::testing::Combine(::testing::Combine(::testing::Values("spc2"),
+                                                               ::testing::Values("md"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values("no"),
+                                                               ::testing::Values(MdpParameterDatabase::Pull)),
+                                            ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #endif
 
 } // namespace

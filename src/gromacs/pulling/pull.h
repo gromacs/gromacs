@@ -52,6 +52,7 @@
 #define GMX_PULLING_PULL_H
 
 #include <cstdio>
+#include <optional>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/pull_params.h"
@@ -69,6 +70,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_pbc;
 class t_state;
+enum class PbcType;
 
 namespace gmx
 {
@@ -351,12 +353,33 @@ bool pull_have_constraint(const pull_params_t& pullParameters);
  */
 real max_pull_distance2(const pull_coord_work_t& pcrd, const t_pbc& pbc);
 
-/*! \brief Sets the previous step COM in pull to the current COM and updates the pull_com_prev_step in the state
+/*! \brief Sets the previous step COM in pull to the current COM, and optionally
+ *         updates it in the provided ArrayRef
  *
- * \param[in]   pull  The COM pull force calculation data structure
- * \param[in]   state The local (to this rank) state.
+ * \param[in] pull  The COM pull force calculation data structure
+ * \param[in] comPreviousStep  The COM of the previous step of each pull group
  */
-void updatePrevStepPullCom(pull_t* pull, t_state* state);
+void updatePrevStepPullCom(pull_t* pull, std::optional<gmx::ArrayRef<double>> comPreviousStep);
+
+/*! \brief Returns a copy of the previous step pull COM as flat vector
+ *
+ * Used for modular simulator checkpointing. Allows to keep the
+ * implementation details of pull_t hidden from its users.
+ *
+ * \param[in] pull  The COM pull force calculation data structure
+ * \return A copy of the previous step COM
+ */
+std::vector<double> prevStepPullCom(const pull_t* pull);
+
+/*! \brief Set the previous step pull COM from a flat vector
+ *
+ * Used to restore modular simulator checkpoints. Allows to keep the
+ * implementation details of pull_t hidden from its users.
+ *
+ * \param[in] pull  The COM pull force calculation data structure
+ * \param[in] prevStepPullCom  The previous step COM to set
+ */
+void setPrevStepPullCom(pull_t* pull, gmx::ArrayRef<const double> prevStepPullCom);
 
 /*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
@@ -391,5 +414,23 @@ void initPullComFromPrevStep(const t_commrec*               cr,
                              gmx::ArrayRef<const real>      masses,
                              const t_pbc&                   pbc,
                              gmx::ArrayRef<const gmx::RVec> x);
+
+/*! \brief Initializes the previous step pull COM for new simulations (no reading from checkpoint).
+ *
+ * \param[in] cr               Struct for communication info.
+ * \param[in] pull_work        The COM pull force calculation data structure.
+ * \param[in] masses           Atoms masses.
+ * \param[in] x                The local positions.
+ * \param[in] box              The current box matrix.
+ * \param[in] pbcType          The type of periodic boundary conditions.
+ * \param[in] comPreviousStep  The COM of the previous step of each pull group.
+ */
+void preparePrevStepPullComNewSimulation(const t_commrec*                       cr,
+                                         pull_t*                                pull_work,
+                                         gmx::ArrayRef<const real>              masses,
+                                         gmx::ArrayRef<const gmx::RVec>         x,
+                                         const matrix                           box,
+                                         PbcType                                pbcType,
+                                         std::optional<gmx::ArrayRef<double>>&& comPreviousStep);
 
 #endif

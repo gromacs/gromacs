@@ -1624,7 +1624,7 @@ void gmx::LegacySimulator::do_md()
 
             if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
             {
-                updatePrevStepPullCom(pull_work, state);
+                updatePrevStepPullCom(pull_work, state->pull_com_prev_step);
             }
 
             enerd->term[F_DVDL_CONSTR] += dvdl_constr;

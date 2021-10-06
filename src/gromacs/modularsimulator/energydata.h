@@ -52,6 +52,7 @@ class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct ObservablesHistory;
+struct pull_t;
 struct t_fcdata;
 struct t_inputrec;
 struct SimulationGroups;
@@ -111,7 +112,8 @@ public:
                bool                        isMasterRank,
                ObservablesHistory*         observablesHistory,
                StartingBehavior            startingBehavior,
-               bool                        simulationsShareState);
+               bool                        simulationsShareState,
+               pull_t*                     pullWork);
 
     /*! \brief Final output
      *
@@ -331,6 +333,8 @@ private:
     ObservablesHistory* observablesHistory_;
     //! Whether simulations share the state
     bool simulationsShareState_;
+    //! The pull work object.
+    pull_t* pullWork_;
 };
 
 /*! \internal

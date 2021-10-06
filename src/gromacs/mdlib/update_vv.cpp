@@ -389,7 +389,7 @@ void integrateVVSecondStep(int64_t                   step,
 
     if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
     {
-        updatePrevStepPullCom(pull_work, state);
+        updatePrevStepPullCom(pull_work, state->pull_com_prev_step);
     }
 
     upd->update_coords(*ir,

@@ -89,7 +89,8 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        bool                        isMasterRank,
                        ObservablesHistory*         observablesHistory,
                        StartingBehavior            startingBehavior,
-                       bool                        simulationsShareState) :
+                       bool                        simulationsShareState,
+                       pull_t*                     pullWork) :
     element_(std::make_unique<Element>(this, isMasterRank)),
     isMasterRank_(isMasterRank),
     forceVirialStep_(-1),
@@ -112,7 +113,8 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     mdModulesNotifiers_(mdModulesNotifiers),
     groups_(&globalTopology.groups),
     observablesHistory_(observablesHistory),
-    simulationsShareState_(simulationsShareState)
+    simulationsShareState_(simulationsShareState),
+    pullWork_(pullWork)
 {
     clear_mat(forceVirial_);
     clear_mat(shakeVirial_);
@@ -161,11 +163,10 @@ void EnergyData::Element::trajectoryWriterSetup(gmx_mdoutf* outf)
 
 void EnergyData::setup(gmx_mdoutf* outf)
 {
-    pull_t* pull_work = nullptr;
-    energyOutput_     = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf),
+    energyOutput_ = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf),
                                                    top_global_,
                                                    *inputrec_,
-                                                   pull_work,
+                                                   pullWork_,
                                                    mdoutf_get_fp_dhdl(outf),
                                                    false,
                                                    startingBehavior_,
