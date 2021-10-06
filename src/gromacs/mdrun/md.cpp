@@ -1522,18 +1522,17 @@ void gmx::LegacySimulator::do_md()
                          && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
 
                 // This applies Leap-Frog, LINCS and SETTLE in succession
-                integrator->integrate(
-                        stateGpu->getForcesReadyOnDeviceEvent(
-                                AtomLocality::Local, runScheduleWork->stepWork.useGpuFBufferOps),
-                        ir->delta_t,
-                        true,
-                        bCalcVir,
-                        shake_vir,
-                        doTemperatureScaling,
-                        ekind->tcstat,
-                        doParrinelloRahman,
-                        ir->nstpcouple * ir->delta_t,
-                        M);
+                integrator->integrate(stateGpu->getLocalForcesReadyOnDeviceEvent(
+                                              runScheduleWork->stepWork, runScheduleWork->simulationWork),
+                                      ir->delta_t,
+                                      true,
+                                      bCalcVir,
+                                      shake_vir,
+                                      doTemperatureScaling,
+                                      ekind->tcstat,
+                                      doParrinelloRahman,
+                                      ir->nstpcouple * ir->delta_t,
+                                      M);
 
                 // Copy velocities D2H after update if:
                 // - Globals are computed this step (includes the energy output steps).

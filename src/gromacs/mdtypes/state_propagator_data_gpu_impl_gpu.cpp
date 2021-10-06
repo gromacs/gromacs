@@ -95,6 +95,9 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     fCopyStreams_[AtomLocality::Local]    = localStream_;
     fCopyStreams_[AtomLocality::NonLocal] = nonLocalStream_;
     fCopyStreams_[AtomLocality::All]      = updateStream_;
+
+    copyInStream_ = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::Normal, false);
+    memsetStream_ = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::Normal, false);
 }
 
 StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
@@ -340,22 +343,27 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-GpuEventSynchronizer*
-StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality atomLocality,
-                                                               const SimulationWorkload& simulationWork,
-                                                               const StepWorkload&       stepWork)
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(
+        AtomLocality              atomLocality,
+        const SimulationWorkload& simulationWork,
+        const StepWorkload&       stepWork,
+        GpuEventSynchronizer*     gpuCoordinateHaloLaunched)
 {
     // The provider of the coordinates may be different for local atoms. If the update is offloaded
     // and this is not a neighbor search step, then the consumer needs to wait for the update
     // to complete. Otherwise, the coordinates are copied from the host and we need to wait for
-    // the copy event. Non-local coordinates are always provided by the H2D copy.
-    //
-    // TODO: This should be reconsidered to support the halo exchange.
+    // the copy event. Non-local coordinates are provided by the GPU halo exchange (if active), otherwise by H2D copy.
     //
     // In OpenCL no events are used as coordinate sync is not necessary
     if (GMX_GPU_OPENCL)
     {
         return nullptr;
+    }
+    if (atomLocality == AtomLocality::NonLocal && stepWork.useGpuXHalo)
+    {
+        GMX_ASSERT(gpuCoordinateHaloLaunched != nullptr,
+                   "GPU halo exchange is active but its completion event is null.");
+        return gpuCoordinateHaloLaunched;
     }
     if (atomLocality == AtomLocality::Local && simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
     {
@@ -382,7 +390,9 @@ void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEvent(GpuEventSynchronizer
     xUpdatedOnDeviceEvent_ = xUpdatedOnDeviceEvent;
 }
 
-void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x, AtomLocality atomLocality)
+void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x,
+                                                          AtomLocality             atomLocality,
+                                                          GpuEventSynchronizer*    dependency)
 {
     GMX_ASSERT(atomLocality < AtomLocality::All,
                formatString("Wrong atom locality. Only Local and NonLocal are allowed for "
@@ -392,6 +402,11 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVe
     const DeviceStream* deviceStream = xCopyStreams_[atomLocality];
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying positions with given atom locality.");
+
+    if (dependency != nullptr)
+    {
+        dependency->enqueueWaitEvent(*deviceStream);
+    }
 
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
@@ -476,11 +491,13 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getForces()
     return d_f_;
 }
 
+// Copy CPU forces to GPU using stream internal to this module to allow overlap
+// with GPU force calculations.
 void StatePropagatorDataGpu::Impl::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec> h_f,
                                                    AtomLocality atomLocality)
 {
     GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    const DeviceStream* deviceStream = fCopyStreams_[atomLocality];
+    DeviceStream* deviceStream = copyInStream_.get();
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for copying forces with given atom locality.");
 
@@ -494,10 +511,14 @@ void StatePropagatorDataGpu::Impl::copyForcesToGpu(const gmx::ArrayRef<const gmx
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-void StatePropagatorDataGpu::Impl::clearForcesOnGpu(AtomLocality atomLocality)
+void StatePropagatorDataGpu::Impl::clearForcesOnGpu(AtomLocality atomLocality, GpuEventSynchronizer* dependency)
 {
     GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    const DeviceStream* deviceStream = fCopyStreams_[atomLocality];
+    DeviceStream* deviceStream = memsetStream_.get();
+
+    GMX_ASSERT(dependency != nullptr, "Dependency is not valid for clearing forces.");
+    dependency->enqueueWaitEvent(*deviceStream);
+
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for clearing forces with given atom locality.");
 
@@ -506,26 +527,33 @@ void StatePropagatorDataGpu::Impl::clearForcesOnGpu(AtomLocality atomLocality)
 
     clearOnDevice(d_f_, d_fSize_, atomLocality, *deviceStream);
 
+    fReadyOnDevice_[atomLocality].markEvent(*deviceStream);
+
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getForcesReadyOnDeviceEvent(AtomLocality atomLocality,
-                                                                                bool useGpuFBufferOps)
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getLocalForcesReadyOnDeviceEvent(StepWorkload stepWork,
+                                                                                     SimulationWorkload simulationWork)
 {
-    if ((atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal) && useGpuFBufferOps)
+    if (stepWork.useGpuFBufferOps && !simulationWork.useCpuPmePpCommunication)
     {
-        return &fReducedOnDevice_;
+        return &fReducedOnDevice_[AtomLocality::Local];
     }
     else
     {
-        return &fReadyOnDevice_[atomLocality];
+        return &fReadyOnDevice_[AtomLocality::Local];
     }
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReducedOnDevice()
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReducedOnDevice(AtomLocality atomLocality)
 {
-    return &fReducedOnDevice_;
+    return &fReducedOnDevice_[atomLocality];
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReadyOnDevice(AtomLocality atomLocality)
+{
+    return &fReadyOnDevice_[atomLocality];
 }
 
 void StatePropagatorDataGpu::Impl::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec> h_f, AtomLocality atomLocality)
@@ -617,9 +645,11 @@ void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx:
 GpuEventSynchronizer*
 StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
                                                          const SimulationWorkload& simulationWork,
-                                                         const StepWorkload&       stepWork)
+                                                         const StepWorkload&       stepWork,
+                                                         GpuEventSynchronizer* gpuCoordinateHaloLaunched)
 {
-    return impl_->getCoordinatesReadyOnDeviceEvent(atomLocality, simulationWork, stepWork);
+    return impl_->getCoordinatesReadyOnDeviceEvent(
+            atomLocality, simulationWork, stepWork, gpuCoordinateHaloLaunched);
 }
 
 void StatePropagatorDataGpu::waitCoordinatesCopiedToDevice(AtomLocality atomLocality)
@@ -632,9 +662,11 @@ void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpd
     impl_->setXUpdatedOnDeviceEvent(xUpdatedOnDeviceEvent);
 }
 
-void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec> h_x, AtomLocality atomLocality)
+void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec>   h_x,
+                                                    AtomLocality          atomLocality,
+                                                    GpuEventSynchronizer* dependency)
 {
-    return impl_->copyCoordinatesFromGpu(h_x, atomLocality);
+    return impl_->copyCoordinatesFromGpu(h_x, atomLocality, dependency);
 }
 
 void StatePropagatorDataGpu::waitCoordinatesReadyOnHost(AtomLocality atomLocality)
@@ -675,20 +707,25 @@ void StatePropagatorDataGpu::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec
     return impl_->copyForcesToGpu(h_f, atomLocality);
 }
 
-void StatePropagatorDataGpu::clearForcesOnGpu(AtomLocality atomLocality)
+void StatePropagatorDataGpu::clearForcesOnGpu(AtomLocality atomLocality, GpuEventSynchronizer* dependency)
 {
-    return impl_->clearForcesOnGpu(atomLocality);
+    return impl_->clearForcesOnGpu(atomLocality, dependency);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::getForcesReadyOnDeviceEvent(AtomLocality atomLocality,
-                                                                          bool useGpuFBufferOps)
+GpuEventSynchronizer* StatePropagatorDataGpu::getLocalForcesReadyOnDeviceEvent(StepWorkload stepWork,
+                                                                               SimulationWorkload simulationWork)
 {
-    return impl_->getForcesReadyOnDeviceEvent(atomLocality, useGpuFBufferOps);
+    return impl_->getLocalForcesReadyOnDeviceEvent(stepWork, simulationWork);
 }
 
-GpuEventSynchronizer* StatePropagatorDataGpu::fReducedOnDevice()
+GpuEventSynchronizer* StatePropagatorDataGpu::fReducedOnDevice(AtomLocality atomLocality)
 {
-    return impl_->fReducedOnDevice();
+    return impl_->fReducedOnDevice(atomLocality);
+}
+
+GpuEventSynchronizer* StatePropagatorDataGpu::fReadyOnDevice(AtomLocality atomLocality)
+{
+    return impl_->fReadyOnDevice(atomLocality);
 }
 
 void StatePropagatorDataGpu::copyForcesFromGpu(gmx::ArrayRef<RVec> h_f, AtomLocality atomLocality)

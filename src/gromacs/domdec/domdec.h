@@ -92,6 +92,8 @@ class RangePartitioning;
 class VirtualSitesHandler;
 template<typename>
 class ArrayRef;
+template<typename, size_t>
+class FixedCapacityVector;
 } // namespace gmx
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -265,20 +267,24 @@ void reinitGpuHaloExchange(const t_commrec&        cr,
 
 
 /*! \brief GPU halo exchange of coordinates buffer.
- * \param [in] cr                             The commrec object
- * \param [in] box                            Coordinate box (from which shifts will be constructed)
- * \param [in] coordinatesReadyOnDeviceEvent  event recorded when coordinates have been copied to device
- */
-void communicateGpuHaloCoordinates(const t_commrec&      cr,
-                                   const matrix          box,
-                                   GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
-
-
-/*! \brief GPU halo exchange of force buffer.
  * \param [in] cr                The commrec object
- * \param [in] accumulateForces  True if forces should accumulate, otherwise they are set
+ * \param [in] box               Coordinate box (from which shifts will be constructed)
+ * \param [in] dependencyEvent   Dependency event for this operation
+ * \returns                      Event recorded when this operation has been launched
  */
-void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces);
+GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
+                                                    const matrix          box,
+                                                    GpuEventSynchronizer* dependencyEvent);
+
+/*! \brief  Wait for copy of nonlocal part of coordinate array from GPU to CPU
+ * following coordinate halo exchange
+ * \param [in] cr   The commrec object
+ * \param [in] accumulateForces  True if forces should accumulate, otherwise they are set
+ * \param [in] dependencyEvents  Dependency events for this operation
+ */
+void communicateGpuHaloForces(const t_commrec&                                    cr,
+                              bool                                                accumulateForces,
+                              gmx::FixedCapacityVector<GpuEventSynchronizer*, 2>* dependencyEvents);
 
 /*! \brief Wraps the \c positions so that atoms from the same
  * update group share the same periodic image wrt \c box.

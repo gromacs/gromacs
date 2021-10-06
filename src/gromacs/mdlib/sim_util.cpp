@@ -1132,12 +1132,13 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
     const bool accumulate = runScheduleWork->domainWork.haveCpuLocalForceWork
                             || runScheduleWork->simulationWork.havePpDomainDecomposition;
     const int atomStart = 0;
-    fr->gpuForceReduction[gmx::AtomLocality::Local]->reinit(stateGpu->getForces(),
-                                                            nbv->getNumAtoms(AtomLocality::Local),
-                                                            nbv->getGridIndices(),
-                                                            atomStart,
-                                                            accumulate,
-                                                            stateGpu->fReducedOnDevice());
+    fr->gpuForceReduction[gmx::AtomLocality::Local]->reinit(
+            stateGpu->getForces(),
+            nbv->getNumAtoms(AtomLocality::Local),
+            nbv->getGridIndices(),
+            atomStart,
+            accumulate,
+            stateGpu->fReducedOnDevice(AtomLocality::Local));
 
     // register forces and add dependencies
     fr->gpuForceReduction[gmx::AtomLocality::Local]->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
@@ -1174,15 +1175,12 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
         }
     }
 
-    if (runScheduleWork->domainWork.haveCpuLocalForceWork && !runScheduleWork->simulationWork.useGpuHaloExchange)
+    if (runScheduleWork->domainWork.haveCpuLocalForceWork
+        || (runScheduleWork->simulationWork.havePpDomainDecomposition
+            && !runScheduleWork->simulationWork.useGpuHaloExchange))
     {
-        // in the DD case we use the same stream for H2D and reduction, hence no explicit dependency needed
-        if (!runScheduleWork->simulationWork.havePpDomainDecomposition)
-        {
-            const bool useGpuForceBufferOps = true;
-            fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
-                    stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::All, useGpuForceBufferOps));
-        }
+        fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
+                stateGpu->fReadyOnDevice(AtomLocality::Local));
     }
 
     if (runScheduleWork->simulationWork.useGpuHaloExchange)
@@ -1197,16 +1195,23 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
         const bool accumulate = runScheduleWork->domainWork.haveCpuBondedWork
                                 || runScheduleWork->domainWork.haveFreeEnergyWork;
         const int atomStart = dd_numHomeAtoms(*cr->dd);
-        fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->reinit(stateGpu->getForces(),
-                                                                   nbv->getNumAtoms(AtomLocality::NonLocal),
-                                                                   nbv->getGridIndices(),
-                                                                   atomStart,
-                                                                   accumulate);
+        fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->reinit(
+                stateGpu->getForces(),
+                nbv->getNumAtoms(AtomLocality::NonLocal),
+                nbv->getGridIndices(),
+                atomStart,
+                accumulate,
+                stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
 
         // register forces and add dependencies
-        // in the DD case we use the same stream for H2D and reduction, hence no explicit dependency needed
         fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->registerNbnxmForce(
                 Nbnxm::gpu_get_f(nbv->gpu_nbv));
+
+        if (runScheduleWork->domainWork.haveNonLocalForceContribInCpuBuffer)
+        {
+            fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->addDependency(
+                    stateGpu->fReadyOnDevice(AtomLocality::NonLocal));
+        }
     }
 }
 
@@ -1265,6 +1270,17 @@ void do_force(FILE*                               fplog,
 
     runScheduleWork->stepWork = setupStepWorkload(legacyFlags, inputrec.mtsLevels, step, simulationWork);
     const StepWorkload& stepWork = runScheduleWork->stepWork;
+
+    if (stepWork.useGpuFHalo && !runScheduleWork->domainWork.haveCpuLocalForceWork)
+    {
+        // GPU Force halo exchange will set a subset of local atoms with remote non-local data
+        // First clear local portion of force array, so that untouched atoms are zero.
+        // The dependency for this is that forces from previous timestep have been consumed,
+        // which is satisfied when getCoordinatesReadyOnDeviceEvent has been marked.
+        stateGpu->clearForcesOnGpu(AtomLocality::Local,
+                                   stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                           AtomLocality::Local, simulationWork, stepWork));
+    }
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1579,16 +1595,18 @@ void do_force(FILE*                               fplog,
         }
         else
         {
+            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr;
             if (stepWork.useGpuXHalo)
             {
                 // The following must be called after local setCoordinates (which records an event
                 // when the coordinate data has been copied to the device).
-                communicateGpuHaloCoordinates(*cr, box, localXReadyOnDevice);
+                gpuCoordinateHaloLaunched = communicateGpuHaloCoordinates(*cr, box, localXReadyOnDevice);
 
                 if (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork)
                 {
                     // non-local part of coordinate buffer must be copied back to host for CPU work
-                    stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
+                    stateGpu->copyCoordinatesFromGpu(
+                            x.unpaddedArrayRef(), AtomLocality::NonLocal, gpuCoordinateHaloLaunched);
                 }
             }
             else
@@ -1608,10 +1626,11 @@ void do_force(FILE*                               fplog,
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
                 }
-                nbv->convertCoordinatesGpu(AtomLocality::NonLocal,
-                                           stateGpu->getCoordinates(),
-                                           stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                   AtomLocality::NonLocal, simulationWork, stepWork));
+                nbv->convertCoordinatesGpu(
+                        AtomLocality::NonLocal,
+                        stateGpu->getCoordinates(),
+                        stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched));
             }
             else
             {
@@ -2085,13 +2104,11 @@ void do_force(FILE*                               fplog,
             {
                 // If there exist CPU forces, data from halo exchange should accumulate into these
                 bool accumulateForces = domainWork.haveCpuLocalForceWork;
-                if (!accumulateForces)
-                {
-                    // Force halo exchange will set a subset of local atoms with remote non-local data
-                    // First clear local portion of force array, so that untouched atoms are zero
-                    stateGpu->clearForcesOnGpu(AtomLocality::Local);
-                }
-                communicateGpuHaloForces(*cr, accumulateForces);
+                gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> gpuForceHaloDependencies;
+                gpuForceHaloDependencies.push_back(stateGpu->fReadyOnDevice(AtomLocality::Local));
+                gpuForceHaloDependencies.push_back(stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
+
+                communicateGpuHaloForces(*cr, accumulateForces, &gpuForceHaloDependencies);
             }
             else
             {
@@ -2232,15 +2249,7 @@ void do_force(FILE*                               fplog,
             //   These should be unified.
             if (domainWork.haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)
             {
-                // Note: AtomLocality::All is used for the non-DD case because, as in this
-                // case copyForcesToGpu() uses a separate stream, it allows overlap of
-                // CPU force H2D with GPU force tasks on all streams including those in the
-                // local stream which would otherwise be implicit dependencies for the
-                // transfer and would not overlap.
-                auto locality = simulationWork.havePpDomainDecomposition ? AtomLocality::Local
-                                                                         : AtomLocality::All;
-
-                stateGpu->copyForcesToGpu(forceWithShift, locality);
+                stateGpu->copyForcesToGpu(forceWithShift, AtomLocality::Local);
             }
 
             if (stepWork.computeNonbondedForces)

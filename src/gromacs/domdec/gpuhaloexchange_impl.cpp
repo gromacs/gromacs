@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,8 +67,6 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  int /* dimIndex */,
                                  MPI_Comm /* mpi_comm_mysim */,
                                  const DeviceContext& /* deviceContext */,
-                                 const DeviceStream& /*streamLocal */,
-                                 const DeviceStream& /*streamNonLocal */,
                                  int /*pulse */,
                                  gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
@@ -96,16 +94,18 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
 }
 
 /*!\brief apply X halo exchange stub. */
-void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */,
-                                                 GpuEventSynchronizer* /*coordinatesOnDeviceEvent*/)
+GpuEventSynchronizer* GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */,
+                                                                  GpuEventSynchronizer* /*dependencyEvent*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange exchange was called insted of the correct "
                "implementation.");
+    return nullptr;
 }
 
 /*!\brief apply F halo exchange stub. */
-void GpuHaloExchange::communicateHaloForces(bool gmx_unused accumulateForces)
+void GpuHaloExchange::communicateHaloForces(bool /* accumulateForces */,
+                                            FixedCapacityVector<GpuEventSynchronizer*, 2>* /*dependencyEvents*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");

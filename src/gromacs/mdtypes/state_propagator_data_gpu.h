@@ -188,15 +188,17 @@ public:
      * steps and if update is not offloaded, the coordinates are provided by the H2D copy and the
      * returned synchronizer indicates that the copy is complete.
      *
-     *  \param[in] atomLocality    Locality of the particles to wait for.
-     *  \param[in] simulationWork  The simulation lifetime flags.
-     *  \param[in] stepWork        The step lifetime flags.
+     *  \param[in] atomLocality              Locality of the particles to wait for.
+     *  \param[in] simulationWork            The simulation lifetime flags.
+     *  \param[in] stepWork                  The step lifetime flags.
+     *  \param[in] gpuCoordinateHaloLaunched Event recorded when GPU coordinate halo has been launched.
      *
      *  \returns  The event to synchronize the stream that consumes coordinates on device.
      */
     GpuEventSynchronizer* getCoordinatesReadyOnDeviceEvent(AtomLocality              atomLocality,
                                                            const SimulationWorkload& simulationWork,
-                                                           const StepWorkload&       stepWork);
+                                                           const StepWorkload&       stepWork,
+                                                           GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr);
 
     /*! \brief Blocking wait until coordinates are copied to the device.
      *
@@ -212,12 +214,15 @@ public:
      */
     void setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent);
 
-    /*! \brief Copy positions from the GPU memory.
+    /*! \brief Copy positions from the GPU memory, with an optional explicit dependency.
      *
      *  \param[in] h_x           Positions buffer in the host memory.
      *  \param[in] atomLocality  Locality of the particles to copy.
+     *  \param[in] dependency    Dependency event for this operation.
      */
-    void copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x, AtomLocality atomLocality);
+    void copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x,
+                                AtomLocality             atomLocality,
+                                GpuEventSynchronizer*    dependency = nullptr);
 
     /*! \brief Wait until coordinates are available on the host.
      *
@@ -271,8 +276,9 @@ public:
     /*! \brief Clear forces in the GPU memory.
      *
      *  \param[in] atomLocality  Locality of the particles to clear.
+     *  \param[in] dependency    Dependency event for this operation.
      */
-    void clearForcesOnGpu(AtomLocality atomLocality);
+    void clearForcesOnGpu(AtomLocality atomLocality, GpuEventSynchronizer* dependency);
 
     /*! \brief Get the event synchronizer for the forces ready on device.
      *
@@ -281,20 +287,27 @@ public:
      *  1. The forces are copied to the device (when GPU buffer ops are off)
      *  2. The forces are reduced on the device (GPU buffer ops are on)
      *
-     *  \todo Pass step workload instead of the useGpuFBufferOps boolean.
-     *
-     *  \param[in] atomLocality      Locality of the particles to wait for.
-     *  \param[in] useGpuFBufferOps  If the force buffer ops are offloaded to the GPU.
+     *  \param[in] stepWork        Step workload flags
+     *  \param[in] simulationWork  Simulation workload flags
      *
      *  \returns  The event to synchronize the stream that consumes forces on device.
      */
-    GpuEventSynchronizer* getForcesReadyOnDeviceEvent(AtomLocality atomLocality, bool useGpuFBufferOps);
+    GpuEventSynchronizer* getLocalForcesReadyOnDeviceEvent(StepWorkload       stepWork,
+                                                           SimulationWorkload simulationWork);
 
     /*! \brief Getter for the event synchronizer for the forces are reduced on the GPU.
      *
-     *  \returns  The event to mark when forces are reduced on the GPU.
+     *  \param[in] atomLocality      Locality of the particles to wait for.
+     *  \returns                     The event to mark when forces are reduced on the GPU.
      */
-    GpuEventSynchronizer* fReducedOnDevice();
+    GpuEventSynchronizer* fReducedOnDevice(AtomLocality atomLocality);
+
+    /*! \brief Getter for the event synchronizer for the forces are ready on the GPU.
+     *
+     *  \param[in] atomLocality      Locality of the particles to wait for.
+     *  \returns                     The event to mark when forces are ready on the GPU.
+     */
+    GpuEventSynchronizer* fReadyOnDevice(AtomLocality atomLocality);
 
     /*! \brief Copy forces from the GPU memory.
      *
