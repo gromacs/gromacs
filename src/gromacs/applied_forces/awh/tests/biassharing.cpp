@@ -78,9 +78,8 @@ void parallelTestFunction(const void gmx_unused* dummy)
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     const int shareGroup = 1 + (myRank / c_numSharingBiases);
 
-    t_commrec commRecord;
-    commRecord.nnodes = 1;
-    commRecord.nodeid = 0;
+    t_commrec commRecord = { 0 };
+    commRecord.nnodes    = 1;
 
     const std::vector<char> serializedAwhParametersPerDim = awhDimParamSerialized();
     auto              awhDimArrayRef = gmx::arrayRefFromArray(&serializedAwhParametersPerDim, 1);
@@ -115,7 +114,7 @@ void parallelTestFunction(const void gmx_unused* dummy)
 
 TEST(BiasSharingTest, SharingWorks)
 {
-    if (tMPI_Init_fn(TRUE, c_numRanks, TMPI_AFFINITY_NONE, parallelTestFunction, static_cast<const void*>(this))
+    if (tMPI_Init_fn(FALSE, c_numRanks, TMPI_AFFINITY_NONE, parallelTestFunction, static_cast<const void*>(this))
         != TMPI_SUCCESS)
     {
         GMX_THROW(gmx::InternalError("Failed to spawn thread-MPI threads"));
