@@ -68,7 +68,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 
-static constexpr bool sc_haveGpuConstraintSupport = GMX_GPU_CUDA;
+static constexpr bool sc_haveGpuConstraintSupport = GMX_GPU_CUDA || GMX_GPU_SYCL;
 
 namespace gmx
 {
