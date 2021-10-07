@@ -99,7 +99,7 @@ std::vector<real> createNonBondedParameters(const std::vector<ParticleType>& par
                                             const NonBondedInteractionMap& nonBondedInteractionMap);
 
 //! Create a step work object
-gmx::StepWorkload createStepWorkload(const NBKernelOptions& options);
+gmx::StepWorkload createStepWorkload();
 
 //! Computes the Ewald splitting coefficient for Coulomb
 real ewaldCoeff(real ewald_rtol, real pairlistCutoff);

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+    <Sequence Name="Virials">
+        <Int Name="Length">9</Int>
+        <Real>0.094908442751139188</Real>
+        <Real>0.25238615516784413</Real>
+        <Real>0.02601194356883077</Real>
+        <Real>0.25238615516784413</Real>
+        <Real>0.67116022003893372</Real>
+        <Real>0.069172501786742557</Real>
+        <Real>0.026011943568830798</Real>
+        <Real>0.069172501786742391</Real>
+        <Real>0.0071291993484943611</Real>
+    </Sequence>
+</ReferenceData>

@@ -44,86 +44,69 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#ifndef NBLIB_GMXCALCULATOR_H
-#define NBLIB_GMXCALCULATOR_H
+#ifndef NBLIB_GMXCALCULATORCPU_H
+#define NBLIB_GMXCALCULATORCPU_H
 
 #include <memory>
+#include <vector>
 
+#include "nblib/box.h"
 #include "nblib/vector.h"
-
-struct nonbonded_verlet_t;
-struct t_forcerec;
-struct t_nrnb;
-struct interaction_const_t;
-struct gmx_enerdata_t;
 
 namespace gmx
 {
 template<typename T>
 class ArrayRef;
-class StepWorkload;
 } // namespace gmx
 
 namespace nblib
 {
-class Box;
-class NbvSetupUtil;
-class SimulationState;
 struct NBKernelOptions;
+class Topology;
 
-/*! \brief GROMACS non-bonded force calculation backend
- *
- * This class encapsulates the various GROMACS data structures and their interplay
- * from the NBLIB user. The class is a private member of the ForceCalculator and
- * is not intended for the public interface.
- *
- * Handles the task of storing the simulation problem description using the internal
- * representation used within GROMACS. It currently supports short range non-bonded
- * interactions (PP) on a single node CPU.
- *
- */
-
-class GmxForceCalculator final
+class GmxNBForceCalculatorCpu final
 {
 public:
-    GmxForceCalculator();
+    GmxNBForceCalculatorCpu(gmx::ArrayRef<int>     particleTypeIdOfAllParticles,
+                            gmx::ArrayRef<real>    nonBondedParams,
+                            gmx::ArrayRef<real>    charges,
+                            gmx::ArrayRef<int64_t> particleInteractionFlags,
+                            gmx::ArrayRef<int>     exclusionRanges,
+                            gmx::ArrayRef<int>     exclusionElements,
+                            const NBKernelOptions& options);
 
-    ~GmxForceCalculator();
+    ~GmxNBForceCalculatorCpu();
+
+    //! calculates a new pair list based on new coordinates (for every NS step)
+    void updatePairlist(gmx::ArrayRef<const gmx::RVec> coordinates, const Box& box);
 
     //! Compute forces and return
-    void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput, gmx::ArrayRef<gmx::RVec> forceOutput);
+    void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
+                 const Box&                     box,
+                 gmx::ArrayRef<gmx::RVec>       forceOutput);
 
-    //! Puts particles on a grid based on bounds specified by the box (for every NS step)
-    void setParticlesOnGrid(gmx::ArrayRef<const int64_t>   particleInfoAllVdw,
-                            gmx::ArrayRef<const gmx::RVec> coordinates,
-                            const Box&                     box);
+    //! Compute forces and virial tensor
+    void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
+                 const Box&                     box,
+                 gmx::ArrayRef<gmx::RVec>       forceOutput,
+                 gmx::ArrayRef<real>            virialOutput);
+
+    //! Compute forces, virial tensor and potential energies
+    void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
+                 const Box&                     box,
+                 gmx::ArrayRef<gmx::RVec>       forceOutput,
+                 gmx::ArrayRef<real>            virialOutput,
+                 gmx::ArrayRef<real>            energyOutput);
 
 private:
-    //! Friend to allow setting up private members in this class
-    friend class NbvSetupUtil;
-
-    //! Non-Bonded Verlet object for force calculation
-    std::unique_ptr<nonbonded_verlet_t> nbv_;
-
-    //! Only nbfp and shift_vec are used
-    std::unique_ptr<t_forcerec> forcerec_;
-
-    //! Parameters for various interactions in the system
-    std::unique_ptr<interaction_const_t> interactionConst_;
-
-    //! Tasks to perform in an MD Step
-    std::unique_ptr<gmx::StepWorkload> stepWork_;
-
-    //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
-    std::unique_ptr<gmx_enerdata_t> enerd_;
-
-    //! Non-bonded flop counter; currently only needed as an argument for dispatchNonbondedKernel
-    std::unique_ptr<t_nrnb> nrnb_;
-
-    //! Legacy matrix for box
-    matrix box_{ { 0 } };
+    //! Private implementation
+    class CpuImpl;
+    std::unique_ptr<CpuImpl> impl_;
 };
+
+std::unique_ptr<GmxNBForceCalculatorCpu> setupGmxForceCalculatorCpu(const Topology&        topology,
+                                                                    const NBKernelOptions& options);
 
 } // namespace nblib
 
-#endif // NBLIB_GMXCALCULATOR_H
+#endif // NBLIB_GMXCALCULATORCPU_H

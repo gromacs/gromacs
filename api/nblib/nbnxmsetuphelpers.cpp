@@ -167,7 +167,7 @@ std::vector<real> createNonBondedParameters(const std::vector<ParticleType>& par
     return nonbondedParameters;
 }
 
-gmx::StepWorkload createStepWorkload([[maybe_unused]] const NBKernelOptions& options)
+gmx::StepWorkload createStepWorkload()
 {
     gmx::StepWorkload stepWorkload;
     stepWorkload.computeForces          = true;

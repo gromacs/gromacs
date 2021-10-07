@@ -174,8 +174,10 @@ int main()
     SimulationState simulationState(coordinates, velocities, forces, box, topology);
 
     // The non-bonded force calculator contains all the data needed to compute forces
-    auto forceCalculator = nblib::setupGmxForceCalculator(
-            simulationState.topology(), simulationState.coordinates(), simulationState.box(), options);
+    auto forceCalculator = setupGmxForceCalculatorCpu(simulationState.topology(), options);
+
+    // build the pair list
+    forceCalculator->updatePairlist(simulationState.coordinates(), simulationState.box());
 
     // The listed force calculator is also initialized with the required arguments
     ListedForceCalculator listedForceCalculator(
@@ -183,7 +185,7 @@ int main()
 
     // Integrator is initialized with an array of inverse masses (constructed from topology) and
     // the bounding box
-    LeapFrog integrator(topology, box);
+    LeapFrog integrator(simulationState.topology(), simulationState.box());
 
     // Print some diagnostic info
     printf("initial position of particle 0: x %4f y %4f z %4f\n",
@@ -198,7 +200,8 @@ int main()
     {
         zeroCartesianArray(simulationState.forces());
 
-        forceCalculator->compute(simulationState.coordinates(), simulationState.forces());
+        forceCalculator->compute(
+                simulationState.coordinates(), simulationState.box(), simulationState.forces());
 
         listedForceCalculator.compute(simulationState.coordinates(), simulationState.forces());
 

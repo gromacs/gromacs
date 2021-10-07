@@ -43,9 +43,10 @@
  */
 #include <gtest/gtest.h>
 
-#include "nblib/gmxsetup.h"
+#include "nblib/gmxcalculatorcpu.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/simulationstate.h"
+#include "nblib/tests/testhelpers.h"
 #include "nblib/tests/testsystems.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -61,23 +62,72 @@ TEST(NBlibTest, GmxForceCalculatorCanCompute)
     SimulationState             simState = argonSystemBuilder.setupSimulationState();
     NBKernelOptions             options  = NBKernelOptions();
     options.nbnxmSimd                    = SimdKernels::SimdNo;
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = nblib::setupGmxForceCalculator(
-            simState.topology(), simState.coordinates(), simState.box(), options);
-    ;
-    EXPECT_NO_THROW(gmxForceCalculator->compute(simState.coordinates(), simState.forces()));
+
+    std::unique_ptr<GmxNBForceCalculatorCpu> gmxForceCalculator =
+            setupGmxForceCalculatorCpu(simState.topology(), options);
+    gmxForceCalculator->updatePairlist(simState.coordinates(), simState.box());
+
+    EXPECT_NO_THROW(gmxForceCalculator->compute(simState.coordinates(), simState.box(), simState.forces()));
 }
 
-TEST(NBlibTest, CanSetupStepWorkload)
+TEST(NBlibTest, ArgonVirialsAreCorrect)
 {
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupStepWorkload(options));
+    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::OPLSA);
+    SimulationState             simState = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options  = NBKernelOptions();
+    options.nbnxmSimd                    = SimdKernels::SimdNo;
+    std::unique_ptr<GmxNBForceCalculatorCpu> gmxForceCalculator =
+            setupGmxForceCalculatorCpu(simState.topology(), options);
+    gmxForceCalculator->updatePairlist(simState.coordinates(), simState.box());
+
+    std::vector<real> virialArray(9, 0.0);
+
+    gmxForceCalculator->compute(simState.coordinates(), simState.box(), simState.forces(), virialArray);
+
+    RefDataChecker virialsOutputTest(1e-7);
+    virialsOutputTest.testArrays<real>(virialArray, "Virials");
 }
 
-TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
+TEST(NBlibTest, ArgonEnergiesAreCorrect)
 {
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupInteractionConst(options));
+    ArgonSimulationStateBuilder argonSystemBuilder(fftypes::OPLSA);
+    SimulationState             simState = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options  = NBKernelOptions();
+    options.nbnxmSimd                    = SimdKernels::SimdNo;
+    std::unique_ptr<GmxNBForceCalculatorCpu> gmxForceCalculator =
+            setupGmxForceCalculatorCpu(simState.topology(), options);
+    gmxForceCalculator->updatePairlist(simState.coordinates(), simState.box());
+
+    // number of energy kinds is 5: COULSR, LJSR, BHAMSR, COUL14, LJ14,
+    std::vector<real> energies(5, 0.0);
+
+    gmxForceCalculator->compute(
+            simState.coordinates(), simState.box(), simState.forces(), gmx::ArrayRef<real>{}, energies);
+
+    RefDataChecker energiesOutputTest(5e-5);
+    energiesOutputTest.testArrays<real>(energies, "Argon energies");
 }
+
+TEST(NBlibTest, SpcMethanolEnergiesAreCorrect)
+{
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+    SimulationState                   simState = spcMethanolSystemBuilder.setupSimulationState();
+    NBKernelOptions                   options  = NBKernelOptions();
+    options.nbnxmSimd                          = SimdKernels::SimdNo;
+    std::unique_ptr<GmxNBForceCalculatorCpu> gmxForceCalculator =
+            setupGmxForceCalculatorCpu(simState.topology(), options);
+    gmxForceCalculator->updatePairlist(simState.coordinates(), simState.box());
+
+    // number of energy kinds is 5: COULSR, LJSR, BHAMSR, COUL14, LJ14,
+    std::vector<real> energies(5, 0.0);
+
+    gmxForceCalculator->compute(
+            simState.coordinates(), simState.box(), simState.forces(), gmx::ArrayRef<real>{}, energies);
+
+    RefDataChecker energiesOutputTest(5e-5);
+    energiesOutputTest.testArrays<real>(energies, "SPC-methanol energies");
+}
+
 } // namespace
 } // namespace test
 } // namespace nblib

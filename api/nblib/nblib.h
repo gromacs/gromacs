@@ -47,8 +47,7 @@
 
 #include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
-#include "nblib/gmxcalculator.h"
-#include "nblib/gmxsetup.h"
+#include "nblib/gmxcalculatorcpu.h"
 #include "nblib/integrator.h"
 #include "nblib/interactions.h"
 #include "nblib/kerneloptions.h"
@@ -56,6 +55,7 @@
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/listed_forces/calculator.h"
 #include "nblib/molecules.h"
+#include "nblib/nbnxmsetuphelpers.h"
 #include "nblib/particlesequencer.h"
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
