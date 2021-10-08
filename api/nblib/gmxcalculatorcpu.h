@@ -63,6 +63,7 @@ namespace nblib
 {
 struct NBKernelOptions;
 class Topology;
+struct TprReader;
 
 class GmxNBForceCalculatorCpu final
 {
@@ -105,6 +106,10 @@ private:
 };
 
 std::unique_ptr<GmxNBForceCalculatorCpu> setupGmxForceCalculatorCpu(const Topology&        topology,
+                                                                    const NBKernelOptions& options);
+
+//! Sets up and returns a GmxForceCalculatorCpu based on a TPR file as input
+std::unique_ptr<GmxNBForceCalculatorCpu> setupGmxForceCalculatorCpu(TprReader& tprReader,
                                                                     const NBKernelOptions& options);
 
 } // namespace nblib

@@ -99,6 +99,7 @@ target_sources(nblib
         simulationstate.cpp
         topologyhelpers.cpp
         topology.cpp
+        tpr.cpp
         virials.cpp
         )
 
@@ -141,6 +142,7 @@ if(GMX_INSTALL_NBLIB_API)
             particletype.h
             simulationstate.h
             topology.h
+            tpr.h
             vector.h
             DESTINATION include/nblib)
 endif()

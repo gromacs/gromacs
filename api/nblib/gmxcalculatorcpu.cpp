@@ -57,6 +57,7 @@
 #include "nblib/pbc.hpp"
 #include "nblib/systemdescription.h"
 #include "nblib/topology.h"
+#include "nblib/tpr.h"
 #include "nblib/virials.h"
 
 namespace nblib
@@ -333,6 +334,18 @@ std::unique_ptr<GmxNBForceCalculatorCpu> setupGmxForceCalculatorCpu(const Topolo
                                                      particleInteractionFlags,
                                                      topology.exclusionLists().ListRanges,
                                                      topology.exclusionLists().ListElements,
+                                                     options);
+}
+
+std::unique_ptr<GmxNBForceCalculatorCpu> setupGmxForceCalculatorCpu(TprReader& tprReader,
+                                                                    const NBKernelOptions& options)
+{
+    return std::make_unique<GmxNBForceCalculatorCpu>(tprReader.particleTypeIdOfAllParticles_,
+                                                     tprReader.nonbondedParameters_,
+                                                     tprReader.charges_,
+                                                     tprReader.particleInteractionFlags_,
+                                                     tprReader.exclusionListRanges_,
+                                                     tprReader.exclusionListElements_,
                                                      options);
 }
 
