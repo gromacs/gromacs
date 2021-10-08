@@ -32,6 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+set(TESTUTILS_DIR ${PROJECT_SOURCE_DIR}/src/testutils)
+if (BUILD_TESTING)
+    if(NOT GMX_DEVELOPER_BUILD)
+        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
+    endif()
+    include(${TESTUTILS_DIR}/TestMacros.cmake)
+endif()
+
 # The legacy public API headers may still be installed,
 # but may be removed or changed without warning.
 add_subdirectory(legacy)

@@ -38,14 +38,6 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-set(TESTUTILS_DIR ${PROJECT_SOURCE_DIR}/src/testutils)
-if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    include(${TESTUTILS_DIR}/TestMacros.cmake)
-endif()
-
 add_custom_target(nblib-tests
         COMMENT "Target to build all nblib tests including samples"
         )
