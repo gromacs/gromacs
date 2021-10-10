@@ -98,11 +98,20 @@ target_sources(nblib
 gmx_target_compile_options(nblib)
 
 target_link_libraries(nblib PRIVATE libgromacs)
-target_include_directories(nblib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 target_include_directories(nblib PRIVATE ${PROJECT_SOURCE_DIR}/api)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/api)
 target_link_libraries(nblib PRIVATE common)
-# There are transitive dependencies on the legacy GROMACS headers.
+target_link_libraries(nblib PRIVATE
+                      fileio
+                      gmxlib
+                      listed_forces
+                      mdtypes
+                      mdlib
+                      topology
+                      utility)
+
+# There are transitive interface dependencies on the legacy GROMACS headers.
+# TODO(#3288): Explicitly link specific modules for public API dependencies as legacy_api is removed.
 target_link_libraries(nblib PUBLIC legacy_api)
 # TODO: Explicitly link specific modules.
 target_link_libraries(nblib PRIVATE legacy_modules)

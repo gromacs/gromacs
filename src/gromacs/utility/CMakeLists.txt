@@ -39,30 +39,30 @@ add_library(utility INTERFACE)
 file(GLOB UTILITY_SOURCES *.cpp)
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(cuda_version_information.cu)
-endif()
+endif ()
 if (GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES
-        sycl_version_information.cpp
-    )
-endif()
+                               sycl_version_information.cpp
+                               )
+endif ()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-          baseversion.h
-          classhelpers.h
-          enumerationhelpers.h
-	  fileptr.h
-	  futil.h
-	  flags.h
-	  pleasecite.h
-          programcontext.h
-          range.h
-          smalloc.h
-	  stringutil.h
-          unique_cptr.h
-          DESTINATION include/gromacs/utility)
-endif()
+if (GMX_INSTALL_LEGACY_API)
+    install(FILES
+            baseversion.h
+            classhelpers.h
+            enumerationhelpers.h
+            fileptr.h
+            futil.h
+            flags.h
+            pleasecite.h
+            programcontext.h
+            range.h
+            smalloc.h
+            stringutil.h
+            unique_cptr.h
+            DESTINATION include/gromacs/utility)
+endif ()
 
 # Public interface for modules, including dependencies and interfaces
 #target_include_directories(utility PUBLIC
@@ -72,15 +72,21 @@ target_include_directories(utility INTERFACE
 target_link_libraries(utility INTERFACE
                       legacy_api
                       )
+if (GMX_LIB_MPI)
+    target_link_libraries(utility INTERFACE MPI::MPI_CXX)
+else ()
+    target_include_directories(
+        utility INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include>
+    )
+endif ()
 
-# TODO: when utility is an OBJECT target
-#target_link_libraries(utility PUBLIC legacy_api)
-#target_link_libraries(utility PRIVATE common)
-
+# TODO(#3288): when utility is an OBJECT target, explicitly link source dependencies.
 # Source files have the following private module dependencies.
-# TODO: Explicitly link specific modules.
+#target_link_libraries(utility PRIVATE common)
+# TODO(#3288): Explicitly link specific modules as legacy_modules is removed.
 #target_link_libraries(utility PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
-endif()
+endif ()

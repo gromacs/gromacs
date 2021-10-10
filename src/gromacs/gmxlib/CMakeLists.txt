@@ -43,9 +43,10 @@ file(GLOB GMXLIB_SOURCES *.cpp)
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)
 
+# TODO(#3288): Explicitly link specific modules for source dependencies when gmxlib is an OBJECT target.
 # Source files have the following private module dependencies.
 target_link_libraries(gmxlib PRIVATE
-                      #                      gmxlib
+                      #                      common
                       #                      math
                       #                      mdtypes
                       #                      tng_io
@@ -58,22 +59,8 @@ target_include_directories(gmxlib INTERFACE
 #target_link_libraries(gmxlib PUBLIC
 target_link_libraries(gmxlib INTERFACE
                       legacy_api
-                      )
-
-# TODO: when fileio is an OBJECT target
-#target_link_libraries(gmxlib PUBLIC legacy_api)
-#target_link_libraries(gmxlib PRIVATE common)
-
-# Module dependencies
-# fileio interfaces convey transitive dependence on these modules.
-#target_link_libraries(gmxlib PUBLIC
-target_link_libraries(gmxlib INTERFACE
                       utility
                       )
-# Source files have the following private module dependencies.
-#target_link_libraries(gmxlib PRIVATE tng_io)
-# TODO: Explicitly link specific modules.
-#target_link_libraries(gmxlib PRIVATE legacy_modules)
 
 if(BUILD_TESTING)
     add_subdirectory(nonbonded/tests)
