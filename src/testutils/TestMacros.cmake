@@ -37,6 +37,34 @@
 include(CMakeParseArguments)
 include(gmxClangCudaUtils)
 
+set(GMX_CAN_RUN_MPI_TESTS 1)
+if (GMX_MPI)
+    set(_an_mpi_variable_had_content 0)
+    foreach(VARNAME MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS)
+        # These variables need a valid value for the test to run
+        # and pass, but conceivably any of them might be valid
+        # with arbitrary (including empty) content. They can't be
+        # valid if they've been populated with the CMake
+        # find_package magic suffix/value "NOTFOUND", though.
+        if (${VARNAME} MATCHES ".*NOTFOUND")
+            gmx_add_missing_tests_notice("CMake variable ${VARNAME} was not detected to be a valid value. "
+                                         "To test GROMACS correctly, check the advice in the install guide.")
+            set(GMX_CAN_RUN_MPI_TESTS 0)
+        endif()
+        if (NOT VARNAME STREQUAL MPIEXEC AND ${VARNAME})
+            set(_an_mpi_variable_had_content 1)
+        endif()
+    endforeach()
+    if(_an_mpi_variable_had_content AND NOT MPIEXEC)
+        gmx_add_missing_tests_notice("CMake variable MPIEXEC must have a valid value if one of the other related "
+                                     "MPIEXEC variables does. To test GROMACS correctly, check the advice in the "
+                                     "install guide.")
+        set(GMX_CAN_RUN_MPI_TESTS 0)
+    endif()
+elseif (NOT GMX_THREAD_MPI)
+    set(GMX_CAN_RUN_MPI_TESTS 0)
+endif()
+
 function (gmx_add_unit_test_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         add_library(${NAME} STATIC ${UNITTEST_TARGET_OPTIONS} ${ARGN})
@@ -253,6 +281,7 @@ function (gmx_register_gtest_test NAME EXENAME)
         endif()
         if (ARG_MPI_RANKS)
             if (NOT GMX_CAN_RUN_MPI_TESTS)
+                gmx_add_missing_tests_notice("Skipping ${NAME} because MPI tests are not available.")
                 return()
             endif()
             list(APPEND _labels MpiTest)
