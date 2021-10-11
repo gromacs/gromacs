@@ -106,7 +106,6 @@ endif()
 
 add_subdirectory(gromacs)
 add_subdirectory(programs)
-add_subdirectory(api)
 
 # Configure header files with configuration-specific values. This step
 # should follow all introspection e.g. looking for headers and

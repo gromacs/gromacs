@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,22 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-/*! \file
- * \brief Test gmxapi::Context
- *
- * Provides additional test coverage of template headers only used by client code.
- */
-
-#include "config.h"
-
-#include <gtest/gtest.h>
-
-#include "gromacs/utility/gmxmpi.h"
-
-#include "gmxapi/context.h"
-#include "gmxapi/mpi/gmxapi_mpi.h"
-
+#include "testingconfiguration.h"
+#include "gmxapi/system.h"
 
 namespace gmxapi
 {
@@ -58,48 +44,16 @@ namespace testing
 namespace
 {
 
-TEST(GmxApiMpiTest, AllContext)
+/*!
+ * \brief Check gmxapi::System construction.
+ */
+TEST_F(GmxApiTest, SystemConstruction)
 {
-    // Default Implicit COMM_WORLD for MPI builds.
-    auto context = createContext();
+    makeTprFile(1);
+    EXPECT_NO_THROW(gmxapi::fromTprFile(runner_.tprFileName_));
+    // We have nothing to check at this point other than compilation and
+    // error-free execution.
 }
-
-#if GMX_LIB_MPI
-TEST(GmxApiMpiTest, NullContext)
-{
-    // Explicit COMM_NULL is not supported.
-    EXPECT_ANY_THROW(assignResource(MPI_COMM_NULL));
-}
-
-TEST(GmxApiMpiTest, MpiWorldContext)
-{
-    // Note that this test is only compiled when GMX_MPI is enabled for the
-    // build tree, so we cannot unit test the behavior of non-MPI GROMACS
-    // provided with MPI-enabled Context. For that, we defer to the Python
-    // package testing.
-    // Note also that the code should look the same for tMPI or regular MPI.
-
-    // Explicit COMM_WORLD.
-    auto resources = assignResource(MPI_COMM_WORLD);
-    EXPECT_TRUE(resources->size() != 0);
-
-    // Store the rank for debugging convenience.
-    [[maybe_unused]] auto rank = resources->rank();
-
-    auto context = createContext(*resources);
-}
-
-TEST(GmxApiMpiTest, MpiSplitContext)
-{
-    // Explicit sub-communicator.
-    MPI_Comm communicator = MPI_COMM_NULL;
-    int      rank{ 0 };
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // Run each rank as a separate ensemble member.
-    MPI_Comm_split(MPI_COMM_WORLD, rank, rank, &communicator);
-    auto context = createContext(*assignResource(communicator));
-}
-#endif
 
 } // end anonymous namespace
 
