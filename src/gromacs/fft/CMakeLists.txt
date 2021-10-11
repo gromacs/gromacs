@@ -74,7 +74,7 @@ elseif (GMX_GPU_OPENCL)
         gpu_3dfft_ocl.cpp
         )
 elseif (GMX_GPU_SYCL)
-    if (NOT GMX_GPU_HIPSYCL AND GMX_FFT_MKL)
+    if (NOT GMX_SYCL_HIPSYCL AND GMX_FFT_MKL)
             gmx_add_libgromacs_sources(
             gpu_3dfft_sycl_mkl.cpp
             )
@@ -82,7 +82,7 @@ elseif (GMX_GPU_SYCL)
             gpu_3dfft_sycl_mkl.cpp
             )
     endif()
-    if (GMX_GPU_HIPSYCL)
+    if (GMX_SYCL_HIPSYCL)
             gmx_add_libgromacs_sources(
             gpu_3dfft_sycl_rocfft.cpp
             )
