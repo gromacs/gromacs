@@ -76,7 +76,7 @@ namespace test
 class TestFileManager::Impl
 {
 public:
-    //! Global test input data path set with setDataInputDirectory().
+    //! Global test input data path set with setInputDataDirectory().
     static std::string s_inputDirectory;
 
     //! Global path to simulation input database set with setTestSimulationDataBaseDirectory().
