@@ -352,9 +352,9 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     // ToDo: We need further refinement here as communicateHaloData includes launch time for cudamemcpyasync
     wallcycle_start(wcycle_, WallCycleCounter::MoveF);
 
-    while (dependencyEvents->size() > 0)
+    while (!dependencyEvents->empty())
     {
-        auto dependency = dependencyEvents->back();
+        auto* dependency = dependencyEvents->back();
         dependency->enqueueWaitEvent(*haloStream_);
         dependencyEvents->pop_back();
     }
