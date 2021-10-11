@@ -922,15 +922,15 @@ void gmx::LegacySimulator::do_md()
         do_verbose = mdrunOptions.verbose
                      && (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
-        if (useGpuForUpdate && !bFirstStep && bNS)
+        // On search steps, when doing the update on the GPU, copy
+        // the coordinates and velocities to the host unless they are
+        // already there (ie on the first step and after replica
+        // exchange).
+        if (useGpuForUpdate && bNS && !bFirstStep && !bExchanged)
         {
-            // Copy velocities from the GPU on search steps to keep a copy on host (device buffers are reinitialized).
             stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
-            stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
-            // Copy coordinate from the GPU when needed at the search step.
-            // NOTE: The cases when coordinates needed on CPU for force evaluation are handled in sim_utils.
-            // NOTE: If the coordinates are to be written into output file they are also copied separately before the output.
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
+            stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
@@ -962,12 +962,14 @@ void gmx::LegacySimulator::do_md()
                 if (correct_box(fplog, step, state->box))
                 {
                     bMasterState = TRUE;
-                    // If update is offloaded, it should be informed about the box size change
-                    if (useGpuForUpdate)
-                    {
-                        integrator->setPbc(PbcType::Xyz, state->box);
-                    }
                 }
+            }
+            // If update is offloaded, and the box was changed either
+            // above or in a replica exchange on the previous step,
+            // the GPU Update object should be informed
+            if (useGpuForUpdate && (bMasterState || bExchanged))
+            {
+                integrator->setPbc(PbcType::Xyz, state->box);
             }
             if (haveDDAtomOrdering(*cr) && bMasterState)
             {
@@ -1489,7 +1491,8 @@ void gmx::LegacySimulator::do_md()
         {
             if (useGpuForUpdate)
             {
-                if (bNS && (bFirstStep || haveDDAtomOrdering(*cr)))
+                // On search steps, update handles to device vectors
+                if (bNS && (bFirstStep || haveDDAtomOrdering(*cr) || bExchanged))
                 {
                     integrator->set(stateGpu->getCoordinates(),
                                     stateGpu->getVelocities(),
@@ -1501,8 +1504,9 @@ void gmx::LegacySimulator::do_md()
                     /* The velocity copy is redundant if we had Center-of-Mass motion removed on
                      * the previous step. We don't check that now. */
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
-                    if (!runScheduleWork->stepWork.haveGpuPmeOnThisRank
-                        && !runScheduleWork->stepWork.useGpuXBufferOps)
+                    if (bExchanged
+                        || (!runScheduleWork->stepWork.haveGpuPmeOnThisRank
+                            && !runScheduleWork->stepWork.useGpuXBufferOps))
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
                     }
@@ -1533,15 +1537,6 @@ void gmx::LegacySimulator::do_md()
                                       doParrinelloRahman,
                                       ir->nstpcouple * ir->delta_t,
                                       M);
-
-                // Copy velocities D2H after update if:
-                // - Globals are computed this step (includes the energy output steps).
-                // - Temperature is needed for the next step.
-                if (bGStat || needHalfStepKineticEnergy)
-                {
-                    stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
-                    stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
-                }
             }
             else
             {
@@ -1640,14 +1635,33 @@ void gmx::LegacySimulator::do_md()
             // and when algorithms require it.
             const bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
 
-            if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
+            if (useGpuForUpdate)
             {
-                // Copy coordinates when needed to stop the CM motion.
-                if (useGpuForUpdate && (bDoReplEx || (!EI_VV(ir->eI) && bStopCM)))
+                const bool coordinatesRequiredForStopCM =
+                        bStopCM && (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
+                        && !EI_VV(ir->eI);
+
+                // Copy coordinates when needed to stop the CM motion or for replica exchange
+                if (coordinatesRequiredForStopCM || bDoReplEx)
                 {
                     stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
                     stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
                 }
+
+                // Copy velocities back to the host if:
+                // - Globals are computed this step (includes the energy output steps).
+                // - Temperature is needed for the next step.
+                // - This is a replica exchange step (even though we will only need
+                //     the velocities if an exchange succeeds)
+                if (bGStat || needHalfStepKineticEnergy || bDoReplEx)
+                {
+                    stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
+                    stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
+                }
+            }
+
+            if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
+            {
                 // Since we're already communicating at this step, we
                 // can propagate intra-simulation signals. Note that
                 // check_nstglobalcomm has the responsibility for
@@ -1722,6 +1736,7 @@ void gmx::LegacySimulator::do_md()
             accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
         }
 
+        bool scaleCoordinates = !useGpuForUpdate || bDoReplEx;
         update_pcouple_after_coordinates(fplog,
                                          step,
                                          ir,
@@ -1735,7 +1750,7 @@ void gmx::LegacySimulator::do_md()
                                          state,
                                          nrnb,
                                          upd.deform(),
-                                         !useGpuForUpdate);
+                                         scaleCoordinates);
 
         const bool doBerendsenPressureCoupling = (inputrec->epc == PressureCoupling::Berendsen
                                                   && do_per_step(step, inputrec->nstpcouple));

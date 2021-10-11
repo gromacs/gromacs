@@ -34,7 +34,7 @@
  */
 
 /*! \internal \file
- * \brief Tests to verify that a simulator that only does some actions
+ * \brief Utility functions for tests to verify that a simulator that only does some actions
  * periodically produces the expected results.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
@@ -44,24 +44,11 @@
 
 #include "config.h"
 
-#include <tuple>
-
-#include "gromacs/trajectory/energyframe.h"
-#include "gromacs/utility/strconvert.h"
-#include "gromacs/utility/stringutil.h"
-
-#include "testutils/simulationdatabase.h"
-#include "testutils/testasserts.h"
-
-#include "energycomparison.h"
-#include "energyreader.h"
-#include "moduletest.h"
+#include "periodicactions.h"
 
 namespace gmx
 {
 namespace test
-{
-namespace
 {
 
 /*! \brief Mdp parameters that determine the manner of simulation
@@ -72,45 +59,8 @@ using PropagationParameters = MdpFieldValues;
  *  not the simulation propagation. */
 using PeriodicOutputParameters = MdpFieldValues;
 
-//! Helper type of output file names for the reference mdrun call
-struct ReferenceFileNames
-{
-    //! Name of energy file
-    std::string edrFileName_;
-};
-
 //! Function type to produce sets of .mdp parameters for testing periodic output
 using OutputParameterGeneratorFunction = std::vector<PeriodicOutputParameters> (*)();
-
-/*! \brief Test fixture base for comparing a simulator with one that
- * does everything every step
- *
- * This test ensures that two simulator code paths called via
- * different mdp options yield identical energy trajectories,
- * up to some (arbitrary) precision.
- *
- * These tests are useful to check that periodic actions implemented
- * in simulators are correct, and that different code paths expected
- * to yield identical results are equivalent.
- */
-class PeriodicActionsTest :
-    public MdrunTestFixture,
-    public ::testing::WithParamInterface<std::tuple<PropagationParameters, OutputParameterGeneratorFunction>>
-{
-public:
-    // PeriodicActionsTest();
-    //! Run mdrun with given output parameters
-    void doMdrun(const PeriodicOutputParameters& output);
-    //! Generate reference data from mdrun writing everything every step.
-    void prepareReferenceData();
-    //! Names for the output files from the reference mdrun call
-    ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
-    //! Functor for energy comparison
-    EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare(),
-                                        MaxNumFrames::compareAllFrames() };
-    //! Names of energies compared by energyComparison_
-    std::vector<std::string> namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
-};
 
 void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
 {
@@ -262,21 +212,13 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
 
 /*! \brief Some common choices of periodic output mdp parameters to
  * simplify defining values for the combinations under test */
-PeriodicOutputParameters g_basicPeriodicOutputParameters = {
+static PeriodicOutputParameters g_basicPeriodicOutputParameters = {
     { "nstenergy", "0" }, { "nstlog", "0" },           { "nstxout", "0" },
     { "nstvout", "0" },   { "nstfout", "0" },          { "nstxout-compressed", "0" },
     { "nstdhdl", "0" },   { "description", "unknown" }
 };
 
-/*! \brief Return vector of mdp parameter sets to test
- *
- * These are constructed to observe the mdp parameter choices that
- * only affect when output is written agree with those that were
- * written from a reference run where output was done every step. The
- * numbers are chosen in the context of the defaults in
- * prepareDefaultMdpFieldValues().
- *
- * \todo Test nstlog, nstdhdl, nstxout-compressed */
+// \todo Test nstlog, nstdhdl, nstxout-compressed
 std::vector<PeriodicOutputParameters> outputParameters()
 {
     std::vector<PeriodicOutputParameters> parameterSets;
@@ -304,7 +246,6 @@ std::vector<PeriodicOutputParameters> outputParameters()
     return parameterSets;
 }
 
-//! Returns sets of simple simulation propagators
 std::vector<PropagationParameters> simplePropagationParameters()
 {
     return {
@@ -320,14 +261,6 @@ std::vector<PropagationParameters> simplePropagationParameters()
     };
 }
 
-/*! \brief Returns sets of simulation propagators including coupling
- *
- * These are chosen to cover the commonly used space of propagation
- * algorithms togther with the perdiods between their actions. The
- * periods tested are chosen to be mutually co-prime and distinct from
- * the pair search and user output period (4), so that over the
- * duration of a short simulation many kinds of simulation step
- * behavior are tested. */
 std::vector<PropagationParameters> propagationParametersWithCoupling()
 {
     std::string nsttcouple = "2";
@@ -394,10 +327,6 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
     return parameterSets;
 }
 
-/*! \brief Returns sets of simulation propagators including coupling
- *
- * These are chosen to cover the commonly used space of propagation
- * algorithms on systems with constraints. */
 std::vector<PropagationParameters> propagationParametersWithConstraints()
 {
     std::string nsttcouple = "2";
@@ -460,37 +389,5 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
     return parameterSets;
 }
 
-using ::testing::Combine;
-using ::testing::Values;
-using ::testing::ValuesIn;
-
-// TODO The time for OpenCL kernel compilation means these tests time
-// out. Once that compilation is cached for the whole process, these
-// tests can run in such configurations.
-#if !GMX_GPU_OPENCL
-INSTANTIATE_TEST_SUITE_P(BasicPropagators,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
-INSTANTIATE_TEST_SUITE_P(PropagatorsWithCoupling,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
-INSTANTIATE_TEST_SUITE_P(PropagatorsWithConstraints,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(propagationParametersWithConstraints()),
-                                 Values(outputParameters)));
-#else
-INSTANTIATE_TEST_SUITE_P(DISABLED_BasicPropagators,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
-INSTANTIATE_TEST_SUITE_P(DISABLED_PropagatorsWithCoupling,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
-INSTANTIATE_TEST_SUITE_P(DISABLED_PropagatorsWithConstraints,
-                         PeriodicActionsTest,
-                         Combine(ValuesIn(propagationParametersWithConstraints()),
-                                 Values(outputParameters)));
-#endif
-
-} // namespace
 } // namespace test
 } // namespace gmx
