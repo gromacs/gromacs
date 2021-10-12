@@ -118,35 +118,33 @@ void GpuForceReduction::Impl::execute()
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpu);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
 
-    if (numAtoms_ == 0)
+    if (numAtoms_ != 0)
     {
-        return;
-    }
+        GMX_ASSERT(nbnxmForceToAdd_, "Nbnxm force for reduction has no data");
 
-    GMX_ASSERT(nbnxmForceToAdd_, "Nbnxm force for reduction has no data");
+        // Enqueue wait on all dependencies passed
+        for (auto* synchronizer : dependencyList_)
+        {
+            synchronizer->enqueueWaitEvent(deviceStream_);
+        }
 
-    // Enqueue wait on all dependencies passed
-    for (auto* synchronizer : dependencyList_)
-    {
-        synchronizer->enqueueWaitEvent(deviceStream_);
-    }
+        const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
 
-    const bool addRvecForce = static_cast<bool>(rvecForceToAdd_); // True iff initialized
+        launchForceReductionKernel(numAtoms_,
+                                   atomStart_,
+                                   addRvecForce,
+                                   accumulate_,
+                                   nbnxmForceToAdd_,
+                                   rvecForceToAdd_,
+                                   baseForce_,
+                                   cellInfo_.d_cell,
+                                   deviceStream_);
 
-    launchForceReductionKernel(numAtoms_,
-                               atomStart_,
-                               addRvecForce,
-                               accumulate_,
-                               nbnxmForceToAdd_,
-                               rvecForceToAdd_,
-                               baseForce_,
-                               cellInfo_.d_cell,
-                               deviceStream_);
-
-    // Mark that kernel has been launched
-    if (completionMarker_ != nullptr)
-    {
-        completionMarker_->markEvent(deviceStream_);
+        // Mark that kernel has been launched
+        if (completionMarker_ != nullptr)
+        {
+            completionMarker_->markEvent(deviceStream_);
+        }
     }
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
