@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,20 +78,29 @@ void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
 //! Wait until all processes in communicator have reached the barrier
 void gmx_barrier(MPI_Comm communicator);
 
-//! Broadcast nbytes bytes from the master to communicator
+/*! Broadcast nbytes bytes from the master to communicator
+ *
+ * Can be called with a single rank or without MPI
+ */
 void gmx_bcast(int nbytes, void* b, MPI_Comm communicator);
 
+/*! Calculate the global sum of an array of ints
+ *
+ * Can be called with a single rank or without MPI
+ */
 void gmx_sumi(int nr, int r[], const struct t_commrec* cr);
-/* Calculate the global sum of an array of ints */
 
-void gmx_sumli(int nr, int64_t r[], const struct t_commrec* cr);
-/* Calculate the global sum of an array of large ints */
-
+/*! Calculate the global sum of an array of floats
+ *
+ * Can be called with a single rank or without MPI
+ */
 void gmx_sumf(int nr, float r[], const struct t_commrec* cr);
-/* Calculate the global sum of an array of floats */
 
+/*! Calculate the global sum of an array of doubles
+ *
+ * Can be called with a single rank or without MPI
+ */
 void gmx_sumd(int nr, double r[], const struct t_commrec* cr);
-/* Calculate the global sum of an array of doubles */
 
 #if GMX_DOUBLE
 #    define gmx_sum gmx_sumd
