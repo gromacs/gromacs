@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -251,6 +251,8 @@ void runTest(TestFileManager*            fileManager,
         EXPECT_EQ(0, runner->callGrompp(caller));
     }
 
+    const std::string splitPoint = std::to_string(std::stoi(mdpFieldValues.at("nsteps")) / 2);
+
     // prepare the .tpr file for the first part of the two-part run
     {
         // TODO evolve grompp to report the number of warnings issued, so
@@ -260,7 +262,7 @@ void runTest(TestFileManager*            fileManager,
         caller.addOption("-maxwarn", maxWarningsTolerated);
         runner->useTopGroAndNdxFromDatabase(simulationName);
         auto firstPartMdpFieldValues      = mdpFieldValues;
-        firstPartMdpFieldValues["nsteps"] = std::to_string(std::stoi(mdpFieldValues.at("nsteps")) / 2);
+        firstPartMdpFieldValues["nsteps"] = splitPoint;
         runner->useStringAsMdpFile(prepareMdpFileContents(firstPartMdpFieldValues));
         runner->tprFileName_ = firstPartRunTprFileName;
         EXPECT_EQ(0, runner->callGrompp(caller));
@@ -272,6 +274,9 @@ void runTest(TestFileManager*            fileManager,
         runner->edrFileName_ = fullRunEdrFileName;
         CommandLine fullRunCaller;
         fullRunCaller.append("mdrun");
+        /* Force neighborlist update at the beginning of the second half of the trajectory.
+         * Doing so through CLI options prevents pairlist tuning from changing it. */
+        fullRunCaller.addOption("-nstlist", splitPoint);
         ASSERT_EQ(0, runner->callMdrun(fullRunCaller));
     }
 

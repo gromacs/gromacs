@@ -30,10 +30,3 @@ from NVIDIA (CC 7.0 and 7.5). This is an issue that affects certain flavors of
 the nonboded kernels, most likely a result of miscompilation, and there is no
 known workaround.
 
-MdrunIO tests fail on Power9
-----------------------------
-
-The mentioned tests fail with small differences in the reported energies that
-are just outside of the set tolerances when using exactly 2 ranks.
-
-:issue:`3747`
