@@ -200,7 +200,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     float  atomCharge;
 
     const int blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
-    const int atomIndexOffset = blockIndex * atomsPerBlock;
+    const int atomIndexOffset = blockIndex * atomsPerBlock + kernelParams.pipelineAtomStart;
 
     /* Thread index w.r.t. block */
     const int threadLocalId =
@@ -225,8 +225,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     /* Charges, required for both spline and spread */
     if (c_useAtomDataPrefetch)
     {
-        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients,
-                                                         kernelParams.atoms.d_coefficients[0]);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+                sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
         __syncthreads();
         atomCharge = sm_coefficients[atomIndexLocal];
     }
@@ -237,7 +237,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
 
     if (computeSplines)
     {
-        const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
+        const float3* __restrict__ gm_coordinates =
+                asFloat3(&kernelParams.atoms.d_coordinates[kernelParams.pipelineAtomStart]);
         if (c_useAtomDataPrefetch)
         {
             // Coordinates
@@ -274,8 +275,12 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(
-                kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+
+        if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+        {
+            spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(
+                    kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+        }
     }
     if (numGrids == 2)
     {
@@ -293,8 +298,11 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         }
         if (spreadCharges)
         {
-            spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(
-                    kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+            if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+            {
+                spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(
+                        kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+            }
         }
     }
 }

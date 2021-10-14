@@ -70,6 +70,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
@@ -342,7 +343,18 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
             const real lambdaQ = 1.0;
             // no synchronization needed as x is transferred in the PME stream
             GpuEventSynchronizer* xReadyOnDevice = nullptr;
-            pme_gpu_spread(pme->gpu, xReadyOnDevice, fftgrid, computeSplines, spreadCharges, lambdaQ);
+
+            bool                           useGpuDirectComm         = false;
+            gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
+
+            pme_gpu_spread(pme->gpu,
+                           xReadyOnDevice,
+                           fftgrid,
+                           computeSplines,
+                           spreadCharges,
+                           lambdaQ,
+                           useGpuDirectComm,
+                           pmeCoordinateReceiverGpu);
         }
         break;
 #endif

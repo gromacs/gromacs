@@ -59,6 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #include "pme_gpu_internal.h"
 #include "pme_gpu_settings.h"
@@ -189,10 +190,12 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
     }
 }
 
-void pme_gpu_launch_spread(gmx_pme_t*            pme,
-                           GpuEventSynchronizer* xReadyOnDevice,
-                           gmx_wallcycle*        wcycle,
-                           const real            lambdaQ)
+void pme_gpu_launch_spread(gmx_pme_t*                     pme,
+                           GpuEventSynchronizer*          xReadyOnDevice,
+                           gmx_wallcycle*                 wcycle,
+                           const real                     lambdaQ,
+                           const bool                     useGpuDirectComm,
+                           gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(!GMX_GPU_CUDA || xReadyOnDevice || !pme->bPPnode,
@@ -215,7 +218,8 @@ void pme_gpu_launch_spread(gmx_pme_t*            pme,
     const bool spreadCharges  = true;
     wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
-    pme_gpu_spread(pmeGpu, xReadyOnDevice, fftgrids, computeSplines, spreadCharges, lambdaQ);
+    pme_gpu_spread(
+            pmeGpu, xReadyOnDevice, fftgrids, computeSplines, spreadCharges, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu);
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuPme);
     wallcycle_stop(wcycle, WallCycleCounter::LaunchGpu);
 }

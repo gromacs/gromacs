@@ -26,3 +26,19 @@ up to a factor of 3.
 
 :issue:`2875`
 :issue:`742`
+
+       
+PME-PP GPU Direct Communication Pipelining
+""""""""""""""""""""""""""""""""""""""
+
+For multi-GPU runs with direct PME-PP GPU comunication enabled, the
+PME rank can now pipeline the coordinate transfers with computation in
+the PME Spread and Spline kernel (where the coordinates are
+consumed). The data from each transfer is handled seperately, allowing
+computation and communication to be overlapped. This is expected to
+have most benefit on systems where hardware communication interfaces
+are shared between multiple GPUs, e.g. PCIe within multi-GPU servers
+or Infiniband across multiple nodes.
+
+:issue:`3969`
+

@@ -224,6 +224,15 @@ struct PmeGpuKernelParamsBase
      * before launching spreading.
      */
     struct PmeGpuDynamicParams current;
+
+    /*! \brief Whether pipelining with PP communications is active
+     * char rather than bool to avoid problem with OpenCL compiler */
+    char usePipeline;
+    /*! \brief Start atom for this stage of pipeline */
+    int pipelineAtomStart;
+    /*! \brief End atom for this stage of pipeline */
+    int pipelineAtomEnd;
+
     /* These texture objects are only used in CUDA and are related to the grid size. */
     /*! \brief Texture object for accessing grid.d_fractShiftsTable */
     HIDE_FROM_OPENCL_COMPILER(DeviceTexture) fractShiftsTableTexture;

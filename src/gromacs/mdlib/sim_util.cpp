@@ -54,6 +54,7 @@
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
@@ -746,7 +747,10 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
                                       gmx_wallcycle*        wcycle)
 {
     pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
-    pme_gpu_launch_spread(pmedata, xReadyOnDevice, wcycle, lambdaQ);
+    bool                           useGpuDirectComm         = false;
+    gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
+    pme_gpu_launch_spread(
+            pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU

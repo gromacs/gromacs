@@ -49,6 +49,8 @@
 #include "gromacs/utility/gmxmpi.h"
 
 class DeviceStream;
+class DeviceContext;
+
 struct PpRanks;
 
 namespace gmx
@@ -62,18 +64,30 @@ class PmeCoordinateReceiverGpu
 
 public:
     /*! \brief Creates PME GPU coordinate receiver object
-     * \param[in] pmeStream       CUDA stream used for PME computations
+     *
+     * For multi-GPU runs, the PME GPU can receive coordinates from
+     * multiple PP GPUs. Data from these distinct communications can
+     * be handled separately in the PME spline/spread kernel, allowing
+     * pipelining which overlaps computation and communication. The
+     * class methods are designed to called seperately for each remote
+     * PP rank, and internally a different stream is used for each
+     * remote PP rank to allow overlapping.
+     *
      * \param[in] comm            Communicator used for simulation
+     * \param[in] deviceContext   GPU context
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeCoordinateReceiverGpu(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeCoordinateReceiverGpu(MPI_Comm comm, const DeviceContext& deviceContext, gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeCoordinateReceiverGpu();
 
     /*! \brief
+     * Re-initialize: set atom ranges and, for thread-MPI case,
      * send coordinates buffer address to PP rank
+     * This is required after repartitioning since atom ranges and
+     * buffer allocations may have changed.
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x);
+    void reinitCoordinateReceiver(DeviceBuffer<RVec> d_x);
 
 
     /*! \brief
@@ -92,10 +106,37 @@ public:
     void launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf, int numAtoms, int numBytes, int ppRank);
 
     /*! \brief
-     * For lib MPI, wait for coordinates from PP ranks
-     * For thread MPI, enqueue PP co-ordinate transfer event into PME stream
+     * For lib MPI, wait for coordinates from any PP rank
+     * For thread MPI, enqueue PP co-ordinate transfer event received from PP
+     * rank determined from pipeline stage into given stream
+     * \param[in] pipelineStage  stage of pipeline corresponding to this transfer
+     * \param[in] deviceStream   stream in which to enqueue the wait event.
+     * \returns                  rank of sending PP task
      */
-    void synchronizeOnCoordinatesFromPpRanks();
+    int synchronizeOnCoordinatesFromPpRank(int pipelineStage, const DeviceStream& deviceStream);
+
+    /*! \brief Perform above synchronizeOnCoordinatesFromPpRanks for all PP ranks,
+     * enqueueing all events to a single stream
+     * \param[in] deviceStream   stream in which to enqueue the wait events.
+     */
+    void synchronizeOnCoordinatesFromAllPpRanks(const DeviceStream& deviceStream);
+
+    /*! \brief
+     * Return pointer to stream associated with specific PP rank sender index
+     * \param[in] senderIndex    Index of sender PP rank.
+     */
+    DeviceStream* ppCommStream(int senderIndex);
+
+    /*! \brief
+     * Returns range of atoms involved in communication associated with specific PP rank sender
+     * index \param[in] senderIndex    Index of sender PP rank.
+     */
+    std::tuple<int, int> ppCommAtomRange(int senderIndex);
+
+    /*! \brief
+     * Return number of PP ranks involved in PME-PP communication
+     */
+    int ppCommNumSenderRanks();
 
 private:
     class Impl;
