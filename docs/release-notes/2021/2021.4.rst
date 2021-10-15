@@ -25,6 +25,18 @@ a domain and its halo were more than 200000.
 
 :issue:`4167`
 
+Disabled the use of PME Mixed mode for FEP simulations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The use of Mixed mode PME (``-pme gpu -pmefft cpu``) led to incorrect
+computation of :math:`{\frac{\partial V}{\partial {\lambda}}}` in FEP
+simulations.
+
+Mixed mode is only used when explicitly requested by the user.
+
+:issue:`4190`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

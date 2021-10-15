@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,6 +259,17 @@ bool pme_gpu_supports_hardware(const gmx_hw_info_t& hwinfo, std::string* error);
  * \returns true if PME can run on GPU with this input, false otherwise.
  */
 bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error);
+
+/*! \brief Checks whether the input system allows to run PME on GPU in Mixed mode.
+ * Assumes that the input system is compatible with GPU PME otherwise, that is,
+ * before calling this function one should check that \ref pme_gpu_supports_input returns \c true.
+ *
+ * \param[in]  ir     Input system.
+ * \param[out] error  If non-null, the error message if the input is not supported.
+ *
+ * \returns true if PME can run on GPU in Mixed mode with this input, false otherwise.
+ */
+bool pme_gpu_mixed_mode_supports_input(const t_inputrec& ir, std::string* error);
 
 /*! \brief
  * Returns the active PME codepath (CPU, GPU, mixed).
