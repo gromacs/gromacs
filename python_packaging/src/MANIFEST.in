@@ -1,0 +1,3 @@
+include README.rst LICENSE
+graft gmxapi
+global-include CMakeLists.txt *.cmake

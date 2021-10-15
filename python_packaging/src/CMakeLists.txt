@@ -32,12 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This CMakeLists.txt allows source distributions of the gmxapi Python package
-# to rely on scikit-build for support of various Python packaging systems. The
-# simplest use case is to allow the `setup.py` file to invoke skbuild to
-# configure and run CMake. CMake could be invoked directly by the user or a
-# parent package, but the Python distribution would not be packaged automatically.
-# Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
+# This CMakeLists.txt is not intended to be used directly, but either through
+# setup.py or as an inclusion of the full GROMACS project.
+# See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more.
 cmake_minimum_required(VERSION 3.16.3)
 
 # This needs to be set before project() in order to pick up toolchain files
@@ -55,12 +52,23 @@ set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python
 # package version, but is likely to do so.
-project(gmxapi VERSION 0.3.0)
+project(gmxapi)
 
 # Check if Python package is being built directly or via add_subdirectory
 set(GMXAPI_MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(GMXAPI_MASTER_PROJECT ON)
+    if (NOT Python3_FIND_STRATEGY)
+        # If the user provides a hint for the Python installation with Python3_ROOT_DIR,
+        # prevent FindPython3 from overriding the choice with a newer Python version
+        # when CMP0094 is set to OLD.
+        set(Python3_FIND_STRATEGY LOCATION)
+    endif ()
+    if(NOT Python3_FIND_VIRTUALENV)
+        # We advocate using Python venvs to manage package availability, so by default
+        # we want to preferentially discover user-space software.
+        set(Python3_FIND_VIRTUALENV FIRST)
+    endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -75,6 +83,24 @@ if(POLICY CMP0074) #3.12
     cmake_policy(SET CMP0074 NEW)
 endif()
 
+find_package(Python3 3.7 COMPONENTS Interpreter Development)
+find_package(pybind11 2.6 CONFIG)
+# If we are not running through setup.py, we may need to look for the pybind11 headers.
+if (NOT pybind11_FOUND)
+    execute_process(
+        COMMAND
+        "${Python3_EXECUTABLE}" -c
+        "import pybind11; print(pybind11.get_cmake_dir())"
+        OUTPUT_VARIABLE _tmp_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+    list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+    find_package(pybind11 2.6 CONFIG)
+endif ()
+if (NOT pybind11_FOUND)
+    message(FATAL_ERROR "Python package build dependencies not found with interpreter ${Python3_EXECUTABLE}. "
+            "See https://manual.gromacs.org/current/gmxapi/userguide/install.html")
+endif ()
+
 if(GMXAPI_MASTER_PROJECT)
     find_package(gmxapi 0.2 REQUIRED
                  HINTS "$ENV{GROMACS_DIR}"
@@ -83,7 +109,16 @@ if(GMXAPI_MASTER_PROJECT)
         message(WARNING "Your GROMACS installation does not support custom MD plugins. "
                 "If you need this feature, please install GROMACS 2021.3 or higher.")
     endif ()
+else()
+    # Building as part of the GROMACS master project. GROMACS CMake logic should
+    # not be processing this unless Python3 was appropriately detected.
+    if (NOT Python3_FOUND)
+        message(FATAL_ERROR "Error in CMake script. Please report GROMACS bug.")
+    endif ()
+
+    get_target_property(gmxapi_VERSION gmxapi VERSION)
 endif()
+
 if(gmxapi_FOUND)
     set(_suffix "")
     # GROMACS master branch and development branches may have divergent
@@ -94,8 +129,9 @@ if(gmxapi_FOUND)
     if(gmxapi_EXPERIMENTAL)
         set(_suffix " (unofficial)")
     endif()
-    message(STATUS "Found gmxapi version ${gmxapi_VERSION}${_suffix}")
 endif()
+
+message(STATUS "Configuring Python package for gmxapi version ${gmxapi_VERSION}${_suffix}")
 
 # The Gromacs::gmxapi target could be imported from an existing installation or
 # provided as an alias target within the GROMACS build tree.
@@ -103,7 +139,7 @@ if (NOT TARGET Gromacs::gmxapi)
     message(FATAL_ERROR "Cannot build Python package without GROMACS gmxapi support.")
 endif ()
 
-# TODO: Provide user hints for mpi4py installation.
+# TODO(#3279): Provide user hints for mpi4py installation.
 # Note that neither the Python package nor the Gromacs::gmxapi CMake target are
 # built with MPI in any case, but they _should_ be built with a C++ compiler
 # that is compatible with the available MPI compiler wrappers, and technically
@@ -112,33 +148,20 @@ endif ()
 # For convenience, it is fine if libgmxapi and _gmxapi are built with the mpi
 # compiler wrapper.
 
-option(GMXAPI_USE_BUNDLED_PYBIND
-       "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`."
-       ON)
-if(GMXAPI_USE_BUNDLED_PYBIND)
-    add_subdirectory(external/pybind)
-else()
-    # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896
-    find_package(pybind11 2.2 REQUIRED)
-endif()
-
-set(GMXAPI_PYTHON_EXTENSION_SOURCES
-    gmxapi/module.cpp
-    gmxapi/export_context.cpp
-    gmxapi/export_exceptions.cpp
-    gmxapi/export_system.cpp
-    gmxapi/export_tprfile.cpp
-    gmxapi/pycontext.cpp
-    gmxapi/pysystem.cpp
-    )
-
 pybind11_add_module(_gmxapi
-                    ${GMXAPI_PYTHON_EXTENSION_SOURCES}
+                    gmxapi/module.cpp
+                    gmxapi/export_context.cpp
+                    gmxapi/export_exceptions.cpp
+                    gmxapi/export_system.cpp
+                    gmxapi/export_tprfile.cpp
+                    gmxapi/pycontext.cpp
+                    gmxapi/pysystem.cpp
                     )
 
 if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
     target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
 else()
+    message(WARNING "Found an old gmxapi library version. Please consider updating your GROMACS installation.")
     target_sources(_gmxapi PRIVATE gmxapi/launch_020.cpp)
 endif()
 
@@ -149,15 +172,6 @@ target_include_directories(_gmxapi PRIVATE
 
 # RPATH management: make sure build artifacts can find GROMACS library.
 set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
-
-# Python sources (*.py) will be packaged by scikit-build and setuptools.
-# Note that library targets are built in CMAKE_LIBRARY_OUTPUT_DIRECTORY if not otherwise specified.
-# This may be an unexpected location, whether inherited from the GROMACS build tree
-# or the SKBUILD framework. Note, also, that when scikit-build is invoked with setup.py,
-# the CMake build takes place in a subdirectory of ./_skbuild/.
-set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging)
-set_target_properties(_gmxapi PROPERTIES
-                      LIBRARY_OUTPUT_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
 
 if(GMXAPI_MASTER_PROJECT)
     # TODO: This requirement is probably overly restrictive.
@@ -200,36 +214,24 @@ endif ()
 if (NOT _gmx_bindir OR NOT _gmx_executable)
     message(FATAL_ERROR "Could not get path for gmx wrapper binary.")
 endif ()
-configure_file(gmxapi/gmxconfig.json.in ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json)
+configure_file(gmxapi/gmxconfig.json.in gmxapi/gmxconfig.json)
 unset(_gmx_executable)
 unset(_gmx_bindir)
 unset(_gmx_mpi_type)
 
-# scikit-build sets SKBUILD when running Python packaging tools through setup.py
-# (e.g. with pip)
-if(SKBUILD)
-    # The Python module is being built for a GROMACS installation.
+if (GMXAPI_MASTER_PROJECT)
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
     set_target_properties(_gmxapi PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
     target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
-    # By default, scikit-build expects the library to be installed into a directory
-    # named for the Python package as in setup.py.
-    install(TARGETS _gmxapi LIBRARY DESTINATION gmxapi)
-    install(FILES ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json DESTINATION gmxapi)
+    # The Python setup.py sets CMAKE_LIBRARY_OUTPUT_DIRECTORY and will be looking for generated files there.
+    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gmxapi/gmxconfig.json
+         DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 else()
-    # The Python module is being built against GROMACS in its build tree.
-    # Note: we do not have plans to install the staged package when SKBUILD != TRUE
-    set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
-    target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
+    # The rest of the logic in this conditional is to support the GMX_PYTHON_PACKAGE option
+    # for testing the gmxapi Python packages within a full GROMACS project build_command and.
+    # for building full GROMACS project documentation.
 
-    # TODO: Determine packaging and installation cases and implementation.
-    # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
-    # Currently, CMake should be run by scikit-build through setup.py for proper Python packaging.
-    # We don't want to install by default in the outer scope of the GROMACS
-    # CMake procedure because we could end up trying to install to a system directory
-    # the user did not intend, or a user might install a Python-installation-specific
-    # package into an overly generic GROMACS path.
-
+    set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging)
     # Instead, we should probably build a source package and alert the user of its location.
     # We can use CMake to call the Python packaging tools to create an 'sdist'
     # source distribution archive to be installed in the GROMACS installation
@@ -237,8 +239,13 @@ else()
     # easier clean-up, as well.
     # TODO: (ref Issue #2896) Build and install 'sdist' with GROMACS.
 
+    # The Python module is being built against GROMACS in its build tree, so we will not install.
+    set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
+    target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
     # However, we can still produce an importable package for documentation builds and
     # basic testing in ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging
+    set_target_properties(_gmxapi PROPERTIES
+                          LIBRARY_OUTPUT_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
     file(GLOB_RECURSE _py_sources
          CONFIGURE_DEPENDS
          ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
@@ -248,8 +255,7 @@ else()
         file(COPY ${_package_file} DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/${_relative_dir})
     endforeach()
     file(COPY setup.py CMakeLists.txt DESTINATION ${GMXAPI_PYTHON_STAGING_DIR})
-    # Set CMake variable pybind11_DIR to ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind/tools
-    # if re-invoking CMake (including via Python setuptools) for the files in gmxapi_staging.
+    file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gmxapi/gmxconfig.json DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
 
     # Unit test and build docs using PYTHONPATH=$CMAKE_CURRENT_BINARY_DIR/gmxapi_staging
     set_target_properties(_gmxapi PROPERTIES staging_dir ${GMXAPI_PYTHON_STAGING_DIR})

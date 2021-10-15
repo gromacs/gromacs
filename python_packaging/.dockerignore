@@ -24,6 +24,8 @@ lib*.pc
 .cproject
 build
 _build
+__pycache__
+docker/*.dockerfile
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing

@@ -1,13 +1,5 @@
-# Python package requirements for complete build, installation, and testing of
-# gmxapi functionality.
-cmake>=3.16.3
+# Python package requirements for complete testing of gmxapi functionality.
+# Supplements the requirements.txt file in the package directory.
 flake8>=3.7.7
-networkx>=2.0
-numpy>=1
-pip>=10.1
-scikit-build>=0.10
-setuptools>=42
-wheel
-# The following packages are not strictly necessary, but allow full testing.
 mpi4py>=3.0.3
 pytest>=3.9

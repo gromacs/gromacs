@@ -520,7 +520,6 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'Pygments>=2.2.0' \
             'pytest>=3.9' \
             'setuptools>=42' \
-            'scikit-build>=0.10' \
             'Sphinx>=1.6.3' \
             'sphinxcontrib-plantuml>=0.14'""")
 

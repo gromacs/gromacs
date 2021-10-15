@@ -73,6 +73,7 @@ def test_binding_protocol(spc_water_box, mdrun_kwargs):
     assert len(context.potentials) > 0
     for restraint in context.potentials:
         if isinstance(restraint, myplugin.NullRestraint):
+            assert gmx.version.api_is_at_least(0, 2, 1)
             assert restraint.count() > 1
 
 

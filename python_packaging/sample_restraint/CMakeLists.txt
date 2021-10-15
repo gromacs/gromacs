@@ -1,58 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 # If you are using this repository as a template, you should probably change the
 # project name and adopt your own versioning scheme.
-project(sample_restraint VERSION 0.2.1)
-
-find_package(PythonInterp)
-
-# Check if Python package is being built directly or via add_subdirectory.
-# I.e. is this being built as a standalone project or as part of the GROMACS
-# build tree (for testing)?
-set(GMXAPI_EXTENSION_MASTER_PROJECT OFF)
-if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-    set(GMXAPI_EXTENSION_MASTER_PROJECT ON)
-endif()
-
-# TODO: (Issue #3027) Handle pybind sources both for forked projects and
-#  for GROMACS-project-internal testing.
-# Projects based on this subtree should bundle pybind11 sources.
-# The GROMACS project already bundles one copy of pybind sources for the gmxapi
-# Python package, and should package them with source distribution archives of
-# the paackage that should be installed with GROMACS, but the pybind sources
-# would only be available to this project with some additional management by
-# the parent project CMake configuration.
-# Also reference https://gitlab.com/gromacs/gromacs/-/issues/2896
-if(GMXAPI_EXTENSION_MASTER_PROJECT)
-    # TODO: (Issue #3027) Handle locally available sources.
-    set(GMXAPI_EXTENSION_USE_BUNDLED_PYBIND OFF CACHE BOOL
-        "Use pybind11 headers bundled with this repository. If OFF, CMake does `find_package(pybind11)`.")
-    if(GMXAPI_EXTENSION_USE_BUNDLED_PYBIND)
-        add_subdirectory(external/pybind)
-    else()
-        option(GMXAPI_EXTENSION_DOWNLOAD_PYBIND ON)
-        if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
-            configure_file(CMakeLists.pybind.in pybind-download/CMakeLists.txt)
-            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-                            RESULT_VARIABLE result
-                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
-            if(result)
-                message(FATAL_ERROR "CMake step for pybind download failed: ${result}")
-            endif()
-            execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                            RESULT_VARIABLE result
-                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
-            if(result)
-                message(FATAL_ERROR "Build step for pybind failed: ${result}")
-            endif()
-            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/pybind-src)
-        else()
-            find_package(pybind11 2.2 REQUIRED)
-        endif()
-    endif()
-else()
-    # If configuring as part of the GROMACS project, pybind11 2.2 has already been found.
-endif()
-
+project(sample_restraint)
 
 # This project requires a GROMACS supporting gmxapi 0.0.8 or higher. It should
 # be sufficient to source the GMXRC, but you can also set the GROMACS_DIR or
@@ -68,12 +17,39 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 # CMake modules are in a subdirectory to keep this file cleaner
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Check if Python package is being built directly or via add_subdirectory.
+# I.e. is this being built as a standalone project or as part of the GROMACS
+# build tree (for testing)?
+set(GMXAPI_EXTENSION_MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(GMXAPI_EXTENSION_MASTER_PROJECT ON)
+endif()
+
+option(GMXAPI_EXTENSION_DOWNLOAD_PYBIND ON)
+if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
+    configure_file(CMakeLists.pybind.in pybind-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
+    if(result)
+        message(FATAL_ERROR "CMake step for pybind download failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/pybind-download)
+    if(result)
+        message(FATAL_ERROR "Build step for pybind failed: ${result}")
+    endif()
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/pybind-src)
+else()
+    find_package(pybind11 2.6 REQUIRED)
+endif()
 # Assuming GROMACS is in our path or that we have set either the gmxapi_DIR or GROMACS_DIR environment variables,
 # this will find the CMake configuration for the GROMACS libraries we need and define the CMake library objects
 # Gromacs::gmxapi
 if(GMXAPI_EXTENSION_MASTER_PROJECT)
     find_package(gmxapi
-                 0.0.8 REQUIRED CONFIG
+                 0.2.1 REQUIRED CONFIG
                  PATHS "$ENV{GROMACS_DIR}"
                  )
 
@@ -136,10 +112,9 @@ option(GMXPLUGIN_USER_INSTALL
 # environments are in use at all, we recommend you do _not_ perform a "user" install in or out of a virtual env. If you do
 # not use any Python virtual environments, we recommend you _do_ perform "user" installs exclusively. Overall, we
 # we recommend you use Python virtual environments and activate one before performing a regular (non-"user") install.
-
-if (PYTHONINTERP_FOUND)
+if (PYTHON_EXECUTABLE)
     message(STATUS "Found Python interpreter: ${PYTHON_EXECUTABLE}")
-    if (PYTHON_LIBRARIES)
+    if (PYTHON_LIBRARIES OR PythonLibs_FOUND OR pybind11_FOUND)
         if (GMXPLUGIN_USER_INSTALL)
             execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "site" "--user-site"
                             OUTPUT_VARIABLE GMXPLUGIN_DEFAULT_SITE_PACKAGES

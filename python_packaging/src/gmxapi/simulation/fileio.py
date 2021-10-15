@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@ __all__ = ['TprFile', 'read_tpr', 'write_tpr_file']
 
 import os
 
-import gmxapi._gmxapi as _gmxapi
 from gmxapi import exceptions
 
 
@@ -88,6 +87,7 @@ class TprFile(object):
         return "{}('{}', '{}')".format(self.__class__.__name__, self.filename, self.mode)
 
     def __enter__(self):
+        import gmxapi._gmxapi as _gmxapi
         self._tprFileHandle = _gmxapi.read_tprfile(self.filename)
         return self
 
@@ -251,6 +251,7 @@ def write_tpr_file(output, input=None):
     Returns:
         TBD : possibly a completion condition of some sort and/or handle to the new File
     """
+    import gmxapi._gmxapi as _gmxapi
 
     # TODO: (Data model) Decide how to find output data sources.
     if not hasattr(input, 'parameters'):

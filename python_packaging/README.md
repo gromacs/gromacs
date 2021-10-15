@@ -115,17 +115,6 @@ Hint: the fork point from `master` and the current git ref can be set as environ
 Refer to `./src/external/README.md` for current details on the copied external
 sources.
 
-# scikit-build
-
-For the C++ extension module `_gmxapi`, 
-[scikit-build](https://scikit-build.readthedocs.io/en/latest/)
-provides glue between Python package tools and CMake infrastructure in `./src`.
-Scikit-build is installed with Python packaging tools automatically with
-`pip install -r requirements.txt`, as above.
-
-Note: scikit-build is only required for convenient management of the Python
-build environment and packaging. See https://gitlab.com/gromacs/gromacs/-/issues/2896
-
 # pybind11
 
 Python bindings are expressed in C++ using the
@@ -141,8 +130,6 @@ installed with GROMACS for convenience and reproducibility.
 On some systems, GROMACS will have been built and installed for a different
 architecture than the system on which the Python package will be compiled.
 We need to use CMake Tool-chains to support cross-compiling for the target architecture.
-
-Note: scikit-build can use CMake Toolchains to properly handle `pip` builds.
 
 ## Offline installation
 

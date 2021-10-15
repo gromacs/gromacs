@@ -20,6 +20,25 @@ options is subject to change, but users generally should not need to manually se
 
 :issue:`4053`
 
+Updates to pybind11 dependency
+""""""""""""""""""""""""""""""
+
+pybind11 is no longer bundled with |Gromacs|.
+
+The gmxapi 0.3 Python package build system relies on PEP 517/518 build requirements to get pybind11 header
+dependencies through the Python packaging system. Package managers like ``pip`` will download dependencies
+automatically. Package managers that do not automatically fulfill dependencies should still report the missing
+dependency to the user.
+
+The ``sample_restraint`` sample project
+(bundled in ``python_packaging/sample_restraint``)
+still has a primitive CMake-only build procedure.
+If you fork a project from this source, you may choose to modernize the build system (similarly to that of
+``gmxapi``) or to bundle the pybind11 sources.
+Within the GROMACS repository, the ``sample_restraint`` option default is now ``GMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON``.
+
+:issue:`4092`
+
 Bundle muparser
 """""""""""""""
 

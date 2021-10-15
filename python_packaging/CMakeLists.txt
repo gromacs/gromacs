@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -60,10 +60,7 @@
 #    current ``PYTHONPATH`` environment variable or after ``sys.path.append()``.
 #  * "To build a package" means to create a package from sources that may need
 #    to be configured or compiled before the package can be imported. Reference
-#    the ``distutils`` ``build`` and ``build_ext`` commands. For example, when
-#    scikit-build is directed to build a package through the ``setuptools`` interface,
-#    it invokes CMake to build **and install** a CMake library target for the C++
-#    extension module in the Python package.
+#    the ``distutils`` ``build`` and ``build_ext`` commands.
 #
 # For basic building and testing of the Python package, we don't necessarily
 # need to create a distribution archive or install the Python package outside
@@ -74,12 +71,6 @@
 # will have to be copied explicitly in additional CMake ``install(FILES)`` directives,
 # and the ExternalProject installation directory will have to be added to the
 # PYTHONPATH environment variable where the package needs to be available.
-#
-# Such an ExternalProject could be used as part of the process of packaging a
-# distribution archive through arguments to the Python side of ``skbuild``,
-# but coupling that machinery is not necessary. The packaging infrastructure may
-# be simplest and most maintainable by using scikit-build with its default
-# behavior (letting it maintain its own environment and artifacts).
 #
 # Note that a binary distribution needs to be built for a specific major and minor
 # Python release, and is often sensitive to a particular Python distribution or

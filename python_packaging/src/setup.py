@@ -32,36 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Python setuptools script to build and install the gmxapi Python interface
-# from a GROMACS installation directory.
+# Note: most of this file is borrowed from
+# https://github.com/pybind/cmake_example/commit/31bc276d91985c9bb94e2b4ec12f3fd528971f2c
 
-# Usage note: things go smoothly when we stick to the setup.py convention of
-# having a package source directory with the same name as the package at the
-# same level as the setup.py script and only expect `pip install .` in the
-# setup.py directory. If we play with the layout more, it is hard to keep all
-# of the `pip` and `setup.py` cases working as expected. This is annoying
-# because running the Python interpreter immediately from the same directory
-# can find the uninstalled source instead of the installed package. We can
-# ease this pain by building an sdist in the enclosing CMake build scope
-# and encouraging users to `pip install the_sdist.archive`. Otherwise, we
-# just have to document that we only support full build-install of the Python
-# package from the directory containing setup.py, which may clutter that
-# directory with some artifacts.
+"""Python setuptools script to build and install the gmxapi Python interface.
 
-import os
-
-# Import setuptools early to avoid UserWarning from Distutils.
-# Ref: https://gitlab.com/gromacs/gromacs/-/issues/3715
-import setuptools
-
-# Allow setup.py to be run when scikit-build is not installed, such as to
-# produce source distribution archives with `python setup.py sdist`
-try:
-    from skbuild import setup
-except ImportError:
-    from distutils.core import setup
-
-usage = """
 The `gmxapi` package requires an existing GROMACS installation, version 2020 or higher.
 To specify the GROMACS installation to use, provide a GMXTOOLCHAINDIR
 environment variable when running setup.py or `pip`.
@@ -69,41 +44,144 @@ environment variable when running setup.py or `pip`.
 Example:
     GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs pip install gmxapi
 
-If you have multiple builds of GROMACS, distinguished by a suffix `$SUFFIX`, the
-tool chain directory will use that suffix.
-
-Example:
-    GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs$SUFFIX pip install gmxapi
-
-In the example, `gmxapi` is downloaded automatically from pypi.org. You can
-replace `gmxapi` with a local directory or archive file to build from a source
-distribution.
-
-setup.py will use the location of GMXTOOLCHAINDIR to locate the
-gmxapi library configured during GROMACS installation. Alternatively, if
-gmxapi_DIR is provided, or if GMXRC has been "sourced", the toolchain file
-location may be deduced. Note, though, that if multiple GROMACS installations
-exist in the same location (with different suffixes) only the first one will be
-used when guessing a toolchain, because setup.py does not know which corresponds
-to the gmxapi support library.
-
-If specifying GMXTOOLCHAINDIR and gmxapi_DIR, the tool chain directory must be
-located within a subdirectory of gmxapi_DIR.
-
-Refer to project web site for complete documentation.
-
+See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more information.
 """
 
 
-class GmxapiInstallError(Exception):
-    """Error processing setup.py for gmxapi Python package."""
+import os
+import re
+import subprocess
+import sys
+import typing
+import warnings
+
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+
+usage = __doc__[2:]
+
+# gmxapi does not officially support Windows environments because GROMACS does not have automated testing
+# infrastructure to verify correct functionality. However, we can try to be friendly or prepare for a possible future
+# in which we can support more platforms.
+# Convert distutils Windows platform specifiers to CMake -A arguments
+PLAT_TO_CMAKE = {
+    "win32": "Win32",
+    "win-amd64": "x64",
+    "win-arm32": "ARM",
+    "win-arm64": "ARM64",
+}
 
 
-gmx_toolchain_dir = os.getenv('GMXTOOLCHAINDIR')
-gmxapi_DIR = os.getenv('gmxapi_DIR')
-if gmxapi_DIR is None:
-    # Infer from GMXRC exports, if available.
-    gmxapi_DIR = os.getenv('GROMACS_DIR')
+# A CMakeExtension needs a sourcedir instead of a file list.
+# The name must be the _single_ output extension from the CMake build.
+class CMakeExtension(Extension):
+    def __init__(self, name, sourcedir=""):
+        Extension.__init__(self, name, sources=[])
+        self.sourcedir = os.path.abspath(sourcedir)
+
+
+class CMakeBuild(build_ext):
+    """Derived distutils Command for build_extension.
+
+    See https://github.com/pybind/cmake_example for the current version
+    of the sample project from which this is borrowed.
+    """
+    def build_extension(self, ext):
+        import pybind11
+
+        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+
+        # required for auto-detection & inclusion of auxiliary "native" libs
+        if not extdir.endswith(os.path.sep):
+            extdir += os.path.sep
+
+        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
+        cfg = "Debug" if debug else "Release"
+
+        # CMake lets you override the generator - we need to check this.
+        # Can be set with Conda-Build, for example.
+        cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
+
+        cmake_args = [
+            "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(extdir),
+            "-DCMAKE_BUILD_TYPE={}".format(cfg),  # not used on MSVC, but no harm
+        ]
+        build_args = []
+        # Adding CMake arguments set as environment variable
+        # (needed e.g. to build for ARM OSx on conda-forge)
+        if "CMAKE_ARGS" in os.environ:
+            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
+
+        if self.compiler.compiler_type != "msvc":
+            # Using Ninja-build since it a) is available as a wheel and b)
+            # multithreads automatically. MSVC would require all variables be
+            # exported for Ninja to pick it up, which is a little tricky to do.
+            # Users can override the generator with CMAKE_GENERATOR in CMake
+            # 3.15+.
+            if not cmake_generator:
+                try:
+                    import ninja  # noqa: F401
+
+                    cmake_args += ["-GNinja"]
+                except ImportError:
+                    pass
+
+        else:
+
+            # Single config generators are handled "normally"
+            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
+
+            # CMake allows an arch-in-generator style for backward compatibility
+            contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
+
+            # Specify the arch if using MSVC generator, but only if it doesn't
+            # contain a backward-compatibility arch spec already in the
+            # generator name.
+            if not single_config and not contains_arch:
+                cmake_args += ["-A", PLAT_TO_CMAKE[self.plat_name]]
+
+            # Multi-config generators have a different way to specify configs
+            if not single_config:
+                cmake_args += [
+                    "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)
+                ]
+                build_args += ["--config", cfg]
+
+        if sys.platform.startswith("darwin"):
+            # Cross-compile support for macOS - respect ARCHFLAGS if set
+            archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
+            if archs:
+                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+
+        # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
+        # across all generators.
+        if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
+            # self.parallel is a Python 3 only way to set parallel jobs by hand
+            # using -j in the build_ext call, not supported by pip or PyPA-build.
+            if hasattr(self, "parallel") and self.parallel:
+                # CMake 3.12+ only.
+                build_args += ["-j{}".format(self.parallel)]
+
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
+
+        update_gromacs_client_cmake_args(cmake_args)
+
+        has_pybind = False
+        for arg in cmake_args:
+            if arg.upper().startswith('-DPYBIND11_ROOT'):
+                has_pybind = True
+        if not has_pybind:
+            pybind_root = pybind11.get_cmake_dir()
+            if pybind_root:
+                cmake_args.append(f'-Dpybind11_ROOT={pybind_root}')
+
+        subprocess.check_call(
+            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp
+        )
+        subprocess.check_call(
+            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+        )
 
 
 def _find_first_gromacs_suffix(directory):
@@ -113,83 +191,97 @@ def _find_first_gromacs_suffix(directory):
             return entry.strip('gromacs')
 
 
-if gmx_toolchain_dir is None:
-    # Try to guess from standard GMXRC environment variables.
-    if gmxapi_DIR is not None:
-        if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
-            share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
-            suffix = _find_first_gromacs_suffix(share_cmake)
-            if suffix is not None:
-                gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
+def update_gromacs_client_cmake_args(args: typing.List[str]):
+    """Try to convert information from command line environment to usable client CMake stuff.
 
-if gmx_toolchain_dir is None:
-    print(usage)
-    raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GMXTOOLCHAINDIR.')
+    This function compartmentalizes details that are likely to evolve with issues
+    https://gitlab.com/gromacs/gromacs/-/issues/3273
+    and
+    https://gitlab.com/gromacs/gromacs/-/issues/3279
 
-suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
-gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir, 'gromacs-toolchain' + suffix + '.cmake'))
+    See linked issues for more discussion or to join in the conversation.
+    """
+    has_gmxapi_dir = False
+    gmxapi_DIR = None
+    for arg in args:
+        if arg.upper().startswith('-DGMXAPI_DIR'):
+            gmxapi_DIR = arg.split('=')[1]
+            if gmxapi_DIR:
+                has_gmxapi_dir = True
+            break
+    if not has_gmxapi_dir:
+        gmxapi_DIR = os.getenv('gmxapi_DIR')
+    if not gmxapi_DIR:
+        # Infer from GMXRC exports, if available.
+        gmxapi_DIR = os.getenv('GROMACS_DIR')
 
-if gmxapi_DIR is None:
-    # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake,
-    # we would want /usr/local/gromacs.
-    # Note that we could point more directly to the gmxapi-config.cmake but,
-    # so far, we have relied on CMake automatically looking into
-    # <package>_DIR/share/cmake/<package>/ for such a file.
-    # We would need a slightly different behavior for packages that link against
-    # libgromacs directly, as sample_restraint currently does.
-    gmxapi_DIR = os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..')
+    has_toolchain_file = False
+    gmx_toolchain = None
+    for arg in args:
+        if arg.upper().startswith('-DCMAKE_TOOLCHAIN_FILE'):
+            gmx_toolchain = arg.split('=')[1]
+            if gmx_toolchain:
+                has_toolchain_file = True
 
-gmxapi_DIR = os.path.abspath(gmxapi_DIR)
+    if has_toolchain_file and has_gmxapi_dir:
+        return
 
-if not os.path.exists(gmxapi_DIR) or not os.path.isdir(gmxapi_DIR):
-    print(usage)
-    raise GmxapiInstallError('Please set a valid gmxapi_DIR.')
+    gmx_toolchain_dir = os.getenv('GMXTOOLCHAINDIR')
+    if gmx_toolchain:
+        if gmx_toolchain_dir:
+            warnings.warn('Overriding GMXTOOLCHAINDIR environment variable because CMAKE_TOOLCHAIN_FILE CMake '
+                          'variable was specified.')
+        gmx_toolchain_dir = os.path.dirname(gmx_toolchain)
 
-if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
-    raise GmxapiInstallError('GROMACS toolchain file {} is not in gmxapi_DIR {}'.format(
-        gmx_toolchain,
-        gmxapi_DIR
-    ))
+    if gmx_toolchain_dir is None:
+        # Try to guess from standard GMXRC environment variables.
+        if gmxapi_DIR is not None:
+            if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
+                share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
+                suffix = _find_first_gromacs_suffix(share_cmake)
+                if suffix is not None:
+                    gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
 
-cmake_platform_hints = '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)
-# Note that <package>_ROOT is not standard until CMake 3.12
-# Reference https://cmake.org/cmake/help/latest/policy/CMP0074.html#policy:CMP0074
-cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'.format(gmxapi_DIR)
-cmake_args = [cmake_platform_hints, cmake_gmxapi_hint]
+    if gmx_toolchain_dir is None:
+        print(usage)
+        raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GMXTOOLCHAINDIR.')
 
-long_description = """gmxapi provides Python access to GROMACS molecular simulation tools.
-Operations can be connected flexibly to allow high performance simulation and
-analysis with complex control and data flows. Users can define new operations
-in C++ or Python with the same tool kit used to implement this package.
+    suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
+    gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir, 'gromacs-toolchain' + suffix + '.cmake'))
 
-This Python package requires a compatible GROMACS installation with the API
-libraries and headers.
+    if not gmxapi_DIR:
+        # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake,
+        # we would want /usr/local/gromacs.
+        # Note that we could point more directly to the gmxapi-config.cmake but,
+        # so far, we have relied on CMake automatically looking into
+        # <package>_DIR/share/cmake/<package>/ for such a file.
+        # We would need a slightly different behavior for packages that link against
+        # libgromacs directly, as sample_restraint currently does.
+        gmxapi_DIR = os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..')
 
-See http://gmxapi.org/ for details on installation and usage.
-"""
+    gmxapi_DIR = os.path.abspath(gmxapi_DIR)
+
+    if not os.path.exists(gmxapi_DIR) or not os.path.isdir(gmxapi_DIR):
+        print(usage)
+        raise GmxapiInstallError('Please set a valid gmxapi_DIR.')
+
+    if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
+        raise GmxapiInstallError('GROMACS toolchain file {} is not in gmxapi_DIR {}'.format(
+            gmx_toolchain,
+            gmxapi_DIR
+        ))
+
+    if not has_gmxapi_dir:
+        args.append(f'-Dgmxapi_ROOT={gmxapi_DIR}')
+    if not has_toolchain_file:
+        args.append(f'-DCMAKE_TOOLCHAIN_FILE={gmx_toolchain}')
+
+
+class GmxapiInstallError(Exception):
+    """Error processing setup.py for gmxapi Python package."""
 
 setup(
-    name='gmxapi',
-
-    # TODO: single-source version information (currently repeated in gmxapi/version.py and CMakeLists.txt)
-    version='0.3.0a4',
-    python_requires='>=3.7',
-    install_requires=['networkx>=2.0',
-                      'numpy>=1'],
-
-    packages=['gmxapi', 'gmxapi.simulation'],
-    package_data={'gmxapi': ['gmxconfig.json']},
-
-    cmake_args=cmake_args,
-
-    author='M. Eric Irrgang',
-    author_email='info@gmxapi.org',
-    description='gmxapi Python interface for GROMACS',
-    long_description=long_description,
-    license='LGPL',
-    url='http://gmxapi.org/',
-
-    # The installed package will contain compiled C++ extensions that cannot be loaded
-    # directly from a zip file.
+    ext_modules=[CMakeExtension("gmxapi._gmxapi")],
+    cmdclass={"build_ext": CMakeBuild},
     zip_safe=False
 )

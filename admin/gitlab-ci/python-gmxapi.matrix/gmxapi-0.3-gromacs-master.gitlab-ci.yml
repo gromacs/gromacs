@@ -28,7 +28,8 @@
     PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-py-gmxapi-0.3.sh
+    - source $VENVPATH/bin/activate
+    - INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.3.sh
   artifacts:
     reports:
       junit:

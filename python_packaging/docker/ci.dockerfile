@@ -40,12 +40,9 @@ USER testing
 ENV VENV /home/testing/venv
 RUN python3 -m venv $VENV
 RUN . $VENV/bin/activate && \
-    pip install --no-cache-dir --upgrade pip setuptools
+    pip install --no-cache-dir --upgrade pip setuptools wheel
 
 ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
-
-RUN . $VENV/bin/activate && \
-    pip install --no-cache-dir -r /home/testing/gmxapi/requirements-test.txt
 
 #
 # Use gromacs installation from gmxapi/gromacs image
@@ -59,16 +56,18 @@ FROM python-base
 
 COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 
+RUN $VENV/bin/python -m pip install --upgrade pip setuptools wheel
+RUN $VENV/bin/python -m pip install --no-cache-dir --no-build-isolation -r /home/testing/gmxapi/requirements-test.txt
+
 ADD --chown=testing:testing src /home/testing/gmxapi/src
 ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 
-# We use "--no-cache-dir" to reduce Docker image size. The other pip flags are
-# to eliminate network access and speed up the build, since we already know we
-# have installed the dependencies.
+# We use "--no-cache-dir" to reduce Docker image size.
 RUN . $VENV/bin/activate && \
     (cd $HOME/gmxapi/src && \
+     rm -rf build dist && \
      GMXTOOLCHAINDIR=/usr/local/gromacs/share/cmake/gromacs \
-      pip install --no-cache-dir --no-deps --no-index --no-build-isolation . \
+      pip install --no-cache-dir --verbose . \
     )
 
 ADD --chown=testing:testing src/test /home/testing/gmxapi/test
@@ -83,6 +82,7 @@ RUN . $VENV/bin/activate && \
      mkdir build && \
      cd build && \
      cmake .. \
+             -DPYTHON_EXECUTABLE=$VENV/bin/python \
              -DDOWNLOAD_GOOGLETEST=ON \
              -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON && \
      make -j4 && \

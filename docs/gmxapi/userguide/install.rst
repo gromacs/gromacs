@@ -65,8 +65,7 @@ Set up a Python virtual environment
     python3 -m venv $HOME/myvenv
     . $HOME/myvenv/bin/activate
     python -m ensurepip --default-pip
-    pip install --upgrade pip setuptools
-    pip install --upgrade cmake scikit-build
+    pip install --upgrade pip setuptools wheel
 
 .. seealso:: :ref:`gmxapi venv`
 
@@ -114,7 +113,7 @@ Build system requirements
 
 gmxapi can be built for Python 3.7 and higher.
 
-You will need a C++ 14 compatible compiler and a reasonably up-to-date version
+You will need a C++ 17 compatible compiler and a reasonably up-to-date version
 of CMake.
 Full gmxapi functionality may also require an MPI compiler (e.g. :command:`mpicc`).
 
@@ -156,7 +155,7 @@ gmxapi requires Python 3.7 or higher. Check your version with
     :command:`python3 --version` or :command:`python --version` and :command:`pip --version`.
 
 To build and install, you need the Python packages for
-cmake_, networkx_, scikit-build_, and setuptools_
+cmake_, networkx_, and setuptools_
 (all available from `PyPI with pip <https://pip.pypa.io/en/stable/>`_).
 
 For full functionality, you should also have mpi4py_ and numpy_.
@@ -340,7 +339,7 @@ the remaining examples assume the virtual environment is still active.
 Install dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
-It is always a good idea to update pip_ and setuptools_ before installing
+It is always a good idea to update pip_, setuptools_, and wheel_ before installing
 new Python packages::
 
     pip install --upgrade pip setuptools
@@ -350,7 +349,7 @@ they are installed and up to date before proceeding.
 
 ::
 
-    pip install --upgrade cmake scikit-build
+    pip install --upgrade cmake pybind11
 
 For MPI, we use mpi4py_.
 Make sure it is using the same MPI installation that we are building
@@ -432,7 +431,7 @@ without internet access, either from the source directory or from a source archi
 
 For example, the last line of the previous example could be replaced with::
 
-    pip install --no-cache-dir --no-deps --no-index --no-build-isolation .
+    pip install --no-cache-dir --no-deps --no-index .
 
 Refer to pip_ documentation for descriptions of these options.
 
@@ -449,11 +448,11 @@ Building a source archive
 -------------------------
 
 A source archive for the gmxapi python package can be built from the GROMACS
-source repository using Python ``setuptools`` and ``scikit-build``.
+source repository using Python ``setuptools``.
 
 Example::
 
-    pip install --upgrade setuptools scikit-build
+    pip install --upgrade setuptools
     cd python_packaging/src
     python setup.py sdist
 
@@ -461,6 +460,13 @@ This command will create a ``dist`` directory containing a source distribution
 archive file. The file name has the form *gmxapi-<version>.<suffix>*, where
 *<version>* is the version from the ``setup.py`` file, and *<suffix>* is
 determined by the local environment or by additional arguments to ``setup.py``.
+
+The new `build <https://pypa-build.readthedocs.io/en/latest/>`__ module is somewhat tidier.
+It automatically manages a temporary venv with the necessary dependencies::
+
+    pip install --upgrade build
+    cd python_packaging/src
+    python -m build --sdist .
 
 .. seealso::
 
@@ -495,6 +501,19 @@ To build the full gmxapi documentation with GROMACS, configure GROMACS with
 This will first build the *gmxapi* Python package and install it to a temporary
 location in the build tree. Sphinx can then import the package to automatically
 extract Python docstrings.
+
+Note that this is an entirely CMake-driven installation and Python dependencies
+will not be installed automatically. You can update your Python environment
+(before configuring with CMake) using the :file:`requirements.txt` files provided
+in the :file:`python_packaging/` directory of the repository. Example::
+
+    pip install -r python_packaging/requirements-docs.txt
+
+or
+
+::
+
+    pip install -r python_packaging/requirements-test.txt
 
 Sometimes the build environment can choose a different Python interpreter than
 the one you intended.
@@ -550,6 +569,27 @@ Try::
 and see if that fixes the problem. If not, try a fresh virtual environment
 (see above) to help narrow down the problem before you
 `open an issue <https://gitlab.com/gromacs/gromacs/-/issues/>`_.
+
+Errors regarding pybind11
+-------------------------
+
+An error may occur in ``setup.py`` with output that contains something like the following::
+
+      ModuleNotFoundError: No module named 'pybind11'
+      Building wheel for gmxapi (pyproject.toml): finished with status 'error'
+      ERROR: Failed building wheel for gmxapi
+    Failed to build gmxapi
+    ERROR: Could not build wheels for gmxapi, which is required to install pyproject.toml-based projects
+
+The important information here is that ``pybind11`` was not found.
+
+Build dependencies aren't always automatically installed.
+Even if you are using ``pip``, you may have disabled automatic dependency fulfillment with an option like ``--no-build-isolation`` or ``--no-deps``.
+
+In any case, the problem should be resolved by explicitly installing the ``pybind11``
+Python package before attempting to build ``gmxapi``::
+
+    pip install --upgrade pybind11
 
 Couldn't find the ``gmxapi`` support library?
 ---------------------------------------------
@@ -669,3 +709,5 @@ rebase your feature branches for the new development cycle.
 .. _scikit-build: https://pypi.org/project/scikit-build/
 
 .. _setuptools: https://pypi.org/project/setuptools/
+
+.. _wheel: https://pypi.org/project/wheel/

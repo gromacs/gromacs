@@ -8,10 +8,11 @@
 # and run time package dependencies (to be checked during installation) are
 # resolved by setuptools from the `install_requires` argument to setup() in
 # setup.py.
-cmake>=3.13
+cmake>=3.16
 networkx>=2.0
-numpy>=1
+numpy>1.7
+packaging
 pip>=10.1
-scikit-build>=0.10
+pybind11>=2.6
 setuptools>=42
 wheel

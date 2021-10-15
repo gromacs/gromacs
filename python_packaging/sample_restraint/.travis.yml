@@ -69,7 +69,7 @@ before_script:
   - export CCACHE_DIR=$HOME/.ccache_py
   - ccache -s
   - pip install --upgrade pip setuptools
-  - pip install --upgrade packaging scikit-build
+  - pip install --upgrade packaging
   - pip install --no-cache-dir --upgrade --no-binary ":all:" --force-reinstall networkx mpi4py MarkupSafe
   - pip install pytest numpy networkx sphinx sphinx_rtd_theme
 

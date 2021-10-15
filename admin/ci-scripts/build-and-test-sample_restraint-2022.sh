@@ -19,9 +19,6 @@ pushd python_packaging/src
       GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
           python -m pip install \
               --no-cache-dir \
-              --no-deps \
-              --no-index \
-              --no-build-isolation \
               .
   # TODO: Get sdist artifact for other gmxapi versions.
 #    elif [ "2021" -eq "$GROMACS_MAJOR_VERSION" ]; then
@@ -30,7 +27,6 @@ pushd python_packaging/src
 #              --no-cache-dir \
 #              --no-deps \
 #              --no-index \
-#              --no-build-isolation \
 #              dist/gmxapi*
   else
       echo "Logic error in GROMACS version handling."
@@ -44,8 +40,9 @@ pushd python_packaging/sample_restraint
   pushd build
     # TODO: Update with respect to https://gitlab.com/gromacs/gromacs/-/issues/3133
     cmake .. \
-             -DDOWNLOAD_GOOGLETEST=ON \
-             -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
+      -DPYTHON_EXECUTABLE=`which python` \
+      -DDOWNLOAD_GOOGLETEST=ON \
+      -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
     make -j4 tests
     make test
     #TODO: Can we get ctest JUnitXML output here?
