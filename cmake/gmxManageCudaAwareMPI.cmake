@@ -56,7 +56,7 @@ function(GMX_TEST_CUDA_AWARE_MPI)
       #if defined(MPIX_CUDA_AWARE_SUPPORT) && (MPIX_CUDA_AWARE_SUPPORT==1)
         return 0;
       #else
-      #error MPI implementation isn't CUDA-aware
+      #error MPI implementation is not CUDA-aware
       #endif
       }" HAVE_CUDA_AWARE_MPI)
 
