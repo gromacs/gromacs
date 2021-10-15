@@ -390,7 +390,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(
         GpuEventSynchronizer*          GPU_FUNC_ARGUMENT(xReadyOnDevice),
         gmx_wallcycle*                 GPU_FUNC_ARGUMENT(wcycle),
         real                           GPU_FUNC_ARGUMENT(lambdaQ),
-        const bool                     GPU_FUNC_ARGUMENT(useGpuDirectComm),
+        bool                           GPU_FUNC_ARGUMENT(useGpuDirectComm),
         gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu)) GPU_FUNC_TERM;
 
 /*! \brief
