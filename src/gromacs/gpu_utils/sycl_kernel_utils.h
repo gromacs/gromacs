@@ -157,9 +157,9 @@ __device__ __host__ static inline bool isfinite(Real value)
     // https://github.com/illuhad/hipSYCL/issues/636
 #    ifdef SYCL_DEVICE_ONLY
 #        if defined(HIPSYCL_PLATFORM_CUDA) && defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
-    return isfinite(value);
+    return ::isfinite(value);
 #        elif defined(HIPSYCL_PLATFORM_ROCM) && defined(__HIPSYCL_ENABLE_HIP_TARGET__)
-    return isfinite(value);
+    return ::isfinite(value);
 #        else
 #            error "Unsupported hipSYCL target"
 #        endif
