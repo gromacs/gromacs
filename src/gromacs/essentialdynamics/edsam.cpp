@@ -3062,14 +3062,15 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
 
     } /* end of MASTER only section */
 
-    if (PAR(cr))
+    if (haveDDAtomOrdering(*cr))
     {
-        /* Broadcast the essential dynamics / flooding data to all nodes */
+        /* Broadcast the essential dynamics / flooding data to all nodes.
+         * In a single-rank case, only the necessary memory allocation is done. */
         broadcast_ed_data(cr, ed);
     }
     else
     {
-        /* In the single-CPU case, point the local atom numbers pointers to the global
+        /* In the non-DD case, point the local atom numbers pointers to the global
          * one, so that we can use the same notation in serial and parallel case: */
         /* Loop over all ED data sets (usually only one, though) */
         for (auto edi = ed->edpar.begin(); edi != ed->edpar.end(); ++edi)

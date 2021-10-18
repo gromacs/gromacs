@@ -62,6 +62,7 @@ void dd_make_local_group_indices(const gmx_ga2la_t* ga2la,
                                  int coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
     GMX_ASSERT(ga2la, "We need a valid ga2la object");
+    GMX_RELEASE_ASSERT(anrs != *anrs_loc, "Can not update indices in-place");
 
     /* Loop over all the atom indices of the group to check
      * which ones are on the local node */
