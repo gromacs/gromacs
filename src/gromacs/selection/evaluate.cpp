@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -522,6 +522,7 @@ void _gmx_sel_evaluate_static(gmx_sel_evaluate_t* /* data */,
 {
     if (sel->flags & SEL_UNSORTED)
     {
+        gmx_ana_index_reserve(sel->v.u.g, sel->u.cgrp.isize);
         // This only works if g contains all the atoms, but that is currently
         // the only supported case.
         gmx_ana_index_copy(sel->v.u.g, &sel->u.cgrp, false);

@@ -16,6 +16,27 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed crash for large system with virtual sites
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+When large system with virtual sites were ran with domain decomposition
+and OpenMP threading, mdrun would crash when the number of atoms in
+a domain and its halo were more than 200000.
+
+:issue:`4167`
+
+Disabled the use of PME Mixed mode for FEP simulations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The use of Mixed mode PME (``-pme gpu -pmefft cpu``) led to incorrect
+computation of :math:`{\frac{\partial V}{\partial {\lambda}}}` in FEP
+simulations.
+
+Mixed mode is only used when explicitly requested by the user.
+
+:issue:`4190`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -23,6 +44,19 @@ grompp now prints a note again when combining center of mass motion removal and 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`4128`
+
+Static selections of large index groups now work
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Commands like ``gmx distance -f traj.xtc -n ndx.ndx -select "group
+\"Contacts\""`` only worked if the size of ``Contacts`` was less than
+the number of atoms. This restriction was a bug, and has been fixed so
+that ``Contacts`` make take any size.
+
+Other similar uses of static selections derived from index groups will
+also now work.
+
+:issue:`4148`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

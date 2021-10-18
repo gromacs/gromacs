@@ -907,6 +907,7 @@ int Mdrunner::mdrunner()
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(useGpuForNonbonded,
                                                                      pmeTarget,
+                                                                     pmeFftTarget,
                                                                      numAvailableDevices,
                                                                      userGpuTaskAssignment,
                                                                      *hwinfo_,
@@ -1012,6 +1013,7 @@ int Mdrunner::mdrunner()
                 gpusWereDetected);
         useGpuForPme    = decideWhetherToUseGpusForPme(useGpuForNonbonded,
                                                     pmeTarget,
+                                                    pmeFftTarget,
                                                     userGpuTaskAssignment,
                                                     *hwinfo_,
                                                     *inputrec,

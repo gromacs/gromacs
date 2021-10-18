@@ -12,7 +12,7 @@ CMake now detects Python using
 If you previously used ``PYTHON_EXECUTABLE`` to hint the location of the Python
 interpreter, you should instead specify the Python "root" or "prefix" path
 (the directory containing ``./bin/python3``) with CMake variable
-``Python3_ROOT`` or ``CMAKE_PREFIX_PATH``. As other infrastructure evolves,
+``Python3_ROOT_DIR`` or ``CMAKE_PREFIX_PATH``. As other infrastructure evolves,
 ``PYTHON_EXECUTABLE`` may cease to have the desired effect without warning.
 
 .. Note to developers!
