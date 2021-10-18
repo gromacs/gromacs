@@ -22,6 +22,7 @@ if grep -qF 'amd.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
 fi
 if grep -qF 'intel.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     sycl-ls || true;
+    export SYCL_CACHE_PERSISTENT=1; # Issue #4218
 fi
 ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
 awk '/The following tests FAILED/,/^Errors while running CTest|^$/' ctestLog.log | tee ctestErrors.log
