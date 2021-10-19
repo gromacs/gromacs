@@ -29,7 +29,7 @@ up to a factor of 3.
 
        
 PME-PP GPU Direct Communication Pipelining
-""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""
 
 For multi-GPU runs with direct PME-PP GPU comunication enabled, the
 PME rank can now pipeline the coordinate transfers with computation in
