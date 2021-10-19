@@ -75,14 +75,9 @@ TprReader::TprReader(std::string filename)
     PartialDeserializedTprFile partialDeserializedTpr =
             read_tpx_state(filename.c_str(), &inputRecord, &globalState, &molecularTopology);
 
-    // init commrec
-    MPI_Comm      simulationCommunicator = MPI_COMM_WORLD;
-    CommrecHandle crHandle               = init_commrec(simulationCommunicator);
-    t_commrec*    commrec                = crHandle.get();
-    assert((commrec != nullptr) && "Must have valid commrec");
-
     // init forcerec
     t_forcerec          forceRecord;
+    t_commrec           commrec{};
     gmx::ForceProviders forceProviders;
     forceRecord.forceProviders = &forceProviders;
     init_forcerec(nullptr,
@@ -91,7 +86,7 @@ TprReader::TprReader(std::string filename)
                   &forceRecord,
                   inputRecord,
                   molecularTopology,
-                  commrec,
+                  &commrec,
                   globalState.box,
                   nullptr,
                   nullptr,
