@@ -192,6 +192,22 @@ public:
      */
     void waitCoordinatesCopiedToDevice(AtomLocality atomLocality);
 
+    /*! \brief Consume the event for copying coordinates to the device.
+     *
+     * Used for manual event consumption. Does nothing except changing the internal event counter.
+     *
+     *  \param[in] atomLocality  Locality of the particles.
+     */
+    void consumeCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality);
+
+    /*! \brief Reset the event for copying coordinates to the device.
+     *
+     * Used for manual event consumption. Does nothing except resetting the event.
+     *
+     *  \param[in] atomLocality  Locality of the particles.
+     */
+    void resetCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality);
+
     /*! \brief Setter for the event synchronizer for the update is done on th GPU
      *
      *  \param[in] xUpdatedOnDeviceEvent  The event to synchronize the stream coordinates wre updated on device.
@@ -283,6 +299,9 @@ public:
      *  \returns                     The event to mark when forces are reduced on the GPU.
      */
     GpuEventSynchronizer* fReducedOnDevice(AtomLocality atomLocality);
+
+    //! \brief Consume the event for when the forces are reduced on device.
+    void consumeForcesReducedOnDeviceEvent(AtomLocality atomLocality);
 
     /*! \brief Getter for the event synchronizer for the forces are ready for GPU update.
      *

@@ -372,6 +372,16 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceE
     }
     else
     {
+        if (stepWork.doNeighborSearch && xUpdatedOnDeviceEvent_)
+        {
+            /* On search steps, we do not consume the result of the GPU update
+             * but rather that of a H2D transfer. So, we reset the event triggered after
+             * update to avoid leaving it unconsumed.
+             * Unfortunately, we don't always have the event marked either (e.g., on the
+             * first step) so we just reset it here.
+             * See Issue #3988. */
+            xUpdatedOnDeviceEvent_->reset();
+        }
         return &xReadyOnDevice_[atomLocality];
     }
 }
@@ -382,6 +392,18 @@ void StatePropagatorDataGpu::Impl::waitCoordinatesCopiedToDevice(AtomLocality at
     GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
     xReadyOnDevice_[atomLocality].waitForEvent();
     wallcycle_stop(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
+}
+
+void StatePropagatorDataGpu::Impl::consumeCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality)
+{
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    xReadyOnDevice_[atomLocality].consume();
+}
+
+void StatePropagatorDataGpu::Impl::resetCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality)
+{
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+    xReadyOnDevice_[atomLocality].reset();
 }
 
 void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent)
@@ -551,6 +573,11 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReducedOnDevice(AtomLocalit
     return &fReducedOnDevice_[atomLocality];
 }
 
+void StatePropagatorDataGpu::Impl::consumeForcesReducedOnDeviceEvent(AtomLocality atomLocality)
+{
+    fReducedOnDevice_[atomLocality].consume();
+}
+
 GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReadyOnDevice(AtomLocality atomLocality)
 {
     return &fReadyOnDevice_[atomLocality];
@@ -657,6 +684,16 @@ void StatePropagatorDataGpu::waitCoordinatesCopiedToDevice(AtomLocality atomLoca
     return impl_->waitCoordinatesCopiedToDevice(atomLocality);
 }
 
+void StatePropagatorDataGpu::consumeCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality)
+{
+    return impl_->consumeCoordinatesCopiedToDeviceEvent(atomLocality);
+}
+
+void StatePropagatorDataGpu::resetCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality)
+{
+    return impl_->resetCoordinatesCopiedToDeviceEvent(atomLocality);
+}
+
 void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent)
 {
     impl_->setXUpdatedOnDeviceEvent(xUpdatedOnDeviceEvent);
@@ -721,6 +758,11 @@ GpuEventSynchronizer* StatePropagatorDataGpu::getLocalForcesReadyOnDeviceEvent(S
 GpuEventSynchronizer* StatePropagatorDataGpu::fReducedOnDevice(AtomLocality atomLocality)
 {
     return impl_->fReducedOnDevice(atomLocality);
+}
+
+void StatePropagatorDataGpu::consumeForcesReducedOnDeviceEvent(AtomLocality atomLocality)
+{
+    impl_->consumeForcesReducedOnDeviceEvent(atomLocality);
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::fReadyOnDevice(AtomLocality atomLocality)

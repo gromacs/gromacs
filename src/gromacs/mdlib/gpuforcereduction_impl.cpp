@@ -139,12 +139,25 @@ void GpuForceReduction::Impl::execute()
                                    baseForce_,
                                    cellInfo_.d_cell,
                                    deviceStream_);
-
-        // Mark that kernel has been launched
-        if (completionMarker_ != nullptr)
+    }
+    else
+    {
+        /* In case we have nothing to do, but still have dependencies, we need
+         * to consume them and mark our own event.
+         * Happens sometimes in MdrunVsitesTest.
+         * Issue #3988, #4227. */
+        for (auto* synchronizer : dependencyList_)
         {
-            completionMarker_->markEvent(deviceStream_);
+            synchronizer->consume();
         }
+    }
+
+    /* Mark that kernel has been launched.
+     * Even if we have no work to do and have not launched the kernel, we still mark the event
+     * in order to ensure proper marking/consumption balance, see Issue #3988, #4227. */
+    if (completionMarker_ != nullptr)
+    {
+        completionMarker_->markEvent(deviceStream_);
     }
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuNBFBufOps);
