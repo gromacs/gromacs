@@ -242,9 +242,13 @@ def update_gromacs_client_cmake_args(args: typing.List[str]):
                 if suffix is not None:
                     gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
 
-    if gmx_toolchain_dir is None:
+    if gmx_toolchain_dir is None or not os.path.exists(gmx_toolchain_dir):
         print(usage)
-        raise GmxapiInstallError('Could not configure for GROMACS installation. Provide GMXTOOLCHAINDIR.')
+        raise GmxapiInstallError(
+            'Could not configure for GROMACS installation. '
+            'Provide GMXTOOLCHAINDIR or CMAKE_TOOLCHAIN_FILE. '
+            'See https://manual.gromacs.org/current/gmxapi/userguide/install.html'
+        )
 
     suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
     gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir, 'gromacs-toolchain' + suffix + '.cmake'))

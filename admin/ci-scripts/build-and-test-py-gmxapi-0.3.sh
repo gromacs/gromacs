@@ -21,18 +21,14 @@ pushd python_packaging/src
   # Make sure to delete any accidentally lingering build artifacts.
   rm -rf build dist
   # Build and install the gmxapi Python package.
-# TODO(#4092): Revert to using --no-deps and --no-index once Docker images updated.
+  # TODO(#3273): Reduce requirements for `setup.py` `sdist` command and provide build artifact.
   GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
       python -m pip install \
+          --no-build-isolation \
           --no-cache-dir \
+          --no-deps \
+          --no-index \
           .
-#  # TODO(#3273): Reduce requirements for `setup.py` `sdist` command and provide build artifact.
-#  GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
-#      python -m pip install \
-#          --no-cache-dir \
-#          --no-deps \
-#          --no-index \
-#          .
 popd
 
 # Run Python unit tests.

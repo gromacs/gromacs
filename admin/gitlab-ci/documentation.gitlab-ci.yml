@@ -47,8 +47,6 @@
     # without additional hinting. Once CMakeCache.txt exists, the later stages
     # should work fine without reactivating the venv.
     - source /root/venv/py3.7/bin/activate
-    # TODO(#4092) Remove `pip install pybind11` once CI images are updated.
-    - /root/venv/py3.7/bin/pip install pybind11
     - cmake ..
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
@@ -153,8 +151,6 @@
       fi
     - cd $RELEASE_BUILD_DIR
     - source /root/venv/py3.7/bin/activate
-    # TODO(#4092) Remove `pip install pybind11` once CI images are updated.
-    - /root/venv/py3.7/bin/pip install pybind11
     - cmake ../$RELEASE_SOURCE/
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
@@ -195,8 +191,6 @@ docs:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-7-docs
   script:
     - cd $BUILD_DIR
-    # TODO(#4092) Remove `pip install pybind11` once CI images are updated.
-    - /root/venv/py3.7/bin/pip install pybind11
     - cmake --build . --target gmx -- -j8
     - cd ..
   artifacts:
@@ -244,8 +238,6 @@ docs:build:
     - cd $BUILD_DIR
     - cmake --build . --target manual -- -j4 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
-    # TODO(#4092) Remove `pip install pybind11` once CI images are updated.
-    - /root/venv/py3.7/bin/pip install pybind11
     - cmake --build . --target webpage -- -j4
     - grep "WARNING:" docs/manual/all-output.log | tee pythonErrors.log || true
     - grep -i "error" docs/sphinx-*.log | tee sphinxDiagnostics.log || true

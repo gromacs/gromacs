@@ -185,8 +185,6 @@ check-source:
   script:
     - CMAKE=${CMAKE:-$(which cmake)}
     - cd $BUILD_DIR
-    # TODO(#4092) Remove `pip install pybind11` once CI images are updated.
-    - /root/venv/py3.7/bin/pip install pybind11
     - $CMAKE --build . --target check-source
     - awk '/warning.*include style.*order/,/You can use.*rst|^$/' docs/doxygen/check-source.log | tee doxygenError.txt || true
     - awk '/warning:.*includes/,/unnecessarily|^$/' docs/doxygen/check-source.log | tee -a doxygenError.txt || true
