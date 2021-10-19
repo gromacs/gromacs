@@ -106,7 +106,12 @@ namespace detail
 #if GMX_SYCL_DPCPP
 // Confirmed to work for 2021.1-beta10 (20201005) to 2021.3.0 (20210619).
 // Deprecated in favor of sycl::ext::oneapi on 20210717 in https://github.com/intel/llvm/commit/d703f578.
+// Removed on 20210927 with https://github.com/intel/llvm/pull/4488
+#    if __clang_major__ >= 14
+namespace origin = sycl::ext::oneapi;
+#    else
 namespace origin = cl::sycl::ONEAPI;
+#    endif
 #elif GMX_SYCL_HIPSYCL
 namespace origin = cl::sycl;
 #else

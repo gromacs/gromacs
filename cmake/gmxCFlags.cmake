@@ -378,10 +378,6 @@ macro (gmx_c_flags)
         endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_RESERVED_IDENTIFIER "-Wno-reserved-identifier" GMXC_CXXFLAGS) # LLVM BUG #50644
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_MISSING_FIELD_INITIALIZERS "-Wno-missing-field-initializers" GMXC_CXXFLAGS)
-        # Intel LLVM 2021.2 defaults to no-finite-math which isn't OK for GROMACS
-        if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 2021020)
-            GMX_TEST_CXXFLAG(CXXFLAGS_FINITE_MATH "-fno-finite-math-only" GMXC_CXXFLAGS)
-        endif()
         # Some versions of Intel ICPX compiler (at least 2021.1.1 to 2021.3.0) fail to unroll a loop
         # in sycl::accessor::__init, and emit -Wpass-failed=transform-warning. This is a useful
         # warning, but mostly noise right now. Probably related to using shared memory accessors.
