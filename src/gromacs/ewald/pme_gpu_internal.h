@@ -362,7 +362,7 @@ pme_gpu_spread(const PmeGpu*                  GPU_FUNC_ARGUMENT(pmeGpu),
                bool                           GPU_FUNC_ARGUMENT(computeSplines),
                bool                           GPU_FUNC_ARGUMENT(spreadCharges),
                real                           GPU_FUNC_ARGUMENT(lambda),
-               const bool                     GPU_FUNC_ARGUMENT(useGpuDirectComm),
+               bool                           GPU_FUNC_ARGUMENT(useGpuDirectComm),
                gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
