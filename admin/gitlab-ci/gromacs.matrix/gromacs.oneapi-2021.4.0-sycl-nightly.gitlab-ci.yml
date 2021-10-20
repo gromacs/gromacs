@@ -8,43 +8,43 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: ICPX 2021.2
+#   Compiler: ICPX 2021.4
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1
 
-gromacs:oneapi-2021.2.0-sycl-nightly:configure:
+gromacs:oneapi-2021.4.0-sycl-nightly:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi:base
    - .use-sycl
    - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
-gromacs:oneapi-2021.2.0-sycl-nightly:build:
+gromacs:oneapi-2021.4.0-sycl-nightly:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi:base
     - .rules:nightly-not-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:oneapi-2021.2.0-sycl-nightly:configure
+    - job: gromacs:oneapi-2021.4.0-sycl-nightly:configure
 
-gromacs:oneapi-2021.2.0-sycl-nightly:test-opencl:
+gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -55,16 +55,16 @@ gromacs:oneapi-2021.2.0-sycl-nightly:test-opencl:
     # Except we now don't request any GPUs, so we must set this one up manually until !1585 is merged
     GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
   needs:
-    - job: gromacs:oneapi-2021.2.0-sycl-nightly:build
+    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
 
-gromacs:oneapi-2021.2.0-sycl-nightly:regressiontest-opencl:
+gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-opencl:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:nightly-not-for-release
   tags:
     - intel-gpu-dg1
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     SYCL_DEVICE_FILTER: "opencl:gpu"
@@ -78,20 +78,20 @@ gromacs:oneapi-2021.2.0-sycl-nightly:regressiontest-opencl:
     # Except we now don't request any GPUs, so we must set this one up manually until !1585 is merged
     GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
   needs:
-    - job: gromacs:oneapi-2021.2.0-sycl-nightly:build
+    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
     - job: regressiontests:prepare
 
 # We have to disable LevelZero tests until https://github.com/intel/llvm/pull/3045 makes it into
 # the OneAPI release. Without this patch, some of the tests deadlock.
 
-#gromacs:oneapi-2021.2.0-sycl-nightly:test-levelzero:
+#gromacs:oneapi-2021.4.0-sycl-nightly:test-levelzero:
 #  extends:
 #    - .gromacs:base:test
 #    - .use-oneapi:base
 #    - .rules:nightly-not-for-release
 #  tags:
 #    - intel-gpu-dg1
-#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
 #  variables:
 #    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
 #    SYCL_DEVICE_FILTER: "level_zero:gpu"
@@ -102,16 +102,16 @@ gromacs:oneapi-2021.2.0-sycl-nightly:regressiontest-opencl:
 #    # Except we now don't request any GPUs, so we must set this one up manually until !1585 is merged
 #    GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
 #  needs:
-#    - job: gromacs:oneapi-2021.2.0-sycl-nightly:build
+#    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
 #
-#gromacs:oneapi-2021.2.0-sycl-nightly:regressiontest-levelzero:
+#gromacs:oneapi-2021.4.0-sycl-nightly:regressiontest-levelzero:
 #  extends:
 #    - .gromacs:base:regressiontest
 #    - .use-oneapi:base
 #    - .rules:nightly-not-for-release
 #  tags:
 #    - intel-gpu-dg1
-#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.2.0-intel-21.21.19914:latest
+#  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
 #  variables:
 #    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
 #    SYCL_DEVICE_FILTER: "level_zero:gpu"
@@ -125,5 +125,5 @@ gromacs:oneapi-2021.2.0-sycl-nightly:regressiontest-opencl:
 #    # Except we now don't request any GPUs, so we must set this one up manually until !1585 is merged
 #    GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
 #  needs:
-#    - job: gromacs:oneapi-2021.2.0-sycl-nightly:build
+#    - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
 #    - job: regressiontests:prepare
