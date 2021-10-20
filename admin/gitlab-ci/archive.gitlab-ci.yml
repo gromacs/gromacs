@@ -155,13 +155,12 @@ archive:configure:release:
     - cmake --build . --target man -- -j4 2>&1 | tee manBuildLogFile.log
     - cmake --build . --target completion -- -j4 2>&1 | tee completionBuildLogFile.log
     - cmake --build . --target install-guide -- -j4 2>&1 | tee installGuideBuildLogFile.log
-    - cmake --build . --target reference_checksum -- -j4 2>&1 | tee checksumBuildLogFile.log
     - cmake --build . --target package_source -- -j4 2>&1 | tee packageBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log manBuildLogFile.log
       completionBuildLogFile.log installGuideBuildLogFile.log checksumBuildLogFile.log
       packageBuildLogFile.log | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log manBuildLogFile.log
-      completionBuildLogFile.log installGuideBuildLogFile.log checksumBuildLogFile.log
+      completionBuildLogFile.log installGuideBuildLogFile.log
       packageBuildLogFile.log | tee -a buildErrors.log || true
     - if [ -s buildErrors.log ] ; then echo "Found warnings during build"; cat buildErrors.log; exit 1; fi
     - mv gromacs*tar.gz ..
