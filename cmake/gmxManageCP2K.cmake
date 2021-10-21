@@ -34,25 +34,57 @@
 
 if(GMX_CP2K)
     
-    # Check that all necessary CMake flags are present 
+    # CMake flags for CP2K linking 
     set(CP2K_DIR "" CACHE STRING "Path to the directory with libcp2k.a library")
     set(CP2K_LINKER_FLAGS "" CACHE STRING "List of flags and libraries required for linking libcp2k. Typically this should be combination of LDFLAGS and LIBS variables from ARCH file used to compile CP2K")
-    if ((CP2K_DIR STREQUAL "") OR (CP2K_LINKER_FLAGS STREQUAL ""))
-        message(FATAL_ERROR "To build GROMACS with CP2K Interface both CP2K_DIR and CP2K_LINKER_FLAGS should be defined")
+
+    # Check is CP2K_DIR present (this flags is required)
+    if (NOT CP2K_DIR)
+        message(FATAL_ERROR "To build GROMACS with CP2K Interface CP2K_DIR should be defined")
     endif()
 
-    # Add directory with libcp2k.h into system include directories
-    include_directories(SYSTEM "${CP2K_DIR}/../../../src/start")
+    # if CP2K_LINKER_FLAGS defined then it should be used for linking instead pkg-config
+    if (CP2K_LINKER_FLAGS)
+        message(STATUS "CP2K_LINKER_FLAGS will be used to link libcp2k")
 
-    # Add libcp2k and DBCSR for linking 
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
+        # Add directory with libcp2k.h into system include directories
+        include_directories(SYSTEM "${CP2K_DIR}/../../../src/start")
 
-    # Add User provided libraries
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} ${CP2K_LINKER_FLAGS}")
+        # Add libcp2k and DBCSR for linking 
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
 
+        # Add User provided libraries
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} ${CP2K_LINKER_FLAGS}")
+    else()
+        # In other case pkg-config should be used to search for libcp2k
+        find_package(PkgConfig QUIET)
+
+        # if pkg-config not found then ask user to provide CP2K_LINKER_FLAGS
+        if(NOT PKG_CONFIG_FOUND)
+            message(FATAL_ERROR "pkg-config not found, define CP2K_LINKER_FLAGS for custom linking of libcp2k")
+        endif()
+
+        # Append PKG_CONFIG_PATH_PATH with ${CP2K_DIR}/pkgconfig which should contain libcp2k.pc
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CP2K_DIR}/pkgconfig")
+ 
+        # Search for libcp2k
+        pkg_check_modules(LIBCP2K QUIET libcp2k)
+
+        # if libcp2k not found then ask user to provide CP2K_LINKER_FLAGS
+        if(NOT LIBCP2K_FOUND)
+            message(FATAL_ERROR "pkg-config could not find libcp2k, define CP2K_LINKER_FLAGS for custom linking of libcp2k")
+        endif()
+
+        # libcp2k found: add libraries and paths to the respecting GROMACS variables
+        message(STATUS "Found libcp2k in ${LIBCP2K_LIBDIR}")
+        include_directories(SYSTEM "${LIBCP2K_INCLUDE_DIRS}")
+        link_directories(${LIBCP2K_LIBRARY_DIRS})
+        list(APPEND GMX_COMMON_LIBRARIES ${LIBCP2K_LIBRARIES})
+    endif()
+ 
     # If we use GNU compilers then also libgfortran should be linked
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lgfortran")
+        list(APPEND GMX_COMMON_LIBRARIES "gfortran")
     endif()
 
     # If we use external MPI then Fortran MPI library should be linked
@@ -66,4 +98,3 @@ if(GMX_CP2K)
     endif()
 
 endif()
-
