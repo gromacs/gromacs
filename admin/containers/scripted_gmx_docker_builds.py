@@ -272,10 +272,10 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
                 raise RuntimeError('No TSAN compiler build stage!')
         # Build the default compiler if we don't need special support
         else:
-            # Currently the focal apt repositories do not contain
-            # llvm higher than 11, so we work around that. This will
-            # need further work when we start supporting ubuntu 22.04
-            compiler = hpccm.building_blocks.llvm(version=args.llvm, upstream=True if int(args.llvm) > 11 else False)
+            # Always use the "upstream" llvm repositories because the
+            # main ubuntu repositories stop adding support for new
+            # llvm versions after a few llvm releases.
+            compiler = hpccm.building_blocks.llvm(version=args.llvm, upstream=True)
 
     elif args.oneapi is not None:
         if compiler_build_stage is not None:
@@ -754,7 +754,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     # Add Python environments to MPI images, only, so we don't have to worry
     # about whether to install mpi4py.
     if args.mpi is not None and len(args.venvs) > 0:
-        add_python_stages(building_blocks=building_blocks, input_args=args, output_stages=stages)
+        add_python_stages(base='build_base', input_args=args, output_stages=stages)
 
     # Create the stage from which the targeted image will be tagged.
     stages['main'] = hpccm.Stage()
@@ -799,6 +799,12 @@ if __name__ == '__main__':
 
     # Set container specification output format
     hpccm.config.set_container_format(args.format)
+    # Normally in hpccm the first call to baseimage sets the context
+    # for other packages, e.g. which distro version to use. We want to
+    # set that early on, so that hpccm can do the right thing to use
+    # the right llvm apt repo when we want to use versions of llvm
+    # that were never supported by the main apt repo.
+    hpccm.config.set_linux_distro(hpccm_distro_name(args))
 
     container_recipe = build_stages(args)
 

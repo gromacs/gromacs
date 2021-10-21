@@ -113,8 +113,8 @@ compiler. Since we require full C++17 support the minimum supported
 compiler versions are
 
 * GNU (gcc/libstdc++) 7
-* LLVM (clang/libc++) 5
-* Microsoft (MSVC) 2017 15.7
+* LLVM (clang/libc++) 8
+* Microsoft (MSVC) 2019
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -1282,11 +1282,12 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it.
 Every commit in our git source code repository
 is currently tested with a range of configuration options on x86 with
-gcc versions 7 and 8,
-clang versions 8 and 9,
+gcc versions including 7 and 11,
+clang versions including 8 and 13,
+CUDA versions 11.0 and 11.4.2,
 and
 a version of oneAPI containing Intel's clang-based compiler.
-For this testing, we use Ubuntu 18.04 or 20.04 operating system.
+For this testing, we use Ubuntu 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the
 `continuous integration server used by GROMACS <https://gitlab.com/gromacs/gromacs/>`_,
