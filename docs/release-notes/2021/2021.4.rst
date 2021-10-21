@@ -25,6 +25,15 @@ a domain and its halo were more than 200000.
 
 :issue:`4167`
 
+Fixed bug with GPU LINCS occasionally shifting atoms in wrong direction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Due to missing blocking synchronizations in the CUDA version of LINCS,
+the shared memory was occasionally overwritten with the new data. This
+may slightly affect the final coordinates of the shifted atoms.
+
+:issue:`4199`
+
 Disabled the use of PME Mixed mode for FEP simulations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
