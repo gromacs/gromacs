@@ -270,17 +270,7 @@ class GatherTest : public ::testing::TestWithParam<GatherInputParameters>
 public:
     GatherTest() = default;
     //! Sets the input atom data references and programs once
-    static void SetUpTestSuite()
-    {
-        s_pmeTestHardwareContexts    = createPmeTestHardwareContextList();
-        g_allowPmeWithSyclForTesting = true; // We support Gather with SYCL
-    }
-
-    static void TearDownTestSuite()
-    {
-        // Revert the value back.
-        g_allowPmeWithSyclForTesting = false;
-    }
+    static void SetUpTestSuite() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
 
     //! The test
     static void runTest()

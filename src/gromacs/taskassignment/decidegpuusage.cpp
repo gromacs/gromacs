@@ -113,6 +113,10 @@ const char* const g_specifyEverythingFormatString =
 #endif
         ;
 
+// The conditions below must be in sync with modeTargetsFftOnGpus check in src/programs/mdrun/tests/pmetest.cpp
+constexpr bool sc_gpuBuildOnlySupportsMixedModePme = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
+constexpr bool sc_gpuBuildPrefersMixedModePme = (GMX_GPU_SYCL != 0) && (GMX_SYCL_HIPSYCL != 0); // Issue #4274
+
 } // namespace
 
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        nonbondedTarget,
@@ -156,6 +160,14 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
     return haveAvailableDevices;
 }
 
+static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
+{
+    bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
+                     || (pmeFftTarget == TaskTarget::Auto
+                         && (sc_gpuBuildPrefersMixedModePme || sc_gpuBuildOnlySupportsMixedModePme));
+    return !useCpuFft;
+}
+
 static bool canUseGpusForPme(const bool           useGpuForNonbonded,
                              const TaskTarget     pmeTarget,
                              const TaskTarget     pmeFftTarget,
@@ -176,9 +188,9 @@ static bool canUseGpusForPme(const bool           useGpuForNonbonded,
     errorReasons.appendIf(!pme_gpu_supports_build(&tempString), tempString);
     errorReasons.appendIf(!pme_gpu_supports_hardware(hardwareInfo, &tempString), tempString);
     errorReasons.appendIf(!pme_gpu_supports_input(inputrec, &tempString), tempString);
-    if (pmeFftTarget == TaskTarget::Cpu)
+    if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
     {
-        // User requested PME FFT on CPU, so we check whether we are able to use PME Mixed mode.
+        // We need to do FFT on CPU, so we check whether we are able to use PME Mixed mode.
         errorReasons.appendIf(!pme_gpu_mixed_mode_supports_input(inputrec, &tempString), tempString);
     }
     errorReasons.finishContext();
@@ -454,7 +466,13 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
 
     if (useGpuForPme)
     {
-        if (pmeFftTarget == TaskTarget::Cpu)
+        if (sc_gpuBuildOnlySupportsMixedModePme && pmeFftTarget == TaskTarget::Gpu)
+        {
+            gmx_fatal(FARGS,
+                      "SYCL build does not support fully offloading PME to GPUs. Please use "
+                      "-pmefft cpu.");
+        }
+        if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
         {
             return PmeRunMode::Mixed;
         }

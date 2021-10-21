@@ -93,6 +93,7 @@ inline void reduceAtomForces(cl::sycl::nd_item<3>        itemIdx,
 
     static_assert(atomDataSize <= subGroupSize,
                   "TODO: rework for atomDataSize > subGroupSize (order 8 or larger)");
+    static_assert(gmx::isPowerOfTwo(atomDataSize));
 
     fx += sycl_2020::shift_left(sg, fx, 1);
     fy += sycl_2020::shift_right(sg, fy, 1);
@@ -107,6 +108,7 @@ inline void reduceAtomForces(cl::sycl::nd_item<3>        itemIdx,
     {
         fx = fz;
     }
+    static_assert(atomDataSize >= 4);
     // We have to just further reduce those groups of 4
     for (int delta = 4; delta < atomDataSize; delta *= 2)
     {
