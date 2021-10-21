@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,15 +37,18 @@
 import json
 import logging
 import os
+
 import pytest
 
 pytest_plugins = ('gmxapi.testsupport',)
 
-@pytest.fixture(scope='class')
-def spc_water_box(gmxcli, remove_tempdir):
-    """Provide a TPR input file for a simple simulation.
+
+@pytest.fixture(scope='session')
+def spc_water_box_collection(gmxcli, remove_tempdir):
+    """Provide a collection of simulation input items for a simple simulation.
 
     Prepare the MD input in a freshly created working directory.
+    Solvate a 5nm cubic box with spc water. Return a dictionary of the artifacts produced.
     """
     import gmxapi as gmx
     # TODO: Remove this import when the the spc_water_box fixture is migrated to gmxapi.testsupport
@@ -98,7 +101,7 @@ def spc_water_box(gmxcli, remove_tempdir):
             raise RuntimeError('solvate failed in spc_water_box testing fixture.')
 
         # Choose an exactly representable dt of 2^-9 ps (approximately 0.002)
-        dt = 2.**-9.
+        dt = 2. ** -9.
         mdp_input = [('integrator', 'md'),
                      ('dt', dt),
                      ('cutoff-scheme', 'Verlet'),
@@ -135,4 +138,18 @@ def spc_water_box(gmxcli, remove_tempdir):
 
         # TODO: more inspection of grompp errors...
         assert os.path.exists(tprfilename)
-        yield tprfilename
+        collection = {
+            'tpr_filename': tprfilename,
+            'mdp_input_filename': mdpfile,
+            'mdp_output_filename': mdout_mdp,
+            'topology_filename': solvate.output.file['-p'].result(),
+            'gro_filename': solvate.output.file['-o'].result(),
+            'mdp_input_list': mdp_input
+        }
+        yield collection
+
+
+@pytest.fixture(scope='session')
+def spc_water_box(spc_water_box_collection):
+    """Provide a TPR input file for a simple simulation."""
+    yield spc_water_box_collection['tpr_filename']

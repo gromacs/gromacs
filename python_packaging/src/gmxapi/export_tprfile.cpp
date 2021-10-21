@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,63 +72,67 @@ void detail::export_tprfile(pybind11::module& module)
     // We don't want Python users to create invalid params objects, so don't
     // export a constructor until we can default initialize a valid one.
     //    mdparams.def(py::init());
-    mdparams.def("extract",
-                 [](const GmxMdParams& self) {
-                     py::dict dictionary;
-                     for (const auto& key : gmxapicompat::keys(self))
-                     {
-                         try
-                         {
-                             // TODO: More complete typing and dispatching.
-                             // This only handles the two types described in the initial implementation.
-                             // Less trivial types (strings, maps, arrays) warrant additional
-                             // design discussion before being exposed through an interface
-                             // like this one.
-                             // Also reference https://gitlab.com/gromacs/gromacs/-/issues/2993
+    mdparams.def(
+            "extract",
+            [](const GmxMdParams& self) {
+                py::dict dictionary;
+                for (const auto& key : gmxapicompat::keys(self))
+                {
+                    try
+                    {
+                        // TODO: More complete typing and dispatching.
+                        // This only handles the two types described in the initial implementation.
+                        // Less trivial types (strings, maps, arrays) warrant additional
+                        // design discussion before being exposed through an interface
+                        // like this one.
+                        // Also reference https://gitlab.com/gromacs/gromacs/-/issues/2993
 
-                             // We can use templates and/or tag dispatch in a more complete
-                             // future implementation.
-                             const auto& paramType = gmxapicompat::mdParamToType(key);
-                             if (paramType == GmxapiType::FLOAT64)
-                             {
-                                 dictionary[key.c_str()] = extractParam(self, key, double());
-                             }
-                             else if (paramType == GmxapiType::INT64)
-                             {
-                                 dictionary[key.c_str()] = extractParam(self, key, int64_t());
-                             }
-                         }
-                         catch (const gmxapicompat::ValueError& e)
-                         {
-                             throw gmxapi::ProtocolError(std::string("Unknown parameter: ") + key);
-                         }
-                     }
-                     return dictionary;
-                 },
-                 "Get a dictionary of the parameters.");
+                        // We can use templates and/or tag dispatch in a more complete
+                        // future implementation.
+                        const auto& paramType = gmxapicompat::mdParamToType(key);
+                        if (paramType == GmxapiType::FLOAT64)
+                        {
+                            dictionary[key.c_str()] = extractParam(self, key, double());
+                        }
+                        else if (paramType == GmxapiType::INT64)
+                        {
+                            dictionary[key.c_str()] = extractParam(self, key, int64_t());
+                        }
+                    }
+                    catch (const gmxapicompat::ValueError& e)
+                    {
+                        throw gmxapi::ProtocolError(std::string("Unknown parameter: ") + key);
+                    }
+                }
+                return dictionary;
+            },
+            "Get a dictionary of the parameters.");
 
     // Overload a setter for each known type and None
-    mdparams.def("set",
-                 [](GmxMdParams* self, const std::string& key, int64_t value) {
-                     gmxapicompat::setParam(self, key, value);
-                 },
-                 py::arg("key").none(false),
-                 py::arg("value").none(false),
-                 "Use a dictionary to update simulation parameters.");
-    mdparams.def("set",
-                 [](GmxMdParams* self, const std::string& key, double value) {
-                     gmxapicompat::setParam(self, key, value);
-                 },
-                 py::arg("key").none(false),
-                 py::arg("value").none(false),
-                 "Use a dictionary to update simulation parameters.");
-    mdparams.def("set",
-                 [](GmxMdParams* self, const std::string& key, py::none) {
-                     // unsetParam(self, key);
-                 },
-                 py::arg("key").none(false),
-                 py::arg("value"),
-                 "Use a dictionary to update simulation parameters.");
+    mdparams.def(
+            "set",
+            [](GmxMdParams* self, const std::string& key, int64_t value) {
+                gmxapicompat::setParam(self, key, value);
+            },
+            py::arg("key").none(false),
+            py::arg("value").none(false),
+            "Use a dictionary to update simulation parameters.");
+    mdparams.def(
+            "set",
+            [](GmxMdParams* self, const std::string& key, double value) {
+                gmxapicompat::setParam(self, key, value);
+            },
+            py::arg("key").none(false),
+            py::arg("value").none(false),
+            "Use a dictionary to update simulation parameters.");
+    mdparams.def(
+            "set",
+            [](GmxMdParams* self, const std::string& key, py::none) {
+                // unsetParam(self, key);
+            },
+            py::arg("key").none(false),
+            py::arg("value"),
+            "Use a dictionary to update simulation parameters.");
 
 
     py::class_<TprReadHandle> tprfile(module, "TprFile");
@@ -142,36 +146,39 @@ void detail::export_tprfile(pybind11::module& module)
                py::arg("filename"),
                "Get a handle to a TPR file resource for a given file name.");
 
-    module.def("write_tprfile",
-               [](std::string filename, const GmxMdParams& parameterObject) {
-                   auto tprReadHandle = gmxapicompat::getSourceFileHandle(parameterObject);
-                   auto params        = gmxapicompat::getMdParams(tprReadHandle);
-                   auto structure     = gmxapicompat::getStructureSource(tprReadHandle);
-                   auto state         = gmxapicompat::getSimulationState(tprReadHandle);
-                   auto topology      = gmxapicompat::getTopologySource(tprReadHandle);
-                   gmxapicompat::writeTprFile(filename, *params, *structure, *state, *topology);
-               },
-               py::arg("filename").none(false),
-               py::arg("parameters"),
-               "Write a new TPR file with the provided data.");
+    module.def(
+            "write_tprfile",
+            [](std::string filename, const GmxMdParams& parameterObject) {
+                auto tprReadHandle = gmxapicompat::getSourceFileHandle(parameterObject);
+                auto params        = gmxapicompat::getMdParams(tprReadHandle);
+                auto structure     = gmxapicompat::getStructureSource(tprReadHandle);
+                auto state         = gmxapicompat::getSimulationState(tprReadHandle);
+                auto topology      = gmxapicompat::getTopologySource(tprReadHandle);
+                gmxapicompat::writeTprFile(filename, *params, *structure, *state, *topology);
+            },
+            py::arg("filename").none(false),
+            py::arg("parameters"),
+            "Write a new TPR file with the provided data.");
 
-    module.def("copy_tprfile",
-               [](const gmxapicompat::TprReadHandle& input, std::string outFile) {
-                   return gmxapicompat::copy_tprfile(input, outFile);
-               },
-               py::arg("source"),
-               py::arg("destination"),
-               "Copy a TPR file from ``source`` to ``destination``.");
+    module.def(
+            "copy_tprfile",
+            [](const gmxapicompat::TprReadHandle& input, std::string outFile) {
+                return gmxapicompat::copy_tprfile(input, outFile);
+            },
+            py::arg("source"),
+            py::arg("destination"),
+            "Copy a TPR file from ``source`` to ``destination``.");
 
-    module.def("rewrite_tprfile",
-               [](std::string input, std::string output, double end_time) {
-                   return gmxapicompat::rewrite_tprfile(input, output, end_time);
-               },
-               py::arg("source"),
-               py::arg("destination"),
-               py::arg("end_time"),
-               "Copy a TPR file from ``source`` to ``destination``, replacing `nsteps` with "
-               "``end_time``.");
+    module.def(
+            "rewrite_tprfile",
+            [](std::string input, std::string output, double end_time) {
+                return gmxapicompat::rewrite_tprfile(input, output, end_time);
+            },
+            py::arg("source"),
+            py::arg("destination"),
+            py::arg("end_time"),
+            "Copy a TPR file from ``source`` to ``destination``, replacing `nsteps` with "
+            "``end_time``.");
 }
 
 } // end namespace gmxpy
