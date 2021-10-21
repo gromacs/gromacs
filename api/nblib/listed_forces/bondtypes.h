@@ -111,7 +111,7 @@ inline bool operator==(const TwoParameterInteraction<Phantom>& a, const TwoParam
 /*! \brief harmonic bond type
  *
  *  It represents the interaction of the form
- *  V(r, forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilConstant)^2
+ *  V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilConstant)^2
  */
 using HarmonicBondType = TwoParameterInteraction<struct HarmonicBondTypeParameter>;
 
@@ -119,7 +119,7 @@ using HarmonicBondType = TwoParameterInteraction<struct HarmonicBondTypeParamete
 /*! \brief GROMOS bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilConstant^2)^2
+ * V(r, forceConstant, equilConstant) = 0.25 * forceConstant * (r^2 - equilConstant^2)^2
  */
 class G96BondType : public TwoParameterInteraction<struct G96BondTypeParameter>
 {
@@ -136,7 +136,7 @@ public:
 /*! \brief FENE bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, equilDistance) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilConstant)^2)
+ * V(r, forceConstant, equilConstant) = - 0.5 * forceConstant * equilConstant^2 * log( 1 - (r / equilConstant)^2)
  */
 using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 
@@ -144,7 +144,7 @@ using FENEBondType = TwoParameterInteraction<struct FENEBondTypeParameter>;
 /*! \brief Half-attractive quartic bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilDistance)^4
+ * V(r, forceConstant, equilConstant) = 0.5 * forceConstant * (r - equilConstant)^4
  */
 using HalfAttractiveQuarticBondType =
         TwoParameterInteraction<struct HalfAttractiveQuarticBondTypeParameter>;
@@ -154,7 +154,7 @@ using HalfAttractiveQuarticBondType =
  *
  * It represents the interaction of the form
  * V(r, quadraticForceConstant, cubicForceConstant, equilConstant) = quadraticForceConstant * (r -
- * equilDistance)^2 + quadraticForceConstant * cubicForceConstant * (r - equilConstant)
+ * equilConstant)^2 + quadraticForceConstant * cubicForceConstant * (r - equilConstant)
  */
 class CubicBondType
 {
@@ -193,7 +193,7 @@ inline bool operator==(const CubicBondType& a, const CubicBondType& b)
 /*! \brief Morse bond type
  *
  * It represents the interaction of the form
- * V(r, forceConstant, exponent, equilDistance) = forceConstant * ( 1 - exp( -exponent * (r - equilConstant))
+ * V(r, forceConstant, exponent, equilConstant) = forceConstant * ( 1 - exp( -exponent * (r - equilConstant))
  */
 class MorseBondType
 {
@@ -289,7 +289,7 @@ public:
 /*! \brief Harmonic angle type
  *
  * It represents the interaction of the form
- * V(theta, forceConstant, equilAngle) = 0.5 * forceConstant * (theta - equilAngle)^2
+ * V(theta, forceConstant, equilConstant) = 0.5 * forceConstant * (theta - equilConstant)^2
  */
 using HarmonicAngle = AngleInteractionType<struct HarmonicAngleParameter>;
 
@@ -325,22 +325,22 @@ public:
 /*! \brief G96 or Cosine-based angle type
  *
  * This represents the interaction of the form
- * V(cos(theta), forceConstant, cos(equilAngle)) = 0.5 * forceConstant * (cos(theta) - cos(equilAngle))^2
+ * V(cos(theta), forceConstant, cos(equilConstant)) = 0.5 * forceConstant * (cos(theta) - cos(equilConstant))^2
  */
 using G96Angle = CosineParamAngle<struct G96AngleParameter>;
 
 /*! \brief Restricted angle type
  *
  * This represents the interaction of the form
- * V(cos(theta), forceConstant, cos(equilAngle)) =
- *     0.5 * forceConstant * (cos(theta) - cos(equilAngle))^2 / (sin(theta))^2
+ * V(cos(theta), forceConstant, cos(equilConstant)) =
+ *     0.5 * forceConstant * (cos(theta) - cos(equilConstant))^2 / (sin(theta))^2
  */
 using RestrictedAngle = CosineParamAngle<struct RestrictedAngleParameter>;
 
 /*! \brief Quartic angle type
  *
  * It represents the interaction of the form of a fourth order polynomial
- * V(theta, forceConstant, equilAngle) = sum[i = 0 -> 4](forceConstant_i * (theta - equilAngle)^i
+ * V(theta, forceConstant, equilConstant) = sum[i = 0 -> 4](forceConstant_i * (theta - equilConstant)^i
  */
 class QuarticAngle
 {

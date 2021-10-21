@@ -72,8 +72,8 @@ inline ShiftForce* accessShiftForces(int shiftIndex, gmx::ArrayRef<ShiftForce> s
 }
 
 //! \brief dummy op in case shift forces are not computed (will be removed by the compiler)
-inline std::nullptr_t accessShiftForces([[maybe_unused]] int shiftIndex,
-                                        [[maybe_unused]] gmx::ArrayRef<std::nullptr_t> shiftForces)
+inline std::nullptr_t accessShiftForces(int /* shiftIndex */,
+                                        gmx::ArrayRef<std::nullptr_t> /* shiftForces */)
 {
     return nullptr;
 }
@@ -149,7 +149,7 @@ addTwoCenterAggregate(const ThreeCenterType& parameters, const BasicVector& rij,
                       BasicVector* fi, BasicVector* fj, BasicVector* fk,
                       ShiftForce* shf_ij, ShiftForce* shf_kj, ShiftForce* shf_c)
 {
-    if (parameters.manifest == ThreeCenterType::Cargo::ij)
+if (parameters.manifest == ThreeCenterType::Cargo::ij)
     {
         // i-j bond
         return computeTwoCenter(parameters.twoCenter(), rij, fi, fj, shf_ij, shf_c);
@@ -167,15 +167,15 @@ addTwoCenterAggregate(const ThreeCenterType& parameters, const BasicVector& rij,
 template<class ThreeCenterType, class BasicVector, class ShiftForce>
 inline NBLIB_ALWAYS_INLINE
 std::enable_if_t<!HasTwoCenterAggregate<ThreeCenterType>::value, BasicVectorValueType_t<BasicVector>>
-addTwoCenterAggregate([[maybe_unused]] const ThreeCenterType& parameters,
-                      [[maybe_unused]] const BasicVector& rij,
-                      [[maybe_unused]] const BasicVector& rkj,
-                      [[maybe_unused]] BasicVector* fi,
-                      [[maybe_unused]] BasicVector* fj,
-                      [[maybe_unused]] BasicVector* fk,
-                      [[maybe_unused]] ShiftForce* shf_ij,
-                      [[maybe_unused]] ShiftForce* shf_kj,
-                      [[maybe_unused]] ShiftForce* shf_c)
+addTwoCenterAggregate(const ThreeCenterType& /* parameters */,
+                      const BasicVector& /* rij */,
+                      const BasicVector& /* rkj */,
+                      BasicVector* /* fi */,
+                      BasicVector* /* fj */,
+                      BasicVector* /* fk */,
+                      ShiftForce* /* shf_ij */,
+                      ShiftForce* /* shf_kj */,
+                      ShiftForce* /* shf_c */)
 {
     return 0.0;
 };
@@ -260,7 +260,7 @@ auto computeThreeCenter(const CrossBondAngle& parameters, const BasicVector& rij
 {
     using ValueType = BasicVectorValueType_t<BasicVector>;
     // 42 flops from the norm() calls
-    auto [ci, cj, ck, energy] = crossBondAngleKernel(norm(rij), norm(rkj), norm(rik), parameters);
+    auto [ci, cj, ck, energy] = threeCenterKernel(norm(rij), norm(rkj), norm(rik), parameters);
 
     BasicVector fi_loc = ci * rij + ck * rik;
     BasicVector fk_loc = cj * rkj - ck * rik;
@@ -356,14 +356,14 @@ addThreeCenterAggregate(const FourCenterType& parameters,
 template<class FourCenterType, class BasicVector>
 inline NBLIB_ALWAYS_INLINE
 std::enable_if_t<!HasThreeCenterAggregate<FourCenterType>::value, BasicVectorValueType_t<BasicVector>>
-addThreeCenterAggregate([[maybe_unused]] const FourCenterType& parameters,
-                        [[maybe_unused]] const BasicVector& rij,
-                        [[maybe_unused]] const BasicVector& rkj,
-                        [[maybe_unused]] const BasicVector& rkl,
-                        [[maybe_unused]] BasicVector* fi,
-                        [[maybe_unused]] BasicVector* fj,
-                        [[maybe_unused]] BasicVector* fk,
-                        [[maybe_unused]] BasicVector* fl)
+addThreeCenterAggregate(const FourCenterType& /* parameters*/,
+                        const BasicVector& /* rij */,
+                        const BasicVector& /* rkj */,
+                        const BasicVector& /* rkl */,
+                        BasicVector* /* fi */,
+                        BasicVector* /* fj */,
+                        BasicVector* /* fk */,
+                        BasicVector* /* fl */)
 {
     return 0.0;
 };
@@ -484,8 +484,9 @@ auto dispatchInteraction(InteractionIndex<FiveCenterType> index,
     FiveCenterType fiveCenterTypeParams = parameters[std::get<5>(index)];
 
     // this dispatch function is not in use yet, because CMap is not yet implemented
-    // we don't want to add [[maybe_unused]] in the signature
-    // and we also don't want compiler warnings, so we cast to void
+    // we don't want to add [[maybe_unused]] in the signature since the params will
+    // be used once CMap is implemented, and we also don't want compiler warnings,
+    // so we cast to void.
     (void)fiveCenterTypeParams;
     (void)forces;
 

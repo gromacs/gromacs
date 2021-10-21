@@ -51,8 +51,6 @@
 #include "gromacs/math/vectypes.h"
 #include "nblib/listed_forces/bondtypes.h"
 
-#define NBLIB_ALWAYS_INLINE __attribute((always_inline))
-
 namespace nblib
 {
 
@@ -434,21 +432,21 @@ inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 /*! \brief kernel to calculate the scalar part for linear angle forces
  *         for lambda = 0
  *
- * \param k  force constant
- * \param a  contribution of rij vector
- * \param dr weighted distance metric
+ * \param k force constant
+ * \param a0 equilibrium angle
+ * \param angle current angle vaule
  *
  * \return tuple<force, potential energy>
  */
 template <class T>
-inline std::tuple<T, T, T> linearAnglesScalar(T k, T a, T dr)
+inline std::tuple<T, T, T> linearAnglesScalarForce(T k, T a0, T angle)
 {
-    T b = T(1.0) - a;
+    T b = T(1.0) - a0;
 
-    T kdr  = k * dr;
-    T epot = 0.5 * kdr * dr;
+    T kdr  = k * angle;
+    T epot = 0.5 * kdr * angle;
 
-    T ci = a * k;
+    T ci = a0 * k;
     T ck = b * k;
 
     return std::make_tuple(ci, ck, epot);
@@ -459,7 +457,7 @@ inline std::tuple<T, T, T> linearAnglesScalar(T k, T a, T dr)
 template <class T>
 inline auto threeCenterKernel(T dr, const LinearAngle& angle)
 {
-    return linearAnglesScalar(angle.forceConstant(), angle.equilConstant(), dr);
+    return linearAnglesScalarForce(angle.forceConstant(), angle.equilConstant(), dr);
 }
 
 //! Harmonic Angle
@@ -530,7 +528,7 @@ inline auto threeCenterKernel(T drij, T drkj, const CrossBondBond& crossBondBond
  * \param rkj  input bond length between particles k & j
  * \param rik  input bond length between particles i & k
  *
- * \return tuple<force, potential energy>
+ * \return tuple<atom i force, atom j force, atom k force, potential energy>
  */
 
 template <class T>
@@ -542,18 +540,18 @@ inline std::tuple<T, T, T, T> crossBondAngleScalarForce(T k, T r0ij, T r0kj, T r
 
     T epot = k * sik * (sij + skj);
 
-    T ci = -k * sik / rij;
-    T cj = -k * sik / rkj;
-    T ck = -k * (sij + skj) / rik;
+    T fi = -k * sik / rij;
+    T fj = -k * sik / rkj;
+    T fk = -k * (sij + skj) / rik;
 
-    return std::make_tuple(ci, cj, ck, epot);
+    return std::make_tuple(fi, fj, fk, epot);
 
     /* That was 13 flops */
 }
 
 //! Cross bond-bond interaction
 template <class T>
-inline auto crossBondAngleKernel(T drij, T drkj, T drik, const CrossBondAngle& crossBondAngle)
+inline auto threeCenterKernel(T drij, T drkj, T drik, const CrossBondAngle& crossBondAngle)
 {
     return crossBondAngleScalarForce(crossBondAngle.forceConstant(), crossBondAngle.equilDistanceIJ(), crossBondAngle.equilDistanceKJ(), crossBondAngle.equilDistanceIK(), drij, drkj, drik);
 }
@@ -750,19 +748,25 @@ inline void addShiftForce([[maybe_unused]] const gmx::BasicVector<T>& fij,
 {
 }
 
-/*! \brief Spreads and accumulates the bonded forces to the two atoms and adds the virial contribution when needed
+/*! \brief Spreads and accumulates the forces between two atoms and adds the virial contribution when needed
  *
- * \p shiftIndex is used as the periodic shift.
+ * \tparam T         The type of vector, e.g. float, double, etc
+ * \param force      The Force
+ * \param dx         Distance between centers
+ * \param force_i    Force on center i
+ * \param force_j    Force on center j
+ * \param shf_ik     Shift force between centers i and j
+ * \param shf_c      Shift force at the "center" of the two center interaction
  */
 template <class T, class ShiftForce>
-inline void spreadTwoCenterForces(const T bondForce,
+inline void spreadTwoCenterForces(const T force,
                                   const gmx::BasicVector<T>& dx,
                                   gmx::BasicVector<T>*       force_i,
                                   gmx::BasicVector<T>*       force_j,
                                   ShiftForce*                shf_ij,
                                   ShiftForce*                shf_c)
 {
-    gmx::BasicVector<T> fij = bondForce * dx;
+    gmx::BasicVector<T> fij = force * dx;
     *force_i += fij;
     *force_j -= fij;
 
@@ -775,20 +779,23 @@ inline void spreadTwoCenterForces(const T bondForce,
 
 /*! \brief spread force to 3 centers based on scalar force and angle
  *
- * \tparam T
- * \param cos_theta
- * \param force
- * \param r_ij
- * \param r_kj
- * \param force_i
- * \param force_j
- * \param force_k
+ * \tparam T         The type of vector, e.g. float, double, etc
+ * \param cos_theta  Angle between two vectors
+ * \param force      The Force
+ * \param dxIJ       Distance between centers i and j
+ * \param dxJK       Distance between centers j and k
+ * \param force_i    Force on center i
+ * \param force_j    Force on center j
+ * \param force_k    Force on center k
+ * \param shf_ik     Shift force between centers i and j
+ * \param shf_kj     Shift force between centers k and j
+ * \param shf_c      Shift force at the center subtending the angle
  */
 template <class T, class ShiftForce>
 inline void spreadThreeCenterForces(T                          cos_theta,
                                     T                          force,
-                                    const gmx::BasicVector<T>& r_ij,
-                                    const gmx::BasicVector<T>& r_kj,
+                                    const gmx::BasicVector<T>& dxIJ,
+                                    const gmx::BasicVector<T>& dxKJ,
                                     gmx::BasicVector<T>*       force_i,
                                     gmx::BasicVector<T>*       force_j,
                                     gmx::BasicVector<T>*       force_k,
@@ -801,16 +808,16 @@ inline void spreadThreeCenterForces(T                          cos_theta,
     {
         T st    = force / std::sqrt(1 - cos_theta2); /*  12		*/
         T sth   = st * cos_theta;                    /*   1		*/
-        T nrij2 = dot(r_ij, r_ij);                   /*   5		*/
-        T nrkj2 = dot(r_kj, r_kj);                   /*   5		*/
+        T nrij2 = dot(dxIJ, dxIJ);                   /*   5		*/
+        T nrkj2 = dot(dxKJ, dxKJ);                   /*   5		*/
 
         T cik = st / std::sqrt(nrij2 * nrkj2);       /*  11		*/
         T cii = sth / nrij2;                         /*   1		*/
         T ckk = sth / nrkj2;                         /*   1		*/
 
         /*  33 */
-        gmx::BasicVector<T> f_i = cii * r_ij - cik * r_kj;
-        gmx::BasicVector<T> f_k = ckk * r_kj - cik * r_ij;
+        gmx::BasicVector<T> f_i = cii * dxIJ - cik * dxKJ;
+        gmx::BasicVector<T> f_k = ckk * dxKJ - cik * dxIJ;
         gmx::BasicVector<T> f_j = T(-1.0) * (f_i + f_k);
         *force_i += f_i;
         *force_j += f_j;
@@ -824,6 +831,24 @@ inline void spreadThreeCenterForces(T                          cos_theta,
 }
 
 //! Four-center category common
+
+/*! \brief spread force to 4 centers
+ *
+ * \tparam T         The type of vector, e.g. float, double, etc
+ * \param dxIJ       Distance between centers i and j
+ * \param dxKJ       Distance between centers j and k
+ * \param dxKL       Distance between centers k and l
+ * \param m          Cross product of \p dxIJ x \p dxKJ
+ * \param m          Cross product of \p dxKJ x \p dxKL
+ * \param force_i    Force on center i
+ * \param force_j    Force on center j
+ * \param force_k    Force on center k
+ * \param force_k    Force on center l
+ * \param shf_ik     Shift force between centers i and j
+ * \param shf_kj     Shift force between centers k and j
+ * \param shf_lj     Shift force between centers k and j
+ * \param shf_c      Shift force at the center subtending the angle
+ */
 template <class T, class ShiftForce>
 inline void spreadFourCenterForces(T force,
                                    const gmx::BasicVector<T>& dxIJ,
@@ -875,7 +900,5 @@ inline void spreadFourCenterForces(T force,
 }
 
 } // namespace nblib
-
-#undef NBLIB_ALWAYS_INLINE
 
 #endif // NBLIB_LISTEDFORCES_KERNELS_HPP
