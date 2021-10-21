@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,42 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Check the Python installation for sphinx-build, even if not on PATH.
+if(Python3_EXECUTABLE)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import sys; print(sys.exec_prefix)"
+        OUTPUT_VARIABLE _python_exec_prefix
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    list(APPEND CMAKE_PROGRAM_PATH ${_python_exec_prefix})
+    unset(_python_exec_prefix)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m site --user-base
+        OUTPUT_VARIABLE _python_user_base
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (_python_user_base)
+        list(APPEND CMAKE_PROGRAM_PATH ${_python_user_base})
+    endif ()
+    unset(_python_user_base)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import sys; print(sys.base_exec_prefix)"
+        OUTPUT_VARIABLE _python_base_exec_prefix
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (_python_base_exec_prefix)
+        list(APPEND CMAKE_PROGRAM_PATH ${_python_base_exec_prefix})
+    endif ()
+    unset(_python_base_exec_prefix)
+endif()
+
 find_program(SPHINX_EXECUTABLE NAMES sphinx-build sphinx-build2
-    HINTS
-    $ENV{SPHINX_DIR}
-    PATH_SUFFIXES bin
-    DOC "Sphinx documentation generator"
-)
+             HINTS ENV SPHINX_DIR
+             PATH_SUFFIXES bin
+             DOC "Sphinx documentation generator"
+             )
 mark_as_advanced(SPHINX_EXECUTABLE)
 
 # Detect Sphinx version
