@@ -206,7 +206,6 @@ protected:
         interactions = data.interactions;
         box          = data.box;
         refForces    = data.forces;
-        // pbc.reset(new PbcHolder(*box));
 
         refEnergies = reduceListedForces(interactions, x, &refForces, NoPbc{});
     }
@@ -224,7 +223,6 @@ protected:
     std::vector<gmx::RVec> x;
     ListedInteractionData  interactions;
     std::shared_ptr<Box>   box;
-    // std::shared_ptr<PbcHolder> pbc;
 
 private:
     std::vector<gmx::RVec>            refForces;

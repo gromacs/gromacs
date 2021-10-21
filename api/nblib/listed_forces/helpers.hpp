@@ -49,6 +49,8 @@
 
 #include <unordered_map>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "nblib/pbc.hpp"
 #include "definitions.h"
 #include "nblib/util/util.hpp"
@@ -75,29 +77,29 @@ inline void gmxRVecZeroWorkaround<gmx::RVec>(gmx::RVec& value)
 }
 } // namespace detail
 
-/*! \internal \brief object to store forces for multithreaded listed forces computation
+/*! \internal \brief proxy object to access forces in an underlying buffer
+ *
+ * Depending on the index, either the underlying master buffer, or local
+ * storage for outliers is accessed. This object does not own the master buffer.
  *
  */
 template<class T>
-class ForceBuffer
+class ForceBufferProxy
 {
     using HashMap = std::unordered_map<int, T>;
 
 public:
-    ForceBuffer() : rangeStart(0), rangeEnd(0) { }
+    ForceBufferProxy() : rangeStart_(0), rangeEnd_(0) { }
 
-    ForceBuffer(T* mbuf, int rs, int re) :
-        masterForceBuffer(mbuf),
-        rangeStart(rs),
-        rangeEnd(re)
+    ForceBufferProxy(int rangeStart, int rangeEnd) : rangeStart_(rangeStart), rangeEnd_(rangeEnd)
     {
     }
 
-    void clear() { outliers.clear(); }
+    void clearOutliers() { outliers.clear(); }
 
     inline NBLIB_ALWAYS_INLINE T& operator[](int i)
     {
-        if (i >= rangeStart && i < rangeEnd)
+        if (i >= rangeStart_ && i < rangeEnd_)
         {
             return masterForceBuffer[i];
         }
@@ -117,12 +119,14 @@ public:
     typename HashMap::const_iterator begin() { return outliers.begin(); }
     typename HashMap::const_iterator end() { return outliers.end(); }
 
-    [[nodiscard]] bool inRange(int index) const { return (index >= rangeStart && index < rangeEnd); }
+    [[nodiscard]] bool inRange(int index) const { return (index >= rangeStart_ && index < rangeEnd_); }
+
+    void setMasterBuffer(gmx::ArrayRef<T> buffer) { masterForceBuffer = buffer; }
 
 private:
-    T*  masterForceBuffer;
-    int rangeStart;
-    int rangeEnd;
+    gmx::ArrayRef<T> masterForceBuffer;
+    int rangeStart_;
+    int rangeEnd_;
 
     HashMap outliers;
 };

@@ -106,12 +106,13 @@ TEST(NBlibTest, ListedForceBuffer)
     T              vzero{ 0, 0, 0 };
     std::vector<T> masterBuffer(ncoords, vzero);
 
-    // the ForceBuffer is going to access indices [10-15) through the masterBuffer
+    // the ForceBufferProxy is going to access indices [10-15) through the masterBuffer
     // and the outliers internally
     int rangeStart = 10;
     int rangeEnd   = 15;
 
-    ForceBuffer<T> forceBuffer(masterBuffer.data(), rangeStart, rangeEnd);
+    ForceBufferProxy<T> forceBuffer(rangeStart, rangeEnd);
+    forceBuffer.setMasterBuffer(masterBuffer);
 
     // in range
     T internal1{ 1, 2, 3 };
