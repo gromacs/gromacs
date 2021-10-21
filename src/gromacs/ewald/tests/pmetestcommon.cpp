@@ -82,6 +82,15 @@ namespace gmx
 namespace test
 {
 
+//! A couple of valid inputs for boxes.
+const std::map<std::string, Matrix3x3> c_inputBoxes = {
+    { "rect", { { 8.0F, 0.0F, 0.0F, 0.0F, 3.4F, 0.0F, 0.0F, 0.0F, 2.0F } } },
+    { "tric", { { 7.0F, 0.0F, 0.0F, 0.0F, 4.1F, 0.0F, 3.5F, 2.0F, 12.2F } } },
+};
+
+//! Valid PME orders for testing
+std::vector<int> c_inputPmeOrders{ 3, 4, 5 };
+
 bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inputRec, CodePath mode)
 {
     bool implemented;
@@ -192,7 +201,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
                   const ChargesVector&     charges)
 {
     const index atomCount = coordinates.size();
-    GMX_RELEASE_ASSERT(atomCount == charges.ssize(), "Mismatch in atom data");
+    GMX_RELEASE_ASSERT(atomCount == gmx::ssize(charges), "Mismatch in atom data");
     PmeAtomComm* atc = nullptr;
 
     switch (mode)
@@ -677,7 +686,7 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
 {
     PmeAtomComm* atc       = &(pme->atc[0]);
     const index  atomCount = atc->numAtoms();
-    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.ssize(), "Mismatch in gridline indices size");
+    GMX_RELEASE_ASSERT(atomCount == ssize(gridLineIndices), "Mismatch in gridline indices size");
 
     IVec paddedGridSizeUnused, gridSize(0, 0, 0);
     pmeGetRealGridSizesInternal(pme, mode, gridSize, paddedGridSizeUnused);
@@ -810,11 +819,15 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
     switch (mode)
     {
         case CodePath::GPU:
-            gridLineIndices = arrayRefFromArray(
-                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices), atomCount);
-            break;
+        {
+            auto* gridlineIndicesAsIVec =
+                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices);
+            ArrayRef<IVec> gridlineIndicesArrayRef = arrayRefFromArray(gridlineIndicesAsIVec, atomCount);
+            gridLineIndices = { gridlineIndicesArrayRef.begin(), gridlineIndicesArrayRef.end() };
+        }
+        break;
 
-        case CodePath::CPU: gridLineIndices = atc->idx; break;
+        case CodePath::CPU: gridLineIndices = { atc->idx.begin(), atc->idx.end() }; break;
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -908,16 +921,6 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, P
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
     return output;
-}
-
-const char* codePathToString(CodePath codePath)
-{
-    switch (codePath)
-    {
-        case CodePath::CPU: return "CPU";
-        case CodePath::GPU: return "GPU";
-        default: GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
-    }
 }
 
 PmeTestHardwareContext::PmeTestHardwareContext() : codePath_(CodePath::CPU) {}

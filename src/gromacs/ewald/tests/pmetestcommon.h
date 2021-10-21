@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,20 +74,17 @@ enum class CodePath : int
     Count
 };
 
-//! Return a string useful for human-readable messages describing a \c codePath.
-const char* codePathToString(CodePath codePath);
-
 // Convenience typedefs
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
 //! Charges
-typedef ArrayRef<const real> ChargesVector;
+typedef std::vector<real> ChargesVector;
 //! Coordinates
 typedef std::vector<RVec> CoordinatesVector;
 //! Forces
 typedef ArrayRef<RVec> ForcesVector;
 //! Gridline indices
-typedef ArrayRef<const IVec> GridLineIndicesVector;
+typedef std::vector<IVec> GridLineIndicesVector;
 /*! \brief Spline parameters (theta or dtheta).
  * A reference to a single dimension's spline data; this means (atomCount * pmeOrder) values or derivatives.
  */
@@ -245,6 +242,12 @@ struct PmeTestHardwareContext
 };
 
 std::vector<std::unique_ptr<PmeTestHardwareContext>> createPmeTestHardwareContextList();
+
+//! A couple of valid inputs for boxes.
+extern const std::map<std::string, Matrix3x3> c_inputBoxes;
+
+//! Valid PME orders for testing
+extern std::vector<int> c_inputPmeOrders;
 
 } // namespace test
 } // namespace gmx

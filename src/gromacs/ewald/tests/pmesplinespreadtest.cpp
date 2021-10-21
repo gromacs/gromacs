@@ -37,6 +37,7 @@
  * Implements PME spline computation and charge spreading tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_ewald
  */
 
@@ -62,29 +63,113 @@ namespace test
 namespace
 {
 
+//! A couple of valid inputs for grid sizes
+std::vector<IVec> const c_inputGridSizes{ IVec{ 16, 12, 14 }, IVec{ 19, 17, 11 } };
+
 //! PME spline and spread code path being tested
-enum class PmeSplineAndSpreadOptions
+enum class SplineAndSpreadOptions
 {
     SplineOnly,
     SpreadOnly,
-    SplineAndSpreadUnified
+    SplineAndSpreadUnified,
+    Count
 };
+
+struct TestSystem
+{
+    CoordinatesVector coordinates;
+    ChargesVector     charges;
+};
+
+const std::unordered_map<std::string, TestSystem> c_testSystems = {
+    { "1 atom", { CoordinatesVector{ { 5.59F, 1.37F, 0.95F } }, ChargesVector{ 4.95F } } },
+    { "2 atoms",
+      { CoordinatesVector{
+                // 2 box lengths in x
+                { 16.0F, 1.02F, 0.22F },
+                { 0.034F, 1.65F, 0.22F },
+        },
+        ChargesVector{ {
+                3.11F,
+                3.97F,
+        } } } },
+    { "13 atoms",
+      { CoordinatesVector{
+                { 0.33F, 0.92F, 1.56F },
+                { 1.16F, 0.75F, 0.39F },
+                { 0.5F, 1.63F, 1.14F },
+                // > 2 box lengths in x
+                { 16.0001F, 1.52F, 1.19F },
+                // > 2 box lengths in z
+                { 1.43F, 1.1F, 4.1F },
+                // negative x
+                { -1.08F, 1.19F, 0.08F },
+                { 1.6F, 0.93F, 0.53F },
+                // negative y
+                { 1.32F, -1.48F, 0.16F },
+                { 0.87F, 0.0F, 0.33F },
+                // > 2 box lengths in y, negative z
+                { 0.95F, 7.7F, -0.48F },
+                { 1.23F, 0.91F, 0.68F },
+                { 0.19F, 1.45F, 0.94F },
+                { 1.28F, 0.46F, 0.38F },
+        },
+        ChargesVector{ 1.08F, 2.09F, 1.1F, 4.13F, 3.31F, 2.8F, 5.83F, 5.09F, 6.1F, 2.86F, 0.24F, 5.76F, 5.19F } } },
+};
+
+/* Valid input instances */
 
 /*! \brief Convenience typedef of input parameters - unit cell box, PME interpolation order, grid
  * dimensions, particle coordinates, particle charges
  * TODO: consider inclusion of local grid offsets/sizes or PME nodes counts to test the PME DD
  */
-typedef std::tuple<Matrix3x3, int, IVec, CoordinatesVector, ChargesVector> SplineAndSpreadInputParameters;
+typedef std::tuple<std::string, int, IVec, std::string> SplineAndSpreadInputParameters;
+
+//! Help GoogleTest name our test cases
+std::string nameOfTest(const testing::TestParamInfo<SplineAndSpreadInputParameters>& info)
+{
+    std::string testName = formatString(
+            "box_%s_"
+            "order_%d_"
+            "grid_%d_%d_%d_"
+            "system_%s",
+            std::get<0>(info.param).c_str(),
+            std::get<1>(info.param),
+            std::get<2>(info.param)[XX],
+            std::get<2>(info.param)[YY],
+            std::get<2>(info.param)[ZZ],
+            std::get<3>(info.param).c_str());
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+const char* enumValueToString(SplineAndSpreadOptions enumValue)
+{
+    static constexpr gmx::EnumerationArray<SplineAndSpreadOptions, const char*> s_splineAndSpreadOptionsNames = {
+        "spline computation",
+        "charge spreading",
+        "spline computation and charge spreading (fused)",
+    };
+    return s_splineAndSpreadOptionsNames[enumValue];
+}
 
 /*! \brief Test fixture for testing both atom spline parameter computation and charge spreading.
  * These 2 stages of PME are tightly coupled in the code.
  */
-class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadInputParameters>
+class SplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadInputParameters>
 {
 public:
-    PmeSplineAndSpreadTest() = default;
+    SplineAndSpreadTest() = default;
 
-    //! Sets the programs once
     static void SetUpTestSuite()
     {
         s_pmeTestHardwareContexts    = createPmeTestHardwareContextList();
@@ -101,14 +186,15 @@ public:
     static void runTest()
     {
         /* Getting the input */
-        Matrix3x3         box;
-        int               pmeOrder;
-        IVec              gridSize;
-        CoordinatesVector coordinates;
-        ChargesVector     charges;
+        int         pmeOrder;
+        IVec        gridSize;
+        std::string boxName, testSystemName;
 
-        std::tie(box, pmeOrder, gridSize, coordinates, charges) = GetParam();
-        const size_t atomCount                                  = coordinates.size();
+        std::tie(boxName, pmeOrder, gridSize, testSystemName) = GetParam();
+        Matrix3x3                box                          = c_inputBoxes.at(boxName);
+        const CoordinatesVector& coordinates = c_testSystems.at(testSystemName).coordinates;
+        const ChargesVector&     charges     = c_testSystems.at(testSystemName).charges;
+        const size_t             atomCount   = coordinates.size();
 
         /* Storing the input where it's needed */
         t_inputrec inputRec;
@@ -118,13 +204,6 @@ public:
         inputRec.pme_order   = pmeOrder;
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
-
-        const std::map<PmeSplineAndSpreadOptions, std::string> optionsToTest = {
-            { PmeSplineAndSpreadOptions::SplineAndSpreadUnified,
-              "spline computation and charge spreading (fused)" },
-            { PmeSplineAndSpreadOptions::SplineOnly, "spline computation" },
-            { PmeSplineAndSpreadOptions::SpreadOnly, "charge spreading" }
-        };
 
         // There is a subtle problem with multiple comparisons against same reference data:
         // The subsequent (GPU) spreading runs at one point didn't actually copy the output grid
@@ -151,14 +230,14 @@ public:
                 continue;
             }
 
-            for (const auto& option : optionsToTest)
+            for (SplineAndSpreadOptions option : EnumerationWrapper<SplineAndSpreadOptions>())
             {
                 /* Describing the test uniquely in case it fails */
 
                 SCOPED_TRACE(
                         formatString("Testing %s on %s for PME grid size %d %d %d"
                                      ", order %d, %zu atoms",
-                                     option.second.c_str(),
+                                     enumValueToString(option),
                                      pmeTestHardwareContext->description().c_str(),
                                      gridSize[XX],
                                      gridSize[YY],
@@ -183,12 +262,10 @@ public:
 
                 pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, coordinates, charges);
 
-                const bool computeSplines =
-                        (option.first == PmeSplineAndSpreadOptions::SplineOnly)
-                        || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
-                const bool spreadCharges =
-                        (option.first == PmeSplineAndSpreadOptions::SpreadOnly)
-                        || (option.first == PmeSplineAndSpreadOptions::SplineAndSpreadUnified);
+                const bool computeSplines = (option == SplineAndSpreadOptions::SplineOnly)
+                                            || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
+                const bool spreadCharges = (option == SplineAndSpreadOptions::SpreadOnly)
+                                           || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
 
                 if (!computeSplines)
                 {
@@ -289,123 +366,30 @@ public:
     static std::vector<std::unique_ptr<PmeTestHardwareContext>> s_pmeTestHardwareContexts;
 };
 
-std::vector<std::unique_ptr<PmeTestHardwareContext>> PmeSplineAndSpreadTest::s_pmeTestHardwareContexts;
+std::vector<std::unique_ptr<PmeTestHardwareContext>> SplineAndSpreadTest::s_pmeTestHardwareContexts;
 
 
 /*! \brief Test for spline parameter computation and charge spreading. */
-TEST_P(PmeSplineAndSpreadTest, ReproducesOutputs)
+TEST_P(SplineAndSpreadTest, WorksWith)
 {
     EXPECT_NO_THROW_GMX(runTest());
 }
 
-/* Valid input instances */
+//! Moved out from instantiations for readability
+const auto c_inputBoxNames = ::testing::Values("rect", "tric");
+//! Moved out from instantiations for readability
+const auto c_inputGridNames = ::testing::Values("first", "second");
+//! Moved out from instantiations for readability
+const auto c_inputTestSystemNames = ::testing::Values("1 atom", "2 atoms", "13 atoms");
 
-//! A couple of valid inputs for boxes.
-std::vector<Matrix3x3> const c_sampleBoxes{
-    // normal box
-    Matrix3x3{ { 8.0F, 0.0F, 0.0F, 0.0F, 3.4F, 0.0F, 0.0F, 0.0F, 2.0F } },
-    // triclinic box
-    Matrix3x3{ { 7.0F, 0.0F, 0.0F, 0.0F, 4.1F, 0.0F, 3.5F, 2.0F, 12.2F } },
-};
+INSTANTIATE_TEST_SUITE_P(Pme,
+                         SplineAndSpreadTest,
+                         ::testing::Combine(c_inputBoxNames,
+                                            ::testing::ValuesIn(c_inputPmeOrders),
+                                            ::testing::ValuesIn(c_inputGridSizes),
+                                            c_inputTestSystemNames),
+                         nameOfTest);
 
-//! A couple of valid inputs for grid sizes.
-std::vector<IVec> const c_sampleGridSizes{ IVec{ 16, 12, 14 }, IVec{ 19, 17, 11 } };
-
-//! Random charges
-std::vector<real> const c_sampleChargesFull{ 4.95F, 3.11F, 3.97F, 1.08F, 2.09F, 1.1F,
-                                             4.13F, 3.31F, 2.8F,  5.83F, 5.09F, 6.1F,
-                                             2.86F, 0.24F, 5.76F, 5.19F, 0.72F };
-//! 1 charge
-auto const c_sampleCharges1 = ChargesVector(c_sampleChargesFull).subArray(0, 1);
-//! 2 charges
-auto const c_sampleCharges2 = ChargesVector(c_sampleChargesFull).subArray(1, 2);
-//! 13 charges
-auto const c_sampleCharges13 = ChargesVector(c_sampleChargesFull).subArray(3, 13);
-
-//! Random coordinate vectors
-CoordinatesVector const c_sampleCoordinatesFull{ { 5.59F, 1.37F, 0.95F },
-                                                 {
-                                                         16.0F,
-                                                         1.02F,
-                                                         0.22F // 2 box lengths in x
-                                                 },
-                                                 { 0.034F, 1.65F, 0.22F },
-                                                 { 0.33F, 0.92F, 1.56F },
-                                                 { 1.16F, 0.75F, 0.39F },
-                                                 { 0.5F, 1.63F, 1.14F },
-                                                 {
-                                                         16.0001F,
-                                                         1.52F,
-                                                         1.19F // > 2 box lengths in x
-                                                 },
-                                                 {
-                                                         1.43F,
-                                                         1.1F,
-                                                         4.1F // > 2 box lengths in z
-                                                 },
-                                                 {
-                                                         -1.08F,
-                                                         1.19F,
-                                                         0.08F // negative x
-                                                 },
-                                                 { 1.6F, 0.93F, 0.53F },
-                                                 {
-                                                         1.32F,
-                                                         -1.48F,
-                                                         0.16F // negative y
-                                                 },
-                                                 { 0.87F, 0.0F, 0.33F },
-                                                 {
-                                                         0.95F,
-                                                         7.7F,
-                                                         -0.48F // > 2 box lengths in y, negative z
-                                                 },
-                                                 { 1.23F, 0.91F, 0.68F },
-                                                 { 0.19F, 1.45F, 0.94F },
-                                                 { 1.28F, 0.46F, 0.38F },
-                                                 { 1.21F, 0.23F, 1.0F } };
-//! 1 coordinate vector
-CoordinatesVector const c_sampleCoordinates1(c_sampleCoordinatesFull.begin(),
-                                             c_sampleCoordinatesFull.begin() + 1);
-//! 2 coordinate vectors
-CoordinatesVector const c_sampleCoordinates2(c_sampleCoordinatesFull.begin() + 1,
-                                             c_sampleCoordinatesFull.begin() + 3);
-//! 13 coordinate vectors
-CoordinatesVector const c_sampleCoordinates13(c_sampleCoordinatesFull.begin() + 3,
-                                              c_sampleCoordinatesFull.begin() + 16);
-
-//! moved out from instantiantions for readability
-auto c_inputBoxes = ::testing::ValuesIn(c_sampleBoxes);
-//! moved out from instantiantions for readability
-auto c_inputPmeOrders = ::testing::Range(3, 5 + 1);
-//! moved out from instantiantions for readability
-auto c_inputGridSizes = ::testing::ValuesIn(c_sampleGridSizes);
-
-/*! \brief Instantiation of the test with valid input and 1 atom */
-INSTANTIATE_TEST_SUITE_P(SaneInput1,
-                         PmeSplineAndSpreadTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputPmeOrders,
-                                            c_inputGridSizes,
-                                            ::testing::Values(c_sampleCoordinates1),
-                                            ::testing::Values(c_sampleCharges1)));
-
-/*! \brief Instantiation of the test with valid input and 2 atoms */
-INSTANTIATE_TEST_SUITE_P(SaneInput2,
-                         PmeSplineAndSpreadTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputPmeOrders,
-                                            c_inputGridSizes,
-                                            ::testing::Values(c_sampleCoordinates2),
-                                            ::testing::Values(c_sampleCharges2)));
-/*! \brief Instantiation of the test with valid input and 13 atoms */
-INSTANTIATE_TEST_SUITE_P(SaneInput13,
-                         PmeSplineAndSpreadTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputPmeOrders,
-                                            c_inputGridSizes,
-                                            ::testing::Values(c_sampleCoordinates13),
-                                            ::testing::Values(c_sampleCharges13)));
 } // namespace
 } // namespace test
 } // namespace gmx

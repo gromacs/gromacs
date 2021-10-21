@@ -37,6 +37,7 @@
  * Implements PME solving tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_ewald
  */
 
@@ -61,25 +62,89 @@ namespace test
 {
 namespace
 {
+
+//! A couple of valid inputs for grid sizes
+std::vector<IVec> const c_inputGridSizes{ IVec{ 16, 12, 28 }, IVec{ 9, 7, 23 } };
+
+//! Two input complex grids - only non-zero values have to be listed
+const std::map<std::string, SparseComplexGridValuesInput> c_inputGridValues = {
+    { "first",
+      SparseComplexGridValuesInput{
+              { IVec{ 0, 0, 0 }, t_complex{ 3.5F, 6.7F } },
+              { IVec{ 7, 0, 0 }, t_complex{ -2.5F, -0.7F } },
+              { IVec{ 3, 5, 7 }, t_complex{ -0.006F, 1e-8F } },
+              { IVec{ 3, 1, 2 }, t_complex{ 0.6F, 7.9F } },
+              { IVec{ 6, 2, 4 }, t_complex{ 30.1F, 2.45F } },
+      } },
+    { "second",
+      SparseComplexGridValuesInput{
+              { IVec{ 0, 4, 0 }, t_complex{ 0.0F, 0.3F } },
+              { IVec{ 4, 2, 7 }, t_complex{ 13.76F, -40.0F } },
+              { IVec{ 0, 6, 7 }, t_complex{ 3.6F, 0.0F } },
+              { IVec{ 2, 5, 10 }, t_complex{ 3.6F, 10.65F } },
+      } },
+};
+
 /*! \brief Convenience typedef of the test input parameters - unit cell box, complex grid dimensions, complex grid values,
  * electrostatic constant epsilon_r, Ewald splitting parameters ewaldcoeff_q and ewaldcoeff_lj, solver type
  * Output: transformed local grid (Fourier space); optionally reciprocal energy and virial matrix.
  * TODO:
  * Implement and test Lorentz-Berthelot
  */
-typedef std::tuple<Matrix3x3, IVec, SparseComplexGridValuesInput, double, double, double, PmeSolveAlgorithm> SolveInputParameters;
+typedef std::tuple<std::string, IVec, std::string, double, double, double, PmeSolveAlgorithm> SolveInputParameters;
+
+const char* enumValueToString(PmeSolveAlgorithm enumValue)
+{
+    static constexpr gmx::EnumerationArray<PmeSolveAlgorithm, const char*> s_pmeSolveAlgorithmNames = {
+        "Coulomb", "LJ"
+    };
+    return s_pmeSolveAlgorithmNames[enumValue];
+}
+
+//! Help GoogleTest name our test cases
+std::string nameOfTest(const testing::TestParamInfo<SolveInputParameters>& info)
+{
+    std::string testName = formatString(
+            "box_%s_"
+            "grid_%d_%d_%d_"
+            "gridvalues_%s_"
+            "eps_%g_"
+            "ewaldq_%g_"
+            "ewaldlj_%g_"
+            "method_%s",
+            std::get<0>(info.param).c_str(),
+            std::get<1>(info.param)[XX],
+            std::get<1>(info.param)[YY],
+            std::get<1>(info.param)[ZZ],
+            std::get<2>(info.param).c_str(),
+            std::get<3>(info.param),
+            std::get<4>(info.param),
+            std::get<5>(info.param),
+            enumValueToString(std::get<6>(info.param)));
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
 
 //! Test fixture
-class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
+class SolveTest : public ::testing::TestWithParam<SolveInputParameters>
 {
 public:
-    PmeSolveTest() = default;
+    SolveTest() = default;
 
     //! Sets the programs once
     static void SetUpTestSuite()
     {
         s_pmeTestHardwareContexts    = createPmeTestHardwareContextList();
-        g_allowPmeWithSyclForTesting = true; // We support PmeSolve with SYCL
+        g_allowPmeWithSyclForTesting = true; // We support Solve with SYCL
     }
 
     static void TearDownTestSuite()
@@ -92,15 +157,16 @@ public:
     static void runTest()
     {
         /* Getting the input */
-        Matrix3x3                    box;
-        IVec                         gridSize;
-        SparseComplexGridValuesInput nonZeroGridValues;
-        double                       epsilon_r;
-        double                       ewaldCoeff_q;
-        double                       ewaldCoeff_lj;
-        PmeSolveAlgorithm            method;
-        std::tie(box, gridSize, nonZeroGridValues, epsilon_r, ewaldCoeff_q, ewaldCoeff_lj, method) =
+        IVec              gridSize;
+        double            epsilon_r;
+        double            ewaldCoeff_q;
+        double            ewaldCoeff_lj;
+        PmeSolveAlgorithm method;
+        std::string       boxName, gridValuesName;
+        std::tie(boxName, gridSize, gridValuesName, epsilon_r, ewaldCoeff_q, ewaldCoeff_lj, method) =
                 GetParam();
+        Matrix3x3                           box               = c_inputBoxes.at(boxName);
+        const SparseComplexGridValuesInput& nonZeroGridValues = c_inputGridValues.at(gridValuesName);
 
         /* Storing the input where it's needed, running the test */
         t_inputrec inputRec;
@@ -274,51 +340,18 @@ public:
     static std::vector<std::unique_ptr<PmeTestHardwareContext>> s_pmeTestHardwareContexts;
 };
 
-std::vector<std::unique_ptr<PmeTestHardwareContext>> PmeSolveTest::s_pmeTestHardwareContexts;
+std::vector<std::unique_ptr<PmeTestHardwareContext>> SolveTest::s_pmeTestHardwareContexts;
 
 /*! \brief Test for PME solving */
-TEST_P(PmeSolveTest, ReproducesOutputs)
+TEST_P(SolveTest, WorksWith)
 {
     EXPECT_NO_THROW_GMX(runTest());
 }
 
-/* Valid input instances */
-
-//! A couple of valid inputs for boxes.
-std::vector<Matrix3x3> const c_sampleBoxes{
-    // normal box
-    Matrix3x3{ { 8.0F, 0.0F, 0.0F, 0.0F, 3.4F, 0.0F, 0.0F, 0.0F, 2.0F } },
-    // triclinic box
-    Matrix3x3{ { 7.0F, 0.0F, 0.0F, 0.0F, 4.1F, 0.0F, 3.5F, 2.0F, 12.2F } },
-};
-
-//! A couple of valid inputs for grid sizes
-std::vector<IVec> const c_sampleGridSizes{ IVec{ 16, 12, 28 }, IVec{ 9, 7, 23 } };
-
 //! Moved out from instantiations for readability
-const auto c_inputBoxes = ::testing::ValuesIn(c_sampleBoxes);
+const auto c_inputBoxNames = ::testing::Values("rect", "tric");
 //! Moved out from instantiations for readability
-const auto c_inputGridSizes = ::testing::ValuesIn(c_sampleGridSizes);
-
-//! 2 sample complex grids - only non-zero values have to be listed
-std::vector<SparseComplexGridValuesInput> const c_sampleGrids{
-    SparseComplexGridValuesInput{
-            { IVec{ 0, 0, 0 }, t_complex{ 3.5F, 6.7F } },
-            { IVec{ 7, 0, 0 }, t_complex{ -2.5F, -0.7F } },
-            { IVec{ 3, 5, 7 }, t_complex{ -0.006F, 1e-8F } },
-            { IVec{ 3, 1, 2 }, t_complex{ 0.6F, 7.9F } },
-            { IVec{ 6, 2, 4 }, t_complex{ 30.1F, 2.45F } },
-    },
-    SparseComplexGridValuesInput{
-            { IVec{ 0, 4, 0 }, t_complex{ 0.0F, 0.3F } },
-            { IVec{ 4, 2, 7 }, t_complex{ 13.76F, -40.0F } },
-            { IVec{ 0, 6, 7 }, t_complex{ 3.6F, 0.0F } },
-            { IVec{ 2, 5, 10 }, t_complex{ 3.6F, 10.65F } },
-    }
-};
-
-//! Moved out from instantiations for readability
-const auto c_inputGrids = ::testing::ValuesIn(c_sampleGrids);
+const auto c_inputGridNames = ::testing::Values("first", "second");
 //! Moved out from instantiations for readability
 const auto c_inputEpsilon_r = ::testing::Values(1.2);
 //! Moved out from instantiations for readability
@@ -329,50 +362,54 @@ const auto c_inputEwaldCoeff_lj = ::testing::Values(0.7);
 const auto c_inputMethods = ::testing::Values(PmeSolveAlgorithm::Coulomb, PmeSolveAlgorithm::LennardJones);
 
 //! Instantiation of the PME solving test
-INSTANTIATE_TEST_SUITE_P(SaneInput,
-                         PmeSolveTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputGridSizes,
-                                            c_inputGrids,
+INSTANTIATE_TEST_SUITE_P(Pme,
+                         SolveTest,
+                         ::testing::Combine(c_inputBoxNames,
+                                            ::testing::ValuesIn(c_inputGridSizes),
+                                            c_inputGridNames,
                                             c_inputEpsilon_r,
                                             c_inputEwaldCoeff_q,
                                             c_inputEwaldCoeff_lj,
-                                            c_inputMethods));
+                                            c_inputMethods),
+                         nameOfTest);
 
 //! A few more instances to check that different ewaldCoeff_q actually affects results of the Coulomb solver
-INSTANTIATE_TEST_SUITE_P(DifferentEwaldCoeffQ,
-                         PmeSolveTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputGridSizes,
-                                            c_inputGrids,
+INSTANTIATE_TEST_SUITE_P(PmeDiffEwaldQ,
+                         SolveTest,
+                         ::testing::Combine(c_inputBoxNames,
+                                            ::testing::ValuesIn(c_inputGridSizes),
+                                            c_inputGridNames,
                                             c_inputEpsilon_r,
                                             ::testing::Values(0.4),
                                             c_inputEwaldCoeff_lj,
-                                            ::testing::Values(PmeSolveAlgorithm::Coulomb)));
+                                            ::testing::Values(PmeSolveAlgorithm::Coulomb)),
+                         nameOfTest);
 
 //! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver.
 //! The value has to be approximately larger than 1 / (box dimensions) to have a meaningful output grid.
 //! Previous value of 0.3 caused one of the grid cells to be less or greater than GMX_FLOAT_MIN, depending on the architecture.
-INSTANTIATE_TEST_SUITE_P(DifferentEwaldCoeffLJ,
-                         PmeSolveTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputGridSizes,
-                                            c_inputGrids,
+INSTANTIATE_TEST_SUITE_P(PmeDiffEwaldLJ,
+                         SolveTest,
+                         ::testing::Combine(c_inputBoxNames,
+                                            ::testing::ValuesIn(c_inputGridSizes),
+                                            c_inputGridNames,
                                             c_inputEpsilon_r,
                                             c_inputEwaldCoeff_q,
                                             ::testing::Values(2.35),
-                                            ::testing::Values(PmeSolveAlgorithm::LennardJones)));
+                                            ::testing::Values(PmeSolveAlgorithm::LennardJones)),
+                         nameOfTest);
 
 //! A few more instances to check that different epsilon_r actually affects results of all solvers
-INSTANTIATE_TEST_SUITE_P(DifferentEpsilonR,
-                         PmeSolveTest,
-                         ::testing::Combine(c_inputBoxes,
-                                            c_inputGridSizes,
-                                            c_inputGrids,
+INSTANTIATE_TEST_SUITE_P(PmeDiffEps,
+                         SolveTest,
+                         ::testing::Combine(c_inputBoxNames,
+                                            ::testing::ValuesIn(c_inputGridSizes),
+                                            c_inputGridNames,
                                             testing::Values(1.9),
                                             c_inputEwaldCoeff_q,
                                             c_inputEwaldCoeff_lj,
-                                            c_inputMethods));
+                                            c_inputMethods),
+                         nameOfTest);
 
 } // namespace
 } // namespace test
