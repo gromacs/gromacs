@@ -73,6 +73,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
 
 
@@ -155,6 +156,47 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
     return haveAvailableDevices;
 }
 
+static bool canUseGpusForPme(const bool           useGpuForNonbonded,
+                             const TaskTarget     pmeTarget,
+                             const TaskTarget     pmeFftTarget,
+                             const gmx_hw_info_t& hardwareInfo,
+                             const t_inputrec&    inputrec,
+                             std::string*         errorMessage)
+{
+    if (pmeTarget == TaskTarget::Cpu)
+    {
+        return false;
+    }
+
+    std::string                 tempString;
+    gmx::MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Cannot compute PME interactions on a GPU, because:");
+    errorReasons.appendIf(!useGpuForNonbonded, "Nonbonded interactions must also run on GPUs.");
+    errorReasons.appendIf(!pme_gpu_supports_build(&tempString), tempString);
+    errorReasons.appendIf(!pme_gpu_supports_hardware(hardwareInfo, &tempString), tempString);
+    errorReasons.appendIf(!pme_gpu_supports_input(inputrec, &tempString), tempString);
+    if (pmeFftTarget == TaskTarget::Cpu)
+    {
+        // User requested PME FFT on CPU, so we check whether we are able to use PME Mixed mode.
+        errorReasons.appendIf(!pme_gpu_mixed_mode_supports_input(inputrec, &tempString), tempString);
+    }
+    errorReasons.finishContext();
+
+    if (errorReasons.isEmpty())
+    {
+        return true;
+    }
+    else
+    {
+        if (pmeTarget == TaskTarget::Gpu && errorMessage != nullptr)
+        {
+            *errorMessage = errorReasons.toString();
+        }
+        return false;
+    }
+}
+
 bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
                                                const TaskTarget        pmeTarget,
                                                const TaskTarget        pmeFftTarget,
@@ -166,18 +208,9 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
                                                const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
-    if ((pmeTarget == TaskTarget::Cpu) || !useGpuForNonbonded || !pme_gpu_supports_build(nullptr)
-        || !pme_gpu_supports_hardware(hardwareInfo, nullptr) || !pme_gpu_supports_input(inputrec, nullptr))
+    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, hardwareInfo, inputrec, nullptr))
     {
         // PME can't run on a GPU. If the user required that, we issue an error later.
-        return false;
-    }
-
-    if (pmeFftTarget == TaskTarget::Cpu && !pme_gpu_mixed_mode_supports_input(inputrec, nullptr))
-    {
-        /* User requested PME FFT on CPU, but the current system is not compatible with Mixed mode,
-         * so we don't use GPUs at all.
-         * If the user had -pme gpu, we issue an error later. */
         return false;
     }
 
@@ -346,53 +379,12 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const int               numPmeRanksPerSimulation,
                                   const bool              gpusWereDetected)
 {
-    if (pmeTarget == TaskTarget::Cpu)
-    {
-        return false;
-    }
-
-    if (!useGpuForNonbonded)
-    {
-        if (pmeTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(NotImplementedError(
-                    "PME on GPUs is only supported when nonbonded interactions run on GPUs also."));
-        }
-        return false;
-    }
-
     std::string message;
-    if (!pme_gpu_supports_build(&message))
+    if (!canUseGpusForPme(useGpuForNonbonded, pmeTarget, pmeFftTarget, hardwareInfo, inputrec, &message))
     {
-        if (pmeTarget == TaskTarget::Gpu)
+        if (!message.empty())
         {
-            GMX_THROW(NotImplementedError("Cannot compute PME interactions on a GPU, because " + message));
-        }
-        return false;
-    }
-    if (!pme_gpu_supports_hardware(hardwareInfo, &message))
-    {
-        if (pmeTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(NotImplementedError("Cannot compute PME interactions on a GPU, because " + message));
-        }
-        return false;
-    }
-    if (!pme_gpu_supports_input(inputrec, &message))
-    {
-        if (pmeTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(NotImplementedError("Cannot compute PME interactions on a GPU, because " + message));
-        }
-        return false;
-    }
-    if (pmeFftTarget == TaskTarget::Cpu && !pme_gpu_mixed_mode_supports_input(inputrec, &message))
-    {
-        /* User requested PME FFT on CPU, but the current system is not compatible with Mixed mode,
-         * so we don't use GPUs at all. */
-        if (pmeTarget == TaskTarget::Gpu)
-        {
-            GMX_THROW(NotImplementedError("Cannot compute PME interactions in Mixed mode, because " + message));
+            GMX_THROW(InconsistentInputError(message));
         }
         return false;
     }
