@@ -14,6 +14,15 @@ previous 2020.6 version, to fix known issues.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed bug with GPU LINCS occasionally shifting atoms in wrong direction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Due to missing blocking synchronizations in the CUDA version of LINCS,
+the shared memory was occasionally overwritten with the new data. This
+may slightly affect the final coordinates of the shifted atoms.
+
+:issue:`4199`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

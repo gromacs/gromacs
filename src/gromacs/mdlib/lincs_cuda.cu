@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,6 +220,9 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
      *  Inverse matrix using a set of expansionOrder matrix multiplications
      */
 
+    // Make sure that we don't overwrite the sm_r[..] array.
+    __syncthreads();
+
     // This will use the same memory space as sm_r, which is no longer needed.
     extern __shared__ float sm_rhs[];
     // Save current right-hand-side vector in the shared memory
@@ -353,7 +356,8 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         // 6 values are saved. Dummy threads will have zeroes in their virial: targetLength,
         // lagrangeScaled and rc are all set to zero for them in the beginning of the kernel.
         // The sm_threadVirial[..] will overlap with the sm_r[..] and sm_rhs[..], but the latter
-        // two are no longer in use.
+        // two are no longer in use, which we make sure by waiting for all threads in block.
+        __syncthreads();
         extern __shared__ float sm_threadVirial[];
         float                   mult                  = targetLength * lagrangeScaled;
         sm_threadVirial[0 * blockDim.x + threadIdx.x] = mult * rc.x * rc.x;
