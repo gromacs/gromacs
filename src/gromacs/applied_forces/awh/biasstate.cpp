@@ -124,7 +124,7 @@ void sumPmf(gmx::ArrayRef<PointState> pointState, int numSharedUpdate, const Bia
         buffer[i] = pointState[i].inTargetRegion() ? std::exp(pointState[i].logPmfSum()) : 0;
     }
 
-    biasSharing->sum(gmx::ArrayRef<double>(buffer), biasIndex);
+    biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(buffer), biasIndex);
 
     /* Take log again to get (non-normalized) PMF */
     double normFac = 1.0 / numSharedUpdate;
@@ -671,7 +671,7 @@ void mergeSharedUpdateLists(std::vector<int>*  updateList,
     }
 
     /* Sum over the sims to get all the flagged points */
-    biasSharing.sum(arrayRefFromArray(numUpdatesOfPoint.data(), numPoints), biasIndex);
+    biasSharing.sumOverSharingSimulations(arrayRefFromArray(numUpdatesOfPoint.data(), numPoints), biasIndex);
 
     /* Collect the indices of the flagged points in place. The resulting array will be the merged update list.*/
     updateList->clear();
@@ -790,8 +790,8 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
             coordVisits[localIndex] = ps.numVisitsIteration();
         }
 
-        biasSharing->sum(gmx::ArrayRef<double>(weightSum), biasIndex);
-        biasSharing->sum(gmx::ArrayRef<double>(coordVisits), biasIndex);
+        biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(weightSum), biasIndex);
+        biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(coordVisits), biasIndex);
 
         /* Transfer back the result */
         for (size_t localIndex = 0; localIndex < localUpdateList.size(); localIndex++)
@@ -1025,8 +1025,9 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&         params,
         /* For multiple dimensions this may not be the best way to do it. */
         for (int d = 0; d < grid.numDimensions(); d++)
         {
-            biasSharing_->sum(gmx::arrayRefFromArray(checkDim[d].covered.data(), grid.axis(d).numPoints()),
-                              params.biasIndex);
+            biasSharing_->sumOverSharingSimulations(
+                    gmx::arrayRefFromArray(checkDim[d].covered.data(), grid.axis(d).numPoints()),
+                    params.biasIndex);
         }
     }
 

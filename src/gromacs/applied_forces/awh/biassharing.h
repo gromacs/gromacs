@@ -85,17 +85,25 @@ public:
     //! Returns the index of our simulation in the simulations sharing bias \p biasIndex
     int sharingSimulationIndex(int biasIndex) const { return sharingSimulationIndices_[biasIndex]; }
 
-    //! Sums data over the master ranks of all simulations sharing bias \p biasIndex
-    void sumOverMasterRanks(ArrayRef<int> data, int biasIndex) const;
+    //! Sums data of type int over the master ranks of all simulations sharing bias \p biasIndex
+    void sumOverSharingMasterRanks(ArrayRef<int> data, int biasIndex) const;
 
-    //! Sums data over the master ranks of all simulations sharing bias \p biasIndex
-    void sumOverMasterRanks(ArrayRef<long> data, int biasIndex) const;
+    //! Sums data of type long over the master ranks of all simulations sharing bias \p biasIndex
+    void sumOverSharingMasterRanks(ArrayRef<long> data, int biasIndex) const;
 
-    //! Sums data over all simulations sharing bias \p biasIndex and broadcasts to all ranks within the simulation
-    void sum(ArrayRef<int> data, int biasIndex) const;
+    /*! \brief Sums data of type int over all simulations sharing bias \p biasIndex
+     *
+     * The summing is performed over the master ranks of the simulations sharing bias \p biasIndex
+     * and the result is broadcasted to the other ranks within each simulation.
+     */
+    void sumOverSharingSimulations(ArrayRef<int> data, int biasIndex) const;
 
-    //! Sums data over all simulations sharing bias \p biasIndex and broadcasts to all ranks within the simulation
-    void sum(ArrayRef<double> data, int biasIndex) const;
+    /*! \brief Sums data of type long over all simulations sharing bias \p biasIndex
+     *
+     * The summing is performed over the master ranks of the simulations sharing bias \p biasIndex
+     * and the result is broadcasted to the other ranks within each simulation.
+     */
+    void sumOverSharingSimulations(ArrayRef<double> data, int biasIndex) const;
 
 private:
     //! The number of simulations sharing for each bias

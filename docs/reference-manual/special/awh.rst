@@ -498,6 +498,17 @@ equal to the length of the sampling interval, the sampling interval is
 considered covered when at least one walker has independently traversed
 the sampling interval.
 
+In practice biases are shared by setting :mdp:`awh-share-multisim` to true
+and :mdp:`awh1-share-group` (for bias 1) to a non-zero value. Here, bias 1
+will be shared between simulations that have the same share group value.
+Sharing can be different for bias 1, 2, etc. (although there are
+few use cases where this is useful). Technically there are no restrictions
+on sharing, apart from that biases that are shared need to have the same
+number of grid points and the update intervals should match.
+Note that biases can not be shared within a simulation.
+The latter could be useful, especially for multimeric proteins, but this
+is more difficult to implement.
+
 .. _awhreweight:
 
 Reweighting and combining biased data
