@@ -691,7 +691,6 @@ void gmx::LegacySimulator::do_mimic()
                                              mdatoms->tmass,
                                              enerd,
                                              ir->fepvals.get(),
-                                             ir->expandedvals.get(),
                                              state->box,
                                              PTCouplingArrays({ state->boxv,
                                                                 state->nosehoover_xi,

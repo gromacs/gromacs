@@ -65,7 +65,6 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_t;
 struct t_ebin;
-struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_inputrec;
@@ -168,7 +167,6 @@ public:
      * \param[in] tmass             Total mass
      * \param[in] enerd             Energy data object.
      * \param[in] fep               FEP data.
-     * \param[in] expand            Expanded ensemble (for FEP).
      * \param[in] lastbox           PBC data.
      * \param[in] ptCouplingArrays  Arrays connected to pressure and temperature coupling.
      * \param[in] fep_state         The current alchemical state we are in.
@@ -184,7 +182,6 @@ public:
                              real                    tmass,
                              const gmx_enerdata_t*   enerd,
                              const t_lambda*         fep,
-                             const t_expanded*       expand,
                              const matrix            lastbox,
                              PTCouplingArrays        ptCouplingArrays,
                              int                     fep_state,
@@ -402,6 +399,8 @@ private:
 
     //! The dhdl.xvg output file
     FILE* fp_dhdl_ = nullptr;
+    //! Whether the free-energy lambda moves dynamically between lambda states
+    bool haveFepLambdaMoves_;
     //! Energy components for dhdl.xvg output
     std::vector<double> dE_;
     //! The delta U components (raw data + histogram)

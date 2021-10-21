@@ -100,6 +100,9 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const gmx_mtop_t&    mtop,
                                 warninp_t            wi);
 
+//! Returns true when AWH has a bias with a free energy lambda state dimension
+bool awhHasFepLambdaDimension(const AwhParams& awhParams);
+
 } // namespace gmx
 
 #endif /* GMX_AWH_READPARAMS_H */

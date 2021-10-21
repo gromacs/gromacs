@@ -1357,4 +1357,20 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, warninp_t 
     }
 }
 
+bool awhHasFepLambdaDimension(const AwhParams& awhParams)
+{
+    for (const auto& biasParams : awhParams.awhBiasParams())
+    {
+        for (const auto& dimParams : biasParams.dimParams())
+        {
+            if (dimParams.coordinateProvider() == AwhCoordinateProviderType::FreeEnergyLambda)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 } // namespace gmx

@@ -615,7 +615,6 @@ TEST_P(EnergyOutputTest, CheckOutput)
                                           tmass_,
                                           enerdata_.get(),
                                           nullptr,
-                                          nullptr,
                                           box_,
                                           PTCouplingArrays({ state_.boxv,
                                                              state_.nosehoover_xi,

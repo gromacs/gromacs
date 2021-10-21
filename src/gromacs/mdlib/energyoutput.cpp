@@ -56,6 +56,7 @@
 #include <string>
 
 #include "gromacs/applied_forces/awh/awh.h"
+#include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -123,6 +124,13 @@ const char* enumValueToString(NonBondedEnergyTerms enumValue)
 
 //! \}
 
+static bool haveFepLambdaMoves(const t_inputrec& inputrec)
+{
+    return (inputrec.bExpanded && inputrec.expandedvals->elmcmove > LambdaMoveCalculation::No)
+           || (inputrec.efep != FreeEnergyPerturbationType::No && inputrec.bDoAwh
+               && awhHasFepLambdaDimension(*inputrec.awhParams));
+}
+
 namespace gmx
 {
 
@@ -142,7 +150,8 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
                            bool                      isRerun,
                            const StartingBehavior    startingBehavior,
                            const bool                simulationsShareState,
-                           const MDModulesNotifiers& mdModulesNotifiers)
+                           const MDModulesNotifiers& mdModulesNotifiers) :
+    haveFepLambdaMoves_(haveFepLambdaMoves(inputrec))
 {
     const char*        ener_nm[F_NRE];
     static const char* vir_nm[]   = { "Vir-XX", "Vir-XY", "Vir-XZ", "Vir-YX", "Vir-YY",
@@ -635,11 +644,10 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     FILE*       fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
                *lambdastate = "\\lambda state";
-    int         i, nsets, nsets_de, nsetsbegin;
-    int         n_lambda_terms = 0;
-    t_lambda*   fep            = ir->fepvals.get(); /* for simplicity */
-    t_expanded* expand         = ir->expandedvals.get();
-    char        lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
+    int       i, nsets, nsets_de, nsetsbegin;
+    int       n_lambda_terms = 0;
+    t_lambda* fep            = ir->fepvals.get(); /* for simplicity */
+    char      lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
 
     int  nsets_dhdl = 0;
     int  s          = 0;
@@ -678,7 +686,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
         buf = gmx::formatString("T = %g (K) ", ir->opts.ref_t[0]);
     }
     if ((ir->efep != FreeEnergyPerturbationType::SlowGrowth)
-        && (ir->efep != FreeEnergyPerturbationType::Expanded))
+        && (ir->efep != FreeEnergyPerturbationType::Expanded)
+        && !(ir->bDoAwh && awhHasFepLambdaDimension(*ir->awhParams)))
     {
         if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
         {
@@ -706,7 +715,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
 
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->n_lambda > 0 && (expand->elmcmove > LambdaMoveCalculation::No))
+    if (haveFepLambdaMoves(*ir))
     {
         nsets += 1; /*add fep state for expanded ensemble */
     }
@@ -728,7 +737,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     }
     std::vector<std::string> setname(nsetsextend);
 
-    if (expand->elmcmove > LambdaMoveCalculation::No)
+    if (haveFepLambdaMoves(*ir))
     {
         /* state for the fep_vals, if we have alchemical sampling */
         setname[s++] = "Thermodynamic state";
@@ -781,7 +790,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
          * from this xvg legend.
          */
 
-        if (expand->elmcmove > LambdaMoveCalculation::No)
+        if (haveFepLambdaMoves(*ir))
         {
             nsetsbegin = 1; /* for including the expanded ensemble */
         }
@@ -838,7 +847,6 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        real                    tmass,
                                        const gmx_enerdata_t*   enerd,
                                        const t_lambda*         fep,
-                                       const t_expanded*       expand,
                                        const matrix            box,
                                        PTCouplingArrays        ptCouplingArrays,
                                        int                     fep_state,
@@ -1048,7 +1056,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             /* the current free energy state */
 
             /* print the current state if we are doing expanded ensemble */
-            if (expand->elmcmove > LambdaMoveCalculation::No)
+            if (haveFepLambdaMoves_)
             {
                 fprintf(fp_dhdl_, " %4d", fep_state);
             }
