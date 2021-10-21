@@ -864,12 +864,12 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         if constexpr (vdwInteractionTypeIsEwald)
                         {
                             computeVdwInteraction =
-                                    (r < rVdw && (c6[i] != 0 || c12[i] != 0) && bPairIncluded);
+                                    (r < rVdw && (c6[i] != zero || c12[i] != zero) && bPairIncluded);
                         }
                         else
                         {
                             computeVdwInteraction =
-                                    (rV < rVdw && (c6[i] != 0 || c12[i] != 0) && bPairIncluded);
+                                    (rV < rVdw && (c6[i] != zero || c12[i] != zero) && bPairIncluded);
                         }
                         if (gmx::anyTrue(computeVdwInteraction))
                         {
