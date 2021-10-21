@@ -86,8 +86,11 @@ static inline void reactionFieldQuadraticPotential(const RealType qq,
                                                    RealType*            dvdl,
                                                    BoolType             mask)
 {
+    RealType one(1);
+    RealType zero(0);
+
     /* check if we have to use the hardcore values */
-    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff && facel != 0);
+    BoolType computeValues = mask && (lambdaFac < one && zero < alphaEff && facel != zero);
     if (gmx::anyTrue(computeValues))
     {
         RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);
@@ -146,8 +149,11 @@ static inline void ewaldQuadraticPotential(const RealType qq,
                                            RealType*            dvdl,
                                            BoolType             mask)
 {
+    RealType one(1);
+    RealType zero(0);
+
     /* check if we have to use the hardcore values */
-    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff && facel != 0);
+    BoolType computeValues = mask && (lambdaFac < one && zero < alphaEff && facel != zero);
     if (gmx::anyTrue(computeValues))
     {
         RealType lambdaFacRev = gmx::selectByMask(1 - lambdaFac, computeValues);
@@ -212,8 +218,11 @@ static inline void lennardJonesQuadraticPotential(const RealType c6,
     constexpr real c_oneTwelth        = 1.0_real / 12.0_real;
     constexpr real c_half             = 1.0_real / 2.0_real;
 
+    RealType one(1);
+    RealType zero(0);
+
     /* check if we have to use the hardcore values */
-    BoolType computeValues = mask && (lambdaFac < 1 && 0 < alphaEff);
+    BoolType computeValues = mask && (lambdaFac < one && zero < alphaEff);
     if (gmx::anyTrue(computeValues))
     {
         RealType lambdaFacRev    = gmx::selectByMask(1 - lambdaFac, computeValues);
