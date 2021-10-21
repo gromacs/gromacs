@@ -479,10 +479,10 @@ static void nb_free_energy_kernel(const t_nblist&                               
         int            preloadIi[DataTypes::simdRealWidth];
         int gmx_unused preloadIs[DataTypes::simdRealWidth];
 #endif
-        for (int s = 0; s < DataTypes::simdRealWidth; s++)
+        for (int i = 0; i < DataTypes::simdRealWidth; i++)
         {
-            preloadIi[s] = ii;
-            preloadIs[s] = shift[n];
+            preloadIi[i] = ii;
+            preloadIs[i] = shift[n];
         }
         IntType ii_s = gmx::load<IntType>(preloadIi);
 
@@ -520,115 +520,115 @@ static void nb_free_energy_kernel(const t_nblist&                               
             real gmx_unused preloadGapsysSigma6VdW[NSTATES][DataTypes::simdRealWidth];
             real            preloadLjPmeC6Grid[NSTATES][DataTypes::simdRealWidth];
 #endif
-            for (int s = 0; s < DataTypes::simdRealWidth; s++)
+            for (int j = 0; j < DataTypes::simdRealWidth; j++)
             {
-                if (k + s < nj1)
+                if (k + j < nj1)
                 {
-                    preloadPairIsValid[s] = true;
+                    preloadPairIsValid[j] = true;
                     /* Check if this pair on the exclusions list.*/
-                    preloadPairIncluded[s]  = (nlist.excl_fep.empty() || nlist.excl_fep[k + s]);
-                    const int jnr           = jjnr[k + s];
-                    preloadJnr[s]           = jnr;
-                    typeIndices[STATE_A][s] = ntiA + typeA[jnr];
-                    typeIndices[STATE_B][s] = ntiB + typeB[jnr];
-                    preloadQq[STATE_A][s]   = iqA * chargeA[jnr];
-                    preloadQq[STATE_B][s]   = iqB * chargeB[jnr];
+                    preloadPairIncluded[j]  = (nlist.excl_fep.empty() || nlist.excl_fep[k + j]);
+                    const int jnr           = jjnr[k + j];
+                    preloadJnr[j]           = jnr;
+                    typeIndices[STATE_A][j] = ntiA + typeA[jnr];
+                    typeIndices[STATE_B][j] = ntiB + typeB[jnr];
+                    preloadQq[STATE_A][j]   = iqA * chargeA[jnr];
+                    preloadQq[STATE_B][j]   = iqB * chargeB[jnr];
 
                     for (int i = 0; i < NSTATES; i++)
                     {
                         if constexpr (vdwInteractionTypeIsEwald)
                         {
-                            preloadLjPmeC6Grid[i][s] = nbfp_grid[2 * typeIndices[i][s]];
+                            preloadLjPmeC6Grid[i][j] = nbfp_grid[2 * typeIndices[i][j]];
                         }
                         else
                         {
-                            preloadLjPmeC6Grid[i][s] = 0;
+                            preloadLjPmeC6Grid[i][j] = 0;
                         }
                         if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                         {
-                            const real c6  = nbfp[2 * typeIndices[i][s]];
-                            const real c12 = nbfp[2 * typeIndices[i][s] + 1];
+                            const real c6  = nbfp[2 * typeIndices[i][j]];
+                            const real c12 = nbfp[2 * typeIndices[i][j] + 1];
                             if (c6 > 0 && c12 > 0)
                             {
                                 /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                                preloadSigma6[i][s] = 0.5_real * c12 / c6;
-                                if (preloadSigma6[i][s]
+                                preloadSigma6[i][j] = 0.5_real * c12 / c6;
+                                if (preloadSigma6[i][j]
                                     < sigma6_min) /* for disappearing coul and vdw with soft core at the same time */
                                 {
-                                    preloadSigma6[i][s] = sigma6_min;
+                                    preloadSigma6[i][j] = sigma6_min;
                                 }
                             }
                             else
                             {
-                                preloadSigma6[i][s] = sigma6_def;
+                                preloadSigma6[i][j] = sigma6_def;
                             }
                         }
                         if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                         {
-                            const real c6  = nbfp[2 * typeIndices[i][s]];
-                            const real c12 = nbfp[2 * typeIndices[i][s] + 1];
+                            const real c6  = nbfp[2 * typeIndices[i][j]];
+                            const real c12 = nbfp[2 * typeIndices[i][j] + 1];
                             if (c6 > 0 && c12 > 0)
                             {
                                 /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
-                                preloadGapsysSigma6VdW[i][s] = 0.5_real * c12 / c6;
+                                preloadGapsysSigma6VdW[i][j] = 0.5_real * c12 / c6;
                             }
                             else
                             {
-                                preloadGapsysSigma6VdW[i][s] = gapsysSigma6VdW;
+                                preloadGapsysSigma6VdW[i][j] = gapsysSigma6VdW;
                             }
                         }
                     }
                     if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                     {
                         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-                        const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
-                        const real c12B = nbfp[2 * typeIndices[STATE_B][s] + 1];
+                        const real c12A = nbfp[2 * typeIndices[STATE_A][j] + 1];
+                        const real c12B = nbfp[2 * typeIndices[STATE_B][j] + 1];
                         if (c12A > 0 && c12B > 0)
                         {
-                            preloadAlphaVdwEff[s]  = 0;
-                            preloadAlphaCoulEff[s] = 0;
+                            preloadAlphaVdwEff[j]  = 0;
+                            preloadAlphaCoulEff[j] = 0;
                         }
                         else
                         {
-                            preloadAlphaVdwEff[s]  = alpha_vdw;
-                            preloadAlphaCoulEff[s] = alpha_coul;
+                            preloadAlphaVdwEff[j]  = alpha_vdw;
+                            preloadAlphaCoulEff[j] = alpha_coul;
                         }
                     }
                     if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                     {
                         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-                        const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
-                        const real c12B = nbfp[2 * typeIndices[STATE_B][s] + 1];
+                        const real c12A = nbfp[2 * typeIndices[STATE_A][j] + 1];
+                        const real c12B = nbfp[2 * typeIndices[STATE_B][j] + 1];
                         if (c12A > 0 && c12B > 0)
                         {
-                            preloadGapsysScaleLinpointVdW[s]  = 0;
-                            preloadGapsysScaleLinpointCoul[s] = 0;
+                            preloadGapsysScaleLinpointVdW[j]  = 0;
+                            preloadGapsysScaleLinpointCoul[j] = 0;
                         }
                         else
                         {
-                            preloadGapsysScaleLinpointVdW[s]  = gapsysScaleLinpointVdW;
-                            preloadGapsysScaleLinpointCoul[s] = gapsysScaleLinpointCoul;
+                            preloadGapsysScaleLinpointVdW[j]  = gapsysScaleLinpointVdW;
+                            preloadGapsysScaleLinpointCoul[j] = gapsysScaleLinpointCoul;
                         }
                     }
                 }
                 else
                 {
-                    preloadJnr[s]                     = jjnr[k];
-                    preloadPairIsValid[s]             = false;
-                    preloadPairIncluded[s]            = false;
-                    preloadAlphaVdwEff[s]             = 0;
-                    preloadAlphaCoulEff[s]            = 0;
-                    preloadGapsysScaleLinpointVdW[s]  = 0;
-                    preloadGapsysScaleLinpointCoul[s] = 0;
+                    preloadJnr[j]                     = jjnr[k];
+                    preloadPairIsValid[j]             = false;
+                    preloadPairIncluded[j]            = false;
+                    preloadAlphaVdwEff[j]             = 0;
+                    preloadAlphaCoulEff[j]            = 0;
+                    preloadGapsysScaleLinpointVdW[j]  = 0;
+                    preloadGapsysScaleLinpointCoul[j] = 0;
 
                     for (int i = 0; i < NSTATES; i++)
                     {
-                        typeIndices[STATE_A][s]      = ntiA + typeA[jjnr[k]];
-                        typeIndices[STATE_B][s]      = ntiB + typeB[jjnr[k]];
-                        preloadLjPmeC6Grid[i][s]     = 0;
-                        preloadQq[i][s]              = 0;
-                        preloadSigma6[i][s]          = 0;
-                        preloadGapsysSigma6VdW[i][s] = 0;
+                        typeIndices[STATE_A][j]      = ntiA + typeA[jjnr[k]];
+                        typeIndices[STATE_B][j]      = ntiB + typeB[jjnr[k]];
+                        preloadLjPmeC6Grid[i][j]     = 0;
+                        preloadQq[i][j]              = 0;
+                        preloadSigma6[i][j]          = 0;
+                        preloadGapsysSigma6VdW[i][j] = 0;
                     }
                 }
             }
