@@ -75,7 +75,7 @@ public:
             const NBKernelOptions& options);
 
     //! calculates a new pair list based on new coordinates (for every NS step)
-    void updatePairlist(gmx::ArrayRef<const gmx::RVec> coordinates, const Box& box);
+    void updatePairlist(gmx::ArrayRef<gmx::RVec> coordinates, const Box& box);
 
     //! Compute forces and return
     void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
@@ -120,8 +120,7 @@ GmxNBForceCalculatorCpu::CpuImpl::CpuImpl(gmx::ArrayRef<int>     particleTypeIdO
                                    system_.nonBondedParams_);
 }
 
-void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<const gmx::RVec> coordinates,
-                                                      const Box&                     box)
+void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> coordinates, const Box& box)
 {
     if (coordinates.size() != system_.numParticles_)
     {
@@ -142,6 +141,9 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<const gmx::R
     const rvec upperCorner = { legacyBox[dimX][dimX], legacyBox[dimY][dimY], legacyBox[dimZ][dimZ] };
 
     const real particleDensity = static_cast<real>(coordinates.size()) / det(legacyBox);
+
+    // If particles are too far outside the box, the grid setup can fail
+    put_atoms_in_box_omp(PbcType::Xyz, box.legacyMatrix(), coordinates, backend_.numThreads_);
 
     // Put particles on a grid based on bounds specified by the box
     nbnxn_put_on_grid(backend_.nbv_.get(),
@@ -288,7 +290,7 @@ GmxNBForceCalculatorCpu::GmxNBForceCalculatorCpu(gmx::ArrayRef<int>  particleTyp
 GmxNBForceCalculatorCpu::~GmxNBForceCalculatorCpu() = default;
 
 //! calculates a new pair list based on new coordinates (for every NS step)
-void GmxNBForceCalculatorCpu::updatePairlist(gmx::ArrayRef<const gmx::RVec> coordinates, const Box& box)
+void GmxNBForceCalculatorCpu::updatePairlist(gmx::ArrayRef<gmx::RVec> coordinates, const Box& box)
 {
     impl_->updatePairlist(coordinates, box);
 }

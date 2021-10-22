@@ -77,7 +77,8 @@ public:
     GmxBackendData(const NBKernelOptions& options,
                    int                    numEnergyGroups,
                    gmx::ArrayRef<int>     exclusionRanges,
-                   gmx::ArrayRef<int>     exclusionElements)
+                   gmx::ArrayRef<int>     exclusionElements) :
+        numThreads_(options.numOpenMPThreads)
     {
         // Set hardware params from the execution context
         setGmxNonBondedNThreads(options.numOpenMPThreads);
@@ -119,6 +120,9 @@ public:
 
     //! Non-bonded flop counter; currently only needed as an argument for dispatchNonbondedKernel
     t_nrnb nrnb_;
+
+    //! Number of OpenMP threads to use
+    int numThreads_;
 
     //! Keep track of whether updatePairlist has been called at least once
     bool updatePairlistCalled{ false };

@@ -79,7 +79,7 @@ public:
     ~GmxNBForceCalculatorCpu();
 
     //! calculates a new pair list based on new coordinates (for every NS step)
-    void updatePairlist(gmx::ArrayRef<const gmx::RVec> coordinates, const Box& box);
+    void updatePairlist(gmx::ArrayRef<gmx::RVec> coordinates, const Box& box);
 
     //! Compute forces and return
     void compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,

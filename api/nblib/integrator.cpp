@@ -60,6 +60,11 @@ LeapFrog::LeapFrog(const Topology& topology, const Box& box) : box_(box)
     }
 }
 
+LeapFrog::LeapFrog(gmx::ArrayRef<const real> inverseMasses, const Box& box) :
+    inverseMasses_(inverseMasses.begin(), inverseMasses.end()), box_(box)
+{
+}
+
 void LeapFrog::integrate(const real dt, gmx::ArrayRef<Vec3> x, gmx::ArrayRef<Vec3> v, gmx::ArrayRef<const Vec3> f)
 {
     for (size_t i = 0; i < x.size(); i++)
@@ -70,7 +75,6 @@ void LeapFrog::integrate(const real dt, gmx::ArrayRef<Vec3> x, gmx::ArrayRef<Vec
             x[i][dim] += v[i][dim] * dt;
         }
     }
-    put_atoms_in_box(PbcType::Xyz, box_.legacyMatrix(), x);
 }
 
 } // namespace nblib

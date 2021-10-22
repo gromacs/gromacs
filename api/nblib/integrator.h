@@ -74,6 +74,13 @@ public:
      */
     LeapFrog(const Topology& topology, const Box& box);
 
+    /*! \brief Constructor.
+     *
+     * \param[in] masses  List of inverse masses.
+     * \param[in] box     Box object for ensuring that coordinates remain within bounds
+     */
+    LeapFrog(gmx::ArrayRef<const real> inverseMasses, const Box& box);
+
     /*! \brief Integrate
      *
      * Integrates the equation of motion using Leap-Frog algorithm.
