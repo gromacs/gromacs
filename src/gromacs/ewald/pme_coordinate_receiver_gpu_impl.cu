@@ -63,7 +63,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
 {
     // Create streams to manage pipelining
     ppCommManagers_.reserve(ppRanks.size());
-    for (auto& ppRank : ppRanks)
+    for (const auto& ppRank : ppRanks)
     {
         ppCommManagers_.emplace_back(PpCommManager{
                 ppRank,
@@ -110,9 +110,8 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDir
 
 #if GMX_MPI
     // Receive event from PP task
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     MPI_Irecv(&ppCommManagers_[ppRank].sync,
-              sizeof(GpuEventSynchronizer*),
+              sizeof(GpuEventSynchronizer*), // NOLINT(bugprone-sizeof-expression)
               MPI_BYTE,
               ppRank,
               0,

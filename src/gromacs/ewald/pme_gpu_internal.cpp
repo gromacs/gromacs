@@ -594,7 +594,7 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
      */
 
 #if GMX_GPU_CUDA
-    pmeGpu->kernelParams->usePipeline       = false;
+    pmeGpu->kernelParams->usePipeline       = char(false);
     pmeGpu->kernelParams->pipelineAtomStart = 0;
     pmeGpu->kernelParams->pipelineAtomEnd   = 0;
     pmeGpu->maxGridWidthX                   = deviceContext.deviceInfo().prop.maxGridSize[0];
@@ -1387,10 +1387,10 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
     pme_gpu_start_timing(pmeGpu, timingId);
     auto* timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
 
-    kernelParamsPtr->usePipeline = computeSplines && spreadCharges && useGpuDirectComm
-                                   && (pmeCoordinateReceiverGpu->ppCommNumSenderRanks() > 1)
-                                   && !writeGlobalOrSaveSplines;
-    if (kernelParamsPtr->usePipeline)
+    kernelParamsPtr->usePipeline = char(computeSplines && spreadCharges && useGpuDirectComm
+                                        && (pmeCoordinateReceiverGpu->ppCommNumSenderRanks() > 1)
+                                        && !writeGlobalOrSaveSplines);
+    if (kernelParamsPtr->usePipeline != 0)
     {
         int numStagesInPipeline = pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
 
