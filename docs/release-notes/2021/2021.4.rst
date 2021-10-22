@@ -49,6 +49,13 @@ Mixed mode is only used when explicitly requested by the user.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix ``gmx convert-tpr -s -o``
+"""""""""""""""""""""""""""""
+
+Formerly, this combination could be used when supplying an index file.
+Now this combination can also be used with default index groups when
+not supplying an index file.
+
 grompp now prints a note again when combining center of mass motion removal and position restraints
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
