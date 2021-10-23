@@ -173,7 +173,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
     // the force accumulation stage before syncing with the local stream. Only done in CUDA and
     // SYCL, since the force buffer ops are not implemented in OpenCL.
-    if ((GMX_GPU_CUDA || GMX_GPU_SYCL) && d_fCapacity_ != d_fOldCapacity)
+    if ((bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL)) && d_fCapacity_ != d_fOldCapacity)
     {
         clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, *localStream_);
     }
@@ -334,7 +334,7 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     //   - it's not needed, copy is done in the same stream as the only consumer task (PME)
     //   - we don't consume the events in OpenCL which is not allowed by GpuEventSynchronizer (would leak memory).
     // TODO: remove this by adding an event-mark free flavor of this function
-    if (GMX_GPU_CUDA || GMX_GPU_SYCL)
+    if (bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL))
     {
         xReadyOnDevice_[atomLocality].markEvent(*deviceStream);
     }
