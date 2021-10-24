@@ -391,12 +391,9 @@ struct MsdGroupData
 
 /*! \brief Implements the gmx msd module
  *
- * \todo Implement -(no)mw. Right now, all calculations are mass-weighted with -mol, and not otherwise
  * \todo Implement -tensor for full MSD tensor calculation
  * \todo Implement -rmcomm for total-frame COM removal
  * \todo Implement -pdb for molecule B factors
- * \todo Implement -maxtau option proposed at https://gitlab.com/gromacs/gromacs/-/issues/3870
- * \todo Update help text as options are added and clarifications decided on at https://gitlab.com/gromacs/gromacs/-/issues/3869
  */
 class Msd : public TrajectoryAnalysisModule
 {

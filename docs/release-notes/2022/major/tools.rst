@@ -11,17 +11,25 @@ Improvements to |Gromacs| tools
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The tool now uses the |Gromacs| selection syntax. Rather than piping selections via stdin,
-selections are now made using the "-sel" option.
+selections are now made using the "-sel" option. There is a new option called ``-maxtau``,
+which limits maximum time delta between frames to compare for calculating MSDs. This will allow
+users who otherwise would run into out-of-memory errors and slow execution with large systems
+to restrict sampling to useful tau values.
 
 This migration comes with about a 20% speedup in execution time.
 
-TODO: Modify/Delete this segment as features are added back in.
 Some rarely used features have yet to be migrated, including:
 
-- Mass weighting of MSDs cannot currently be turned on or off. It is set to on when -mol is set, otherwise off.
 - The -tensor option is not yet implemented.
 - System COM removal with -rmcomm has not yet been implemented.
 - B-factor writing using the -pdb option is not yet supported.
+
+A slight behavior change is the removal of the -mw option. ``gmx msd`` with ``-mol`` will
+take the MSD of the center-of-mass of of molecules, while no mass-weighting is done
+when ``-mol`` is not selected. In previous |Gromacs| versions, ``-mw`` was on by default,
+and ``-nomw`` was silently ignored when ``-mol`` was chosen. This change will only cause
+different results when performing MSD calculations on a non-homogenous group of particles without
+``-mol`` set.
 
 :issue:`2368`
 
