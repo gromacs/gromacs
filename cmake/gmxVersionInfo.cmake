@@ -36,11 +36,14 @@
 # Sets version information variables and provides CMake functions for
 # generating files based on them
 #
-# This script provides the following basic version variables that need to be
-# maintained manually:
+# The following variables are derived from variables initialized by
+# https://cmake.org/cmake/help/latest/command/project.html#command:project
 #   GMX_VERSION_MAJOR      Major version number.
 #   GMX_VERSION_PATCH      Patch version number.
 #       Should always be defined: zero for, e.g., 2016.
+#
+# This script provides the following basic version variables that need to be
+# maintained manually:
 #   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
 #       "-dev" is automatically added when not building from a source package,
 #       and does not need to be kept here. This mechanism is not quite enough
@@ -194,13 +197,15 @@
 # are used internally by this machinery, as well as VersionInfo.cmake.cmakein.
 
 #####################################################################
+# Derived version info.
+# Ref https://cmake.org/cmake/help/latest/command/project.html#command:project
+set(GMX_VERSION_MAJOR ${Gromacs_VERSION_MAJOR})
+set(GMX_VERSION_PATCH ${Gromacs_VERSION_MINOR})
+
+#####################################################################
 # Manually maintained version info
 
-# The GROMACS convention is that these are the version number of the next
-# release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2022)
-set(GMX_VERSION_PATCH 0)
-# The suffix, on the other hand, is used mainly for betas and release
+# The suffix is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.

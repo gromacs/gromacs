@@ -37,6 +37,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 cmake_policy(SET CMP0074 NEW) # From CMake 3.12
 cmake_policy(SET CMP0068 NEW) # From CMake-3.9
+cmake_policy(SET CMP0048 NEW) # As of CMake 3.22, default is still "OLD"
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -53,7 +54,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         FORCE)
 endif()
 
-project(Gromacs)
+# The GROMACS convention is that these are the version number of the next
+# release that is going to be made from this branch.
+project(Gromacs VERSION 2022.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
