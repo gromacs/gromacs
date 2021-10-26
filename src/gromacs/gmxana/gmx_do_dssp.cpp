@@ -481,7 +481,7 @@ int gmx_do_dssp(int argc, char* argv[])
         "reads a trajectory file and computes the secondary structure for",
         "each time frame ",
         "calling the dssp program. If you do not have the dssp program,",
-        "get it from http://swift.cmbi.ru.nl/gv/dssp. [THISMODULE] assumes ",
+        "get it from https://swift.cmbi.umcn.nl/gv/dssp. [THISMODULE] assumes ",
         "that the dssp executable is located in ",
         // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
         "[TT]" GMX_DSSP_PROGRAM_PATH "[tt]. If this is not the case, then you should",
