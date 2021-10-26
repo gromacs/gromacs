@@ -119,7 +119,7 @@ if (DOXYGEN_FOUND)
     else()
         # If there is no git, we just update the stamp every time, and the
         # builds are triggered every time.  This should be rare enough, but
-        # this case still needs to be supported for the Jenkins job that builds
+        # this case still needs to be supported for the CI job that builds
         # the documentation for a release from the release tarball.
         gmx_add_custom_output_target(doxygen-source-timestamp
             RUN_ALWAYS OUTPUT STAMP
@@ -207,7 +207,7 @@ if (DOXYGEN_FOUND)
         # TODO: Consider whether this is the best location for this code,
         # since not all of it is Doxygen-specific (but nearly all of it
         # relies on the Doxygen XML documentation).
-        # The output .log file currently needs to be here, since Jenkins
+        # The output .log file currently needs to be here, since CI
         # expects that.
         set(check_source_command
             ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py

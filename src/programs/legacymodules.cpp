@@ -108,8 +108,8 @@ private:
         std::fprintf(stderr,
                      "This tool is no longer present in GROMACS. Please see\n"
                      "  "
-                     "http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/"
-                     "user-guide/cmdline.html#command-changes\n"
+                     "https://manual.gromacs.org/current/user-guide/"
+                     "cmdline.html#command-changes-between-versions\n"
                      "for ideas how to perform the same tasks with the "
                      "new tools.\n");
     }

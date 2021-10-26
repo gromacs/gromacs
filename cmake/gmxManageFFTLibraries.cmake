@@ -130,9 +130,6 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     if (NOT MKL_MANUALLY)
         # The next line takes care of everything for MKL
         if (WIN32)
-            # This works according to the Intel MKL 10.3 for Windows
-            # docs, but on Jenkins Win2k8, icl tries to interpret it
-            # as a file. Shrug.
             set(FFT_LINKER_FLAGS "/Qmkl:sequential")
         elseif(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION GREATER_EQUAL 2021020)
             set(FFT_LINKER_FLAGS "-qmkl=sequential")

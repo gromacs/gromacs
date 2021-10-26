@@ -8,7 +8,3 @@ ignore=
  cmake.org
 # This site gives warnings because it redirects to itself
  http://swift.cmbi.ru.nl/gv/dssp
-# This site has a robots.txt that denies access
- jenkins.gromacs.org
-# A matching regressiontests tarball generally can't be found on this server yet.
- gerrit.gromacs.org/download

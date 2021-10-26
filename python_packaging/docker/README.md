@@ -2,7 +2,7 @@
 
 This directory segregates the Dockerfiles to avoid clutter. The Dockerfiles
 here help to build and test gmxapi software. They may be subsumed or supplanted
-by future Jenkins infrastructure.
+by future infrastructure.
 
 Assume you have already checked out the commit you want to build for.
 Assume the following definitions.
@@ -129,7 +129,7 @@ Then browse to http://localhost:8080/
 
 ## Automation
 
-*TODO: Update this section as Jenkins infrastructure evolves.*
+*TODO: Update this section as CI infrastructure evolves.*
 
 Travis-CI builds and pushes a chain of Docker images to the `gmxapi` dockerhub organization.
 The `kassonlab` GitHub organization `gromacs-gmxapi` repository branches that are descended from the `kassonLabFork`

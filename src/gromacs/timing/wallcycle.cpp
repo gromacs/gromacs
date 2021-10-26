@@ -720,8 +720,8 @@ void wallcycle_print(FILE*                            fplog,
            code so that it is provably robust with respect to
            non-positive values for all possible timer and cycle
            counters, there is less value gained from printing whatever
-           timing data might still be sensible for some non-Jenkins
-           run, than is lost from diagnosing Jenkins FP exceptions on
+           timing data might still be sensible for some non-CI
+           run, than is lost from diagnosing CI FP exceptions on
            runs about whose execution time we don't care. */
         GMX_LOG(mdlog.warning)
                 .asParagraph()

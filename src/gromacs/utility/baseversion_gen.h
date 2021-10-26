@@ -58,7 +58,7 @@ extern const char gmx_central_base_hash[];
  *
  *  The variable is populated with the generated DOI string
  *  by CMake when the build of a release version is
- *  requested by Jenkins. Allows identification and
+ *  requested. Allows identification and
  *  referencing of different \Gromacs releases.
  */
 extern const char gmxSourceDoiString[];
