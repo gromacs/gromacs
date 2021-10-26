@@ -1811,16 +1811,43 @@ static void read_pull_xf(const char*        fn,
     }
     if (bFirst || opt->verbose)
     {
+        // Note the comment above about the pull file column format!
         printf("\nReading pull %s file %s, expecting %d columns:\n", quantity, fn, nColExpect);
+        printf("\tColumn for time: 1\n");
+        int nextColumn = 2;
         for (i = 0; i < header->npullcrds; i++)
         {
-            printf("\tColumns for pull coordinate %d\n", i + 1);
-            printf("\t\treaction coordinate:             %d\n"
-                   "\t\tcenter-of-mass of groups:        %d\n"
-                   "\t\treference position column:       %s\n",
-                   1,
-                   nColCOMCrd[i],
-                   (header->bPrintRefValue ? "Yes" : "No"));
+            printf("\tColumn(s) with data for pull coordinate %d are\n", i + 1);
+            if (nColCOMCrd[i] > 0)
+            {
+                const int firstColumnForCOM       = nextColumn;
+                const int lastColumnForCOM        = firstColumnForCOM + nColCOMCrd[i] - 1;
+                const int columnForThisCoordinate = lastColumnForCOM + 1;
+                printf("\t\treaction coordinate:             %d\n"
+                       "\t\tcenter-of-mass of groups:        %d through %d\n",
+                       columnForThisCoordinate,
+                       firstColumnForCOM,
+                       lastColumnForCOM);
+                nextColumn = columnForThisCoordinate + 1;
+            }
+            else
+            {
+                const int columnForThisCoordinate = nextColumn;
+                printf("\t\treaction coordinate:             %d\n"
+                       "\t\tcenter-of-mass of groups:        No\n",
+                       columnForThisCoordinate);
+                ++nextColumn;
+            }
+            if (header->bPrintRefValue)
+            {
+                const int columnForRefValue = nextColumn;
+                printf("\t\treference position column:       %d\n", columnForRefValue);
+                ++nextColumn;
+            }
+            else
+            {
+                printf("\t\treference position column:       No\n");
+            }
         }
         printf("\tFound %d times in %s\n", nt, fn);
         bFirst = FALSE;
@@ -2084,7 +2111,7 @@ static void read_tpr_pullxf_files(char**             fnTprs,
     int  i;
     real mintmp, maxtmp;
 
-    printf("Reading %d tpr and pullf files\n", nfiles);
+    printf("Reading %d tpr and pullx/pullf files\n", nfiles);
 
     /* min and max not given? */
     if (opt->bAuto)

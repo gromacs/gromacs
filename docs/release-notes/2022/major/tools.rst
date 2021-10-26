@@ -38,3 +38,9 @@ different results when performing MSD calculations on a non-homogenous group of 
 
 The need to add the names of custom residues to ``residuetypes.dat`` has been
 removed, because it served no purpose. This makes ``gmx chi`` easier to use.
+
+``gmx wham`` has had minor improvements to its text output
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reporting about file handling and input-file column contents are easier to
+follow.
