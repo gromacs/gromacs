@@ -77,9 +77,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     pmeStream_      = &deviceStreamManager.stream(DeviceStreamType::Pme);
     localStream_    = &deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
     nonLocalStream_ = &deviceStreamManager.stream(DeviceStreamType::NonBondedNonLocal);
-    // PME stream is used in OpenCL for H2D coordinate transfer
-    updateStream_ = &deviceStreamManager.stream(
-            GMX_GPU_OPENCL ? DeviceStreamType::Pme : DeviceStreamType::UpdateAndConstraints);
+    updateStream_   = &deviceStreamManager.stream(DeviceStreamType::UpdateAndConstraints);
 
     // Map the atom locality to the stream that will be used for coordinates,
     // velocities and forces transfers. Same streams are used for H2D and D2H copies.
@@ -120,6 +118,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     nonLocalStream_ = nullptr;
     updateStream_   = nullptr;
 
+    isPmeOnly_ = true;
 
     // Only local/all coordinates are allowed to be copied in PME-only rank/ PME tests.
     // This it temporary measure to make it safe to use this class in those cases.
@@ -330,11 +329,8 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
 
     copyToDevice(d_x_, h_x, d_xSize_, atomLocality, *deviceStream);
 
-    // markEvent is skipped in OpenCL as:
-    //   - it's not needed, copy is done in the same stream as the only consumer task (PME)
-    //   - we don't consume the events in OpenCL which is not allowed by GpuEventSynchronizer (would leak memory).
-    // TODO: remove this by adding an event-mark free flavor of this function
-    if (bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL))
+    // marking is skipped on the PME-rank mode as everything is on the same stream
+    if (!isPmeOnly_)
     {
         xReadyOnDevice_[atomLocality].markEvent(*deviceStream);
     }
@@ -353,12 +349,7 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceE
     // and this is not a neighbor search step, then the consumer needs to wait for the update
     // to complete. Otherwise, the coordinates are copied from the host and we need to wait for
     // the copy event. Non-local coordinates are provided by the GPU halo exchange (if active), otherwise by H2D copy.
-    //
-    // In OpenCL no events are used as coordinate sync is not necessary
-    if (GMX_GPU_OPENCL)
-    {
-        return nullptr;
-    }
+
     if (atomLocality == AtomLocality::NonLocal && stepWork.useGpuXHalo)
     {
         GMX_ASSERT(gpuCoordinateHaloLaunched != nullptr,

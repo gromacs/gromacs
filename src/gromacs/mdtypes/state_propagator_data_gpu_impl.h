@@ -419,6 +419,9 @@ private:
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
 
+    //! Whether this instance of the class is used on a PME-only rank
+    bool isPmeOnly_ = false;
+
     /*! \brief Performs the copy of data from host to device buffer.
      *
      * \todo Template on locality.

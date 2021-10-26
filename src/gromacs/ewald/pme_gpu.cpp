@@ -198,8 +198,7 @@ void pme_gpu_launch_spread(gmx_pme_t*                     pme,
                            gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
-    GMX_ASSERT(!GMX_GPU_CUDA || xReadyOnDevice || !pme->bPPnode,
-               "Need a valid xReadyOnDevice on PP+PME ranks with CUDA.");
+    GMX_ASSERT(xReadyOnDevice || !pme->bPPnode, "Need a valid xReadyOnDevice on PP+PME ranks.");
     GMX_ASSERT(pme->doCoulomb, "Only Coulomb PME can be run on GPU.");
 
     PmeGpu* pmeGpu = pme->gpu;
