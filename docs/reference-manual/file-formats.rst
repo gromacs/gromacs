@@ -1013,68 +1013,45 @@ All the data is stored using calls to *xdr* routines.
     Please note that when the number of atoms is smaller than 9
     no reduced precision is used.
 
-Using xtc in your "C" programs
+Using xtc in your C++ programs
 ++++++++++++++++++++++++++++++
 
-To read and write these files the following "C" routines are available::
+It is possible to write your own analysis tools to take advantage
+of the compressed .xtc format files: see the
+``template.cpp`` file in the
+``share/gromacs/template`` directory of your installation
+for an example and
+https://manual.gromacs.org/current/doxygen/html-full/page_analysistemplate.xhtml
+for documentation.
+
+To read and write xtc files the following routines are available via ``xtcio.h``::
 
     /* All functions return 1 if successful, 0 otherwise */
 
-    extern int open_xtc(XDR *xd,char *filename,char *mode);
+    struct t_fileio* open_xtc(const char* filename, const char* mode);
     /* Open a file for xdr I/O */
 
-    extern void close_xtc(XDR *xd);
+    void close_xtc(struct t_fileio* fio);
     /* Close the file for xdr I/O */
 
-    extern int read_first_xtc(XDR *xd,char *filename,
-                              int *natoms,int *step,real *time,
-                              matrix box,rvec **x,real *prec);
+    int read_first_xtc(struct t_fileio* fio,
+                       int*             natoms,
+                       int64_t*         step,
+                       real*            time,
+                       matrix           box,
+                       rvec**           x,
+                       real*            prec,
+                       gmx_bool*        bOK);
     /* Open xtc file, read xtc file first time, allocate memory for x */
 
-    extern int read_next_xtc(XDR *xd,
-                             int *natoms,int *step,real *time,
-                             matrix box,rvec *x,real *prec);
+    int read_next_xtc(struct t_fileio* fio, int natoms, int64_t* step, real* time, matrix box, rvec* x, real* prec, gmx_bool* bOK);
     /* Read subsequent frames */
 
-    extern int write_xtc(XDR *xd,
-                         int natoms,int step,real time,
-                         matrix box,rvec *x,real prec);
+    int write_xtc(struct t_fileio* fio, int natoms, int64_t step, real time, const rvec* box, const rvec* x, real prec);
     /* Write a frame to xtc file */
 
 To use the library function include ``"gromacs/fileio/xtcio.h"``
-in your file and link with ``-lgmx.$(CPU)``.
-
-Using xtc in your FORTRAN programs
-++++++++++++++++++++++++++++++++++
-
-To read and write these in a FORTRAN program use the calls to
-``readxtc`` and ``writextc`` as in the following sample program
-which reads and xtc file and copies it to a new one::
-
-    program testxtc
-
-    parameter (maxatom=10000,maxx=3*maxatom)
-    integer xd,xd2,natoms,step,ret,i
-    real    time,box(9),x(maxx)
-
-    call xdrfopen(xd,"test.xtc","r",ret)
-    print *,'opened test.xtc, ret=',ret
-    call xdrfopen(xd2,"testout.xtc","w",ret)
-    print *,'opened testout.xtc, ret=',ret
-
-    call readxtc(xd,natoms,step,time,box,x,prec,ret)
-
-    if ( ret .eq. 1 ) then
-       call writextc(xd2,natoms,step,time,box,x,prec,ret)
-    else
-       print *,'Error reading xtc'
-    endif
-
-    stop
-    end
-
-To link your program use ``-L$(GMXHOME)/lib/$(CPU) -lxtcf``
-on your linker command line.
+in your file and link with ``-lgromacs``.
 
 .. _xvg:
 
