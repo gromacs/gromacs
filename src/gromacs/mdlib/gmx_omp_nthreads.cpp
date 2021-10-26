@@ -62,7 +62,6 @@ typedef struct
     int gnth_pme; /**< Global num. of threads per PME only process/tMPI thread. */
 
     gmx::EnumerationArray<ModuleMultiThread, int> nth; /**< Number of threads for each module, indexed with module_nth_t */
-    bool initialized; /**< TRUE if the module as been initialized. */
 } omp_module_nthreads_t;
 
 /** Names of environment variables to set the per module number of threads.
@@ -108,7 +107,7 @@ static const char* enumValueToString(ModuleMultiThread enumValue)
  *  the init call is omitted.
  * */
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, FALSE };
+static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 
 /** Determine the number of threads for module \p mod.
@@ -260,14 +259,6 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     GMX_UNUSED_VALUE(cr);
 #endif
 
-    if (modth.initialized)
-    {
-        /* Just return if the initialization has already been
-           done. This could only happen if gmx_omp_nthreads_init() has
-           already been called. */
-        return;
-    }
-
     /* With full OpenMP support (verlet scheme) set the number of threads
      * per process / default:
      * - 1 if not compiled with OpenMP or
@@ -374,8 +365,6 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
             gmx_omp_set_num_threads(nth);
         }
     }
-
-    modth.initialized = TRUE;
 }
 
 /*! \brief Report on the OpenMP settings that will be used */

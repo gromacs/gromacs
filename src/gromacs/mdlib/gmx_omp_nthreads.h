@@ -71,7 +71,7 @@ enum class ModuleMultiThread : int
  *
  * It is compatible with tMPI, thread-safety is ensured (for the features
  * available with tMPI).
- * This function should caled only once during the initialization of mdrun. */
+ * This function should be called only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
                            t_commrec*           cr,
                            int                  nthreads_hw_avail,
