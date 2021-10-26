@@ -140,4 +140,4 @@ if (ENABLE_OPENMP)
     target_link_libraries(t_ParserTest OpenMP::OpenMP_CXX)
 endif()
 add_test (NAME ParserTest COMMAND t_ParserTest)
-
+add_dependencies(tests t_ParserTest)
