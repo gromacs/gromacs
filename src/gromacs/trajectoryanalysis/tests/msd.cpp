@@ -225,6 +225,16 @@ TEST_F(MsdModuleTest, oneDimensionalDiffusion)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(MsdModuleTest, oneDimensionalDiffusionWithMaxTau)
+{
+    setInputFile("-f", "msd_traj.xtc");
+    setInputFile("-s", "msd_coords.gro");
+    setInputFile("-n", "msd.ndx");
+    const char* const cmdline[] = { "-trestart", "200", "-type", "x", "-sel", "0", "-maxtau", "5" };
+    runTest(CommandLine(cmdline));
+}
+
+
 // -------------------------------------------------------------------------
 // These tests operate on a more realistic trajectory, with a solvated protein,
 // with 20 frames at a 2 ps dt. Note that this box is also non-square, so we're validating

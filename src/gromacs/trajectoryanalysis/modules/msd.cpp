@@ -431,6 +431,10 @@ private:
     double t0_ = 0;
     //! Inter-frame delta-t
     std::optional<double> dt_ = std::nullopt;
+    //! Inter-frame maximum time delta.
+    double maxTau_ = std::numeric_limits<double>::max();
+    //! Tracks the index of the first valid frame. Starts at 0, increases as old frames are deleted
+    size_t firstValidFrame_ = 0;
 
     //! First tau value to fit from for diffusion coefficient, defaults to 0.1 * max tau
     real beginFit_ = -1.0;
@@ -501,6 +505,14 @@ void Msd::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* se
         "Note that this diffusion coefficient and error estimate are only",
         "accurate when the MSD is completely linear between",
         "[TT]-beginfit[tt] and [TT]-endfit[tt].[PAR]",
+        "By default, [THISMODULE] compares all trajectory frames against every frame stored at",
+        "[TT]-trestart[TT] intervals, so the number of frames stored scales linearly with the",
+        "number of frames processed. This can lead to long analysis times and out-of-memory errors",
+        "for long/large trajectories, and often the data at higher time deltas lacks sufficient ",
+        "sampling, often manifesting as a wobbly line on the MSD plot after a straighter region at",
+        "lower time deltas. The [TT]-maxtau[TT] option can be used to cap the maximum time delta",
+        "for frame comparison, which may improve performance and can be used to avoid",
+        "out-of-memory issues.[PAR]"
     };
     settings->setHelpText(desc);
 
@@ -528,6 +540,10 @@ void Msd::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* se
                                .description("Time between restarting points in trajectory (ps)")
                                .defaultValue(10.0)
                                .store(&trestart_));
+    options->addOption(
+            DoubleOption("maxtau")
+                    .description("Maximum time delta between frames to calculate MSDs for (ps)")
+                    .store(&maxTau_));
     options->addOption(
             RealOption("beginfit").description("Time point at which to start fitting.").store(&beginFit_));
     options->addOption(RealOption("endfit").description("End time for fitting.").store(&endFit_));
@@ -645,8 +661,10 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
 
     // Each frame will get a tau between it and frame 0, and all other frame combos should be
     // covered by this.
-    // \todo this will no longer hold exactly when maxtau is added
-    taus_.push_back(time - times_[0]);
+    if (const double tau = time - times_[0]; tau <= maxTau_)
+    {
+        taus_.push_back(time - times_[0]);
+    }
 
     for (MsdGroupData& msdData : groupData_)
     {
@@ -655,10 +673,19 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
         ArrayRef<const RVec> coords = msdData.coordinateManager_.buildCoordinates(sel, pbc);
 
         // For each preceding frame, calculate tau and do comparison.
-        for (size_t i = 0; i < msdData.frames.size(); i++)
+        for (size_t i = firstValidFrame_; i < msdData.frames.size(); i++)
         {
             // If dt > trestart, the tau increment will be dt rather than trestart.
-            double  tau      = time - (t0_ + std::max<double>(trestart_, *dt_) * i);
+            const double tau = time - (t0_ + std::max<double>(trestart_, *dt_) * i);
+            if (tau > maxTau_)
+            {
+                // The (now empty) entry is no longer needed, so over time the outer vector will
+                // grow with extraneous empty elements persisting, but the alternative would require
+                // some more complicated remapping of tau to frame index.
+                msdData.frames[i].clear();
+                firstValidFrame_ = i + 1;
+                continue;
+            }
             int64_t tauIndex = gmx::roundToInt64(tau / *dt_);
             msdData.msds[tauIndex].push_back(calcMsd_(coords, msdData.frames[i]));
 
