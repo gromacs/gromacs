@@ -464,9 +464,15 @@ static void write_checkpoint(const char*                     fn,
         /* Rename the checkpoint file from the temporary to the final name */
         mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
 
-        if (gmx_file_rename(fntemp, fn) != 0)
+        try
         {
-            gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
+            gmx_file_rename(fntemp, fn);
+        }
+        catch (gmx::FileIOError const&)
+        {
+            // In this case we can be more helpful than the generic message from gmx_file_rename
+            GMX_THROW(gmx::FileIOError(
+                    "Cannot rename checkpoint file; maybe you are out of disk space?"));
         }
     }
 #endif /* GMX_NO_RENAME */

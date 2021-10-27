@@ -592,11 +592,12 @@ FILE* gmx_fopen_temporary(char* buf)
     return fpout;
 }
 
-int gmx_file_rename(const char* oldname, const char* newname)
+void gmx_file_rename(const char* oldname, const char* newname)
 {
+    int code;
 #if !GMX_NATIVE_WINDOWS
     /* under unix, rename() is atomic (at least, it should be). */
-    return rename(oldname, newname);
+    code = rename(oldname, newname);
 #else
     if (MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     {
@@ -604,13 +605,18 @@ int gmx_file_rename(const char* oldname, const char* newname)
         /* This just lets the F@H checksumming system know about the rename */
         fcRename(oldname, newname);
 #    endif
-        return 0;
+        code = 0;
     }
     else
     {
-        return 1;
+        code = 1;
     }
 #endif
+    if (code != 0)
+    {
+        auto errorMsg = gmx::formatString("Failed to rename %s to %s.", oldname, newname);
+        GMX_THROW(gmx::FileIOError(errorMsg));
+    }
 }
 
 int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_empty)
