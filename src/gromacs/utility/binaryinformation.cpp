@@ -121,6 +121,7 @@ void printCopyright(gmx::TextWriter* writer)
                                                 "Aldert van Buuren",
                                                 "Rudi van Drunen",
                                                 "Anton Feenstra",
+                                                "Oliver Fleetwood",
                                                 "Gaurav Garg",
                                                 "Gilles Gouaillardet",
                                                 "Alan Gray",
