@@ -73,11 +73,11 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
     simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuPmeFft    = (pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuBonded    = useGpuForBonded;
-    simulationWorkload.useGpuUpdate    = useGpuForUpdate;
-    simulationWorkload.useGpuBufferOps = (devFlags.enableGpuBufferOps || useGpuForUpdate)
-                                         && !simulationWorkload.computeNonbondedAtMtsLevel1;
+    simulationWorkload.useGpuPmeFft = (pmeRunMode == PmeRunMode::Mixed);
+    simulationWorkload.useGpuBonded = useGpuForBonded;
+    simulationWorkload.useGpuUpdate = useGpuForUpdate;
+    simulationWorkload.useGpuBufferOps =
+            (devFlags.enableGpuBufferOps || useGpuForUpdate) && !inputrec.useMts;
     simulationWorkload.havePpDomainDecomposition = havePpDomainDecomposition;
     simulationWorkload.useCpuHaloExchange        = havePpDomainDecomposition && !useGpuDirectHalo;
     simulationWorkload.useGpuHaloExchange        = useGpuDirectHalo;
