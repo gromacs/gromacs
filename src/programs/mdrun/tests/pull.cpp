@@ -47,6 +47,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <regex>
 
 #include <gtest/gtest.h>
 
@@ -71,14 +72,10 @@ namespace
 {
 
 /*! \brief Database of energy tolerances on the various systems. */
-std::unordered_map<std::string, FloatingPointTolerance> energyToleranceForSystem_g = {
-    { { "spc216", relativeToleranceAsFloatingPoint(1, 1e-4) } }
-};
+std::unordered_map<std::string, double> energyToleranceForSystem_g = { { { "spc216", 1e-4 } } };
 
 /*! \brief Database of pressure tolerances on the various systems. */
-std::unordered_map<std::string, FloatingPointTolerance> pressureToleranceForSystem_g = {
-    { { "spc216", relativeToleranceAsFloatingPoint(1, 2e-4) } }
-};
+std::unordered_map<std::string, double> pressureToleranceForSystem_g = { { { "spc216", 2e-4 } } };
 
 const std::unordered_map<std::string, std::vector<std::pair<std::string, std::string>>> c_mdpPullParams = {
     { { "umbrella-3D",
@@ -125,7 +122,26 @@ const std::unordered_map<std::string, std::vector<std::pair<std::string, std::st
           { "pull-coord2-geometry", "distance" },
           { "pull-coord2-dim", "Y Y Y" },
           { "pull-coord2-init", "0.4" },
-          { "pull-coord2-k", "100" } } } }
+          { "pull-coord2-k", "100" } } },
+      { "transformation-coord-umbrella-3D", // should yield the same force on the first pull coordinate as in the umbrella-3D test above
+        {
+                { "pull-ngroups", "2" },
+                { "pull-ncoords", "2" },
+                { "pull-nstxout", "0" },
+                { "pull-nstfout", "0" },
+                { "pull-group1-name", "r_1" },
+                { "pull-group2-name", "r_2" },
+                { "pull-coord1-groups", "1 2" },
+                { "pull-coord1-type", "umbrella" },
+                { "pull-coord1-geometry", "distance" },
+                { "pull-coord1-dim", "Y Y Y" },
+                { "pull-coord1-k", "0" }, // set to zero since the force comes from the transformation coordinate
+                { "pull-coord2-geometry", "transformation" },
+                { "pull-coord2-type", "umbrella" },
+                { "pull-coord2-expression", "2*(0.6 - x1)" },
+                { "pull-coord2-init", "0" }, // -> pull-coord1-init = 0.6
+                { "pull-coord2-k", "25" }    // -> pull-coord1-k = 2^2*25 = 100
+        } } }
 };
 
 //! Helper type
@@ -153,6 +169,14 @@ void addBasicMdpValues(MdpFieldValues* mdpFieldValues)
     (*mdpFieldValues)["nstenergy"]     = "5";
     (*mdpFieldValues)["coulombtype"]   = "Reaction-field";
     (*mdpFieldValues)["vdwtype"]       = "Cut-off";
+}
+
+bool isTransformationPullSetup(const std::string& pullSetupName)
+{
+    const auto* pattern{ "transformation" };
+    // std::regex_constants::icase - TO IGNORE CASE.
+    auto rx = std::regex{ pattern, std::regex_constants::icase };
+    return std::regex_search(pullSetupName, rx);
 }
 
 TEST_P(PullIntegrationTest, WithinTolerances)
@@ -195,13 +219,23 @@ TEST_P(PullIntegrationTest, WithinTolerances)
     }
     // Do mdrun
     {
+        // conver the tolerance to relative floating point tolerance
+        auto energyTolerance   = energyToleranceForSystem_g.at(simulationName);
+        auto pressureTolerance = pressureToleranceForSystem_g.at(simulationName);
+        if (isTransformationPullSetup(pullSetup)) // need to increase the tolerance a bit due to numerical evaluations
+        {
+            energyTolerance *= 10;
+            pressureTolerance *= 10;
+        }
+        auto relativeEnergyTolerance   = relativeToleranceAsFloatingPoint(1, energyTolerance);
+        auto relativePressureTolerance = relativeToleranceAsFloatingPoint(1, pressureTolerance);
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         EnergyTermsToCompare energyTermsToCompare{ {
-                { interaction_function[F_COM_PULL].longname, energyToleranceForSystem_g.at(simulationName) },
-                { interaction_function[F_EPOT].longname, energyToleranceForSystem_g.at(simulationName) },
-                { interaction_function[F_EKIN].longname, energyToleranceForSystem_g.at(simulationName) },
-                { interaction_function[F_PRES].longname, pressureToleranceForSystem_g.at(simulationName) },
+                { interaction_function[F_COM_PULL].longname, relativeEnergyTolerance },
+                { interaction_function[F_EPOT].longname, relativeEnergyTolerance },
+                { interaction_function[F_EKIN].longname, relativeEnergyTolerance },
+                { interaction_function[F_PRES].longname, relativePressureTolerance },
         } };
         TestReferenceData    refData;
         auto                 checker = refData.rootChecker()
@@ -216,7 +250,8 @@ INSTANTIATE_TEST_SUITE_P(PullTest,
                          ::testing::Combine(::testing::Values("spc216"),
                                             ::testing::Values("umbrella-3D",
                                                               "umbrella-2D",
-                                                              "constraint-flatbottom")));
+                                                              "constraint-flatbottom",
+                                                              "transformation-coord-umbrella-3D")));
 
 } // namespace
 } // namespace test

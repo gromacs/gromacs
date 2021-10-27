@@ -86,8 +86,9 @@ public:
     //! Tells whether warnings and/or errors are expected from inputrec parsing and checking, and whether we should compare the output
     enum class TestBehavior
     {
-        NoErrorAndCompareOutput,   //!< Expect no warnings/error and compare output
-        ErrorAndCompareOutput,     //!< Expect at least one warning/error and compare output
+        NoErrorAndCompareOutput,      //!< Expect no warnings/error and compare output
+        NoErrorAndDoNotCompareOutput, //!< Expect no warnings/error and do not compare output
+        ErrorAndCompareOutput,        //!< Expect at least one warning/error and compare output
         ErrorAndDoNotCompareOutput //!< Expect at least one warning/error and do not compare output
     };
 
@@ -99,8 +100,10 @@ public:
     void runTest(const std::string& inputMdpFileContents,
                  const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput)
     {
-        const bool expectError   = testBehavior != TestBehavior::NoErrorAndCompareOutput;
-        const bool compareOutput = testBehavior != TestBehavior::ErrorAndDoNotCompareOutput;
+        const bool expectError = testBehavior == TestBehavior::ErrorAndCompareOutput
+                                 || testBehavior == TestBehavior::ErrorAndDoNotCompareOutput;
+        const bool compareOutput = testBehavior == TestBehavior::ErrorAndCompareOutput
+                                   || testBehavior == TestBehavior::NoErrorAndCompareOutput;
 
         std::string inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp");
         std::string outputMdpFilename;
@@ -108,7 +111,6 @@ public:
         {
             outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp");
         }
-
         TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
 
         get_ir(inputMdpFilename.c_str(),
@@ -280,6 +282,74 @@ TEST_F(GetIrTest, AcceptsMimic)
     const char* inputMdpFile[] = { "integrator = mimic", "QMMM-grps = QMatoms" };
     runTest(joinStrings(inputMdpFile, "\n"));
 }
+
+#if HAVE_MUPARSER
+
+TEST_F(GetIrTest, AcceptsTransformationCoord)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ngroups = 2",
+        "pull-ncoords = 2",
+        "pull-coord1-geometry = distance",
+        "pull-coord1-groups = 1 2",
+        "pull-coord1-k = 1",
+        "pull-coord2-geometry = transformation",
+        "pull-coord2-expression = 1/(1+x1)",
+        "pull-coord2-k = 10",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, InvalidTransformationCoordWithConstraint)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ncoords = 1",
+        "pull-coord1-geometry = transformation",
+        "pull-coord1-type = constraint", // INVALID
+        "pull-coord1-expression = 10",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, InvalidPullCoordWithConstraintInTransformationExpression)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ngroups = 2",
+        "pull-ncoords = 2",
+        "pull-coord1-geometry = distance",
+        "pull-coord1-type = constraint", // INVALID
+        "pull-coord1-groups = 1 2",
+        "pull-coord2-geometry = transformation",
+        "pull-coord2-expression = x1",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, InvalidTransformationCoordDxValue)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ncoords = 1",
+        "pull-coord1-geometry = transformation",
+        "pull-coord1-expression = 10",
+        "pull-coord1-dx = 0", // INVALID
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, MissingTransformationCoordExpression)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ncoords = 1",
+        "pull-coord1-geometry = transformation",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+#endif // HAVE_MUPARSER
 
 } // namespace test
 } // namespace gmx

@@ -134,23 +134,23 @@ static void process_pull_dim(char* dim_buf, ivec dim, const t_pull_coord* pcrd)
     }
 }
 
-static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t& pull)
+static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t& pull, warninp_t wi)
 {
     const int coord_index_for_output = pull.coord.size() + 1;
     if (pcrd->eType == PullingAlgorithm::Constraint)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                "pull-coord%d can not have type 'constraint' and geometry 'transformation'",
-                coord_index_for_output)));
+        warning_error(
+                wi,
+                gmx::formatString(
+                        "pull-coord%d cannot have type 'constraint' and geometry 'transformation'",
+                        coord_index_for_output));
     }
 
     /*Validate the mathematical expression to epullgTRANSFORMATION*/
     if (pcrd->expression.empty())
     {
-        GMX_THROW(gmx::InvalidInputError(
-                gmx::formatString("pull-coord%d-expression not set for pull coordinate of geometry "
-                                  "'transformation'",
-                                  coord_index_for_output)));
+        warning_error(
+                wi, gmx::formatString("pull-coord%d-expression not set for pull coordinate of geometry 'transformation'", coord_index_for_output));
     }
     else if (pcrd->expression[0] == '"' || pcrd->expression[0] == '\'')
     {
@@ -160,17 +160,19 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
     }
     if (pcrd->dx == 0)
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                "pull-coord%d-dx cannot be set to zero for pull coordinate of geometry "
-                "'transformation'",
-                coord_index_for_output)));
+        warning_error(
+                wi,
+                gmx::formatString(
+                        "pull-coord%d-dx cannot be set to zero for pull coordinate of geometry "
+                        "'transformation'",
+                        coord_index_for_output));
     }
     /* make sure that the kappa of all previous pull coords is 0*/
     int previousCoordOutputIndex = 0;
     for (const auto& previousPcrd : pull.coord)
     {
         previousCoordOutputIndex++;
-        // See if the previous variable is used by the transformatino coord
+        // See if the previous variable is used by the transformation coord
         // Note that a simple std::string::find won't work since we don't want x1 to match x11 etc.
         std::string previousPcrdName = gmx::formatString("x%d(\\D|$)", previousCoordOutputIndex);
         std::regex  rx(previousPcrdName);
@@ -187,11 +189,25 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
 
         if (previousPcrd.eType == PullingAlgorithm::Constraint)
         {
-            GMX_THROW(gmx::InvalidInputError(
-                    gmx::formatString("pull-coord%d can not use pull-coord%d in the "
-                                      "transformation since this is a constraint",
+            warning_error(wi,
+                          gmx::formatString("pull-coord%d can not use pull-coord%d in the "
+                                            "transformation since this is a "
+                                            "constraint",
+                                            coord_index_for_output,
+                                            previousCoordOutputIndex));
+        }
+        else if (previousPcrd.k != 0 && pcrd->k != 0)
+        {
+            warning_note(
+                    wi,
+                    gmx::formatString("pull-coord%d has a non-zero force constant and is also "
+                                      "referenced in pull-coord%d-expression. "
+                                      "Make sure that this is intended. "
+                                      "In most use cases, the pull coordinates referenced by a "
+                                      "transformation coordinate should have their force constant "
+                                      "set to zero.",
                                       coord_index_for_output,
-                                      previousCoordOutputIndex)));
+                                      previousCoordOutputIndex));
         }
     }
 }
@@ -365,7 +381,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
     }
     if (pcrd->eGeom == PullGroupGeometry::Transformation)
     {
-        initTransformationPullCoord(pcrd, pull);
+        initTransformationPullCoord(pcrd, pull, wi);
     }
 
     for (m = 0; m < DIM; m++)

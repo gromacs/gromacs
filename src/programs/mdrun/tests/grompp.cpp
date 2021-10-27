@@ -46,9 +46,14 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/gmxpreprocess/readir.h"
+
 #include <gtest/gtest.h>
 
 #include "moduletest.h"
+
+#include "testutils/testexceptions.h"
 
 namespace
 {
@@ -95,6 +100,44 @@ TEST_F(GromppTest, SimulatedAnnealingWorksWithMultipleGroups)
             "annealing-temp = 298 280 270 298 320 320 298\n");
     runTest();
 }
+
+#if HAVE_MUPARSER
+
+TEST_F(GromppTest, ValidTransformationCoord)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ncoords = 2",
+        "pull-ngroups = 2",
+        "pull-group1-name = SOL",
+        "pull-group2-name = Methanol",
+        "pull-coord1-geometry = distance",
+        "pull-coord1-groups = 1 2",
+        "pull-coord2-geometry = transformation",
+        "pull-coord2-expression = x1", // Valid expression
+    };
+    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
+    runTest();
+}
+
+TEST_F(GromppTest, InvalidTransformationCoord)
+{
+    const char* inputMdpFile[] = {
+        "pull = yes",
+        "pull-ncoords = 2",
+        "pull-ngroups = 2",
+        "pull-group1-name = SOL",
+        "pull-group2-name = Methanol",
+        "pull-coord1-geometry = distance",
+        "pull-coord1-groups = 1 2",
+        "pull-coord2-geometry = transformation",
+        "pull-coord2-expression = x2", // Invalid expression -> evaluation should fail
+    };
+    runner_.useStringAsMdpFile(gmx::joinStrings(inputMdpFile, "\n"));
+    ASSERT_THROW(runTest(), gmx::InconsistentInputError);
+    done_inputrec_strings(); // This allows grompp to be called again in another test
+}
+#endif // HAVE_MUPARSER
 
 
 } // namespace
