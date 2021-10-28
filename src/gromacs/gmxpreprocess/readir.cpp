@@ -139,15 +139,13 @@ void done_inputrec_strings()
 }
 
 
-enum
+//! How to treat coverage of the whole system for a set of atom groupsx
+enum class GroupCoverage
 {
-    egrptpALL,         /* All particles have to be a member of a group.     */
-    egrptpALL_GENREST, /* A rest group with name is generated for particles *
-                        * that are not part of any group.                   */
-    egrptpPART,        /* As egrptpALL_GENREST, but no name is generated    *
-                        * for the rest group.                               */
-    egrptpONE          /* Merge all selected groups into one group,         *
-                        * make a rest group for the remaining particles.    */
+    All,             //!< All particles have to be a member of a group
+    AllGenerateRest, //<! A rest group with name is generated for particles not part of any group
+    Partial,         //<! As \p AllGenerateRest, but no name for the rest group is generated
+    OneGroup //<! Merge all selected groups into one group, make a rest group for the remaining particles
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
@@ -2821,11 +2819,7 @@ void get_ir(const char*     mdparin,
     sfree(dumstr[1]);
 }
 
-/* We would like gn to be const as well, but C doesn't allow this */
-/* TODO this is utility functionality (search for the index of a
-   string in a collection), so should be refactored and located more
-   centrally. */
-int search_string(const char* s, int ng, char* gn[])
+int search_string(const char* s, int ng, char* const gn[])
 {
     int i;
 
@@ -2860,16 +2854,29 @@ static void atomGroupRangeValidation(int natoms, int groupIndex, const t_blocka&
     }
 }
 
-static void do_numbering(int                        natoms,
-                         SimulationGroups*          groups,
-                         gmx::ArrayRef<std::string> groupsFromMdpFile,
-                         t_blocka*                  block,
-                         char*                      gnames[],
-                         SimulationAtomGroupType    gtype,
-                         int                        restnm,
-                         int                        grptp,
-                         bool                       bVerbose,
-                         warninp_t                  wi)
+/*! Creates the groups of atom indices for group type \p gtype
+ *
+ * \param[in] natoms  The total number of atoms in the system
+ * \param[in,out] groups  Index \p gtype in this list of list of groups will be set
+ * \param[in] groupsFromMdpFile  The list of group names set for \p gtype in the mdp file
+ * \param[in] block       The list of atom indices for all available index groups
+ * \param[in] gnames      The list of names for all available index groups
+ * \param[in] gtype       The group type to creates groups for
+ * \param[in] restnm      The index of rest group name in \p gnames
+ * \param[in] coverage    How to treat coverage of all atoms in the system
+ * \param[in] bVerbose    Whether to print when we make a rest group
+ * \param[in,out] wi      List of warnings
+ */
+static void do_numbering(const int                        natoms,
+                         SimulationGroups*                groups,
+                         gmx::ArrayRef<const std::string> groupsFromMdpFile,
+                         const t_blocka*                  block,
+                         char* const                      gnames[],
+                         const SimulationAtomGroupType    gtype,
+                         const int                        restnm,
+                         const GroupCoverage              coverage,
+                         const bool                       bVerbose,
+                         warninp_t                        wi)
 {
     unsigned short*   cbuf;
     AtomGroupIndices* grps = &(groups->groups[gtype]);
@@ -2890,7 +2897,7 @@ static void do_numbering(int                        natoms,
     {
         /* Lookup the group name in the block structure */
         const int gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
-        if ((grptp != egrptpONE) || (i == 0))
+        if ((coverage != GroupCoverage::OneGroup) || (i == 0))
         {
             grps->emplace_back(gid);
         }
@@ -2909,7 +2916,7 @@ static void do_numbering(int                        natoms,
             else
             {
                 /* Store the group number in buffer */
-                if (grptp == egrptpONE)
+                if (coverage == GroupCoverage::OneGroup)
                 {
                     cbuf[aj] = 0;
                 }
@@ -2925,11 +2932,11 @@ static void do_numbering(int                        natoms,
     /* Now check whether we have done all atoms */
     if (ntot != natoms)
     {
-        if (grptp == egrptpALL)
+        if (coverage == GroupCoverage::All)
         {
             gmx_fatal(FARGS, "%d atoms are not part of any of the %s groups", natoms - ntot, title);
         }
-        else if (grptp == egrptpPART)
+        else if (coverage == GroupCoverage::Partial)
         {
             sprintf(warn_buf, "%d atoms are not part of any of the %s groups", natoms - ntot, title);
             warning_note(wi, warn_buf);
@@ -2942,7 +2949,7 @@ static void do_numbering(int                        natoms,
                 cbuf[j] = grps->size();
             }
         }
-        if (grptp != egrptpPART)
+        if (coverage != GroupCoverage::Partial)
         {
             if (bVerbose)
             {
@@ -3555,7 +3562,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::TemperatureCoupling,
                  restnm,
-                 useReferenceTemperature ? egrptpALL : egrptpALL_GENREST,
+                 useReferenceTemperature ? GroupCoverage::All : GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     nr            = groups->groups[SimulationAtomGroupType::TemperatureCoupling].size();
@@ -3916,7 +3923,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::Freeze,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     nr             = groups->groups[SimulationAtomGroupType::Freeze].size();
@@ -3956,7 +3963,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::EnergyOutput,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     add_wall_energrps(groups, ir->nwall, symtab);
@@ -3969,7 +3976,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::MassCenterVelocityRemoval,
                  restnm,
-                 vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART,
+                 vcmGroupNames.empty() ? GroupCoverage::AllGenerateRest : GroupCoverage::Partial,
                  bVerbose,
                  wi);
 
@@ -3989,7 +3996,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::User1,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     auto user2GroupNames = gmx::splitString(inputrecStrings->user2);
@@ -4000,7 +4007,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::User2,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     auto compressedXGroupNames = gmx::splitString(inputrecStrings->x_compressed_groups);
@@ -4011,7 +4018,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::CompressedPositionOutput,
                  restnm,
-                 egrptpONE,
+                 GroupCoverage::OneGroup,
                  bVerbose,
                  wi);
     auto orirefFitGroupNames = gmx::splitString(inputrecStrings->orirefitgrp);
@@ -4022,7 +4029,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::OrientationRestraintsFit,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
 
@@ -4040,7 +4047,7 @@ void do_index(const char*                    mdparin,
                  gnames,
                  SimulationAtomGroupType::QuantumMechanics,
                  restnm,
-                 egrptpALL_GENREST,
+                 GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
     ir->opts.ngQM = qmGroupNames.size();

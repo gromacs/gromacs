@@ -112,16 +112,18 @@ void init_inputrec_strings();
 /*! \brief Clean up object that holds strings parsed from an .mdp file */
 void done_inputrec_strings();
 
+/*! \brief Performs all validation on \p ir that can be done without index groups and topology
+ *
+ * Any errors, warnings or notes are added to \p wi
+ */
 void check_ir(const char*                    mdparin,
               const gmx::MDModulesNotifiers& mdModulesNotifiers,
               t_inputrec*                    ir,
               t_gromppopts*                  opts,
               warninp_t                      wi);
-/* Validate inputrec data.
- * Fatal errors will be added to nerror.
- */
-int search_string(const char* s, int ng, char* gn[]);
-/* Returns the index of string s in the index groups */
+
+//! Returns the index of string \p s in \p gn or exit with a verbose fatal error when not found
+int search_string(const char* s, int ng, char* const gn[]);
 
 void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool bHasAnyConstraints, warninp_t wi);
 /* Do more checks */
