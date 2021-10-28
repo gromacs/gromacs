@@ -8,14 +8,16 @@ releases of |Gromacs|. Major releases contain changes to the
 functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
-Two versions of |Gromacs| are under active maintenance, the 2021
-series and the 2020 series. In the latter, only highly conservative
-fixes will be made, and only to address issues that affect scientific
+Two version series of |Gromacs| are under active maintenance and
+within support lifetime at any time. In 2021, they are the 2021 series
+and the 2020 series. In the latter, only highly conservative fixes
+will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2020 ends, but we keep 2019 in the name so users understand how
-up to date their version is. Such fixes will also be incorporated into
-the 2021 release series, as appropriate. Around the time the 2022
-release is made, the 2020 series will no longer be maintained.
+year 2020 ends, but we keep the year of the original release in the
+version name so that users understand how up to date their version
+is. Such fixes will also be incorporated into the more recent release
+series, as appropriate. Around the time the 2022 release is made, the
+2020 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found on the `issue tracker`_ at that issue number.
