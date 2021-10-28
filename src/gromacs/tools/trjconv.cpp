@@ -242,8 +242,8 @@ int gmx_trjconv(int argc, char* argv[])
         "[PAR]",
 
         "The following formats are supported for input and output:",
-        "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt]",
-        "and [REF].pdb[ref].",
+        "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt],",
+        "[REF].pdb[ref] and [REF].tng[ref].",
         "The file formats are detected from the file extension.",
         "The precision of the [REF].xtc[ref] output is taken from the",
         "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
@@ -253,7 +253,7 @@ int gmx_trjconv(int argc, char* argv[])
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[REF].trr[ref], [REF].gro[ref] and [TT].g96[tt] files.[PAR]",
+        "[REF].trr[ref], [REF].tng[ref], [REF].gro[ref] and [TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
         "[TT].gro, .g96[tt] or [REF].pdb[ref] file. By default, all frames all written to ",
@@ -266,7 +266,11 @@ int gmx_trjconv(int argc, char* argv[])
         "out the water from a trajectory of a protein in water.",
         "[BB]ALWAYS[bb] put the original trajectory on tape!",
         "We recommend to use the portable [REF].xtc[ref] format for your analysis",
-        "to save disk space and to have portable files.[PAR]",
+        "to save disk space and to have portable files. When writing [REF].tng[ref]",
+        "output the file will contain one molecule type of the correct count",
+        "if the selection name matches the molecule name and the selected atoms",
+        "match all atoms of that molecule. Otherwise the whole selection will",
+        "be treated as one single molecule containing all the selected atoms.[PAR]",
 
         "There are two options for fitting the trajectory to a reference",
         "either for essential dynamics analysis, etc.",
