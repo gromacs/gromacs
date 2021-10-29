@@ -110,6 +110,7 @@ void GpuForceReduction::Impl::registerRvecForce(DeviceBuffer<RVec> forcePtr)
 
 void GpuForceReduction::Impl::addDependency(GpuEventSynchronizer* dependency)
 {
+    GMX_ASSERT(dependency != nullptr, "Force reduction dependency synchronizer should not be NULL");
     dependencyList_.push_back(dependency);
 }
 
