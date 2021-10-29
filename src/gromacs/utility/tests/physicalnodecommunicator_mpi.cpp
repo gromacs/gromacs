@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,21 +44,24 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
 TEST(PhysicalNodeCommunicatorTest, CanConstruct)
 {
-    GMX_MPI_TEST(4);
+    GMX_MPI_TEST(AllowAnyRankCount);
     PhysicalNodeCommunicator comm(MPI_COMM_WORLD, 0);
 }
 
 TEST(PhysicalNodeCommunicatorTest, CanCallBarrier)
 {
-    GMX_MPI_TEST(4);
+    GMX_MPI_TEST(AllowAnyRankCount);
     PhysicalNodeCommunicator comm(MPI_COMM_WORLD, 0);
     comm.barrier();
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

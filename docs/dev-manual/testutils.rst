@@ -22,9 +22,10 @@ Shared code used to implement the tests is in ``src/external/googletest/`` and
 ``src/testutils/`` (see below).
 
 The tests are built if ``BUILD_TESTING=ON`` (the default) and
-``GMX_BUILD_UNITTESTS=ON`` (the default) in CMake.
-Each module produces a separate unit test binary (:file:`{module}-test`) under
-``bin/``, which can execute all the tests for that module.
+``GMX_BUILD_UNITTESTS=ON`` (the default) in CMake. Each module
+produces at least one separate unit test binary
+(:file:`{module}-test`) under ``bin/``, which can execute tests for
+that module.
 
 The tests can be executed in a few different ways:
 
@@ -47,13 +48,20 @@ The tests can be executed in a few different ways:
   3. If unit tests and/or regression tests are not available, a message is
      printed.
 
-- Directly executing a test binary.  This provides the most useful output for
-  diagnosing failures, and allows debugging test failures.  The output
-  identifies the individual test(s) that fail, and shows the results of all
-  failing assertions.  Some tests also add extra information to failing
-  assertions to make it easier to identify the reason.  It is possible to
-  control which tests are run using command line options.  Execute the binary
-  with ``-h`` to get additional information.
+- The implementation of ``make check`` calls CTest via the ``ctest`` binary
+  to run all the individual test binaries. More fine-grained control is available
+  there, e.g. filtering by test name or label, or increasing verbosity.
+- Directly executing a test binary.  This provides the most useful
+  output for diagnosing failures, and allows debugging test failures.
+  The output identifies the individual test(s) that fail, and shows
+  the results of all failing assertions.  Some tests also add extra
+  information to failing assertions to make it easier to identify the
+  reason. Some tests are skipped because they cannot run with the
+  number of MPI ranks or GPU devices detected.  Explicit information
+  about such cases can be obtained by using the ``-echo-reasons`` flag
+  to the test binary.  It is possible to control which tests are run
+  using command line options.  Execute the binary with ``--help`` to
+  get additional information.
 
 When executed using CTest, the tests produce XML output in
 ``Testing/Temporary/``, containing the result of each test as well as failure
@@ -142,7 +150,7 @@ some pointers to find tests that use certain functionality:
   following it, plus headers required to make them compile.
 - The same file contains also simple tests using the reference framework to
   check line wrapping (the tests for ``gmx::TextLineWrapper``).  The test fixture
-  for these tests is in ``src/testutils/stringtest.h``/``.cpp``.  The string test
+  for these tests is in ``src/testutils/include/testutils/stringtest.h``/``.cpp``.  The string test
   fixture also demonstrates how to add a custom command line option to the
   test binary to influence the test execution.
 - ``src/gromacs/selection/tests/`` contains more complex use of the
@@ -179,3 +187,14 @@ Here are some things to keep in mind when working with the unit tests:
 .. _Google Mock: http://code.google.com/p/googlemock/
 
 .. include:: /fragments/doxygen-links.rst
+
+MPI tests
+---------
+
+If your test makes specific requirements on the number of MPI ranks,
+or needs a communicator as part of its implementation, then there are
+GROMACS-specific extensions that make normal-looking GoogleTests work
+well in these cases. Use ``GMX_TEST_MPI(RankRequirement)`` and declare
+the test with ``gmx_add_mpi_unit_test`` to teach ``CTest`` how to run
+the test regardless of whether the build is with thread-MPI or real
+MPI. See ``src/testutils/include/mpitest.h`` for details.

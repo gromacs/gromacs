@@ -216,14 +216,14 @@ public:
 
 TEST_P(GpuFftTest3D, GpuFftDecomposition)
 {
-    GMX_MPI_TEST(4);
+    GMX_MPI_TEST(RequireRankCount<4>);
     GpuFftTestParams params = GetParam();
     runTest(params);
 }
 
 std::vector<GpuFftTestParams> const inputs{
-    { IVec{ 5, 6, 9 }, 4, 1, FftBackend::HeFFTe_CUDA}, // slab decomposition
-    { IVec{ 5, 6, 9 }, 2, 2, FftBackend::HeFFTe_CUDA} // pencil decomposition
+    { IVec{ 5, 6, 9 }, 4, 1, FftBackend::HeFFTe_CUDA }, // slab decomposition
+    { IVec{ 5, 6, 9 }, 2, 2, FftBackend::HeFFTe_CUDA }  // pencil decomposition
 };
 
 INSTANTIATE_TEST_SUITE_P(GpuFft, GpuFftTest3D, ::testing::ValuesIn(inputs));

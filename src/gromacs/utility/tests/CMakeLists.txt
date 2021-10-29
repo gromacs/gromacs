@@ -63,7 +63,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
 # TODO: Explicitly link specific modules.
 target_link_libraries(utility-test PRIVATE legacy_modules)
 
-gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 4
+gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 2
     CPP_SOURCE_FILES
         physicalnodecommunicator_mpi.cpp
         )

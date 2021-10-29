@@ -68,6 +68,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "testutils/mpitest.h"
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testfilemanager.h"
@@ -88,7 +89,7 @@ namespace
  *
  * This context overrides the installationPrefix() implementation to always
  * load data files from the source directory, as the test binaries are never
- * installed.  It also support overriding the directory through a command-line
+ * installed.  It also supports overriding the directory through a command-line
  * option to the test binary.
  *
  * \ingroup module_testutils
@@ -141,6 +142,29 @@ void printHelp(const Options& options)
 //! Global program context instance for test binaries.
 // Never releases ownership.
 std::unique_ptr<TestProgramContext> g_testContext;
+
+/*! \brief Makes GoogleTest non-failures more verbose
+ *
+ * By default, GoogleTest does not echo messages appended to explicit
+ * assertions of success with SUCCEEDED() e.g.
+ *
+ *    GTEST_SKIP() << "reason why";
+ *
+ * produces no output. This test listener changes that behavior, so
+ * that the message is echoed.
+ *
+ * When run with multiple ranks, only the master rank should use this
+ * listener, else the output can be very noisy. */
+class SuccessListener : public testing::EmptyTestEventListener
+{
+    void OnTestPartResult(const testing::TestPartResult& result) override
+    {
+        if (result.type() == testing::TestPartResult::kSuccess)
+        {
+            printf("%s\n", result.message());
+        }
+    }
+};
 
 } // namespace
 
@@ -198,6 +222,7 @@ void initTestUtils(const char* dataPath,
 
         bool        bHelp = false;
         std::string sourceRoot;
+        bool        echoReasons = false;
         Options     options;
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit
@@ -209,6 +234,8 @@ void initTestUtils(const char* dataPath,
         // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
         options.addOption(
                 StringOption("src-root").store(&sourceRoot).description("Override source tree location (for data files)"));
+        options.addOption(
+                BooleanOption("echo-reasons").store(&echoReasons).description("When succeeding or skipping a test, echo the reason"));
         // The potential MPI test event listener must be initialized first,
         // because it should appear in the start of the event listener list,
         // before other event listeners that may generate test failures
@@ -239,6 +266,11 @@ void initTestUtils(const char* dataPath,
         {
             g_testContext->overrideSourceRoot(sourceRoot);
             TestFileManager::setInputDataDirectory(Path::join(sourceRoot, dataPath));
+        }
+        // Echo success messages only from the master MPI rank
+        if (echoReasons && (gmx_node_rank() == 0))
+        {
+            testing::UnitTest::GetInstance()->listeners().Append(new SuccessListener);
         }
     }
     catch (const std::exception& ex)

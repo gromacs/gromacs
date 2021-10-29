@@ -60,6 +60,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/mpitest.h"
 
 #include "moduletest.h"
 #include "terminationhelper.h"
