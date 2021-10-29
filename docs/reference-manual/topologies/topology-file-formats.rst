@@ -44,8 +44,10 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         |                   |                           |            generate pairs (no/yes);                        |
         |                   |                           |            fudge LJ (); fudge QQ ()                        |
         +-------------------+---------------------------+------------------------------------------------------------+
-        | *mandatory*       | ``atomtypes``             |            atom type; m (u); q (e); particle type;         |
+        | *mandatory*       | ``atomtypes``             |            atom type; bonded type; atomic number;          |
+        |                   |                           |            m (u); q (e); particle type;                    |
         |                   |                           |            |VCR| ; |WCR|                                   |
+        |                   |                           |            (bonded type and atomic number are optional)    |
         +-------------------+---------------------------+------------------------------------------------------------+
         |                   | ``bondtypes``             |  (see |TREF|, directive ``bonds``)                         |
         +                   +                           +                                                            +
