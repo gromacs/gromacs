@@ -970,13 +970,6 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
 
-    GMX_RELEASE_ASSERT(
-            !inputrec->useConstantAcceleration,
-            "Linear acceleration has been removed in GROMACS 2022, and was broken for many years "
-            "before that. Use GROMACS 4.5 or earlier if you need this feature.");
-
-    // Now we decide whether to use the domain decomposition machinery.
-    // Note that this does not necessarily imply actually using multiple domains.
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the master rank. The ranks can now all run
     // the task-deciding functions and will agree on the result

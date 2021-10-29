@@ -111,6 +111,7 @@ gmx_add_gtest_executable(${exename}
         swapcoords.cpp
         tabulated_bonded_interactions.cpp
         freezegroups.cpp
+	constantacceleration.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )

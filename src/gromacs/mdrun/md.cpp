@@ -395,7 +395,9 @@ void gmx::LegacySimulator::do_md()
                                  md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
                                              : gmx::ArrayRef<const unsigned short>(),
                                  md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                         : gmx::ArrayRef<const unsigned short>());
+                                         : gmx::ArrayRef<const unsigned short>(),
+                                 md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                          : gmx::ArrayRef<const unsigned short>());
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
     else
@@ -409,7 +411,9 @@ void gmx::LegacySimulator::do_md()
                                  md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
                                              : gmx::ArrayRef<const unsigned short>(),
                                  md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                         : gmx::ArrayRef<const unsigned short>());
+                                         : gmx::ArrayRef<const unsigned short>(),
+                                 md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                          : gmx::ArrayRef<const unsigned short>());
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
 
@@ -1004,7 +1008,9 @@ void gmx::LegacySimulator::do_md()
                                          md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
                                                      : gmx::ArrayRef<const unsigned short>(),
                                          md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                 : gmx::ArrayRef<const unsigned short>());
+                                                 : gmx::ArrayRef<const unsigned short>(),
+                                         md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                                  : gmx::ArrayRef<const unsigned short>());
                 fr->longRangeNonbondeds->updateAfterPartition(*md);
             }
         }
@@ -1968,7 +1974,9 @@ void gmx::LegacySimulator::do_md()
                                      md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
                                                  : gmx::ArrayRef<const unsigned short>(),
                                      md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                             : gmx::ArrayRef<const unsigned short>());
+                                             : gmx::ArrayRef<const unsigned short>(),
+                                     md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
+                                              : gmx::ArrayRef<const unsigned short>());
             fr->longRangeNonbondeds->updateAfterPartition(*md);
         }
 

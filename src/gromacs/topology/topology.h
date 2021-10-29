@@ -56,7 +56,7 @@ enum class SimulationAtomGroupType : int
 {
     TemperatureCoupling,
     EnergyOutput,
-    AccelerationUnused,
+    Acceleration,
     Freeze,
     User1,
     User2,

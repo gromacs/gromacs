@@ -1,13 +1,6 @@
 Removed functionality
 ^^^^^^^^^^^^^^^^^^^^^
 
-Removed constant-acceleration groups support
-""""""""""""""""""""""""""""""""""""""""""""
-This code has been broken since before GROMACS 4.6, so it has been
-removed.
-
-:issue:`1354`
-
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.

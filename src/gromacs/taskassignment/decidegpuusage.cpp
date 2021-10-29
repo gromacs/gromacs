@@ -637,6 +637,10 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are "
                 "supported.\n";
     }
+    if (inputrec.cos_accel != 0 || inputrec.useConstantAcceleration)
+    {
+        errorMessage += "Acceleration is not supported.\n";
+    }
     if (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0)
     {
         // The graph is needed, but not supported

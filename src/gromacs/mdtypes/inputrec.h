@@ -69,6 +69,8 @@ struct t_grpopts
     int ngtc = 0;
     //! Number of of Nose-Hoover chains per group
     int nhchainlength = 0;
+    //! Number of Accelerate groups
+    int ngacc;
     //! Number of Freeze groups
     int ngfrz = 0;
     //! Number of Energy groups
@@ -87,6 +89,8 @@ struct t_grpopts
     real** anneal_temp = nullptr;
     //! Tau coupling time
     real* tau_t = nullptr;
+    //! Acceleration per group
+    rvec* acceleration = nullptr;
     //! Whether the group will be frozen in each direction
     ivec* nFreeze = nullptr;
     //! Exclusions/tables of energy group pairs
@@ -566,7 +570,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     bool bAdress = false;
     //! Whether twin-range scheme is active - always false if a valid .tpr was read
     bool useTwinRange = false;
-    //! Whether we have constant acceleration - removed in GROMACS 2022
+    //! Whether we have constant acceleration
     bool useConstantAcceleration = false;
 
     //! KVT object that contains input parameters converted to the new style.

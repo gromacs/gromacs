@@ -168,10 +168,6 @@ void list_tpr(const char* fn,
         {
             for (auto group : keysOf(gcount))
             {
-                if (group == SimulationAtomGroupType::AccelerationUnused)
-                {
-                    continue;
-                }
                 gcount[group][getGroupType(groups, group, i)]++;
             }
         }

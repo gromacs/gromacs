@@ -330,6 +330,7 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.anneal_time);
     sfree(ir->opts.anneal_temp);
     sfree(ir->opts.tau_t);
+    sfree(ir->opts.acceleration);
     sfree(ir->opts.nFreeze);
     sfree(ir->opts.egp_flags);
 
@@ -404,6 +405,17 @@ static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopt
             fprintf(out, "\n");
         }
     }
+
+    pr_indent(out, indent);
+    fprintf(out, "acc:\t");
+    for (i = 0; (i < opts->ngacc); i++)
+    {
+        for (m = 0; (m < DIM); m++)
+        {
+            fprintf(out, "  %10g", opts->acceleration[i][m]);
+        }
+    }
+    fprintf(out, "\n");
 
     pr_indent(out, indent);
     fprintf(out, "nfreeze:");
@@ -1077,6 +1089,7 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
     char buf1[256], buf2[256];
 
     cmp_int(fp, "inputrec->grpopts.ngtc", -1, opt1->ngtc, opt2->ngtc);
+    cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
     for (i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
@@ -1107,6 +1120,10 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
                 cmp_int(fp, buf1, j, opt1->egp_flags[opt1->ngener * i + j], opt2->egp_flags[opt1->ngener * i + j]);
             }
         }
+    }
+    for (i = 0; (i < std::min(opt1->ngacc, opt2->ngacc)); i++)
+    {
+        cmp_rvec(fp, "inputrec->grpopts.acceleration", i, opt1->acceleration[i], opt2->acceleration[i], ftol, abstol);
     }
     for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {

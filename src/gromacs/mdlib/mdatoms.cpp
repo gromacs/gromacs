@@ -87,6 +87,7 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->ptype);
     sfree(mdatoms_->cTC);
     sfree(mdatoms_->cENER);
+    sfree(mdatoms_->cACC);
     sfree(mdatoms_->cFREEZE);
     sfree(mdatoms_->cVCM);
     sfree(mdatoms_->cORF);
@@ -288,6 +289,10 @@ void atoms2md(const gmx_mtop_t&  mtop,
             /* We always copy cTC with domain decomposition */
         }
         srenew(md->cENER, md->nalloc);
+        if (inputrec.useConstantAcceleration)
+        {
+            srenew(md->cACC, md->nalloc);
+        }
         if (inputrecFrozenAtoms(&inputrec))
         {
             srenew(md->cFREEZE, md->nalloc);
@@ -474,6 +479,10 @@ void atoms2md(const gmx_mtop_t&  mtop,
                 md->cTC[i] = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
             }
             md->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
+            if (md->cACC)
+            {
+                md->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
+            }
             if (md->cVCM)
             {
                 md->cVCM[i] = groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];

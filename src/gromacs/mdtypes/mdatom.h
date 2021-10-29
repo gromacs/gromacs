@@ -117,6 +117,8 @@ typedef struct t_mdatoms
     unsigned short* cTC;
     //! Group index for energy matrix
     unsigned short* cENER;
+    //! Group index for acceleration
+    unsigned short* cACC;
     //! Group index for freezing
     unsigned short* cFREEZE;
     //! Group index for center of mass motion removal

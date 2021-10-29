@@ -40,6 +40,14 @@ freeze group
     simulation, and afterward use position restraints in conjunction
     with constant pressure.
 
+accelerate group
+
+    On each atom in an “accelerate group” an acceleration
+    :math:`\mathbf{a}^g` is imposed. This is equivalent to
+    a mass-weighted external force. This feature makes it possible to
+    drive the system into a non-equilibrium state to compute,
+    for example, transport properties.
+
 energy-monitor group
 
     Mutual interactions between all energy-monitor groups are compiled

@@ -139,6 +139,7 @@ enum tpxv
     tpxv_RemovedConstantAcceleration, /**< Removed support for constant acceleration NEMD. */
     tpxv_TransformationPullCoord,     /**< Support for transformation pull coordinates */
     tpxv_SoftcoreGapsys,              /**< Added gapsys softcore function */
+    tpxv_ReaddedConstantAcceleration, /**< Re-added support for constant acceleration NEMD. */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1579,10 +1580,14 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         ir->opts.nhchainlength = 1;
     }
-    int removedOptsNgacc = 0;
-    if (serializer->reading() && file_version < tpxv_RemovedConstantAcceleration)
+    if (serializer->reading() && file_version >= tpxv_RemovedConstantAcceleration
+        && file_version < tpxv_ReaddedConstantAcceleration)
     {
-        serializer->doInt(&removedOptsNgacc);
+        ir->opts.ngacc = 0;
+    }
+    else
+    {
+        serializer->doInt(&ir->opts.ngacc);
     }
     serializer->doInt(&ir->opts.ngfrz);
     serializer->doInt(&ir->opts.ngener);
@@ -1597,6 +1602,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         snew(ir->opts.anneal_temp, ir->opts.ngtc);
         snew(ir->opts.tau_t, ir->opts.ngtc);
         snew(ir->opts.nFreeze, ir->opts.ngfrz);
+        snew(ir->opts.acceleration, ir->opts.ngacc);
         snew(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
     }
     if (ir->opts.ngtc > 0)
@@ -1609,18 +1615,20 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         serializer->doIvecArray(ir->opts.nFreeze, ir->opts.ngfrz);
     }
-    if (serializer->reading() && file_version < tpxv_RemovedConstantAcceleration && removedOptsNgacc > 0)
+    if (ir->opts.ngacc > 0)
     {
-        std::vector<gmx::RVec> dummy;
-        dummy.resize(removedOptsNgacc);
-        serializer->doRvecArray(reinterpret_cast<rvec*>(dummy.data()), removedOptsNgacc);
-        ir->useConstantAcceleration = std::any_of(dummy.begin(), dummy.end(), [](const gmx::RVec& vec) {
-            return vec[XX] != 0.0 || vec[YY] != 0.0 || vec[ZZ] != 0.0;
-        });
+        serializer->doRvecArray(ir->opts.acceleration, ir->opts.ngacc);
     }
-    else
+    if (serializer->reading())
     {
         ir->useConstantAcceleration = false;
+        for (int g = 0; g < ir->opts.ngacc; g++)
+        {
+            if (norm2(ir->opts.acceleration[g]) != 0)
+            {
+                ir->useConstantAcceleration = true;
+            }
+        }
     }
     serializer->doIntArray(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
 
@@ -2632,11 +2640,6 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
     }
 
     do_groups(serializer, &mtop->groups, &(mtop->symtab));
-    if (file_version < tpxv_RemovedConstantAcceleration)
-    {
-        mtop->groups.groups[SimulationAtomGroupType::AccelerationUnused].clear();
-        mtop->groups.groupNumbers[SimulationAtomGroupType::AccelerationUnused].clear();
-    }
 
     mtop->haveMoleculeIndices = true;
 

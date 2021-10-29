@@ -26,11 +26,18 @@ both dhdl.xvg and the energy file, which is used by e.g. gmx bar, was correct.
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Removed velocity output for acceleration groups
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+The reported velocity in the energy file for acceleration groups was always
+zero. Now their velocity is no longer reported in the energy file.
+
+:issue:`1354`
+
 Use correct c0 parameter in Me2PO4 in OPLSAA
 """"""""""""""""""""""""""""""""""""""""""""
 
-OPLSAA torsions must sum to 0, but the paramters for Me2PO4 did not do so. Changed the c0
+OPLSAA torsions must sum to 0, but the parameters for Me2PO4 did not do so. Changed the c0
 parameter to the correct value.
 
 :issue:`4075`
-

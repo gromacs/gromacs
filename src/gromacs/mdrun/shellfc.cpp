@@ -852,7 +852,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
     auto  invmass = gmx::arrayRefFromArray(md.invmass, md.nr);
     dt            = ir->delta_t;
 
-    /* Does NOT work with freeze groups (yet) */
+    /* Does NOT work with freeze or acceleration groups (yet) */
     for (n = 0; n < end; n++)
     {
         w_dt = invmass[n] * dt;

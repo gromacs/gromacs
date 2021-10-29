@@ -3023,6 +3023,23 @@ Expanded Ensemble calculations
 Non-equilibrium MD
 ^^^^^^^^^^^^^^^^^^
 
+.. mdp:: acc-grps
+
+   groups for constant acceleration (*e.g.* ``Protein Sol``) all atoms
+   in groups Protein and Sol will experience constant acceleration as
+   specified in the :mdp:`accelerate` line. Note that the kinetic energy
+   of the center of mass of accelarated groups contributes to the kinetic
+   energy and temperature of the system. If this is not desired, make
+   each accelerate group also a separate temperature coupling group.
+
+.. mdp:: accelerate
+
+   (0) [nm ps\ :sup:`-2`]
+   acceleration for :mdp:`acc-grps`; x, y and z for each group
+   (*e.g.* ``0.1 0.0 0.0 -0.1 0.0 0.0`` means that first group has
+   constant acceleration of 0.1 nm ps\ :sup:`-2` in X direction, second group
+   the opposite).
+
 .. mdp:: freezegrps
 
    Groups that are to be frozen (*i.e.* their X, Y, and/or Z position

@@ -174,6 +174,8 @@ public:
     gmx::ArrayRef<const unsigned short> cFREEZE_;
     //! Group index for temperature coupling
     gmx::ArrayRef<const unsigned short> cTC_;
+    //! Group index for accleration groups
+    gmx::ArrayRef<const unsigned short> cAcceleration_;
 
 private:
     //! stochastic dynamics struct
@@ -517,6 +519,7 @@ updateMDLeapfrogSimpleSimd(int                               start,
 enum class AccelerationType
 {
     none,
+    group,
     cosine
 };
 
@@ -530,6 +533,8 @@ enum class AccelerationType
  * \param[in]     dtPressureCouple  Time step for pressure coupling, is 0 when no pressure
  *                                  coupling should be applied at this step.
  * \param[in]     cTC               Temperature coupling group indices
+ * \param[in]     cAcceleration     Acceleration group indices
+ * \param[in]     acceleration      Acceleration per group.
  * \param[in]     invMassPerDim     Inverse mass per dimension
  * \param[in]     ekind             Kinetic energy data.
  * \param[in]     box               The box dimensions.
@@ -548,6 +553,8 @@ static void updateMDLeapfrogGeneral(int                                 start,
                                     real                                dt,
                                     real                                dtPressureCouple,
                                     gmx::ArrayRef<const unsigned short> cTC,
+                                    gmx::ArrayRef<const unsigned short> cAcceleration,
+                                    const rvec* gmx_restrict            acceleration,
                                     gmx::ArrayRef<const rvec>           invMassPerDim,
                                     const gmx_ekindata_t*               ekind,
                                     const matrix                        box,
@@ -568,6 +575,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
     gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
     /* Initialize group values, changed later when multiple groups are used */
+    int ga = 0;
     int gt = 0;
 
     real omega_Z = 2 * static_cast<real>(M_PI) / box[ZZ][ZZ];
@@ -585,6 +593,14 @@ static void updateMDLeapfrogGeneral(int                                 start,
         switch (accelerationType)
         {
             case AccelerationType::none: copy_rvec(v[n], vRel); break;
+            case AccelerationType::group:
+                if (!cAcceleration.empty())
+                {
+                    ga = cAcceleration[n];
+                }
+                /* With constant acceleration we do scale the velocity of the accelerated groups */
+                copy_rvec(v[n], vRel);
+                break;
             case AccelerationType::cosine:
                 cosineZ = std::cos(x[n][ZZ] * omega_Z);
                 vCosine = cosineZ * ekind->cosacc.vcos;
@@ -613,6 +629,10 @@ static void updateMDLeapfrogGeneral(int                                 start,
             switch (accelerationType)
             {
                 case AccelerationType::none: break;
+                case AccelerationType::group:
+                    /* Apply the constant acceleration */
+                    vNew += acceleration[ga][d] * dt;
+                    break;
                 case AccelerationType::cosine:
                     if (d == XX)
                     {
@@ -641,6 +661,9 @@ static void do_update_md(int                                  start,
                          const int                            nsttcouple,
                          const int                            nstpcouple,
                          gmx::ArrayRef<const unsigned short>  cTC,
+                         const bool                           useConstantAcceleration,
+                         gmx::ArrayRef<const unsigned short>  cAcceleration,
+                         const rvec*                          acceleration,
                          gmx::ArrayRef<const real> gmx_unused invmass,
                          gmx::ArrayRef<const rvec>            invMassPerDim,
                          const gmx_ekindata_t*                ekind,
@@ -662,8 +685,8 @@ static void do_update_md(int                                  start,
 
     real dtPressureCouple = (doParrinelloRahman ? nstpcouple * dt : 0);
 
-    /* NEMD cosine acceleration is applied in updateMDLeapFrogGeneral */
-    bool doAcceleration = (ekind->cosacc.cos_accel != 0);
+    /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
+    const bool doAcceleration = (useConstantAcceleration || ekind->cosacc.cos_accel != 0);
 
     if (doNoseHoover || doPROffDiagonal || doAcceleration)
     {
@@ -686,6 +709,8 @@ static void do_update_md(int                                  start,
                                                             dt,
                                                             dtPressureCouple,
                                                             cTC,
+                                                            cAcceleration,
+                                                            acceleration,
                                                             invMassPerDim,
                                                             ekind,
                                                             box,
@@ -697,6 +722,27 @@ static void do_update_md(int                                  start,
                                                             nsttcouple,
                                                             stepM);
         }
+        else if (useConstantAcceleration)
+        {
+            updateMDLeapfrogGeneral<AccelerationType::group>(start,
+                                                             nrend,
+                                                             doNoseHoover,
+                                                             dt,
+                                                             dtPressureCouple,
+                                                             cTC,
+                                                             cAcceleration,
+                                                             acceleration,
+                                                             invMassPerDim,
+                                                             ekind,
+                                                             box,
+                                                             x,
+                                                             xprime,
+                                                             v,
+                                                             f,
+                                                             nh_vxi,
+                                                             nsttcouple,
+                                                             stepM);
+        }
         else
         {
             updateMDLeapfrogGeneral<AccelerationType::cosine>(start,
@@ -705,6 +751,8 @@ static void do_update_md(int                                  start,
                                                               dt,
                                                               dtPressureCouple,
                                                               cTC,
+                                                              cAcceleration,
+                                                              acceleration,
                                                               invMassPerDim,
                                                               ekind,
                                                               box,
@@ -820,6 +868,8 @@ static void do_update_vv_vel(int                                 start,
                              int                                 nrend,
                              real                                dt,
                              gmx::ArrayRef<const ivec>           nFreeze,
+                             gmx::ArrayRef<const unsigned short> cAcceleration,
+                             const rvec*                         acceleration,
                              gmx::ArrayRef<const real>           invmass,
                              gmx::ArrayRef<const ParticleType>   ptype,
                              gmx::ArrayRef<const unsigned short> cFREEZE,
@@ -829,7 +879,7 @@ static void do_update_vv_vel(int                                 start,
                              real                                veta,
                              real                                alpha)
 {
-    int  gf = 0;
+    int  gf = 0, ga = 0;
     int  n, d;
     real g, mv1, mv2;
 
@@ -851,12 +901,17 @@ static void do_update_vv_vel(int                                 start,
         {
             gf = cFREEZE[n];
         }
+        if (!cAcceleration.empty())
+        {
+            ga = cAcceleration[n];
+        }
 
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != ParticleType::Shell) && !nFreeze[gf][d])
             {
-                v[n][d] = mv1 * (mv1 * v[n][d] + 0.5 * (w_dt * mv2 * f[n][d]));
+                v[n][d] = mv1 * (mv1 * v[n][d] + 0.5 * (w_dt * mv2 * f[n][d]))
+                          + 0.5 * acceleration[ga][d] * dt;
             }
             else
             {
@@ -1009,12 +1064,14 @@ Update::Impl::Impl(const t_inputrec& inputRecord, BoxDeformation* boxDeformation
 
 void Update::updateAfterPartition(int                                 numAtoms,
                                   gmx::ArrayRef<const unsigned short> cFREEZE,
-                                  gmx::ArrayRef<const unsigned short> cTC)
+                                  gmx::ArrayRef<const unsigned short> cTC,
+                                  gmx::ArrayRef<const unsigned short> cAcceleration)
 {
 
     impl_->xp()->resizeWithPadding(numAtoms);
-    impl_->cFREEZE_ = cFREEZE;
-    impl_->cTC_     = cTC;
+    impl_->cFREEZE_       = cFREEZE;
+    impl_->cTC_           = cTC;
+    impl_->cAcceleration_ = cAcceleration;
 }
 
 /*! \brief Sets the SD update type */
@@ -1048,6 +1105,8 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                               gmx::ArrayRef<const ParticleType>   ptype,
                               gmx::ArrayRef<const unsigned short> cFREEZE,
                               gmx::ArrayRef<const unsigned short> cTC,
+                              gmx::ArrayRef<const unsigned short> cAcceleration,
+                              const rvec*                         acceleration,
                               const rvec                          x[],
                               rvec                                xprime[],
                               rvec                                v[],
@@ -1056,7 +1115,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                               int                                 seed,
                               const int*                          gatindex)
 {
-    // cTC and cFREEZE can be nullptr any time, but various
+    // cTC, cACC and cFREEZE can be nullptr any time, but various
     // instantiations do not make sense with particular pointer
     // values.
     if (updateType == SDUpdate::ForcesOnly)
@@ -1067,6 +1126,8 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
     if (updateType == SDUpdate::FrictionAndNoiseOnly)
     {
         GMX_ASSERT(f == nullptr, "SD update with only noise cannot handle forces");
+        GMX_ASSERT(cAcceleration.empty(),
+                   "SD update with only noise cannot handle acceleration groups");
     }
     if (updateType == SDUpdate::Combined)
     {
@@ -1086,8 +1147,9 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
         real inverseMass = invmass[n];
         real invsqrtMass = std::sqrt(inverseMass);
 
-        int freezeGroup      = !cFREEZE.empty() ? cFREEZE[n] : 0;
-        int temperatureGroup = !cTC.empty() ? cTC[n] : 0;
+        int freezeGroup       = !cFREEZE.empty() ? cFREEZE[n] : 0;
+        int accelerationGroup = !cAcceleration.empty() ? cAcceleration[n] : 0;
+        int temperatureGroup  = !cTC.empty() ? cTC[n] : 0;
 
         for (int d = 0; d < DIM; d++)
         {
@@ -1095,7 +1157,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
             {
                 if (updateType == SDUpdate::ForcesOnly)
                 {
-                    real vn = v[n][d] + inverseMass * f[n][d] * dt;
+                    real vn = v[n][d] + (inverseMass * f[n][d] + acceleration[accelerationGroup][d]) * dt;
                     v[n][d] = vn;
                     // Simple position update.
                     xprime[n][d] = x[n][d] + v[n][d] * dt;
@@ -1112,7 +1174,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                 }
                 else
                 {
-                    real vn = v[n][d] + inverseMass * f[n][d] * dt;
+                    real vn = v[n][d] + (inverseMass * f[n][d] + acceleration[accelerationGroup][d]) * dt;
                     v[n][d] = (vn * sd.sdc[temperatureGroup].em
                                + invsqrtMass * sd.sdsig[temperatureGroup].V * dist(rng));
                     // Here we include half of the friction+noise
@@ -1149,6 +1211,8 @@ static void do_update_sd(int                                 start,
                          gmx::ArrayRef<const ParticleType>   ptype,
                          gmx::ArrayRef<const unsigned short> cFREEZE,
                          gmx::ArrayRef<const unsigned short> cTC,
+                         gmx::ArrayRef<const unsigned short> cAcceleration,
+                         const rvec*                         acceleration,
                          int                                 seed,
                          const t_commrec*                    cr,
                          const gmx_stochd_t&                 sd,
@@ -1166,6 +1230,8 @@ static void do_update_sd(int                                 start,
                                                 ptype,
                                                 cFREEZE,
                                                 gmx::ArrayRef<const unsigned short>(),
+                                                cAcceleration,
+                                                acceleration,
                                                 x,
                                                 xprime,
                                                 v,
@@ -1186,6 +1252,8 @@ static void do_update_sd(int                                 start,
                 ptype,
                 cFREEZE,
                 cTC,
+                cAcceleration,
+                acceleration,
                 x,
                 xprime,
                 v,
@@ -1426,6 +1494,8 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                         ptype,
                         cFREEZE_,
                         cTC_,
+                        cAcceleration_,
+                        inputRecord.opts.acceleration,
                         state->x.rvec_array(),
                         xp_.rvec_array(),
                         state->v.rvec_array(),
@@ -1582,6 +1652,9 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  inputRecord.nsttcouple,
                                  inputRecord.nstpcouple,
                                  cTC_,
+                                 inputRecord.useConstantAcceleration,
+                                 cAcceleration_,
+                                 inputRecord.opts.acceleration,
                                  invMass,
                                  invMassPerDim,
                                  ekind,
@@ -1604,6 +1677,8 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  ptype,
                                  cFREEZE_,
                                  cTC_,
+                                 cAcceleration_,
+                                 inputRecord.opts.acceleration,
                                  inputRecord.ld_seed,
                                  cr,
                                  sd_,
@@ -1646,6 +1721,8 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                              dt,
                                              gmx::arrayRefFromArray(inputRecord.opts.nFreeze,
                                                                     inputRecord.opts.ngfrz),
+                                             cAcceleration_,
+                                             inputRecord.opts.acceleration,
                                              invMass,
                                              ptype,
                                              cFREEZE_,
