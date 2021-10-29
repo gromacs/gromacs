@@ -52,7 +52,7 @@
  *
  * \returns Buffer, casted to float3*.
  */
-static inline __host__ __device__ float3* asFloat3(gmx::RVec* in)
+__forceinline__ static __host__ __device__ float3* asFloat3(gmx::RVec* in)
 {
     static_assert(sizeof(in[0]) == sizeof(float3),
                   "Size of the host-side data-type is different from the size of the device-side "
@@ -66,7 +66,7 @@ static inline __host__ __device__ float3* asFloat3(gmx::RVec* in)
  *
  * \returns Buffer pointer, casted to float3*.
  */
-static inline __host__ __device__ float3** asFloat3Pointer(gmx::RVec** in)
+__forceinline__ static __host__ __device__ float3** asFloat3Pointer(gmx::RVec** in)
 {
     static_assert(sizeof((*in)[0]) == sizeof(float3),
                   "Size of the host-side data-type is different from the size of the device-side "
