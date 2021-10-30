@@ -105,6 +105,10 @@ struct PmeGpuSpecific
     GpuEventSynchronizer pmeForcesReady;
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     GpuEventSynchronizer syncSpreadGridD2H;
+    /*! \brief Triggered after the grid has been converted from FFT grid to PME grid (before the gather stage). */
+    GpuEventSynchronizer syncFftToPmeGrid;
+    /*! \brief Triggered after spline/spread computations have been completed. */
+    GpuEventSynchronizer spreadCompleted;
 
     /* Settings which are set at the start of the run */
     /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currently true. */
@@ -165,6 +169,43 @@ struct PmeGpuSpecific
     int complexGridSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
     int complexGridCapacity[NUMFEPSTATES] = { 0, 0 };
+
+    /*! \brief Buffer size used to transfer PME grid overlap region in X-dimension*/
+    int overlapXSizeLeft = 0;
+    /*! \brief Buffer capacity used to transfer PME grid overlap region in X-dimension*/
+    int overlapXCapacityLeft = 0;
+    /*! \brief Buffer size used to transfer PME grid overlap region in X-dimension*/
+    int overlapXSizeRight = 0;
+    /*! \brief Buffer capacity used to transfer PME grid overlap region in X-dimension*/
+    int overlapXCapacityRight = 0;
+    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
+    int overlapYSendSizeLeft = 0;
+    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
+    int overlapYSendCapacityLeft = 0;
+    /*! \brief Buffer size used to recv PME grid overlap region in Y-dimension*/
+    int overlapYRecvSizeLeft = 0;
+    /*! \brief Buffer capacity used to recv PME grid overlap region in Y-dimension*/
+    int overlapYRecvCapacityLeft = 0;
+    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
+    int overlapYSendSizeRight = 0;
+    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
+    int overlapYSendCapacityRight = 0;
+    /*! \brief Buffer size used to recv PME grid overlap region in Y-dimension*/
+    int overlapYRecvSizeRight = 0;
+    /*! \brief Buffer capacity used to recv PME grid overlap region in Y-dimension*/
+    int overlapYRecvCapacityRight = 0;
+    /*! \brief Buffer used to transfer PME grid overlap region in X-dimension*/
+    DeviceBuffer<float> d_recvGridLeftX = nullptr;
+    /*! \brief Buffer used to transfer PME grid overlap region in X-dimension*/
+    DeviceBuffer<float> d_recvGridRightX = nullptr;
+    /*! \brief Buffer used to send PME grid overlap region in Y-dimension*/
+    DeviceBuffer<float> d_sendGridLeftY = nullptr;
+    /*! \brief Buffer used to recv PME grid overlap region in Y-dimension*/
+    DeviceBuffer<float> d_recvGridLeftY = nullptr;
+    /*! \brief Buffer used to send PME grid overlap region in Y-dimension*/
+    DeviceBuffer<float> d_sendGridRightY = nullptr;
+    /*! \brief Buffer used to recv PME grid overlap region in Y-dimension*/
+    DeviceBuffer<float> d_recvGridRightY = nullptr;
 };
 
 #endif

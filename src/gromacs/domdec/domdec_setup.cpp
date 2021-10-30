@@ -421,16 +421,22 @@ static float comm_cost_est(real               limit,
          * along the x dimension per rank doing PME.
          */
         int npme_x = (npme_tot > 1 ? npme[XX] : nc[XX]);
+        int npme_y = (npme_tot > 1 ? npme[YY] : nc[YY]);
 
         /* Currently we don't have the OpenMP thread count available here.
          * But with threads we have only tighter restrictions and it's
          * probably better anyhow to avoid settings where we need to reduce
          * grid lines over multiple ranks, as the thread check will do.
+         *
+         * extendedHaloRegion (used for PME GPU decomposition runs) is also not known
+         * at this point. Just ignore it at this point.
          */
-        bool useThreads     = true;
-        bool errorsAreFatal = false;
+        bool useThreads         = true;
+        int  extendedHaloRegion = 0;
+        bool useGpuPme          = false;
+        bool errorsAreFatal     = false;
         if (!gmx_pme_check_restrictions(
-                    ir.pme_order, ir.nkx, ir.nky, ir.nkz, npme_x, useThreads, errorsAreFatal))
+                    ir.pme_order, ir.nkx, ir.nky, ir.nkz, npme_x, npme_y, extendedHaloRegion, useGpuPme, useThreads, errorsAreFatal))
         {
             return -1;
         }

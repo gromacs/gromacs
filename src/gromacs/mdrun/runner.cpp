@@ -1853,21 +1853,26 @@ int Mdrunner::mdrunner()
                                  ? &deviceStreamManager->stream(DeviceStreamType::Pme)
                                  : nullptr;
 
-                pmedata = gmx_pme_init(cr,
-                                       getNumPmeDomains(cr->dd),
-                                       inputrec.get(),
-                                       nChargePerturbed != 0,
-                                       nTypePerturbed != 0,
-                                       mdrunOptions.reproducible,
-                                       ewaldcoeff_q,
-                                       ewaldcoeff_lj,
-                                       gmx_omp_nthreads_get(ModuleMultiThread::Pme),
-                                       pmeRunMode,
-                                       nullptr,
-                                       deviceContext,
-                                       pmeStream,
-                                       pmeGpuProgram.get(),
-                                       mdlog);
+                const t_inputrec* ir = inputrec.get();
+                pmedata              = gmx_pme_init(
+                        cr,
+                        getNumPmeDomains(cr->dd),
+                        ir,
+                        box,
+                        minCellSizeForAtomDisplacement(
+                                mtop, *ir, updateGroups.updateGroupingPerMoleculeType(), ir->ewald_rtol),
+                        nChargePerturbed != 0,
+                        nTypePerturbed != 0,
+                        mdrunOptions.reproducible,
+                        ewaldcoeff_q,
+                        ewaldcoeff_lj,
+                        gmx_omp_nthreads_get(ModuleMultiThread::Pme),
+                        pmeRunMode,
+                        nullptr,
+                        deviceContext,
+                        pmeStream,
+                        pmeGpuProgram.get(),
+                        mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }

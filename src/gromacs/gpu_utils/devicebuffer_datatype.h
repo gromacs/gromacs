@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,12 @@ private:
     cl_mem data_;
 
 public:
+    //! \brief Default constructor
+    TypedClMemory() : data_(nullptr) {}
+
+    //! \brief Needed for cross-platform compilation
+    TypedClMemory(std::nullptr_t nullPtr) : data_(nullPtr) {}
+
     //! \brief An assignment operator - the purpose is to make allocation/zeroing work
     TypedClMemory& operator=(cl_mem data)
     {
@@ -101,6 +107,7 @@ struct DeviceBuffer
     std::unique_ptr<ClSyclBufferWrapper> buffer_;
 
     DeviceBuffer();
+    DeviceBuffer(std::nullptr_t nullPtr);
     ~DeviceBuffer();
     DeviceBuffer(DeviceBuffer<ValueType> const& src);
     DeviceBuffer(DeviceBuffer<ValueType>&& src) noexcept;

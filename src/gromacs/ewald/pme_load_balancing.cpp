@@ -220,8 +220,6 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
 {
 
     pme_load_balancing_t* pme_lb;
-    real                  spm, sp;
-    int                   d;
 
     // Note that we don't (yet) support PME load balancing with LJ-PME only.
     GMX_RELEASE_ASSERT(EEL_PME(ir.coulombtype),
@@ -275,16 +273,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
         pme_lb->setup[0].pmedata = pmedata;
     }
 
-    spm = 0;
-    for (d = 0; d < DIM; d++)
-    {
-        sp = norm(pme_lb->box_start[d]) / pme_lb->setup[0].grid[d];
-        if (sp > spm)
-        {
-            spm = sp;
-        }
-    }
-    pme_lb->setup[0].spacing = spm;
+    pme_lb->setup[0].spacing = getGridSpacingFromBox(pme_lb->box_start, pme_lb->setup[0].grid);
 
     if (ir.fourier_spacing > 0)
     {
@@ -399,7 +388,7 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
          * per PME rank along x, which is not a strong restriction.
          */
         grid_ok = gmx_pme_check_restrictions(
-                pme_order, set.grid[XX], set.grid[YY], set.grid[ZZ], numPmeDomains.x, true, false);
+                pme_order, set.grid[XX], set.grid[YY], set.grid[ZZ], numPmeDomains.x, numPmeDomains.y, 0, false, true, false);
     } while (sp <= 1.001 * pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
 
     set.rcut_coulomb = pme_lb->cut_spacing * sp;

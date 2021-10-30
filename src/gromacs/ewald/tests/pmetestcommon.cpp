@@ -128,12 +128,17 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                               const real           ewaldCoeff_lj)
 {
     const MDLogger dummyLogger;
+    const matrix   dummyBox      = { { 0 } };
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec  = { 0 };
     NumPmeDomains  numPmeDomains = { 1, 1 };
-    gmx_pme_t*     pmeDataRaw    = gmx_pme_init(&dummyCommrec,
+    // TODO: Need to use proper value when GPU PME decomposition code path is tested
+    const real     haloExtentForAtomDisplacement = 1.0;
+    gmx_pme_t*     pmeDataRaw                    = gmx_pme_init(&dummyCommrec,
                                          numPmeDomains,
                                          inputRec,
+                                         dummyBox,
+                                         haloExtentForAtomDisplacement,
                                          false,
                                          false,
                                          true,
@@ -359,6 +364,7 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
             pme_gpu_spread(pme->gpu,
                            xReadyOnDevice,
                            fftgrid,
+                           pme->pfft_setup,
                            computeSplines,
                            spreadCharges,
                            lambdaQ,
@@ -485,7 +491,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
             PmeOutput  output = pme_gpu_getOutput(*pme, computeEnergyAndVirial, lambdaQ);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            pme_gpu_gather(pme->gpu, fftgrid, lambdaQ);
+            pme_gpu_gather(pme->gpu, fftgrid, pme->pfft_setup, lambdaQ);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;

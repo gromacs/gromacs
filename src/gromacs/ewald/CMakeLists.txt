@@ -66,6 +66,7 @@ if (GMX_GPU_CUDA)
         pme_pp_comm_gpu_impl.cu
         pme_force_sender_gpu_impl.cu
         pme_coordinate_receiver_gpu_impl.cu
+        pme_gpu_grid.cu
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
@@ -80,6 +81,7 @@ elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
         pme_gpu_program_impl_ocl.cpp
+        pme_gpu_ocl_stubs.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
@@ -92,6 +94,7 @@ elseif (GMX_GPU_SYCL)
         pme_gpu.cpp
         pme_gpu_internal.cpp
         pme_gpu_program_impl_sycl.cpp
+        pme_gpu_sycl_stubs.cpp
         pme_gpu_timings.cpp
         pme_solve_sycl.cpp
         pme_spread_sycl.cpp

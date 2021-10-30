@@ -335,6 +335,8 @@ struct gmx_pme_t
     real ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
     real ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
     real epsilon_r;
+    int  pmeGpuGridHalo = 0; /* Size of the grid halo region with PME GPU decomposition */
+    real haloExtentForAtomDisplacement = .0; /* extent of halo region in nm to account for atom */
 
 
     enum PmeRunMode runMode; /* Which codepath is the PME runner taking - CPU, GPU, mixed;

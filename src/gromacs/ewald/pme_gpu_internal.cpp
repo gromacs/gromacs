@@ -91,6 +91,7 @@
 #include "pme_grid.h"
 #include "pme_internal.h"
 #include "pme_solve.h"
+#include "pme_gpu_grid.h"
 
 /*! \brief
  * CUDA only
@@ -405,6 +406,93 @@ void pme_gpu_realloc_grids(PmeGpu* pmeGpu)
             // the size might get used later for copying the grid
         }
     }
+
+    // allocate overlap buffers needed for PME grid halo exchanges
+    if (pmeGpu->settings.useDecomposition)
+    {
+        if (pmeGpu->common->nnodesX > 1)
+        {
+            int rank  = pmeGpu->common->nodeidX;
+            int size  = pmeGpu->common->nnodesX;
+            int right = (rank + 1) % size;
+            int left  = (rank + size - 1) % size;
+
+            int myGrid    = pmeGpu->common->s2g0X[rank + 1] - pmeGpu->common->s2g0X[rank];
+            int rightGrid = pmeGpu->common->s2g0X[right + 1] - pmeGpu->common->s2g0X[right];
+
+            int overlapSize = pmeGpu->common->gridHalo * kernelParamsPtr->grid.realGridSizePadded[YY]
+                              * kernelParamsPtr->grid.realGridSizePadded[ZZ];
+
+            // if only 2 PME ranks in X-domain and overlap width more than slab width
+            // just transfer all grid points from neighbor
+            if (right == left && 2 * overlapSize >= rightGrid)
+            {
+                int slabWidth = std::max(rightGrid, myGrid);
+                overlapSize   = slabWidth * kernelParamsPtr->grid.realGridSizePadded[YY]
+                              * kernelParamsPtr->grid.realGridSizePadded[ZZ];
+            }
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_recvGridLeftX,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapXSizeLeft,
+                                   &pmeGpu->archSpecific->overlapXCapacityLeft,
+                                   pmeGpu->archSpecific->deviceContext_);
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_recvGridRightX,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapXSizeRight,
+                                   &pmeGpu->archSpecific->overlapXCapacityRight,
+                                   pmeGpu->archSpecific->deviceContext_);
+        }
+
+        if (pmeGpu->common->nnodesY > 1)
+        {
+            int rank  = pmeGpu->common->nodeidY;
+            int size  = pmeGpu->common->nnodesY;
+            int right = (rank + 1) % size;
+            int left  = (rank + size - 1) % size;
+
+            int myGrid    = pmeGpu->common->s2g0Y[rank + 1] - pmeGpu->common->s2g0Y[rank];
+            int rightGrid = pmeGpu->common->s2g0Y[right + 1] - pmeGpu->common->s2g0Y[right];
+
+            int overlapSize = pmeGpu->common->gridHalo * kernelParamsPtr->grid.realGridSizePadded[XX]
+                              * kernelParamsPtr->grid.realGridSizePadded[ZZ];
+
+            // if only 2 PME ranks in Y-domain and overlap width more than slab width
+            // just transfer all grid points from neighbor
+            if (right == left && 2 * overlapSize >= rightGrid)
+            {
+                int slabWidth = std::max(rightGrid, myGrid);
+                overlapSize   = slabWidth * kernelParamsPtr->grid.realGridSizePadded[XX]
+                              * kernelParamsPtr->grid.realGridSizePadded[ZZ];
+            }
+
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_sendGridLeftY,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapYSendSizeLeft,
+                                   &pmeGpu->archSpecific->overlapYSendCapacityLeft,
+                                   pmeGpu->archSpecific->deviceContext_);
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_recvGridLeftY,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapYRecvSizeLeft,
+                                   &pmeGpu->archSpecific->overlapYRecvCapacityLeft,
+                                   pmeGpu->archSpecific->deviceContext_);
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_sendGridRightY,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapYSendSizeRight,
+                                   &pmeGpu->archSpecific->overlapYSendCapacityRight,
+                                   pmeGpu->archSpecific->deviceContext_);
+
+            reallocateDeviceBuffer(&pmeGpu->archSpecific->d_recvGridRightY,
+                                   overlapSize,
+                                   &pmeGpu->archSpecific->overlapYRecvSizeRight,
+                                   &pmeGpu->archSpecific->overlapYRecvCapacityRight,
+                                   pmeGpu->archSpecific->deviceContext_);
+        }
+    }
 }
 
 void pme_gpu_free_grids(const PmeGpu* pmeGpu)
@@ -416,6 +504,23 @@ void pme_gpu_free_grids(const PmeGpu* pmeGpu)
             freeDeviceBuffer(&pmeGpu->kernelParams->grid.d_fourierGrid[gridIndex]);
         }
         freeDeviceBuffer(&pmeGpu->kernelParams->grid.d_realGrid[gridIndex]);
+    }
+
+    if (pmeGpu->settings.useDecomposition)
+    {
+        if (pmeGpu->common->nnodesX > 1)
+        {
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_recvGridLeftX);
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_recvGridRightX);
+        }
+
+        if (pmeGpu->common->nnodesY > 1)
+        {
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_sendGridLeftY);
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_recvGridLeftY);
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_sendGridRightY);
+            freeDeviceBuffer(&pmeGpu->archSpecific->d_recvGridRightY);
+        }
     }
 }
 
@@ -436,9 +541,9 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
 
-    const int nx                  = kernelParamsPtr->grid.realGridSize[XX];
-    const int ny                  = kernelParamsPtr->grid.realGridSize[YY];
-    const int nz                  = kernelParamsPtr->grid.realGridSize[ZZ];
+    const int nx                  = pmeGpu->common->nk[XX];
+    const int ny                  = pmeGpu->common->nk[YY];
+    const int nz                  = pmeGpu->common->nk[ZZ];
     const int cellCount           = c_pmeNeighborUnitcellCount;
     const int gridDataOffset[DIM] = { 0, cellCount * nx, cellCount * (nx + ny) };
 
@@ -795,9 +900,11 @@ static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
     /* The grid size variants */
     for (int i = 0; i < DIM; i++)
     {
+        // allocate only decomposed grid size on device
         kernelParamsPtr->grid.realGridSize[i] = pmeGpu->common->nk[i];
-        kernelParamsPtr->grid.realGridSizeFP[i] =
-                static_cast<float>(kernelParamsPtr->grid.realGridSize[i]);
+
+        // realGridSizeFP is expected to be full-grid size in kernels
+        kernelParamsPtr->grid.realGridSizeFP[i]     = static_cast<float>(pmeGpu->common->nk[i]);
         kernelParamsPtr->grid.realGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
 
         // The complex grid currently uses no padding;
@@ -850,6 +957,21 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     pmeGpu->common->nk[YY]       = pme->nky;
     pmeGpu->common->nk[ZZ]       = pme->nkz;
     pmeGpu->common->pme_order    = pme->pme_order;
+    // overlap region is needed only in case of decomposition
+    pmeGpu->common->pmegridNk[XX] = pme->nnodes_major > 1 ? pme->pmegrid_nx : pme->nkx;
+    pmeGpu->common->pmegridNk[YY] = pme->nnodes_minor > 1 ? pme->pmegrid_ny : pme->nky;
+    pmeGpu->common->pmegridNk[ZZ] = pme->nkz;
+    pmeGpu->common->ndecompdim    = pme->ndecompdim;
+    pmeGpu->common->nodeidX       = pme->nodeid_major;
+    pmeGpu->common->nodeidY       = pme->nodeid_minor;
+    pmeGpu->common->nnodesX       = pme->nnodes_major;
+    pmeGpu->common->nnodesY       = pme->nnodes_minor;
+    pmeGpu->common->s2g0X         = pme->overlap[0].s2g0;
+    pmeGpu->common->s2g1X         = pme->overlap[0].s2g1;
+    pmeGpu->common->s2g0Y         = pme->overlap[1].s2g0;
+    pmeGpu->common->s2g1Y         = pme->overlap[1].s2g1;
+    pmeGpu->common->gridHalo      = pme->pmeGpuGridHalo;
+
     if (pmeGpu->common->pme_order != c_pmeGpuOrder)
     {
         GMX_THROW(gmx::NotImplementedError("pme_order != 4 is not implemented!"));
@@ -870,6 +992,8 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     pmeGpu->common->runMode       = pme->runMode;
     pmeGpu->common->isRankPmeOnly = !pme->bPPnode;
     pmeGpu->common->boxScaler     = pme->boxScaler.get();
+    pmeGpu->common->mpiCommX      = pme->mpi_comm_d[0];
+    pmeGpu->common->mpiCommY      = pme->mpi_comm_d[1];
 }
 
 /*! \libinternal \brief
@@ -1283,6 +1407,7 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
 void pme_gpu_spread(const PmeGpu*                  pmeGpu,
                     GpuEventSynchronizer*          xReadyOnDevice,
                     real**                         h_grids,
+                    gmx_parallel_3dfft_t*          fftSetup,
                     bool                           computeSplines,
                     bool                           spreadCharges,
                     const real                     lambda,
@@ -1484,14 +1609,35 @@ void pme_gpu_spread(const PmeGpu*                  pmeGpu,
 
     pme_gpu_stop_timing(pmeGpu, timingId);
 
-    const auto& settings    = pmeGpu->settings;
+    const auto& settings = pmeGpu->settings;
+
+    // halo exchange
+    if (settings.useDecomposition)
+    {
+        // mark event once spread has been launched, this event is consumed in pmeGpuGridHaloExchange
+        pmeGpu->archSpecific->spreadCompleted.markEvent(pmeGpu->archSpecific->pmeStream_);
+        pmeGpuGridHaloExchange(pmeGpu);
+    }
+
     const bool copyBackGrid = spreadCharges && (!settings.performGPUFFT || settings.copyAllOutputs);
     if (copyBackGrid)
     {
-        for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+        if (settings.useDecomposition)
         {
-            float* h_grid = h_grids[gridIndex];
-            pme_gpu_copy_output_spread_grid(pmeGpu, h_grid, gridIndex);
+            // non-contiguous data - need to run kernel
+            for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+            {
+                float* h_grid = h_grids[gridIndex];
+                convertPmeGridToFftGrid<true>(pmeGpu, h_grid, fftSetup, gridIndex);
+            }
+        }
+        else
+        {
+            for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+            {
+                float* h_grid = h_grids[gridIndex];
+                pme_gpu_copy_output_spread_grid(pmeGpu, h_grid, gridIndex);
+            }
         }
     }
     const bool copyBackAtomData =
@@ -1717,7 +1863,7 @@ inline auto selectGatherKernelPtr(const PmeGpu*  pmeGpu,
     return kernelPtr;
 }
 
-void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, const float lambda)
+void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, gmx_parallel_3dfft_t* fftSetup, const float lambda)
 {
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -1727,16 +1873,34 @@ void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, const float lambda)
 
     if (!settings.performGPUFFT || settings.copyAllOutputs)
     {
-        for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+        if (settings.useDecomposition)
         {
-            float* h_grid = const_cast<float*>(h_grids[gridIndex]);
-            pme_gpu_copy_input_gather_grid(pmeGpu, h_grid, gridIndex);
+            // non-contiguous data - need to run kernel
+            for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+            {
+                float* h_grid = const_cast<float*>(h_grids[gridIndex]);
+                convertPmeGridToFftGrid<false>(pmeGpu, h_grid, fftSetup, gridIndex);
+            }
+        }
+        else
+        {
+            for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
+            {
+                float* h_grid = const_cast<float*>(h_grids[gridIndex]);
+                pme_gpu_copy_input_gather_grid(pmeGpu, h_grid, gridIndex);
+            }
         }
     }
 
     if (settings.copyAllOutputs)
     {
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
+    }
+
+    // reverse halo exchange
+    if (settings.useDecomposition)
+    {
+        pmeGpuGridHaloExchangeReverse(pmeGpu);
     }
 
     /* Set if we have unit tests */

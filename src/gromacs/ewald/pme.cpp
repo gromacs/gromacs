@@ -204,7 +204,7 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     gmx::MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("PME GPU does not support:");
-    errorReasons.appendIf((pme->nnodes != 1), "PME decomposition.");
+    errorReasons.appendIf((!GMX_GPU_CUDA && pme->nnodes != 1), "PME decomposition.");
     errorReasons.appendIf((pme->pme_order != 4), "interpolation orders other than 4.");
     errorReasons.appendIf(pme->doLJ, "Lennard-Jones PME.");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS.");
@@ -479,7 +479,39 @@ int minimalPmeGridSize(int pmeOrder)
     return minimalSize;
 }
 
-bool gmx_pme_check_restrictions(int pme_order, int nkx, int nky, int nkz, int numPmeDomainsAlongX, bool useThreads, bool errorsAreFatal)
+int numGridLinesForExtendedHaloRegion(int pmeOrder, real haloExtentForAtomDisplacement, real gridSpacing)
+{
+    GMX_ASSERT(gridSpacing > 0, "PME grid spacing must be >0");
+    // use at least pmeOrder grid lines if haloExtentForAtomDisplacement is zero
+    return std::max(static_cast<int>(std::ceil(haloExtentForAtomDisplacement / gridSpacing)), 1)
+           + (pmeOrder - 1);
+}
+
+real getGridSpacingFromBox(const matrix box, const ivec gridDim)
+{
+    real spm = 0;
+    for (int d = 0; d < DIM; d++)
+    {
+        real sp = gridDim[d] > 0 ? norm(box[d]) / gridDim[d] : 0;
+        if (sp > spm)
+        {
+            spm = sp;
+        }
+    }
+
+    return spm;
+}
+
+bool gmx_pme_check_restrictions(int  pme_order,
+                                int  nkx,
+                                int  nky,
+                                int  nkz,
+                                int  numPmeDomainsAlongX,
+                                int  numPmeDomainsAlongY,
+                                int  extendedHaloRegion,
+                                bool useGpuPme,
+                                bool useThreads,
+                                bool errorsAreFatal)
 {
     if (pme_order > PME_ORDER_MAX)
     {
@@ -527,6 +559,20 @@ bool gmx_pme_check_restrictions(int pme_order, int nkx, int nky, int nkz, int nu
                   pme_order);
     }
 
+    /* Check if extended halo size is not more than local grid width
+     * this is needed for PME-GPU decomposition
+     */
+    if (useGpuPme && (numPmeDomainsAlongX > 1 || numPmeDomainsAlongY > 1)
+        && (extendedHaloRegion > nkx / numPmeDomainsAlongX || extendedHaloRegion > nky / numPmeDomainsAlongY))
+    {
+        if (!errorsAreFatal)
+        {
+            return false;
+        }
+
+        gmx_fatal(FARGS, "Extended halo size (%d) is too high. Reduce nstlist value.", extendedHaloRegion);
+    }
+
     return true;
 }
 
@@ -539,6 +585,8 @@ static int div_round_up(int enumerator, int denominator)
 gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                         const NumPmeDomains& numPmeDomains,
                         const t_inputrec*    ir,
+                        const matrix         box,
+                        real                 haloExtentForAtomDisplacement,
                         gmx_bool             bFreeEnergy_q,
                         gmx_bool             bFreeEnergy_lj,
                         gmx_bool             bReproducible,
@@ -698,9 +746,52 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     pme->boxScaler = std::make_unique<EwaldBoxZScaler>(
             EwaldBoxZScaler(inputrecPbcXY2Walls(ir), ir->wall_ewald_zfac));
 
+    if (runMode != PmeRunMode::CPU && pme->ndecompdim >= 1)
+    {
+        real gridSpacing = .0;
+        if (ir->fourier_spacing > 0)
+        {
+            gridSpacing = ir->fourier_spacing;
+        }
+        else
+        {
+            // if ir doesn't have valid fourier_spacing value
+            // calculate it from simulation box and grid dimension
+            matrix scaledBox;
+            pme->boxScaler->scaleBox(box, scaledBox);
+
+            ivec gridDim = { ir->nkx, ir->nky, ir->nkz };
+            gridSpacing  = getGridSpacingFromBox(scaledBox, gridDim);
+        }
+
+        GMX_RELEASE_ASSERT(gridSpacing > 0, "Computed value of grid spacing is 0");
+
+        int pmeGpuGridHalo = numGridLinesForExtendedHaloRegion(
+                ir->pme_order, haloExtentForAtomDisplacement, gridSpacing);
+
+        if (debug)
+        {
+            fprintf(debug,
+                    "PME GPU haloExtent = %.3f pmeGpuGridHalo = %d\n",
+                    haloExtentForAtomDisplacement,
+                    pmeGpuGridHalo);
+        }
+
+        pme->haloExtentForAtomDisplacement = haloExtentForAtomDisplacement;
+        pme->pmeGpuGridHalo                = pmeGpuGridHalo;
+    }
+
     /* If we violate restrictions, generate a fatal error here */
-    gmx_pme_check_restrictions(
-            pme->pme_order, pme->nkx, pme->nky, pme->nkz, pme->nnodes_major, pme->bUseThreads, true);
+    gmx_pme_check_restrictions(pme->pme_order,
+                               pme->nkx,
+                               pme->nky,
+                               pme->nkz,
+                               pme->nnodes_major,
+                               pme->nnodes_minor,
+                               pme->pmeGpuGridHalo,
+                               runMode != PmeRunMode::CPU,
+                               pme->bUseThreads,
+                               true);
 
     if (pme->nnodes > 1)
     {
@@ -924,6 +1015,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
     irc.nkx                    = grid_size[XX];
     irc.nky                    = grid_size[YY];
     irc.nkz                    = grid_size[ZZ];
+    irc.fourier_spacing        = ir->fourier_spacing;
 
     try
     {
@@ -931,11 +1023,14 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
         // Here we should avoid writing notes for settings the user did not
         // set directly.
         const gmx::MDLogger dummyLogger;
+        const matrix        dummyBox = { { 0 } };
         GMX_ASSERT(pmedata, "Invalid PME pointer");
         NumPmeDomains numPmeDomains = { pme_src->nnodes_major, pme_src->nnodes_minor };
         *pmedata                    = gmx_pme_init(cr,
                                 numPmeDomains,
                                 &irc,
+                                dummyBox,
+                                pme_src->haloExtentForAtomDisplacement,
                                 pme_src->bFEP_q,
                                 pme_src->bFEP_lj,
                                 FALSE,

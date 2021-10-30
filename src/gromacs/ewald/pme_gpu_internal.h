@@ -68,6 +68,7 @@ class PmeGpuProgram;
 struct PmeGpuStaging;
 struct PmeGpuSettings;
 struct t_complex;
+typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 
 #ifndef FEP_STATE_A
 //! Grid index of FEP state A (or unperturbed system)
@@ -347,6 +348,7 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
  * \param[out] h_grids                   The host-side grid buffers (used only if the result
  *                                       of the spread is expected on the host, e.g. testing
  *                                       or host-side FFT)
+ * \param[in]  fftSetup                  Host-side FFT setup structure used in Mixed mode
  * \param[in]  computeSplines            Should the computation of spline parameters and gridline
  *                                       indices be performed.
  * \param[in]  spreadCharges             Should the charges/coefficients be spread on the grid.
@@ -359,6 +361,7 @@ GPU_FUNC_QUALIFIER void
 pme_gpu_spread(const PmeGpu*                  GPU_FUNC_ARGUMENT(pmeGpu),
                GpuEventSynchronizer*          GPU_FUNC_ARGUMENT(xReadyOnDevice),
                float**                        GPU_FUNC_ARGUMENT(h_grids),
+               gmx_parallel_3dfft_t*          GPU_FUNC_ARGUMENT(fftSetup),
                bool                           GPU_FUNC_ARGUMENT(computeSplines),
                bool                           GPU_FUNC_ARGUMENT(spreadCharges),
                real                           GPU_FUNC_ARGUMENT(lambda),
@@ -396,11 +399,13 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  *
  * \param[in]     pmeGpu                   The PME GPU structure.
  * \param[in]     h_grids                  The host-side grid buffer (used only in testing mode).
+ * \param[in]     fftSetup                 Host-side FFT setup structure used in Mixed mode
  * \param[in]     lambda                   The lambda value to use.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
-                                       float** GPU_FUNC_ARGUMENT(h_grids),
-                                       float   GPU_FUNC_ARGUMENT(lambda)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*               GPU_FUNC_ARGUMENT(pmeGpu),
+                                       float**               GPU_FUNC_ARGUMENT(h_grids),
+                                       gmx_parallel_3dfft_t* GPU_FUNC_ARGUMENT(fftSetup),
+                                       float GPU_FUNC_ARGUMENT(lambda)) GPU_FUNC_TERM;
 
 
 /*! \brief Sets the device pointer to coordinate data

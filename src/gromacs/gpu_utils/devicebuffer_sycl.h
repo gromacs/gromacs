@@ -75,6 +75,12 @@ DeviceBuffer<T>::DeviceBuffer() : buffer_(nullptr)
 {
 }
 
+//! Dummy assignment operator to allow compilation of cross-platform code
+template<typename T>
+DeviceBuffer<T>::DeviceBuffer(std::nullptr_t nullPtr) : buffer_(nullPtr)
+{
+}
+
 //! Destructor.
 template<typename T>
 DeviceBuffer<T>::~DeviceBuffer() = default;

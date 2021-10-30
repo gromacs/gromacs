@@ -129,6 +129,29 @@ enum class PmeRunMode
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
 
+/*! \brief Calculates the number of grid lines used as halo region for PME decomposition.
+ *
+ * This function is only used for PME GPU decomposition case
+ *
+ * \param[in] pmeOrder                      PME interpolation order
+ * \param[in] haloExtentForAtomDisplacement extent of halo region in nm to account for atom
+ *                                          displacement
+ * \param[in] gridSpacing                   spacing between grid lines
+ *
+ * \returns  extended halo region used in GPU PME decomposition
+ */
+int numGridLinesForExtendedHaloRegion(int pmeOrder, real haloExtentForAtomDisplacement, real gridSpacing);
+
+/*! \brief
+ * Gets grid spacing from simulation box and grid dimension
+ *
+ * \param[in]     box       Simulation box
+ * \param[in]     gridDim   Fourier grid dimension
+ *
+ * \returns  Grid spacing value
+ */
+real getGridSpacingFromBox(const matrix box, const ivec gridDim);
+
 //! Return whether the grid of \c pme is identical to \c grid_size.
 bool gmx_pme_grid_matches(const gmx_pme_t& pme, const ivec grid_size);
 
@@ -148,6 +171,9 @@ bool gmx_pme_check_restrictions(int  pme_order,
                                 int  nky,
                                 int  nkz,
                                 int  numPmeDomainsAlongX,
+                                int  numPmeDomainsAlongY,
+                                int  extendedHaloRegion,
+                                bool useGpuPme,
                                 bool useThreads,
                                 bool errorsAreFatal);
 
@@ -164,6 +190,8 @@ bool gmx_pme_check_restrictions(int  pme_order,
 gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                         const NumPmeDomains& numPmeDomains,
                         const t_inputrec*    ir,
+                        const matrix         box,
+                        real                 haloExtentForAtomDisplacement,
                         gmx_bool             bFreeEnergy_q,
                         gmx_bool             bFreeEnergy_lj,
                         gmx_bool             bReproducible,
