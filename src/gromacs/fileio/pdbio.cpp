@@ -296,7 +296,8 @@ void write_pdbfile_indexed(FILE*          out,
                            int            nindex,
                            const int      index[],
                            gmx_conect     conect,
-                           bool           usePqrFormat)
+                           bool           usePqrFormat,
+                           bool           standardCompliantMode)
 {
     gmx_conect_t* gc = static_cast<gmx_conect_t*>(conect);
     PdbRecordType type;
@@ -304,8 +305,27 @@ void write_pdbfile_indexed(FILE*          out,
     real          occup, bfac;
     gmx_bool      bOccup;
 
+    if (standardCompliantMode)
+    {
+        fprintf(out, "HEADER    GROMACS SIMULATION BOX                  01-JAN-00   0000\n");
+        fprintf(out,
+                "TITLE     Gromacs simulation box\n"
+                "COMPND    MOL_ID:  1;                                                           \n"
+                "COMPND   2 MOLECULE:  GROMACS SIMULATION BOX;                                   \n"
+                "COMPND   3 CHAIN: A;  \n"
+                "SOURCE    MOL_ID: 1;\n"
+                "SOURCE   2 SYNTHETIC\n"
+                "KEYWDS    GROMACS\n"
+                "EXPDTA    PURE PRODUCT OF COMPUTER SIMULATION\n"
+                "AUTHOR    GROMACS\n"
+                "REVDAT   1   01-JAN-00 0000    0\n");
+    }
+    else
+    {
+        fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
+    }
 
-    fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
+
     if (box && ((norm2(box[XX]) != 0.0F) || (norm2(box[YY]) != 0.0F) || (norm2(box[ZZ]) != 0.0F)))
     {
         gmx_write_pdb_box(out, pbcType, box);
@@ -328,6 +348,11 @@ void write_pdbfile_indexed(FILE*          out,
     }
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
+
+    // Collect last printed values for TER record
+    int         lastAtomNumber = 0;
+    std::string lastResName;
+    int         lastResNr = 0;
 
     for (int ii = 0; ii < nindex; ii++)
     {
@@ -391,6 +416,10 @@ void write_pdbfile_indexed(FILE*          out,
                                      bfac,
                                      atoms->atom[i].elem);
 
+            lastAtomNumber = i + 1;
+            lastResName    = resnm;
+            lastResNr      = resnr;
+
             if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
             {
                 fprintf(out,
@@ -426,7 +455,15 @@ void write_pdbfile_indexed(FILE*          out,
         }
     }
 
-    fprintf(out, "TER\n");
+    if (standardCompliantMode)
+    {
+        fprintf(out, "TER   %5d      %4.4s%c%4d\n", lastAtomNumber, lastResName.c_str(), chainid, lastResNr);
+    }
+    else
+    {
+        fprintf(out, "TER\n");
+    }
+
     fprintf(out, "ENDMDL\n");
 
     if (nullptr != gc)

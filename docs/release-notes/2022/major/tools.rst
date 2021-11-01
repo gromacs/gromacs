@@ -44,3 +44,12 @@ removed, because it served no purpose. This makes ``gmx chi`` easier to use.
 
 Reporting about file handling and input-file column contents are easier to
 follow.
+
+``gmx do_dssp`` supports DSSP version 4
+"""""""""""""""""""""""""""""""""""""""
+
+The newer DSSP version 4 program can be used by ``do_dssp`` by specifying 
+option ``-ver 4`` and setting the DSSP environement variable to the ``mkdssp``
+executable path (e.g. ``setenv DSSP /opt/dssp/mkdssp``)
+
+:issue:`4129`

@@ -107,7 +107,8 @@ void write_pdbfile_indexed(FILE*          out,
                            int            nindex,
                            const int      index[],
                            gmx_conect     conect,
-                           bool           usePqrFormat);
+                           bool           usePqrFormat,
+                           bool           standardCompliantMode = false);
 /* REALLY low level */
 
 void write_pdbfile(FILE*          out,
