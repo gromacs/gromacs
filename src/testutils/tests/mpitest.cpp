@@ -74,6 +74,9 @@ TEST_F(MpiSelfTest, Runs)
     {
         reached_.resize(getNumberOfTestMpiRanks(), 0);
     }
+    // Needed for thread-MPI so that we resize the buffer before we
+    // fill it on non-master ranks.
+    MPI_Barrier(MPI_COMM_WORLD);
     int value = 1;
     MPI_Gather(&value, 1, MPI_INT, reached_.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (gmx_node_rank() == 0)
