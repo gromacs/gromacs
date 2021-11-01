@@ -45,6 +45,15 @@ Mixed mode is only used when explicitly requested by the user.
 
 :issue:`4190`
 
+Fixed spurious nan in AWH free energy output when running FEP with other dimensions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running AWH with alchemical free energy perturbations as one of multiple dimensions
+the free energy output could contain nan entries due to failing log operations. This did
+not affect the AWH bias, which means that the simulations were not affected as such, but
+the output was.
+
+:issue:`4180`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
