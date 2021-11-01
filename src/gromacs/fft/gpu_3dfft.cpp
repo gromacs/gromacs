@@ -55,7 +55,7 @@
 #    if GMX_SYCL_DPCPP && GMX_FFT_MKL
 #        include "gpu_3dfft_sycl_mkl.h"
 #    endif
-#    if GMX_SYCL_HIPSYCL
+#    if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
 #        include "gpu_3dfft_sycl_rocfft.h"
 #    endif
 #endif
@@ -155,7 +155,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                             complexGrid);
             break;
 #        endif
-#        if GMX_SYCL_HIPSYCL
+#        if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
         case FftBackend::SyclRocfft:
             impl_ = std::make_unique<Gpu3dFft::ImplSyclRocfft>(allocateGrids,
                                                                comm,

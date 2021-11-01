@@ -230,6 +230,12 @@
 /* Define if hipSYCL is used for SYCL support (otherwise DPCPP is assumed) */
 #cmakedefine01 GMX_SYCL_HIPSYCL
 
+// Define if hipSYCL has HIP target(s)
+#cmakedefine01 GMX_HIPSYCL_HAVE_HIP_TARGET
+
+// Define if hipSYCL has CUDA target(s)
+#cmakedefine01 GMX_HIPSYCL_HAVE_CUDA_TARGET
+
 /* Define if Intel's DPCPP is used (default unless hipSYCL is chosen) */
 #define GMX_SYCL_DPCPP (!GMX_SYCL_HIPSYCL && GMX_GPU_SYCL)
 

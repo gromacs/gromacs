@@ -72,6 +72,8 @@ namespace gmx
 {
 namespace test
 {
+namespace
+{
 
 /*! \brief Input data for FFT tests.
  *
@@ -364,8 +366,44 @@ TEST_F(FFTTest3D, Real5_6_9)
     checkRealGrid(realGridSize, realGridSizePadded, in_, outputRealGridValues);
 }
 
-#if GMX_GPU_CUDA || GMX_GPU_OPENCL \
-        || (GMX_GPU_SYCL && (GMX_SYCL_HIPSYCL || (GMX_SYCL_DPCPP && GMX_FFT_MKL)))
+#if GMX_GPU
+
+/*! \brief Whether the FFT is in- or out-of-place
+ *
+ *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
+ *  transforms. */
+static constexpr bool sc_performOutOfPlaceFFT = !(GMX_SYCL_DPCPP && GMX_FFT_MKL);
+
+/*! \brief Return the output grid depending on whether in- or out-of
+ * place FFT is used
+ *
+ * Some versions of clang complain of unused code if we would just
+ * branch on the value of sc_performOutOfPlaceFFT at run time, because
+ * in any single configuration there would indeed be unused code. So
+ * the two template specializations are needed so that the compiler
+ * only compiles the template that is used. */
+template<bool performOutOfPlaceFFT>
+DeviceBuffer<float>* actualOutputGrid(DeviceBuffer<float>* realGrid, DeviceBuffer<float>* complexGrid);
+
+#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
+
+template<>
+DeviceBuffer<float>* actualOutputGrid<false>(DeviceBuffer<float>* realGrid,
+                                             DeviceBuffer<float>* /* complexGrid */)
+{
+    return realGrid;
+};
+
+#    else
+
+template<>
+DeviceBuffer<float>* actualOutputGrid<true>(DeviceBuffer<float>* /* realGrid */, DeviceBuffer<float>* complexGrid)
+{
+    return complexGrid;
+}
+
+#    endif
+
 TEST_F(FFTTest3D, GpuReal5_6_9)
 {
     // Ensure library resources are managed appropriately
@@ -398,28 +436,46 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         // Use std::copy to convert from double to real easily
         std::copy(inputdata, inputdata + sizeInReals, in_.begin());
 
-        // DPCPP uses oneMKL, which seems to have troubles with out-of-place transforms
-        const bool performOutOfPlaceFFT = !GMX_SYCL_DPCPP;
-
-        SCOPED_TRACE("Allocating the device buffers");
-        DeviceBuffer<float> realGrid, complexGrid;
-        allocateDeviceBuffer(&realGrid, in_.size(), deviceContext);
-        if (performOutOfPlaceFFT)
-        {
-            allocateDeviceBuffer(&complexGrid, complexGridValues.size(), deviceContext);
-        }
-
 #    if GMX_GPU_CUDA
         const FftBackend backend = FftBackend::Cufft;
 #    elif GMX_GPU_OPENCL
         const FftBackend backend = FftBackend::Ocl;
 #    elif GMX_GPU_SYCL
 #        if GMX_SYCL_HIPSYCL
+#            if GMX_HIPSYCL_HAVE_HIP_TARGET
         const FftBackend backend = FftBackend::SyclRocfft;
-#        elif GMX_SYCL_DPCPP && GMX_FFT_MKL
+#            else
+        // Use stub backend so compilation succeeds
+        const FftBackend backend = FftBackend::Sycl;
+        // Don't complain about unused reference data
+        checker.disableUnusedEntriesCheck();
+        // Skip the rest of the test
+        GTEST_SKIP() << "Only rocFFT backend is supported with hipSYCL";
+#            endif
+#        elif GMX_SYCL_DPCPP
+#            if GMX_FFT_MKL
         const FftBackend backend = FftBackend::SyclMkl;
+#            else
+        // Use stub backend so compilation succeeds
+        const FftBackend backend = FftBackend::Sycl;
+        // Don't complain about unused reference data
+        checker.disableUnusedEntriesCheck();
+        // Skip the rest of the test
+        GTEST_SKIP() << "Only MKL backend is supported with DPC++";
+#            endif
+#        else
+#            error "Unsupported SYCL implementation"
 #        endif
 #    endif
+
+        SCOPED_TRACE("Allocating the device buffers");
+        DeviceBuffer<float> realGrid, complexGrid;
+        allocateDeviceBuffer(&realGrid, in_.size(), deviceContext);
+        if (sc_performOutOfPlaceFFT)
+        {
+            allocateDeviceBuffer(&complexGrid, complexGridValues.size(), deviceContext);
+        }
+
         MPI_Comm           comm                    = MPI_COMM_NULL;
         const bool         allocateGrid            = false;
         std::array<int, 1> gridSizesInXForEachRank = { 0 };
@@ -431,14 +487,14 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
                           gridSizesInXForEachRank,
                           gridSizesInYForEachRank,
                           nz,
-                          performOutOfPlaceFFT,
+                          sc_performOutOfPlaceFFT,
                           deviceContext,
                           deviceStream,
                           realGridSize,
                           realGridSizePadded,
                           complexGridSizePadded,
                           &realGrid,
-                          performOutOfPlaceFFT ? &complexGrid : &realGrid);
+                          actualOutputGrid<sc_performOutOfPlaceFFT>(&realGrid, &complexGrid));
 
         // Transfer the real grid input data for the FFT
         copyToDeviceBuffer(
@@ -451,7 +507,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
 
         // Check the complex grid (NB this data has not been normalized)
         copyFromDeviceBuffer(complexGridValues.data(),
-                             performOutOfPlaceFFT ? &complexGrid : &realGrid,
+                             actualOutputGrid<sc_performOutOfPlaceFFT>(&realGrid, &complexGrid),
                              0,
                              complexGridValues.size(),
                              deviceStream,
@@ -461,7 +517,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
                 complexGridValues.begin(), complexGridValues.end(), "ComplexGridAfterRealToComplex");
 
         std::vector<float> outputRealGridValues(in_.size());
-        if (performOutOfPlaceFFT)
+        if (sc_performOutOfPlaceFFT)
         {
             // Clear the real grid input data for the FFT so we can
             // compute the back transform into it and observe that it did
@@ -492,7 +548,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
 
         SCOPED_TRACE("Cleaning up");
         freeDeviceBuffer(&realGrid);
-        if (performOutOfPlaceFFT)
+        if (sc_performOutOfPlaceFFT)
         {
             freeDeviceBuffer(&complexGrid);
         }
@@ -501,5 +557,6 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
 
 #endif
 
+} // namespace
 } // namespace test
 } // namespace gmx

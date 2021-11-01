@@ -190,7 +190,7 @@ if (TARGET Heffte::Heffte)
     target_link_libraries(libgromacs PRIVATE Heffte::Heffte)
 endif()
 
-if (GMX_SYCL_HIPSYCL)
+if (GMX_SYCL_HIPSYCL AND GMX_HIPSYCL_HAVE_HIP_TARGET)
     target_link_libraries(libgromacs PUBLIC roc::rocfft)
 endif()
 

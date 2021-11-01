@@ -82,7 +82,7 @@ elseif (GMX_GPU_SYCL)
             gpu_3dfft_sycl_mkl.cpp
             )
     endif()
-    if (GMX_SYCL_HIPSYCL)
+    if (GMX_SYCL_HIPSYCL AND GMX_HIPSYCL_HAVE_HIP_TARGET)
             gmx_add_libgromacs_sources(
             gpu_3dfft_sycl_rocfft.cpp
             )
