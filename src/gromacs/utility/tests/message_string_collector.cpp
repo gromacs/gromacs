@@ -175,6 +175,35 @@ TEST(MessageStringCollectorTest, CanAddStringMessagesConditionally)
     EXPECT_EQ(messagesDirect.toString(), messagesConditional.toString());
 }
 
+TEST(MessageStringCollectorTest, CanMoveConstruct)
+{
+    MessageStringCollector first;
+    EXPECT_TRUE(first.isEmpty());
+    std::string message = "Message1";
+    first.append(message);
+    EXPECT_FALSE(first.isEmpty());
+    MessageStringCollector second(std::move(first));
+    // Now the only valid thing to do with first is to call the
+    // destructor.
+    EXPECT_FALSE(second.isEmpty());
+    EXPECT_EQ(second.toString(), message + "\n");
+}
+
+TEST(MessageStringCollectorTest, CanMoveAssign)
+{
+    MessageStringCollector first, second;
+    EXPECT_TRUE(first.isEmpty());
+    EXPECT_TRUE(second.isEmpty());
+    std::string message = "Message1";
+    first.append(message);
+    EXPECT_FALSE(first.isEmpty());
+    second = std::move(first);
+    // Now the only valid thing to do with first is to call the
+    // destructor.
+    EXPECT_FALSE(second.isEmpty());
+    EXPECT_EQ(second.toString(), message + "\n");
+}
+
 } // namespace
 
 } // namespace gmx

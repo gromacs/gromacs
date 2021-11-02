@@ -62,7 +62,9 @@ public:
 
 MessageStringCollector::MessageStringCollector() : impl_(new Impl) {}
 
-MessageStringCollector::~MessageStringCollector() {}
+MessageStringCollector::~MessageStringCollector()                                 = default;
+MessageStringCollector::MessageStringCollector(MessageStringCollector&&) noexcept = default;
+MessageStringCollector& MessageStringCollector::operator=(MessageStringCollector&&) noexcept = default;
 
 void MessageStringCollector::startContext(const char* name)
 {

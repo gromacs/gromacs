@@ -65,6 +65,8 @@ class MessageStringCollector
 public:
     MessageStringCollector();
     ~MessageStringCollector();
+    MessageStringCollector(MessageStringCollector&& /*unused*/) noexcept;
+    MessageStringCollector& operator=(MessageStringCollector&& /*unused*/) noexcept;
 
     /*! \brief
      * Starts a context for messages.
