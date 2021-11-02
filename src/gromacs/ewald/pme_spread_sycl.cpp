@@ -205,31 +205,31 @@ auto pmeSplineAndSpreadKernel(
 
     if constexpr (spreadCharges)
     {
-        cgh.require(a_realGrid_0);
+        a_realGrid_0.bind(cgh);
     }
     if constexpr (writeGlobal || computeSplines)
     {
-        cgh.require(a_theta);
+        a_theta.bind(cgh);
     }
     if constexpr (computeSplines && writeGlobal)
     {
-        cgh.require(a_dtheta);
+        a_dtheta.bind(cgh);
     }
     if constexpr (writeGlobal)
     {
-        cgh.require(a_gridlineIndices);
+        a_gridlineIndices.bind(cgh);
     }
     if constexpr (computeSplines)
     {
-        cgh.require(a_fractShiftsTable);
-        cgh.require(a_gridlineIndicesTable);
-        cgh.require(a_coordinates);
+        a_fractShiftsTable.bind(cgh);
+        a_gridlineIndicesTable.bind(cgh);
+        a_coordinates.bind(cgh);
     }
-    cgh.require(a_coefficients_0);
+    a_coefficients_0.bind(cgh);
     if constexpr (numGrids == 2 && spreadCharges)
     {
-        cgh.require(a_realGrid_1);
-        cgh.require(a_coefficients_1);
+        a_realGrid_1.bind(cgh);
+        a_coefficients_1.bind(cgh);
     }
 
     // Gridline indices, ivec

@@ -72,16 +72,16 @@ auto settleKernel(cl::sycl::handler&                                           c
                   OptionalAccessor<float, mode::read_write, computeVirial>     a_virialScaled,
                   PbcAiuc                                                      pbcAiuc)
 {
-    cgh.require(a_settles);
-    cgh.require(a_x);
-    cgh.require(a_xp);
+    a_settles.bind(cgh);
+    a_x.bind(cgh);
+    a_xp.bind(cgh);
     if constexpr (updateVelocities)
     {
-        cgh.require(a_v);
+        a_v.bind(cgh);
     }
     if constexpr (computeVirial)
     {
-        cgh.require(a_virialScaled);
+        a_virialScaled.bind(cgh);
     }
 
     // shmem buffer for i x+q pre-loading

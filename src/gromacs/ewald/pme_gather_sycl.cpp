@@ -284,27 +284,27 @@ auto pmeGatherKernel(cl::sycl::handler&                                 cgh,
     constexpr int splineParamsSize    = atomsPerBlock * DIM * order;
     constexpr int gridlineIndicesSize = atomsPerBlock * DIM;
 
-    cgh.require(a_gridA);
-    cgh.require(a_coefficientsA);
-    cgh.require(a_forces);
+    a_gridA.bind(cgh);
+    a_coefficientsA.bind(cgh);
+    a_forces.bind(cgh);
 
     if constexpr (numGrids == 2)
     {
-        cgh.require(a_gridB);
-        cgh.require(a_coefficientsB);
+        a_gridB.bind(cgh);
+        a_coefficientsB.bind(cgh);
     }
 
     if constexpr (readGlobal)
     {
-        cgh.require(a_theta);
-        cgh.require(a_dtheta);
-        cgh.require(a_gridlineIndices);
+        a_theta.bind(cgh);
+        a_dtheta.bind(cgh);
+        a_gridlineIndices.bind(cgh);
     }
     else
     {
-        cgh.require(a_coordinates);
-        cgh.require(a_fractShiftsTable);
-        cgh.require(a_gridlineIndicesTable);
+        a_coordinates.bind(cgh);
+        a_fractShiftsTable.bind(cgh);
+        a_gridlineIndicesTable.bind(cgh);
     }
 
     // Gridline indices, ivec

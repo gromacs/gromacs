@@ -583,34 +583,34 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
-    cgh.require(a_xq);
-    cgh.require(a_f);
-    cgh.require(a_shiftVec);
-    cgh.require(a_fShift);
+    a_xq.bind(cgh);
+    a_f.bind(cgh);
+    a_shiftVec.bind(cgh);
+    a_fShift.bind(cgh);
     if constexpr (doCalcEnergies)
     {
-        cgh.require(a_energyElec);
-        cgh.require(a_energyVdw);
+        a_energyElec.bind(cgh);
+        a_energyVdw.bind(cgh);
     }
-    cgh.require(a_plistCJ4);
-    cgh.require(a_plistSci);
-    cgh.require(a_plistExcl);
+    a_plistCJ4.bind(cgh);
+    a_plistSci.bind(cgh);
+    a_plistExcl.bind(cgh);
     if constexpr (!props.vdwComb)
     {
-        cgh.require(a_atomTypes);
-        cgh.require(a_nbfp);
+        a_atomTypes.bind(cgh);
+        a_nbfp.bind(cgh);
     }
     else
     {
-        cgh.require(a_ljComb);
+        a_ljComb.bind(cgh);
     }
     if constexpr (props.vdwEwald)
     {
-        cgh.require(a_nbfpComb);
+        a_nbfpComb.bind(cgh);
     }
     if constexpr (props.elecEwaldTab)
     {
-        cgh.require(a_coulombTab);
+        a_coulombTab.bind(cgh);
     }
 
     // shmem buffer for i x+q pre-loading

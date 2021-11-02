@@ -76,11 +76,11 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
                           const int   numParts,
                           const int   part)
 {
-    cgh.require(a_xq);
-    cgh.require(a_shiftVec);
-    cgh.require(a_plistCJ4);
-    cgh.require(a_plistSci);
-    cgh.require(a_plistIMask);
+    a_xq.bind(cgh);
+    a_shiftVec.bind(cgh);
+    a_plistCJ4.bind(cgh);
+    a_plistSci.bind(cgh);
+    a_plistIMask.bind(cgh);
 
     /* shmem buffer for i x+q pre-loading */
     cl::sycl::accessor<Float4, 2, mode::read_write, target::local> sm_xq(

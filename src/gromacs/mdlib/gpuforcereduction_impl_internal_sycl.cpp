@@ -72,13 +72,13 @@ static auto reduceKernel(cl::sycl::handler&                                 cgh,
                          DeviceAccessor<int, cl::sycl::access::mode::read> a_cell,
                          const int                                         atomStart)
 {
-    cgh.require(a_nbnxmForce);
+    a_nbnxmForce.bind(cgh);
     if constexpr (addRvecForce)
     {
-        cgh.require(a_rvecForceToAdd);
+        a_rvecForceToAdd.bind(cgh);
     }
-    cgh.require(a_forceTotal);
-    cgh.require(a_cell);
+    a_forceTotal.bind(cgh);
+    a_cell.bind(cgh);
 
     return [=](cl::sycl::id<1> itemIdx) {
         // Set to nbnxnm force, then perhaps accumulate further to it

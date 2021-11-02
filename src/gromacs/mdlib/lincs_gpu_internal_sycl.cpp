@@ -124,25 +124,25 @@ auto lincsKernel(cl::sycl::handler&                   cgh,
                  OptionalAccessor<float, mode::read_write, computeVirial>          a_virialScaled,
                  PbcAiuc                                                           pbcAiuc)
 {
-    cgh.require(a_constraints);
-    cgh.require(a_constraintsTargetLengths);
+    a_constraints.bind(cgh);
+    a_constraintsTargetLengths.bind(cgh);
     if constexpr (haveCoupledConstraints)
     {
-        cgh.require(a_coupledConstraintsCounts);
-        cgh.require(a_coupledConstraintsIndices);
-        cgh.require(a_massFactors);
-        cgh.require(a_matrixA);
+        a_coupledConstraintsCounts.bind(cgh);
+        a_coupledConstraintsIndices.bind(cgh);
+        a_massFactors.bind(cgh);
+        a_matrixA.bind(cgh);
     }
-    cgh.require(a_inverseMasses);
-    cgh.require(a_x);
-    cgh.require(a_xp);
+    a_inverseMasses.bind(cgh);
+    a_x.bind(cgh);
+    a_xp.bind(cgh);
     if constexpr (updateVelocities)
     {
-        cgh.require(a_v);
+        a_v.bind(cgh);
     }
     if constexpr (computeVirial)
     {
-        cgh.require(a_virialScaled);
+        a_virialScaled.bind(cgh);
     }
 
     /* Shared local memory buffer. Corresponds to sh_r, sm_rhs, and sm_threadVirial in CUDA.

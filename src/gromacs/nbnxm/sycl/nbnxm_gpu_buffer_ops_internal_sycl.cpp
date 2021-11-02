@@ -76,11 +76,11 @@ static auto nbnxmKernelTransformXToXq(cl::sycl::handler&                       c
                                       int                                      numAtomsPerCell,
                                       int                                      columnsOffset)
 {
-    cgh.require(a_xq);
-    cgh.require(a_x);
-    cgh.require(a_atomIndex);
-    cgh.require(a_numAtoms);
-    cgh.require(a_cellIndex);
+    a_xq.bind(cgh);
+    a_x.bind(cgh);
+    a_atomIndex.bind(cgh);
+    a_numAtoms.bind(cgh);
+    a_cellIndex.bind(cgh);
 
     return [=](cl::sycl::id<2> itemIdx) {
         // Map cell-level parallelism to y component of block index.

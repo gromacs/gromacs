@@ -60,7 +60,7 @@ static auto scaleKernel(cl::sycl::handler&                                      
                         DeviceAccessor<Float3, cl::sycl::access::mode::read_write> a_x,
                         const ScalingMatrix                                        scalingMatrix)
 {
-    cgh.require(a_x);
+    a_x.bind(cgh);
 
     return [=](cl::sycl::id<1> itemIdx) {
         Float3 x     = a_x[itemIdx];

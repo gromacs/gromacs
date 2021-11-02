@@ -68,13 +68,13 @@ auto makeSolveKernel(cl::sycl::handler&                            cgh,
                      OptionalAccessor<float, mode::read_write, computeEnergyAndVirial> a_virialAndEnergy,
                      DeviceAccessor<float, mode::read_write> a_fourierGrid)
 {
-    cgh.require(a_splineModuli);
-    cgh.require(a_solveKernelParams);
+    a_splineModuli.bind(cgh);
+    a_solveKernelParams.bind(cgh);
     if constexpr (computeEnergyAndVirial)
     {
-        cgh.require(a_virialAndEnergy);
+        a_virialAndEnergy.bind(cgh);
     }
-    cgh.require(a_fourierGrid);
+    a_fourierGrid.bind(cgh);
 
     /* Reduce 7 outputs per warp in the shared memory */
     const int stride =

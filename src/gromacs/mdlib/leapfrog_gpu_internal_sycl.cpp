@@ -98,18 +98,18 @@ auto leapFrogKernel(
         OptionalAccessor<unsigned short, mode::read, numTempScaleValues == NumTempScaleValues::Multiple> a_tempScaleGroups,
         Float3 prVelocityScalingMatrixDiagonal)
 {
-    cgh.require(a_x);
-    cgh.require(a_xp);
-    cgh.require(a_v);
-    cgh.require(a_f);
-    cgh.require(a_inverseMasses);
+    a_x.bind(cgh);
+    a_xp.bind(cgh);
+    a_v.bind(cgh);
+    a_f.bind(cgh);
+    a_inverseMasses.bind(cgh);
     if constexpr (numTempScaleValues != NumTempScaleValues::None)
     {
-        cgh.require(a_lambdas);
+        a_lambdas.bind(cgh);
     }
     if constexpr (numTempScaleValues == NumTempScaleValues::Multiple)
     {
-        cgh.require(a_tempScaleGroups);
+        a_tempScaleGroups.bind(cgh);
     }
 
     return [=](cl::sycl::id<1> itemIdx) {
