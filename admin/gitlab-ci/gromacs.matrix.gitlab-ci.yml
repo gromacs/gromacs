@@ -87,7 +87,9 @@
       mkdir $RELEASE_BUILD_DIR ;
       fi
     - cd $RELEASE_BUILD_DIR
-    - cmake ../$RELEASE_SOURCE/
+    - which $CMAKE
+    - $CMAKE --version
+    - $CMAKE ../$RELEASE_SOURCE/
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
       $CMAKE_EXTRA_OPTIONS
@@ -125,6 +127,8 @@
   script:
     - CMAKE=${CMAKE:-$(which cmake)}
     - cd $BUILD_DIR
+    - which $CMAKE
+    - $CMAKE --version
     - scan-build -o scan_html $CMAKE --build . -- -j8 2>&1 | tee buildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true

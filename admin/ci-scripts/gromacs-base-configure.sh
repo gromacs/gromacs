@@ -16,6 +16,8 @@ else
       mkdir $BUILD_DIR
 fi
 cd $BUILD_DIR
+which $CMAKE
+$CMAKE --version
 $CMAKE .. \
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
       $CMAKE_COMPILER_SCRIPT \
