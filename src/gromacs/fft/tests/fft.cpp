@@ -372,7 +372,7 @@ TEST_F(FFTTest3D, Real5_6_9)
  *
  *  DPCPP uses oneMKL, which seems to have troubles with out-of-place
  *  transforms. */
-static constexpr bool sc_performOutOfPlaceFFT = !(GMX_SYCL_DPCPP && GMX_FFT_MKL);
+constexpr bool sc_performOutOfPlaceFFT = !((GMX_SYCL_DPCPP == 1) && (GMX_FFT_MKL == 1));
 
 /*! \brief Return the output grid depending on whether in- or out-of
  * place FFT is used
