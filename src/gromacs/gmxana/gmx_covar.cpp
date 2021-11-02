@@ -283,6 +283,10 @@ int gmx_covar(int argc, char* argv[])
     if (bPBC)
     {
         gpbc = gmx_rmpbc_init(&top.idef, pbcType, atoms->nr);
+        if (const char* boxError = check_box(pbcType, box); boxError != nullptr)
+        {
+            gmx_fatal(FARGS, "Invalid periodic boundary conditions: %s\n", boxError);
+        }
         gmx_rmpbc(gpbc, atoms->nr, box, xref);
     }
     if (bFit)
@@ -318,6 +322,10 @@ int gmx_covar(int argc, char* argv[])
         /* calculate x: a fitted struture of the selected atoms */
         if (bPBC)
         {
+            if (const char* boxError = check_box(pbcType, box); boxError != nullptr)
+            {
+                gmx_fatal(FARGS, "Invalid periodic boundary conditions: %s\n", boxError);
+            }
             gmx_rmpbc(gpbc, nat, box, xread);
         }
         if (bFit)

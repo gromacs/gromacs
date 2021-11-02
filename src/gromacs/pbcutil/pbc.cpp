@@ -138,7 +138,17 @@ const char* check_box(PbcType pbcType, const matrix box)
         return nullptr;
     }
 
-    if ((box[XX][YY] != 0) || (box[XX][ZZ] != 0) || (box[YY][ZZ] != 0))
+    GMX_ASSERT(box != nullptr, "check_box requires a valid box unless pbcType is No");
+
+    if (pbcType == PbcType::Xyz && box[XX][XX] == 0 && box[YY][YY] == 0 && box[ZZ][ZZ] == 0)
+    {
+        ptr = "Empty diagonal for a 3-dimensional periodic box";
+    }
+    else if (pbcType == PbcType::XY && box[XX][XX] == 0 && box[YY][YY] == 0)
+    {
+        ptr = "Empty diagonal for a 2-dimensional periodic box";
+    }
+    else if ((box[XX][YY] != 0) || (box[XX][ZZ] != 0) || (box[YY][ZZ] != 0))
     {
         ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second "
               "vector in the xy-plane are supported.";
@@ -212,6 +222,7 @@ static gmx_bool bWarnedGuess = FALSE;
 PbcType guessPbcType(const matrix box)
 {
     PbcType pbcType;
+    GMX_RELEASE_ASSERT(box != nullptr, "guessPbcType requires a valid box");
 
     if (box[XX][XX] > 0 && box[YY][YY] > 0 && box[ZZ][ZZ] > 0)
     {
