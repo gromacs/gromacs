@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
@@ -583,8 +584,7 @@ static void removeSolventOverlappingWithSolute(t_atoms*                 atoms,
 static void removeExtraSolventMolecules(t_atoms* atoms, std::vector<RVec>* x, std::vector<RVec>* v, int numberToRemove)
 {
     gmx::AtomsRemover               remover(*atoms);
-    std::random_device              rd;
-    std::mt19937                    randomNumberGenerator(rd());
+    std::mt19937                    randomNumberGenerator(gmx::makeRandomSeed());
     std::uniform_int_distribution<> randomDistribution(0, atoms->nr - 1);
     while (numberToRemove > 0)
     {
