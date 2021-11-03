@@ -141,7 +141,8 @@ void readConfAndAtoms(const char* infile,
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
  * \param[in]     requireMasses Require masses to be present, either from tpr or from the mass
- * database \returns if a topology is available
+ *                              database
+ * \returns if a topology is available
  */
 gmx_bool read_tps_conf(const char*        infile,
                        struct t_topology* top,

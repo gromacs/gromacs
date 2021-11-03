@@ -690,8 +690,10 @@ void mergeSharedUpdateLists(std::vector<int>*  updateList,
  * \param[in] grid              The AWH bias.
  * \param[in] points            The point state.
  * \param[in] originUpdatelist  The origin of the rectangular region that has been sampled since
- * last update. \param[in] endUpdatelist     The end of the rectangular that has been sampled since
- * last update. \param[in,out] updateList    Local update list to set (assumed >= npoints long).
+ *                              last update.
+ * \param[in] endUpdatelist     The end of the rectangular that has been sampled since
+ *                              last update.
+ * \param[in,out] updateList    Local update list to set (assumed >= npoints long).
  */
 void makeLocalUpdateList(const BiasGrid&            grid,
                          ArrayRef<const PointState> points,

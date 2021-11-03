@@ -68,7 +68,7 @@ Thole polarization
 
 Based on early work by Thole :ref:`95 <refThole81>`, Roux and coworkers
 have implemented potentials for molecules like
-ethanol \ :ref:`96 <refLamoureux2003a>`\ :ref:`98 <refNoskov2005a>`.
+ethanol \ :ref:`96 <refLamoureux2003a>`, :ref:`98 <refNoskov2005a>`.
 Within such molecules, there are intra-molecular interactions between
 shell particles, however these must be screened because full Coulomb
 would be too strong. The potential between two shell particles :math:`i`

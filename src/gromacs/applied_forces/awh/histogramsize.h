@@ -98,7 +98,8 @@ private:
      * \param[in]     params             The bias parameters.
      * \param[in]     t                  Time.
      * \param[in]     detectedCovering   True if we detected that the sampling interval has been
-     * sufficiently covered. \param[in,out] weightsumCovering  The weight sum for checking covering.
+     *                                   sufficiently covered.
+     * \param[in,out] weightsumCovering  The weight sum for checking covering.
      * \param[in,out] fplog              Log file.
      * \returns the new histogram size.
      */

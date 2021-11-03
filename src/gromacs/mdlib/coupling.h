@@ -266,11 +266,15 @@ void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir);
  *       the default code path.
  *
  * \param[in] kk     present value of the kinetic energy of the atoms to be thermalized (in
- * arbitrary units) \param[in] sigma  target average value of the kinetic energy (ndeg k_b T/2)  (in
- * the same units as kk) \param[in] ndeg   number of degrees of freedom of the atoms to be
- * thermalized \param[in] taut   relaxation time of the thermostat, in units of 'how often this
- * routine is called' \param[in] step   the time step this routine is called on \param[in] seed the
- * random number generator seed \return  the new kinetic energy
+ *                   arbitrary units)
+ * \param[in] sigma  target average value of the kinetic energy (ndeg k_b T/2)  (in
+ *                   the same units as kk)
+ * \param[in] ndeg   number of degrees of freedom of the atoms to be thermalized
+ * \param[in] taut   relaxation time of the thermostat, in units of 'how often this
+ *                   routine is called'
+ * \param[in] step   the time step this routine is called on
+ * \param[in] seed   the random number generator seed
+ * \return  the new kinetic energy
  */
 real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut, int64_t step, int64_t seed);
 

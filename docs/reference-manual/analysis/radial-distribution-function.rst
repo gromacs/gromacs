@@ -37,7 +37,7 @@ averaging is also performed in time. In practice the analysis program
 into spherical slices (from :math:`r` to :math:`r+dr`, see
 :numref:`Fig. %s <fig-rdfex>` A) and makes a histogram in stead of
 the :math:`\delta`-function. An example of the RDF of oxygen-oxygen in
-SPC water \ :ref::ref:`80 <refBerendsen81>` is given in :numref:`Fig. %s <fig-rdf>`
+SPC water \ :ref:`80 <refBerendsen81>` is given in :numref:`Fig. %s <fig-rdf>`
 
 .. _fig-rdf:
 

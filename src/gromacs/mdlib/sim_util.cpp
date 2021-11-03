@@ -527,7 +527,8 @@ static real averageKineticEnergyEstimate(const t_grpopts& groupOptions)
  *
  * \param[in] step      The step number, used for checking and printing
  * \param[in] enerd     The energy data; the non-bonded group energies need to be added to
- * enerd.term[F_EPOT] before calling this routine \param[in] inputrec  The input record
+ *                      \c enerd.term[F_EPOT] before calling this routine
+ * \param[in] inputrec  The input record
  */
 static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& enerd, const t_inputrec& inputrec)
 {

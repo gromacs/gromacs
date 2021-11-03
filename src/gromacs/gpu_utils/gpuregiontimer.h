@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,7 +121,8 @@ public:
      * Accumulates the last timespan of all the events used into the total duration,
      * and resets the internal timer state.
      * To be called after closeTimingRegion() and the command stream of the event having been
-     * synchronized. \returns The last timespan (in milliseconds).
+     * synchronized.
+     * \returns The last timespan (in milliseconds).
      */
     double getLastRangeTime()
     {

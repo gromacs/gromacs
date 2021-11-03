@@ -1577,7 +1577,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
 
 /*! \brief Checks if the Verlet buffer and constraint accuracy is sufficient for decoupled dynamic modes.
  *
- * When decoupled modes are present and the accuray in insufficient,
+ * When decoupled modes are present and the accuracy in insufficient,
  * this routine issues a warning if the accuracy is insufficient.
  */
 static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec* ir, warninp* wi)

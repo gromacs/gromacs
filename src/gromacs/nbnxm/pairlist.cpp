@@ -121,7 +121,8 @@ static constexpr int jClusterSize()
  *
  * \tparam    jClusterSize      The number of atoms in a j-cluster
  * \tparam    jSubClusterIndex  The j-sub-cluster index (0/1), used when size(j-cluster) <
- * size(i-cluster) \param[in] ci                The i-cluster index
+ *                              size(i-cluster)
+ * \param[in] ci                The i-cluster index
  */
 template<int jClusterSize, int jSubClusterIndex>
 static inline int cjFromCi(int ci)
@@ -158,7 +159,8 @@ static inline int cjFromCi(int ci)
  *
  * \tparam    layout            The pair-list layout
  * \tparam    jSubClusterIndex  The j-sub-cluster index (0/1), used when size(j-cluster) <
- * size(i-cluster) \param[in] ci                The i-cluster index
+ *                              size(i-cluster)
+ * \param[in] ci                The i-cluster index
  */
 template<NbnxnLayout layout, int jSubClusterIndex>
 static inline int cjFromCi(int ci)

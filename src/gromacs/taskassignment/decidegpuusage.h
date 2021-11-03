@@ -243,7 +243,8 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
  *
  * \param[in]  useGpuForPme              PME task assignment, true if PME task is mapped to the GPU.
  * \param[in]  pmeFftTarget              The user's choice for -pmefft for where to assign the FFT
- * work of the PME task. \param[in]  inputrec                  The user input record
+ *                                       work of the PME task.
+ * \param[in]  inputrec                  The user input record
  * */
 PmeRunMode determinePmeRunMode(bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec);
 

@@ -100,9 +100,11 @@ __global__ void packSendBufKernel(float3* __restrict__ dataPacked,
 }
 
 /*! \brief unpack non-local force data buffer on the GPU using pre-populated "map" containing index
- * information \param[out] data        full array of force values \param[in]  dataPacked  packed
- * array of force values to be transferred \param[in]  map         array of indices defining mapping
- * from full to packed array \param[in]  mapSize     number of elements in map array
+ * information
+ * \param[out] data        full array of force values
+ * \param[in]  dataPacked  packed array of force values to be transferred
+ * \param[in]  map         array of indices defining mapping from full to packed array
+ * \param[in]  mapSize     number of elements in map array
  */
 template<bool accumulate>
 __global__ void unpackRecvBufKernel(float3* __restrict__ data,
@@ -140,7 +142,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
     const gmx_domdec_comm_dim_t& cd   = comm.cd[dimIndex_];
     const gmx_domdec_ind_t&      ind  = cd.ind[pulse_];
 
-    numHomeAtoms_ = comm.atomRanges.numHomeAtoms(); // offset for data recieved by this rank
+    numHomeAtoms_ = comm.atomRanges.numHomeAtoms(); // offset for data received by this rank
 
     // Determine receive offset for the dimension index and pulse of this halo exchange object
     int numZoneTemp   = 1;

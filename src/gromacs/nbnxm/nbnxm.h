@@ -326,7 +326,8 @@ public:
      * The API function for the transformation of the coordinates from one layout to another.
      *
      * \param[in] locality     Whether coordinates for local or non-local atoms should be
-     * transformed. \param[in] coordinates  Coordinates in plain rvec format to be transformed.
+     *                         transformed.
+     * \param[in] coordinates  Coordinates in plain rvec format to be transformed.
      */
     void convertCoordinates(gmx::AtomLocality locality, gmx::ArrayRef<const gmx::RVec> coordinates);
 
@@ -373,23 +374,23 @@ public:
 
     //! Executes the non-bonded free-energy kernels, local + non-local, always runs on the CPU
     void dispatchFreeEnergyKernels(const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                   gmx::ForceWithShiftForces*                forceWithShiftForces,
-                                   bool                                      useSimd,
-                                   int                                       ntype,
-                                   real                                      rlist,
-                                   const interaction_const_t&                ic,
-                                   gmx::ArrayRef<const gmx::RVec>            shiftvec,
-                                   gmx::ArrayRef<const real>                 nbfp,
-                                   gmx::ArrayRef<const real>                 nbfp_grid,
-                                   gmx::ArrayRef<const real>                 chargeA,
-                                   gmx::ArrayRef<const real>                 chargeB,
-                                   gmx::ArrayRef<const int>                  typeA,
-                                   gmx::ArrayRef<const int>                  typeB,
-                                   t_lambda*                                 fepvals,
-                                   gmx::ArrayRef<const real>                 lambda,
-                                   gmx_enerdata_t*                           enerd,
-                                   const gmx::StepWorkload&                  stepWork,
-                                   t_nrnb*                                   nrnb);
+                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
+                                   bool                           useSimd,
+                                   int                            ntype,
+                                   real                           rlist,
+                                   const interaction_const_t&     ic,
+                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                   gmx::ArrayRef<const real>      nbfp,
+                                   gmx::ArrayRef<const real>      nbfp_grid,
+                                   gmx::ArrayRef<const real>      chargeA,
+                                   gmx::ArrayRef<const real>      chargeB,
+                                   gmx::ArrayRef<const int>       typeA,
+                                   gmx::ArrayRef<const int>       typeB,
+                                   t_lambda*                      fepvals,
+                                   gmx::ArrayRef<const real>      lambda,
+                                   gmx_enerdata_t*                enerd,
+                                   const gmx::StepWorkload&       stepWork,
+                                   t_nrnb*                        nrnb);
 
     /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
      * \param [in] locality         Local or non-local

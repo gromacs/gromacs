@@ -206,7 +206,7 @@ std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality
                                "be All, Local or NonLocal.");
     }
     GMX_ASSERT(atomsStartAt >= 0,
-               "The first elemtnt to copy has negative index. Probably, the GPU propagator state "
+               "The first element to copy has negative index. Probably, the GPU propagator state "
                "was not initialized.");
     GMX_ASSERT(numAtomsToCopy >= 0,
                "Number of atoms to copy is negative. Probably, the GPU propagator state was not "

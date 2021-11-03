@@ -59,7 +59,8 @@ class ArrayRef;
  * This requires the values of the pull coordinates of lower indices to be set
  * \param[in] coord  The (transformation) coordinate to compute the value for
  * \param[in] variableCoords  Pull coordinates used as variables, entries 0 to coord->coordIndex
- * will be used \returns Transformation value for pull coordinate.
+ *                            will be used
+ * \returns Transformation value for pull coordinate.
  */
 double getTransformationPullCoordinateValue(pull_coord_work_t*                coord,
                                             ArrayRef<const pull_coord_work_t> variableCoords);

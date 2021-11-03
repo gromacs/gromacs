@@ -272,7 +272,8 @@ std::array<void*, sizeof...(Args)> prepareGpuKernelArguments(KernelPtr kernel,
  * \param[in] deviceStream    GPU stream to launch kernel in
  * \param[in] kernelName      Human readable kernel description, for error handling only
  * \param[in] kernelArgs      Array of the pointers to the kernel arguments, prepared by
- * prepareGpuKernelArguments() \throws gmx::InternalError on kernel launch failure
+ *                            prepareGpuKernelArguments()
+ * \throws gmx::InternalError on kernel launch failure
  */
 template<typename... Args>
 void launchGpuKernel(void (*kernel)(Args...),

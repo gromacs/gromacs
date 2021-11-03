@@ -442,8 +442,8 @@ constexpr int64_t exactDiv(int64_t a, int64_t b)
 
 /*! \brief Round float to int
  *
- * Rounding behavior is round to nearest. Rounding of halfway cases is implemention defined
- * (either halway to even or halway away from zero).
+ * Rounding behavior is round to nearest. Rounding of halfway cases is implementation defined
+ * (either halfway to even or halfway away from zero).
  */
 /* Implementation details: It is assumed that FE_TONEAREST is default and not changed by anyone.
  * Currently the implementation is using rint(f) because 1) on all known HW that is faster than

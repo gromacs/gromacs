@@ -654,7 +654,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
  *  for OpenCL local memory.
  *
  * \param[in] num_threads_z cj4 concurrency equal to the number of threads/work items in the 3-rd
- * dimension. \returns   the amount of local memory in bytes required by the pruning kernel
+ * dimension.
+ * \returns   the amount of local memory in bytes required by the pruning kernel
  */
 static inline int calc_shmem_required_prune(const int num_threads_z)
 {
