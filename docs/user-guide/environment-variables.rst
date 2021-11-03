@@ -423,6 +423,7 @@ compilation of OpenCL kernels, but they are also used in device selection.
 
 ``GMX_OCL_DISABLE_FASTMATH``
         Prevents the use of ``-cl-fast-relaxed-math`` compiler option.
+        Not: fast math is always disabled on Intel devices due to instability.
 
 ``GMX_OCL_DUMP_LOG``
         If defined, the OpenCL build log is always written to the
@@ -442,8 +443,8 @@ compilation of OpenCL kernels, but they are also used in device selection.
         ``GMX_OCL_NOGENCACHE``).
 
             - NVIDIA GPUs: PTX code is saved in the current directory
-	      with the name ``device_name.ptx``
-	    - AMD GPUs: ``.IL/.ISA`` files will be created for each OpenCL
+              with the name ``device_name.ptx``
+            - AMD GPUs: ``.IL/.ISA`` files will be created for each OpenCL
               kernel built.  For details about where these files are
               created check AMD documentation for ``-save-temps`` compiler
               option.

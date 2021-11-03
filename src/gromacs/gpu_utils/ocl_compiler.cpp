@@ -169,8 +169,9 @@ static std::string selectCompilerOptions(DeviceVendor deviceVendor)
         compilerOptions += " -cl-opt-disable";
     }
 
-    /* Fastmath improves performance on all supported arch */
-    if (getenv("GMX_OCL_DISABLE_FASTMATH") == nullptr)
+    /* Fastmath improves performance on all supported arch,
+     * but is tends to cause problems on Intel (Issue #3898) */
+    if ((deviceVendor != DeviceVendor::Intel) && (getenv("GMX_OCL_DISABLE_FASTMATH") == nullptr))
     {
         compilerOptions += " -cl-fast-relaxed-math";
 
