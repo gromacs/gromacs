@@ -2976,7 +2976,8 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
                                         !isDlbDisabled(ddSettings_.initialDlbState),
                                         options_.dlbScaling,
                                         ir_,
-                                        systemInfo_.cellsizeLimit);
+                                        systemInfo_.cellsizeLimit,
+                                        numRanksRequested);
     ddGridSetup_ = getDDGridSetup(mdlog_,
                                   MASTER(cr_) ? DDRole::Master : DDRole::Agent,
                                   cr->mpiDefaultCommunicator,

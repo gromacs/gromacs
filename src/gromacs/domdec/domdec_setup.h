@@ -115,7 +115,8 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
                                  bool                 bDynLoadBal,
                                  real                 dlb_scale,
                                  const t_inputrec&    ir,
-                                 real                 systemInfoCellSizeLimit);
+                                 real                 systemInfoCellSizeLimit,
+                                 int                  numRanksRequested);
 
 /*! \brief Determines the DD grid setup
  *

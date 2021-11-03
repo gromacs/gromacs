@@ -712,8 +712,15 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
                                  const bool           bDynLoadBal,
                                  const real           dlb_scale,
                                  const t_inputrec&    ir,
-                                 real                 systemInfoCellSizeLimit)
+                                 real                 systemInfoCellSizeLimit,
+                                 int                  numRanksRequested)
 {
+    // do not impose DLB-related limits with single-domain
+    if (numRanksRequested == 1)
+    {
+        return systemInfoCellSizeLimit;
+    }
+
     real cellSizeLimit = systemInfoCellSizeLimit;
 
     /* Add a margin for DLB and/or pressure scaling */
