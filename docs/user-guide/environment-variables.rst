@@ -82,8 +82,8 @@ Output Control
         files. Set to 0 for quiet operation.
 
 ``GMX_ENABLE_GPU_TIMING``
-        Enables GPU timings in the log file for CUDA. Note that CUDA timings
-        are incorrect with multiple streams, as happens with domain
+        Enables GPU timings in the log file for CUDA and SYCL. Note that CUDA
+        timings are incorrect with multiple streams, as happens with domain
         decomposition or with both non-bondeds and PME on the GPU (this is
         also the main reason why they are not turned on by default).
 
@@ -211,6 +211,7 @@ Performance and Run Control
 ``GMX_DISABLE_GPU_TIMING``
         timing of asynchronously executed GPU operations can have a
         non-negligible overhead with short step times. Disabling timing can improve performance in these cases.
+        Timings are disabled by default with CUDA and SYCL.
 
 ``GMX_DISABLE_GPU_DETECTION``
         when set, disables GPU detection even if :ref:`gmx mdrun` was compiled

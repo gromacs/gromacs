@@ -59,3 +59,26 @@ const char* enumValueToString(GpuApiCallBehavior enumValue)
     };
     return s_gpuApiCallBehaviorNames[enumValue];
 }
+
+bool decideGpuTimingsUsage()
+{
+    if (GMX_GPU_CUDA || GMX_GPU_SYCL)
+    {
+        /* CUDA: timings are incorrect with multiple streams.
+         * This is the main reason why they are disabled by default.
+         * TODO: Consider turning on by default when we can detect nr of streams.
+         *
+         * SYCL: compilers and runtimes change rapidly, so we disable timings by default
+         * to avoid any possible overhead. */
+        return (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
+    }
+    else if (GMX_GPU_OPENCL)
+    {
+        return (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+    }
+    else
+    {
+        // CPU-only build
+        return false;
+    }
+}

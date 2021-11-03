@@ -431,18 +431,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     nb->timers = new Nbnxm::GpuTimers();
     snew(nb->timings, 1);
 
-    /* WARNING: CUDA timings are incorrect with multiple streams.
-     * This is the main reason why they are disabled by default.
-     * Can be enabled by setting GMX_ENABLE_GPU_TIMING environment variable.
-     * TODO: Consider turning on by default when we can detect nr of streams.
-     *
-     * OpenCL timing is enabled by default and can be disabled by
-     * GMX_DISABLE_GPU_TIMING environment variable.
-     *
-     * Timing is disabled in SYCL.
-     */
-    nb->bDoTime = (GMX_GPU_CUDA && (getenv("GMX_ENABLE_GPU_TIMING") != nullptr))
-                  || (GMX_GPU_OPENCL && (getenv("GMX_DISABLE_GPU_TIMING") == nullptr));
+    nb->bDoTime = decideGpuTimingsUsage();
 
     if (nb->bDoTime)
     {
