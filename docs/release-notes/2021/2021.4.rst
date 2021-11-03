@@ -110,3 +110,10 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix a bug affecting re-run gmxapi scripts
+"""""""""""""""""""""""""""""""""""""""""
+
+A typo may have prevented gmxapi simulations from continuing from checkpoints
+after being interrupted. Fixed in version 0.2.3 of the gmxapi Python package.
+
+:issue:`4267`

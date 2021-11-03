@@ -55,7 +55,7 @@ set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python
 # package version, but is likely to do so.
-project(gmxapi VERSION 0.2.1)
+project(gmxapi)
 
 # Check if Python package is being built directly or via add_subdirectory
 set(GMXAPI_MASTER_PROJECT OFF)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -216,7 +216,7 @@ class LegacyImplementationSubscription(object):
                             # It is unspecified by the API, but at least through gmxapi 0.1,
                             # all simulations are initialized with a checkpoint file named state.cpt
                             # (see src/api/cpp/context.cpp)
-                            checkpoint_file = os.path.join(self.workdir, 'state.cpp')
+                            checkpoint_file = os.path.join(self.workdir, 'state.cpt')
                             expected_working_files.append(checkpoint_file)
 
                             for file in expected_working_files:
