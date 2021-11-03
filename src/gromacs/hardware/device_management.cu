@@ -82,7 +82,7 @@ static cudaError_t checkCompiledTargetCompatibility(int deviceId, const cudaDevi
                 "\nWARNING: The %s binary does not include support for the CUDA architecture of "
                 "the GPU ID #%d (compute capability %d.%d) detected during detection. "
                 "By default, GROMACS supports all architectures of compute "
-                "capability >= 3.0, so your GPU "
+                "capability >= 3.5, so your GPU "
                 "might be rare, or some architectures were disabled in the build. \n"
                 "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                 "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. \n",
