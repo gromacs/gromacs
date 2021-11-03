@@ -2,16 +2,36 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="GammaDistribution">
-    <Int Name="Length">10</Int>
-    <Real>7.2300576785074835</Real>
-    <Real>7.2758594071167826</Real>
-    <Real>5.2014783979537693</Real>
-    <Real>17.065501715812729</Real>
-    <Real>32.066124987428772</Real>
-    <Real>5.4208824941016109</Real>
-    <Real>3.9078264858447538</Real>
-    <Real>3.1450042317477274</Real>
-    <Real>9.3517746645342825</Real>
-    <Real>3.2296141721313592</Real>
+    <Int Name="Length">30</Int>
+    <Real>1.6500051907511584e-11</Real>
+    <Real>0.022468715116941446</Real>
+    <Real>0.021226030113526941</Real>
+    <Real>0.75235110421321072</Real>
+    <Real>1.6982436652153765e-06</Real>
+    <Real>9.6383587544984251e-10</Real>
+    <Real>0.0097518532542712998</Real>
+    <Real>0.0047231308061418259</Real>
+    <Real>0.27942091591097273</Real>
+    <Real>0.3935562981500017</Real>
+    <Real>9.1710003312094894</Real>
+    <Real>1.3750960110331074</Real>
+    <Real>4.7749080826435701</Real>
+    <Real>2.7657963372826542</Real>
+    <Real>4.2402107285551542</Real>
+    <Real>0.723716184296187</Real>
+    <Real>1.9809864910359629</Real>
+    <Real>1.3234442036849443</Real>
+    <Real>6.1193656965708882</Real>
+    <Real>0.75410009488515928</Real>
+    <Real>17.293406516839745</Real>
+    <Real>6.1372158573024098</Real>
+    <Real>7.3865332854811818</Real>
+    <Real>8.9930135536428857</Real>
+    <Real>4.1526979424801596</Real>
+    <Real>13.467324274955104</Real>
+    <Real>12.885942175821343</Real>
+    <Real>13.497606030575064</Real>
+    <Real>24.492451963887692</Real>
+    <Real>9.2956723967559824</Real>
   </Sequence>
 </ReferenceData>

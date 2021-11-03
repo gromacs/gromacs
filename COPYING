@@ -20,16 +20,15 @@ This file contains the licenses for the following bodies of code:
 9. Sun XDR implementation (External Data Representation)
 10. Sun FDLIBM (Freely Distributable Maths Library)
 11. ThreeFry Random Engine
-12. Gamma distribution from libc++
-13. md5
-14. lmfit
-15. clFFT
-16. Guidelines Support Library (GSL)
-17. P0009 reference implementation (Sandia Corporation)
-18. pybind11
-19. Reference implementation of std::string_view
-20. Reference implementation of std::optional
-21. stl_interfaces
+12. md5
+13. lmfit
+14. clFFT
+15. Guidelines Support Library (GSL)
+16. P0009 reference implementation (Sandia Corporation)
+17. pybind11
+18. Reference implementation of std::string_view
+19. Reference implementation of std::optional
+20. stl_interfaces
 
 Our chosen method for packaging distributions (CPack) only permits a
 package to have a single license file, so we are unfortunately forced
@@ -1200,31 +1199,8 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-12. Gamma distribution from libc++
-============================================
 
-Copyright (c) The LLVM compiler infrastructure
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-
-13. md5
+12. md5
 ============================================
 
 Copyright (C) 1999, 2002 Aladdin Enterprises.  All rights reserved.
@@ -1248,7 +1224,7 @@ freely, subject to the following restrictions:
 L. Peter Deutsch
 ghost@aladdin.com
 
-14. lmfit
+13. lmfit
 ============================================
 The package lmfit is distributed under the FreeBSD License:
 
@@ -1281,7 +1257,7 @@ The package lmfit is distributed under the FreeBSD License:
   possibility of such damage.
 --
 
-15. clFFT
+14. clFFT
 ============================================
 
    Files: src/external/clFFT/*
@@ -1328,7 +1304,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --
 
-17. P0009 reference implementation (Sandia Corporation)
+16. P0009 reference implementation (Sandia Corporation)
 =======================================================
 
    Files: src/gromacs/mdspan/*
@@ -1370,7 +1346,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Questions? Contact Christian R. Trott (crtrott@sandia.gov)
 
-18. pybind11 release 2.5.0 from https://github.com/pybind/pybind11
+17. pybind11 release 2.5.0 from https://github.com/pybind/pybind11
 ==================================================================
 
     Files: python_packaging/src/external/pybind/*
@@ -1407,7 +1383,7 @@ Please also refer to the file CONTRIBUTING.md, which clarifies licensing of
 external contributions to this project including patches, pull requests, etc.
 --
 
-19. Reference implementation of std::string_view
+18. Reference implementation of std::string_view
 ================================================
 
 Used with minor modifications from commit bf5824916b6895ccab0dbc2431520ee3b6d4f27f of
@@ -1437,7 +1413,7 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-20. Reference implementation of std::optional
+19. Reference implementation of std::optional
 =============================================
 
 Used with minor modifications from commit 096ce6d7e45ef184d of
@@ -1467,7 +1443,7 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-21. stl_interfaces
+20. stl_interfaces
 ==================
 
 Used with minor modification from commit 486db0a5543cea2901ed of

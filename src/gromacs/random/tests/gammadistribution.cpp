@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,14 +61,25 @@ TEST(GammaDistributionTest, Output)
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
     gmx::ThreeFry2x64<8>         rng(123456, gmx::RandomDomain::Other);
-    gmx::GammaDistribution<real> dist(2.0, 5.0);
+    gmx::GammaDistribution<real> distA(0.1, 5.0);
+    gmx::GammaDistribution<real> distB(1.0, 5.0);
+    gmx::GammaDistribution<real> distC(2.0, 5.0);
     std::vector<real>            result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
     {
-        result.push_back(dist(rng));
+        result.push_back(distA(rng));
     }
+    for (int i = 0; i < 10; i++)
+    {
+        result.push_back(distB(rng));
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        result.push_back(distC(rng));
+    }
+
     checker.checkSequence(result.begin(), result.end(), "GammaDistribution");
 }
 

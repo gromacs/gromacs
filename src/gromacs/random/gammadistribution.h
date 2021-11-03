@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,9 +56,12 @@
 
 #include <limits>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/random/exponentialdistribution.h"
+#include "gromacs/random/normaldistribution.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/exceptions.h"
 
 /*
  * The workaround implementation for the broken std::gamma_distribution in the
@@ -110,8 +113,24 @@ namespace gmx
  *  The gamma distribution is defined as
  *
  * \f[
- *     p(x|\alpha,\beta) = \frac{1}{\Gamma(\alpha)\beta^{alpha}} x^{\alpha - 1}
- * e^{-\frac{x}{\beta}}, x\geq 0 \f]
+ *     p(x|\alpha,\theta) = \frac{1}{\Gamma(\alpha)\theta^{alpha}} x^{\alpha - 1}
+ * e^{-\frac{x}{\theta}}, x\geq 0 , \alpha>0, \theta>0
+ * \f]
+ *
+ * In this definition, the parameter &alpha; is the so-called shape, while &theta; is
+ * so-called scale. This distribution will have the expectation value &alpha;&theta;, and
+ *  the variance &alpha;&theta;&theta;.
+ *
+ * \note The gamma distribution is sometimes defined in terms of a parameter
+ *  &beta; that is the inverse of &theta; (i.e., a rate rather than scale),
+ *  while in other cases the parameter in the
+ *  definition above is simply called &beta;. We can't do a lot about these different
+ *  definitions, so make sure you look at the expectation value and variance unless
+ *  you are certain you are using e.g. scale or rate for the second parameter - do not
+ *  trust that it e.g. rate just because it is called &beta; in your equations.
+ *
+ *  \note For now, we generate the gamma distribution using the algorithm from
+ *  Marsaglia G, Tsang WW (2000). ACM Trans. Math. Softw. 26(3), 363-372. DOI:10.1145/358407.358414
  *
  * \tparam RealType Floating-point type, real by default in GROMACS.
  */
@@ -125,10 +144,10 @@ public:
     /*! \brief Gamma distribution parameters */
     class param_type
     {
-        /*! \brief First parameter of gamma distribution */
+        /*! \brief Shape parameter of gamma distribution */
         result_type alpha_;
-        /*! \brief Second parameter of gamma distribution */
-        result_type beta_;
+        /*! \brief Scale parameter of gamma distribution */
+        result_type theta_;
 
     public:
         /*! \brief Reference back to the distribution class */
@@ -136,19 +155,26 @@ public:
 
         /*! \brief Construct parameter block
          *
-         * \param alpha  First parameter of gamma distribution
-         * \param beta   Second parameter of gamma distribution
+         * \param alpha  Shape parameter of gamma distribution
+         * \param theta  Scale parameter of gamma distribution
+         *
+         *  \throws InvalidInputError if either parameter is negative or zero.
          */
-        explicit param_type(result_type alpha = 1.0, result_type beta = 1.0) :
+        explicit param_type(result_type alpha = 1.0, result_type theta = 1.0) :
             alpha_(alpha),
-            beta_(beta)
+            theta_(theta)
         {
+            if (alpha <= 0 || theta <= 0)
+            {
+                GMX_THROW(
+                        InvalidInputError("Both parameters in the gamma distribution must be >0."));
+            }
         }
 
-        /*! \brief Return first parameter */
+        /*! \brief Return shape parameter */
         result_type alpha() const { return alpha_; }
-        /*! \brief Return second parameter */
-        result_type beta() const { return beta_; }
+        /*! \brief Return scale parameter */
+        result_type theta() const { return theta_; }
 
         /*! \brief True if two parameter sets will return the same distribution.
          *
@@ -156,7 +182,7 @@ public:
          */
         bool operator==(const param_type& x) const
         {
-            return alpha_ == x.alpha_ && beta_ == x.beta_;
+            return alpha_ == x.alpha_ && theta_ == x.theta_;
         }
 
         /*! \brief True if two parameter sets will return different distributions
@@ -166,14 +192,15 @@ public:
         bool operator!=(const param_type& x) const { return !operator==(x); }
     };
 
-public:
     /*! \brief Construct new distribution with given floating-point parameters.
      *
-     * \param alpha  First parameter of gamma distribution
-     * \param beta   Second parameter of gamma distribution
+     * \param alpha  Shape parameter of gamma distribution
+     * \param theta  Scale parameter of gamma distribution
+     *
+     *  \throws InvalidInputError if either parameter is negative or zero.
      */
-    explicit GammaDistribution(result_type alpha = 1.0, result_type beta = 1.0) :
-        param_(param_type(alpha, beta))
+    explicit GammaDistribution(result_type alpha = 1.0, result_type theta = 1.0) :
+        param_(param_type(alpha, theta))
     {
     }
 
@@ -209,83 +236,58 @@ public:
     result_type operator()(Rng& g, const param_type& param)
     {
         result_type                          alpha = param.alpha();
-        UniformRealDistribution<result_type> uniformDist(0, 1);
-        ExponentialDistribution<result_type> expDist;
+        UniformRealDistribution<result_type> uniformDist(std::numeric_limits<result_type>::min(), 1);
 
-        result_type x;
-
-        if (alpha == 1.0)
+        if (alpha == result_type(1))
         {
-            x = expDist(g);
+            // Special case; when alpha is unity, it is a plain exponential distribution,
+            // which we can calculate faster by just using an exponential distribution.
+            ExponentialDistribution<result_type> expDist;
+            return expDist(g) * param.theta();
         }
-        else if (alpha > 1.0)
+        else if (alpha > result_type(1))
         {
-            const result_type b = alpha - 1.0;
-            const result_type c = 3.0 * alpha - result_type(0.75);
+            NormalDistribution<result_type> normDist;
 
-            while (true)
+            for (;;)
             {
-                const result_type u = uniformDist(g);
-                const result_type v = uniformDist(g);
-                const result_type w = u * (1 - u);
+                result_type d = alpha - result_type(1) / result_type(3);
+                result_type c = result_type(1) / result_type(3) * invsqrt(d);
+                result_type x, v;
 
-                if (w != 0)
+                do
                 {
-                    const result_type y = std::sqrt(c / w) * (u - result_type(0.5));
-                    x                   = b + y;
+                    x = normDist(g);
+                    v = result_type(1) + c * x;
+                } while (v <= result_type(0));
+                v             = v * v * v;
+                result_type u = uniformDist(g);
+                result_type y = x * x;
 
-                    if (x >= 0)
-                    {
-                        const result_type z = 64 * w * w * w * v * v;
-
-                        if (z <= 1.0 - 2.0 * y * y / x)
-                        {
-                            break;
-                        }
-                        if (std::log(z) <= 2.0 * (b * std::log(x / b) - y))
-                        {
-                            break;
-                        }
-                    }
+                // Sieve; we first check a computationally cheaper expression that catches the majority of cases
+                if (u < result_type(1) - result_type(0.0331) * y * y)
+                {
+                    return (d * v * param.theta());
+                }
+                // If we got here, we need to evaluate the two log functions to compare with the exact expression
+                if (std::log(u) < result_type(0.5) * y + d * (result_type(1) - v + std::log(v)))
+                {
+                    return (d * v * param.theta());
                 }
             }
         }
-        else // __a < 1
+        else // alpha < 1
         {
-            while (true)
-            {
-                const result_type u  = uniformDist(g);
-                const result_type es = expDist(g);
-
-                if (u <= 1.0 - alpha)
-                {
-                    x = std::pow(u, 1.0 / alpha);
-
-                    if (x <= es)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    const result_type e = -std::log((1.0 - u) / alpha);
-                    x                   = std::pow(1.0 - alpha + alpha * e, 1.0 / alpha);
-
-                    if (x <= e + es)
-                    {
-                        break;
-                    }
-                }
-            }
+            result_type x = this->operator()(g, param_type(alpha + result_type(1), param.theta()));
+            return x * std::pow(uniformDist(g), result_type(1) / alpha);
         }
-        return x * param.beta();
     }
 
-    /*! \brief Return the first parameter of gamma distribution */
+    /*! \brief Return the shape parameter of gamma distribution */
     result_type alpha() const { return param_.alpha(); }
 
-    /*! \brief Return the second parameter of gamma distribution */
-    result_type beta() const { return param_.beta(); }
+    /*! \brief Return the scale parameter of gamma distribution */
+    result_type theta() const { return param_.theta(); }
 
     /*! \brief Return the full parameter class of gamma distribution */
     param_type param() const { return param_; }
