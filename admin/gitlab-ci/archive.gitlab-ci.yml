@@ -1,5 +1,8 @@
 # Packages, exported artifacts, and release engineering processes.
 
+# Special job to run cmake to output the version string and
+# regressiontest md5sum to a file
+
 prepare-release-version:
   extends:
     - .variables:default
@@ -12,10 +15,10 @@ prepare-release-version:
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
-    - cmake -P cmake/gmxVersionInfo.cmake &> version.json
+    - cmake . -DGMX_BUILD_TARBALL=on
   artifacts:
     paths:
-      - version.json
+      - VersionInfo-partial.cmake.cmakein
 
 # Special job to package regressiontest files and have them available for testing
 # Runs during pre-build
@@ -78,8 +81,7 @@ regressiontests:package:
   needs:
     - job: prepare-release-version
   script:
-    - VERSION=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - REGTESTNAME="regressiontests-"$VERSION
     - if [[ $GROMACS_RELEASE != "true" ]] ; then
       REGTESTNAME=$REGTESTNAME-dev ;
@@ -102,7 +104,7 @@ regressiontests:package:
     - git archive -o $REGTESTNAME.tar.gz --prefix $REGTESTNAME/ -9 HEAD
     - git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD
     - mv $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz ..
-    - echo "Build regressiontests for branch  $REGTESTBRANCH"
+    - echo "Build regressiontests $REGTESTNAME for branch  $REGTESTBRANCH"
     - cd ..
   artifacts:
     paths:
@@ -222,13 +224,11 @@ checksum-verify:
     BUILD_DIR: build-package
   script:
     - VALID_BUILD=true
-    - VERSION=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - if [[ "$GROMACS_RELEASE" != "true" ]] ; then
       VERSION="$VERSION"-dev ;
       fi
-    - REGTEST_COMPARE=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['regressiontest-md5sum'])"`
+    - REGTEST_COMPARE=`sed -n -e '/REGRESSIONTEST_MD5SUM/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - SOURCENAME=gromacs-"$VERSION"
     - SOURCETARBALL="$SOURCENAME".tar.gz
     - SOURCE_MD5SUM=`md5sum "$SOURCETARBALL" | awk '{print $1}'`
@@ -265,8 +265,7 @@ version-verify:
     BUILD_DIR: release-doc-builds
   script:
     - VALID_BUILD=true
-    - VERSION=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - if [[ "$GROMACS_RELEASE" != "true" ]] ; then
       VERSION="$VERSION"-dev ;
       fi

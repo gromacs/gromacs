@@ -47,8 +47,7 @@
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
   script:
     - CMAKE=${CMAKE:-$(which cmake)}
-    - VERSION=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - if [[ $GROMACS_RELEASE != "true" ]] ; then
       VERSION=$VERSION-dev ;
       fi

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,3 +42,5 @@ set(GMX_VERSION_FULL_HASH         "@GMX_VERSION_FULL_HASH@")
 set(GMX_VERSION_CENTRAL_BASE_HASH "@GMX_VERSION_CENTRAL_BASE_HASH@")
 set(GMX_RELEASE_SOURCE_FILE_CHECKSUM  "@GMX_RELEASE_SOURCE_FILE_CHECKSUM@")
 set(GMX_CURRENT_SOURCE_FILE_CHECKSUM  "@GMX_CURRENT_SOURCE_FILE_CHECKSUM@")
+
+set(REGRESSIONTEST_MD5SUM             "@REGRESSIONTEST_MD5SUM@")

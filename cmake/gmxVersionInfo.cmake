@@ -265,23 +265,14 @@ endif()
 
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
 mark_as_advanced(GMX_BUILD_TARBALL)
-# If run with cmake -P, the -dev suffix is managed elsewhere.
 if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
-    NOT GMX_BUILD_TARBALL AND
-    NOT CMAKE_SCRIPT_MODE_FILE)
+    NOT GMX_BUILD_TARBALL)
     set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
 endif()
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
 set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
-
-# If run with cmake -P from GitLab scripts, print out necessary version info
-# as JSON.
-if (CMAKE_SCRIPT_MODE_FILE)
-    message("{ \"version\": \"${GMX_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
-    return()
-endif()
 
 # Set those values only in release versions, after getting the identifiers
 # from Zenodo for the manual and source code
@@ -372,6 +363,9 @@ string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_C
 #        - These are again custom commands that depend on the output from
 #          step 1, so they get regenerated only when the static version info
 #          changes.
+#
+# Note that VersionInfo-partial.cmake is also used to transfer version
+# information between GitLab CI jobs for release and documentation builds.
 
 # Check if we have all necessary python modules available
 if (Python3_Interpreter_FOUND)

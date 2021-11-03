@@ -109,13 +109,11 @@
     - echo $CMAKE_BUILD_TYPE_OPTIONS
     - echo $CMAKE_GMXAPI_OPTIONS
     - echo $REL_OPTION
-    - VERSION=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - VERSION=`sed -n -e '/GMX_VERSION_STRING\b/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - if [[ $GROMACS_RELEASE != "true" ]] ; then
       VERSION=$VERSION-dev ;
       fi
-    - REGTEST_COMPARE=`cat version.json |
-      python3 -c "import json,sys; print(json.load(sys.stdin)['regressiontest-md5sum'])"`
+    - REGTEST_COMPARE=`sed -n -e '/REGRESSIONTEST_MD5SUM/ s/.*"\(.*\)")/\1/p' VersionInfo-partial.cmake.cmakein`
     - SOURCENAME=gromacs-$VERSION
     - SOURCETARBALL=$SOURCENAME.tar.gz
     - REGTESTNAME=regressiontests-$VERSION
