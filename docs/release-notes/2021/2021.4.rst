@@ -55,6 +55,14 @@ the output was.
 
 :issue:`4180`
 
+Made mdrun work without MPI
+"""""""""""""""""""""""""""
+
+When configured with neither of MPI or thread-MPI, mdrun would terminate with an
+assertion failure.
+
+:issue:`4264`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
