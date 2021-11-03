@@ -258,14 +258,6 @@ static int assign_param(t_functype                ftype,
             newparam->thole.a      = old[0];
             newparam->thole.alpha1 = old[1];
             newparam->thole.alpha2 = old[2];
-            if ((old[1] > 0) && (old[2] > 0))
-            {
-                newparam->thole.rfac = old[0] * gmx::invsixthroot(old[1] * old[2]);
-            }
-            else
-            {
-                newparam->thole.rfac = 1;
-            }
             break;
         case F_BHAM:
             newparam->bham.a = old[0];

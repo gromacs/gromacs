@@ -112,7 +112,7 @@ typedef union t_iparams
     } wpol;
     struct
     {
-        real a, alpha1, alpha2, rfac;
+        real a, alpha1, alpha2;
     } thole;
     struct
     {

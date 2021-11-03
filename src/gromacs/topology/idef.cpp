@@ -180,11 +180,10 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
                                        iparams.anharm_polarize.khyp);
             break;
         case F_THOLE_POL:
-            writer->writeLineFormatted("a=%15.8e, alpha1=%15.8e, alpha2=%15.8e, rfac=%15.8e",
+            writer->writeLineFormatted("a=%15.8e, alpha1=%15.8e, alpha2=%15.8e",
                                        iparams.thole.a,
                                        iparams.thole.alpha1,
-                                       iparams.thole.alpha2,
-                                       iparams.thole.rfac);
+                                       iparams.thole.alpha2);
             break;
         case F_WATER_POL:
             writer->writeLineFormatted(

@@ -140,6 +140,7 @@ enum tpxv
     tpxv_TransformationPullCoord,     /**< Support for transformation pull coordinates */
     tpxv_SoftcoreGapsys,              /**< Added gapsys softcore function */
     tpxv_ReaddedConstantAcceleration, /**< Re-added support for constant acceleration NEMD. */
+    tpxv_RemoveTholeRfac,             /**< Remove unused rfac parameter from thole listed force */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1899,7 +1900,12 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->thole.a);
             serializer->doReal(&iparams->thole.alpha1);
             serializer->doReal(&iparams->thole.alpha2);
-            serializer->doReal(&iparams->thole.rfac);
+            if (file_version < tpxv_RemoveTholeRfac)
+            {
+                real noRfac = 0;
+                serializer->doReal(&noRfac);
+            }
+
             break;
         case F_LJ:
             serializer->doReal(&iparams->lj.c6);
