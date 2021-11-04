@@ -49,7 +49,7 @@ if(GMX_INSTALL_NBLIB_API)
             bondtypes.h
             calculator.h
             definitions.h
-            DESTINATION include/nblib)
+            DESTINATION include/nblib/listed_forces)
 endif()
 
 if(BUILD_TESTING)

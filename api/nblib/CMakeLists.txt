@@ -146,6 +146,7 @@ if(GMX_INSTALL_NBLIB_API)
             particletype.h
             simulationstate.h
             topology.h
+            vector.h
             DESTINATION include/nblib)
 endif()
 
