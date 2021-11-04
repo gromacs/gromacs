@@ -986,7 +986,7 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
         GMX_ASSERT(simulationWork.useGpuNonbonded,
                    "Can only offload buffer ops if nonbonded computation is also offloaded");
     }
-    flags.useGpuXBufferOps = simulationWork.useGpuBufferOps;
+    flags.useGpuXBufferOps = simulationWork.useGpuBufferOps && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
     flags.useGpuFBufferOps       = simulationWork.useGpuBufferOps && !flags.computeVirial;
     const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
@@ -1364,23 +1364,24 @@ void do_force(FILE*                               fplog,
         haveCopiedXFromGpu = true;
     }
 
+    if (stepWork.doNeighborSearch && ((stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuBufferOps)))
+    {
+        // TODO refactor this to do_md, after partitioning.
+        stateGpu->reinit(mdatoms->homenr,
+                         getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition));
+        if (stepWork.haveGpuPmeOnThisRank)
+        {
+            // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
+            pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
+        }
+    }
+
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
     //       if the later is not offloaded.
     if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
     {
-        if (stepWork.doNeighborSearch)
-        {
-            // TODO refactor this to do_md, after partitioning.
-            stateGpu->reinit(mdatoms->homenr,
-                             getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition));
-            if (stepWork.haveGpuPmeOnThisRank)
-            {
-                // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
-                pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
-            }
-        }
         // We need to copy coordinates when:
         // 1. Update is not offloaded
         // 2. The buffers were reinitialized on search step
@@ -1529,7 +1530,7 @@ void do_force(FILE*                               fplog,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
 
-        if (stepWork.useGpuXBufferOps)
+        if (simulationWork.useGpuBufferOps)
         {
             nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
@@ -1580,7 +1581,7 @@ void do_force(FILE*                               fplog,
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpu);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
-        if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
+        if (!stepWork.useGpuXBufferOps)
         {
             Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::Local);
         }
@@ -1687,7 +1688,7 @@ void do_force(FILE*                               fplog,
         if (simulationWork.useGpuNonbonded)
         {
 
-            if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
+            if (!stepWork.useGpuXBufferOps)
             {
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpu);
                 wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
