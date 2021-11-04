@@ -409,7 +409,7 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
     }
     // Enqueue the 3D FFT work
     impl_->queue_.submit([&](cl::sycl::handler& cgh) {
-        auto inputGridAccessor = inputGrid->get_access(cgh, cl::sycl::read_only, cl::sycl::no_init);
+        auto inputGridAccessor = inputGrid->get_access(cgh, cl::sycl::read_only);
         auto outputGridAccessor = outputGrid->get_access(cgh, cl::sycl::write_only, cl::sycl::no_init);
         // Use a hipSYCL custom operation to access the native buffers
         // needed to call rocFFT
