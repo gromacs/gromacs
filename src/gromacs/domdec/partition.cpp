@@ -3198,8 +3198,8 @@ void dd_partition_system(FILE*                     fplog,
     {
         numPulses[dd->dim[i]] = comm->cd[i].numPulses();
     }
-    int numBondedInteractionsToReduce = dd_make_local_top(dd,
-                                                          &comm->zones,
+    int numBondedInteractionsToReduce = dd_make_local_top(*dd,
+                                                          comm->zones,
                                                           dd->unitCellInfo.npbcdim,
                                                           state_local->box,
                                                           comm->cellsize_min,

@@ -47,6 +47,8 @@
 
 #include "gromacs/domdec/localtopology.h"
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include "gromacs/domdec/domdec_internal.h"
@@ -73,42 +75,91 @@ using gmx::DDBondedChecking;
 using gmx::ListOfLists;
 using gmx::RVec;
 
-/*! \brief Store a vsite interaction at the end of \p il
+//! Container for returning molecule type and index information for an atom
+struct AtomIndexSet
+{
+    int local;          //!< The local index
+    int global;         //!< The global index
+    int withinMolecule; //!< The index in the molecule this atom belongs to
+};
+
+//! Container for returning molecule type and index information for an atom
+struct AtomInMolblock
+{
+    int molblockIndex;       //!< The index into the molecule block array
+    int moleculeType;        //!< The molecule type
+    int moleculeIndex;       //!< The index of the molecule in the molecule block
+    int atomIndexInMolecule; //!< The index of the atom in the molecule
+};
+
+/*! \brief Return global topology molecule information for global atom index \p i_gl */
+static AtomInMolblock atomInMolblockFromGlobalAtomnr(ArrayRef<const MolblockIndices> molblockIndices,
+                                                     const int globalAtomIndex)
+{
+    // Find the molecule block whose range of global atom indices
+    // includes globalAtomIndex, by being the first for which
+    // globalAtomIndex is not greater than its end.
+    auto molblockIt = std::partition_point(
+            molblockIndices.begin(),
+            molblockIndices.end(),
+            [globalAtomIndex](const MolblockIndices& mbi) { return mbi.a_end <= globalAtomIndex; });
+
+    AtomInMolblock aim;
+
+    aim.molblockIndex = std::distance(molblockIndices.begin(), molblockIt);
+    aim.moleculeType  = molblockIt->type;
+    aim.moleculeIndex = (globalAtomIndex - molblockIt->a_start) / molblockIt->natoms_mol;
+    aim.atomIndexInMolecule =
+            (globalAtomIndex - molblockIt->a_start) - (aim.moleculeIndex) * molblockIt->natoms_mol;
+
+    return aim;
+}
+
+/*! \brief Store a vsite at the end of \p il, returns an array with parameter and atom indices
  *
  * This routine is very similar to add_ifunc, but vsites interactions
  * have more work to do than other kinds of interactions, and the
  * complex way nral (and thus vector contents) depends on ftype
  * confuses static analysis tools unless we fuse the vsite
  * atom-indexing organization code with the ifunc-adding code, so that
- * they can see that nral is the same value. */
-static inline void add_ifunc_for_vsites(t_iatom*           tiatoms,
-                                        const gmx_ga2la_t& ga2la,
-                                        int                nral,
-                                        gmx_bool           bHomeA,
-                                        int                a,
-                                        int                a_gl,
-                                        int                a_mol,
-                                        const t_iatom*     iatoms,
-                                        InteractionList*   il)
+ * they can see that nral is the same value.
+ *
+ * \param[in] ga2la  The global to local atom index mapping
+ * \param[in] nral   The number of atoms involved in this vsite
+ * \param[in] isLocalVsite  Whether all atoms involved in this vsite are local
+ * \param[in] atomIndexSet  The atom index set for the virtual site
+ * \param[in] iatoms     Indices, 0: interaction type, 1: vsite (unused), 2 ...: constructing atoms
+ * \param[in,out] il     The interaction list to add this vsite to
+ *
+ * \returns an array with the parameter index and the NRAL atom indices
+ */
+static inline ArrayRef<const int> add_ifunc_for_vsites(const gmx_ga2la_t&  ga2la,
+                                                       const int           nral,
+                                                       const bool          isLocalVsite,
+                                                       const AtomIndexSet& atomIndexSet,
+                                                       ArrayRef<const int> iatoms,
+                                                       InteractionList*    il)
 {
+    std::array<int, 1 + MAXATOMLIST> tiatoms;
+
     /* Copy the type */
     tiatoms[0] = iatoms[0];
 
-    if (bHomeA)
+    if (isLocalVsite)
     {
         /* We know the local index of the first atom */
-        tiatoms[1] = a;
+        tiatoms[1] = atomIndexSet.local;
     }
     else
     {
         /* Convert later in make_local_vsites */
-        tiatoms[1] = -a_gl - 1;
+        tiatoms[1] = -atomIndexSet.global - 1;
     }
 
     GMX_ASSERT(nral >= 2 && nral <= 5, "Invalid nral for vsites");
     for (int k = 2; k < 1 + nral; k++)
     {
-        int ak_gl = a_gl + iatoms[k] - a_mol;
+        int ak_gl = atomIndexSet.global + iatoms[k] - atomIndexSet.withinMolecule;
         if (const int* homeIndex = ga2la.findHome(ak_gl))
         {
             tiatoms[k] = *homeIndex;
@@ -121,7 +172,10 @@ static inline void add_ifunc_for_vsites(t_iatom*           tiatoms,
         // Note that ga2la_get_home always sets the third parameter if
         // it returns TRUE
     }
-    il->push_back(tiatoms[0], nral, tiatoms + 1);
+    il->push_back(tiatoms[0], nral, tiatoms.data() + 1);
+
+    // Return an array with the parameter index and the nral atom indices
+    return ArrayRef<int>(il->iatoms).subArray(il->iatoms.size() - (1 + nral), 1 + nral);
 }
 
 /*! \brief Store a position restraint in idef and iatoms, complex because the parameters are different for each entry */
@@ -203,22 +257,18 @@ static void add_fbposres(int                     mol,
 }
 
 /*! \brief Store a virtual site interaction, complex because of PBC and recursion */
-static void add_vsite(const gmx_ga2la_t&       ga2la,
-                      gmx::ArrayRef<const int> index,
-                      gmx::ArrayRef<const int> rtil,
-                      int                      ftype,
-                      int                      nral,
-                      gmx_bool                 bHomeA,
-                      int                      a,
-                      int                      a_gl,
-                      int                      a_mol,
-                      const t_iatom*           iatoms,
-                      InteractionDefinitions*  idef)
+static void add_vsite(const gmx_ga2la_t&      ga2la,
+                      const reverse_ilist_t&  reverseIlist,
+                      const int               ftype,
+                      const int               nral,
+                      const bool              isLocalVsite,
+                      const AtomIndexSet&     atomIndexSet,
+                      ArrayRef<const int>     iatoms,
+                      InteractionDefinitions* idef)
 {
-    t_iatom tiatoms[1 + MAXATOMLIST];
-
     /* Add this interaction to the local topology */
-    add_ifunc_for_vsites(tiatoms, ga2la, nral, bHomeA, a, a_gl, a_mol, iatoms, &idef->il[ftype]);
+    ArrayRef<const int> tiatoms =
+            add_ifunc_for_vsites(ga2la, nral, isLocalVsite, atomIndexSet, iatoms, &idef->il[ftype]);
 
     if (iatoms[1 + nral])
     {
@@ -233,29 +283,30 @@ static void add_vsite(const gmx_ga2la_t&       ga2la,
                     fprintf(debug,
                             "Constructing atom %d of vsite atom %d is a vsite and non-home\n",
                             iatoms[k] + 1,
-                            a_mol + 1);
+                            atomIndexSet.withinMolecule + 1);
                 }
                 /* Find the vsite construction */
 
                 /* Check all interactions assigned to this atom */
-                int j = index[iatoms[k]];
-                while (j < index[iatoms[k] + 1])
+                int j = reverseIlist.index[iatoms[k]];
+                while (j < reverseIlist.index[iatoms[k] + 1])
                 {
-                    int ftype_r = rtil[j++];
+                    int ftype_r = reverseIlist.il[j++];
                     int nral_r  = NRAL(ftype_r);
                     if (interaction_function[ftype_r].flags & IF_VSITE)
                     {
                         /* Add this vsite (recursion) */
+                        const AtomIndexSet atomIndexRecur = {
+                            -1, atomIndexSet.global + iatoms[k] - iatoms[1], iatoms[k]
+                        };
                         add_vsite(ga2la,
-                                  index,
-                                  rtil,
+                                  reverseIlist,
                                   ftype_r,
                                   nral_r,
-                                  FALSE,
-                                  -1,
-                                  a_gl + iatoms[k] - iatoms[1],
-                                  iatoms[k],
-                                  rtil.data() + j,
+                                  false,
+                                  atomIndexRecur,
+                                  gmx::arrayRefFromArray(reverseIlist.il.data() + j,
+                                                         reverseIlist.il.size() - j),
                                   idef);
                     }
                     j += 1 + nral_rt(ftype_r);
@@ -334,13 +385,6 @@ static void combine_idef(InteractionDefinitions* dest, gmx::ArrayRef<const threa
     }
 }
 
-//! Options for assigning interactions for atoms
-enum class InteractionConnectivity
-{
-    Intramolecular, //!< Only intra-molecular interactions
-    Intermolecular  //!< Only inter-molecular interactions
-};
-
 /*! \brief Determine whether the local domain has responsibility for
  * any of the bonded interactions for local atom \p atomIndex
  * and assign those to the local domain.
@@ -348,16 +392,10 @@ enum class InteractionConnectivity
  * \returns The total number of bonded interactions for this atom for
  * which this domain is responsible.
  */
-template<InteractionConnectivity interactionConnectivity>
-static inline int assignInteractionsForAtom(const int                 atomIndex,
-                                            const int                 globalAtomIndex,
-                                            const int                 atomIndexInMolecule,
-                                            gmx::ArrayRef<const int>  index,
-                                            gmx::ArrayRef<const int>  rtil,
-                                            const int                 ind_start,
-                                            const int                 ind_end,
+static inline int assignInteractionsForAtom(const AtomIndexSet&       atomIndexSet,
+                                            const reverse_ilist_t&    reverseIlist,
                                             const gmx_ga2la_t&        ga2la,
-                                            const gmx_domdec_zones_t* zones,
+                                            const gmx_domdec_zones_t& zones,
                                             const bool                checkDistanceMultiBody,
                                             const ivec                rcheck,
                                             const bool                checkDistanceTwoBody,
@@ -368,37 +406,27 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
                                             const int                 iz,
                                             const DDBondedChecking    ddBondedChecking)
 {
-    gmx::ArrayRef<const DDPairInteractionRanges> iZones = zones->iZones;
+    gmx::ArrayRef<const DDPairInteractionRanges> iZones = zones.iZones;
+
+    ArrayRef<const int> rtil = reverseIlist.il;
 
     int numBondedInteractions = 0;
 
-    int j = ind_start;
-    while (j < ind_end)
+    int       j        = reverseIlist.index[atomIndexSet.withinMolecule];
+    const int indexEnd = reverseIlist.index[atomIndexSet.withinMolecule + 1];
+    while (j < indexEnd)
     {
-        t_iatom tiatoms[1 + MAXATOMLIST];
+        int tiatoms[1 + MAXATOMLIST];
 
         const int ftype  = rtil[j++];
         auto      iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
         const int nral   = NRAL(ftype);
         if (interaction_function[ftype].flags & IF_VSITE)
         {
-            GMX_ASSERT(interactionConnectivity == InteractionConnectivity::Intramolecular,
-                       "All vsites should be intramolecular");
-
             /* The vsite construction goes where the vsite itself is */
             if (iz == 0)
             {
-                add_vsite(ga2la,
-                          index,
-                          rtil,
-                          ftype,
-                          nral,
-                          TRUE,
-                          atomIndex,
-                          globalAtomIndex,
-                          atomIndexInMolecule,
-                          iatoms.data(),
-                          idef);
+                add_vsite(ga2la, reverseIlist, ftype, nral, true, atomIndexSet, iatoms, idef);
             }
         }
         else
@@ -410,16 +438,13 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
 
             if (nral == 1)
             {
-                GMX_ASSERT(interactionConnectivity == InteractionConnectivity::Intramolecular,
-                           "All interactions that involve a single atom are intramolecular");
-
                 /* Assign single-body interactions to the home zone.
                  * Position restraints are not handled here, but separately.
                  */
                 if (iz == 0 && !(ftype == F_POSRES || ftype == F_FBPOSRES))
                 {
                     bUse       = true;
-                    tiatoms[1] = atomIndex;
+                    tiatoms[1] = atomIndexSet.local;
                 }
             }
             else if (nral == 2)
@@ -427,17 +452,14 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
                 /* This is a two-body interaction, we can assign
                  * analogous to the non-bonded assignments.
                  */
-                const int k_gl = (interactionConnectivity == InteractionConnectivity::Intramolecular)
-                                         ?
-                                         /* Get the global index using the offset in the molecule */
-                                         (globalAtomIndex + iatoms[2] - atomIndexInMolecule)
-                                         : iatoms[2];
+                /* Get the global index using the offset in the molecule */
+                const int k_gl = atomIndexSet.global + iatoms[2] - atomIndexSet.withinMolecule;
                 if (const auto* entry = ga2la.find(k_gl))
                 {
                     int kz = entry->cell;
-                    if (kz >= zones->n)
+                    if (kz >= zones.n)
                     {
-                        kz -= zones->n;
+                        kz -= zones.n;
                     }
                     /* Check zone interaction assignments */
                     bUse = ((iz < iZones.ssize() && iz <= kz && iZones[iz].jZoneRange.isInRange(kz))
@@ -447,7 +469,7 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
                         GMX_ASSERT(ftype != F_CONSTR || (iz == 0 && kz == 0),
                                    "Constraint assigned here should only involve home atoms");
 
-                        tiatoms[1] = atomIndex;
+                        tiatoms[1] = atomIndexSet.local;
                         tiatoms[2] = entry->la;
                         /* If necessary check the cgcm distance */
                         if (checkDistanceTwoBody
@@ -476,14 +498,10 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
                 clear_ivec(k_plus);
                 for (int k = 1; k <= nral && bUse; k++)
                 {
-                    const int k_gl =
-                            (interactionConnectivity == InteractionConnectivity::Intramolecular)
-                                    ?
-                                    /* Get the global index using the offset in the molecule */
-                                    (globalAtomIndex + iatoms[k] - atomIndexInMolecule)
-                                    : iatoms[k];
+                    /* Get the global index using the offset in the molecule */
+                    const int k_gl = atomIndexSet.global + iatoms[k] - atomIndexSet.withinMolecule;
                     const auto* entry = ga2la.find(k_gl);
-                    if (entry == nullptr || entry->cell >= zones->n)
+                    if (entry == nullptr || entry->cell >= zones.n)
                     {
                         /* We do not have this atom of this interaction
                          * locally, or it comes from more than one cell
@@ -496,7 +514,7 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
                         tiatoms[k] = entry->la;
                         for (int d = 0; d < DIM; d++)
                         {
-                            if (zones->shift[entry->cell][d] == 0)
+                            if (zones.shift[entry->cell][d] == 0)
                             {
                                 k_zero[d] = k;
                             }
@@ -552,37 +570,38 @@ static inline int assignInteractionsForAtom(const int                 atomIndex,
  * \returns The total number of bonded interactions for this atom for
  * which this domain is responsible.
  */
-static inline int assignPositionRestraintsForAtom(const int                atomIndex,
-                                                  const int                mol,
-                                                  const int                atomIndexInMolecule,
-                                                  const int                numAtomsInMolecule,
-                                                  gmx::ArrayRef<const int> rtil,
-                                                  const int                ind_start,
-                                                  const int                ind_end,
-                                                  const gmx_molblock_t&    molb,
-                                                  const t_iparams*         ip_in,
-                                                  InteractionDefinitions*  idef)
+static inline int assignPositionRestraintsForAtom(const AtomIndexSet&     atomIndexSet,
+                                                  const int               moleculeIndex,
+                                                  const int               numAtomsInMolecule,
+                                                  const reverse_ilist_t&  reverseIlist,
+                                                  const gmx_molblock_t&   molb,
+                                                  const t_iparams*        ip_in,
+                                                  InteractionDefinitions* idef)
 {
     constexpr int nral = 1;
 
+    ArrayRef<const int> rtil = reverseIlist.il;
+
     int numBondedInteractions = 0;
 
-    int j = ind_start;
-    while (j < ind_end)
+    int       j        = reverseIlist.index[atomIndexSet.withinMolecule];
+    const int indexEnd = reverseIlist.index[atomIndexSet.withinMolecule + 1];
+    while (j < indexEnd)
     {
         const int ftype  = rtil[j++];
         auto      iatoms = gmx::constArrayRefFromArray(rtil.data() + j, rtil.size() - j);
 
         if (ftype == F_POSRES || ftype == F_FBPOSRES)
         {
-            std::array<int, 1 + nral> tiatoms = { iatoms[0], atomIndex };
+            std::array<int, 1 + nral> tiatoms = { iatoms[0], atomIndexSet.local };
             if (ftype == F_POSRES)
             {
-                add_posres(mol, atomIndexInMolecule, numAtomsInMolecule, molb, tiatoms, ip_in, idef);
+                add_posres(moleculeIndex, atomIndexSet.withinMolecule, numAtomsInMolecule, molb, tiatoms, ip_in, idef);
             }
             else
             {
-                add_fbposres(mol, atomIndexInMolecule, numAtomsInMolecule, molb, tiatoms, ip_in, idef);
+                add_fbposres(
+                        moleculeIndex, atomIndexSet.withinMolecule, numAtomsInMolecule, molb, tiatoms, ip_in, idef);
             }
             idef->il[ftype].push_back(tiatoms[0], nral, tiatoms.data() + 1);
             numBondedInteractions++;
@@ -598,10 +617,10 @@ static inline int assignPositionRestraintsForAtom(const int                atomI
  * With thread parallelizing each thread acts on a different atom range:
  * at_start to at_end.
  */
-static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
+static int make_bondeds_zone(const gmx_reverse_top_t&           rt,
                              ArrayRef<const int>                globalAtomIndices,
                              const gmx_ga2la_t&                 ga2la,
-                             const gmx_domdec_zones_t*          zones,
+                             const gmx_domdec_zones_t&          zones,
                              const std::vector<gmx_molblock_t>& molb,
                              const bool                         checkDistanceMultiBody,
                              const ivec                         rcheck,
@@ -614,82 +633,65 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
                              int                                izone,
                              const gmx::Range<int>&             atomRange)
 {
-    const auto ddBondedChecking = rt->options().ddBondedChecking;
+    const auto ddBondedChecking = rt.options().ddBondedChecking;
 
     int numBondedInteractions = 0;
 
-    for (int i : atomRange)
+    for (int atomIndexLocal : atomRange)
     {
         /* Get the global atom number */
-        const int                          globalAtomIndex = globalAtomIndices[i];
-        const MolecularTopologyAtomIndices mtai =
-                globalAtomIndexToMoltypeIndices(rt->molblockIndices(), globalAtomIndex);
-        /* Check all intramolecular interactions assigned to this atom */
-        const auto&              ilistMol = rt->interactionListForMoleculeType(mtai.moleculeType);
-        gmx::ArrayRef<const int> index    = ilistMol.index;
-        gmx::ArrayRef<const t_iatom> rtil = ilistMol.il;
+        const int  atomIndexGlobal = globalAtomIndices[atomIndexLocal];
+        const auto aim = atomInMolblockFromGlobalAtomnr(rt.molblockIndices(), atomIndexGlobal);
 
-        numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intramolecular>(
-                i,
-                globalAtomIndex,
-                mtai.atomIndex,
-                index,
-                rtil,
-                index[mtai.atomIndex],
-                index[mtai.atomIndex + 1],
-                ga2la,
-                zones,
-                checkDistanceMultiBody,
-                rcheck,
-                checkDistanceTwoBody,
-                cutoffSquared,
-                pbc_null,
-                coordinates,
-                idef,
-                izone,
-                ddBondedChecking);
+        const AtomIndexSet atomIndexMol = { atomIndexLocal, atomIndexGlobal, aim.atomIndexInMolecule };
+        const auto&        ilistMol     = rt.interactionListForMoleculeType(aim.moleculeType);
+        numBondedInteractions += assignInteractionsForAtom(atomIndexMol,
+                                                           ilistMol,
+                                                           ga2la,
+                                                           zones,
+                                                           checkDistanceMultiBody,
+                                                           rcheck,
+                                                           checkDistanceTwoBody,
+                                                           cutoffSquared,
+                                                           pbc_null,
+                                                           coordinates,
+                                                           idef,
+                                                           izone,
+                                                           ddBondedChecking);
 
         // Assign position restraints, when present, for the home zone
-        if (izone == 0 && rt->hasPositionRestraints())
+        if (izone == 0 && rt.hasPositionRestraints())
         {
-            numBondedInteractions += assignPositionRestraintsForAtom(i,
-                                                                     mtai.moleculeIndex,
-                                                                     mtai.atomIndex,
-                                                                     ilistMol.numAtomsInMolecule,
-                                                                     rtil,
-                                                                     index[mtai.atomIndex],
-                                                                     index[mtai.atomIndex + 1],
-                                                                     molb[mtai.blockIndex],
-                                                                     ip_in,
-                                                                     idef);
+            numBondedInteractions +=
+                    assignPositionRestraintsForAtom(atomIndexMol,
+                                                    aim.moleculeIndex,
+                                                    ilistMol.numAtomsInMolecule,
+                                                    rt.interactionListForMoleculeType(aim.moleculeType),
+                                                    molb[aim.molblockIndex],
+                                                    ip_in,
+                                                    idef);
         }
 
-        if (rt->hasIntermolecularInteractions())
+        if (rt.hasIntermolecularInteractions())
         {
-            /* Check all intermolecular interactions assigned to this atom */
-            const auto& ilistIntermol = rt->interactionListForIntermolecularInteractions();
-            index                     = ilistIntermol.index;
-            rtil                      = ilistIntermol.il;
-
-            numBondedInteractions += assignInteractionsForAtom<InteractionConnectivity::Intermolecular>(
-                    i,
-                    -1, // not used
-                    -1, // not used
-                    index,
-                    rtil,
-                    index[globalAtomIndex],
-                    index[globalAtomIndex + 1],
-                    ga2la,
-                    zones,
-                    checkDistanceMultiBody,
-                    rcheck,
-                    checkDistanceTwoBody,
-                    cutoffSquared,
-                    pbc_null,
-                    coordinates,
-                    idef,
-                    izone,
-                    ddBondedChecking);
+            /* Check all intermolecular interactions assigned to this atom.
+             * Note that we will index the intermolecular reverse ilist with atomIndexGlobal.
+             */
+            const AtomIndexSet atomIndexIntermol = { atomIndexLocal, atomIndexGlobal, atomIndexGlobal };
+            numBondedInteractions +=
+                    assignInteractionsForAtom(atomIndexIntermol,
+                                              rt.interactionListForIntermolecularInteractions(),
+                                              ga2la,
+                                              zones,
+                                              checkDistanceMultiBody,
+                                              rcheck,
+                                              checkDistanceTwoBody,
+                                              cutoffSquared,
+                                              pbc_null,
+                                              coordinates,
+                                              idef,
+                                              izone,
+                                              ddBondedChecking);
         }
     }
 
@@ -699,7 +701,7 @@ static int make_bondeds_zone(gmx_reverse_top_t*                 rt,
 /*! \brief Set the exclusion data for i-zone \p iz */
 static void make_exclusions_zone(ArrayRef<const int>               globalAtomIndices,
                                  const gmx_ga2la_t&                ga2la,
-                                 gmx_domdec_zones_t*               zones,
+                                 const gmx_domdec_zones_t&         zones,
                                  ArrayRef<const MolblockIndices>   molblockIndices,
                                  const std::vector<gmx_moltype_t>& moltype,
                                  gmx::ArrayRef<const int64_t>      atomInfo,
@@ -709,7 +711,7 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
                                  int                               at_end,
                                  const gmx::ArrayRef<const int>    intermolecularExclusionGroup)
 {
-    const auto& jAtomRange = zones->iZones[iz].jAtomRange;
+    const auto& jAtomRange = zones.iZones[iz].jAtomRange;
 
     const gmx::index oldNumLists = lexcls->ssize();
 
@@ -771,24 +773,24 @@ static void make_exclusions_zone(ArrayRef<const int>               globalAtomInd
 /*! \brief Generate and store all required local bonded interactions in \p idef and local exclusions in \p lexcls
  *
  * \returns Total count of bonded interactions in the local topology on this domain */
-static int make_local_bondeds_excls(gmx_domdec_t*           dd,
-                                    gmx_domdec_zones_t*     zones,
-                                    const gmx_mtop_t&       mtop,
-                                    ArrayRef<const int64_t> atomInfo,
-                                    const bool              checkDistanceMultiBody,
-                                    const ivec              rcheck,
-                                    const gmx_bool          checkDistanceTwoBody,
-                                    const real              cutoff,
-                                    const t_pbc*            pbc_null,
-                                    ArrayRef<const RVec>    coordinates,
-                                    InteractionDefinitions* idef,
-                                    ListOfLists<int>*       lexcls)
+static int make_local_bondeds_excls(const gmx_domdec_t&       dd,
+                                    const gmx_domdec_zones_t& zones,
+                                    const gmx_mtop_t&         mtop,
+                                    ArrayRef<const int64_t>   atomInfo,
+                                    const bool                checkDistanceMultiBody,
+                                    const ivec                rcheck,
+                                    const gmx_bool            checkDistanceTwoBody,
+                                    const real                cutoff,
+                                    const t_pbc*              pbc_null,
+                                    ArrayRef<const RVec>      coordinates,
+                                    InteractionDefinitions*   idef,
+                                    ListOfLists<int>*         lexcls)
 {
     int nzone_bondeds = 0;
 
-    if (dd->reverse_top->hasInterAtomicInteractions())
+    if (dd.reverse_top->hasInterAtomicInteractions())
     {
-        nzone_bondeds = zones->n;
+        nzone_bondeds = zones.n;
     }
     else
     {
@@ -799,9 +801,9 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
     }
 
     /* We only use exclusions from i-zones to i- and j-zones */
-    const int numIZonesForExclusions = (dd->haveExclusions ? zones->iZones.size() : 0);
+    const int numIZonesForExclusions = (dd.haveExclusions ? zones.iZones.size() : 0);
 
-    gmx_reverse_top_t* rt = dd->reverse_top.get();
+    const gmx_reverse_top_t& rt = *dd.reverse_top;
 
     const real cutoffSquared = gmx::square(cutoff);
 
@@ -813,10 +815,10 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
 
     for (int izone = 0; izone < nzone_bondeds; izone++)
     {
-        const int cg0 = zones->cg_range[izone];
-        const int cg1 = zones->cg_range[izone + 1];
+        const int cg0 = zones.cg_range[izone];
+        const int cg1 = zones.cg_range[izone + 1];
 
-        gmx::ArrayRef<thread_work_t> threadWorkObjects = rt->threadWorkObjects();
+        gmx::ArrayRef<thread_work_t> threadWorkObjects = rt.threadWorkObjects();
         const int                    numThreads        = threadWorkObjects.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int thread = 0; thread < numThreads; thread++)
@@ -840,8 +842,8 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
 
                 threadWorkObjects[thread].numBondedInteractions =
                         make_bondeds_zone(rt,
-                                          dd->globalAtomIndices,
-                                          *dd->ga2la,
+                                          dd.globalAtomIndices,
+                                          *dd.ga2la,
                                           zones,
                                           mtop.molblock,
                                           checkDistanceMultiBody,
@@ -871,10 +873,10 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                     }
 
                     /* No charge groups and no distance check required */
-                    make_exclusions_zone(dd->globalAtomIndices,
-                                         *dd->ga2la,
+                    make_exclusions_zone(dd.globalAtomIndices,
+                                         *dd.ga2la,
                                          zones,
-                                         rt->molblockIndices(),
+                                         rt.molblockIndices(),
                                          mtop.moltype,
                                          atomInfo,
                                          excl_t,
@@ -914,8 +916,8 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
     return numBondedInteractions;
 }
 
-int dd_make_local_top(gmx_domdec_t*                dd,
-                      gmx_domdec_zones_t*          zones,
+int dd_make_local_top(const gmx_domdec_t&          dd,
+                      const gmx_domdec_zones_t&    zones,
                       int                          npbcdim,
                       matrix                       box,
                       rvec                         cellsize_min,
@@ -938,10 +940,10 @@ int dd_make_local_top(gmx_domdec_t*                dd,
     bool checkDistanceMultiBody = false;
     bool checkDistanceTwoBody   = false;
 
-    if (dd->reverse_top->hasInterAtomicInteractions())
+    if (dd.reverse_top->hasInterAtomicInteractions())
     {
         /* We need to check to which cell bondeds should be assigned */
-        rc = dd_cutoff_twobody(dd);
+        rc = dd_cutoff_twobody(&dd);
         if (debug)
         {
             fprintf(debug, "Two-body bonded cut-off distance is %g\n", rc);
@@ -954,10 +956,9 @@ int dd_make_local_top(gmx_domdec_t*                dd,
             /* Only need to check for dimensions where the part of the box
              * that is not communicated is smaller than the cut-off.
              */
-            if (d < npbcdim && dd->numCells[d] > 1
-                && (dd->numCells[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
+            if (d < npbcdim && dd.numCells[d] > 1 && (dd.numCells[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
             {
-                if (dd->numCells[d] == 2)
+                if (dd.numCells[d] == 2)
                 {
                     rcheck[d]              = TRUE;
                     checkDistanceMultiBody = TRUE;
@@ -983,7 +984,7 @@ int dd_make_local_top(gmx_domdec_t*                dd,
         {
             if (fr->bMolPBC)
             {
-                pbc_null = set_pbc_dd(&pbc, fr->pbcType, dd->numCells, TRUE, box);
+                pbc_null = set_pbc_dd(&pbc, fr->pbcType, dd.numCells, TRUE, box);
             }
             else
             {
@@ -1005,7 +1006,7 @@ int dd_make_local_top(gmx_domdec_t*                dd,
                                                                  &ltop->idef,
                                                                  &ltop->excls);
 
-    if (dd->reverse_top->doListedForcesSorting())
+    if (dd.reverse_top->doListedForcesSorting())
     {
         gmx_sort_ilist_fe(&ltop->idef, atomInfo);
     }
