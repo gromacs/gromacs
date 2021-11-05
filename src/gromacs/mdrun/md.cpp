@@ -1513,6 +1513,8 @@ void gmx::LegacySimulator::do_md()
                             && !runScheduleWork->stepWork.useGpuXBufferOps))
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                        // Coordinates are later used by the integrator running in the same stream.
+                        stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
                     }
                 }
 
