@@ -102,8 +102,8 @@ TEST_P(OutputFiles, FilesArePresent)
         for (const auto& file : { runner_.fullPrecisionTrajectoryFileName_,
                                   runner_.logFileName_,
                                   runner_.edrFileName_,
-                                  fileManager_.getTemporaryFilePath("state.gro"),
-                                  fileManager_.getTemporaryFilePath("state.cpt") })
+                                  runner_.groOutputFileName_,
+                                  runner_.cptOutputFileName_ })
         {
             EXPECT_TRUE(File::exists(file, File::returnFalseOnError))
                     << "File " << file << " was not found.";

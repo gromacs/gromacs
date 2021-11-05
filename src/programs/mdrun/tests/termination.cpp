@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ typedef MdrunTestFixture MdrunTerminationTest;
 
 TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+    runner_.cptOutputFileName_ = fileManager_.getTemporaryFilePath(".cpt");
 
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
@@ -93,10 +93,9 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        ASSERT_TRUE(File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found and should be";
+        ASSERT_TRUE(File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found and should be";
     }
     SCOPED_TRACE("Running the second simulation part with default appending behavior");
     {
@@ -104,7 +103,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
@@ -115,8 +114,6 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
 
 TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_, 100);
     EXPECT_EQ(0, runner_.callGrompp());
@@ -125,7 +122,6 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         // Ensure maxh will trigger the halt, and that the signal will
         // have time to be propagated.
         //
@@ -134,8 +130,8 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
         firstPart.addOption("-maxh", 1e-7);
         firstPart.addOption("-nstlist", 1);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part");
@@ -144,7 +140,7 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
@@ -155,8 +151,6 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
 
 TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterAppend)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
@@ -165,10 +159,9 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part with -noappend");
@@ -177,8 +170,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
-        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
         secondPart.append("-noappend");
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
@@ -197,8 +189,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     {
         CommandLine thirdPart;
         thirdPart.append("mdrun");
-        thirdPart.addOption("-cpi", runner_.cptFileName_);
-        thirdPart.addOption("-cpo", runner_.cptFileName_);
+        thirdPart.addOption("-cpi", runner_.cptOutputFileName_);
         thirdPart.append("-append");
         EXPECT_THROW_GMX(runner_.callMdrun(thirdPart), InconsistentInputError);
     }
@@ -206,8 +197,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     {
         CommandLine thirdPart;
         thirdPart.append("mdrun");
-        thirdPart.addOption("-cpi", runner_.cptFileName_);
-        thirdPart.addOption("-cpo", runner_.cptFileName_);
+        thirdPart.addOption("-cpi", runner_.cptOutputFileName_);
         thirdPart.append("-noappend");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0003.edr");
         ASSERT_EQ(0, runner_.callMdrun(thirdPart));
@@ -224,8 +214,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     {
         CommandLine fourthPart;
         fourthPart.append("mdrun");
-        fourthPart.addOption("-cpi", runner_.cptFileName_);
-        fourthPart.addOption("-cpo", runner_.cptFileName_);
+        fourthPart.addOption("-cpi", runner_.cptOutputFileName_);
         // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fourthPart.append("-noappend");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0004.edr");
@@ -243,8 +232,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
     {
         CommandLine fifthPart;
         fifthPart.append("mdrun");
-        fifthPart.addOption("-cpi", runner_.cptFileName_);
-        fifthPart.addOption("-cpo", runner_.cptFileName_);
+        fifthPart.addOption("-cpi", runner_.cptOutputFileName_);
         // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fifthPart.append("-noappend");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0005.edr");
@@ -262,8 +250,6 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
 
 TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
@@ -272,10 +258,9 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part after deleting the checkpoint file");
@@ -284,14 +269,13 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
-        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
 
         // Remove the checkpoint, so technically this can no longer be
         // a restart. But it starts again from the beginning anyway.
         //
         // TODO what do we want the behaviour to be?
-        std::remove(runner_.cptFileName_.c_str());
+        std::remove(runner_.cptOutputFileName_.c_str());
 
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
@@ -302,8 +286,6 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
 
 TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheckpointFile)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
@@ -312,10 +294,9 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found";
     }
 
     SCOPED_TRACE(
@@ -325,13 +306,12 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
-        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
         secondPart.append("-append");
 
         // Remove the checkpoint, so this can no longer be a
         // restart.
-        std::remove(runner_.cptFileName_.c_str());
+        std::remove(runner_.cptOutputFileName_.c_str());
 
         EXPECT_THROW_GMX(runner_.callMdrun(secondPart), InconsistentInputError);
     }
@@ -339,8 +319,6 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
 
 TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
 {
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-
     runner_.useTopGroAndNdxFromDatabase("spc2");
     organizeMdpFile(&runner_);
     EXPECT_EQ(0, runner_.callGrompp());
@@ -349,7 +327,6 @@ TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
     {
         CommandLine firstPart;
         firstPart.append("mdrun");
-        firstPart.addOption("-cpo", runner_.cptFileName_);
         firstPart.append("-noappend");
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0001.log");
@@ -358,8 +335,8 @@ TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0001.edr");
         ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
                 << expectedEdrFileName << " was not found";
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
-                << runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptOutputFileName_, File::returnFalseOnError))
+                << runner_.cptOutputFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part with -noappend");
@@ -368,8 +345,7 @@ TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
 
         CommandLine secondPart;
         secondPart.append("mdrun");
-        secondPart.addOption("-cpi", runner_.cptFileName_);
-        secondPart.addOption("-cpo", runner_.cptFileName_);
+        secondPart.addOption("-cpi", runner_.cptOutputFileName_);
         secondPart.append("-noappend");
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 

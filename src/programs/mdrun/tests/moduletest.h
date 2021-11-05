@@ -164,13 +164,13 @@ public:
     std::string fullPrecisionTrajectoryFileName_;
     std::string reducedPrecisionTrajectoryFileName_;
     std::string groOutputFileName_;
+    std::string cptOutputFileName_;
     std::string ndxFileName_;
     std::string mdpOutputFileName_;
     std::string tprFileName_;
     std::string logFileName_;
     std::string edrFileName_;
     std::string mtxFileName_;
-    std::string cptFileName_;
     std::string swapFileName_;
     std::string dhdlFileName_;
     int         nsteps_;

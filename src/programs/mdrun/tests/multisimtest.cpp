@@ -233,12 +233,12 @@ void MultiSimTest::runMaxhTest()
     SimulationRunner runner(&fileManager_);
     runner.useTopGroAndNdxFromDatabase("spc2");
 
-    TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner);
+    TerminationHelper helper(mdrunCaller_.get(), &runner);
     // Make sure -maxh has a chance to propagate
     int numSteps = 100;
     runGrompp(&runner, numSteps);
 
-    helper.runFirstMdrun(runner.cptFileName_);
+    helper.runFirstMdrun(runner.cptOutputFileName_);
     helper.runSecondMdrun();
 }
 

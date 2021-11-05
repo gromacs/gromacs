@@ -102,6 +102,8 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 
 SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
     fullPrecisionTrajectoryFileName_(fileManager->getTemporaryFilePath(".trr")),
+    groOutputFileName_(fileManager->getTemporaryFilePath(".gro")),
+    cptOutputFileName_(fileManager->getTemporaryFilePath(".cpt")),
     mdpOutputFileName_(fileManager->getTemporaryFilePath("output.mdp")),
     tprFileName_(fileManager->getTemporaryFilePath(".tpr")),
     logFileName_(fileManager->getTemporaryFilePath(".log")),
@@ -307,6 +309,8 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     {
         caller.addOption("-dhdl", dhdlFileName_);
     }
+    caller.addOption("-c", groOutputFileName_);
+    caller.addOption("-cpo", cptOutputFileName_);
 
     caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
 

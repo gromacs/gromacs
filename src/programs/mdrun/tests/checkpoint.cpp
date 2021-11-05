@@ -64,10 +64,7 @@ class CheckpointCoordinatesSanityChecks :
     public ::testing::WithParamInterface<std::tuple<std::string, std::string, std::string, std::string>>
 {
 public:
-    void runSimulation(MdpFieldValues     mdpFieldValues,
-                       int                numSteps,
-                       const std::string& trrFileName,
-                       const std::string& cptFileName)
+    void runSimulation(MdpFieldValues mdpFieldValues, int numSteps)
     {
         mdpFieldValues["nsteps"] = toString(numSteps);
         // Trajectories have the initial and the last frame
@@ -80,8 +77,7 @@ public:
         runGrompp(&runner_);
 
         // Do first mdrun
-        runner_.fullPrecisionTrajectoryFileName_ = trrFileName;
-        runMdrun(&runner_, { { "-cpo", cptFileName } });
+        runMdrun(&runner_, {});
     }
 
     static void compareCptAndTrr(const std::string&          trrFileName,
@@ -136,7 +132,6 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
             prepareMdpFieldValues(simulationName, integrator, temperatureCoupling, pressureCoupling);
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     // Set file names
-    const auto cptFileName = fileManager_.getTemporaryFilePath(".cpt");
     const auto trrFileName = fileManager_.getTemporaryFilePath(".trr");
 
     SCOPED_TRACE(formatString(
@@ -150,8 +145,10 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
     SCOPED_TRACE("End of trajectory sanity");
     // Running a few steps - we expect the checkpoint to be equal
     // to the final configuration
-    runSimulation(mdpFieldValues, 16, trrFileName, cptFileName);
-    compareCptAndTrr(trrFileName, cptFileName, { trajectoryMatchSettings, trajectoryTolerances });
+    runSimulation(mdpFieldValues, 16);
+    compareCptAndTrr(runner_.fullPrecisionTrajectoryFileName_,
+                     runner_.cptOutputFileName_,
+                     { trajectoryMatchSettings, trajectoryTolerances });
 }
 
 #if !GMX_GPU_OPENCL

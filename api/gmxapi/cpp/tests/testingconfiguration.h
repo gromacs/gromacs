@@ -134,7 +134,7 @@ public:
         mdArgs.emplace_back("-e");
         mdArgs.emplace_back(runner_.edrFileName_);
         mdArgs.emplace_back("-cpo");
-        mdArgs.emplace_back(runner_.cptFileName_);
+        mdArgs.emplace_back(runner_.cptOutputFileName_);
 #if GMX_THREAD_MPI
         /* This should be handled through the actual API we have for getting
          * ranks, but currently this leads to data races right now */

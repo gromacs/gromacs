@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -276,8 +276,6 @@ TEST_F(DensityFittingTest, GromppErrorWhenEnergyEvaluationFrequencyMismatch)
 TEST_F(DensityFittingTest, CheckpointWorks)
 {
     runner_.useStringAsMdpFile(mdpMdDensfitYesUnsetValues + mdpSkipDensityfittingEveryOtherStep_);
-    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
-    commandLineForMdrun_.addOption("-cpo", runner_.cptFileName_);
 
     ASSERT_EQ(0, runner_.callGrompp());
     ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
@@ -285,7 +283,7 @@ TEST_F(DensityFittingTest, CheckpointWorks)
     // checkMdrun(expectedEnergyTermMagnitude);
 
     CommandLine commandLineForRestart;
-    commandLineForRestart.addOption("-cpi", runner_.cptFileName_);
+    commandLineForRestart.addOption("-cpi", runner_.cptOutputFileName_);
     commandLineForRestart.addOption("-noappend");
     runner_.nsteps_ = 4;
     ASSERT_EQ(0, runner_.callMdrun(commandLineForRestart));

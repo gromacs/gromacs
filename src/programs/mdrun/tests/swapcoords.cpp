@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,21 +110,17 @@ TEST_F(CompelTest, SwapCanRun)
 
     EXPECT_EQ(0, runner_.callGrompp());
 
-    runner_.cptFileName_       = fileManager_.getTemporaryFilePath(".cpt");
-    runner_.groOutputFileName_ = fileManager_.getTemporaryFilePath(".gro");
-    runner_.swapFileName_      = fileManager_.getTemporaryFilePath("swap.xvg");
+    runner_.swapFileName_ = fileManager_.getTemporaryFilePath("swap.xvg");
 
     ::gmx::test::CommandLine swapCaller;
-    swapCaller.addOption("-c", runner_.groOutputFileName_);
     swapCaller.addOption("-swap", runner_.swapFileName_);
 
     // Do an initial mdrun that writes a checkpoint file
     ::gmx::test::CommandLine firstCaller(swapCaller);
-    firstCaller.addOption("-cpo", runner_.cptFileName_);
     ASSERT_EQ(0, runner_.callMdrun(firstCaller));
     // Continue mdrun from that checkpoint file
     ::gmx::test::CommandLine secondCaller(swapCaller);
-    secondCaller.addOption("-cpi", runner_.cptFileName_);
+    secondCaller.addOption("-cpi", runner_.cptOutputFileName_);
     runner_.nsteps_ = 2;
     ASSERT_EQ(0, runner_.callMdrun(secondCaller));
 }

@@ -55,12 +55,9 @@ namespace gmx
 namespace test
 {
 
-TerminationHelper::TerminationHelper(TestFileManager*  fileManager,
-                                     CommandLine*      mdrunCaller,
-                                     SimulationRunner* runner) :
+TerminationHelper::TerminationHelper(CommandLine* mdrunCaller, SimulationRunner* runner) :
     mdrunCaller_(mdrunCaller), runner_(runner)
 {
-    runner_->cptFileName_ = fileManager->getTemporaryFilePath(".cpt");
     runner_->useTopGroAndNdxFromDatabase("spc2");
 }
 
@@ -71,7 +68,6 @@ void TerminationHelper::runFirstMdrun(const std::string& expectedCptFileName)
     // numSteps isn't reached first.
     firstPart.addOption("-maxh", 1e-7);
     firstPart.addOption("-nstlist", 1);
-    firstPart.addOption("-cpo", runner_->cptFileName_);
     ASSERT_EQ(0, runner_->callMdrun(firstPart));
     EXPECT_EQ(true, File::exists(expectedCptFileName, File::returnFalseOnError))
             << expectedCptFileName << " was not found";
@@ -80,7 +76,7 @@ void TerminationHelper::runFirstMdrun(const std::string& expectedCptFileName)
 void TerminationHelper::runSecondMdrun()
 {
     CommandLine secondPart(*mdrunCaller_);
-    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-cpi", runner_->cptOutputFileName_);
     secondPart.addOption("-nsteps", 2);
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
@@ -88,7 +84,7 @@ void TerminationHelper::runSecondMdrun()
 void TerminationHelper::runSecondMdrunWithNoAppend()
 {
     CommandLine secondPart(*mdrunCaller_);
-    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-cpi", runner_->cptOutputFileName_);
     secondPart.addOption("-nsteps", 2);
     secondPart.append("-noappend");
     ASSERT_EQ(0, runner_->callMdrun(secondPart));

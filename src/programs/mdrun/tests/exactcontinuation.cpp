@@ -287,7 +287,7 @@ void runTest(TestFileManager*            fileManager,
         runner->edrFileName_ = firstPartRunEdrFileName;
         CommandLine firstPartRunCaller;
         firstPartRunCaller.append("mdrun");
-        firstPartRunCaller.addOption("-cpo", firstPartRunCheckpointFileName);
+        runner->cptOutputFileName_ = firstPartRunCheckpointFileName;
         ASSERT_EQ(0, runner->callMdrun(firstPartRunCaller));
     }
 
