@@ -981,14 +981,14 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
             && !(simulationWork.computeNonbondedAtMtsLevel1 && !computeSlowForces);
     flags.computeDhdl = ((legacyFlags & GMX_FORCE_DHDL) != 0);
 
-    if (simulationWork.useGpuBufferOps)
+    if (simulationWork.useGpuXBufferOps || simulationWork.useGpuFBufferOps)
     {
         GMX_ASSERT(simulationWork.useGpuNonbonded,
                    "Can only offload buffer ops if nonbonded computation is also offloaded");
     }
-    flags.useGpuXBufferOps = simulationWork.useGpuBufferOps && !flags.doNeighborSearch;
+    flags.useGpuXBufferOps = simulationWork.useGpuXBufferOps && !flags.doNeighborSearch;
     // on virial steps the CPU reduction path is taken
-    flags.useGpuFBufferOps       = simulationWork.useGpuBufferOps && !flags.computeVirial;
+    flags.useGpuFBufferOps       = simulationWork.useGpuFBufferOps && !flags.computeVirial;
     const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
     flags.useGpuPmeFReduction    = flags.computeSlowForces && flags.useGpuFBufferOps
                                 && (rankHasGpuPmeTask || simulationWork.useGpuPmePpCommunication);
@@ -1339,7 +1339,7 @@ void do_force(FILE*                               fplog,
     const bool reinitGpuPmePpComms =
             simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
-    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
+    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
                                                 AtomLocality::Local, simulationWork, stepWork)
                                         : nullptr;
@@ -1364,7 +1364,8 @@ void do_force(FILE*                               fplog,
         haveCopiedXFromGpu = true;
     }
 
-    if (stepWork.doNeighborSearch && ((stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuBufferOps)))
+    if (stepWork.doNeighborSearch
+        && (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps || simulationWork.useGpuFBufferOps))
     {
         // TODO refactor this to do_md, after partitioning.
         stateGpu->reinit(mdatoms->homenr,
@@ -1530,12 +1531,12 @@ void do_force(FILE*                               fplog,
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchLocal);
         wallcycle_stop(wcycle, WallCycleCounter::NS);
 
-        if (simulationWork.useGpuBufferOps)
+        if (simulationWork.useGpuXBufferOps)
         {
             nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
 
-        if (simulationWork.useGpuBufferOps)
+        if (simulationWork.useGpuFBufferOps)
         {
             setupLocalGpuForceReduction(runScheduleWork,
                                         fr->nbv.get(),

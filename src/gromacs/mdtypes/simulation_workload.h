@@ -179,8 +179,10 @@ public:
     bool useGpuBonded = false;
     //! If update and constraint solving is performed on GPU.
     bool useGpuUpdate = false;
-    //! If buffer operations are performed on GPU.
-    bool useGpuBufferOps = false;
+    //! If X buffer operations are performed on GPU.
+    bool useGpuXBufferOps = false;
+    //! If F buffer operations are performed on GPU.
+    bool useGpuFBufferOps = false;
     //! If PP domain decomposition is active.
     bool havePpDomainDecomposition = false;
     //! If domain decomposition halo exchange is performed on CPU (in CPU-only runs or with staged GPU communication).

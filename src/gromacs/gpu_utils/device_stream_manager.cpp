@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
                     std::make_unique<DeviceStream>(context_, DeviceStreamPriority::High, useTiming);
         }
         // Update stream is used both for coordinates transfers and for GPU update/constraints
-        if (simulationWork.useGpuPme || simulationWork.useGpuUpdate || simulationWork.useGpuBufferOps)
+        if (simulationWork.useGpuPme || simulationWork.useGpuUpdate || simulationWork.useGpuXBufferOps)
         {
             streams_[DeviceStreamType::UpdateAndConstraints] =
                     std::make_unique<DeviceStream>(context_, DeviceStreamPriority::Normal, useTiming);

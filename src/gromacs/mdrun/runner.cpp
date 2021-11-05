@@ -1996,7 +1996,7 @@ int Mdrunner::mdrunner()
             makeBondedLinks(cr->dd, mtop, fr->atomInfoForEachMoleculeBlock);
         }
 
-        if (runScheduleWork.simulationWork.useGpuBufferOps)
+        if (runScheduleWork.simulationWork.useGpuFBufferOps)
         {
             fr->gpuForceReduction[gmx::AtomLocality::Local] = std::make_unique<gmx::GpuForceReduction>(
                     deviceStreamManager->context(),
@@ -2011,7 +2011,7 @@ int Mdrunner::mdrunner()
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
         if (gpusWereDetected
             && ((runScheduleWork.simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME))
-                || runScheduleWork.simulationWork.useGpuBufferOps))
+                || runScheduleWork.simulationWork.useGpuXBufferOps))
         {
             GpuApiCallBehavior transferKind =
                     (inputrec->eI == IntegrationAlgorithm::MD && !doRerun && !useModularSimulator)

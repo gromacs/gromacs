@@ -338,7 +338,6 @@ void gmx::LegacySimulator::do_md()
     const auto& simulationWork     = runScheduleWork->simulationWork;
     const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
-    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     /* Check for polarizable models and flexible constraints */
@@ -360,9 +359,8 @@ void gmx::LegacySimulator::do_md()
     ObservablesReducer observablesReducer = observablesReducerBuilder->build();
 
     ForceBuffers     f(simulationWork.useMts,
-                   ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
-                               ? PinningPolicy::PinnedIfSupported
-                               : PinningPolicy::CannotBePinned);
+                   (simulationWork.useGpuFBufferOps || useGpuForUpdate) ? PinningPolicy::PinnedIfSupported
+                                                                            : PinningPolicy::CannotBePinned);
     const t_mdatoms* md = mdAtoms->mdatoms();
     if (haveDDAtomOrdering(*cr))
     {
@@ -431,7 +429,7 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ir->eConstrAlg != ConstraintAlgorithm::Shake || constr == nullptr
                                    || constr->numConstraintsTotal() == 0,
                            "SHAKE is not supported with GPU update.");
-        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuBufferOps),
+        GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuXBufferOps),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
         GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD,
@@ -488,7 +486,7 @@ void gmx::LegacySimulator::do_md()
         integrator->setPbc(PbcType::Xyz, state->box);
     }
 
-    if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
+    if (useGpuForPme || simulationWork.useGpuXBufferOps || useGpuForUpdate)
     {
         changePinningPolicy(&state->x, PinningPolicy::PinnedIfSupported);
     }
