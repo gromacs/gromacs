@@ -211,13 +211,13 @@ public:
 
     //! Communicator over which the test fixture works
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-    static MPI_Comm communicator_;
+    static MPI_Comm s_communicator;
     /*! \brief Hardware information object
      *
      * Detected within \c communicator_ and available to re-use
      * over all tests in the test case of this text fixture. */
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-    static std::unique_ptr<gmx_hw_info_t> hwinfo_;
+    static std::unique_ptr<gmx_hw_info_t> s_hwinfo;
 };
 
 /*! \internal

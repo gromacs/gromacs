@@ -159,7 +159,7 @@ TEST_P(ReplicaExchangeRegressionTest, WithinTolerances)
 
 #if GMX_LIB_MPI
     // Make sure all simulations are finished before checking the results.
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
 
     // We only test simulation results on one rank to avoid problems with reference file access.
@@ -241,7 +241,7 @@ TEST_P(ReplicaExchangeRegressionTest, WithinTolerances)
 
 #if GMX_LIB_MPI
     // Make sure testing is complete before returning - ranks delete temporary files on exit
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
 }
 

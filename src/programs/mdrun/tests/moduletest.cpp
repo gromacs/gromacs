@@ -121,7 +121,7 @@ SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
     // but there is no way to do that currently, and it is also not a
     // problem for such a build. Any code based on such an invalid
     // test fixture will be found in CI testing, however.
-    GMX_RELEASE_ASSERT(MdrunTestFixtureBase::communicator_ != MPI_COMM_NULL,
+    GMX_RELEASE_ASSERT(MdrunTestFixtureBase::s_communicator != MPI_COMM_NULL,
                        "SimulationRunner may only be used from a test fixture that inherits from "
                        "MdrunTestFixtureBase");
 #endif
@@ -244,7 +244,7 @@ int SimulationRunner::callGrompp(const CommandLine& callerRef)
     // Make sure rank zero has written the .tpr file before other
     // ranks try to read it. Thread-MPI and serial do this just fine
     // on their own.
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
     return returnValue;
 }
@@ -327,8 +327,8 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-    return gmx_mdrun(MdrunTestFixtureBase::communicator_,
-                     *MdrunTestFixtureBase::hwinfo_,
+    return gmx_mdrun(MdrunTestFixtureBase::s_communicator,
+                     *MdrunTestFixtureBase::s_hwinfo,
                      caller.argc(),
                      caller.argv());
 }
@@ -342,24 +342,24 @@ int SimulationRunner::callMdrun()
 
 // static
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-MPI_Comm MdrunTestFixtureBase::communicator_ = MPI_COMM_NULL;
+MPI_Comm MdrunTestFixtureBase::s_communicator = MPI_COMM_NULL;
 // static
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::hwinfo_;
+std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::s_hwinfo;
 
 // static
 void MdrunTestFixtureBase::SetUpTestSuite()
 {
-    communicator_ = MPI_COMM_WORLD;
+    s_communicator = MPI_COMM_WORLD;
     auto newHwinfo =
-            gmx_detect_hardware(PhysicalNodeCommunicator{ communicator_, gmx_physicalnode_id_hash() });
-    std::swap(hwinfo_, newHwinfo);
+            gmx_detect_hardware(PhysicalNodeCommunicator{ s_communicator, gmx_physicalnode_id_hash() });
+    std::swap(s_hwinfo, newHwinfo);
 }
 
 // static
 void MdrunTestFixtureBase::TearDownTestSuite()
 {
-    hwinfo_.reset(nullptr);
+    s_hwinfo.reset(nullptr);
 }
 
 MdrunTestFixtureBase::MdrunTestFixtureBase()
@@ -379,7 +379,7 @@ MdrunTestFixture::~MdrunTestFixture()
 {
 #if GMX_LIB_MPI
     // fileManager_ should only clean up after all the ranks are done.
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
 }
 

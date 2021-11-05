@@ -97,7 +97,7 @@ MultiSimTest::MultiSimTest() :
     }
 #if GMX_LIB_MPI
     // Make sure directories got created.
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
     fileManager_.setOutputTempDirectory(newTempDirectory);
 
@@ -202,7 +202,7 @@ void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps, bool doRegr
 
 #if GMX_LIB_MPI
     // Make sure simulation masters have written the .tpr file before other ranks try to read it.
-    MPI_Barrier(MdrunTestFixtureBase::communicator_);
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
 #endif
 }
 
