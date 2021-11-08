@@ -80,6 +80,8 @@ TEST(GammaDistributionTest, Output)
         result.push_back(distC(rng));
     }
 
+    // Use wider tolerance in double precision
+    checker.setDefaultTolerance(test::relativeToleranceAsPrecisionDependentUlp(1.0, 4, 8));
     checker.checkSequence(result.begin(), result.end(), "GammaDistribution");
 }
 
