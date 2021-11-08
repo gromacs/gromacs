@@ -53,3 +53,15 @@ option ``-ver 4`` and setting the DSSP environement variable to the ``mkdssp``
 executable path (e.g. ``setenv DSSP /opt/dssp/mkdssp``)
 
 :issue:`4129`
+
+``gmx trjconv`` handles selections in TNG files better
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When writing TNG files the whole system was written even if the user requested only a
+selection of atoms. Now only the selected atoms should be written. If the selection name
+matches a molecule type and the selected atoms are all present in that molecule
+then the molecule will be written as expected with the correct molecule count etc.
+If the selection only matches some atoms in a molecule or atoms from multiple molecules
+then the TNG file will contain a single molecule instance containing all those atoms.
+
+:issue:`2785`

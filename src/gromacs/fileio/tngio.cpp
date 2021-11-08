@@ -1050,7 +1050,7 @@ void gmx_prepare_tng_writing(const char*              filename,
         /* Set parameters (compression, time per frame, molecule
          * information, number of frames per frame set and writing
          * intervals of positions, box shape and lambdas) of the
-         * output tng container based on their respective values int
+         * output tng container based on their respective values in
          * the input tng container */
         double  time, compression_precision;
         int64_t n_frames_per_frame_set, interval = -1;
@@ -1061,6 +1061,12 @@ void gmx_prepare_tng_writing(const char*              filename,
         char compression_type = TNG_TNG_COMPRESSION;
 
         tng_molecule_system_copy(*input, *output);
+        /* This should be done before adding the trajectory data blocks below since
+         * adding them forces the TNG header, including the molecule data, to be written. */
+        if ((!index.empty()) && nAtoms > 0)
+        {
+            gmx_tng_setup_atom_subgroup(*gmx_tng_output, index, indexGroupName);
+        }
 
         tng_time_per_frame_get(*input, &time);
         /* Only write the time per frame if it was written (and valid). E.g., single
@@ -1136,12 +1142,11 @@ void gmx_prepare_tng_writing(const char*              filename,
            gmx_tng_set_compression_precision(*output, ndec2prec(nDecimalsOfPrecision));
          */
         gmx_tng_add_mtop(*gmx_tng_output, mtop);
+        if ((!index.empty()) && nAtoms > 0)
+        {
+            gmx_tng_setup_atom_subgroup(*gmx_tng_output, index, indexGroupName);
+        }
         tng_num_frames_per_frame_set_set(*output, 1);
-    }
-
-    if ((!index.empty()) && nAtoms > 0)
-    {
-        gmx_tng_setup_atom_subgroup(*gmx_tng_output, index, indexGroupName);
     }
 
     /* If for some reason there are more requested atoms than there are atoms in the
@@ -1306,17 +1311,23 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng, gmx::ArrayRef<con
         return;
     }
 
+    /* Check if there is one molecule type matching the selection name. */
     stat = tng_molecule_find(tng, name, -1, &mol);
     if (stat == TNG_SUCCESS)
     {
         tng_molecule_num_atoms_get(tng, mol, &nAtoms);
         tng_molecule_cnt_get(tng, mol, &cnt);
-        if (nAtoms == ind.ssize())
+        if (nAtoms * cnt == ind.ssize())
         {
             stat = TNG_SUCCESS;
         }
         else
         {
+            /* Since the molecule that matched the name of the selection did
+             * not match the number of atoms in the selection set the number
+             * of molecules of that type to 0. Below a new molecule type will
+             * be added matching that of the selection. */
+            tng_molecule_cnt_set(tng, mol, 0);
             stat = TNG_FAILURE;
         }
     }
@@ -1356,10 +1367,10 @@ void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t gmx_tng, gmx::ArrayRef<con
             tng_residue_atom_w_id_add(tng, res, temp_name, temp_type, ind[i], &atom);
         }
         tng_molecule_existing_add(tng, &mol);
+        /* Set the count of the add molecule containing the selected atoms to 1 */
+        tng_molecule_cnt_set(tng, mol, 1);
     }
-    /* Set the count of the molecule containing the selected atoms to 1 and all
-     * other molecules to 0 */
-    tng_molecule_cnt_set(tng, mol, 1);
+    /* Set the count of other molecule types to 0 */
     tng_num_molecule_types_get(tng, &nMols);
     for (int64_t k = 0; k < nMols; k++)
     {
