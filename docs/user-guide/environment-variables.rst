@@ -165,6 +165,10 @@ Performance and Run Control
         disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
         do scheduling based on data dependencies. Experimental.
 
+``GMX_GPU_SYCL_USE_SUBDEVICES``
+        partition the GPUs that support it into sub-devices, and treat each one as an independent device.
+        GPUs that can not be split are ignored. Intended for use with multi-tile GPUs.
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
