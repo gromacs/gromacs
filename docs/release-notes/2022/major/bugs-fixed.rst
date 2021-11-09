@@ -41,3 +41,13 @@ OPLSAA torsions must sum to 0, but the parameters for Me2PO4 did not do so. Chan
 parameter to the correct value.
 
 :issue:`4075`
+
+Allow function type Fourier Dihedral with free energy perturbations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Fourier Dihedral (dihedral interaction type 3) could not be used in
+free energy perturbation simulations. Under the hood the dihedral parameters
+were anyhow converted to Ryckaert-Bellemans parameters, so now the checks
+for perturbations are the same for the two functions.
+
+:issue:`2606`

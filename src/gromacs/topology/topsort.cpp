@@ -85,7 +85,9 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
         case F_ANGRESZ:
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB || ip->pdihs.cpA != ip->pdihs.cpB);
             break;
+        /* Fourier dihedrals have been converted to Ryckaert-Bellemans by now. Treat them the same way. */
         case F_RBDIHS:
+        case F_FOURDIHS:
             bPert = FALSE;
             for (int i = 0; i < NR_RBDIHS; i++)
             {
