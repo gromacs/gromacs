@@ -55,6 +55,10 @@
 #include "device_information.h"
 
 
+void warnWhenDeviceNotTargeted(const gmx::MDLogger& /* mdlog */, const DeviceInformation& /* deviceInfo */)
+{
+}
+
 bool isDeviceDetectionFunctional(std::string* errorMessage)
 {
     try

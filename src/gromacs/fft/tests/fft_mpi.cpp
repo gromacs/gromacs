@@ -57,6 +57,7 @@
 #if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"

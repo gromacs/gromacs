@@ -72,29 +72,33 @@ static constexpr bool c_canSerializeDeviceInformation =
 enum class DeviceStatus : int
 {
     //! The device is compatible
-    Compatible = 0,
+    Compatible,
     //! Device does not exist
-    Nonexistent = 1,
+    Nonexistent,
     //! Device is not compatible
-    Incompatible = 2,
+    Incompatible,
     //! OpenCL device has incompatible cluster size for non-bonded kernels.
-    IncompatibleClusterSize = 3,
+    IncompatibleClusterSize,
     //! There are known issues with OpenCL on NVIDIA Volta and newer.
-    IncompatibleNvidiaVolta = 4,
+    IncompatibleNvidiaVolta,
     /*! \brief The device originates from non-recommended SYCL backend.
      * The device might work by itself, but to simplify device allocation, it is marked as incompatible.
      * */
-    NotPreferredBackend = 5,
+    NotPreferredBackend,
     /*! \brief An error occurred during the functionality checks.
      * That indicates malfunctioning of the device, driver, or incompatible driver/runtime.
      */
-    NonFunctional = 6,
+    NonFunctional,
     /*! \brief CUDA devices are busy or unavailable.
      * typically due to use of \p cudaComputeModeExclusive, \p cudaComputeModeProhibited modes.
      */
-    Unavailable = 7,
+    Unavailable,
+    /*! \brief The device is outside the set of compilation targets.
+     * See \c GMX_CUDA_TARGET_SM and \c GMX_CUDA_TARGET_COMPUTE CMake variables.
+     */
+    DeviceNotTargeted,
     //! Enumeration size
-    Count = 8
+    Count
 };
 
 /*! \brief Names of the GPU detection/check results
@@ -117,7 +121,8 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
     "not recommended (please use SYCL_DEVICE_FILTER to limit visibility to a single backend)",
     "non-functional",
-    "unavailable"
+    "unavailable",
+    "not in set of targeted devices",
 };
 
 //! Device vendors

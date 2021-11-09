@@ -56,12 +56,26 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/iserializer.h"
 
 struct DeviceInformation;
 enum class DeviceVendor : int;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+class MDLogger;
+} // namespace gmx
+
+/*! \brief Warn to the logger when the detected device was not one of
+ * the targets selected at configure time for compilation.
+ *
+ * \param[in] mdlog       Logger
+ * \param[in] deviceInfo  The device to potentially warn about
+ */
+void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo);
 
 /*! \brief Return whether GPUs can be detected.
  *
