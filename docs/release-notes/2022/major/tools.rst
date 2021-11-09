@@ -33,6 +33,16 @@ different results when performing MSD calculations on a non-homogenous group of 
 
 :issue:`2368`
 
+``gmx lie`` now reads energy files from reruns
+""""""""""""""""""""""""""""""""""""""""""""""
+
+This tool formerly relied on the presence of a pressure field in the .edr file,
+and that field will be missing if the .edr came from a rerun. However it was
+never necessary to rely on the presence of the pressure field, so now the
+tool just works correctly.
+
+:issue:`4070`
+
 ``gmx chi`` no longer needs ``residuetypes.dat`` entries for custom residues
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
