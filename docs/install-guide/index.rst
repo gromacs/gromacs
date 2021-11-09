@@ -109,11 +109,11 @@ compiler. We recommend gcc, because it is free, widely available and
 frequently provides the best performance.
 
 You should strive to use the most recent version of your
-compiler. Since we require full C++17 support the minimum supported
-compiler versions are
+compiler. Since we require full C++17 support the minimum
+compiler versions supported by the GROMACS team are
 
 * GNU (gcc/libstdc++) 7
-* LLVM (clang/libc++) 8
+* LLVM (clang/libc++) 7
 * Microsoft (MSVC) 2019
 
 Other compilers may work (Cray, Pathscale, older clang) but do
@@ -1283,7 +1283,7 @@ it works because we have tested it.
 Every commit in our git source code repository
 is currently tested with a range of configuration options on x86 with
 gcc versions including 7 and 11,
-clang versions including 8 and 13,
+clang versions including 7 and 13,
 CUDA versions 11.0 and 11.4.2,
 and
 a version of oneAPI containing Intel's clang-based compiler.

@@ -1,4 +1,18 @@
-# Build documentation and web page.
+# Test goal: Build documentation and web page.
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: Clang oldest supported
+#   GPU: no
+#   MPI: no
+#   Features: python package, documentation
+#   Scope: configure, build, documentation
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: Debug
+#   Compiler: Clang 7
+#   MPI: non
+#   SIMD: none
+#   FFT: FFTW3
 
 .docs:configure:
   extends:
