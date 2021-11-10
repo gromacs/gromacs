@@ -1932,6 +1932,12 @@ int gmx_energy(int argc, char* argv[])
                 bIsEner[i] = bIsEner[i]
                              || (gmx_strcasecmp(interaction_function[j].longname, leg[i]) == 0);
             }
+            bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(pvEnergyFieldName, leg[i]);
+            bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(enthalpyEnergyFieldName, leg[i]);
+            for (const char* name : virialEnergyFieldNames)
+            {
+                bIsEner[i] = bIsEner[i] || gmx::equalCaseInsensitive(name, leg[i]);
+            }
         }
         if (bPrAll && nset > 1)
         {

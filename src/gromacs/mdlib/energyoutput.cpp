@@ -105,11 +105,13 @@ static const char* vol_nm[] = { "Volume" };
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static const char* dens_nm[] = { "Density" };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* pv_nm[] = { "pV" };
+const char* pvEnergyFieldName = "pV";
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* enthalpy_nm[] = { "Enthalpy" };
+const char* enthalpyEnergyFieldName = "Enthalpy";
+
+std::array<const char*, 9> virialEnergyFieldNames = { "Vir-XX", "Vir-XY", "Vir-XZ",
+                                                      "Vir-YX", "Vir-YY", "Vir-YZ",
+                                                      "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
 
 static constexpr std::array<const char*, 6> boxvel_nm = { "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
                                                           "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY" };
@@ -154,8 +156,6 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     haveFepLambdaMoves_(haveFepLambdaMoves(inputrec))
 {
     const char*        ener_nm[F_NRE];
-    static const char* vir_nm[]   = { "Vir-XX", "Vir-XY", "Vir-XZ", "Vir-YX", "Vir-YY",
-                                    "Vir-YZ", "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
     static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
                                      "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
     static const char* surft_nm[] = { "#Surf*SurfTen" };
@@ -319,13 +319,14 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         idens_ = get_ebin_space(ebin_, 1, dens_nm, unit_density_SI);
         if (bDiagPres_)
         {
-            ipv_       = get_ebin_space(ebin_, 1, pv_nm, unit_energy);
-            ienthalpy_ = get_ebin_space(ebin_, 1, enthalpy_nm, unit_energy);
+            ipv_       = get_ebin_space(ebin_, 1, &pvEnergyFieldName, unit_energy);
+            ienthalpy_ = get_ebin_space(ebin_, 1, &enthalpyEnergyFieldName, unit_energy);
         }
     }
     if (bPres_)
     {
-        ivir_   = get_ebin_space(ebin_, asize(vir_nm), vir_nm, unit_energy);
+        ivir_ = get_ebin_space(
+                ebin_, virialEnergyFieldNames.size(), virialEnergyFieldNames.data(), unit_energy);
         ipres_  = get_ebin_space(ebin_, asize(pres_nm), pres_nm, unit_pres_bar);
         isurft_ = get_ebin_space(ebin_, asize(surft_nm), surft_nm, unit_surft_bar);
     }

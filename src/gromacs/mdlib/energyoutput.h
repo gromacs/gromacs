@@ -47,6 +47,7 @@
 
 #include <cstdio>
 
+#include <array>
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
@@ -80,6 +81,12 @@ class Constraints;
 struct MDModulesNotifiers;
 enum class StartingBehavior;
 } // namespace gmx
+
+extern const char* pvEnergyFieldName;
+
+extern const char* enthalpyEnergyFieldName;
+
+extern std::array<const char*, 9> virialEnergyFieldNames;
 
 //! \brief Printed names for intergroup energies
 const char* enumValueToString(NonBondedEnergyTerms enumValue);
