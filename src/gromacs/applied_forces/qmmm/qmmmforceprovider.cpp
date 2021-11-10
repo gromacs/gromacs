@@ -51,13 +51,33 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/textwriter.h"
 
 #include <libcp2k.h>
 
 namespace gmx
 {
+
+namespace
+{
+
+/*! \brief Helper function that dumps string into the file.
+ *
+ * \param[in] filename Name of the file to write.
+ * \param[in] str String to write into the file.
+ * \throws    std::bad_alloc if out of memory.
+ * \throws    FileIOError on any I/O error.
+ */
+void writeStringToFile(const std::string& filename, const std::string& str)
+{
+
+    TextOutputFile fOut(filename);
+    fOut.write(str.c_str());
+    fOut.close();
+}
+
+} // namespace
 
 QMMMForceProvider::QMMMForceProvider(const QMMMParameters& parameters,
                                      const LocalAtomSet&   localQMAtomSet,
@@ -116,11 +136,10 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
     if (MASTER(&cr))
     {
         // In the CP2K Input we need to substitute placeholder with the actuall *.pdb file name
-        TextWriter::writeFileFromString(
-                cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
+        writeStringToFile(cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
 
         // Write *.pdb with point charges for CP2K
-        TextWriter::writeFileFromString(cp2kPdbName, parameters_.qmPdb_);
+        writeStringToFile(cp2kPdbName, parameters_.qmPdb_);
     }
 
     // Check if we have external MPI library

@@ -344,6 +344,14 @@ void QMMMOptions::processExternalInputFile()
     }
     fInp.close();
 
+    // Check if @INCLUDE found in file
+    if (cp2kParams.count("@INCLUDE") > 0)
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "@INCLUDE directive is not allowed but found in external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
     // Check if CHARGE found in file
     if (cp2kParams.count("CHARGE") == 0)
     {
@@ -360,15 +368,7 @@ void QMMMOptions::processExternalInputFile()
                              qmExternalInputFileName_.c_str())));
     }
 
-    // Check if COORD_FILE_NAME found in file
-    if (cp2kParams.count("COORD_FILE_NAME") == 0)
-    {
-        GMX_THROW(InconsistentInputError(formatString(
-                "Parameter COORD_FILE_NAME not found in the external CP2K input file %s",
-                qmExternalInputFileName_.c_str())));
-    }
-
-    // Check if RUN_TYPE in the file present and is ENERGY_FORCE
+    // Check if RUN_TYPE in the file present
     if (cp2kParams.count("RUN_TYPE") == 0)
     {
         GMX_THROW(InconsistentInputError(
@@ -381,6 +381,46 @@ void QMMMOptions::processExternalInputFile()
     {
         GMX_THROW(InconsistentInputError(formatString(
                 "Parameter RUN_TYPE should be ENERGY_FORCE in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if COORD_FILE_FORMAT in the file present
+    if (cp2kParams.count("COORD_FILE_FORMAT") == 0)
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter COORD_FILE_FORMAT not found in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if COORD_FILE_FORMAT in the file is equal to PDB
+    if (toUpperCase(cp2kParams["COORD_FILE_FORMAT"]) != "PDB")
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter COORD_FILE_FORMAT must be PDB in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if CHARGE_EXTENDED in the file present
+    if (cp2kParams.count("CHARGE_EXTENDED") == 0)
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter CHARGE_EXTENDED not found in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if CHARGE_EXTENDED in the file is equal to TRUE
+    if (toUpperCase(cp2kParams["CHARGE_EXTENDED"]) != "TRUE")
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter CHARGE_EXTENDED must be TRUE in the external CP2K input file %s",
+                qmExternalInputFileName_.c_str())));
+    }
+
+    // Check if COORD_FILE_NAME found in file
+    if (cp2kParams.count("COORD_FILE_NAME") == 0)
+    {
+        GMX_THROW(InconsistentInputError(formatString(
+                "Parameter COORD_FILE_NAME not found in the external CP2K input file %s",
                 qmExternalInputFileName_.c_str())));
     }
 
