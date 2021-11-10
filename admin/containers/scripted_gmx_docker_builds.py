@@ -122,6 +122,28 @@ _rocm_extra_packages = [
     'rocm-opencl',
     'rocm-dev',
 ]
+    
+# Extra packages required to build CP2K
+_cp2k_extra_packages = [
+                        'autoconf',
+                        'autogen',
+                        'automake',
+                        'autotools-dev',
+                        'bzip2',
+                        'less',
+                        'libtool',
+                        'make',
+                        'nano',
+                        'patch',
+                        'pkg-config',
+                        'python',
+                        'python-numpy',
+                        'python3',
+                        'unzip',
+                        'xxd',
+                        'zlib1g-dev',
+                        'libopenblas-dev'
+]
 
 # Extra packages needed to build Intel Compute Runtime
 _intel_compute_runtime_extra_packages = ['intel-opencl-icd',
@@ -260,6 +282,14 @@ def get_rocm_packages(args) -> typing.List[str]:
     else:
         return _rocm_extra_packages
 
+def get_cp2k_packages(args) -> typing.List[str]:
+    if args.mpi is not None:
+        packages = _cp2k_extra_packages + ['libfftw3-mpi-dev']
+
+    if (args.cp2k is None):
+        return []
+    else:
+        return packages
 
 def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     # Compiler
@@ -290,7 +320,12 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
             raise RuntimeError('No oneAPI compiler build stage!')
 
     elif args.gcc is not None:
-        compiler = hpccm.building_blocks.gnu(extra_repository=True,
+        if args.cp2k is not None:
+            compiler = hpccm.building_blocks.gnu(extra_repository=True,
+                                             version=args.gcc,
+                                             fortran=True)
+        else:
+            compiler = hpccm.building_blocks.gnu(extra_repository=True,
                                              version=args.gcc,
                                              fortran=False)
     else:
@@ -409,6 +444,48 @@ def get_hipsycl(args):
         cmake_opts=['-DCMAKE_BUILD_TYPE=Release', *cmake_opts],
         postinstall=postinstall)
 
+def get_cp2k(args):
+    if args.cp2k is None:
+        return None
+
+    if args.gcc is None:
+        raise RuntimeError('CP2K build requires GNU compilers')
+
+    make_commands = ['make ARCH=local VERSION=ssmp libcp2k']
+    if args.mpi is not None:
+        make_commands += ['make ARCH=local VERSION=psmp libcp2k']
+    make_commands += ['rm -rf ./obj']
+
+    return hpccm.building_blocks.generic_build(
+        repository='https://github.com/cp2k/cp2k.git',
+        branch=f'support/v{args.cp2k}',
+        recursive=True,
+        build=['mkdir -p /opt/cp2k',
+               'cp -rf ./* /opt/cp2k/',
+               'cd /opt/cp2k/tools/toolchain',
+               './install_cp2k_toolchain.sh  \
+                --with-gcc=system            \
+                --with-cmake=system          \
+                --with-openmpi=system        \
+                --with-fftw=system           \
+                --with-openblas=system       \
+                --with-scalapack=install     \
+                --with-gsl=no                \
+                --with-elpa=no               \
+                --with-spglib=no             \
+                --with-spfft=no              \
+                --with-cosma=no              \
+                --with-libvori=no            \
+                --with-sirius=no             \
+                --with-hdf5=no               \
+                --with-libxc=install         \
+                --with-libxsmm=install       \
+                --with-libint=install        \
+                --libint-lmax=5',
+                'rm -rf ./build',
+                'cp ./install/arch/local.* ../../arch/',
+                'cd ../../']
+                 + make_commands)
 
 def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
     """Isolate the expensive TSAN preparation stage.
@@ -708,7 +785,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
             version=cmake)
 
     # Install additional packages early in the build to optimize Docker build layer cache.
-    os_packages = list(get_llvm_packages(args)) + get_opencl_packages(args) + get_rocm_packages(args)
+    os_packages = list(get_llvm_packages(args)) + get_opencl_packages(args) + get_rocm_packages(args) + get_cp2k_packages(args)
     if args.doxygen is not None:
         os_packages += _docs_extra_packages
     if args.oneapi is not None:
@@ -730,6 +807,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     building_blocks['extra_packages'] += hpccm.building_blocks.packages(
         ospackages=os_packages,
         apt_ppas=['ppa:intel-opencl/intel-opencl'])
+
+    building_blocks['CP2K'] = get_cp2k(args)
 
     if args.cuda is not None and args.llvm is not None:
         # Hack to tell clang what version of CUDA we're using

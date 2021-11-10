@@ -51,10 +51,10 @@ if(GMX_CP2K)
         include_directories(SYSTEM "${CP2K_DIR}/../../../src/start")
 
         # Add libcp2k and DBCSR for linking 
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
+        list(APPEND GMX_COMMON_LIBRARIES "-Wl,--allow-multiple-definition -L${CP2K_DIR} -lcp2k -L${CP2K_DIR}/exts/dbcsr -ldbcsr")
 
         # Add User provided libraries
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} ${CP2K_LINKER_FLAGS}")
+        list(APPEND GMX_COMMON_LIBRARIES ${CP2K_LINKER_FLAGS})
     else()
         # In other case pkg-config should be used to search for libcp2k
         find_package(PkgConfig QUIET)

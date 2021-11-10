@@ -138,6 +138,9 @@ parser.add_argument('--heffte', type=str, nargs='?', default=None,
 parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
                     help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
 
+parser.add_argument('--cp2k', type=str, nargs='?', const='8.2', default=None,
+                    help='Add build environment for CP2K QM/MM support')
+
 # Supported Python versions for maintained branches.
 _python_versions = ['3.7.7', '3.8.2', '3.9.1']
 parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
@@ -180,6 +183,8 @@ def image_name(configuration: argparse.Namespace) -> str:
     if configuration.rocm is not None:
         if (configuration.rocm != 'debian'):
             elements.append('rocm-' + configuration.rocm)
+    if configuration.cp2k is not None:
+        elements.append('cp2k-' + configuration.cp2k)
 
     # Check for special cases
     # The following attribute keys indicate the image is built for the named
