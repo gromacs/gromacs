@@ -44,6 +44,7 @@
 #include "gmxpre.h"
 
 #include <string>
+#include <unordered_map>
 
 #include <gmock/gmock.h>
 
