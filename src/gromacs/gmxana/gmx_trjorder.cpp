@@ -184,7 +184,7 @@ int gmx_trjorder(int argc, char* argv[])
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     if (natoms > top.atoms.nr)
     {
-        gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trjactory");
+        gmx_fatal(FARGS, "Number of atoms in the run input file is larger than in the trajectory");
     }
     for (i = 0; (i < 2); i++)
     {
@@ -209,6 +209,22 @@ int gmx_trjorder(int argc, char* argv[])
     }
 
     nwat = isize_sol / na;
+    for (i = 0; i < nwat; i++)
+    {
+        const int residueIndex = top.atoms.atom[ind_sol[i * na]].resind;
+        for (j = 1; j < na; j++)
+        {
+            if (top.atoms.atom[ind_sol[i * na + j]].resind != residueIndex)
+            {
+                gmx_fatal(FARGS,
+                          "Atom %d and %d should belong to the same solvent residue, but they do "
+                          "not. Did you set -na correctly?",
+                          ind_sol[i * na],
+                          ind_sol[i * na + j]);
+            }
+        }
+    }
+
     if (ref_a > na)
     {
         gmx_fatal(FARGS,
@@ -238,7 +254,7 @@ int gmx_trjorder(int argc, char* argv[])
         bPDBout = (fn2ftp(opt2fn("-o", NFILE, fnm)) == efPDB);
         if (bPDBout && !top.atoms.pdbinfo)
         {
-            fprintf(stderr, "Creating pdbfino records\n");
+            fprintf(stderr, "Creating pdbinfo records\n");
             snew(top.atoms.pdbinfo, top.atoms.nr);
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
