@@ -63,7 +63,6 @@
 
 #include "architecture.h"
 #include "device_information.h"
-#include "prepare_detection.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h> // sysconf()
@@ -355,9 +354,6 @@ void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused& mdlog,
 
 std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm)
 {
-    // Ensure all cores have spun up, where applicable.
-    hardwareTopologyPrepareDetection();
-
     // TODO: We should also do CPU hardware detection only once on each
     // physical node and broadcast it, instead of doing it on every MPI rank.
     auto hardwareInfo = std::make_unique<gmx_hw_info_t>(

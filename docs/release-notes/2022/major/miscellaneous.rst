@@ -21,3 +21,16 @@ Bonded atom types names in topologies were not allowed to start with a number.
 Now all names are supported that contain at least one non-digit character.
 
 :issue:`4120`
+
+Core spin-up code is removed
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly, on non-x86 and non-PowerPC platforms, mdrun ran some
+multi-threaded code to try to wake up any cores that the OS might have
+powered down. This caused problems on some Arm platforms, and does not
+seem to suit a significant number of platforms for use of GROMACS. So
+now it is removed.
+
+If required, please manually spin-up the cores with, e.g., ``stress --cpu $(nproc --all)``.
+
+:issue:`4074`
