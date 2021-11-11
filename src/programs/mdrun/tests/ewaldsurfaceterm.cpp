@@ -60,10 +60,10 @@
 #include "testutils/refdata.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
+#include "testutils/trajectoryreader.h"
 
 #include "energycomparison.h"
 #include "moduletest.h"
-#include "trajectoryreader.h"
 
 namespace gmx
 {

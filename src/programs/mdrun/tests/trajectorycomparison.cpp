@@ -55,8 +55,7 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
-
-#include "trajectoryreader.h"
+#include "testutils/trajectoryreader.h"
 
 namespace gmx
 {

@@ -87,6 +87,7 @@ target_sources(testutils PRIVATE
                testoptions.cpp
                textblockmatchers.cpp
                tprfilegenerator.cpp
+               trajectoryreader.cpp
                xvgtest.cpp
                )
 

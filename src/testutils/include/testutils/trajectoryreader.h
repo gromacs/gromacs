@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ public:
      * If true is returned, then TrajectoryFrame frame() should be called
      * to get access to the data. If false is returned, then no
      * further data exists and no further call to
-     * readNextFrameStub or TrajectoryFrame frame() should occur.
+     * readNextFrame or TrajectoryFrame frame() should occur.
      *
      * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
      * \throws APIError    if an earlier probe has not been properly handled
@@ -101,9 +101,9 @@ public:
      *
      * If the next frame has not been probed for, then probe for
      * it. If no next frame exists, then throw APIError, because
-     * user code should have called readNextFrameStub itself if this
+     * user code should have called readNextFrame itself if this
      * is possible. (This permits user code to avoid making calls
-     * to readNextFrameStub in a case where it already knows that
+     * to readNextFrame in a case where it already knows that
      * the frame exists.)
      *
      * \throws APIError  if no next frame exists, or if it lacks either time or step number. */

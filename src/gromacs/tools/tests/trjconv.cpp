@@ -45,93 +45,113 @@
 
 #include "config.h"
 
+#include <cstring>
+
+#include "gromacs/utility/stringutil.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/trajectoryreader.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
-class TrjconvWithIndexGroupSubset :
+class TrjconvWithDifferentInputFormats :
     public gmx::test::CommandLineTestBase,
     public ::testing::WithParamInterface<const char*>
 {
-public:
-    void runTest(const char* fileName)
-    {
-        auto& cmdline = commandLine();
-
-        setInputFile("-s", "spc2.gro");
-        setInputFile("-f", fileName);
-        setInputFile("-n", "spc2.ndx");
-        setOutputFile("-o", "spc-traj.tng", gmx::test::NoTextMatch());
-
-        gmx::test::StdioTestHelper stdioHelper(&fileManager());
-        stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
-
-        /* TODO Ideally, we would then check that the output file
-           has only 3 of the 6 atoms (which it does), but the
-           infrastructure for doing that automatically is still
-           being built. This would also fix the TODO below. */
-        ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
-    }
 };
-/* TODO These tests are actually not very effective, because trjconv
- * can only return 0 or exit via gmx_fatal() (which currently also
- * exits the test binary). So, "no XDR/TNG support in the binary"
- * leads to the reading test appearing to pass. Still, no fatal error
- * and no segfault is useful information while modifying such code. */
 
-TEST_P(TrjconvWithIndexGroupSubset, WithDifferentInputFormats)
+TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
 {
-    runTest(GetParam());
+    auto& cmdline = commandLine();
+
+    setInputFile("-s", "spc2.gro");
+    setInputFile("-f", GetParam());
+    setInputFile("-n", "spc2.ndx");
+    std::string outputFile = setOutputFile("-o", "spc-traj.trr", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+
+    TrajectoryFrameReader reader(outputFile);
+    int                   frameIndex = 0;
+    while (reader.readNextFrame())
+    {
+        TrajectoryFrame frame = reader.frame();
+        EXPECT_EQ(frame.x().size(), 3) << "One water molecule should be present in frame " << frameIndex;
+        frameIndex++;
+    }
+}
+
+TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
+{
+    const char* fileName = GetParam();
+    if (!GMX_USE_TNG)
+    {
+        if (std::strstr(fileName, ".tng") != nullptr)
+        {
+            GTEST_SKIP() << "Cannot test TNG reading if TNG support is not configured";
+        }
+    }
+    auto& cmdline = commandLine();
+
+    setInputFile("-f", fileName);
+    setInputFile("-n", "spc2.ndx");
+    std::string outputFile = setOutputFile("-o", "spc-traj.trr", NoTextMatch());
+
+    StdioTestHelper stdioHelper(&fileManager());
+    stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+
+    TrajectoryFrameReader reader(outputFile);
+    int                   frameIndex = 0;
+    while (reader.readNextFrame())
+    {
+        TrajectoryFrame frame = reader.frame();
+        EXPECT_EQ(frame.x().size(), 3) << "One water molecule should be present in frame " << frameIndex;
+        frameIndex++;
+    }
 }
 
 /*! \brief Helper array of input files present in the source repo
  * database. These all have two identical frames of two SPC water
  * molecules, which were generated via trjconv from the .gro
  * version. */
-const char* const trajectoryFileNames[] = { "spc2-traj.trr",
-#if GMX_USE_TNG
-                                            "spc2-traj.tng",
-#endif
-                                            "spc2-traj.xtc", "spc2-traj.gro",
-                                            "spc2-traj.pdb", "spc2-traj.g96" };
+const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.tng", "spc2-traj.xtc",
+                                            "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96" };
 
-INSTANTIATE_TEST_SUITE_P(NoFatalErrorWhenWritingFrom,
-                         TrjconvWithIndexGroupSubset,
-                         ::testing::ValuesIn(trajectoryFileNames));
-
-class TrjconvWithoutTopologyFile :
-    public gmx::test::CommandLineTestBase,
-    public ::testing::WithParamInterface<const char*>
+//! Help GoogleTest name our test cases
+std::string nameOfTrjconvWithDifferentInputFormatsTest(const testing::TestParamInfo<const char*>& info)
 {
-public:
-    void runTest(const char* fileName)
-    {
-        auto& cmdline = commandLine();
+    std::string testName = formatString("file_%s", info.param);
 
-        setInputFile("-f", fileName);
-        setInputFile("-n", "spc2.ndx");
-        setOutputFile("-o", "spc-traj.trr", gmx::test::NoTextMatch());
-
-        gmx::test::StdioTestHelper stdioHelper(&fileManager());
-        stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
-
-        /* As mentioned above, the tests don't check much besides
-         * that trjconv does not crash.
-         */
-        ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
-    }
-};
-
-TEST_P(TrjconvWithoutTopologyFile, WithDifferentInputFormats)
-{
-    runTest(GetParam());
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
 }
 
-INSTANTIATE_TEST_SUITE_P(NoFatalErrorWhenWritingFrom,
-                         TrjconvWithoutTopologyFile,
-                         ::testing::ValuesIn(trajectoryFileNames));
+INSTANTIATE_TEST_SUITE_P(Works,
+                         TrjconvWithDifferentInputFormats,
+                         ::testing::ValuesIn(trajectoryFileNames),
+                         nameOfTrjconvWithDifferentInputFormatsTest);
+
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -42,7 +42,6 @@ gmx_add_unit_test_library(mdrun_test_infrastructure
     simulatorcomparison.cpp
     terminationhelper.cpp
     trajectorycomparison.cpp
-    trajectoryreader.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )

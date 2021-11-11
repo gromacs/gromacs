@@ -49,10 +49,10 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/simulationdatabase.h"
+#include "testutils/trajectoryreader.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"
-#include "trajectoryreader.h"
 
 namespace gmx::test
 {

@@ -301,6 +301,8 @@ void clear_trxframe(t_trxframe* fr, gmx_bool bFirst)
         clear_mat(fr->box);
         fr->bPBC    = FALSE;
         fr->pbcType = PbcType::Unset;
+        fr->bIndex  = false;
+        fr->index   = nullptr;
     }
 }
 

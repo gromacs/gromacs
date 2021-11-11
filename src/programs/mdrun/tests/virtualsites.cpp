@@ -74,12 +74,12 @@
 #include "testutils/mpitest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/testmatchers.h"
+#include "testutils/trajectoryreader.h"
 
 #include "gromacs/utility/strconvert.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"
-#include "trajectoryreader.h"
 
 namespace gmx::test
 {
