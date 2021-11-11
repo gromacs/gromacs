@@ -31,7 +31,7 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-#
+
 # \author Victor Holanda <victor.holanda@cscs.ch>
 # \author Joe Jordan <ejjordan@kth.se>
 # \author Prashanth Kanduri <kanduri@cscs.ch>
@@ -42,6 +42,8 @@ target_sources(nblib
         PRIVATE
         calculator.cpp
         transformations.cpp
+        conversions.cpp
+        convertGmxToNblib.cpp
         )
 
 if(GMX_INSTALL_NBLIB_API)

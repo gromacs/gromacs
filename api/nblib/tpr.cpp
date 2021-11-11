@@ -60,6 +60,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
 #include "nblib/box.h"
+#include "nblib/listed_forces/conversionscommon.h"
 
 namespace nblib
 {
@@ -130,6 +131,16 @@ TprReader::TprReader(std::string filename)
     boxZ_ = globalState.box[ZZ][ZZ];
     coordinates_.assign(globalState.x.begin(), globalState.x.end());
     velocities_.assign(globalState.v.begin(), globalState.v.end());
+
+    // Copy listed interactions data
+    int listedInteractionCount = gmx_mtop_interaction_count(molecularTopology, IF_BOND)
+                                 + gmx_mtop_interaction_count(molecularTopology, IF_PAIR)
+                                 + gmx_mtop_interaction_count(molecularTopology, IF_DIHEDRAL);
+    if (listedInteractionCount != 0)
+    {
+        InteractionDefinitions interactionDefinitions = localtop.idef;
+        listedInteractionData_ = convertToNblibInteractions(interactionDefinitions);
+    }
 }
 
 Box TprReader::getBox() const
