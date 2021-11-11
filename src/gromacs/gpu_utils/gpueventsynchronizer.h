@@ -190,6 +190,13 @@ public:
         event_.reset();
     }
 
+    //! Set the event consumption limits.
+    inline void setConsumptionLimits(int minConsumptionCount, int maxConsumptionCount)
+    {
+        minConsumptionCount_ = minConsumptionCount;
+        maxConsumptionCount_ = maxConsumptionCount;
+    }
+
 private:
     DeviceEvent event_;
     int         consumptionCount_;

@@ -159,8 +159,12 @@ public:
      *
      *  \param[in] h_x           Positions in the host memory.
      *  \param[in] atomLocality  Locality of the particles to copy.
+     *  \param[in] expectedConsumptionCount How many times will the event be used later
+     *                                      via \ref getCoordinatesReadyOnDeviceEvent.
      */
-    void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec> h_x, AtomLocality atomLocality);
+    void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec> h_x,
+                              AtomLocality                   atomLocality,
+                              int                            expectedConsumptionCount);
 
     /*! \brief Get the event synchronizer of the coordinates ready for the consumption on the device.
      *
@@ -213,6 +217,12 @@ public:
      *  \param[in] xUpdatedOnDeviceEvent  The event to synchronize the stream coordinates wre updated on device.
      */
     void setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent);
+
+    /*! \brief Set the expected consumption count for the event associated with GPU update.
+     *
+     *  \param[in] expectedConsumptionCount  New value.
+     */
+    void setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount);
 
     /*! \brief Copy positions from the GPU memory, with an optional explicit dependency.
      *

@@ -1050,6 +1050,60 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
     }
 }
 
+/*! \brief Compute the number of times the "local coordinates ready on device" GPU event will be used as a synchronization point.
+ *
+ * When some work is offloaded to GPU, force calculation should wait for the atom coordinates to
+ * be ready on the device. The coordinates can come either from H2D copy at the beginning of the step,
+ * or from the GPU integration at the end of the previous step.
+ *
+ * In GROMACS, we usually follow the "mark once - wait once" approach. But this event is "consumed"
+ * (that is, waited upon either on host or on the device) multiple times, since many tasks
+ * in different streams depend on the coordinates.
+ *
+ * This function return the number of times the event will be consumed based on this step's workload.
+ *
+ * \param simulationWork Simulation workload flags.
+ * \param stepWork Step workload flags.
+ * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
+ * \return
+ */
+static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& gmx_used_in_debug simulationWork,
+                                                          const StepWorkload& stepWork,
+                                                          bool pmeSendCoordinatesFromGpu)
+{
+    int result = 0;
+    if (stepWork.computeSlowForces)
+    {
+        if (pmeSendCoordinatesFromGpu)
+        {
+            GMX_ASSERT(simulationWork.haveSeparatePmeRank,
+                       "GPU PME PP communications require having a separate PME rank");
+            // Event is consumed by gmx_pme_send_coordinates for GPU PME PP Communications
+            result++;
+        }
+        if (stepWork.haveGpuPmeOnThisRank)
+        {
+            // Event is consumed by launchPmeGpuSpread
+            result++;
+        }
+        if (stepWork.computeNonbondedForces && stepWork.useGpuXBufferOps)
+        {
+            // Event is consumed by convertCoordinatesGpu
+            result++;
+        }
+    }
+    if (stepWork.useGpuXHalo)
+    {
+        // Event is consumed by communicateGpuHaloCoordinates
+        result++;
+        if (GMX_THREAD_MPI) // Issue #4262
+        {
+            result++;
+        }
+    }
+    return result;
+}
+
 //! \brief Data structure to hold dipole-related data and staging arrays
 struct DipoleData
 {
@@ -1383,28 +1437,24 @@ void do_force(FILE*                               fplog,
     //       if the later is not offloaded.
     if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
     {
+        GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
+        const int expectedLocalXReadyOnDeviceConsumptionCount =
+                getExpectedLocalXReadyOnDeviceConsumptionCount(
+                        simulationWork, stepWork, pmeSendCoordinatesFromGpu);
+
         // We need to copy coordinates when:
         // 1. Update is not offloaded
         // 2. The buffers were reinitialized on search step
         if (!simulationWork.useGpuUpdate || stepWork.doNeighborSearch)
         {
-            GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
-            stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::Local);
-            if (stepWork.doNeighborSearch)
-            {
-                /* On NS steps, we skip X buffer ops. So, unless we use PME or direct GPU
-                 * communications, we don't wait for the coordinates on the device,
-                 * and we must consume the event here.
-                 * Issue #3988. */
-                const bool eventWillBeConsumedByGpuPme = stepWork.haveGpuPmeOnThisRank;
-                const bool eventWillBeConsumedByGpuPmePPComm =
-                        (simulationWork.haveSeparatePmeRank && stepWork.computeSlowForces)
-                        && pmeSendCoordinatesFromGpu;
-                if (!eventWillBeConsumedByGpuPme && !eventWillBeConsumedByGpuPmePPComm)
-                {
-                    stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
-                }
-            }
+            stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(),
+                                           AtomLocality::Local,
+                                           expectedLocalXReadyOnDeviceConsumptionCount);
+        }
+        else if (simulationWork.useGpuUpdate)
+        {
+            stateGpu->setXUpdatedOnDeviceEventExpectedConsumptionCount(
+                    expectedLocalXReadyOnDeviceConsumptionCount);
         }
     }
 

@@ -313,7 +313,8 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getCoordinates()
 }
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec> h_x,
-                                                        AtomLocality atomLocality)
+                                                        AtomLocality atomLocality,
+                                                        int          expectedConsumptionCount)
 {
     GMX_ASSERT(atomLocality < AtomLocality::All,
                formatString("Wrong atom locality. Only Local and NonLocal are allowed for "
@@ -330,11 +331,11 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
 
     copyToDevice(d_x_, h_x, d_xSize_, atomLocality, *deviceStream);
 
-    // marking is skipped on the PME-rank mode as everything is on the same stream
-    if (!isPmeOnly_)
+    if (expectedConsumptionCount > 0)
     {
         xReadyOnDevice_[atomLocality].markEvent(*deviceStream);
     }
+    xReadyOnDevice_[atomLocality].setConsumptionLimits(expectedConsumptionCount, expectedConsumptionCount);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpu);
@@ -402,6 +403,11 @@ void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEvent(GpuEventSynchronizer
 {
     GMX_ASSERT(xUpdatedOnDeviceEvent != nullptr, "The event synchronizer can not be nullptr.");
     xUpdatedOnDeviceEvent_ = xUpdatedOnDeviceEvent;
+}
+
+void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount)
+{
+    xUpdatedOnDeviceEvent_->setConsumptionLimits(expectedConsumptionCount, expectedConsumptionCount);
 }
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x,
@@ -656,9 +662,10 @@ DeviceBuffer<RVec> StatePropagatorDataGpu::getCoordinates()
 }
 
 void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec> h_x,
-                                                  AtomLocality                         atomLocality)
+                                                  AtomLocality                         atomLocality,
+                                                  int expectedConsumptionCount)
 {
-    return impl_->copyCoordinatesToGpu(h_x, atomLocality);
+    return impl_->copyCoordinatesToGpu(h_x, atomLocality, expectedConsumptionCount);
 }
 
 GpuEventSynchronizer*
@@ -689,6 +696,11 @@ void StatePropagatorDataGpu::resetCoordinatesCopiedToDeviceEvent(AtomLocality at
 void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent)
 {
     impl_->setXUpdatedOnDeviceEvent(xUpdatedOnDeviceEvent);
+}
+
+void StatePropagatorDataGpu::setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount)
+{
+    impl_->setXUpdatedOnDeviceEventExpectedConsumptionCount(expectedConsumptionCount);
 }
 
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec>   h_x,

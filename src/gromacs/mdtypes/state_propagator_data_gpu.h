@@ -171,12 +171,20 @@ public:
      *
      * Use \ref getCoordinatesReadyOnDeviceEvent to get the associated event synchronizer or
      * \ref waitCoordinatesCopiedToDevice to wait for the copy completion.
-     * Note: the event is not marked in OpenCL, because it is not used.
+     *
+     * Please set \p expectedConsumptionCount when expecting to consume (use for synchronization)
+     * the associated \ref GpuEventSynchronizer event more than once (or never).
      *
      *  \param[in] h_x           Positions in the host memory.
      *  \param[in] atomLocality  Locality of the particles to copy.
+     *  \param[in] expectedConsumptionCount How many times will the event indicating the completion
+     *                                      of the data transfer be used later via
+     *                                      \ref getCoordinatesReadyOnDeviceEvent and
+     *                                      \ref waitCoordinatesCopiedToDevice.
      */
-    void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec> h_x, AtomLocality atomLocality);
+    void copyCoordinatesToGpu(gmx::ArrayRef<const gmx::RVec> h_x,
+                              AtomLocality                   atomLocality,
+                              int                            expectedConsumptionCount = 1);
 
     /*! \brief Get the event synchronizer of the coordinates ready for the consumption on the device.
      *
@@ -224,11 +232,17 @@ public:
      */
     void resetCoordinatesCopiedToDeviceEvent(AtomLocality atomLocality);
 
-    /*! \brief Setter for the event synchronizer for the update is done on th GPU
+    /*! \brief Setter for the event synchronizer for the update is done on the GPU
      *
      *  \param[in] xUpdatedOnDeviceEvent  The event to synchronize the stream coordinates wre updated on device.
      */
     void setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpdatedOnDeviceEvent);
+
+    /*! \brief Set the expected consumption count for the event associated with GPU update.
+     *
+     *  \param[in] expectedConsumptionCount  New value.
+     */
+    void setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount);
 
     /*! \brief Copy positions from the GPU memory, with an optional explicit dependency.
      *

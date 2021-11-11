@@ -140,8 +140,16 @@ void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* /* x
                "GPU implementation.");
 }
 
+void StatePropagatorDataGpu::setXUpdatedOnDeviceEventExpectedConsumptionCount(int /* expectedConsumptionCount */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub method from GPU state propagator data was called instead of one from "
+               "GPU implementation.");
+}
+
 void StatePropagatorDataGpu::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec> /* h_x */,
-                                                  AtomLocality /* atomLocality */)
+                                                  AtomLocality /* atomLocality */,
+                                                  int /* expectedConsumptionCount */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "
