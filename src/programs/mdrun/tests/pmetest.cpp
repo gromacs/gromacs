@@ -50,6 +50,7 @@
 #include "gmxpre.h"
 
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -62,6 +63,7 @@
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
@@ -79,19 +81,118 @@ namespace test
 namespace
 {
 
+//! Enum describing the flavors of PME tests that are run
+enum class PmeTestFlavor : int
+{
+    Basic,
+    WithWalls,
+    Count
+};
+
+//! Helper to print a string to describe the PME test flavor
+const char* enumValueToString(const PmeTestFlavor enumValue)
+{
+    static constexpr gmx::EnumerationArray<PmeTestFlavor, const char*> s_names = {
+        "basic",
+        "with walls",
+    };
+    return s_names[enumValue];
+}
+
 /*! \brief A basic PME runner
  *
  * \todo Consider also using GpuTest class. */
 class PmeTest : public MdrunTestFixture
 {
 public:
+    //! Names of tpr files built by grompp in SetUpTestSuite to run in tests
+    inline static EnumerationArray<PmeTestFlavor, std::string> s_tprFileNames;
+    //! Mutex to protect creation of the TestFileManager with thread-MPI
+    inline static std::mutex s_mutexForTestFileManager;
+    //! Manager needed in SetUpTestSuite to handle making tpr files
+    inline static std::unique_ptr<TestFileManager> s_testFileManager;
+    //! Name of the system from the simulation database to use in SetupTestSuite
+    inline static const std::string s_inputFile = "spc-and-methanol";
+    //! Runs grompp to prepare the tpr files that are reused in the tests
+    static void SetUpTestSuite();
+    //! Cleans up the tpr files
+    static void TearDownTestSuite();
     //! Convenience typedef
     using RunModesList = std::map<std::string, std::vector<const char*>>;
     //! Runs the test with the given inputs
-    void runTest(const RunModesList& runModes);
+    void runTest(const RunModesList& runModes, PmeTestFlavor pmeTestFlavor);
 };
 
-void PmeTest::runTest(const RunModesList& runModes)
+// static
+void PmeTest::SetUpTestSuite()
+{
+    MdrunTestFixture::SetUpTestSuite();
+
+    // Ensure we only make one TestFileManager per process, which
+    // ensures there is no race with thread-MPI. Whichever thread gets
+    // the lock first initializes s_testFileManager, and by the time
+    // the rest get the lock it is already initialized.  Without
+    // thread-MPI, there's only one thread, so the initialization is
+    // trivial.
+    {
+        std::lock_guard<std::mutex> testFileManagerLock(s_mutexForTestFileManager);
+        if (!s_testFileManager)
+        {
+            s_testFileManager = std::make_unique<TestFileManager>();
+        }
+    }
+
+    const static std::unordered_map<PmeTestFlavor, std::string> sc_pmeTestFlavorExtraMdpLines = {
+        { PmeTestFlavor::Basic,
+          { "nsteps = 20\n"
+            "pbc    = xyz\n" } },
+        { PmeTestFlavor::WithWalls,
+          { "nsteps          = 0\n"
+            "pbc             = xy\n"
+            "nwall           = 2\n"
+            "ewald-geometry  = 3dc\n"
+            "wall_atomtype   = CMet H\n"
+            "wall_density    = 9 9.0\n"
+            "wall-ewald-zfac = 5\n" } },
+    };
+
+    // Make the tpr files for the different flavors
+    for (PmeTestFlavor pmeTestFlavor : EnumerationWrapper<PmeTestFlavor>{})
+    {
+        SimulationRunner runner(s_testFileManager.get());
+        runner.useTopGroAndNdxFromDatabase(s_inputFile);
+
+        std::string mdpInputFileContents(
+                "coulombtype     = PME\n"
+                "nstcalcenergy   = 1\n"
+                "nstenergy       = 1\n"
+                "pme-order       = 4\n");
+        mdpInputFileContents += sc_pmeTestFlavorExtraMdpLines.at(pmeTestFlavor);
+        runner.useStringAsMdpFile(mdpInputFileContents);
+
+        std::string tprFileNameSuffix = formatString("%s.tpr", enumValueToString(pmeTestFlavor));
+        std::replace(tprFileNameSuffix.begin(), tprFileNameSuffix.end(), ' ', '_');
+        runner.tprFileName_ = s_testFileManager->getTemporaryFilePath(tprFileNameSuffix);
+        // Note that only one rank actually generates a tpr file
+        runner.callGrompp();
+        s_tprFileNames[pmeTestFlavor] = runner.tprFileName_;
+    }
+}
+
+// static
+void PmeTest::TearDownTestSuite()
+{
+    MdrunTestFixture::TearDownTestSuite();
+
+    // Ensure we only clean up the TestFileManager once per process, which
+    // ensures there is no race with thread-MPI.
+    {
+        std::lock_guard<std::mutex> testFileManagerLock(s_mutexForTestFileManager);
+        s_testFileManager.reset(nullptr);
+    }
+}
+
+void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestFlavor)
 {
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile);
@@ -101,7 +202,8 @@ void PmeTest::runTest(const RunModesList& runModes)
     const bool parallelRun    = (getNumberOfTestMpiRanks() > 1);
     const bool useSeparatePme = parallelRun;
 
-    EXPECT_EQ(0, runner_.callGrompp());
+    // Run mdrun on the tpr file that was built in SetUpTestSuite()
+    runner_.tprFileName_ = s_tprFileNames[pmeTestFlavor];
 
     TestReferenceData    refData;
     TestReferenceChecker rootChecker(refData.rootChecker());
@@ -201,17 +303,6 @@ void PmeTest::runTest(const RunModesList& runModes)
 
 TEST_F(PmeTest, ReproducesEnergies)
 {
-    const int         nsteps     = 20;
-    const std::string theMdpFile = formatString(
-            "coulombtype     = PME\n"
-            "nstcalcenergy   = 1\n"
-            "nstenergy       = 1\n"
-            "pme-order       = 4\n"
-            "nsteps          = %d\n",
-            nsteps);
-
-    runner_.useStringAsMdpFile(theMdpFile);
-
     // TODO test all proper/improper combinations in more thorough way?
     RunModesList runModes;
     runModes["PmeOnCpu"]         = { "-pme", "cpu" };
@@ -224,56 +315,17 @@ TEST_F(PmeTest, ReproducesEnergies)
     runModes["PmeOnGpuFftOnCpuTune"] = { "-pme", "gpu", "-pmefft", "cpu" };
     runModes["PmeOnGpuFftOnGpuTune"] = { "-pme", "gpu", "-pmefft", "gpu" };
 
-    runTest(runModes);
-}
-
-TEST_F(PmeTest, ScalesTheBox)
-{
-    const int         nsteps     = 0;
-    const std::string theMdpFile = formatString(
-            "coulombtype     = PME\n"
-            "nstcalcenergy   = 1\n"
-            "nstenergy       = 1\n"
-            "pme-order       = 4\n"
-            "pbc             = xyz\n"
-            "nsteps          = %d\n",
-            nsteps);
-
-    runner_.useStringAsMdpFile(theMdpFile);
-
-    RunModesList runModes;
-    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
-    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
-    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
-
-    runTest(runModes);
+    runTest(runModes, PmeTestFlavor::Basic);
 }
 
 TEST_F(PmeTest, ScalesTheBoxWithWalls)
 {
-    const int         nsteps     = 0;
-    const std::string theMdpFile = formatString(
-            "coulombtype     = PME\n"
-            "nstcalcenergy   = 1\n"
-            "nstenergy       = 1\n"
-            "pme-order       = 4\n"
-            "pbc             = xy\n"
-            "nwall           = 2\n"
-            "ewald-geometry  = 3dc\n"
-            "wall_atomtype   = CMet H\n"
-            "wall_density    = 9 9.0\n"
-            "wall-ewald-zfac = 5\n"
-            "nsteps          = %d\n",
-            nsteps);
-
-    runner_.useStringAsMdpFile(theMdpFile);
-
     RunModesList runModes;
     runModes["PmeOnCpu"]         = { "-pme", "cpu" };
     runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
     runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
 
-    runTest(runModes);
+    runTest(runModes, PmeTestFlavor::WithWalls);
 }
 
 } // namespace
