@@ -586,8 +586,8 @@ void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
         if (!pullGroup.weight.empty() && pullGroup.weight.size() != pullGroup.ind.size())
         {
             gmx_fatal(FARGS,
-                      "Number of weights (%ld) for pull group %d '%s' does not match the number of "
-                      "atoms (%ld)",
+                      "Number of weights (%td) for pull group %d '%s' does not match the number of "
+                      "atoms (%td)",
                       gmx::ssize(pullGroup.weight),
                       g,
                       pullGroupNames[g].c_str(),

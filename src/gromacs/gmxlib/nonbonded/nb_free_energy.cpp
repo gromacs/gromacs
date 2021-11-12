@@ -1143,7 +1143,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
      */
     atomicNrnbIncrement(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist.nri * 12 + nlist.jindex[nri] * 150);
 
-    if (haveExcludedPairsBeyondRlist > 0)
+    if (haveExcludedPairsBeyondRlist)
     {
         gmx_fatal(FARGS,
                   "There are perturbed non-bonded pair interactions beyond the pair-list cutoff "

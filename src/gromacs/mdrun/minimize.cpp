@@ -853,8 +853,10 @@ real maxCoordinateDifference(ArrayRef<const RVec> coords1, ArrayRef<const RVec> 
 
     real maxDiffSquared = 0;
 
+#ifndef _MSC_VER // Visual Studio has no support for reduction(max)
     const int gmx_unused nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-#pragma omp parallel for reduction(max : maxDiffSquared) num_threads(nthreads) schedule(static)
+#    pragma omp parallel for reduction(max : maxDiffSquared) num_threads(nthreads) schedule(static)
+#endif
     for (int i = 0; i < ssize(coords1); i++)
     {
         maxDiffSquared = std::max(maxDiffSquared, gmx::norm2(coords1[i] - coords2[i]));

@@ -286,10 +286,14 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-// const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
-        firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+// const variables are best shared and MSVC requires it, but gcc-8 & gcc-9 don't agree how to write
+// that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim)
+#else
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
+            shared(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#endif
     for (int th = 0; th < nth; th++)
     {
         try

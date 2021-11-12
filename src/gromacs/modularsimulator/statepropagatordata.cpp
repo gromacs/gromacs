@@ -112,8 +112,7 @@ public:
 
         auto velocities = statePropagatorData_->velocitiesView().unpaddedArrayRef();
         int  nth        = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(nth, velocityScalingFactors_, velocities)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, velocities)
         for (int threadIndex = 0; threadIndex < nth; threadIndex++)
         {
             int startAtom = 0;

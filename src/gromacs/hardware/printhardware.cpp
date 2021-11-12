@@ -395,11 +395,14 @@ void gmx_print_detected_hardware(FILE*                fplog,
         // Logically this should come at the end of
         // detected_hardware_string(), and can become so once that
         // function uses the MDLogger properly.
-        if (bGPUBinary && !hwinfo->deviceInfoList.empty())
+        if constexpr (bGPUBinary)
         {
-            for (const auto& deviceInfo : hwinfo->deviceInfoList)
+            if (!hwinfo->deviceInfoList.empty())
             {
-                warnWhenDeviceNotTargeted(mdlog, *deviceInfo);
+                for (const auto& deviceInfo : hwinfo->deviceInfoList)
+                {
+                    warnWhenDeviceNotTargeted(mdlog, *deviceInfo);
+                }
             }
         }
     }

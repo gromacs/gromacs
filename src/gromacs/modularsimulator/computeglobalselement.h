@@ -192,33 +192,6 @@ private:
     //! A dummy signaller (used for setup and VV)
     std::unique_ptr<SimulationSignaller> nullSignaller_;
 
-    /*! \brief Check that DD doesn't miss bonded interactions
-     *
-     * Domain decomposition could incorrectly miss a bonded
-     * interaction, but checking for that requires a global
-     * communication stage, which does not otherwise happen in DD
-     * code. So we do that alongside the first global energy reduction
-     * after a new DD is made. These variables handle whether the
-     * check happens, and the result it returns.
-     */
-    //! \{
-    int  totalNumberOfBondedInteractions_;
-    bool shouldCheckNumberOfBondedInteractions_;
-    //! \}
-
-    /*! \brief Signal to ComputeGlobalsElement that it should check for DD errors
-     *
-     * Note that this should really be the responsibility of the DD element.
-     * MDLogger, global and local topology are only needed due to the call to
-     * checkNumberOfBondedInteractions(...).
-     *
-     * The DD element should have a single variable which gets reduced, and then
-     * be responsible for the checking after a global reduction has happened.
-     * This would, however, require a new approach for the compute_globals calls,
-     * which is not yet implemented. So for now, we're leaving this here.
-     */
-    void needToCheckNumberOfBondedInteractions();
-
     //! Global reduction struct
     gmx_global_stat* gstat_;
 
