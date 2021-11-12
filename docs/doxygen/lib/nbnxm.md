@@ -16,7 +16,7 @@ gridding and binning. We then construct a pair list between these
 clusters instead of single atoms. This not only leads to a smaller list,
 but also regularizes the data access. The non-bonded pair-interaction
 kernels can then compute interactions between all atom-pairs in
-a cluster-pair simulatenously. For GPUs there is another layer:
+a cluster-pair simultaneously. For GPUs there is another layer:
 superclusters consisting of multiple clusters to increase data reuse.
 
 Architecture support
@@ -26,5 +26,5 @@ Currently the module supports 5 different kernel architectures:
 * Plain C++: slow, only for reference.
 * SIMD 4xM: targets CPUs using SIMD intrinsics with N=4 and M=2, 4 or 8, SIMD width 2, 4 or 8.
 * SIMD 2xMM: targets CPUs using SIMD intrinsics with N=4 and M=4 or 8, SIMD width 8 or 16.
-* CUDA: targets CUDA GPUs
-* OpenCL: targets GPUs using OpenCL
+* GPU: targets GPUs with N=M=8 or N=M=4, depending on
+  `GMX_GPU_NB_CLUSTER_SIZE` compilation option value.

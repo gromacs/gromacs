@@ -73,6 +73,8 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_MPI=on`` to build using `MPI support`_
 * ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
 * ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
+* ``-DGMX_GPU=SYCL`` to build with SYCL_ support enabled (using `Intel oneAPI DPC++`_ by default).
+* ``-DGMX_SYCL_HIPSYCL=on`` to build with SYCL_ support using hipSYCL_ (requires ``-DGMX_GPU=SYCL``).
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
@@ -198,10 +200,19 @@ OpenCL is also supported with NVIDIA GPUs, but using
 the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
 recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
-It is not possible to configure both CUDA and OpenCL
-support in the same build of |Gromacs|, nor to support both
-Intel and other vendors' GPUs with OpenCL. A 64-bit implementation
-of OpenCL is required and therefore OpenCL is only supported on 64-bit platforms.
+It is not possible to support both Intel and other vendors' GPUs with OpenCL.
+A 64-bit implementation of OpenCL is required and therefore OpenCL is only
+supported on 64-bit platforms.
+
+Since |Gromacs| 2021, the support for SYCL_ is added.
+The current SYCL implementation can be compiled either with `Intel oneAPI DPC++`_
+compiler for Intel GPUs, or with hipSYCL_ compiler and ROCm runtime for
+AMD GFX9 and CDNA GPUs. Using other devices supported by these compilers is
+possible, but not recommended.
+
+It is not possible to configure several GPU backends in the same build
+of |Gromacs|.
+
 
 .. _mpi-support:
 
@@ -754,6 +765,45 @@ external library, use
 ::
 
     cmake .. -DGMX_GPU=OpenCL -DclFFT_ROOT_DIR=/path/to/your/clFFT -DGMX_EXTERNAL_CLFFT=TRUE
+
+SYCL GPU acceleration
+~~~~~~~~~~~~~~~~~~~~~
+
+The SYCL_ support in |Gromacs| is intended to eventually replace
+OpenCL_ as an acceleration mechanism for AMD and Intel hardware.
+For AMD devices, we use hipSYCL_ compiler and runtime with HIP backend, which only supports
+discrete GPUs with GFX9 (RX Vega 64, Pro VII, Instinct MI25, Instinct MI50)
+and CDNA architectures (Instinct MI100).
+For Intel devices, we use `Intel oneAPI DPC++`_ with OpenCL and LevelZero backends, which
+supports both integrated and discreet Intel GPUs.
+
+SYCL GPU acceleration for Intel GPUs
+""""""""""""""""""""""""""""""""""""
+
+You should install the recent `Intel oneAPI DPC++`_ compiler toolkit.
+For |Gromacs| 2022, version 2021.4 is recommended.
+Using open-source `Intel LLVM <https://github.com/intel/llvm>`_ is possible,
+but not extensively tested. We also recommend installing the most recent
+`Neo driver <https://github.com/intel/compute-runtime/releases>`_.
+
+With the toolkit installed and added to the environment (usually by running
+``source /opt/intel/oneapi/setvars.sh`` or using an appropriate
+:command:`module load` on an HPC system), the following CMake flags
+must be set:
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL
+
+SYCL GPU compilation options
+""""""""""""""""""""""""""""
+
+The following flags can be passed to CMake in order to tune |Gromacs|:
+
+``-DGMX_GPU_NB_CLUSTER_SIZE``
+      changes the data layout of non-bonded kernels. Default values: 4 when
+      compiling with `Intel oneAPI DPC++`_, 8 when compiling with hipSYCL_.
+      Those are reasonable defaults for Intel and AMD devices, respectively.
 
 Static linking
 ~~~~~~~~~~~~~~
