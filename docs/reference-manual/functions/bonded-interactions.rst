@@ -323,6 +323,30 @@ field \ :ref:`84 <refBBrooks83>`. The energy is given by:
 The force equations can be deduced from sections :ref:`harmonicbond`
 and :ref:`harmonicangle`.
 
+Linear Angle potential
+~~~~~~~~~~~~~~~~~~~~~~
+
+The linear angle potential was designed especially for linear compounds
+such as nitriles and for carbon dioxide \ :ref:`190 <refSpoel2020>`. 
+It avoids the calculation of the angle per se, since the angle force
+is not well-defined if the angle is 180 degrees. Rather, it computes the
+deviation of a central atom in a triplet *i,j,k* from a reference position
+
+.. math:: \mathbf{x}_j^0 = a \mathbf{x}_i + (1-a) \mathbf{x}_k
+
+where a is defined by the bond-length *i-j* and *j-k*, in a symmetric
+molecule such as carbon dioxide *a = 1/2*. If the compound has different
+bond lengths :math:`b_{ij}` and :math:`b_{jk}` respectivey, we instead have
+
+.. math:: a = \frac{b_{jk}}{b_{ij}+b_{jk}}.
+
+If the order of atoms is changed to *k,j,i*, *a* needs to be 
+replaced by *1-a*. The energy is now given by
+
+.. math:: V_{lin} = \frac{k_{lin}}{2}\left(\mathbf{x}_j - \mathbf{x}_j^0\right)^2
+
+with :math:`k_{lin}` the force constant. For examples, and a derivation of the forces from the energy function, see ref. \ :ref:`190 <refSpoel2020>`. 
+
 Bond-Bond cross term
 ~~~~~~~~~~~~~~~~~~~~
 

@@ -35,6 +35,14 @@ If required, please manually spin-up the cores with, e.g., ``stress --cpu $(npro
 
 :issue:`4074`
 
+Add documentation for linear angle potential
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Added documentation and reference for the linear angle potential. Also
+added please_cite entry, but there is no call to reference it yet.
+
+:issue:`4286`
+
 gmxapi.mdrun guarantees trajectory output
 """""""""""""""""""""""""""""""""""""""""
 

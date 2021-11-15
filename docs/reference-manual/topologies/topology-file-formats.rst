@@ -141,6 +141,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |PHI0| replace:: :math:`\phi_0`
 .. |KPHI| replace:: :math:`k_\phi`
 .. |PHIK| replace:: :math:`\phi,k`
+.. |KLIN| replace:: :math:`k_{lin}`
 .. |XI0| replace:: :math:`\xi_0`
 .. |KXI| replace:: :math:`k_\xi`
 .. |C0| replace:: :math:`C_0`
@@ -226,6 +227,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
             | quartic angle                      | ``angles`` [5]_            | 3          | 6         | |THE0| (deg); |C024| (|KJRI|)                                           |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | tabulated angle                    | ``angles``                 | 3          | 8         | table number (|GE0|); |KO| (|KJM|)                                      | |KO|       |
+            +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
+            | linear angle                       | ``angles``                 | 3          | 9         | |A0|; |KLIN| (|NM2|)                                                    | all        |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             |  |  restricted                     |                            |            |           |                                                                         |            |
             |  |  bending potential              | ``angles``                 | 3          | 10        | |THE0| (deg); |KTHE| (|KJM|)                                            |            |

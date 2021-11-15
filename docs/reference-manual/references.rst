@@ -2676,6 +2676,15 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+   </div>
+
+   <div id="refSpoel2020">
+
+.. _refSpoel2020:
+   
+:sup:`190` D. van der Spoel, H. Henschel, P. J. van Maaren, M. M. Ghahremanpour , and L. T. Costa, "A potential for molecular simulation of compounds with linear moieties", *J. Chem. Phys.*, **153** 084503 (2020).
+
 .. raw:: html
 
    </div>
+
