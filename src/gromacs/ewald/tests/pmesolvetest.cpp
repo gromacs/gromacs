@@ -111,7 +111,7 @@ std::string nameOfTest(const testing::TestParamInfo<SolveInputParameters>& info)
             "eps_%g_"
             "ewaldq_%g_"
             "ewaldlj_%g_"
-            "method_%s",
+            "%s",
             std::get<0>(info.param).c_str(),
             std::get<1>(info.param)[XX],
             std::get<1>(info.param)[YY],
@@ -333,8 +333,9 @@ public:
 std::vector<std::unique_ptr<PmeTestHardwareContext>> SolveTest::s_pmeTestHardwareContexts;
 
 /*! \brief Test for PME solving */
-TEST_P(SolveTest, WorksWith)
+TEST_P(SolveTest, Works)
 {
+    checkTestNameLength();
     EXPECT_NO_THROW_GMX(runTest());
 }
 

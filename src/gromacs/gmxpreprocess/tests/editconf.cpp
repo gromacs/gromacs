@@ -108,7 +108,7 @@ TEST_P(EditconfTest, ProducesMatchingOutputStructureFile)
 
 TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
 {
-    setInputFile("-n", "fragment1.ndx");
+    setInputFile("-n", "A.ndx");
     runTest("Output file type using index group");
 }
 
@@ -117,11 +117,10 @@ TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
 // coordinates. It's better to run the tests only in single than not
 // have the tests.
 #if !GMX_DOUBLE
-INSTANTIATE_TEST_SUITE_P(
-        SinglePeptideFragments,
-        EditconfTest,
-        ::testing::Combine(::testing::Values("fragment1.pdb", "fragment1.gro", "fragment1.g96"),
-                           ::testing::Values(efPDB, efGRO, efG96)));
+INSTANTIATE_TEST_SUITE_P(SinglePeptideFragments,
+                         EditconfTest,
+                         ::testing::Combine(::testing::Values("A.pdb", "A.gro", "A.g96"),
+                                            ::testing::Values(efPDB, efGRO, efG96)));
 #else
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EditconfTest);
 #endif
