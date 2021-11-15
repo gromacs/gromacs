@@ -38,15 +38,24 @@
 """Python setuptools script to build and install the gmxapi Python interface.
 
 The `gmxapi` package requires an existing GROMACS installation, version 2020 or higher.
-To specify the GROMACS installation to use, provide a GMXTOOLCHAINDIR
-environment variable when running setup.py or `pip`.
+If the usual GROMACS environment variables are detected (such as from sourcing GMXRC),
+the corresponding GROMACS installation will be used. Otherwise, provide CMake options
+to the Python package installer.
+Define ``gmxapi_ROOT`` to the GROMACS installation directory (``-Dgmxapi_ROOT=/path/to/gromacs``).
+Help CMake find the GROMACS compiler toolchain with ``-C  /path/to/gromacs/share/cmake/gromacs/gromacs-hints.cmake``.
+
+If this script is unable to locate GROMACS as above, it will check for a
+GMXTOOLCHAINDIR environment variable, giving the location of a gromacs-toolchain.cmake file.
+The toolchain file is not provided by GROMACS 2022 and above, so support for GMXTOOLCHAINDIR
+is deprecated.
 
 Example:
-    GMXTOOLCHAINDIR=/path/to/gromacs/share/cmake/gromacs pip install gmxapi
+    GROMACS_DIR=/path/to/gromacs
+    CMAKE_ARGS="-Dgmxapi_ROOT=$GROMACS_DIR -C $GROMACS_DIR/share/cmake/gromacs/gromacs-hints.cmake"
+    pip install gmxapi
 
 See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more information.
 """
-
 
 import os
 import re
@@ -86,7 +95,11 @@ class CMakeBuild(build_ext):
     See https://github.com/pybind/cmake_example for the current version
     of the sample project from which this is borrowed.
     """
+
     def build_extension(self, ext):
+        # The pybind11 package is only needed for `build_ext`, and may not be installed
+        # in the caller's environment. By the time this function is called, though,
+        # build dependencies will have been checked.
         import pybind11
 
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
@@ -165,7 +178,7 @@ class CMakeBuild(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
-        update_gromacs_client_cmake_args(cmake_args)
+        cmake_args = update_gromacs_client_cmake_args(cmake_args)
 
         has_pybind = False
         for arg in cmake_args:
@@ -191,8 +204,29 @@ def _find_first_gromacs_suffix(directory):
             return entry.strip('gromacs')
 
 
-def update_gromacs_client_cmake_args(args: typing.List[str]):
+def update_gromacs_client_cmake_args(args: typing.Sequence[str]) -> typing.List[str]:
     """Try to convert information from command line environment to usable client CMake stuff.
+
+    Normalize user input and automated GROMACS detection to produce a list of CMake arguments
+    containing a ``-Dgmxapi_ROOT`` and, if possible, hints for generating the CMake build tool
+    chain.
+
+    Args:
+        args: CMake args provided by CMakeBuild instance, including user input from CMAKE_ARGS.
+
+    First, we must determine a single value of ``gmxapi_ROOT``.
+
+    If ``CMAKE_ARGS`` contains a ``-C`` option, the value is checked for consistency with the
+    ``gmxapi_ROOT`` path.
+
+    If ``CMAKE_ARGS`` contains both ``-C`` and ``-DCMAKE_TOOLCHAIN_FILE`` options,
+    both are passed along to CMake and we assume the user knows what they are doing.
+    If ``CMAKE_ARGS`` contains neither a ``-C`` option, nor a ``-DCMAKE_TOOLCHAIN_FILE`` option,
+    this script attempts to locate a ``gromacs-hints.cmake`` file in order to generate
+    a ``-C`` option to add to the CMake arguments for CMakeBuild.
+
+    If the script is unable to locate a ``gromacs-hints.cmake`` file, we fall back
+    to the gmxapi 0.2 scheme for ``GMXTOOLCHAINDIR``.
 
     This function compartmentalizes details that are likely to evolve with issues
     https://gitlab.com/gromacs/gromacs/-/issues/3273
@@ -201,88 +235,115 @@ def update_gromacs_client_cmake_args(args: typing.List[str]):
 
     See linked issues for more discussion or to join in the conversation.
     """
-    has_gmxapi_dir = False
-    gmxapi_DIR = None
-    for arg in args:
-        if arg.upper().startswith('-DGMXAPI_DIR'):
-            gmxapi_DIR = arg.split('=')[1]
-            if gmxapi_DIR:
-                has_gmxapi_dir = True
-            break
-    if not has_gmxapi_dir:
-        gmxapi_DIR = os.getenv('gmxapi_DIR')
-    if not gmxapi_DIR:
-        # Infer from GMXRC exports, if available.
-        gmxapi_DIR = os.getenv('GROMACS_DIR')
+    args = list(str(arg) for arg in args)
 
-    has_toolchain_file = False
+    # Existing input for gmxapi_root
+    gmxapi_root_arg = False
+
+    # Value of gmxapi_root for use in this function.
+    gmxapi_root = None
+    for arg in args:
+        if arg.upper().startswith('-DGMXAPI_DIR') or arg.upper().startswith('-DGMXAPI_ROOT'):
+            _dir = arg.split('=')[1]
+            if _dir:
+                gmxapi_root_arg = arg
+                gmxapi_root = os.path.abspath(_dir)
+            break
+
+    # The CMake hints file, if available.
+    # Note that the `-C` flag occurs as a distinct CLI argument from the value (the file path).
+    cmake_hints = None
+    for i, arg in enumerate(args):
+        if arg.upper() == "-C":
+            cmake_hints = args[i+1]
+            if cmake_hints:
+                cmake_hints = os.path.abspath(cmake_hints)
+            if not os.path.exists(cmake_hints):
+                raise GmxapiInstallError(f'Hints file {cmake_hints} does not exist.')
+
+    # CMake toolchain argument already present in args.
+    toolchain_file_arg = None
+    # The CMake toolchain file, if available.
     gmx_toolchain = None
     for arg in args:
         if arg.upper().startswith('-DCMAKE_TOOLCHAIN_FILE'):
             gmx_toolchain = arg.split('=')[1]
             if gmx_toolchain:
-                has_toolchain_file = True
+                toolchain_file_arg = arg
+                gmx_toolchain = os.path.abspath(gmx_toolchain)
+                if os.getenv('GMXTOOLCHAINDIR'):
+                    warnings.warn(
+                        'Overriding GMXTOOLCHAINDIR environment variable because'
+                        'CMAKE_TOOLCHAIN_FILE CMake variable was specified.')
 
-    if has_toolchain_file and has_gmxapi_dir:
-        return
+    if (toolchain_file_arg or cmake_hints) and gmxapi_root_arg:
+        # The user has provided enough information. No automatigical behavior required.
+        return args
+    # Else, try to find the needed configuration, and update args.
 
-    gmx_toolchain_dir = os.getenv('GMXTOOLCHAINDIR')
+    # If toolchain file was not provided explicitly, look for the documented environment variable.
     if gmx_toolchain:
-        if gmx_toolchain_dir:
-            warnings.warn('Overriding GMXTOOLCHAINDIR environment variable because CMAKE_TOOLCHAIN_FILE CMake '
-                          'variable was specified.')
         gmx_toolchain_dir = os.path.dirname(gmx_toolchain)
+    else:
+        gmx_toolchain_dir = os.getenv('GMXTOOLCHAINDIR')
 
-    if gmx_toolchain_dir is None:
+    # Final attempts to locate gmxapi_ROOT.
+    if not gmxapi_root_arg:
+        gmxapi_root = os.getenv('gmxapi_ROOT', default=os.getenv('gmxapi_DIR'))
+    if not gmxapi_root:
+        # Infer from GMXRC exports, if available.
+        gmxapi_root = os.getenv('GROMACS_DIR')
+    # Try to infer from other input.
+    # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake
+    # or /usr/local/gromacs/share/cmake/gromacs/gromacs-hints.cmake,
+    # we would want /usr/local/gromacs.
+    # Note that we could point more directly to the gmxapi-config.cmake but,
+    # so far, we have relied on CMake automatically looking into
+    # <package>_DIR/share/cmake/<package>/ for such a file.
+    if not gmxapi_root:
+        if cmake_hints:
+            gmxapi_root = os.path.join(os.path.dirname(cmake_hints), '..', '..', '..')
+        elif gmx_toolchain_dir:
+            gmxapi_root = os.path.join(gmx_toolchain_dir, '..', '..', '..')
+    if not gmxapi_root or not os.path.exists(gmxapi_root) or not os.path.isdir(gmxapi_root):
+        print(usage)
+        raise GmxapiInstallError('Please set a valid gmxapi_ROOT.')
+    gmxapi_root = os.path.abspath(gmxapi_root)
+    if not gmxapi_root_arg:
+        args.append(f'-Dgmxapi_ROOT={gmxapi_root}')
+
+    # If we need to keep guessing for cmake hints or toolchain files, make a final effort to find
+    # the GROMACS-provided share/cmake/gromacs* directory.
+    if not gmx_toolchain_dir:
         # Try to guess from standard GMXRC environment variables.
-        if gmxapi_DIR is not None:
-            if os.path.exists(gmxapi_DIR) and os.path.isdir(gmxapi_DIR):
-                share_cmake = os.path.join(gmxapi_DIR, 'share', 'cmake')
-                suffix = _find_first_gromacs_suffix(share_cmake)
-                if suffix is not None:
-                    gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
+        if gmxapi_root:
+            share_cmake = os.path.join(gmxapi_root, 'share', 'cmake')
+            suffix = _find_first_gromacs_suffix(share_cmake)
+            if suffix is not None:
+                gmx_toolchain_dir = os.path.join(share_cmake, 'gromacs' + suffix)
 
-    if gmx_toolchain_dir is None or not os.path.exists(gmx_toolchain_dir):
-        print(usage)
-        raise GmxapiInstallError(
-            'Could not configure for GROMACS installation. '
-            'Provide GMXTOOLCHAINDIR or CMAKE_TOOLCHAIN_FILE. '
-            'See https://manual.gromacs.org/current/gmxapi/userguide/install.html'
-        )
+    if gmx_toolchain_dir and os.path.exists(gmx_toolchain_dir):
+        suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
+        if not cmake_hints:
+            cmake_hints = os.path.abspath(os.path.join(gmx_toolchain_dir,
+                                                       'gromacs-hints' + suffix + '.cmake'))
+        if os.path.exists(cmake_hints):
+            if '-C' not in args:
+                args.extend(('-C', str(cmake_hints)))
+        elif not toolchain_file_arg:
+            # Only bother guessing a toolchain file if no hints file is available.
+            if not gmx_toolchain:
+                gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir,
+                                                             'gromacs-toolchain' + suffix + '.cmake'))
+            if os.path.exists(gmx_toolchain):
+                args.append(f'-DCMAKE_TOOLCHAIN_FILE={gmx_toolchain}')
 
-    suffix = os.path.basename(gmx_toolchain_dir).strip('gromacs')
-    gmx_toolchain = os.path.abspath(os.path.join(gmx_toolchain_dir, 'gromacs-toolchain' + suffix + '.cmake'))
-
-    if not gmxapi_DIR:
-        # Example: given /usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake,
-        # we would want /usr/local/gromacs.
-        # Note that we could point more directly to the gmxapi-config.cmake but,
-        # so far, we have relied on CMake automatically looking into
-        # <package>_DIR/share/cmake/<package>/ for such a file.
-        # We would need a slightly different behavior for packages that link against
-        # libgromacs directly, as sample_restraint currently does.
-        gmxapi_DIR = os.path.join(os.path.dirname(gmx_toolchain), '..', '..', '..')
-
-    gmxapi_DIR = os.path.abspath(gmxapi_DIR)
-
-    if not os.path.exists(gmxapi_DIR) or not os.path.isdir(gmxapi_DIR):
-        print(usage)
-        raise GmxapiInstallError('Please set a valid gmxapi_DIR.')
-
-    if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
-        raise GmxapiInstallError('GROMACS toolchain file {} is not in gmxapi_DIR {}'.format(
-            gmx_toolchain,
-            gmxapi_DIR
-        ))
-
-    if not has_gmxapi_dir:
-        args.append(f'-Dgmxapi_ROOT={gmxapi_DIR}')
-    if not has_toolchain_file:
-        args.append(f'-DCMAKE_TOOLCHAIN_FILE={gmx_toolchain}')
+    return args
 
 
 class GmxapiInstallError(Exception):
     """Error processing setup.py for gmxapi Python package."""
+
 
 setup(
     ext_modules=[CMakeExtension("gmxapi._gmxapi")],

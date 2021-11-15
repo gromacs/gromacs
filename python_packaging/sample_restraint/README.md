@@ -125,11 +125,11 @@ We use CMake to configure and build a C++ library and a Python module
 for interacting with it.
 
 After installing GROMACS, either source the GMXRC file provided with the GROMACS
-installation or set `gmxapi_DIR` to the GROMACS installation path.
+installation or set the `gmxapi_ROOT` CMake variable to the GROMACS installation path.
 
 The GROMACS installation provides some additional CMake infrastructure to help us build compatible client software.
-To help set the correct compilers, specify the CMake toolchains file with,
-*e.g.*, `-DCMAKE_TOOLCHAIN_FILE=/usr/local/gromacs/share/cmake/gromacs/gromacs-toolchain.cmake` (for GROMACS installed
+To help set the correct compilers, specify the CMake hints file with,
+*e.g.*, `-C /usr/local/gromacs/share/cmake/gromacs/gromacs-hints.cmake` (for GROMACS installed
  to `/usr/local/gromacs`).
 **todo:** Link to GROMACS docs for the toolchains file.
 

@@ -39,6 +39,23 @@ Within the GROMACS repository, the ``sample_restraint`` option default is now ``
 
 :issue:`4092`
 
+CMake toolchain file replaced with cache file
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The ``gromacs-toolchain.cmake`` file
+(previously installed to ``$CMAKE_INSTALL_PREFIX/share/cmake/gromacs/``)
+is no longer provided.
+Instead a partial CMake cache file is installed to
+``$CMAKE_INSTALL_PREFIX/share/cmake/gromacs${SUFFIX}/gromacs-hints.cmake``.
+
+Client software may get CMake hints by configuring with ``-C /path/to/gromacs-hints.cmake``,
+instead of forcing a cross-compiling CMake configuration with ``-DCMAKE_TOOLCHAIN_FILE`` or ``--toolchain``.
+
+Client software bundled with GROMACS (the gmxapi Python package) no longer requires the toolchain file.
+See :doc:`/gmxapi/userguide/install` for details.
+
+:issue:`4208`
+
 Bundle muparser
 """""""""""""""
 

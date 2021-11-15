@@ -5,11 +5,15 @@
 
 # This image serves as a base for integration with the gmxapi Python tools and sample code.
 
-FROM ubuntu:groovy as base
+FROM ubuntu:focal as base
 
 # Basic packages
 RUN apt-get update && \
-    apt-get -yq --no-install-suggests --no-install-recommends install software-properties-common build-essential && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get -yq --no-install-suggests --no-install-recommends install \
+        software-properties-common \
+        build-essential && \
+    DEBIAN_FRONTEND=noninteractive \
     apt-get -yq --no-install-suggests --no-install-recommends install \
         cmake \
         git \
@@ -25,6 +29,7 @@ RUN apt-get update && \
 
 # mpich installation layer
 RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
     apt-get -yq --no-install-suggests --no-install-recommends install \
         libmpich-dev \
         mpich && \

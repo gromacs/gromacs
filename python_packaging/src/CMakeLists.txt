@@ -102,9 +102,7 @@ if (NOT pybind11_FOUND)
 endif ()
 
 if(GMXAPI_MASTER_PROJECT)
-    find_package(gmxapi 0.2 REQUIRED
-                 HINTS "$ENV{GROMACS_DIR}"
-                 )
+    find_package(gmxapi REQUIRED)
     if (gmxapi_VERSION VERSION_LESS 0.2.1)
         message(WARNING "Your GROMACS installation does not support custom MD plugins. "
                 "If you need this feature, please install GROMACS 2021.3 or higher.")

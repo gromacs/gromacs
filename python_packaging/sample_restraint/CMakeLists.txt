@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.16.3)
 project(sample_restraint)
 
 # This project requires a GROMACS supporting gmxapi 0.0.8 or higher. It should
-# be sufficient to source the GMXRC, but you can also set the GROMACS_DIR or
-# gmxapi_DIR environment variable to help CMake find the GROMACS installation.
+# be sufficient to source the GMXRC, but you can also set the GROMACS_DIR
+# environment variable or gmxapi_ROOT CMake variable to help CMake find the GROMACS installation.
 
 # Note that the code will need to be built separately for different versions of Python and for substantially different
 # versions of GROMACS. If building from the command line, you can specify a Python executable with the PYTHON_EXECUTABLE
@@ -44,9 +44,9 @@ if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
 else()
     find_package(pybind11 2.6 REQUIRED)
 endif()
-# Assuming GROMACS is in our path or that we have set either the gmxapi_DIR or GROMACS_DIR environment variables,
-# this will find the CMake configuration for the GROMACS libraries we need and define the CMake library objects
-# Gromacs::gmxapi
+# Assuming GROMACS is in our path or that we have set either gmxapi_ROOT or the
+# GROMACS_DIR environment variable, this will find the CMake configuration for
+# the GROMACS libraries we need and define the CMake library object Gromacs::gmxapi
 if(GMXAPI_EXTENSION_MASTER_PROJECT)
     find_package(gmxapi
                  0.2.1 REQUIRED CONFIG

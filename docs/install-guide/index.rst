@@ -1103,10 +1103,12 @@ change the names of directories inside the install tree. If you still
 need to do that, you might want to recompile with the new install
 location properly set, or edit the ``GMXRC`` script.
 
-|Gromacs| also installs a CMake toolchains file to help with building client
-software. For an installation at ``/your/installation/prefix/here``, toolchain
-files will be installed at
-``/your/installation/prefix/here/share/cmake/gromacs${GMX_LIBS_SUFFIX}/gromacs-toolchain${GMX_LIBS_SUFFIX}.cmake``
+|Gromacs| also installs a CMake cache file to help with building client software
+(using the `-C option <https://cmake.org/cmake/help/latest/manual/cmake.1.html#options>`__
+when configuring the client software with CMake.)
+For an installation at ``/your/installation/prefix/here``,
+hints files will be installed at
+``/your/installation/prefix/share/cmake/gromacs${GMX_LIBS_SUFFIX}/gromacs-hints${GMX_LIBS_SUFFIX}.cmake``
 where ``${GMX_LIBS_SUFFIX}`` is :ref:`as documented above <suffixes>`.
 
 Testing |Gromacs| for correctness

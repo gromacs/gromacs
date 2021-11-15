@@ -20,11 +20,13 @@
 #
 
 ARG REF=latest
+ARG MPIFLAVOR=mpich
 
-FROM gmxapi/gromacs-dependencies-mpich as python-base
+FROM gmxapi/gromacs-dependencies-$MPIFLAVOR as python-base
 
 RUN apt-get update && \
-    apt-get -yq --no-install-suggests --no-install-recommends install \
+    DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-suggests --no-install-recommends \
+    install \
         python3 \
         python3-dev \
         python3-venv && \
@@ -48,7 +50,7 @@ ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
 # Use gromacs installation from gmxapi/gromacs image
 #
 
-FROM gmxapi/gromacs-mpich:$REF as gromacs
+FROM gmxapi/gromacs-$MPIFLAVOR:$REF as gromacs
 # This intermediate is necessary because the COPY command does not support syntax like the following:
 #COPY --from=gmxapi/gromacs:$REF /usr/local/gromacs /usr/local/gromacs
 
@@ -65,8 +67,7 @@ ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
 # We use "--no-cache-dir" to reduce Docker image size.
 RUN . $VENV/bin/activate && \
     (cd $HOME/gmxapi/src && \
-     rm -rf build dist && \
-     GMXTOOLCHAINDIR=/usr/local/gromacs/share/cmake/gromacs \
+     CMAKE_ARGS="-Dgmxapi_ROOT=/usr/local/gromacs -C /usr/local/gromacs/share/cmake/gromacs/gromacs-hints.cmake" \
       pip install --no-cache-dir --verbose . \
     )
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Setting CMAKE_SYSTEM_NAME tells CMake we are cross compiling.
-SET(CMAKE_SYSTEM_NAME "@CMAKE_SYSTEM_NAME@")
 SET(CMAKE_SYSTEM_VERSION "@CMAKE_SYSTEM_VERSION@")
 SET(CMAKE_C_COMPILER  "@CMAKE_C_COMPILER@")
 SET(CMAKE_CXX_COMPILER "@CMAKE_CXX_COMPILER@")
 SET(CMAKE_LINKER "@CMAKE_LINKER@")
 # The following are only relevant in Mac OS X environments.
-SET(CMAKE_OSX_DEPLOYMENT_TARGET "@CMAKE_OSX_DEPLOYMENT_TARGET@" CACHE STRING "OS X Deployment target" FORCE)
+SET(CMAKE_OSX_DEPLOYMENT_TARGET "@CMAKE_OSX_DEPLOYMENT_TARGET@" CACHE STRING "OS X Deployment target")
 SET(CMAKE_OSX_ARCHITECTURES "@CMAKE_OSX_ARCHITECTURES@")
-# Ref: https://stackoverflow.com/questions/32414112/setting-sdk-on-cross-compilation-to-osx-in-cmake
-SET(CMAKE_OSX_SYSROOT "@CMAKE_OSX_SYSROOT@"
-    CACHE PATH
-    "Overrides standard CMake variable with a cache variable for consistent behavior."
-    FORCE)

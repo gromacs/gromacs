@@ -68,11 +68,11 @@ import warnings
 
 from .exceptions import FeatureNotAvailableError
 
-# TODO: Version management policy and procedures.
+# TODO(#3851): Version management policy and procedures.
 _major = 0
 _minor = 3
 _micro = 0
-_suffix = 'b1'
+_suffix = ''
 
 # Reference https://www.python.org/dev/peps/pep-0440/
 # and https://packaging.pypa.io/en/latest/version/
@@ -184,7 +184,7 @@ def has_feature(name='', enable_exception=False) -> bool:
     """
     # First, issue a warning if the feature name is subject to removal because
     # of the history of the API specification.
-    if api_is_at_least(0, 2):
+    if api_is_at_least(0, 3):
         # For sufficiently advanced API versions, we want to warn that old
         # feature checks lose meaning and should no longer be checked.
         # We provide a suggestion with the API version that absorbed their
