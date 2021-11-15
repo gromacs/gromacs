@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
  *  - floating-point comparison
  *  - comparison against NULL
  *  - death tests
+ *  - ensuring test names don't get too long
  *
  * \if internal
  * \todo
@@ -712,6 +713,26 @@ static inline ::testing::AssertionResult plainAssertHelper(const char* /*expr*/,
  * \hideinitializer
  */
 #define ASSERT_PLAIN(expr) ASSERT_PRED_FORMAT1(plainAssertHelper, expr)
+
+/*! \brief Gives a GoogleTest assertion if the test's name is too long
+ *
+ * On Windows, MAX_PATH is 260 characters by default. Particularly
+ * when using parameterized tests it is convenient to generate
+ * descriptive names. However the reference data files for these tests
+ * can have names that get too long. For example, by default Visual
+ * Studio will put files in `{user-folder}\source\repos\gromacs` and
+ * we need to leave room for that, plus the path to the user's folder,
+ * plus a build folder, then
+ * e.g. `src\gromacs\gmxpreprocess\tests\refdata` and then the test
+ * data filename. So we limit the name of the test to help keep things
+ * working.
+ *
+ * When we identify tests whose names go close to this limit
+ * (e.g. because MSVC builds fail), then call this function from them
+ * to help maintainers keep that length under control when working on
+ * other platforms.
+ */
+void checkTestNameLength();
 
 //! \}
 

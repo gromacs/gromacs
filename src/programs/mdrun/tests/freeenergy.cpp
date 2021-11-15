@@ -91,6 +91,7 @@ public:
 
 TEST_P(FreeEnergyReferenceTest, WithinTolerances)
 {
+    checkTestNameLength();
     const auto& simulationName   = std::get<0>(GetParam());
     const auto  maxNumWarnings   = std::get<1>(GetParam());
     const auto& interactionsList = std::get<2>(GetParam());
@@ -201,7 +202,7 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
 //       tests can run in such configurations.
 #if !GMX_GPU_OPENCL
 INSTANTIATE_TEST_SUITE_P(
-        FreeEnergyCalculationsAreEquivalentToReference,
+        EquivalentToReference,
         FreeEnergyReferenceTest,
         ::testing::Values(
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_coul",
@@ -228,7 +229,7 @@ INSTANTIATE_TEST_SUITE_P(
         FreeEnergyReferenceTest::PrintParametersToString());
 #else
 INSTANTIATE_TEST_SUITE_P(
-        DISABLED_FreeEnergyCalculationsAreEquivalentToReference,
+        DISABLED_EquivalentToReference,
         FreeEnergyReferenceTest,
         ::testing::Values(
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_coul",

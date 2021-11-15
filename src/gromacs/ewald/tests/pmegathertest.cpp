@@ -378,6 +378,7 @@ std::vector<std::unique_ptr<PmeTestHardwareContext>> GatherTest::s_pmeTestHardwa
 //! Test for PME force gathering
 TEST_P(GatherTest, WorksWith)
 {
+    checkTestNameLength();
     EXPECT_NO_THROW_GMX(runTest());
 }
 

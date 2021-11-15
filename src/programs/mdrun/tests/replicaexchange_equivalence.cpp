@@ -102,7 +102,7 @@ static std::string getReplicaExchangeOutputFromLogFile(const std::string& logFil
 }
 
 //! Convenience typedef
-typedef MultiSimTest ReplicaExchangeRegressionTest;
+typedef MultiSimTest ReplicaExchangeTest;
 
 /* Run replica exchange simulations, compare to reference data
  *
@@ -124,8 +124,9 @@ typedef MultiSimTest ReplicaExchangeRegressionTest;
  * C++ compiler:       /usr/local/bin/mpic++ Clang 8.0.1
  *
  */
-TEST_P(ReplicaExchangeRegressionTest, WithinTolerances)
+TEST_P(ReplicaExchangeTest, Works)
 {
+    checkTestNameLength();
     if (!mpiSetupValid())
     {
         // Can't test multi-sim without multiple simulations
@@ -256,14 +257,13 @@ struct PrintReplicaExchangeParametersToString
     template<class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType>& parameter) const
     {
-        auto testIdentifier =
-                formatString("ReplExRegression_%s_%s_%s_%dRanks_%dRanksPerSimulation_%s",
-                             enumValueToString(std::get<1>(parameter.param)),
-                             enumValueToString(std::get<2>(parameter.param)),
-                             enumValueToString(std::get<3>(parameter.param)),
-                             gmx_node_num(),
-                             static_cast<int>(std::get<0>(parameter.param)),
-                             GMX_DOUBLE ? "d" : "s");
+        auto testIdentifier = formatString("%s_%s_%s_%dRanks_%dRanksPerSim_%s",
+                                           enumValueToString(std::get<1>(parameter.param)),
+                                           enumValueToString(std::get<2>(parameter.param)),
+                                           enumValueToString(std::get<3>(parameter.param)),
+                                           gmx_node_num(),
+                                           static_cast<int>(std::get<0>(parameter.param)),
+                                           GMX_DOUBLE ? "d" : "s");
         // Valid GTest names cannot include hyphens
         testIdentifier.erase(std::remove(testIdentifier.begin(), testIdentifier.end(), '-'),
                              testIdentifier.end());
@@ -273,15 +273,15 @@ struct PrintReplicaExchangeParametersToString
 
 #if GMX_LIB_MPI
 INSTANTIATE_TEST_SUITE_P(
-        ReplicaExchangeIsEquivalentToReferenceLeapFrog,
-        ReplicaExchangeRegressionTest,
+        LF,
+        ReplicaExchangeTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
                            ::testing::Values(IntegrationAlgorithm::MD),
                            ::testing::Values(TemperatureCoupling::VRescale, TemperatureCoupling::NoseHoover),
                            ::testing::Values(PressureCoupling::CRescale, PressureCoupling::ParrinelloRahman)),
         PrintReplicaExchangeParametersToString());
-INSTANTIATE_TEST_SUITE_P(ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
-                         ReplicaExchangeRegressionTest,
+INSTANTIATE_TEST_SUITE_P(VV,
+                         ReplicaExchangeTest,
                          ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
                                                               NumRanksPerSimulation(2)),
                                             ::testing::Values(IntegrationAlgorithm::VV),
@@ -290,15 +290,15 @@ INSTANTIATE_TEST_SUITE_P(ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
                          PrintReplicaExchangeParametersToString());
 #else
 INSTANTIATE_TEST_SUITE_P(
-        DISABLED_ReplicaExchangeIsEquivalentToReferenceLeapFrog,
-        ReplicaExchangeRegressionTest,
+        DISABLED_LF,
+        ReplicaExchangeTest,
         ::testing::Combine(::testing::Values(NumRanksPerSimulation(1), NumRanksPerSimulation(2)),
                            ::testing::Values(IntegrationAlgorithm::MD),
                            ::testing::Values(TemperatureCoupling::VRescale, TemperatureCoupling::NoseHoover),
                            ::testing::Values(PressureCoupling::CRescale, PressureCoupling::ParrinelloRahman)),
         PrintReplicaExchangeParametersToString());
-INSTANTIATE_TEST_SUITE_P(DISABLED_ReplicaExchangeIsEquivalentToReferenceVelocityVerlet,
-                         ReplicaExchangeRegressionTest,
+INSTANTIATE_TEST_SUITE_P(DISABLED_VV,
+                         ReplicaExchangeTest,
                          ::testing::Combine(::testing::Values(NumRanksPerSimulation(1),
                                                               NumRanksPerSimulation(2)),
                                             ::testing::Values(IntegrationAlgorithm::VV),

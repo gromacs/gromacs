@@ -363,6 +363,7 @@ std::vector<std::unique_ptr<PmeTestHardwareContext>> SplineAndSpreadTest::s_pmeT
 /*! \brief Test for spline parameter computation and charge spreading. */
 TEST_P(SplineAndSpreadTest, WorksWith)
 {
+    checkTestNameLength();
     EXPECT_NO_THROW_GMX(runTest());
 }
 
