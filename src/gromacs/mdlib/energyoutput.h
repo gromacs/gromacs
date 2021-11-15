@@ -82,11 +82,11 @@ struct MDModulesNotifiers;
 enum class StartingBehavior;
 } // namespace gmx
 
-extern const char* pvEnergyFieldName;
+extern const char* const pvEnergyFieldName;
 
-extern const char* enthalpyEnergyFieldName;
+extern const char* const enthalpyEnergyFieldName;
 
-extern std::array<const char*, 9> virialEnergyFieldNames;
+extern const std::array<const char*, 9> virialEnergyFieldNames;
 
 //! \brief Printed names for intergroup energies
 const char* enumValueToString(NonBondedEnergyTerms enumValue);

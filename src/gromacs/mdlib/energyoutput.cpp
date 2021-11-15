@@ -91,27 +91,24 @@
 
 //! Labels for energy file quantities
 //! \{
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
+static const char* const conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
 static constexpr std::array<const char*, 3> boxs_nm = { "Box-X", "Box-Y", "Box-Z" };
 
 static constexpr std::array<const char*, 6> tricl_boxs_nm = { "Box-XX", "Box-YY", "Box-ZZ",
                                                               "Box-YX", "Box-ZX", "Box-ZY" };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* vol_nm[] = { "Volume" };
+static const char* const vol_nm[] = { "Volume" };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static const char* dens_nm[] = { "Density" };
+static const char* const dens_nm[] = { "Density" };
 
-const char* pvEnergyFieldName = "pV";
+const char* const pvEnergyFieldName = "pV";
 
-const char* enthalpyEnergyFieldName = "Enthalpy";
+const char* const enthalpyEnergyFieldName = "Enthalpy";
 
-std::array<const char*, 9> virialEnergyFieldNames = { "Vir-XX", "Vir-XY", "Vir-XZ",
-                                                      "Vir-YX", "Vir-YY", "Vir-YZ",
-                                                      "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
+const std::array<const char*, 9> virialEnergyFieldNames = { "Vir-XX", "Vir-XY", "Vir-XZ",
+                                                            "Vir-YX", "Vir-YY", "Vir-YZ",
+                                                            "Vir-ZX", "Vir-ZY", "Vir-ZZ" };
 
 static constexpr std::array<const char*, 6> boxvel_nm = { "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
                                                           "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY" };
