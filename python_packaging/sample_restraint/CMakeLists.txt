@@ -152,18 +152,12 @@ if(GMXAPI_EXTENSION_MASTER_PROJECT)
     message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache value ${GMXPLUGIN_INSTALL_PATH}")
 endif()
 
-# TODO: (Issue #3027) Handle Googletest sources both for forked projects and
-#  for GROMACS-project-internal testing.
 # Projects based on this subtree should bundle googletest sources.
 # The GROMACS project already bundles googletest sources for internal use, but
 # they will only be available to this project with some additional management by
 # the parent project CMake configuration.
-option(DOWNLOAD_GOOGLETEST "Download the latest master branch of googletest." OFF)
+option(DOWNLOAD_GOOGLETEST "Download the version of googletest used for GROMACS testing." OFF)
 mark_as_advanced(DOWNLOAD_GOOGLETEST)
-
-# Prevent overriding the parent project's compiler/linker
-# settings on Windows
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 
 # Now move on to building the custom code.

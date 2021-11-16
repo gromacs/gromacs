@@ -1,8 +1,11 @@
 This directory contains source code for Google C++ Testing and Mocking
 Frameworks.
 
-The code has been copied verbatim from the GoogleTest git commit with
-hash 96f4ce0 by copying the following files/directories recursively.
+The code has been copied verbatim from the GoogleTest repository
+(https://github.com/google/googletest). The currently bundled code
+is from git commit 96f4ce0, which needs to be manually synchronized
+with the reference in python_packaging/sample_restraint/tests/CMakeLists.txt
+
 No files were omitted or changed, consistent with the live-at-head
 philosophy followed by GoogleTest.
 
