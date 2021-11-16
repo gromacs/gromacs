@@ -43,8 +43,6 @@
 #include "gmxpre.h"
 
 #include "pme_gpu_types_host.h"
-#include "pme_gpu_types.h"
-#include "pme_gpu_types_host_impl.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "pme_gpu_grid.h"
 
