@@ -3448,7 +3448,6 @@ def join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) 
     # TODO: check type and shape.
     # TODO: figure out a better annotation.
     """
-    # TODO: (FR4) Returned list should be an NDArray.
     if isinstance(front, (str, bytes)) or isinstance(back, (str, bytes)):
         raise exceptions.ValueError('Input must be a pair of lists.')
     assert isinstance(front, datamodel.NDArray)

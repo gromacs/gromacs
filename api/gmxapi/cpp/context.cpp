@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include <cstring>
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -286,17 +287,39 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
          */
 
         // Set input TPR name
+        if (std::any_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
+                return arg == "-s";
+            }))
+        {
+            throw UsageError("gmxapi must control the simulation input, but caller provided '-s'.");
+        }
         mdArgs_.emplace_back("-s");
         mdArgs_.emplace_back(filename);
 
-        // Set checkpoint file name
-        mdArgs_.emplace_back("-cpi");
-        mdArgs_.emplace_back("state.cpt");
-        /* Note: we normalize the checkpoint file name, but not its full path.
-         * Through version 0.0.8, gmxapi clients change working directory
-         * for each session, so relative path(s) below are appropriate.
-         * A future gmxapi version should avoid changing directories once the
-         * process starts and instead manage files (paths) in an absolute and
+        // Set checkpoint file name(s) (if not already set by user).
+        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
+                return arg == "-cpi";
+            }))
+        {
+            mdArgs_.emplace_back("-cpi");
+            mdArgs_.emplace_back("state.cpt");
+        }
+        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
+                return arg == "-cpo";
+            }))
+        {
+            mdArgs_.emplace_back("-cpo");
+            mdArgs_.emplace_back("state.cpt");
+        }
+        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
+                return arg == "-o";
+            }))
+        {
+            mdArgs_.emplace_back("-o");
+            mdArgs_.emplace_back("traj.trr");
+        }
+        /* Note: we normalize the file names, but not the full paths.
+         * A future gmxapi version should manage files (paths) in an absolute and
          * immutable way, with abstraction provided through the Context chain-of-responsibility.
          * TODO: API abstractions for initializing simulations that may be new or partially
          * complete. Reference gmxapi milestone 13 at https://gitlab.com/gromacs/gromacs/-/issues/2585

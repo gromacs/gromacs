@@ -36,8 +36,7 @@
 #ifndef GROMACS_TESTINGCONFIGURATION_H
 #define GROMACS_TESTINGCONFIGURATION_H
 
-#include "config.h"
-
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -85,7 +84,15 @@ inline real getTestStepSize()
 class GmxApiTest : public gmx::test::MdrunTestFixture
 {
 public:
-    GmxApiTest() {}
+    GmxApiTest()
+    {
+        // For files that will always be generated, let's explicitly set the names so that
+        // TestFileManager will clean them up properly.
+        runner_.groOutputFileName_ = fileManager_.getTemporaryFilePath("confout.gro");
+        runner_.cptOutputFileName_ = fileManager_.getTemporaryFilePath("state.cpt");
+        runner_.reducedPrecisionTrajectoryFileName_ =
+                fileManager_.getTemporaryFilePath("traj_comp.xtc");
+    }
 
     /* \brief
      * Prepare a tpr to run the test with.
@@ -106,7 +113,7 @@ public:
                                   "nstxout = 2\n"
                                   "nstvout = 2\n"
                                   "nstfout = 4\n"
-                                  "nstxout-compressed = 5\n"
+                                  "nstxout-compressed = 2\n"
                                   "tcoupl = v-rescale\n"
                                   "tc-grps = System\n"
                                   "tau-t = 1\n"
@@ -123,18 +130,54 @@ public:
     {
         std::vector<std::string> mdArgs;
 
-        mdArgs.emplace_back("-o");
-        mdArgs.emplace_back(runner_.fullPrecisionTrajectoryFileName_);
-        mdArgs.emplace_back("-x");
-        mdArgs.emplace_back(runner_.reducedPrecisionTrajectoryFileName_);
-        mdArgs.emplace_back("-c");
-        mdArgs.emplace_back(runner_.groOutputFileName_);
-        mdArgs.emplace_back("-g");
-        mdArgs.emplace_back(runner_.logFileName_);
-        mdArgs.emplace_back("-e");
-        mdArgs.emplace_back(runner_.edrFileName_);
-        mdArgs.emplace_back("-cpo");
-        mdArgs.emplace_back(runner_.cptOutputFileName_);
+        if (!runner_.fullPrecisionTrajectoryFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-o";
+            }));
+            mdArgs.emplace_back("-o");
+            mdArgs.emplace_back(runner_.fullPrecisionTrajectoryFileName_);
+        }
+        if (!runner_.reducedPrecisionTrajectoryFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-x";
+            }));
+            mdArgs.emplace_back("-x");
+            mdArgs.emplace_back(runner_.reducedPrecisionTrajectoryFileName_);
+        }
+        if (!runner_.groOutputFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-c";
+            }));
+            mdArgs.emplace_back("-c");
+            mdArgs.emplace_back(runner_.groOutputFileName_);
+        }
+        if (!runner_.logFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-g";
+            }));
+            mdArgs.emplace_back("-g");
+            mdArgs.emplace_back(runner_.logFileName_);
+        }
+        if (!runner_.edrFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-e";
+            }));
+            mdArgs.emplace_back("-e");
+            mdArgs.emplace_back(runner_.edrFileName_);
+        }
+        if (!runner_.cptOutputFileName_.empty())
+        {
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
+                return arg == "-cpo";
+            }));
+            mdArgs.emplace_back("-cpo");
+            mdArgs.emplace_back(runner_.cptOutputFileName_);
+        }
 #if GMX_THREAD_MPI
         /* This should be handled through the actual API we have for getting
          * ranks, but currently this leads to data races right now */

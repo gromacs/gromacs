@@ -34,3 +34,12 @@ now it is removed.
 If required, please manually spin-up the cores with, e.g., ``stress --cpu $(nproc --all)``.
 
 :issue:`4074`
+
+gmxapi.mdrun guarantees trajectory output
+"""""""""""""""""""""""""""""""""""""""""
+
+gmxapi simulations now always run with full-precision trajectory output (``-o``)
+in order to guarantee the availability of a usable output trajectory through the
+``mdrun.output.trajectory`` result.
+
+:issue:`4285`

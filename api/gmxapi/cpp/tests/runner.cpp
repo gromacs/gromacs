@@ -34,14 +34,18 @@
  */
 #include <memory>
 
-#include "testingconfiguration.h"
+#include "gromacs/mdlib/sighandler.h"
+#include "gromacs/mdtypes/iforceprovider.h"
+
+#include "testutils/trajectoryreader.h"
+
 #include "gmxapi/context.h"
+#include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 
-#include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdtypes/iforceprovider.h"
+#include "testingconfiguration.h"
 
 namespace gmxapi
 {
@@ -60,11 +64,19 @@ TEST_F(GmxApiTest, RunnerBasicMD)
     makeTprFile(2);
     auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
+    // Check our input validation.
     {
         auto           context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
         gmxapi::MDArgs args    = makeMdArgs();
-        // TODO the command line arguments should be set through the
-        // usual command line options settings for the tests
+        args.emplace_back("-s");
+        args.emplace_back("dummyfilename.tpr");
+        context->setMDArgs(args);
+        EXPECT_THROW(system.launch(context), gmxapi::UsageError);
+    }
+
+    {
+        auto           context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
+        gmxapi::MDArgs args    = makeMdArgs();
 
         context->setMDArgs(args);
         auto session = system.launch(context);
@@ -131,49 +143,103 @@ TEST_F(GmxApiTest, RunnerReinitialize)
 }
 
 /*!
- * \brief Test simulation continuation.
+ * \brief Test chained trajectory segments.
  *
- * Run a simulation, then extend the target number of steps and continue the simulation.
+ * Use the result of one simulation as the starting point for an exact continuation.
  */
-TEST_F(GmxApiTest, RunnerContinuedMD)
+TEST_F(GmxApiTest, RunnerChainedMD)
 {
-    // Run a simulation, then extend the target number of steps and continue the simulation
-    makeTprFile(10);
-    auto system = gmxapi::fromTprFile(runner_.tprFileName_);
+    const int segment1Steps     = 2;
+    const int segment2Steps     = 2;
+    const int segment2FinalStep = segment1Steps + segment2Steps;
+    makeTprFile(segment1Steps);
+
+    auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
 
     {
-        auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
+        auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
+        // In the absence of a SimulationResult or SimulationOutput abstraction, we have to use the
+        // input parameters to infer the outputs.
+        // Note: makeMdArgs may add checkpoint file options that we would want to read from.
+
+        EXPECT_TRUE(context != nullptr);
+        gmxapi::MDArgs args = makeMdArgs();
+        // makeMdArgs automatically sets output trajectory.
+        ASSERT_TRUE(std::any_of(
+                args.cbegin(), args.cend(), [](const std::string& arg) { return arg == "-x"; }));
+        ASSERT_TRUE(!runner_.reducedPrecisionTrajectoryFileName_.empty());
+
+        context->setMDArgs(args);
+        auto session = system.launch(context);
+        EXPECT_TRUE(session != nullptr);
+        gmxapi::Status status;
+        ASSERT_NO_THROW(status = session->run());
+        EXPECT_TRUE(status.success());
+        ASSERT_NO_THROW(status = session->close());
+        EXPECT_TRUE(status.success());
+    }
+
+    {
+        // Check that we ran the expected number of steps.
+        auto reader = gmx::test::TrajectoryFrameReader(runner_.fullPrecisionTrajectoryFileName_);
+        int  currentStep = 0;
+        while (currentStep < segment1Steps)
         {
-            EXPECT_TRUE(context != nullptr);
-            gmxapi::MDArgs args = makeMdArgs();
-
-            context->setMDArgs(args);
-            auto session = system.launch(context);
-            EXPECT_TRUE(session != nullptr);
-            gmxapi::Status status;
-            ASSERT_NO_THROW(status = session->run());
-            EXPECT_TRUE(status.success());
-            ASSERT_NO_THROW(status = session->close());
-            EXPECT_TRUE(status.success());
+            currentStep = reader.frame().step();
         }
+        EXPECT_FALSE(reader.readNextFrame());
+    }
 
-        // Reuse the context. Add MD parameters. Run a new session extending the previous trajectory.
+    // Run a new segment extending the previous trajectory.
+    {
+        // Re-use the name of the previous TPR file, simplifying
+        // clean-up of test files under the gmx::test::MdrunTestFixture scheme.
+        runner_.changeTprNsteps(segment2FinalStep);
+
+        auto system = gmxapi::fromTprFile(runner_.tprFileName_);
+
+        gmxapi::MDArgs args = makeMdArgs();
+
+        // Get the checkpoint file from the previous simulation.
+        ASSERT_TRUE(std::none_of(
+                args.cbegin(), args.cend(), [](const std::string& arg) { return arg == "-cpi"; }));
+        ASSERT_TRUE(!runner_.cptOutputFileName_.empty());
+        args.emplace_back("-cpi");
+        args.emplace_back(runner_.cptOutputFileName_);
+
+        // Provide distinct output.
+        args.emplace_back("-noappend");
+        // Need to override the value for `-x` set by makeMdArgs.
+        auto trajectory_arg = std::find(args.begin(), args.end(), "-x");
+        ASSERT_TRUE(trajectory_arg != args.cend());
+        ++trajectory_arg;
+        // As of this writing, the TestFileManager does not actually interact
+        // with the automatic GROMACS simulation file management, and output
+        // file names may not be exactly as specified by command line options.
+        // The suffix here works around these caveats for a particular structure
+        // of this test code, but the workaround is brittle.
+        *trajectory_arg = fileManager_.getTemporaryFilePath(".part0002.xtc");
+
+        context->setMDArgs(args);
+        auto session = system.launch(context);
+        EXPECT_TRUE(session != nullptr);
+        gmxapi::Status status;
+        ASSERT_NO_THROW(status = session->run());
+        EXPECT_TRUE(status.success());
+        ASSERT_NO_THROW(status = session->close());
+        EXPECT_TRUE(status.success());
+
+        // Check that the new trajectory has the expected steps.
+        auto reader      = gmx::test::TrajectoryFrameReader(*trajectory_arg);
+        int  currentStep = reader.frame().step();
+        EXPECT_GE(currentStep, segment1Steps);
+        while (currentStep < segment2FinalStep)
         {
-            gmxapi::MDArgs args = makeMdArgs();
-            // TODO This needs to be changed to make a new tpr with convert-tpr instead.
-            args.emplace_back("-nsteps");
-            args.emplace_back("20");
-
-            context->setMDArgs(args);
-            auto session = system.launch(context);
-            EXPECT_TRUE(session != nullptr);
-            gmxapi::Status status;
-            ASSERT_NO_THROW(status = session->run());
-            EXPECT_TRUE(status.success());
-            ASSERT_NO_THROW(status = session->close());
-            EXPECT_TRUE(status.success());
+            currentStep = reader.frame().step();
         }
+        EXPECT_EQ(currentStep, segment2FinalStep);
+        EXPECT_FALSE(reader.readNextFrame());
     }
 }
 
