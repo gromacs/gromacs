@@ -1579,7 +1579,8 @@ std::string getCoolQuote()
         { "If my PhD doesn't allow me to be right on the internet, what is it even good for?",
           "Martin Vögele" },
         { "A little less conversation, a little more action, please.", "Elvis Presley" },
-        { "Friends don't let friends use Berendsen!", "John Chodera (on Twitter)" }
+        { "Friends don't let friends use Berendsen!", "John Chodera (on Twitter)" },
+        { "The plural of regex is regrets", "Steve McCarthy (on Twitter)" }
     };
 
     if (beCool())
