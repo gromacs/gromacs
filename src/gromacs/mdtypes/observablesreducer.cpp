@@ -129,14 +129,21 @@ ObservablesReducer& ObservablesReducer::operator=(ObservablesReducer&& other) no
     return *this;
 }
 
-ArrayRef<double> ObservablesReducer::communicationBuffer()
+bool ObservablesReducer::isReductionRequired() const
 {
-    if (!impl_->reduceSoon_)
+    return impl_->reduceSoon_;
+}
+
+ArrayRef<double> ObservablesReducer::communicationBuffer(const bool reductionRequiredExternally)
+{
+    // If there's reduction to do, and some module here or externally
+    // required reduction, then return a view of the reduction buffer.
+    if (!impl_->callbacksAfterReduction_.empty() && (impl_->reduceSoon_ || reductionRequiredExternally))
     {
-        // Nothing to reduce
-        return {};
+        return impl_->communicationBuffer_;
     }
-    return impl_->communicationBuffer_;
+    // Nothing to reduce
+    return {};
 }
 
 void ObservablesReducer::reductionComplete(Step step)

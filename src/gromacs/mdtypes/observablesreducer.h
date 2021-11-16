@@ -399,14 +399,26 @@ public:
     //! Move assignment operator
     ObservablesReducer& operator=(ObservablesReducer&& other) noexcept;
 
+    /*! \brief Return whether any subscriber has required reduction soon.
+     */
+    bool isReductionRequired() const;
     /*! \brief Provide view of communication buffer for MPI reduction
      *
      * If no subscriber used ReductionRequirement::Soon since the last
      * call to reductionComplete(), then this method returns an empty
      * buffer. Otherwise it returns a view over the buffer potentially
      * filled by all subscribed modules.
+     *
+     * For so long as the ObservablesReducer continues to interact
+     * with the legacy compute_globals() code, the implementation of
+     * ReductionRequirement::Eventually needs to know whether any
+     * modules using compute_globals() have already requested a
+     * reduction. This value is passed as a parameter to this method.
+     *
+     * \param[in] reductionRequiredExternally Whether external code
+     *                                        has required a reduction
      */
-    ArrayRef<double> communicationBuffer();
+    ArrayRef<double> communicationBuffer(bool reductionRequiredExternally);
     /*! \brief Called by the runner after MPI communication is complete
      *
      * Notifies all subscribers who required reduction since the last

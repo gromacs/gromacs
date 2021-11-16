@@ -345,8 +345,7 @@ void compute_globals(gmx_global_stat*               gstat,
         calc_vcm_grp(*mdatoms, x, v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain
-        || !observablesReducer->communicationBuffer().empty())
+    if (bTemp || bStopCM || bPres || bEner || bConstrain || observablesReducer->isReductionRequired())
     {
         if (!bGStat)
         {

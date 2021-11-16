@@ -277,8 +277,14 @@ void global_stat(const gmx_global_stat&   gs,
         isig = add_binr(rb, sig);
     }
 
-    gmx::ArrayRef<double> observablesReducerBuffer = observablesReducer->communicationBuffer();
-    int                   tbinIndexForObservablesReducer = 0;
+    // When this point is reached, some other code has required a
+    // reduction, so the observablesReducer needs to be told that, so
+    // it can decide whether to add any
+    // ReductionRequirement::Eventually work.
+    const bool            reductionRequired = true;
+    gmx::ArrayRef<double> observablesReducerBuffer =
+            observablesReducer->communicationBuffer(reductionRequired);
+    int tbinIndexForObservablesReducer = 0;
     if (!observablesReducerBuffer.empty())
     {
         tbinIndexForObservablesReducer =
