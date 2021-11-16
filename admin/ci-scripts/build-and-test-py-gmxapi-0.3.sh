@@ -22,7 +22,7 @@ pushd python_packaging/src
   rm -rf build dist
   # Build and install the gmxapi Python package.
   # TODO(#3273): Reduce requirements for `setup.py` `sdist` command and provide build artifact.
-  CMAKE_ARGS="-Dgmxapi_ROOT=$INSTALL_DIR -C $INSTALL_DIR/share/cmake/gromacs/gromacs-hints.cmake" \
+  CMAKE_ARGS="-Dgmxapi_ROOT=$GROMACS_ROOT -C $GROMACS_ROOT/share/cmake/gromacs/gromacs-hints.cmake" \
       python -m pip install \
           --no-build-isolation \
           --no-cache-dir \

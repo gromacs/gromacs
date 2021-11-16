@@ -16,13 +16,13 @@ pushd python_packaging/src
   # Build and install gmxapi python package from local source.
   # Note that tool chain may be provided differently across GROMACS versions.
   if [ "2022" -eq "$GROMACS_MAJOR_VERSION" ]; then
-      GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
+      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
           python -m pip install \
               --no-cache-dir \
               .
   # TODO: Get sdist artifact for other gmxapi versions.
 #    elif [ "2021" -eq "$GROMACS_MAJOR_VERSION" ]; then
-#      GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
+#      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
 #          python -m pip install \
 #              --no-cache-dir \
 #              --no-deps \
@@ -34,14 +34,15 @@ pushd python_packaging/src
   fi
 popd
 
-. $INSTALL_DIR/bin/GMXRC
+. $GROMACS_ROOT/bin/GMXRC
 pushd python_packaging/sample_restraint
+  rm -rf build
   mkdir build
   pushd build
     # TODO: Update with respect to https://gitlab.com/gromacs/gromacs/-/issues/3133
     cmake .. \
+      -C $GROMACS_ROOT/share/cmake/gromacs/gromacs-hints.cmake \
       -DPYTHON_EXECUTABLE=`which python` \
-      -DDOWNLOAD_GOOGLETEST=ON \
       -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
     make -j4 tests
     make test

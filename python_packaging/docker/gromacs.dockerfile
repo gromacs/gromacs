@@ -14,7 +14,9 @@ ARG MPIFLAVOR=mpich
 ARG REF=latest
 FROM gmxapi/gromacs-dependencies-$MPIFLAVOR:$REF as build
 
-ENV SRC_DIR /tmp/gromacs-source
+# We let the sources stay in the intermediate `build` stage, since a little bloat here shouldn't
+#impact the size of the final containers unless we copy explicitly (see below)
+ENV SRC_DIR /gromacs-source
 COPY . $SRC_DIR
 
 ENV BUILD_DIR /tmp/gromacs-build
@@ -39,3 +41,6 @@ RUN make -j$DOCKER_CORES install
 FROM gmxapi/gromacs-dependencies-$MPIFLAVOR:$REF
 
 COPY --from=build /usr/local/gromacs /usr/local/gromacs
+# The following can be essential for troubleshooting, but we should suppress it for containers
+# that will be uploaded and shared.
+#COPY --from=build /gromacs-source /gromacs-source

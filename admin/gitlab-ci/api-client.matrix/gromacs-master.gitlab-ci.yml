@@ -30,7 +30,7 @@
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
-    - INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2022.sh
+    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2022.sh
   artifacts:
     reports:
       junit:

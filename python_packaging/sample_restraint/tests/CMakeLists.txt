@@ -1,38 +1,3 @@
-if(DOWNLOAD_GOOGLETEST)
-    # Download and unpack googletest at configure time. For simplicity, we pin to the same
-    # googletest ref as in
-    #    https://gitlab.com/gromacs/gromacs/-/blob/master/src/external/googletest/README.Gromacs
-    # Reference https://google.github.io/googletest/quickstart-cmake.html#set-up-a-project
-    include(FetchContent)
-    FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/96f4ce02a3a78d63981c67acbd368945d11d7d70.zip
-    )
-    # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
-
-    add_library(GTest::GTest ALIAS gtest)
-    add_library(GTest::Main ALIAS gtest_main)
-else()
-    if(GMXAPI_EXTENSION_MASTER_PROJECT)
-        find_package(GTest REQUIRED)
-    else() # building as part of a GROMACS build...
-        if(TARGET gtest)
-            add_library(GTest::GTest ALIAS gtest)
-            add_library(GTest::Main ALIAS gtest_main)
-        else()
-            find_package(GTest)
-        endif()
-        if(NOT TARGET GTest::GTest)
-            message(FATAL_ERROR "GTest::GTest target should have been supplied by the parent project.")
-        endif()
-        if(NOT TARGET GTest::Main)
-            message(FATAL_ERROR "GTest::Main target should have been supplied by the parent project.")
-        endif()
-    endif()
-endif() # DOWNLOAD_GOOGLETEST
-
 #
 # Set up our tests
 #

@@ -76,7 +76,10 @@ ADD scripts /docker_entry_points
 
 ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint
 
-# TODO: (#3027) Get googletest sources locally.
+# To test behavior as in GitLab CI, copy the googletest sources, export CI=1 to the cmake
+# configure command, and remove the option to download googletest.
+#COPY --from=gromacs /gromacs-source/src/external/googletest /home/testing/sample_restraint/external/googletest
+RUN cmake --version
 RUN . $VENV/bin/activate && \
     . /usr/local/gromacs/bin/GMXRC && \
     (cd $HOME/sample_restraint && \
