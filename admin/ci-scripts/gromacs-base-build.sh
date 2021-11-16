@@ -9,6 +9,7 @@ $CMAKE --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildL
 awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log \
       | grep -v "CMake" | tee buildErrors.log || true
 grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
+grep "fatal error" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
 
 # Find linking errors:
 grep "^/usr/bin/ld:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
