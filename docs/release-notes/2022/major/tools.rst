@@ -75,3 +75,12 @@ If the selection only matches some atoms in a molecule or atoms from multiple mo
 then the TNG file will contain a single molecule instance containing all those atoms.
 
 :issue:`2785`
+
+``gmx pdb2gmx`` no longer accepts charged glutamine (QLN) with the OPLS-AA forcefield
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A torsion angle definition was missing from the (non-standard) charged glutamine
+residue. Grompp would use the default torsion angle instead. To avoid silent errors
+the charged glutamine residue was removed from the OPLS-AA forcefield.
+
+:issue:`3054`

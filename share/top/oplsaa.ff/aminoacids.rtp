@@ -459,59 +459,6 @@
     CG   NE2    CD   OE1    improper_O_C_X_Y  
     CD  HE21   NE2  HE22    improper_Z_N_X_Y        
 
-; Charged Glutamine
-; See. Patriksson et al. Int. J. Mass. Spectrom. 248 pp 124-135 (2006)
-[ QLN ]
- [ atoms ]
-     N    opls_238   -0.500     0
-     H    opls_241    0.300     0
-    CA    opls_224B   0.140     1
-    HA    opls_140    0.060     1
-    CB    opls_136   -0.120     2
-   HB1    opls_140    0.060     2
-   HB2    opls_140    0.060     2
-    CG    opls_136    0.054     3
-   HG1    opls_140    0.131     3
-   HG2    opls_140    0.131     3
-    CD    opls_235    0.544     4
-   OE1    opls_154   -0.496     4
-   HE1    opls_155    0.498     4
-   NE2    opls_237   -0.720     5
-  HE21    opls_240    0.429     5
-  HE22    opls_240    0.429     5
-     C    opls_235    0.500     6
-     O    opls_236   -0.500     6
- [ bonds ]
-     N     H
-     N    CA
-    CA    HA
-    CA    CB
-    CA     C
-    CB   HB1
-    CB   HB2
-    CB    CG
-    CG   HG1
-    CG   HG2
-    CG    CD
-    CD   OE1
-   OE1   HE1
-    CD   NE2
-   NE2  HE21
-   NE2  HE22
-     C     O
-    -C     N
- [ dihedrals ] ; override some of the typebased dihedrals
-     N    CA    CB    CG    dih_GLN_chi1_N_C_C_C
-    CG    CB    CA     C    dih_GLN_chi1_C_C_C_CO
-    CB    CG    CD   NE2    dih_GLN_chi3_C_C_CO_N
-    CG    CD    OE1  HE1    dih_GLN_chi4_C_C_O_H
- [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y
-    CA    +N     C     O    improper_O_C_X_Y
-    CG   NE2    CD   OE1    improper_O_C_X_Y
-    CD  HE21   NE2  HE22    improper_Z_N_X_Y
-    HE1  OE1    CD   NE2    improper_O_C_X_Y
-
 
 [ GLU ]
  [ atoms ]
