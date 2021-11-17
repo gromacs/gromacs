@@ -47,6 +47,9 @@
 
 #include <cstring>
 
+#include <string>
+#include <tuple>
+
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -129,7 +132,6 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
  * version. */
 const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.tng", "spc2-traj.xtc",
                                             "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96" };
-
 //! Help GoogleTest name our test cases
 std::string nameOfTrjconvWithDifferentInputFormatsTest(const testing::TestParamInfo<const char*>& info)
 {
@@ -152,6 +154,65 @@ INSTANTIATE_TEST_SUITE_P(Works,
                          ::testing::ValuesIn(trajectoryFileNames),
                          nameOfTrjconvWithDifferentInputFormatsTest);
 
+using DumpTestParameters = std::tuple<const char*, double>;
+
+class TrjconvDumpTest :
+    public gmx::test::CommandLineTestBase,
+    public ::testing::WithParamInterface<DumpTestParameters>
+{
+};
+
+TEST_P(TrjconvDumpTest, DumpsFrame)
+{
+    auto& cmdline = commandLine();
+
+    setInputFile("-f", std::get<0>(GetParam()));
+    const real dumpTime = std::get<1>(GetParam());
+    cmdline.addOption("-dump", std::to_string(dumpTime));
+    std::string outputFile = setOutputFile("-o", "dumped-frame.trr", gmx::test::NoTextMatch());
+
+    ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+
+    // This relies on the input trajectories having frames with times
+    // including 0 and 1, so that we test the logic meaningfully.
+    real                  expectedFrameTime = (dumpTime < 0.5) ? 0 : 1;
+    TrajectoryFrameReader reader(outputFile);
+    int                   frameIndex = 0;
+    while (reader.readNextFrame())
+    {
+        TrajectoryFrame frame = reader.frame();
+        EXPECT_EQ(frame.time(), expectedFrameTime) << "Dumped frame has expected time";
+        frameIndex++;
+    }
+    EXPECT_EQ(frameIndex, 1) << "A single frame should be dumped";
+}
+
+//! Help GoogleTest name our test cases
+std::string nameOfTrjconvDumpTest(const testing::TestParamInfo<DumpTestParameters>& info)
+{
+    std::string testName = formatString(
+            "file_%s_"
+            "dump_time_%.2f",
+            std::get<0>(info.param),
+            std::get<1>(info.param));
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "_");
+    testName = replaceAll(testName, ".", "_");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+INSTANTIATE_TEST_SUITE_P(Works,
+                         TrjconvDumpTest,
+                         ::testing::Combine(::testing::ValuesIn(trajectoryFileNames),
+                                            ::testing::Values(-1, 0, 0.3, 1, 999999)),
+                         nameOfTrjconvDumpTest);
 } // namespace
 } // namespace test
 } // namespace gmx

@@ -64,6 +64,17 @@ executable path (e.g. ``setenv DSSP /opt/dssp/mkdssp``)
 
 :issue:`4129`
 
+``gmx trjconv -dump`` now works reliably
+""""""""""""""""""""""""""""""""""""""""
+
+The frame nearest the dump time is now always written, even if the
+time is before or after the range present in the trajectory file. To
+get the last frame of a trajectory file whose frames are in temporal
+order, you can request the dump of any time larger than the time of
+any frame in the trajectory, like ``gmx trjconv -dump 9999999``.
+
+:issue:`2873`
+
 ``gmx trjconv`` handles selections in TNG files better
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
