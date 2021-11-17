@@ -2524,12 +2524,12 @@ bool constrain_lincs(bool                            computeRmsd,
                     lincsd->rmsdReductionBuffer[1] = deviations.sumSquaredDeviation;
 
                     // Call the ObservablesReducer via the callback it
-                    // gave us for the purpose.
-                    ObservablesReducerStatus status =
-                            lincsd->callbackToRequireReduction.value()(ReductionRequirement::Soon);
-                    GMX_RELEASE_ASSERT(status == ObservablesReducerStatus::ReadyToReduce,
-                                       "The LINCS RMSD is computed after observables have been "
-                                       "reduced, please reorder them.");
+                    // gave us for the purpose. Currently we ignore
+                    // the return value because there are too many
+                    // possible calls to compute_globals within an MD
+                    // step and they all share the same
+                    // ObservablesReducer.
+                    lincsd->callbackToRequireReduction.value()(ReductionRequirement::Soon);
                 }
                 else
                 {
