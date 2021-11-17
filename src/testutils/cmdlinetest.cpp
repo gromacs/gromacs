@@ -38,6 +38,7 @@
  * Implements classes from cmdlinetest.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
 #include "gmxpre.h"
@@ -245,16 +246,43 @@ std::string CommandLine::toString() const
     return CommandLineProgramContext(argc(), argv()).commandLine();
 }
 
-bool CommandLine::contains(const char* name) const
+namespace
 {
-    for (int i = 0; i < impl_->argc_; ++i)
+
+//! Function object that returns whether the view matches the C-style string
+struct ViewMatchesCString
+{
+    const std::string_view view_;
+    explicit ViewMatchesCString(const std::string_view view) : view_(view) {}
+
+    //! The operation
+    bool operator()(const char* cString)
     {
-        if (std::strcmp(arg(i), name) == 0)
+        if (cString == nullptr)
         {
-            return true;
+            return view_.empty();
         }
+        return view_.compare(cString) == 0;
     }
-    return false;
+};
+
+} // namespace
+
+bool CommandLine::contains(const std::string_view name) const
+{
+    return std::find_if(impl_->argv_.begin(), impl_->argv_.end(), ViewMatchesCString(name))
+           != impl_->argv_.end();
+}
+
+std::optional<std::string_view> CommandLine::argumentOf(const std::string_view name) const
+{
+    auto foundIt = std::find_if(impl_->argv_.begin(), impl_->argv_.end(), ViewMatchesCString(name));
+    if (foundIt == impl_->argv_.end())
+    {
+        // The named option was not found
+        return std::nullopt;
+    }
+    return std::make_optional<std::string_view>(*++foundIt);
 }
 
 /********************************************************************

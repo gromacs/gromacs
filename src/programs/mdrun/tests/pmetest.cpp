@@ -65,6 +65,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -117,6 +118,9 @@ public:
     static void SetUpTestSuite();
     //! Cleans up the tpr files
     static void TearDownTestSuite();
+    /*! \brief If the mdrun command line can't run on this build or
+     * hardware, we should mark it as skipped and describe why. */
+    static MessageStringCollector getSkipMessagesIfNecessary(const CommandLine& commandLine);
     //! Convenience typedef
     using RunModesList = std::map<std::string, std::vector<const char*>>;
     //! Runs the test with the given inputs
@@ -192,6 +196,50 @@ void PmeTest::TearDownTestSuite()
     }
 }
 
+MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& commandLine)
+{
+    // Note that we can't call GTEST_SKIP() from within this method,
+    // because it only returns from the current function. So we
+    // collect all the reasons why the test cannot run, return them
+    // and skip in a higher stack frame.
+
+    MessageStringCollector messages;
+    messages.startContext("Test is being skipped because:");
+
+    const int numRanks = getNumberOfTestMpiRanks();
+
+    // -npme was already required
+    std::string npmeOptionArgument(commandLine.argumentOf("-npme").value());
+    const bool  commandLineTargetsPmeOnlyRanks = (std::stoi(npmeOptionArgument) > 0);
+    messages.appendIf(commandLineTargetsPmeOnlyRanks && numRanks == 1,
+                      "it targets using PME rank(s) but the simulation is using only one rank");
+
+    // -pme was already required
+    std::string pmeOptionArgument(commandLine.argumentOf("-pme").value());
+    const bool  commandLineTargetsPmeOnGpu = (pmeOptionArgument == "gpu");
+    if (commandLineTargetsPmeOnGpu)
+    {
+        messages.appendIf(getCompatibleDevices(s_hwinfo->deviceInfoList).empty(),
+                          "it targets GPU execution, but no compatible devices were detected");
+        messages.appendIf(!commandLineTargetsPmeOnlyRanks && numRanks > 1,
+                          "it targets PME decomposition, but that is not supported");
+
+        std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
+        const bool                      commandLineTargetsPmeFftOnGpu =
+                !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && GMX_GPU_SYCL, // Issues #4219, #4274
+                          "it targets GPU execution of FFT work, which is not supported with DPC++ "
+                          "or hipSYCL");
+
+        std::string errorMessage;
+        messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
+        messages.appendIf(!pme_gpu_supports_hardware(*s_hwinfo, &errorMessage), errorMessage);
+        // A check on whether the .tpr is supported for PME on GPUs is
+        // not needed, because it is supported by design.
+    }
+    return messages;
+}
+
 void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestFlavor)
 {
     const std::string inputFile = "spc-and-methanol";
@@ -213,37 +261,9 @@ void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestF
         EXPECT_NONFATAL_FAILURE(rootChecker.checkUnusedEntries(), ""); // skip checks on other ranks
     }
 
-    auto hardwareInfo_ =
-            gmx_detect_hardware(PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash()));
-
     for (const auto& mode : runModes)
     {
         SCOPED_TRACE("mdrun " + joinStrings(mode.second, " "));
-        auto modeTargetsGpus = (mode.first.find("Gpu") != std::string::npos);
-        if (modeTargetsGpus && getCompatibleDevices(hardwareInfo_->deviceInfoList).empty())
-        {
-            // This run mode will cause a fatal error from mdrun when
-            // it can't find GPUs, which is not something we're trying
-            // to test here.
-            continue;
-        }
-        auto modeTargetsPmeOnGpus = (mode.first.find("PmeOnGpu") != std::string::npos);
-        if (modeTargetsPmeOnGpus
-            && !(pme_gpu_supports_build(nullptr) && pme_gpu_supports_hardware(*hardwareInfo_, nullptr)))
-        {
-            // This run mode will cause a fatal error from mdrun when
-            // it finds an unsuitable device, which is not something
-            // we're trying to test here.
-            continue;
-        }
-
-        auto modeTargetsFftOnGpus = (mode.first.find("FftOnGpu") != std::string::npos);
-        if (modeTargetsFftOnGpus && GMX_GPU_SYCL) // Issues #4219, #4274
-        {
-            // Currently, we only support PME Mixed mode with DPC++ (#4219) and hipSYCL (#4274).
-            continue;
-        }
-
         runner_.edrFileName_ =
                 fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
 
@@ -262,6 +282,23 @@ void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestF
         if (useSeparatePme)
         {
             commandLine.addOption("-npme", 1);
+        }
+        else
+        {
+            commandLine.addOption("-npme", 0);
+        }
+
+        ASSERT_TRUE(commandLine.argumentOf("-npme").has_value())
+                << "-npme argument is required for this test";
+        ASSERT_TRUE(commandLine.argumentOf("-pme").has_value())
+                << "-pme argument is required for this test";
+        MessageStringCollector skipMessages = getSkipMessagesIfNecessary(commandLine);
+        if (!skipMessages.isEmpty())
+        {
+            // For now, just write these to stdout. Later, we can use
+            // GTEST_SKIP().
+            fputs(skipMessages.toString().c_str(), stdout);
+            continue;
         }
 
         ASSERT_EQ(0, runner_.callMdrun(commandLine));

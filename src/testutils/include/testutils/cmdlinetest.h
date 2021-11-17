@@ -38,6 +38,7 @@
  * Declares utilities testing command-line programs.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */
@@ -46,6 +47,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -188,7 +190,10 @@ public:
     std::string toString() const;
 
     //! Whether the command line contains the given option.
-    bool contains(const char* name) const;
+    bool contains(std::string_view name) const;
+
+    //! The value of the argument following the given option, if found
+    std::optional<std::string_view> argumentOf(std::string_view name) const;
 
 private:
     class Impl;
