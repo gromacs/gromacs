@@ -75,21 +75,18 @@ using CommandLineOptionParams =
  *
  * \todo It would be preferable to just scrub the content that actually
  * varies, but we don't use enough regular expression support for that
- * yet.
- *
- * Note that the "\n" are needed so these regular expressions match
- * Windows line endings. */
-std::vector<std::string> c_regexStringsToSkip = { "^;[[:blank:]] *File '.*' was generated.*\n",
-                                                  "^;[[:blank:]]*By user:.*\n",
-                                                  "^;[[:blank:]]*On host:.*\n",
-                                                  "^;[[:blank:]]*At date:.*\n",
-                                                  "^;[[:blank:]]*:-\\).*\\(-:.*\n",
-                                                  "^;[[:blank:]]*Executable:.*\n",
-                                                  "^;[[:blank:]]*Data prefix:.*\n",
-                                                  "^;[[:blank:]]*Working dir:.*\n",
-                                                  "^;[[:blank:]]*pdb2gmx.*-test.*\n" };
+ * yet. */
+std::vector<std::string> c_regexStringsToSkip = { "^;[[:blank:]] *File '.*' was generated.*",
+                                                  "^;[[:blank:]]*By user:.*",
+                                                  "^;[[:blank:]]*On host:.*",
+                                                  "^;[[:blank:]]*At date:.*",
+                                                  "^;[[:blank:]]*:-\\).*\\(-:.*",
+                                                  "^;[[:blank:]]*Executable:.*",
+                                                  "^;[[:blank:]]*Data prefix:.*",
+                                                  "^;[[:blank:]]*Working dir:.*",
+                                                  "^;[[:blank:]]*pdb2gmx.*-test.*" };
 //! Compiled regular expressions for lines to skip when matching.
-FilteringExactTextMatch c_textMatcher(c_regexStringsToSkip);
+FilteringExactTextMatch c_textMatcher(c_regexStringsToSkip, false, true);
 
 class Pdb2gmxTest : public test::CommandLineTestBase, public ::testing::WithParamInterface<CommandLineOptionParams>
 {

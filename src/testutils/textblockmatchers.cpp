@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,10 @@ public:
 class FilteringExactTextMatcher : public ITextBlockMatcher
 {
 public:
-    FilteringExactTextMatcher(const std::vector<std::string>& linesToSkip)
+    FilteringExactTextMatcher(const std::vector<std::string>& linesToSkip,
+                              const bool                      trimLeadingWhiteSpace,
+                              const bool                      trimTrailingWhiteSpace) :
+        trimLeadingWhiteSpace_(trimLeadingWhiteSpace), trimTrailingWhiteSpace_(trimTrailingWhiteSpace)
     {
         // Prepare the regular expressions to filter out of the stream.
         for (const auto& lineToSkip : linesToSkip)
@@ -93,6 +96,8 @@ public:
         StringOutputStream filteredStream;
         {
             TextReader reader(stream);
+            reader.setTrimLeadingWhiteSpace(trimLeadingWhiteSpace_);
+            reader.setTrimTrailingWhiteSpace(trimTrailingWhiteSpace_);
             TextWriter writer(&filteredStream);
 
             // Filter the stream
@@ -120,6 +125,8 @@ public:
     }
 
     std::vector<std::regex> regexesToSkip_;
+    const bool              trimLeadingWhiteSpace_;
+    const bool              trimTrailingWhiteSpace_;
 };
 
 } // namespace
@@ -138,8 +145,12 @@ TextBlockMatcherPointer NoTextMatch::createMatcher() const
     return TextBlockMatcherPointer(std::make_unique<NoTextMatcher>());
 }
 
-FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip) :
-    linesToSkip_(std::move(linesToSkip))
+FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip,
+                                                 const bool               trimLeadingWhiteSpace,
+                                                 const bool               trimTrailingWhiteSpace) :
+    linesToSkip_(std::move(linesToSkip)),
+    trimLeadingWhiteSpace_(trimLeadingWhiteSpace),
+    trimTrailingWhiteSpace_(trimTrailingWhiteSpace)
 {
 }
 
@@ -150,7 +161,8 @@ void FilteringExactTextMatch::addRegexToSkip(const std::string& lineToSkip)
 
 TextBlockMatcherPointer FilteringExactTextMatch::createMatcher() const
 {
-    return TextBlockMatcherPointer(std::make_unique<FilteringExactTextMatcher>(linesToSkip_));
+    return TextBlockMatcherPointer(std::make_unique<FilteringExactTextMatcher>(
+            linesToSkip_, trimLeadingWhiteSpace_, trimTrailingWhiteSpace_));
 }
 
 } // namespace test

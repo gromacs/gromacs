@@ -73,7 +73,7 @@ public:
         // data, whose standard deviations are computed in a way that
         // is sensitive to the build configuration.
         std::vector<std::string> logLinesToSkip{ "^[A-Z]{3,4}[0-9]+.*" };
-        setOutputFile("-g", "chi.log", FilteringExactTextMatch(logLinesToSkip));
+        setOutputFile("-g", "chi.log", FilteringExactTextMatch(logLinesToSkip, false, true));
 
         setOutputFile("-o", "order.xvg", XvgMatch());
         setOutputFile("-jc", "Jcoupling.xvg", XvgMatch());

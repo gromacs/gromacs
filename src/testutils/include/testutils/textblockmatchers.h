@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,6 +152,11 @@ public:
  * stamps. The latter won't be reproducible in tests until
  * the tools that emit them can be mocked suitably.
  *
+ * Constructor arguments are available to signal whether the text that
+ * is read in should have leading or trailing white space
+ * removed. This can be particularly useful when the regex needs
+ * to work on multiple OS, such as in CI testing.
+ *
  * \inlibraryapi
  * \ingroup module_testutils
  */
@@ -159,7 +164,9 @@ class FilteringExactTextMatch : public ITextBlockMatcherSettings
 {
 public:
     //! Constructor
-    explicit FilteringExactTextMatch(std::vector<std::string> linesToSkip);
+    explicit FilteringExactTextMatch(std::vector<std::string> linesToSkip,
+                                     bool                     trimLeadingWhiteSpace,
+                                     bool                     trimTrailingWhiteSpace);
     //! Factory method.
     TextBlockMatcherPointer createMatcher() const override;
     //! Add a regular expression for which a matching line should be skipped.
@@ -168,6 +175,10 @@ public:
 private:
     //! The regular expressions for lines that should be skipped.
     std::vector<std::string> linesToSkip_;
+    //! Whether the text being matched should have leading white space trimmed
+    const bool trimLeadingWhiteSpace_;
+    //! Whether the text being matched should have trailing white space trimmed
+    const bool trimTrailingWhiteSpace_;
 };
 
 } // namespace test
