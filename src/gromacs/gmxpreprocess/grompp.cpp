@@ -774,9 +774,8 @@ static void new_status(const char*                           topfile,
             mass[i]             = local.m;
         }
 
-        if (opts->seed == -1)
+        if (opts->bMadeSeed)
         {
-            opts->seed = static_cast<int>(gmx::makeRandomSeed());
             GMX_LOG(logger.info).asParagraph().appendTextFormatted("Setting gen_seed to %d", opts->seed);
         }
         state->flags |= enumValueToBitMask(StateEntry::V);

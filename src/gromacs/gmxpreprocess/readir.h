@@ -95,6 +95,7 @@ struct t_gromppopts
     bool               bGenVel   = false;
     bool               bGenPairs = false;
     real               tempi     = 0;
+    bool               bMadeSeed = false;
     int                seed      = 0;
     gmx::GromppMtsOpts mtsOpts;
     bool               bOrire           = false;

@@ -98,7 +98,8 @@ public:
      * which will make these tests run faster, because they don't
      * use disk files. */
     void runTest(const std::string& inputMdpFileContents,
-                 const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput)
+                 const TestBehavior testBehavior = TestBehavior::NoErrorAndCompareOutput,
+                 const bool         setGenVelSeedToKnownValue = true)
     {
         const bool expectError = testBehavior == TestBehavior::ErrorAndCompareOutput
                                  || testBehavior == TestBehavior::ErrorAndDoNotCompareOutput;
@@ -111,7 +112,15 @@ public:
         {
             outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp");
         }
-        TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
+        if (setGenVelSeedToKnownValue)
+        {
+            TextWriter::writeFileFromString(inputMdpFilename,
+                                            inputMdpFileContents + "\n gen-seed = 256\n");
+        }
+        else
+        {
+            TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
+        }
 
         get_ir(inputMdpFilename.c_str(),
                outputMdpFilename.empty() ? nullptr : outputMdpFilename.c_str(),

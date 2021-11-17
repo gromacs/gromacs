@@ -69,6 +69,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
@@ -2204,6 +2205,12 @@ void get_ir(const char*     mdparin,
     opts->tempi   = get_ereal(&inp, "gen-temp", 300.0, wi);
     opts->seed    = get_eint(&inp, "gen-seed", -1, wi);
 
+    if (opts->seed == -1)
+    {
+        opts->seed      = static_cast<int>(gmx::makeRandomSeed());
+        opts->bMadeSeed = true;
+    }
+
     /* Shake stuff */
     printStringNewline(&inp, "OPTIONS FOR BONDS");
     opts->nshake = get_eeenum(&inp, "constraints", constraints, wi);
@@ -2538,6 +2545,14 @@ void get_ir(const char*     mdparin,
     if (mdparout)
     {
         gmx::TextOutputFile stream(mdparout);
+
+        // Set gen-seed line to actual value instead of -1
+        if (opts->bMadeSeed)
+        {
+            int ii         = search_einp(inp, "gen-seed");
+            inp[ii].value_ = std::to_string(opts->seed);
+        }
+
         write_inpfile(&stream, mdparout, &inp, FALSE, writeMdpHeader, wi);
 
         // Transform module data into a flat key-value tree for output.
