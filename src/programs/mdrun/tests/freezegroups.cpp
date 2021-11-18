@@ -73,10 +73,11 @@ class FreezeGroupTest : public MdrunTestFixture, public ::testing::WithParamInte
 {
 public:
     //! Check that the frozen positions don't change and velocities are zero
-    static void checkFreezeGroups(const std::string&           trajectoryName,
-                                  ArrayRef<const unsigned int> fullyFrozenAtoms,
-                                  ArrayRef<const unsigned int> partiallyFrozenAtomsDimZ,
-                                  const TrajectoryTolerances&  tolerances)
+    static void checkFreezeGroups(const std::string&            trajectoryName,
+                                  ArrayRef<const unsigned int>  fullyFrozenAtoms,
+                                  ArrayRef<const unsigned int>  partiallyFrozenAtomsDimZ,
+                                  const FloatingPointTolerance& positionsTolerance,
+                                  const FloatingPointTolerance& velocitiesTolerance)
     {
         auto [fullyFrozenPositions, fullyFrozenVelocities] =
                 getFrozenPositionsAndVelocities(trajectoryName, fullyFrozenAtoms);
@@ -95,28 +96,29 @@ public:
             SCOPED_TRACE(formatString("Checking frame %lu", frameIdx + 1));
             if (frameIdx > 0)
             {
-                checkFullyFrozenPositions(
-                        fullyFrozenPositions[frameIdx], fullyFrozenPositions[frameIdx - 1], tolerances);
+                checkFullyFrozenPositions(fullyFrozenPositions[frameIdx],
+                                          fullyFrozenPositions[frameIdx - 1],
+                                          positionsTolerance);
                 checkZDimFrozenPositions(partiallyFrozenPositions[frameIdx],
                                          partiallyFrozenPositions[frameIdx - 1],
-                                         tolerances);
+                                         positionsTolerance);
             }
-            checkFullyFrozenVelocities(fullyFrozenVelocities[frameIdx], tolerances);
-            checkZDimFrozenVelocities(partiallyFrozenVelocities[frameIdx], tolerances);
+            checkFullyFrozenVelocities(fullyFrozenVelocities[frameIdx], velocitiesTolerance);
+            checkZDimFrozenVelocities(partiallyFrozenVelocities[frameIdx], velocitiesTolerance);
         }
     }
 
     //! Check that fully frozen frame velocities are zero
-    static void checkFullyFrozenVelocities(ArrayRef<const RVec>        velocities,
-                                           const TrajectoryTolerances& tolerances)
+    static void checkFullyFrozenVelocities(ArrayRef<const RVec>          velocities,
+                                           const FloatingPointTolerance& velocitiesTolerance)
     {
         SCOPED_TRACE("Checking fully frozen velocity frame");
         std::vector<RVec> zeroVelocities(velocities.size(), RVec{ 0, 0, 0 });
-        EXPECT_THAT(zeroVelocities, Pointwise(RVecEq(tolerances.velocities), velocities));
+        EXPECT_THAT(zeroVelocities, Pointwise(RVecEq(velocitiesTolerance), velocities));
     }
     //! Check that z-dimension frozen frame velocities are zero
-    static void checkZDimFrozenVelocities(ArrayRef<const RVec>        velocities,
-                                          const TrajectoryTolerances& tolerances)
+    static void checkZDimFrozenVelocities(ArrayRef<const RVec>          velocities,
+                                          const FloatingPointTolerance& velocitiesTolerance)
     {
         SCOPED_TRACE("Checking z-dimension frozen velocity frame");
         std::vector<real> zVelocities;
@@ -125,20 +127,20 @@ public:
             zVelocities.emplace_back(v[ZZ]);
         }
         std::vector<real> zeroVelocities(zVelocities.size(), 0);
-        EXPECT_THAT(zeroVelocities, Pointwise(RealEq(tolerances.velocities), zVelocities));
+        EXPECT_THAT(zeroVelocities, Pointwise(RealEq(velocitiesTolerance), zVelocities));
     }
     //! Check that fully frozen frame positions are static
-    static void checkFullyFrozenPositions(ArrayRef<const RVec>        positions,
-                                          ArrayRef<const RVec>        previousPositions,
-                                          const TrajectoryTolerances& tolerances)
+    static void checkFullyFrozenPositions(ArrayRef<const RVec>          positions,
+                                          ArrayRef<const RVec>          previousPositions,
+                                          const FloatingPointTolerance& positionsTolerance)
     {
         SCOPED_TRACE("Checking fully frozen position frame");
-        EXPECT_THAT(previousPositions, Pointwise(RVecEq(tolerances.coordinates), positions));
+        EXPECT_THAT(previousPositions, Pointwise(RVecEq(positionsTolerance), positions));
     }
     //! Check that z-dimension frozen frame positions are zero
-    static void checkZDimFrozenPositions(ArrayRef<const RVec>        positions,
-                                         ArrayRef<const RVec>        previousPositions,
-                                         const TrajectoryTolerances& tolerances)
+    static void checkZDimFrozenPositions(ArrayRef<const RVec>          positions,
+                                         ArrayRef<const RVec>          previousPositions,
+                                         const FloatingPointTolerance& positionsTolerance)
     {
         SCOPED_TRACE("Checking z-dimension frozen position frame");
         std::vector<real> zPositions;
@@ -151,7 +153,7 @@ public:
         {
             zPrevPositions.emplace_back(p[ZZ]);
         }
-        EXPECT_THAT(zPrevPositions, Pointwise(RealEq(tolerances.coordinates), zPositions));
+        EXPECT_THAT(zPrevPositions, Pointwise(RealEq(positionsTolerance), zPositions));
     }
 
     static std::tuple<std::vector<std::vector<RVec>>, std::vector<std::vector<RVec>>>
@@ -185,14 +187,12 @@ TEST_P(FreezeGroupTest, WithinTolerances)
     const auto& pcoupling      = std::get<2>(params);
     const auto& simulationName = "alanine_vacuo";
 
-    constexpr std::array<unsigned int, 5>  backbone   = { 4, 6, 8, 14, 16 };
-    constexpr std::array<unsigned int, 13> sideChainH = { 0,  1,  2,  3,  9,  10, 11,
-                                                          12, 13, 18, 19, 20, 21 };
+    constexpr std::array<unsigned int, 5> backbone   = { 4, 6, 8, 14, 16 };
+    constexpr std::array<unsigned int, 3> sideChainH = { 0, 10, 18 };
 
     if (integrator == "md-vv" && pcoupling == "parrinello-rahman")
     {
-        // Parrinello-Rahman is not implemented in md-vv
-        return;
+        GTEST_SKIP() << "Parrinello-Rahman is not implemented in md-vv.";
     }
 
     // Prepare mdp input
@@ -200,9 +200,9 @@ TEST_P(FreezeGroupTest, WithinTolerances)
     mdpFieldValues["nsteps"]      = "8";
     mdpFieldValues["nstxout"]     = "4";
     mdpFieldValues["nstvout"]     = "4";
-    mdpFieldValues["freezegrps"]  = "Backbone SideChain";
+    mdpFieldValues["freezegrps"]  = "Backbone SideChain-H";
     mdpFieldValues["freezedim"]   = "Y Y Y N N Y";
-    mdpFieldValues["constraints"] = "all-bonds";
+    mdpFieldValues["constraints"] = "h-bonds";
 
     // Run grompp
     runner_.useTopGroAndNdxFromDatabase(simulationName);
@@ -213,16 +213,17 @@ TEST_P(FreezeGroupTest, WithinTolerances)
     runMdrun(&runner_);
 
     // Check frozen atoms
-    checkFreezeGroups(runner_.fullPrecisionTrajectoryFileName_,
-                      backbone,
-                      sideChainH,
-                      TrajectoryComparison::s_defaultTrajectoryTolerances);
+    FloatingPointTolerance positionsTolerance  = ulpTolerance(0);
+    FloatingPointTolerance velocitiesTolerance = ulpTolerance(0);
+    checkFreezeGroups(
+            runner_.fullPrecisionTrajectoryFileName_, backbone, sideChainH, positionsTolerance, velocitiesTolerance);
 }
 
-INSTANTIATE_TEST_SUITE_P(FreezeWorks,
-                         FreezeGroupTest,
-                         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
-                                            ::testing::Values("no"),
-                                            ::testing::Values("no")));
+INSTANTIATE_TEST_SUITE_P(
+        FreezeWorks,
+        FreezeGroupTest,
+        ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
+                           ::testing::Values("no"),
+                           ::testing::Values("no", "berendsen", "parrinello-rahman")));
 } // namespace
 } // namespace gmx::test
