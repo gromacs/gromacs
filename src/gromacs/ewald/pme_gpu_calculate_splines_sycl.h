@@ -165,7 +165,7 @@ static inline bool pmeGpuCheckAtomCharge(const float charge)
  */
 template<typename T, int atomsPerWorkGroup, int dataCountPerAtom>
 static inline void pmeGpuStageAtomData(cl::sycl::local_ptr<T>        sm_destination,
-                                       const cl::sycl::global_ptr<T> gm_source,
+                                       cl::sycl::global_ptr<const T> gm_source,
                                        cl::sycl::nd_item<3>          itemIdx)
 {
     const int blockIndex      = itemIdx.get_group_linear_id();
@@ -231,8 +231,8 @@ static inline void calculateSplines(const int                         atomIndexO
                                     cl::sycl::global_ptr<float>       gm_theta,
                                     cl::sycl::global_ptr<float>       gm_dtheta,
                                     cl::sycl::global_ptr<int>         gm_gridlineIndices,
-                                    const cl::sycl::global_ptr<float> gm_fractShiftsTable,
-                                    const cl::sycl::global_ptr<int>   gm_gridlineIndicesTable,
+                                    cl::sycl::global_ptr<const float> gm_fractShiftsTable,
+                                    cl::sycl::global_ptr<const int>   gm_gridlineIndicesTable,
                                     cl::sycl::local_ptr<float>        sm_theta,
                                     cl::sycl::local_ptr<float>        sm_dtheta,
                                     cl::sycl::local_ptr<int>          sm_gridlineIndices,

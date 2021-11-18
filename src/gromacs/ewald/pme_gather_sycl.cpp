@@ -148,24 +148,24 @@ inline void reduceAtomForces(cl::sycl::nd_item<3>        itemIdx,
  * \param[in] gm_grid             Global memory array of the grid to use.
  */
 template<int order, int atomsPerWarp, bool wrapX, bool wrapY>
-inline void sumForceComponents(cl::sycl::private_ptr<float>      fx,
-                               cl::sycl::private_ptr<float>      fy,
-                               cl::sycl::private_ptr<float>      fz,
-                               const int                         ithyMin,
-                               const int                         ithyMax,
-                               const int                         ixBase,
-                               const int                         iz,
-                               const int                         nx,
-                               const int                         ny,
-                               const int                         pny,
-                               const int                         pnz,
-                               const int                         atomIndexLocal,
-                               const int                         splineIndexBase,
-                               const cl::sycl::float2            tdz,
-                               const cl::sycl::local_ptr<int>    sm_gridlineIndices,
-                               const cl::sycl::local_ptr<float>  sm_theta,
-                               const cl::sycl::local_ptr<float>  sm_dtheta,
-                               const cl::sycl::global_ptr<float> gm_grid)
+inline void sumForceComponents(cl::sycl::private_ptr<float>            fx,
+                               cl::sycl::private_ptr<float>            fy,
+                               cl::sycl::private_ptr<float>            fz,
+                               const int                               ithyMin,
+                               const int                               ithyMax,
+                               const int                               ixBase,
+                               const int                               iz,
+                               const int                               nx,
+                               const int                               ny,
+                               const int                               pny,
+                               const int                               pnz,
+                               const int                               atomIndexLocal,
+                               const int                               splineIndexBase,
+                               const cl::sycl::float2                  tdz,
+                               const cl::sycl::local_ptr<int>          sm_gridlineIndices,
+                               const cl::sycl::local_ptr<float>        sm_theta,
+                               const cl::sycl::local_ptr<float>        sm_dtheta,
+                               const cl::sycl::global_ptr<const float> gm_grid)
 {
     for (int ithy = ithyMin; ithy < ithyMax; ithy++)
     {
@@ -224,7 +224,7 @@ inline void calculateAndStoreGridForces(cl::sycl::local_ptr<Float3>       sm_for
                                         const Float3&                     recipBox1,
                                         const Float3&                     recipBox2,
                                         const float                       scale,
-                                        const cl::sycl::global_ptr<float> gm_coefficients)
+                                        cl::sycl::global_ptr<const float> gm_coefficients)
 {
     const Float3 atomForces     = sm_forces[forceIndexLocal];
     float        negCoefficient = -scale * gm_coefficients[forceIndexGlobal];

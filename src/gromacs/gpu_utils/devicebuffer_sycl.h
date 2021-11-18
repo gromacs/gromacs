@@ -55,16 +55,32 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits_sycl.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #ifndef DOXYGEN
+
+#    if !GMX_SYCL_USE_USM
 template<typename T>
 class DeviceBuffer<T>::ClSyclBufferWrapper : public cl::sycl::buffer<T, 1>
 {
     using cl::sycl::buffer<T, 1>::buffer; // Get all the constructors
 };
+#    else
+template<typename T>
+class DeviceBuffer<T>::ClSyclBufferWrapper
+{
+public:
+    T*                ptr_;
+    cl::sycl::context context_;
+    ClSyclBufferWrapper(T* ptr, cl::sycl::context context) : ptr_(ptr), context_(std::move(context))
+    {
+    }
+    operator T*() { return ptr_; }
+};
+#    endif
 
 template<typename T>
 using ClSyclBufferWrapper = typename DeviceBuffer<T>::ClSyclBufferWrapper;
@@ -85,7 +101,7 @@ DeviceBuffer<T>::DeviceBuffer(std::nullptr_t nullPtr) : buffer_(nullPtr)
 template<typename T>
 DeviceBuffer<T>::~DeviceBuffer() = default;
 
-//! Copy constructor (references the same underlying SYCL buffer).
+//! Copy constructor (references the same underlying SYCL memory).
 template<typename T>
 DeviceBuffer<T>::DeviceBuffer(DeviceBuffer<T> const& src)
 {
@@ -139,7 +155,55 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
     return *this;
 }
 
+#    if GMX_SYCL_USE_USM
 
+/** \brief
+ * Thin wrapper around placeholder accessor that allows implicit construction from \c DeviceBuffer.
+ *
+ * "Placeholder accessor" is an indicator of the intent to create an accessor for certain buffer
+ * of a certain type, that is not yet bound to a specific command group handler (device). Such
+ * accessors can be created outside SYCL kernels, which is helpful if we want to pass them as
+ * function arguments.
+ *
+ * \tparam T Type of buffer content.
+ * \tparam mode Access mode.
+ */
+template<class T, cl::sycl::access::mode mode>
+class DeviceAccessor
+{
+public:
+    //! Construct DeviceAccessor from DeviceBuffer (must be initialized)
+    DeviceAccessor(DeviceBuffer<T>& buffer) : ptr_(getPointer(buffer)) {}
+    //! Construct read-only DeviceAccessor from a const DeviceBuffer (must be initialized)
+    DeviceAccessor(const DeviceBuffer<T>& buffer) : ptr_(getPointer(buffer))
+    {
+        static_assert(mode == cl::sycl::access::mode::read,
+                      "Can not create non-read-only accessor from a const DeviceBuffer");
+    }
+    //! Construct DeviceAccessor from a raw pointer
+    DeviceAccessor(T* ptr) : ptr_(ptr) {}
+    __attribute__((always_inline)) void bind(cl::sycl::handler& /*cgh*/)
+    {
+        // Do nothing
+    }
+    using ValueType = std::conditional_t<mode == cl::sycl::access::mode::read, const T, T>;
+    __attribute__((always_inline)) ValueType* get_pointer() const noexcept { return ptr_; }
+    __attribute__((always_inline)) ValueType& operator[](cl::sycl::id<1> index) const
+    {
+        return ptr_[index.get(0)];
+    }
+    __attribute__((always_inline)) ValueType& operator[](size_t index) const { return ptr_[index]; }
+
+private:
+    //! Helper function to get sycl:global_ptr object from DeviceBuffer wrapper, with a sanity check.
+    static inline cl::sycl::global_ptr<T> getPointer(const DeviceBuffer<T>& buffer)
+    {
+        GMX_ASSERT(bool(buffer), "Trying to use an uninitialized buffer");
+        return buffer.buffer_->ptr_;
+    }
+    T* ptr_;
+};
+#    else
 namespace gmx::internal
 {
 //! Shorthand alias to create a placeholder SYCL accessor with chosen data type and access mode.
@@ -192,6 +256,7 @@ private:
         return *buffer.buffer_;
     }
 };
+#    endif // GMX_SYCL_USE_USM
 
 namespace gmx::internal
 {
@@ -203,9 +268,11 @@ struct NullAccessor
     //! Allow casting to nullptr
     constexpr operator std::nullptr_t() const { return nullptr; }
     //! Placeholder implementation of \c cl::sycl::accessor::get_pointer.
-    T*   get_pointer() const noexcept { return nullptr; }
+    T* get_pointer() const noexcept { return nullptr; }
+    //! Placeholder for \c cl::sycl::handler::require.
     void bind(cl::sycl::handler& /*cgh*/) { assert(false); }
 };
+
 } // namespace gmx::internal
 
 /** \brief
@@ -217,7 +284,7 @@ struct NullAccessor
     void getBarKernel(handler& cgh, OptionalAccessor<float, mode::read, doFoo> a_fooPrms)
     {
         if constexpr (doFoo)
-            cgh.require(a_fooPrms);
+            a_fooPrms.bind(cgh);
         // Can only use a_fooPrms if doFoo == true
     }
 
@@ -254,7 +321,12 @@ using OptionalAccessor =
 template<typename T>
 static gmx_unused bool checkDeviceBuffer(const DeviceBuffer<T>& buffer, int requiredSize)
 {
+#if GMX_SYCL_USE_USM
+    GMX_UNUSED_VALUE(requiredSize); // Can't be checked with USM
+    return buffer.buffer_ && buffer.buffer_->ptr_;
+#else
     return buffer.buffer_ && (static_cast<int>(buffer.buffer_->get_count()) >= requiredSize);
+#endif
 }
 
 /*! \libinternal \brief
@@ -269,12 +341,18 @@ static gmx_unused bool checkDeviceBuffer(const DeviceBuffer<T>& buffer, int requ
 template<typename ValueType>
 void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& deviceContext)
 {
+#if GMX_SYCL_USE_USM
+    ValueType* ptr = cl::sycl::malloc_device<ValueType>(
+            numValues, deviceContext.deviceInfo().syclDevice, deviceContext.context());
+    buffer->buffer_.reset(new ClSyclBufferWrapper<ValueType>(ptr, deviceContext.context()));
+#else
     /* SYCL does not require binding buffer to a specific context or device. The ::context_bound
      * property only enforces the use of only given context, and possibly offers some optimizations */
     const cl::sycl::property_list bufferProperties{ cl::sycl::property::buffer::context_bound(
             deviceContext.context()) };
     buffer->buffer_.reset(
             new ClSyclBufferWrapper<ValueType>(cl::sycl::range<1>(numValues), bufferProperties));
+#endif
 }
 
 /*! \brief
@@ -288,6 +366,12 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 template<typename ValueType>
 void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
+#if GMX_SYCL_USE_USM
+    if (buffer->buffer_ && buffer->buffer_->ptr_)
+    {
+        cl::sycl::free(buffer->buffer_->ptr_, buffer->buffer_->context_);
+    }
+#endif
     buffer->buffer_.reset(nullptr);
 }
 
@@ -326,9 +410,15 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
+    cl::sycl::event ev;
+#if GMX_SYCL_USE_USM
+    ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
+        cgh.memcpy(buffer->buffer_->ptr_ + startingOffset, hostBuffer, numValues * sizeof(ValueType));
+    });
+#else
     cl::sycl::buffer<ValueType>& syclBuffer = *buffer->buffer_;
 
-    cl::sycl::event ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
+    ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
         /* Here and elsewhere in this file, accessor constructor is user instead of a more common
          * buffer::get_access, since the compiler (icpx 2021.1-beta09) occasionally gets confused
          * by all the overloads */
@@ -337,6 +427,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
         };
         cgh.copy(hostBuffer, d_bufferAccessor);
     });
+#endif
     if (transferKind == GpuApiCallBehavior::Sync)
     {
         ev.wait_and_throw();
@@ -378,14 +469,21 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
+    cl::sycl::event ev;
+#if GMX_SYCL_USE_USM
+    ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
+        cgh.memcpy(hostBuffer, buffer->buffer_->ptr_ + startingOffset, numValues * sizeof(ValueType));
+    });
+#else
     cl::sycl::buffer<ValueType>& syclBuffer = *buffer->buffer_;
 
-    cl::sycl::event ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
+    ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
         const auto d_bufferAccessor = cl::sycl::accessor<ValueType, 1, cl::sycl::access::mode::read>{
             syclBuffer, cgh, cl::sycl::range(numValues), cl::sycl::id(startingOffset)
         };
         cgh.copy(d_bufferAccessor, hostBuffer);
     });
+#endif
     if (transferKind == GpuApiCallBehavior::Sync)
     {
         ev.wait_and_throw();
@@ -473,6 +571,24 @@ inline cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<Float3, 1>& buffe
     }
 }
 
+template<typename ValueType>
+cl::sycl::event fillSyclUsmWithNull(ValueType* buffer, size_t startingOffset, size_t numValues, cl::sycl::queue queue)
+{
+    const ValueType pattern = ValueType(0); // SYCL vectors support initialization by scalar
+
+    return queue.submit(
+            [&](cl::sycl::handler& cgh) { cgh.fill(buffer + startingOffset, pattern, numValues); });
+}
+
+//! \brief Helper function to clear device memory of type Float3.
+template<>
+inline cl::sycl::event
+fillSyclUsmWithNull(Float3* buffer, size_t startingOffset, size_t numValues, cl::sycl::queue queue)
+{
+    return fillSyclUsmWithNull<float>(
+            reinterpret_cast<float*>(buffer), startingOffset * DIM, numValues * DIM, std::move(queue));
+}
+
 } // namespace gmx::internal
 
 /*! \brief
@@ -499,10 +615,15 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
+#if GMX_SYCL_USE_USM
+    gmx::internal::fillSyclUsmWithNull<ValueType>(
+            buffer->buffer_->ptr_, startingOffset, numValues, deviceStream.stream());
+#else
     cl::sycl::buffer<ValueType>& syclBuffer = *(buffer->buffer_);
 
     gmx::internal::fillSyclBufferWithNull<ValueType>(
             syclBuffer, startingOffset, numValues, deviceStream.stream());
+#endif
 }
 
 /*! \brief Create a texture object for an array of type ValueType.
@@ -528,6 +649,14 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
     GMX_ASSERT(hostBuffer, "Host buffer should be specified.");
     GMX_ASSERT(deviceBuffer, "Device buffer should be specified.");
 
+#if GMX_SYCL_USE_USM
+    allocateDeviceBuffer<ValueType>(deviceBuffer, numValues, deviceContext);
+    /* Not perfect, but we call this function only on simulation initialization, so the
+     * overhead of a queue creation should be manageable. */
+    DeviceStream temporaryStream(deviceContext, DeviceStreamPriority::Normal, false);
+    copyToDeviceBuffer(
+            deviceBuffer, hostBuffer, 0, numValues, temporaryStream, GpuApiCallBehavior::Sync, nullptr);
+#else
     /* Constructing buffer with cl::sycl::buffer(T* data, size_t size) will take ownership
      * of this memory region making it unusable, which might lead to side-effects.
      * On the other hand, cl::sycl::buffer(InputIterator<T> begin, InputIterator<T> end) will
@@ -537,6 +666,7 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
             deviceContext.context()) };
     deviceBuffer->buffer_.reset(new ClSyclBufferWrapper<ValueType>(
             hostBuffer, hostBuffer + numValues, bufferProperties));
+#endif
 }
 
 /*! \brief Release the OpenCL device buffer.

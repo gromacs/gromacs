@@ -319,10 +319,17 @@ public:
     RocfftInitializer init_;
     //! Data for 3D FFT plans and execution
     EnumerationArray<FftDirection, RocfftPlan> plans_;
+#if GMX_SYCL_USE_USM
+    //! Handle to the real grid buffer
+    float* realGrid_;
+    //! Handle to the complex grid buffer
+    float* complexGrid_;
+#else
     //! Handle to the real grid buffer
     cl::sycl::buffer<float, 1> realGrid_;
     //! Handle to the complex grid buffer
     cl::sycl::buffer<float, 1> complexGrid_;
+#endif
     /*! \brief Copy of PME stream
      *
      * This copy is guaranteed by the SYCL standard to work as if
@@ -393,8 +400,12 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
 {
     GMX_RELEASE_ASSERT((dir == GMX_FFT_REAL_TO_COMPLEX) || (dir == GMX_FFT_COMPLEX_TO_REAL),
                        "Only real-to-complex and complex-to-real FFTs are implemented in hipSYCL");
-    FftDirection               direction;
+    FftDirection direction;
+#if GMX_SYCL_USE_USM
+    float **inputGrid = nullptr, **outputGrid = nullptr;
+#else
     cl::sycl::buffer<float, 1>*inputGrid = nullptr, *outputGrid = nullptr;
+#endif
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
         direction  = FftDirection::RealToComplex;
@@ -409,13 +420,20 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
     }
     // Enqueue the 3D FFT work
     impl_->queue_.submit([&](cl::sycl::handler& cgh) {
+#if !GMX_SYCL_USE_USM
         auto inputGridAccessor = inputGrid->get_access(cgh, cl::sycl::read_only);
         auto outputGridAccessor = outputGrid->get_access(cgh, cl::sycl::write_only, cl::sycl::no_init);
+#endif
         // Use a hipSYCL custom operation to access the native buffers
         // needed to call rocFFT
-        cgh.hipSYCL_enqueue_custom_operation([=](cl::sycl::interop_handle& h) {
+        cgh.hipSYCL_enqueue_custom_operation([=](cl::sycl::interop_handle& gmx_unused h) {
+#if GMX_SYCL_USE_USM
+            void* d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
+            void* d_outputGrid = reinterpret_cast<void*>(*outputGrid);
+#else
             void* d_inputGrid  = h.get_native_mem<cl::sycl::backend::hip>(inputGridAccessor);
             void* d_outputGrid = h.get_native_mem<cl::sycl::backend::hip>(outputGridAccessor);
+#endif
             // Don't check results generated asynchronously,
             // because we don't know what to do with them
             rocfft_execute(impl_->plans_[direction].plan, &d_inputGrid, &d_outputGrid, nullptr);

@@ -93,10 +93,15 @@ private:
     using Descriptor =
             oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL>;
 
+#if GMX_SYCL_USE_USM
+    float* realGrid_;
+    float* complexGrid_;
+#else
     cl::sycl::buffer<float, 1> realGrid_;
     cl::sycl::buffer<float, 1> complexGrid_;
-    cl::sycl::queue            queue_;
-    Descriptor                 r2cDescriptor_, c2rDescriptor_;
+#endif
+    cl::sycl::queue queue_;
+    Descriptor      r2cDescriptor_, c2rDescriptor_;
 
     static Descriptor initDescriptor(const ivec realGridSize);
 };
