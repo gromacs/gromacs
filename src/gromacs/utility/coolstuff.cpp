@@ -750,9 +750,6 @@ std::string getCoolQuote()
         { "UNIX is basically a simple operating system. It just takes a genius to understand its "
           "simplicity.",
           "Dennis Ritchie" },
-        { "There are two major products that come out of Berkeley: LSD and UNIX. We don't believe "
-          "this to be a coincidence.",
-          "Jeremy Anderson" },
         { "There are only two kinds of programming languages: those people always bitch about and "
           "those nobody uses.",
           "Bjarne Stroustrup" },
