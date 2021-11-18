@@ -169,9 +169,29 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     const int start  = 0;
     const int homenr = mdAtoms_->mdatoms()->homenr;
     auto*     x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    ivec*     nFreeze = inputrec_->opts.nFreeze;
     for (int n = start; n < start + homenr; n++)
     {
-        tmvmul_ur0(mu_, x[n], x[n]);
+        if (mdAtoms_->mdatoms()->cFREEZE == nullptr)
+        {
+            tmvmul_ur0(mu_, x[n], x[n]);
+        }
+        else
+        {
+            int g = mdAtoms_->mdatoms()->cFREEZE[n];
+            if (!nFreeze[g][XX])
+            {
+                x[n][XX] = mu_[XX][XX] * x[n][XX] + mu_[YY][XX] * x[n][YY] + mu_[ZZ][XX] * x[n][ZZ];
+            }
+            if (!nFreeze[g][YY])
+            {
+                x[n][YY] = mu_[YY][YY] * x[n][YY] + mu_[ZZ][YY] * x[n][ZZ];
+            }
+            if (!nFreeze[g][ZZ])
+            {
+                x[n][ZZ] = mu_[ZZ][ZZ] * x[n][ZZ];
+            }
+        }
     }
 }
 

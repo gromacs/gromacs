@@ -51,3 +51,13 @@ were anyhow converted to Ryckaert-Bellemans parameters, so now the checks
 for perturbations are the same for the two functions.
 
 :issue:`2606`
+
+Do not scale coordinates of frozen atoms during Parrinello-Rahman pressure coupling
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When Parrinello-Rahman pressure coupling was used, the box scaling was applied to all the atoms,
+causing frozen atoms to shift. The effect is more drastic towards the sides of the box and when the
+pressure is changed significantly during the simulations. Now, the frozen atoms will be ignored by
+the coupling and atoms with frozen dimensions shall keep such values.
+
+:issue:`3075`
