@@ -5,6 +5,9 @@ project(sample_restraint VERSION 0.2.1)
 
 find_package(PythonInterp)
 
+# Allow gmxapi_ROOT hint (available with CMake 3.12).
+cmake_policy(SET CMP0074 NEW)
+
 # Check if Python package is being built directly or via add_subdirectory.
 # I.e. is this being built as a standalone project or as part of the GROMACS
 # build tree (for testing)?
@@ -177,18 +180,12 @@ if(GMXAPI_EXTENSION_MASTER_PROJECT)
     message(STATUS "Python module will be installed to GMXPLUGIN_INSTALL_PATH cache value ${GMXPLUGIN_INSTALL_PATH}")
 endif()
 
-# TODO: (Issue #3027) Handle Googletest sources both for forked projects and
-#  for GROMACS-project-internal testing.
 # Projects based on this subtree should bundle googletest sources.
 # The GROMACS project already bundles googletest sources for internal use, but
 # they will only be available to this project with some additional management by
 # the parent project CMake configuration.
-option(DOWNLOAD_GOOGLETEST "Download the latest master branch of googletest." OFF)
+option(DOWNLOAD_GOOGLETEST "Download the version of googletest used for GROMACS testing." OFF)
 mark_as_advanced(DOWNLOAD_GOOGLETEST)
-
-# Prevent overriding the parent project's compiler/linker
-# settings on Windows
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 
 # Now move on to building the custom code.
@@ -196,6 +193,66 @@ add_subdirectory(src)
 
 # Set up documentation build targets (work in progress).
 add_subdirectory(docs)
+
+if(DOWNLOAD_GOOGLETEST)
+    # Download and unpack googletest at configure time. For simplicity, we pin to the same
+    # googletest ref as in
+    #    https://gitlab.com/gromacs/gromacs/-/blob/master/src/external/googletest/README.Gromacs
+    # Reference https://google.github.io/googletest/quickstart-cmake.html#set-up-a-project
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/release-1.8.1.zip
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    # Note: as of CMake 3.16.3, setting policy CMP0077 to NEW does not seem to allow
+    # `set(INSTALL_GTEST OFF)` to work as desired, so we have to override the option definition.
+    option(INSTALL_GTEST "Override default behavior" OFF)
+    FetchContent_MakeAvailable(googletest)
+
+    add_library(GTest::GTest ALIAS gtest)
+    add_library(GTest::Main ALIAS gtest_main)
+else()
+    if(GMXAPI_EXTENSION_MASTER_PROJECT)
+        # Allow project maintainers to bundle or provide googletest sources in
+        # a subdirectory `external`.
+        if (DEFINED ENV{CI})
+            # In a CI environment, assume that the supporting software can be provided.
+            if ("$ENV{CI_PROJECT_NAME}" STREQUAL "gromacs")
+                # We are running in a GitLab CI environment for a gromacs repository.
+                # See also admin/gitlab-ci/sample_restraint.gitlab-ci.yml
+                FILE(COPY
+                     $ENV{CI_PROJECT_DIR}/src/external/googletest
+                     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/external/
+                     )
+            endif ()
+            # Note: as of CMake 3.16.3, setting policy CMP0077 to NEW does not seem to allow
+            # `set(INSTALL_GTEST OFF)` to work as desired, so we have to override the option definition.
+            option(INSTALL_GTEST "Override default behavior" OFF)
+            add_subdirectory(external/googletest)
+            add_library(GTest::GTest ALIAS gtest)
+            add_library(GTest::Main ALIAS gtest_main)
+        else()
+            # Logic could be added here for other CI environments. Otherwise, the user is
+            # responsible for helping to find GTest or copying sources to external/googletest
+            find_package(GTest REQUIRED)
+        endif ()
+    else() # building as part of a GROMACS build...
+        if(TARGET gtest)
+            add_library(GTest::GTest ALIAS gtest)
+            add_library(GTest::Main ALIAS gtest_main)
+        else()
+            find_package(GTest)
+        endif()
+        if(NOT TARGET GTest::GTest)
+            message(FATAL_ERROR "GTest::GTest target should have been supplied by the parent project.")
+        endif()
+        if(NOT TARGET GTest::Main)
+            message(FATAL_ERROR "GTest::Main target should have been supplied by the parent project.")
+        endif()
+    endif()
+endif() # DOWNLOAD_GOOGLETEST
 
 # Process CMake configuration for Python and C++ tests.
 include(CTest)
