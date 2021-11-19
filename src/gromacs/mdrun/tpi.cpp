@@ -738,7 +738,9 @@ void LegacySimulator::do_tpi()
                 }
                 /* Rotate the molecule randomly */
                 real angleX = 2 * M_PI * dist(rng);
-                real angleY = 2 * M_PI * dist(rng);
+                /* Draw uniform random number for sin(angleY) instead of angleY itself in order to
+                 * achieve the uniform distribution in the solid angles space. */
+                real angleY = std::asin(2 * dist(rng) - 1);
                 real angleZ = 2 * M_PI * dist(rng);
                 rotate_conf(a_tp1 - a_tp0, state_global->x.rvec_array() + a_tp0, nullptr, angleX, angleY, angleZ);
                 /* Shift to the insertion location */

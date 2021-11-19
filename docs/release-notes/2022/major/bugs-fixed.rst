@@ -61,3 +61,10 @@ pressure is changed significantly during the simulations. Now, the frozen atoms 
 the coupling and atoms with frozen dimensions shall keep such values.
 
 :issue:`3075`
+
+Avoid non-uniform rotation with Test Particle Insertion in anisotropic systems
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With anisotropic systems the random angles would not get a uniform distribution.
+
+:issue:`3558`
