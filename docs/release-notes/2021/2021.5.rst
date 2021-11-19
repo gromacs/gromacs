@@ -19,6 +19,12 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+``gmx make_edi`` now closes its output file properly
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously the file was not closed explicitly, leaving the result up
+to the runtime environment. Now it will work with all environments.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -395,13 +395,15 @@ enum
 #define MAGIC 670
 
 
-static void write_the_whole_thing(FILE*     fp,
-                                  t_edipar* edpars,
-                                  rvec**    eigvecs,
-                                  int       nvec,
-                                  int*      eig_listen[],
-                                  real*     evStepList[])
+static void write_the_whole_thing(const char* filename,
+                                  t_edipar*   edpars,
+                                  rvec**      eigvecs,
+                                  int         nvec,
+                                  int*        eig_listen[],
+                                  real*       evStepList[])
 {
+    FILE* fp = gmx_ffopen(filename, "w");
+
     /* write edi-file */
 
     /*Header*/
@@ -438,6 +440,8 @@ static void write_the_whole_thing(FILE*     fp,
     /*Target and Origin positions */
     write_t_edx(fp, edpars->star, "NTARGET, XTARGET");
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
+
+    gmx_ffclose(fp);
 }
 
 static int read_conffile(const char* confin, rvec** x)
@@ -1113,7 +1117,7 @@ int gmx_make_edi(int argc, char* argv[])
     }
 
     /* Write edi-file */
-    write_the_whole_thing(gmx_ffopen(EdiFile, "w"), &edi_params, eigvec1, nvec1, listen, evStepList);
+    write_the_whole_thing(EdiFile, &edi_params, eigvec1, nvec1, listen, evStepList);
 
     return 0;
 }
