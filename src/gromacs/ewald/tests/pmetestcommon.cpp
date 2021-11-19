@@ -957,18 +957,25 @@ void PmeTestHardwareContext::activate() const
     }
 }
 
-std::vector<std::unique_ptr<PmeTestHardwareContext>> createPmeTestHardwareContextList()
+ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts()
 {
-    std::vector<std::unique_ptr<PmeTestHardwareContext>> pmeTestHardwareContextList;
-    // Add CPU
-    pmeTestHardwareContextList.emplace_back(std::make_unique<PmeTestHardwareContext>());
-    // Add GPU devices
-    const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
-    for (const auto& testDevice : testDeviceList)
+    // The test hardware contexts used in PME tests
+    static std::vector<PmeTestHardwareContext> s_pmeTestHardwareContexts;
+
+    // Lazily make s_pmeTestHardwareContexts to avoid static
+    // initialization fiasco.
+    if (s_pmeTestHardwareContexts.empty())
     {
-        pmeTestHardwareContextList.emplace_back(std::make_unique<PmeTestHardwareContext>(testDevice.get()));
+        // Add CPU
+        s_pmeTestHardwareContexts.emplace_back(PmeTestHardwareContext());
+        // Add GPU devices
+        const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
+        for (const auto& testDevice : testDeviceList)
+        {
+            s_pmeTestHardwareContexts.emplace_back(PmeTestHardwareContext(testDevice.get()));
+        }
     }
-    return pmeTestHardwareContextList;
+    return s_pmeTestHardwareContexts;
 }
 
 } // namespace test

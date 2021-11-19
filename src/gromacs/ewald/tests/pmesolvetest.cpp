@@ -140,9 +140,6 @@ class SolveTest : public ::testing::TestWithParam<SolveInputParameters>
 public:
     SolveTest() = default;
 
-    //! Sets the programs once
-    static void SetUpTestSuite() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
-
     //! The test
     static void runTest()
     {
@@ -176,10 +173,10 @@ public:
         }
 
         TestReferenceData refData;
-        for (const auto& pmeTestHardwareContext : s_pmeTestHardwareContexts)
+        for (const auto& pmeTestHardwareContext : getPmeTestHardwareContexts())
         {
-            pmeTestHardwareContext->activate();
-            CodePath   codePath       = pmeTestHardwareContext->codePath();
+            pmeTestHardwareContext.activate();
+            CodePath   codePath       = pmeTestHardwareContext.codePath();
             const bool supportedInput = pmeSupportsInputForMode(
                     *getTestHardwareEnvironment()->hwinfo(), &inputRec, codePath);
             if (!supportedInput)
@@ -208,7 +205,7 @@ public:
                             (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "Coulomb",
                             gridOrdering.second.c_str(),
                             computeEnergyAndVirial ? "with" : "without",
-                            pmeTestHardwareContext->description().c_str(),
+                            pmeTestHardwareContext.description().c_str(),
                             gridSize[XX],
                             gridSize[YY],
                             gridSize[ZZ],
@@ -218,9 +215,9 @@ public:
                     /* Running the test */
                     PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec,
                                                             codePath,
-                                                            pmeTestHardwareContext->deviceContext(),
-                                                            pmeTestHardwareContext->deviceStream(),
-                                                            pmeTestHardwareContext->pmeGpuProgram(),
+                                                            pmeTestHardwareContext.deviceContext(),
+                                                            pmeTestHardwareContext.deviceStream(),
+                                                            pmeTestHardwareContext.pmeGpuProgram(),
                                                             box,
                                                             ewaldCoeff_q,
                                                             ewaldCoeff_lj);
@@ -326,11 +323,7 @@ public:
             }
         }
     }
-
-    static std::vector<std::unique_ptr<PmeTestHardwareContext>> s_pmeTestHardwareContexts;
 };
-
-std::vector<std::unique_ptr<PmeTestHardwareContext>> SolveTest::s_pmeTestHardwareContexts;
 
 /*! \brief Test for PME solving */
 TEST_P(SolveTest, Works)

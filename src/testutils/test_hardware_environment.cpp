@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "testutils/test_hardware_environment.h"
 
 #include <memory>
+#include <mutex>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -61,41 +62,28 @@ namespace gmx
 namespace test
 {
 
-/* Implements the "construct on first use" idiom to avoid any static
- * initialization order fiasco.
- *
- * Note that thread-safety of the initialization is guaranteed by the
- * C++11 language standard.
- *
- * The pointer itself (not the memory it points to) has no destructor,
- * so there is no deinitialization issue.  See
- * https://isocpp.org/wiki/faq/ctors for discussion of alternatives
- * and trade-offs. */
+//! Mutex for making the test hardware environment
+static std::mutex s_testHardwareEnvironmentMutex;
+//! The test hardware environment
+static std::unique_ptr<TestHardwareEnvironment> s_testHardwareEnvironment;
+
 const TestHardwareEnvironment* getTestHardwareEnvironment()
 {
-    static TestHardwareEnvironment* testHardwareEnvironment = nullptr;
-    if (testHardwareEnvironment == nullptr)
+    if (!s_testHardwareEnvironment)
     {
-        // Ownership of the TestEnvironment is taken by GoogleTest, so nothing can leak
-        testHardwareEnvironment = static_cast<TestHardwareEnvironment*>(
-                ::testing::AddGlobalTestEnvironment(new TestHardwareEnvironment));
+        // Construct and fill the environment
+        std::lock_guard<std::mutex> lock(s_testHardwareEnvironmentMutex);
+        s_testHardwareEnvironment = std::make_unique<TestHardwareEnvironment>();
     }
-    return testHardwareEnvironment;
-}
-
-void callAddGlobalTestEnvironment()
-{
-    getTestHardwareEnvironment();
+    return s_testHardwareEnvironment.get();
 }
 
 TestHardwareEnvironment::TestHardwareEnvironment() :
     hardwareInfo_(gmx_detect_hardware(PhysicalNodeCommunicator{ MPI_COMM_WORLD, gmx_physicalnode_id_hash() }))
 {
-}
+    // Following the ::testing::Environment protocol
+    this->SetUp();
 
-void TestHardwareEnvironment::SetUp()
-{
-    testDeviceList_.clear();
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     for (const DeviceInformation& compatibleDeviceInfo : getCompatibleDevices(hardwareInfo_->deviceInfoList))
     {
@@ -105,14 +93,22 @@ void TestHardwareEnvironment::SetUp()
     }
 }
 
-void TestHardwareEnvironment::TearDown()
+// static
+void TestHardwareEnvironment::gmxSetUp()
 {
-    testDeviceList_.clear();
-    /* In OneAPI 2021.1-beta9 and beta10, there is a bug that cause a
-     * segfault when a sycl::device is destructed too late. So, we
-     * explicitly destroy device handles here by resetting
-     * hardwareInfo_, which does no harm to anything else. */
-    hardwareInfo_.reset(nullptr);
+    // Ensure the environment has been constructed
+    getTestHardwareEnvironment();
+}
+
+// static
+void TestHardwareEnvironment::gmxTearDown()
+{
+    std::lock_guard<std::mutex> lock(s_testHardwareEnvironmentMutex);
+    if (!s_testHardwareEnvironment)
+    {
+        return;
+    }
+    s_testHardwareEnvironment->testDeviceList_.clear();
 }
 
 } // namespace test

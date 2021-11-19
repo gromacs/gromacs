@@ -241,7 +241,8 @@ struct PmeTestHardwareContext
     void activate() const;
 };
 
-std::vector<std::unique_ptr<PmeTestHardwareContext>> createPmeTestHardwareContextList();
+//! Return a view of the current PME test hardware contexts
+ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts();
 
 //! A couple of valid inputs for boxes.
 extern const std::map<std::string, Matrix3x3> c_inputBoxes;

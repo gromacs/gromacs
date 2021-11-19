@@ -269,8 +269,6 @@ class GatherTest : public ::testing::TestWithParam<GatherInputParameters>
 {
 public:
     GatherTest() = default;
-    //! Sets the input atom data references and programs once
-    static void SetUpTestSuite() { s_pmeTestHardwareContexts = createPmeTestHardwareContextList(); }
 
     //! The test
     static void runTest()
@@ -296,10 +294,10 @@ public:
         inputRec.epsilon_r   = 1.0;
 
         TestReferenceData refData;
-        for (const auto& pmeTestHardwareContext : s_pmeTestHardwareContexts)
+        for (const auto& pmeTestHardwareContext : getPmeTestHardwareContexts())
         {
-            pmeTestHardwareContext->activate();
-            CodePath   codePath       = pmeTestHardwareContext->codePath();
+            pmeTestHardwareContext.activate();
+            CodePath   codePath       = pmeTestHardwareContext.codePath();
             const bool supportedInput = pmeSupportsInputForMode(
                     *getTestHardwareEnvironment()->hwinfo(), &inputRec, codePath);
             if (!supportedInput)
@@ -314,7 +312,7 @@ public:
             SCOPED_TRACE(
                     formatString("Testing force gathering on %s for PME grid size %d %d %d"
                                  ", order %d, %d atoms",
-                                 pmeTestHardwareContext->description().c_str(),
+                                 pmeTestHardwareContext.description().c_str(),
                                  gridSize[XX],
                                  gridSize[YY],
                                  gridSize[ZZ],
@@ -323,15 +321,15 @@ public:
 
             PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
                                                     codePath,
-                                                    pmeTestHardwareContext->deviceContext(),
-                                                    pmeTestHardwareContext->deviceStream(),
-                                                    pmeTestHardwareContext->pmeGpuProgram(),
+                                                    pmeTestHardwareContext.deviceContext(),
+                                                    pmeTestHardwareContext.deviceStream(),
+                                                    pmeTestHardwareContext.pmeGpuProgram(),
                                                     box);
             std::unique_ptr<StatePropagatorDataGpu> stateGpu =
                     (codePath == CodePath::GPU)
                             ? makeStatePropagatorDataGpu(*pmeSafe.get(),
-                                                         pmeTestHardwareContext->deviceContext(),
-                                                         pmeTestHardwareContext->deviceStream())
+                                                         pmeTestHardwareContext.deviceContext(),
+                                                         pmeTestHardwareContext.deviceStream())
                             : nullptr;
 
             pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, testSystem.coordinates, testSystem.charges);
@@ -369,11 +367,7 @@ public:
             forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
         }
     }
-
-    static std::vector<std::unique_ptr<PmeTestHardwareContext>> s_pmeTestHardwareContexts;
 };
-
-std::vector<std::unique_ptr<PmeTestHardwareContext>> GatherTest::s_pmeTestHardwareContexts;
 
 //! Test for PME force gathering
 TEST_P(GatherTest, WorksWith)

@@ -202,7 +202,7 @@ void initTestUtils(const char* dataPath,
         }
         if (usesHardwareDetection)
         {
-            callAddGlobalTestEnvironment();
+            ::gmx::test::TestHardwareEnvironment::gmxSetUp();
         }
         g_testContext = std::make_unique<TestProgramContext>(context);
         setProgramContext(g_testContext.get());
@@ -285,8 +285,12 @@ void initTestUtils(const char* dataPath,
     }
 }
 
-void finalizeTestUtils()
+void finalizeTestUtils(const bool usesHardwareDetection)
 {
+    if (usesHardwareDetection)
+    {
+        ::gmx::test::TestHardwareEnvironment::gmxTearDown();
+    }
     setProgramContext(nullptr);
     g_testContext.reset();
     finalizeForCommandLine();
