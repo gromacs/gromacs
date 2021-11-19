@@ -72,7 +72,7 @@ function(gmx_manage_muparser)
         set(HAVE_MUPARSER 1 CACHE INTERNAL "Is muparser found?")
     elseif(GMX_USE_MUPARSER STREQUAL "EXTERNAL")
         # Find an external muparser library.
-        find_package(muparser ${GMX_MUPARSER_REQUIRED_VERSION})
+        find_package(Muparser ${GMX_MUPARSER_REQUIRED_VERSION})
         if(NOT MUPARSER_FOUND OR MUPARSER_VERSION VERSION_LESS GMX_MUPARSER_REQUIRED_VERSION)
             message(FATAL_ERROR "External muparser >= ${GMX_MUPARSER_REQUIRED_VERSION} could not be found, please adjust your pkg-config path to include the muparser.pc file")
         endif()
