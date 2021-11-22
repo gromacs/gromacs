@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -260,7 +260,7 @@ void PushMouse(Display* disp, Window dest, int x, int y)
     newpos->y    = root_y;
     newpos->prev = mpos;
     mpos         = newpos;
-    XWarpPointer(disp, None, dest, 0, 0, 0, 0, x, y);
+    XWarpPointer(disp, X11None, dest, 0, 0, 0, 0, x, y);
 #ifdef DEBUG
     std::fprintf(stderr, "Pushmouse %d, %d\n", x, y);
 #endif
@@ -276,7 +276,7 @@ void PopMouse(Display* disp)
         return;
     }
 
-    XWarpPointer(disp, None, DefaultRootWindow(disp), 0, 0, 0, 0, old->x, old->y);
+    XWarpPointer(disp, X11None, DefaultRootWindow(disp), 0, 0, 0, 0, old->x, old->y);
 #ifdef DEBUG
     std::fprintf(stderr, "Popmouse %d, %d\n", old->x, old->y);
 #endif

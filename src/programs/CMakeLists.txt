@@ -85,7 +85,7 @@ else()
                           ${GMX_COMMON_LIBRARIES}
                           ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)
-        target_link_libraries(gmx ${X11_LIBRARIES})
+        target_link_libraries(gmx PRIVATE ${X11_LIBRARIES})
     endif()
     set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
     set_target_properties(gmx PROPERTIES

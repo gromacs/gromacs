@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -434,7 +434,7 @@ static void EnterDlg(t_dlg* dlg)
         dlg->bGrab = GrabOK(
                 dlg->x11->console,
                 XGrabPointer(
-                        dlg->x11->disp, dlg->win.self, True, 0, GrabModeAsync, GrabModeAsync, dlg->win.self, None, CurrentTime));
+                        dlg->x11->disp, dlg->win.self, True, 0, GrabModeAsync, GrabModeAsync, dlg->win.self, X11None, CurrentTime));
     }
     dlg->x11->Flush(dlg->x11);
 }
@@ -612,7 +612,8 @@ static void DoCreateDlg(t_dlg* dlg)
     hints.x     = dlg->win.x;
     hints.y     = dlg->win.y;
     hints.flags = PPosition;
-    XSetStandardProperties(dlg->x11->disp, dlg->win.self, dlg->title, dlg->title, None, nullptr, 0, &hints);
+    XSetStandardProperties(
+            dlg->x11->disp, dlg->win.self, dlg->title, dlg->title, X11None, nullptr, 0, &hints);
 }
 
 void AddDlgItem(t_dlg* dlg, t_dlgitem* item)
