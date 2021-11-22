@@ -52,8 +52,8 @@ namespace gmx
 namespace
 {
 
-/*! \brief Initializes a basic topology with 9 atoms with settle*/
-void createBasicTop(gmx_mtop_t* mtop)
+/*! \brief Adds 2 water molecules with settles */
+void addTwoWaterMolecules(gmx_mtop_t* mtop)
 {
     gmx_moltype_t moltype;
     moltype.atoms.nr             = NRAL(F_SETTLE);
@@ -63,13 +63,14 @@ void createBasicTop(gmx_mtop_t* mtop)
     iatoms.push_back(0);
     iatoms.push_back(1);
     iatoms.push_back(2);
+    int moleculeTypeIndex = mtop->moltype.size();
     mtop->moltype.push_back(moltype);
 
-    mtop->molblock.resize(1);
-    mtop->molblock[0].type = 0;
-    mtop->molblock[0].nmol = 3;
-    mtop->natoms           = moltype.atoms.nr * mtop->molblock[0].nmol;
-    mtop->finalize();
+    const int numWaterMolecules = 2;
+    mtop->molblock.emplace_back(gmx_molblock_t{});
+    mtop->molblock.back().type = moleculeTypeIndex;
+    mtop->molblock.back().nmol = numWaterMolecules;
+    mtop->natoms           = moltype.atoms.nr * mtop->molblock.back().nmol;
 }
 
 /*! \brief
@@ -100,30 +101,49 @@ std::vector<gmx::Range<int>> createTwoResidueTopology(gmx_mtop_t* mtop)
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
     mtop->natoms           = moltype.atoms.nr * mtop->molblock[0].nmol;
-    mtop->finalize();
     std::vector<gmx::Range<int>> residueRange;
     residueRange.emplace_back(0, residueOneSize);
     residueRange.emplace_back(residueOneSize, residueOneSize + residueTwoSize);
     return residueRange;
 }
 
+/*! \brief Adds intermolecular bonds, assuming atoms 0 to 5 exist */
+void addIntermolecularInteractionBonds(gmx_mtop_t* mtop)
+{
+    mtop->bIntermolecularInteractions = true;
+    mtop->intermolecular_ilist        = std::make_unique<InteractionLists>();
+    std::vector<int>& iatoms          = (*mtop->intermolecular_ilist)[F_BONDS].iatoms;
+    const int         bondType        = 0;
+    iatoms.push_back(bondType);
+    iatoms.push_back(0);
+    iatoms.push_back(1);
+    iatoms.push_back(bondType);
+    iatoms.push_back(2);
+    iatoms.push_back(3);
+    iatoms.push_back(bondType);
+    iatoms.push_back(4);
+    iatoms.push_back(5);
+}
+
 TEST(MtopTest, RangeBasedLoop)
 {
     gmx_mtop_t mtop;
-    createBasicTop(&mtop);
+    addTwoWaterMolecules(&mtop);
+    mtop.finalize();
     int count = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
     {
         EXPECT_EQ(atomP.globalAtomNumber(), count);
         ++count;
     }
-    EXPECT_EQ(count, 9);
+    EXPECT_EQ(count, 6);
 }
 
 TEST(MtopTest, Operators)
 {
     gmx_mtop_t mtop;
-    createBasicTop(&mtop);
+    addTwoWaterMolecules(&mtop);
+    mtop.finalize();
     AtomIterator it(mtop);
     AtomIterator otherIt(mtop);
     EXPECT_EQ((*it).globalAtomNumber(), 0);
@@ -142,6 +162,7 @@ TEST(MtopTest, CanFindResidueStartAndEndAtoms)
 {
     gmx_mtop_t mtop;
     auto       expectedResidueRange = createTwoResidueTopology(&mtop);
+    mtop.finalize();
 
     auto atomRanges = atomRangeOfEachResidue(mtop.moltype[0]);
     ASSERT_EQ(atomRanges.size(), expectedResidueRange.size());
@@ -227,6 +248,61 @@ TEST(MtopTest, AtomHasPerturbedChargeIn14Interaction)
         EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(2, molt));
         EXPECT_FALSE(atomHasPerturbedChargeIn14Interaction(3, molt));
     }
+}
+
+TEST(IListRangeTest, RangeBasedLoopWorks)
+{
+    gmx_mtop_t mtop;
+    addTwoWaterMolecules(&mtop);
+    mtop.finalize();
+
+    int count = 0;
+    for (const IListProxy ilistP : IListRange(mtop))
+    {
+        EXPECT_EQ(ilistP.nmol(), 2);
+        EXPECT_EQ(ilistP.list()[F_BONDS].size(), 0);
+        EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 1 * (NRAL(F_SETTLE) + 1));
+        count++;
+    }
+    EXPECT_EQ(count, 1);
+
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_BONDS), 0);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_SETTLE), 2);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 0);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
+}
+
+TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
+{
+    gmx_mtop_t mtop;
+    addTwoWaterMolecules(&mtop);
+    addIntermolecularInteractionBonds(&mtop);
+    mtop.finalize();
+
+    int count = 0;
+    for (const IListProxy ilistP : IListRange(mtop))
+    {
+        if (count == 0)
+        {
+            EXPECT_EQ(ilistP.nmol(), 2);
+            EXPECT_EQ(ilistP.list()[F_BONDS].size(), 0);
+            EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 1 * (NRAL(F_SETTLE) + 1));
+        }
+        else
+        {
+            EXPECT_EQ(ilistP.nmol(), 1);
+            EXPECT_EQ(ilistP.list()[F_BONDS].size(), 3 * (NRAL(F_BONDS) + 1));
+            EXPECT_EQ(ilistP.list()[F_SETTLE].size(), 0);
+        }
+        count++;
+    }
+    EXPECT_EQ(count, 2);
+
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_BONDS), 3);
+    EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_SETTLE), 2);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 3);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
+    EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND | IF_CONSTRAINT), 0);
 }
 
 } // namespace

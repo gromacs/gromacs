@@ -300,12 +300,6 @@ int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype)
     {
         n += il.nmol() * il.list()[ftype].size() / (1 + NRAL(ftype));
     }
-
-    if (mtop.bIntermolecularInteractions)
-    {
-        n += (*mtop.intermolecular_ilist)[ftype].size() / (1 + NRAL(ftype));
-    }
-
     return n;
 }
 
@@ -323,18 +317,6 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
             }
         }
     }
-
-    if (mtop.bIntermolecularInteractions)
-    {
-        for (int ftype = 0; ftype < F_NRE; ftype++)
-        {
-            if ((interaction_function[ftype].flags & if_flags) == if_flags)
-            {
-                n += (*mtop.intermolecular_ilist)[ftype].size() / (1 + NRAL(ftype));
-            }
-        }
-    }
-
     return n;
 }
 
