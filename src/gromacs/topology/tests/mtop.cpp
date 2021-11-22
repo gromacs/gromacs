@@ -70,7 +70,7 @@ void addTwoWaterMolecules(gmx_mtop_t* mtop)
     mtop->molblock.emplace_back(gmx_molblock_t{});
     mtop->molblock.back().type = moleculeTypeIndex;
     mtop->molblock.back().nmol = numWaterMolecules;
-    mtop->natoms           = moltype.atoms.nr * mtop->molblock.back().nmol;
+    mtop->natoms               = moltype.atoms.nr * mtop->molblock.back().nmol;
 }
 
 /*! \brief
