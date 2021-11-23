@@ -50,6 +50,8 @@
 #include "config.h"
 
 #include <algorithm>
+#include <optional>
+#include <tuple>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -290,8 +292,31 @@ TEST_F(FFTTest, Real2DLength18_15Test)
     //    _checker.checkSequenceArray(rx*ny, out, "backward");
 }
 
-namespace
+using FFTTest3DParameters = std::tuple<int, int, int>;
+
+/*! \brief Help GoogleTest name our tests
+ *
+ * If changes are needed here, consider making matching changes in
+ * makeRefDataFileName(). */
+std::string nameOfTest(const testing::TestParamInfo<FFTTest3DParameters>& info)
 {
+    std::string testName = formatString(
+            "%d_%d_%d", std::get<0>(info.param), std::get<1>(info.param), std::get<2>(info.param));
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+class ParameterizedFFTTest3D : public FFTTest3D, public ::testing::WithParamInterface<FFTTest3DParameters>
+{
+};
 
 /*! \brief Check that the real grid after forward and backward
  * 3D transforms matches the input real grid. */
@@ -300,6 +325,7 @@ void checkRealGrid(const ivec           realGridSize,
                    ArrayRef<const real> inputRealGrid,
                    ArrayRef<real>       outputRealGridValues)
 {
+    SCOPED_TRACE("Checking the real grid");
     // Normalize the output (as the implementation does not
     // normalize either FFT)
     const real normalizationConstant = 1.0 / (realGridSize[XX] * realGridSize[YY] * realGridSize[ZZ]);
@@ -320,31 +346,38 @@ void checkRealGrid(const ivec           realGridSize,
     }
 }
 
-} // namespace
-
 // TODO: test with threads and more than 1 MPI ranks
-TEST_F(FFTTest3D, Real5_6_9)
+TEST_P(ParameterizedFFTTest3D, RunsOnHost)
 {
-    int        realGridSize[] = { 5, 6, 9 };
-    MPI_Comm   comm[]         = { MPI_COMM_NULL, MPI_COMM_NULL };
+    ivec realGridSize = { std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()) };
+    MPI_Comm   comm[] = { MPI_COMM_NULL, MPI_COMM_NULL };
     real*      rdata;
     t_complex* cdata;
     ivec       local_ndata, offset, realGridSizePadded, complexGridSizePadded, complex_order;
-    TestReferenceChecker checker(data_.rootChecker());
-    checker.setDefaultTolerance(defaultTolerance_);
 
     gmx_parallel_3dfft_init(&fft_, realGridSize, &rdata, &cdata, comm, TRUE, 1);
 
     gmx_parallel_3dfft_real_limits(fft_, local_ndata, offset, realGridSizePadded);
     gmx_parallel_3dfft_complex_limits(fft_, complex_order, local_ndata, offset, complexGridSizePadded);
-    checker.checkVector(realGridSizePadded, "realGridSizePadded");
-    checker.checkVector(complexGridSizePadded, "complexGridSizePadded");
+    // Check complex grid against reference data only when it
+    // exists. The real grid is always checked by doing the
+    // identity transform via forward and inverse transform.
+    std::optional<TestReferenceChecker> checker;
+    if ((realGridSize[XX] == 5 && realGridSize[YY] == 6 && realGridSize[ZZ] == 9)
+        || (realGridSize[XX] == 5 && realGridSize[YY] == 5 && realGridSize[ZZ] == 10))
+    {
+        checker = TestReferenceChecker(data_.rootChecker()); // Must be inside the loop to avoid warnings
+        checker.value().setDefaultTolerance(defaultTolerance_);
+        checker.value().checkVector(realGridSizePadded, "realGridSizePadded");
+        checker.value().checkVector(complexGridSizePadded, "complexGridSizePadded");
+    }
     int size = complexGridSizePadded[0] * complexGridSizePadded[1] * complexGridSizePadded[2];
     int sizeInBytes = size * sizeof(t_complex);
     int sizeInReals = sizeInBytes / sizeof(real);
 
     // Prepare the real grid
-    in_ = std::vector<real>(sizeInReals);
+    in_.resize(sizeInReals);
+    ASSERT_LT(sizeInReals, sizeof(inputdata) / sizeof(inputdata[0]));
     // Use std::copy to convert from double to real easily
     std::copy(inputdata, inputdata + sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
@@ -355,8 +388,11 @@ TEST_F(FFTTest3D, Real5_6_9)
 
     // Check the complex grid (NB this data has not been normalized)
     ArrayRef<real> complexGridValues = arrayRefFromArray(reinterpret_cast<real*>(cdata), size * 2);
-    checker.checkSequence(
-            complexGridValues.begin(), complexGridValues.end(), "ComplexGridAfterRealToComplex");
+    if (checker.has_value())
+    {
+        checker.value().checkSequence(
+                complexGridValues.begin(), complexGridValues.end(), "ComplexGridAfterRealToComplex");
+    }
 
     // Do the back transform
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
@@ -404,25 +440,41 @@ DeviceBuffer<float>* actualOutputGrid<true>(DeviceBuffer<float>* /* realGrid */,
 
 #    endif
 
-TEST_F(FFTTest3D, GpuReal5_6_9)
+// This is not the same test case as RunsOnHost because the
+// dimension ordering of the complex grid differs for solve
+// when run on the GPU vs CPU, because the latter caters to a 5D
+// pencil decomposition when using multiple PME ranks.
+// On the CPU, the 3DFFT code handles
+// the transpose from XYZ to YXZ and back, however on the GPU that
+// is part of spread and gather routines. So the reference data
+// is in a different order in these cases that test the 3DFFT output.
+TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 {
     // Ensure library resources are managed appropriately
     ClfftInitializer clfftInitializer;
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        TestReferenceChecker checker(data_.rootChecker()); // Must be inside the loop to avoid warnings
-        checker.setDefaultTolerance(defaultTolerance_);
-
         const DeviceContext& deviceContext = testDevice->deviceContext();
         setActiveDevice(testDevice->deviceInfo());
         const DeviceStream& deviceStream = testDevice->deviceStream();
 
-        ivec realGridSize       = { 5, 6, 9 };
-        ivec realGridSizePadded = { realGridSize[XX], realGridSize[YY], (realGridSize[ZZ] / 2 + 1) * 2 };
+        ivec realGridSize = { std::get<0>(GetParam()), std::get<1>(GetParam()), std::get<2>(GetParam()) };
+        // Note the real-grid padding differs from that on the CPU
+        ivec realGridSizePadded = { realGridSize[XX], realGridSize[YY], ((realGridSize[ZZ] / 2) + 1) * 2 };
         ivec complexGridSizePadded = { realGridSize[XX], realGridSize[YY], (realGridSize[ZZ] / 2) + 1 };
 
-        checker.checkVector(realGridSizePadded, "realGridSizePadded");
-        checker.checkVector(complexGridSizePadded, "complexGridSizePadded");
+        // Check complex grid against reference data only when it
+        // exists. The real grid is always checked by doing the
+        // identity transform via forward and inverse transform.
+        std::optional<TestReferenceChecker> checker;
+        if ((realGridSize[XX] == 5 && realGridSize[YY] == 6 && realGridSize[ZZ] == 9)
+            || (realGridSize[XX] == 5 && realGridSize[YY] == 5 && realGridSize[ZZ] == 10))
+        {
+            checker = TestReferenceChecker(data_.rootChecker()); // Must be inside the loop to avoid warnings
+            checker.value().setDefaultTolerance(defaultTolerance_);
+            checker.value().checkVector(realGridSizePadded, "realGridSizePadded");
+            checker.value().checkVector(complexGridSizePadded, "complexGridSizePadded");
+        }
 
         int size = complexGridSizePadded[0] * complexGridSizePadded[1] * complexGridSizePadded[2];
         int sizeInReals = size * 2;
@@ -432,7 +484,10 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         // Set up the complex grid. Complex numbers take twice the
         // memory.
         std::vector<float> complexGridValues(sizeInReals);
+
+        // Prepare the real grid
         in_.resize(sizeInReals);
+        ASSERT_LT(sizeInReals, sizeof(inputdata) / sizeof(inputdata[0]));
         // Use std::copy to convert from double to real easily
         std::copy(inputdata, inputdata + sizeInReals, in_.begin());
 
@@ -448,7 +503,10 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         // Use stub backend so compilation succeeds
         const FftBackend backend = FftBackend::Sycl;
         // Don't complain about unused reference data
-        checker.disableUnusedEntriesCheck();
+        if (checker.has_value())
+        {
+            checker.value().disableUnusedEntriesCheck();
+        }
         // Skip the rest of the test
         GTEST_SKIP() << "Only rocFFT backend is supported with hipSYCL";
 #            endif
@@ -505,7 +563,7 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
         gpu3dFft.perform3dFft(GMX_FFT_REAL_TO_COMPLEX, timingEvent);
         deviceStream.synchronize();
 
-        // Check the complex grid (NB this data has not been normalized)
+        SCOPED_TRACE("Checking the complex grid - NB this data has not been normalized");
         copyFromDeviceBuffer(complexGridValues.data(),
                              actualOutputGrid<sc_performOutOfPlaceFFT>(&realGrid, &complexGrid),
                              0,
@@ -513,8 +571,12 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
                              deviceStream,
                              GpuApiCallBehavior::Sync,
                              nullptr);
-        checker.checkSequence(
-                complexGridValues.begin(), complexGridValues.end(), "ComplexGridAfterRealToComplex");
+        if (checker.has_value())
+        {
+            checker.value().checkSequence(complexGridValues.begin(),
+                                          complexGridValues.end(),
+                                          "ComplexGridAfterRealToComplex");
+        }
 
         std::vector<float> outputRealGridValues(in_.size());
         if (sc_performOutOfPlaceFFT)
@@ -555,7 +617,21 @@ TEST_F(FFTTest3D, GpuReal5_6_9)
     }
 }
 
-#endif
+#endif // GMX_GPU
+
+/* Uncomment this to run more exhaustive tests
+INSTANTIATE_TEST_SUITE_P(ScanWorks,
+                         ParameterizedFFTTest3D,
+                         ::testing::Combine(::testing::Range(4, 8, 1),
+                                            ::testing::Range(4, 8, 1),
+                                            ::testing::Range(4, 8, 1)),
+                         nameOfTest);
+*/
+
+INSTANTIATE_TEST_SUITE_P(Works,
+                         ParameterizedFFTTest3D,
+                         ::testing::Values(FFTTest3DParameters{ 5, 6, 9 }, FFTTest3DParameters{ 5, 5, 10 }),
+                         nameOfTest);
 
 } // namespace
 } // namespace test

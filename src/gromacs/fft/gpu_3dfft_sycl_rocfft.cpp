@@ -203,8 +203,8 @@ std::array<size_t, DIM> makeRealStrides(ivec realGridSizePadded)
 std::array<size_t, DIM> makeComplexStrides(ivec complexGridSizePadded)
 {
     return { 1,
-             size_t(complexGridSizePadded[XX]),
-             size_t(complexGridSizePadded[XX] * complexGridSizePadded[YY]) };
+             size_t(complexGridSizePadded[ZZ]),
+             size_t(complexGridSizePadded[ZZ] * complexGridSizePadded[YY]) };
 }
 
 //! Compute total grid size
