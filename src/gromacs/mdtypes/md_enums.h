@@ -457,7 +457,7 @@ enum class FreeEnergyPerturbationType : int
     Static,
     //! then the states change monotonically throughout the simulation
     SlowGrowth,
-    //! then expanded ensemble simulations are occuring
+    //! then expanded ensemble simulations are occurring
     Expanded,
     Count,
     Default = No
@@ -465,7 +465,7 @@ enum class FreeEnergyPerturbationType : int
 //! String corresponding to FEP type.
 const char* enumValueToString(FreeEnergyPerturbationType enumValue);
 
-//! Free energy pertubation coupling types.
+//! Free energy perturbation coupling types.
 enum class FreeEnergyPerturbationCouplingType : int
 {
     Fep,

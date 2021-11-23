@@ -204,7 +204,7 @@ private:
      * Used if FEP is off, since do_force
      * requires lambda to be allocated anyway
      */
-    gmx::EnumerationArray<FreeEnergyPerturbationType, real> lambda_;
+    gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda_;
 
     // Access to ISimulator data
     //! Handles logging.
