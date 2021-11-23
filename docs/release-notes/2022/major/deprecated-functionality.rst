@@ -16,3 +16,11 @@ GMX_OPENCL_NB_CLUSTER_SIZE CMake variable deprecated in favor of GMX_GPU_NB_CLUS
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Both OpenCL and SYCL support different cluster sizes, so GMX_GPU_NB_CLUSTER_SIZE should
 be used going forward.
+
+The built-in viewer ``gmx view`` will be removed
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There is little use and no tests of this functionality, so it is not worth attempting to
+maintain moving forward.
+
+:issue:`4296`
