@@ -164,9 +164,9 @@ static inline bool pmeGpuCheckAtomCharge(const float charge)
  * \param[in]  itemIdx SYCL thread ID.
  */
 template<typename T, int atomsPerWorkGroup, int dataCountPerAtom>
-static inline void pmeGpuStageAtomData(cl::sycl::local_ptr<T>        sm_destination,
-                                       cl::sycl::global_ptr<const T> gm_source,
-                                       cl::sycl::nd_item<3>          itemIdx)
+static inline void pmeGpuStageAtomData(cl::sycl::local_ptr<T>              sm_destination,
+                                       const cl::sycl::global_ptr<const T> gm_source,
+                                       cl::sycl::nd_item<3>                itemIdx)
 {
     const int blockIndex      = itemIdx.get_group_linear_id();
     const int localIndex      = itemIdx.get_local_linear_id();
@@ -220,24 +220,24 @@ static inline void pmeGpuStageAtomData(cl::sycl::local_ptr<T>        sm_destinat
  */
 
 template<int order, int atomsPerBlock, int atomsPerWarp, bool writeSmDtheta, bool writeGlobal, int numGrids, int subGroupSize>
-static inline void calculateSplines(const int                         atomIndexOffset,
-                                    const Float3                      atomX,
-                                    const float                       atomCharge,
-                                    const gmx::IVec                   tablesOffsets,
-                                    const gmx::RVec                   realGridSizeFP,
-                                    const gmx::RVec                   currentRecipBox0,
-                                    const gmx::RVec                   currentRecipBox1,
-                                    const gmx::RVec                   currentRecipBox2,
-                                    cl::sycl::global_ptr<float>       gm_theta,
-                                    cl::sycl::global_ptr<float>       gm_dtheta,
-                                    cl::sycl::global_ptr<int>         gm_gridlineIndices,
-                                    cl::sycl::global_ptr<const float> gm_fractShiftsTable,
-                                    cl::sycl::global_ptr<const int>   gm_gridlineIndicesTable,
-                                    cl::sycl::local_ptr<float>        sm_theta,
-                                    cl::sycl::local_ptr<float>        sm_dtheta,
-                                    cl::sycl::local_ptr<int>          sm_gridlineIndices,
-                                    cl::sycl::local_ptr<float>        sm_fractCoords,
-                                    cl::sycl::nd_item<3>              itemIdx)
+static inline void calculateSplines(const int                               atomIndexOffset,
+                                    const Float3                            atomX,
+                                    const float                             atomCharge,
+                                    const gmx::IVec                         tablesOffsets,
+                                    const gmx::RVec                         realGridSizeFP,
+                                    const gmx::RVec                         currentRecipBox0,
+                                    const gmx::RVec                         currentRecipBox1,
+                                    const gmx::RVec                         currentRecipBox2,
+                                    cl::sycl::global_ptr<float>             gm_theta,
+                                    cl::sycl::global_ptr<float>             gm_dtheta,
+                                    cl::sycl::global_ptr<int>               gm_gridlineIndices,
+                                    const cl::sycl::global_ptr<const float> gm_fractShiftsTable,
+                                    const cl::sycl::global_ptr<const int>   gm_gridlineIndicesTable,
+                                    cl::sycl::local_ptr<float>              sm_theta,
+                                    cl::sycl::local_ptr<float>              sm_dtheta,
+                                    cl::sycl::local_ptr<int>                sm_gridlineIndices,
+                                    cl::sycl::local_ptr<float>              sm_fractCoords,
+                                    cl::sycl::nd_item<3>                    itemIdx)
 {
     static_assert(numGrids == 1 || numGrids == 2);
     static_assert(numGrids == 1 || c_skipNeutralAtoms == false);

@@ -217,14 +217,14 @@ inline void sumForceComponents(cl::sycl::private_ptr<float>            fx,
  * or FEP in state A if a single grid is used (\p multiCoefficientsSingleGrid == true).If two
  * separate grids are used this should be the coefficients of the grid in question.
  */
-inline void calculateAndStoreGridForces(cl::sycl::local_ptr<Float3>       sm_forces,
-                                        const int                         forceIndexLocal,
-                                        const int                         forceIndexGlobal,
-                                        const Float3&                     recipBox0,
-                                        const Float3&                     recipBox1,
-                                        const Float3&                     recipBox2,
-                                        const float                       scale,
-                                        cl::sycl::global_ptr<const float> gm_coefficients)
+inline void calculateAndStoreGridForces(cl::sycl::local_ptr<Float3>             sm_forces,
+                                        const int                               forceIndexLocal,
+                                        const int                               forceIndexGlobal,
+                                        const Float3&                           recipBox0,
+                                        const Float3&                           recipBox1,
+                                        const Float3&                           recipBox2,
+                                        const float                             scale,
+                                        const cl::sycl::global_ptr<const float> gm_coefficients)
 {
     const Float3 atomForces     = sm_forces[forceIndexLocal];
     float        negCoefficient = -scale * gm_coefficients[forceIndexGlobal];

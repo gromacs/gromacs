@@ -149,7 +149,7 @@ static inline void ljForceSwitch(const shift_consts_t         dispersionShift,
 
 //! \brief Fetch C6 grid contribution coefficients and return the product of these.
 template<enum VdwType vdwType>
-static inline float calculateLJEwaldC6Grid(const DeviceAccessor<Float2, mode::read> a_nbfpComb,
+static inline float calculateLJEwaldC6Grid(const cl::sycl::global_ptr<const Float2> a_nbfpComb,
                                            const int                                typeI,
                                            const int                                typeJ)
 {
@@ -174,7 +174,7 @@ static inline float calculateLJEwaldC6Grid(const DeviceAccessor<Float2, mode::re
 
 //! Calculate LJ-PME grid force contribution with geometric or LB combination rule.
 template<bool doCalcEnergies, enum VdwType vdwType>
-static inline void ljEwaldComb(const DeviceAccessor<Float2, mode::read> a_nbfpComb,
+static inline void ljEwaldComb(const cl::sycl::global_ptr<const Float2> a_nbfpComb,
                                const float                              sh_lj_ewald,
                                const int                                typeI,
                                const int                                typeJ,
@@ -287,7 +287,7 @@ static inline T lerp(T d0, T d1, T t)
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
-static inline float interpolateCoulombForceR(const DeviceAccessor<float, mode::read> a_coulombTab,
+static inline float interpolateCoulombForceR(const cl::sycl::global_ptr<const float> a_coulombTab,
                                              const float coulombTabScale,
                                              const float r)
 {
@@ -306,11 +306,11 @@ static inline float interpolateCoulombForceR(const DeviceAccessor<float, mode::r
  * c_clSize consecutive threads hold the force components of a j-atom which we
  * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
  */
-static inline void reduceForceJShuffle(Float3                                   f,
-                                       const cl::sycl::nd_item<3>               itemIdx,
-                                       const int                                tidxi,
-                                       const int                                aidx,
-                                       DeviceAccessor<Float3, mode::read_write> a_f)
+static inline void reduceForceJShuffle(Float3                       f,
+                                       const cl::sycl::nd_item<3>   itemIdx,
+                                       const int                    tidxi,
+                                       const int                    aidx,
+                                       cl::sycl::global_ptr<Float3> a_f)
 {
     static_assert(c_clSize == 8 || c_clSize == 4);
     sycl_2020::sub_group sg = itemIdx.get_sub_group();
@@ -360,8 +360,8 @@ static inline void reduceForceJShuffle(Float3                                   
 template<int subGroupSize, int groupSize>
 static inline float groupReduce(const cl::sycl::nd_item<3> itemIdx,
                                 const unsigned int         tidxi,
-                                cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_buf,
-                                float valueToReduce)
+                                cl::sycl::local_ptr<float> sm_buf,
+                                float                      valueToReduce)
 {
     constexpr int numSubGroupsInGroup = groupSize / subGroupSize;
     static_assert(numSubGroupsInGroup == 1 || numSubGroupsInGroup == 2);
@@ -390,13 +390,13 @@ static inline float groupReduce(const cl::sycl::nd_item<3> itemIdx,
  *
  * TODO: implement binary reduction flavor for the case where cl_Size is power of two.
  */
-static inline void reduceForceJGeneric(cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_buf,
-                                       Float3                                   f,
-                                       const cl::sycl::nd_item<3>               itemIdx,
-                                       const int                                tidxi,
-                                       const int                                tidxj,
-                                       const int                                aidx,
-                                       DeviceAccessor<Float3, mode::read_write> a_f)
+static inline void reduceForceJGeneric(cl::sycl::local_ptr<float>   sm_buf,
+                                       Float3                       f,
+                                       const cl::sycl::nd_item<3>   itemIdx,
+                                       const int                    tidxi,
+                                       const int                    tidxj,
+                                       const int                    aidx,
+                                       cl::sycl::global_ptr<Float3> a_f)
 {
     static constexpr int sc_fBufferStride = c_clSizeSq;
     int                  tidx             = tidxi + tidxj * c_clSize;
@@ -424,13 +424,13 @@ static inline void reduceForceJGeneric(cl::sycl::accessor<float, 1, mode::read_w
 
 /*! \brief Reduce c_clSize j-force components using either shifts or local memory and atomically accumulate into a_f.
  */
-static inline void reduceForceJ(cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_buf,
-                                Float3                                                        f,
-                                const cl::sycl::nd_item<3>               itemIdx,
-                                const int                                tidxi,
-                                const int                                tidxj,
-                                const int                                aidx,
-                                DeviceAccessor<Float3, mode::read_write> a_f)
+static inline void reduceForceJ(cl::sycl::local_ptr<float>   sm_buf,
+                                Float3                       f,
+                                const cl::sycl::nd_item<3>   itemIdx,
+                                const int                    tidxi,
+                                const int                    tidxj,
+                                const int                    aidx,
+                                cl::sycl::global_ptr<Float3> a_f)
 {
     if constexpr (!gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster))
     {
@@ -451,16 +451,16 @@ static inline void reduceForceJ(cl::sycl::accessor<float, 1, mode::read_write, t
  *
  * This implementation works only with power of two array sizes.
  */
-static inline void reduceForceIAndFShift(cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_buf,
+static inline void reduceForceIAndFShift(cl::sycl::local_ptr<float> sm_buf,
                                          const Float3 fCiBuf[c_nbnxnGpuNumClusterPerSupercluster],
                                          const bool   calcFShift,
-                                         const cl::sycl::nd_item<3>               itemIdx,
-                                         const int                                tidxi,
-                                         const int                                tidxj,
-                                         const int                                sci,
-                                         const int                                shift,
-                                         DeviceAccessor<Float3, mode::read_write> a_f,
-                                         DeviceAccessor<Float3, mode::read_write> a_fShift)
+                                         const cl::sycl::nd_item<3>   itemIdx,
+                                         const int                    tidxi,
+                                         const int                    tidxj,
+                                         const int                    sci,
+                                         const int                    shift,
+                                         cl::sycl::global_ptr<Float3> a_f,
+                                         cl::sycl::global_ptr<Float3> a_fShift)
 {
     // must have power of two elements in fCiBuf
     static_assert(gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster));
@@ -614,19 +614,18 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
     }
 
     // shmem buffer for i x+q pre-loading
-    cl::sycl::accessor<Float4, 2, mode::read_write, target::local> sm_xq(
-            cl::sycl::range<2>(c_nbnxnGpuNumClusterPerSupercluster, c_clSize), cgh);
+    cl::sycl::accessor<Float4, 1, mode::read_write, target::local> sm_xq(
+            cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
 
     // shmem buffer for force reduction
-    // SYCL-TODO: Make into 3D; section 4.7.6.11 of SYCL2020 specs
     cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_reductionBuffer(
             cl::sycl::range<1>(c_clSize * c_clSize * DIM), cgh);
 
     auto sm_atomTypeI = [&]() {
         if constexpr (!props.vdwComb)
         {
-            return cl::sycl::accessor<int, 2, mode::read_write, target::local>(
-                    cl::sycl::range<2>(c_nbnxnGpuNumClusterPerSupercluster, c_clSize), cgh);
+            return cl::sycl::accessor<int, 1, mode::read_write, target::local>(
+                    cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
         }
         else
         {
@@ -637,8 +636,8 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
     auto sm_ljCombI = [&]() {
         if constexpr (props.vdwComb)
         {
-            return cl::sycl::accessor<Float2, 2, mode::read_write, target::local>(
-                    cl::sycl::range<2>(c_nbnxnGpuNumClusterPerSupercluster, c_clSize), cgh);
+            return cl::sycl::accessor<Float2, 1, mode::read_write, target::local>(
+                    cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
         }
         else
         {
@@ -697,9 +696,9 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
         {
             /* Pre-load i-atom x and q into shared memory */
-            const int             ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
-            const int             ai       = ci * c_clSize + tidxi;
-            const cl::sycl::id<2> cacheIdx = cl::sycl::id<2>(tidxj + i, tidxi);
+            const int ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+            const int ai       = ci * c_clSize + tidxi;
+            const int cacheIdx = (tidxj + i) * c_clSize + tidxi;
 
             const Float3 shift = a_shiftVec[nbSci.shift];
             Float4       xqi   = a_xq[ai];
@@ -743,7 +742,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                     // TODO: Are there other options?
                     if constexpr (props.elecEwald || props.elecRF || props.elecCutoff)
                     {
-                        const float qi = sm_xq[i][tidxi][3];
+                        const float qi = sm_xq[i * c_clSize + tidxi][3];
                         energyElec += qi * qi;
                     }
                     if constexpr (props.vdwEwald)
@@ -825,7 +824,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                         // i cluster index
                         const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + i;
                         // all threads load an atom from i cluster ci into shmem!
-                        const Float4 xqi = sm_xq[i][tidxi];
+                        const Float4 xqi = sm_xq[i * c_clSize + tidxi];
                         const Float3 xi(xqi[0], xqi[1], xqi[2]);
 
                         // distance between i and j atoms
@@ -860,12 +859,12 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                             if constexpr (!props.vdwComb)
                             {
                                 /* LJ 6*C6 and 12*C12 */
-                                atomTypeI = sm_atomTypeI[i][tidxi];
+                                atomTypeI = sm_atomTypeI[i * c_clSize + tidxi];
                                 c6c12     = a_nbfp[numTypes * atomTypeI + atomTypeJ];
                             }
                             else
                             {
-                                const Float2 ljCombI = sm_ljCombI[i][tidxi];
+                                const Float2 ljCombI = sm_ljCombI[i * c_clSize + tidxi];
                                 if constexpr (props.vdwCombGeom)
                                 {
                                     c6c12 = Float2(ljCombI[0] * ljCombJ[0], ljCombI[1] * ljCombJ[1]);
@@ -934,7 +933,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                             }
                             if constexpr (props.vdwEwald)
                             {
-                                ljEwaldComb<doCalcEnergies, vdwType>(a_nbfpComb,
+                                ljEwaldComb<doCalcEnergies, vdwType>(a_nbfpComb.get_pointer(),
                                                                      ljEwaldShift,
                                                                      atomTypeI,
                                                                      atomTypeJ,
@@ -992,7 +991,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                                 fInvR += qi * qj
                                          * (pairExclMask * r2Inv
                                             - interpolateCoulombForceR(
-                                                    a_coulombTab, coulombTabScale, r2 * rInv))
+                                                    a_coulombTab.get_pointer(), coulombTabScale, r2 * rInv))
                                          * rInv;
                             }
 
@@ -1028,7 +1027,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                     maskJI += maskJI;
                 } // for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                 /* reduce j forces */
-                reduceForceJ(sm_reductionBuffer, fCjBuf, itemIdx, tidxi, tidxj, aj, a_f);
+                reduceForceJ(sm_reductionBuffer, fCjBuf, itemIdx, tidxi, tidxj, aj, a_f.get_pointer());
             } // for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             if constexpr (doPruneNBL)
             {
@@ -1041,8 +1040,16 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
         /* skip central shifts when summing shift forces */
         const bool doCalcShift = (calcShift && nbSci.shift != gmx::c_centralShiftIndex);
 
-        reduceForceIAndFShift(
-                sm_reductionBuffer, fCiBuf, doCalcShift, itemIdx, tidxi, tidxj, sci, nbSci.shift, a_f, a_fShift);
+        reduceForceIAndFShift(sm_reductionBuffer,
+                              fCiBuf,
+                              doCalcShift,
+                              itemIdx,
+                              tidxi,
+                              tidxj,
+                              sci,
+                              nbSci.shift,
+                              a_f.get_pointer(),
+                              a_fShift.get_pointer());
 
         if constexpr (doCalcEnergies)
         {

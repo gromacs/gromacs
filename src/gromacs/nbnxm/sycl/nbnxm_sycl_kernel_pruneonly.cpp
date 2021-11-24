@@ -83,8 +83,8 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
     a_plistIMask.bind(cgh);
 
     /* shmem buffer for i x+q pre-loading */
-    cl::sycl::accessor<Float4, 2, mode::read_write, target::local> sm_xq(
-            cl::sycl::range<2>(c_nbnxnGpuNumClusterPerSupercluster, c_clSize), cgh);
+    cl::sycl::accessor<Float4, 1, mode::read_write, target::local> sm_xq(
+            cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
 
     constexpr int warpSize = c_clSize * c_clSize / 2;
 
@@ -131,7 +131,7 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
                 const Float4 xq    = a_xq[ai];
                 const Float3 shift = a_shiftVec[nbSci.shift];
                 const Float4 xi(xq[0] + shift[0], xq[1] + shift[1], xq[2] + shift[2], xq[3]);
-                sm_xq[tidxj + i][tidxi] = xi;
+                sm_xq[(tidxj + i) * c_clSize + tidxi] = xi;
             }
         }
         itemIdx.barrier(fence_space::local_space);
@@ -181,7 +181,7 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
                             if (imaskCheck & mask_ji)
                             {
                                 // load i-cluster coordinates from shmem
-                                const Float4 xi = sm_xq[i][tidxi];
+                                const Float4 xi = sm_xq[i * c_clSize + tidxi];
                                 // distance between i and j atoms
                                 Float3 rv(xi[0], xi[1], xi[2]);
                                 rv -= xj;

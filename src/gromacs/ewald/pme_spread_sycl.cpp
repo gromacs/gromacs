@@ -287,27 +287,6 @@ auto pmeSplineAndSpreadKernel(
         {
             // SYCL-TODO: Use prefetching? Issue #4153.
             const Float3 atomX = a_coordinates[atomIndexGlobal];
-            // Lambdas below can be avoided when hipSYCL merges https://github.com/illuhad/hipSYCL/pull/629.
-            cl::sycl::global_ptr<float> gm_dtheta = [&]() {
-                if constexpr (writeGlobal)
-                {
-                    return a_dtheta.get_pointer();
-                }
-                else
-                {
-                    return nullptr;
-                }
-            }();
-            cl::sycl::global_ptr<int> gm_gridlineIndices = [&]() {
-                if constexpr (writeGlobal)
-                {
-                    return a_gridlineIndices.get_pointer();
-                }
-                else
-                {
-                    return nullptr;
-                }
-            }();
             calculateSplines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, subGroupSize>(
                     atomIndexOffset,
                     atomX,
@@ -318,8 +297,8 @@ auto pmeSplineAndSpreadKernel(
                     currentRecipBox1,
                     currentRecipBox2,
                     a_theta.get_pointer(),
-                    gm_dtheta,
-                    gm_gridlineIndices,
+                    a_dtheta.get_pointer(),
+                    a_gridlineIndices.get_pointer(),
                     a_fractShiftsTable.get_pointer(),
                     a_gridlineIndicesTable.get_pointer(),
                     sm_theta.get_pointer(),
