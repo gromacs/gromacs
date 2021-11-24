@@ -196,7 +196,7 @@ else()
             # In a CI environment, assume that the supporting software can be provided.
             if ("$ENV{CI_PROJECT_NAME}" STREQUAL "gromacs")
                 # We are running in a GitLab CI environment for a gromacs repository.
-                # See also admin/gitlab-ci/sample_restraint.gitlab-ci.yml
+                # See also admin/gitlab-ci/api-client.matrix.gitlab-ci.yml
                 FILE(COPY
                      $ENV{CI_PROJECT_DIR}/src/external/googletest
                      DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/external/
