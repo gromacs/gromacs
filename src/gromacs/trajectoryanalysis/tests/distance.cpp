@@ -98,6 +98,15 @@ TEST_F(DistanceModuleTest, HandlesSelectionFromGroup)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(DistanceModuleTest, HandlesSelectionFromGroupWithSuccessiveIndices)
+{
+    // Ensure that the presence of repeated indices like "1 2 2 3" works
+    const char* const cmdline[] = { "distance", "-select", "group \"SuccessiveContacts\"" };
+    setInputFile("-n", "simple.ndx");
+    setTopology("simple.gro");
+    runTest(CommandLine(cmdline));
+}
+
 TEST_F(DistanceModuleTest, HandlesSelectionFromLargeGroup)
 {
     const char* const cmdline[] = { "distance", "-select", "group \"ManyContacts\"" };

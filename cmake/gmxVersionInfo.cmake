@@ -415,20 +415,15 @@ if (GMX_GIT_VERSION_INFO)
 else()
     # Leave these to be substituted by the custom target below.
     # Specific for building from source tarball.
-    set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "\@GMX_RELEASE_SOURCE_FILE_CHECKSUM\@")
-    set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "\@GMX_CURRENT_SOURCE_FILE_CHECKSUM\@")
     gmx_add_custom_output_target(release-version-info RUN_ALWAYS
         OUTPUT ${VERSION_INFO_CMAKE_FILE}
         COMMAND ${CMAKE_COMMAND}
             -D PYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
-            -D HAVE_FULL_FUNCTIONING_PYTHON=${HAVE_FULL_FUNCTIONING_PYTHON}
             -D PROJECT_VERSION=${GMX_VERSION_STRING}
             -D PROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-            -D DIRECTORIES_TO_CHECKSUM=${DIRECTORIES_TO_CHECKSUM_STRING}
             -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
             -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
             -D VERSION_STRING_OF_FORK=${GMX_VERSION_STRING_OF_FORK}
-            -D SOURCE_IS_SOURCE_DISTRIBUTION=${SOURCE_IS_SOURCE_DISTRIBUTION}
             -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfoWithoutGit.cmake
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating release version information")
@@ -440,9 +435,6 @@ configure_file(${VERSION_INFO_CMAKEIN_FILE}
 unset(GMX_VERSION_STRING_FULL)
 unset(GMX_VERSION_FULL_HASH)
 unset(GMX_VERSION_CENTRAL_BASE_HASH)
-unset(GMX_RELEASE_SOURCE_FILE_CHECKSUM)
-unset(GMX_CURRENT_SOURCE_FILE_CHECKSUM)
-
 
 # What file the checksum should be written to
 set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")

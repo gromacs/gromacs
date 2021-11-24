@@ -935,6 +935,10 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
             {
                 /* If not using completion, simply store the start of the block. */
                 t->index[t->nr++] = i;
+                if (type == INDEX_ATOM)
+                {
+                    id = -1;
+                }
             }
         }
     }

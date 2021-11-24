@@ -1280,6 +1280,9 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(ArrayRef<const DimPar
                     weightSum -= weightData[i];
                 }
             }
+            /* Subtracting potentially very large values above may lead to rounding errors, causing
+             * negative weightSum, even in double precision. */
+            weightSum = std::max(weightSum, GMX_DOUBLE_MIN);
         }
     }
 

@@ -32,8 +32,9 @@ types,
 which have a characteristic name or number, and mass (in a.m.u.). These
 listings are found in the ``atomtypes.atp`` file (:ref:`atp` =
 **a**\ tom **t**\ ype **p**\ arameter file). Therefore, it is in this
-file that you can begin to change and/or add an atom type. A sample from
-the ``gromos43a1.ff`` force field is listed below.
+file that you can begin to change and/or add an atom type. This file is
+only used by :ref:`gmx pdb2gmx`.
+A sample from the ``gromos43a1.ff`` force field is listed below.
 
 ::
 
@@ -54,6 +55,21 @@ the ``gromos43a1.ff`` force field is listed below.
 
 **Note:** |Gromacs| makes use of the atom types as a name, *not* as a
 number (as *e.g.* in GROMOS).
+
+The interaction parameters for the atom types are set through the
+``[ atomtypes ]`` section in the topology file, often obtained through
+including a force field parameter file. The atomtypes listed in
+the ``atomtypes.atp`` file and the ``[ atomtypes ]`` section are
+non-bonded atom types. These are used to look up the
+non-bonded Van der Waals interaction parameters. Some force fields use these
+same atom types to look up parameters for bonded interactions. Other force
+fields additionally use bonded atom types to look up parameters for bonded
+interactions. This is because there are often far fewer bonded atom types
+needed than non-bonded atom types. In this case, the set of parameters for
+each non-bonded atom type includes a bonded atom type. Another optional
+parameter for non-bonded atom types is the atomic number. This is only
+used in hybrid QM/MM simulations.
+
 
 .. _vsitetop:
 

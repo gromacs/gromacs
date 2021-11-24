@@ -62,10 +62,6 @@ extern const char gmx_central_base_hash[];
  *  referencing of different \Gromacs releases.
  */
 extern const char gmxSourceDoiString[];
-//! Sha256 checksum of source and header files, populated for release builds.
-extern const char gmxReleaseSourceFileChecksum[];
-//! Sha256 checksum of source and header files, populated for builds from tarball.
-extern const char gmxCurrentSourceFileChecksum[];
 
 //! \}
 //! \endcond

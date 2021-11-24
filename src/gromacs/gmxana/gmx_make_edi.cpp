@@ -402,13 +402,15 @@ enum
 #define MAGIC 670
 
 
-static void write_the_whole_thing(FILE*     fp,
-                                  t_edipar* edpars,
-                                  rvec**    eigvecs,
-                                  int       nvec,
-                                  int*      eig_listen[],
-                                  real*     evStepList[])
+static void write_the_whole_thing(const char* filename,
+                                  t_edipar*   edpars,
+                                  rvec**      eigvecs,
+                                  int         nvec,
+                                  int*        eig_listen[],
+                                  real*       evStepList[])
 {
+    FILE* fp = gmx_ffopen(filename, "w");
+
     /* write edi-file */
 
     /*Header*/
@@ -450,6 +452,8 @@ static void write_the_whole_thing(FILE*     fp,
     /*Target and Origin positions */
     write_t_edx(fp, edpars->star, "NTARGET, XTARGET");
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
+
+    gmx_ffclose(fp);
 }
 
 static int read_conffile(const char* confin, rvec** x)
@@ -1126,7 +1130,7 @@ int gmx_make_edi(int argc, char* argv[])
     }
 
     /* Write edi-file */
-    write_the_whole_thing(gmx_ffopen(EdiFile, "w"), &edi_params, eigvec1, nvec1, listen, evStepList);
+    write_the_whole_thing(EdiFile, &edi_params, eigvec1, nvec1, listen, evStepList);
 
     return 0;
 }

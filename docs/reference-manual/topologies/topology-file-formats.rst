@@ -39,13 +39,15 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         | interaction type  | directive                 | #   | f. | parameters                                      |
         |                   |                           | at. | tp |                                                 |
         +-------------------+---------------------------+-----+----+-------------------------------------------------+
-        | *mandatory*       | ``defaults``              |          | non-bonded function type;                       |
-        |                   |                           |          | combination rule\ |CRO|;                        |
-        |                   |                           |          | generate pairs (no/yes);                        |
-        |                   |                           |          | fudge LJ (); fudge QQ ()                        |
+        | *mandatory*       | ``defaults``              |            non-bonded function type;                       |
+        |                   |                           |            combination rule\ |CRO|;                        |
+        |                   |                           |            generate pairs (no/yes);                        |
+        |                   |                           |            fudge LJ (); fudge QQ ()                        |
         +-------------------+---------------------------+----------+-------------------------------------------------+
-        | *mandatory*       | ``atomtypes``             |          | atom type; m (u); q (e); particle type;         |
-        |                   |                           |          | |VCR| ; |WCR|                                   |
+        | *mandatory*       | ``atomtypes``             |            atom type; bonded type; atomic number;          |
+        |                   |                           |            m (u); q (e); particle type;                    |
+        |                   |                           |            |VCR| ; |WCR|                                   |
+        |                   |                           |            (bonded type and atomic number are optional)    |
         +-------------------+---------------------------+----------+-------------------------------------------------+
         |                   | ``bondtypes``             |          | (see |TREF|, directive ``bonds``)               |
         +-------------------+---------------------------+------------------------------------------------------------+

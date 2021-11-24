@@ -348,7 +348,17 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
 
 TEST_F(PositionCalculationTest, ComputesAtomPositions)
 {
-    const int group[] = { 0, 1, 2, 3 };
+    const int group[] = { 1, 3, 0, 1 };
+    topManager_.requestVelocities();
+    topManager_.requestForces();
+    topManager_.initAtoms(4);
+    testSingleStatic(POS_ATOM, 0, false, group);
+}
+
+TEST_F(PositionCalculationTest, ComputesAtomPositionsWithRepeatedIndex)
+{
+    // Ensures bug #4149 is fixed
+    const int group[] = { 0, 1, 1, 3 };
     topManager_.requestVelocities();
     topManager_.requestForces();
     topManager_.initAtoms(4);

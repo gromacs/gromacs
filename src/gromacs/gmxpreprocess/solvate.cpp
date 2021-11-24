@@ -55,6 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
@@ -584,8 +585,7 @@ static void removeSolventOverlappingWithSolute(t_atoms*                 atoms,
 static void removeExtraSolventMolecules(t_atoms* atoms, std::vector<RVec>* x, std::vector<RVec>* v, int numberToRemove)
 {
     gmx::AtomsRemover               remover(*atoms);
-    std::random_device              rd;
-    std::mt19937                    randomNumberGenerator(rd());
+    std::mt19937                    randomNumberGenerator(gmx::makeRandomSeed());
     std::uniform_int_distribution<> randomDistribution(0, atoms->nr - 1);
     while (numberToRemove > 0)
     {

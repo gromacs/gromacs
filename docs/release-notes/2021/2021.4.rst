@@ -1,7 +1,7 @@
 GROMACS 2021.4 release notes
 ----------------------------
 
-This version was released on TODO, 2021. These release notes
+This version was released on November 5th, 2021. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2021.3 version, to fix known issues. It also incorporates all
 fixes made in version 2020.6 and earlier, which you can find described
@@ -25,6 +25,15 @@ a domain and its halo were more than 200000.
 
 :issue:`4167`
 
+Fixed bug with GPU LINCS occasionally shifting atoms in wrong direction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Due to missing blocking synchronizations in the CUDA version of LINCS,
+the shared memory was occasionally overwritten with the new data. This
+may slightly affect the final coordinates of the shifted atoms.
+
+:issue:`4199`
+
 Disabled the use of PME Mixed mode for FEP simulations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -36,9 +45,33 @@ Mixed mode is only used when explicitly requested by the user.
 
 :issue:`4190`
 
+Fixed spurious nan in AWH free energy output when running FEP with other dimensions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running AWH with alchemical free energy perturbations as one of multiple dimensions
+the free energy output could contain nan entries due to failing log operations. This did
+not affect the AWH bias, which means that the simulations were not affected as such, but
+the output was.
+
+:issue:`4180`
+
+Made mdrun work without MPI
+"""""""""""""""""""""""""""
+
+When configured with neither of MPI or thread-MPI, mdrun would terminate with an
+assertion failure.
+
+:issue:`4264`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix ``gmx convert-tpr -s -o``
+"""""""""""""""""""""""""""""
+
+Formerly, this combination could be used when supplying an index file.
+Now this combination can also be used with default index groups when
+not supplying an index file.
 
 grompp now prints a note again when combining center of mass motion removal and position restraints
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -58,9 +91,29 @@ also now work.
 
 :issue:`4148`
 
+Static selections of index groups with repeated indices now work
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Static groups from index files referenced in selections (e.g. ``gmx
+tool -select "group \"Contacts\""``) only worked correctly if they
+never had adjacent repeats of the same index within the
+group. Repeating the same index can be meaningful e.g. in lists of
+inter-atomic distances to analyze with ``gmx distance`` to analyze
+``"1 2 2 3"``. Previously, the index group had to be written like
+``"2 3 1 2"`` in order to work.
+
+:issue:`4149`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix a bug affecting re-run gmxapi scripts
+"""""""""""""""""""""""""""""""""""""""""
+
+A typo may have prevented gmxapi simulations from continuing from checkpoints
+after being interrupted. Fixed in version 0.2.3 of the gmxapi Python package.
+
+:issue:`4267`

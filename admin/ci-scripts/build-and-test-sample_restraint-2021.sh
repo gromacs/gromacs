@@ -16,7 +16,7 @@ set -e
 pushd python_packaging/src
   # TODO: Remove extraneous environment variable with resolution of #3273
   # Ref: https://redmine.gromacs.org/issues/3273
-  GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
+  GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
       python setup.py sdist
   # TODO: Identify SDIST
 
@@ -25,7 +25,7 @@ pushd python_packaging/src
   # TODO: How should we distinguish the target branch?
 #  if [ "2020" -eq "$GROMACS_VERSION" ]; then
   if [ 1 ]; then
-      GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
+      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
           python -m pip install \
               --no-cache-dir \
               --no-deps \
@@ -35,7 +35,7 @@ pushd python_packaging/src
   # TODO: Build and install from $SDIST instead of wildcard.
   # TODO: How should we distinguish the target branch?
 #    elif [ "2021" -eq "$GROMACS_VERSION" ]; then
-#      GMXTOOLCHAINDIR=$INSTALL_DIR/share/cmake/gromacs \
+#      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
 #          python -m pip install \
 #              --no-cache-dir \
 #              --no-deps \
@@ -49,13 +49,12 @@ pushd python_packaging/src
   fi
 popd
 
-. $INSTALL_DIR/bin/GMXRC
+. $GROMACS_ROOT/bin/GMXRC
 pushd python_packaging/sample_restraint
   mkdir build
   pushd build
     # TODO: Update with respect to https://redmine.gromacs.org/issues/3133
     cmake .. \
-             -DDOWNLOAD_GOOGLETEST=ON \
              -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON
     make
 
