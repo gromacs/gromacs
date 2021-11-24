@@ -506,14 +506,13 @@ respective licenses:
 8. Sun XDR implementation (External Data Representation)
 9. Sun FDLIBM (Freely Distributable Maths Library)
 10. ThreeFry Random Engine
-11. Gamma distribution from libc++
-12. md5
-13. lmfit
-14. clFFT
-15. Guidelines Support Library (GSL)
-16. P0009 reference implementation (Sandia Corporation)
-17. stl_interfaces
-18. muparser
+11. md5
+12. lmfit
+13. clFFT
+14. Guidelines Support Library (GSL)
+15. P0009 reference implementation (Sandia Corporation)
+16. stl_interfaces
+17. muparser
 
 ============================================
 
@@ -848,7 +847,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-12. md5
+11. md5
 ============================================
 
 Copyright (C) 1999, 2002 Aladdin Enterprises.  All rights reserved.
@@ -872,7 +871,7 @@ freely, subject to the following restrictions:
 L. Peter Deutsch
 ghost@aladdin.com
 
-13. lmfit
+12. lmfit
 ============================================
 The package lmfit is distributed under the FreeBSD License:
 
@@ -905,7 +904,7 @@ The package lmfit is distributed under the FreeBSD License:
   possibility of such damage.
 --
 
-14. clFFT
+13. clFFT
 ============================================
 
    Files: src/external/clFFT/*
@@ -920,7 +919,7 @@ AMD clFFT
     Advanced Micro Devices, Inc. (http://www.amd.com).
 --
 
-15. Guidelines Support Library
+14. Guidelines Support Library
 ============================================
 
    Files: src/gromacs/compat/pointers.h
@@ -952,7 +951,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 --
 
-16. P0009 reference implementation (Sandia Corporation)
+15. P0009 reference implementation (Sandia Corporation)
 =======================================================
 
    Files: src/gromacs/mdspan/*
@@ -994,7 +993,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Questions? Contact Christian R. Trott (crtrott@sandia.gov)
 
-17. stl_interfaces
+16. stl_interfaces
 ==================
 
 Used with minor modification from commit 486db0a5543cea2901ed of
@@ -1024,7 +1023,7 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-18. muparser
+17. muparser
 ============
 
 Used version 2.3.2 from https://github.com/beltoforion/muparser/releases/tag/v2.3.2,
