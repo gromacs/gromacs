@@ -32,7 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(FFTUnitTests fft-test HARDWARE_DETECTION
+# This test is slow with OpenCL or the OpenCL DPC++ SYCL back end so
+# label it as SLOW_TEST always. However when both those cases have
+# gone, it no longer needs this annotation.
+gmx_add_unit_test(FFTUnitTests fft-test HARDWARE_DETECTION SLOW_TEST
     GPU_CPP_SOURCE_FILES
         fft.cpp
     )
