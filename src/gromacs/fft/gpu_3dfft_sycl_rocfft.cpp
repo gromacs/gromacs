@@ -53,6 +53,7 @@
  * calling rocfft_plan_get_work_buffer_size, allocating a buffer that
  * persists suitably, and then using
  * rocfft_execution_info_set_work_buffer in a custom operation.
+ * See Issue #4153.
  *
  * hipSYCL queues operate at a higher level of abstraction than hip
  * streams, with the runtime distributing work to the latter to
@@ -166,6 +167,8 @@ struct RocfftPlan
     rocfft_plan_description description = nullptr;
     //! High level information about the plan
     rocfft_plan plan = nullptr;
+    //! Execution details (working buffer, HIP stream to use, etc)
+    rocfft_execution_info info = nullptr;
     //! Destructor
     ~RocfftPlan()
     {
@@ -178,6 +181,10 @@ struct RocfftPlan
         if (description)
         {
             rocfft_plan_description_destroy(description);
+        }
+        if (info)
+        {
+            rocfft_execution_info_destroy(info);
         }
     }
 };
@@ -289,7 +296,12 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
     handleFftError(
             resultPlanCreate.get_host_access()[0], descriptiveString, "rocfft_plan_create failure");
 
-    return RocfftPlan{ description, plan };
+    rocfft_execution_info execution_info = nullptr;
+    result                               = rocfft_execution_info_create(&execution_info);
+    handleFftError(result, descriptiveString, "rocfft_execution_info_create failure");
+    // rocfft_execution_info_set_work_buffer call can be added here, see Issue #4153
+
+    return RocfftPlan{ description, plan, execution_info };
 }
 
 } // namespace
@@ -434,9 +446,14 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
             void* d_inputGrid  = h.get_native_mem<cl::sycl::backend::hip>(inputGridAccessor);
             void* d_outputGrid = h.get_native_mem<cl::sycl::backend::hip>(outputGridAccessor);
 #endif
+            hipStream_t stream = h.get_native_queue<cl::sycl::backend::hip>();
+            rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
             // Don't check results generated asynchronously,
             // because we don't know what to do with them
-            rocfft_execute(impl_->plans_[direction].plan, &d_inputGrid, &d_outputGrid, nullptr);
+            rocfft_execute(impl_->plans_[direction].plan,
+                           &d_inputGrid,
+                           &d_outputGrid,
+                           impl_->plans_[direction].info);
         });
     });
 }
