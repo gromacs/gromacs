@@ -361,7 +361,7 @@ class EnergyData::Element final :
 {
 public:
     //! Constructor
-    Element(EnergyData* energyData, bool isMasterRank);
+    Element(EnergyData* energyData, bool isMasterRank, int freeEnergyCalculationPeriod);
 
     /*! \brief Register run function for step / time
      *
@@ -447,6 +447,8 @@ private:
     Step energyCalculationStep_;
     //! The next communicated free energy calculation step
     Step freeEnergyCalculationStep_;
+    //! The free energy calculation period
+    const int freeEnergyCalculationPeriod_;
 };
 
 } // namespace gmx

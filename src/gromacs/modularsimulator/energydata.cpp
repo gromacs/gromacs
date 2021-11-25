@@ -91,7 +91,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
                        StartingBehavior            startingBehavior,
                        bool                        simulationsShareState,
                        pull_t*                     pullWork) :
-    element_(std::make_unique<Element>(this, isMasterRank)),
+    element_(std::make_unique<Element>(this, isMasterRank, inputrec->fepvals->nstdhdl)),
     isMasterRank_(isMasterRank),
     forceVirialStep_(-1),
     shakeVirialStep_(-1),
@@ -132,9 +132,10 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
     {
         return;
     }
-    auto writeEnergy                 = energyWritingStep_ == step;
-    auto isEnergyCalculationStep     = energyCalculationStep_ == step;
-    auto isFreeEnergyCalculationStep = freeEnergyCalculationStep_ == step;
+    auto writeEnergy             = energyWritingStep_ == step;
+    auto isEnergyCalculationStep = energyCalculationStep_ == step;
+    auto isFreeEnergyCalculationStep =
+            (freeEnergyCalculationStep_ == step) && do_per_step(step, freeEnergyCalculationPeriod_);
     if (isEnergyCalculationStep || writeEnergy)
     {
         registerRunFunction([this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
@@ -537,12 +538,13 @@ EnergyData::Element* EnergyData::element()
     return element_.get();
 }
 
-EnergyData::Element::Element(EnergyData* energyData, bool isMasterRank) :
+EnergyData::Element::Element(EnergyData* energyData, bool isMasterRank, int freeEnergyCalculationPeriod) :
     energyData_(energyData),
     isMasterRank_(isMasterRank),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
-    freeEnergyCalculationStep_(-1)
+    freeEnergyCalculationStep_(-1),
+    freeEnergyCalculationPeriod_(freeEnergyCalculationPeriod)
 {
 }
 

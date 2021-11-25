@@ -244,7 +244,8 @@ void EnergySignaller::signal(Step step, Time time)
                                      && do_per_step(step, nstcalcvirial_))
                                  || (virialMode_ == EnergySignallerVirialMode::OnStepAndNext
                                      && do_per_step(step - 1, nstcalcvirial_));
-    const bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_);
+    // calculateEnergy is only here for when the last step is not a multiple of nstcalcfreeenergy_
+    const bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_) || calculateEnergy;
 
     if (calculateEnergy)
     {
