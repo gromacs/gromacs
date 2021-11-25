@@ -288,7 +288,8 @@ void BiasState::calcConvolvedPmf(ArrayRef<const DimParams> dimParams,
 
         GMX_RELEASE_ASSERT(freeEnergyWeights > 0,
                            "Attempting to do log(<= 0) in AWH convolved PMF calculation.");
-        (*convolvedPmf)[m] = -std::log(static_cast<float>(freeEnergyWeights));
+        // We should cast to float after taking the logarithm to avoid underflows
+        (*convolvedPmf)[m] = static_cast<float>(-std::log(freeEnergyWeights));
     }
 }
 
@@ -1702,13 +1703,22 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
     std::vector<int> gridIndexToDataIndex(grid.numPoints());
     mapGridToDataGrid(&gridIndexToDataIndex, data, numRows, filename, grid, correctFormatMessage);
 
+    // The bounds for the PMF such that exp(pmf) doesn't over/underflow in double precision
+    const double c_pmfMax = 700.0;
+
     /* Extract the data for each grid point.
      * We check if the target distribution is zero for all points.
      */
     bool targetDistributionIsZero = true;
     for (size_t m = 0; m < pointState->size(); m++)
     {
-        (*pointState)[m].setLogPmfSum(-data[columnIndexPmf][gridIndexToDataIndex[m]]);
+        const double pmf = data[columnIndexPmf][gridIndexToDataIndex[m]];
+        if (pmf < -c_pmfMax || pmf > c_pmfMax)
+        {
+            GMX_THROW(InvalidInputError(
+                    "A value in the user input PMF is beyond the bounds of +-700 kT"));
+        }
+        (*pointState)[m].setLogPmfSum(-pmf);
         double target = data[columnIndexTarget][gridIndexToDataIndex[m]];
 
         /* Check if the values are allowed. */
