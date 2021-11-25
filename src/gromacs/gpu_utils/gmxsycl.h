@@ -74,23 +74,20 @@
 #    pragma clang diagnostic ignored "-Wsuggest-override"
 #    pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #    pragma clang diagnostic ignored "-Wgcc-compat"
-#endif
-
-
-#ifdef DIM
-#    if DIM != 3
-#        error "The workaround here assumes we use DIM=3."
-#    else
-#        undef DIM
-#        include <CL/sycl.hpp>
-#        define DIM 3
-#    endif
-#else
-#    include <CL/sycl.hpp>
-#endif
-
-#if GMX_SYCL_HIPSYCL
+#    include <SYCL/sycl.hpp>
 #    pragma clang diagnostic pop
+#else // DPC++ has issues with DIM macro and has no SYCL/sycl.hpp in oneAPI 2021.4
+#    ifdef DIM
+#        if DIM != 3
+#            error "The workaround here assumes we use DIM=3."
+#        else
+#            undef DIM
+#            include <CL/sycl.hpp>
+#            define DIM 3
+#        endif
+#    else
+#        include <CL/sycl.hpp>
+#    endif
 #endif
 
 /* Exposing Intel-specific extensions in a manner compatible with SYCL2020 provisional spec.
@@ -104,44 +101,25 @@ namespace sycl_2020
 namespace detail
 {
 #if GMX_SYCL_DPCPP
-// Confirmed to work for 2021.1-beta10 (20201005) to 2021.3.0 (20210619).
-// Deprecated in favor of sycl::ext::oneapi on 20210717 in https://github.com/intel/llvm/commit/d703f578.
-// Removed on 20210927 with https://github.com/intel/llvm/pull/4488
-#    if __clang_major__ >= 14
 namespace origin = sycl::ext::oneapi;
-#    else
-namespace origin = cl::sycl::ONEAPI;
-#    endif
 #elif GMX_SYCL_HIPSYCL
-namespace origin = cl::sycl;
+namespace origin = ::sycl;
 #else
 #    error "Unsupported version of SYCL compiler"
 #endif
 } // namespace detail
 
+using detail::origin::atomic_ref;
 using detail::origin::memory_order;
 using detail::origin::memory_scope;
-using detail::origin::plus;
-using detail::origin::sub_group;
 
 #if GMX_SYCL_DPCPP
-using detail::origin::atomic_ref;
-template<typename... Args>
-bool group_any_of(Args&&... args)
-{
-    return detail::origin::any_of(std::forward<Args>(args)...);
-}
-template<typename... Args>
-auto group_reduce(Args&&... args) -> decltype(detail::origin::reduce(std::forward<Args>(args)...))
-{
-    return detail::origin::reduce(std::forward<Args>(args)...);
-}
+template<typename dataT, int dimensions = 1>
+using local_accessor =
+        sycl::accessor<dataT, dimensions, sycl::access_mode::read_write, sycl::target::local>;
 #elif GMX_SYCL_HIPSYCL
-using detail::origin::atomic_ref;
-using detail::origin::group_any_of;
-using detail::origin::group_reduce;
-#else
-#    error "Unsupported SYCL compiler"
+template<typename dataT, int dimensions = 1>
+using local_accessor = sycl::local_accessor<dataT, dimensions>;
 #endif
 
 } // namespace sycl_2020

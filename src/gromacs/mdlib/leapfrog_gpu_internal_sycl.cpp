@@ -63,7 +63,7 @@ class LeapFrogKernel;
 namespace gmx
 {
 
-using cl::sycl::access::mode;
+using mode = sycl::access_mode;
 
 /*! \brief Main kernel for the Leap-Frog integrator.
  *
@@ -87,7 +87,7 @@ using cl::sycl::access::mode;
  */
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
 auto leapFrogKernel(
-        cl::sycl::handler&                          cgh,
+        sycl::handler&                              cgh,
         DeviceAccessor<Float3, mode::read_write>    a_x,
         DeviceAccessor<Float3, mode::discard_write> a_xp,
         DeviceAccessor<Float3, mode::read_write>    a_v,
@@ -112,7 +112,7 @@ auto leapFrogKernel(
         a_tempScaleGroups.bind(cgh);
     }
 
-    return [=](cl::sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx) {
         const Float3 x    = a_x[itemIdx];
         const Float3 v    = a_v[itemIdx];
         const Float3 f    = a_f[itemIdx];
@@ -162,15 +162,15 @@ auto leapFrogKernel(
 
 //! \brief Leap Frog SYCL kernel launch code.
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling, class... Args>
-static cl::sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
+static sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
 {
     // Should not be needed for SYCL2020.
     using kernelNameType = LeapFrogKernel<numTempScaleValues, velocityScaling>;
 
-    const cl::sycl::range<1> rangeAllAtoms(numAtoms);
-    cl::sycl::queue          q = deviceStream.stream();
+    const sycl::range<1> rangeAllAtoms(numAtoms);
+    sycl::queue          q = deviceStream.stream();
 
-    cl::sycl::event e = q.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
         auto kernel =
                 leapFrogKernel<numTempScaleValues, velocityScaling>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
@@ -202,9 +202,9 @@ static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numT
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline cl::sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScalingType,
-                                                   VelocityScalingType prVelocityScalingType,
-                                                   Args&&... args)
+static inline sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScalingType,
+                                               VelocityScalingType prVelocityScalingType,
+                                               Args&&... args)
 {
     GMX_ASSERT(prVelocityScalingType == VelocityScalingType::None
                        || prVelocityScalingType == VelocityScalingType::Diagonal,

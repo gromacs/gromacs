@@ -48,8 +48,7 @@
 
 #include "nbnxm_sycl_types.h"
 
-using cl::sycl::access::mode;
-using cl::sycl::access::target;
+using mode = sycl::access_mode;
 
 namespace Nbnxm
 {
@@ -66,7 +65,7 @@ namespace Nbnxm
  * \param[in]     numAtomsPerCell     Number of atoms per cell.
  * \param[in]     columnsOffset       Index if the first column in the cell.
  */
-static auto nbnxmKernelTransformXToXq(cl::sycl::handler&                       cgh,
+static auto nbnxmKernelTransformXToXq(sycl::handler&                           cgh,
                                       DeviceAccessor<Float4, mode::read_write> a_xq,
                                       DeviceAccessor<Float3, mode::read>       a_x,
                                       DeviceAccessor<int, mode::read>          a_atomIndex,
@@ -82,7 +81,7 @@ static auto nbnxmKernelTransformXToXq(cl::sycl::handler&                       c
     a_numAtoms.bind(cgh);
     a_cellIndex.bind(cgh);
 
-    return [=](cl::sycl::id<2> itemIdx) {
+    return [=](sycl::id<2> itemIdx) {
         // Map cell-level parallelism to y component of block index.
         const int cxy = itemIdx.get(1) + columnsOffset;
 
@@ -115,10 +114,10 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     const unsigned int numAtomsMax = grid.numCellsColumnMax() * grid.numAtomsPerCell();
     GMX_ASSERT(numColumns <= numColumnsMax, "Grid has more columns than allowed");
 
-    const cl::sycl::range<2> globalSize{ numAtomsMax, numColumns };
-    cl::sycl::queue          q = deviceStream.stream();
+    const sycl::range<2> globalSize{ numAtomsMax, numColumns };
+    sycl::queue          q = deviceStream.stream();
 
-    q.submit([&](cl::sycl::handler& cgh) {
+    q.submit([&](sycl::handler& cgh) {
         auto kernel = nbnxmKernelTransformXToXq(cgh,
                                                 nb->atdat->xq,
                                                 d_x,

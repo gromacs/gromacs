@@ -98,13 +98,13 @@ using DeviceBuffer = TypedClMemory<ValueType>;
 #elif GMX_GPU_SYCL
 
 /*! \libinternal \brief
- * A minimal wrapper around \c cl::sycl::buffer to hide it away and simplify compilation.
+ * A minimal wrapper around \c sycl::buffer to hide it away and simplify compilation.
  */
 template<typename ValueType>
 struct DeviceBuffer
 {
-    class ClSyclBufferWrapper;
-    std::unique_ptr<ClSyclBufferWrapper> buffer_;
+    class SyclBufferWrapper;
+    std::unique_ptr<SyclBufferWrapper> buffer_;
 
     DeviceBuffer();
     DeviceBuffer(std::nullptr_t nullPtr);

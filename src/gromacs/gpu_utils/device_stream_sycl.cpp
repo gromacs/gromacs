@@ -46,19 +46,19 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 
-static cl::sycl::property_list makeQueuePropertyList(bool inOrder, bool enableProfiling)
+static sycl::property_list makeQueuePropertyList(bool inOrder, bool enableProfiling)
 {
     if (enableProfiling && inOrder)
     {
-        return { cl::sycl::property::queue::in_order(), cl::sycl::property::queue::enable_profiling() };
+        return { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() };
     }
     else if (enableProfiling && !inOrder)
     {
-        return { cl::sycl::property::queue::enable_profiling() };
+        return { sycl::property::queue::enable_profiling() };
     }
     else if (!enableProfiling && inOrder)
     {
-        return { cl::sycl::property::queue::in_order() };
+        return { sycl::property::queue::in_order() };
     }
     else
     {
@@ -70,19 +70,18 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext,
                            DeviceStreamPriority /* priority */,
                            const bool useTiming)
 {
-    const std::vector<cl::sycl::device> devicesInContext = deviceContext.context().get_devices();
+    const std::vector<sycl::device> devicesInContext = deviceContext.context().get_devices();
     // The context is constructed to have exactly one device
-    const cl::sycl::device device = devicesInContext[0];
+    const sycl::device device = devicesInContext[0];
 
     bool enableProfiling = false;
     if (useTiming)
     {
-        const bool deviceSupportsTiming = device.get_info<cl::sycl::info::device::queue_profiling>();
+        const bool deviceSupportsTiming = device.get_info<sycl::info::device::queue_profiling>();
         enableProfiling                 = deviceSupportsTiming;
     }
     const bool inOrder = (GMX_SYCL_USE_USM != 0);
-    stream_            = cl::sycl::queue(
-            deviceContext.context(), device, makeQueuePropertyList(inOrder, enableProfiling));
+    stream_ = sycl::queue(deviceContext.context(), device, makeQueuePropertyList(inOrder, enableProfiling));
 }
 
 DeviceStream::~DeviceStream()
@@ -106,7 +105,7 @@ void DeviceStream::synchronize()
 
 void DeviceStream::synchronize() const
 {
-    /* cl::sycl::queue::wait is a non-const function. However, a lot of code in GROMACS
+    /* sycl::queue::wait is a non-const function. However, a lot of code in GROMACS
      * assumes DeviceStream is const, yet wants to synchronize with it.
      * The chapter "4.3.2 Common reference semantics" of SYCL 1.2.1 specification says:
      * > Each of the following SYCL runtime classes: [...] queue, [...] must obey the following
@@ -119,5 +118,5 @@ void DeviceStream::synchronize() const
      * Same in chapter "4.5.3" of provisional SYCL 2020 specification (June 30, 2020).
      * So, we can copy-construct a new queue and wait() on it.
      */
-    cl::sycl::queue(stream_).wait_and_throw();
+    sycl::queue(stream_).wait_and_throw();
 }

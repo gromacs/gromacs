@@ -51,7 +51,7 @@
 
 #include "pme_gpu_constants.h"
 
-using cl::sycl::access::mode;
+using mode = sycl::access_mode;
 
 /*! \brief
  * PME complex grid solver kernel function.
@@ -62,7 +62,7 @@ using cl::sycl::access::mode;
  * \tparam     subGroupSize             Describes the width of a SYCL subgroup
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int subGroupSize>
-auto makeSolveKernel(cl::sycl::handler&                cgh,
+auto makeSolveKernel(sycl::handler&                    cgh,
                      DeviceAccessor<float, mode::read> a_splineModuli,
                      SolveKernelParams                 solveKernelParams,
                      OptionalAccessor<float, mode::read_write, computeEnergyAndVirial> a_virialAndEnergy,
@@ -79,16 +79,15 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
     const int stride =
             8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
     static_assert(c_virialAndEnergyCount == 7);
-    const int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
-    cl::sycl::accessor<float, 1, mode::read_write, cl::sycl::target::local> sm_virialAndEnergy(
-            cl::sycl::range<1>(reductionBufferSize), cgh);
+    const int                           reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
+    sycl_2020::local_accessor<float, 1> sm_virialAndEnergy(sycl::range<1>(reductionBufferSize), cgh);
 
     /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
      * Each block handles up to c_solveMaxWarpsPerBlock * subGroupSize cells -
      * depending on the grid contiguous dimension size,
      * that can range from a part of a single gridline to several complete gridlines.
      */
-    return [=](cl::sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
         /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
         int majorDim, middleDim, minorDim;
@@ -128,8 +127,8 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
         // convert from float to float2, runtime boundary checks can
         // fail because of this mismatch. So, we extract the
         // underlying global_ptr and use that to construct
-        // cl::sycl::float2 values when needed.
-        cl::sycl::global_ptr<float> gm_fourierGrid = a_fourierGrid.get_pointer();
+        // sycl::float2 values when needed.
+        sycl::global_ptr<float> gm_fourierGrid = a_fourierGrid.get_pointer();
 
         /* Various grid sizes and indices */
         const int localOffsetMinor = 0, localOffsetMajor = 0, localOffsetMiddle = 0;
@@ -149,7 +148,7 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
         const int gridLineIndex     = threadLocalId / gridLineSize;
         const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
         const int gridLinesPerBlock =
-                cl::sycl::max(itemIdx.get_local_range(2) / size_t(gridLineSize), size_t(1));
+                sycl::max(itemIdx.get_local_range(2) / size_t(gridLineSize), size_t(1));
         const int activeWarps = (itemIdx.get_local_range(2) / subGroupSize);
         const int indexMinor = itemIdx.get_group(2) * itemIdx.get_local_range(2) + gridLineCellIndex;
         const int indexMiddle = itemIdx.get_group(1) * gridLinesPerBlock + gridLineIndex;
@@ -248,22 +247,22 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
                 assert(sycl_2020::isfinite(denom));
                 assert(denom != 0.0F);
 
-                const float tmp1   = cl::sycl::exp(-solveKernelParams.ewaldFactor * m2k);
+                const float tmp1   = sycl::exp(-solveKernelParams.ewaldFactor * m2k);
                 const float etermk = solveKernelParams.elFactor * tmp1 / denom;
 
                 // sycl::float2::load and store are buggy in hipSYCL,
                 // but can probably be used after resolution of
                 // https://github.com/illuhad/hipSYCL/issues/647
-                cl::sycl::float2 gridValue;
+                sycl::float2 gridValue;
                 sycl_2020::loadToVec(
-                        gridThreadIndex, cl::sycl::global_ptr<const float>(gm_fourierGrid), &gridValue);
-                const cl::sycl::float2 oldGridValue = gridValue;
+                        gridThreadIndex, sycl::global_ptr<const float>(gm_fourierGrid), &gridValue);
+                const sycl::float2 oldGridValue = gridValue;
                 gridValue *= etermk;
                 sycl_2020::storeFromVec(gridValue, gridThreadIndex, gm_fourierGrid);
 
                 if (computeEnergyAndVirial)
                 {
-                    const float tmp1k = 2.0F * cl::sycl::dot(gridValue, oldGridValue);
+                    const float tmp1k = 2.0F * sycl::dot(gridValue, oldGridValue);
 
                     float vfactor = (solveKernelParams.ewaldFactor + 1.0F / m2k) * 2.0F;
                     float ets2    = corner_fac * tmp1k;
@@ -293,7 +292,7 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
             const int width = subGroupSize;
             static_assert(subGroupSize >= 8);
 
-            sycl_2020::sub_group sg = itemIdx.get_sub_group();
+            sycl::sub_group sg = itemIdx.get_sub_group();
 
             /* Making pair sums */
             virxx += sycl_2020::shift_left(sg, virxx, 1);
@@ -345,7 +344,7 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
                 const int warpIndex = threadLocalId / subGroupSize;
                 sm_virialAndEnergy[warpIndex * stride + componentIndex] = virxx;
             }
-            itemIdx.barrier(cl::sycl::access::fence_space::local_space);
+            itemIdx.barrier(sycl::access::fence_space::local_space);
 
             /* Reduce to the single warp size */
             const int targetIndex = threadLocalId;
@@ -358,7 +357,7 @@ auto makeSolveKernel(cl::sycl::handler&                cgh,
                 {
                     sm_virialAndEnergy[targetIndex] += sm_virialAndEnergy[sourceIndex];
                 }
-                itemIdx.barrier(cl::sycl::access::fence_space::local_space);
+                itemIdx.barrier(sycl::access::fence_space::local_space);
             }
 
             /* Now use shuffle again */
@@ -420,7 +419,7 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
 }
 
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int gridIndex, int subGroupSize>
-cl::sycl::event PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSize>::launch(
+sycl::event PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSize>::launch(
         const KernelLaunchConfig& config,
         const DeviceStream&       deviceStream)
 {
@@ -430,13 +429,13 @@ cl::sycl::event PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, 
     using KernelNameType = PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSize>;
 
     // SYCL has different multidimensional layout than OpenCL/CUDA.
-    const cl::sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
-    const cl::sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
-    const cl::sycl::nd_range<3> range{ groupRange * localSize, localSize };
+    const sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
+    const sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
+    const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
-    cl::sycl::queue q = deviceStream.stream();
+    sycl::queue q = deviceStream.stream();
 
-    cl::sycl::event e = q.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
         auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
                 cgh,
                 gridParams_->d_splineModuli[gridIndex],

@@ -97,13 +97,13 @@ private:
 #if GMX_GPU_SYCL
 public:
     //! Const getter
-    const cl::sycl::context& context() const { return context_; }
+    const sycl::context& context() const { return context_; }
     //! Getter
-    cl::sycl::context& context() { return context_; }
+    sycl::context& context() { return context_; }
 
 private:
     //! SYCL context object
-    cl::sycl::context context_;
+    sycl::context context_;
 #endif
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);

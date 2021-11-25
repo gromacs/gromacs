@@ -61,16 +61,16 @@ class ReduceKernel;
 namespace gmx
 {
 
-using cl::sycl::access::mode;
+using mode = sycl::access_mode;
 
 //! \brief Function returning the force reduction kernel lambda.
 template<bool addRvecForce, bool accumulateForce>
-static auto reduceKernel(cl::sycl::handler&                                 cgh,
+static auto reduceKernel(sycl::handler&                                     cgh,
                          DeviceAccessor<Float3, mode::read>                 a_nbnxmForce,
                          OptionalAccessor<Float3, mode::read, addRvecForce> a_rvecForceToAdd,
                          DeviceAccessor<Float3, accumulateForce ? mode::read_write : mode::write> a_forceTotal,
-                         DeviceAccessor<int, cl::sycl::access::mode::read> a_cell,
-                         const int                                         atomStart)
+                         DeviceAccessor<int, mode::read> a_cell,
+                         const int                       atomStart)
 {
     a_nbnxmForce.bind(cgh);
     if constexpr (addRvecForce)
@@ -80,7 +80,7 @@ static auto reduceKernel(cl::sycl::handler&                                 cgh,
     a_forceTotal.bind(cgh);
     a_cell.bind(cgh);
 
-    return [=](cl::sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx) {
         // Set to nbnxnm force, then perhaps accumulate further to it
         Float3 temp = a_nbnxmForce[a_cell[itemIdx]];
 
@@ -108,13 +108,13 @@ static void launchReductionKernel_(const int                   numAtoms,
                                    const DeviceBuffer<int>&    b_cell,
                                    const DeviceStream&         deviceStream)
 {
-    const cl::sycl::range<1> rangeNumAtoms(numAtoms);
-    cl::sycl::queue          queue = deviceStream.stream();
+    const sycl::range<1> rangeNumAtoms(numAtoms);
+    sycl::queue          queue = deviceStream.stream();
 
     // We only need parts of b_rvecForceToAdd and b_forceTotal, so sub-buffers would be appropriate.
     // But hipSYCL does not support them yet, nor plans to. See Issue #4019.
 
-    queue.submit([&](cl::sycl::handler& cgh) {
+    queue.submit([&](sycl::handler& cgh) {
         auto kernel = reduceKernel<addRvecForce, accumulateForce>(
                 cgh, b_nbnxmForce, b_rvecForceToAdd, b_forceTotal, b_cell, atomStart);
         cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);

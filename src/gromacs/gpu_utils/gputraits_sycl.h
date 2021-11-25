@@ -57,11 +57,11 @@ using CommandEvent = void*;
 
 // TODO: Issue #3312
 //! Convenience alias.
-using Float4 = cl::sycl::float4;
-//! Convenience alias. Not using cl::sycl::float3 due to alignment issues.
+using Float4 = sycl::float4;
+//! Convenience alias. Not using sycl::float3 due to alignment issues.
 using Float3 = gmx::RVec;
-//! Convenience alias for cl::sycl::float2
-using Float2 = cl::sycl::float2;
+//! Convenience alias for sycl::float2
+using Float2 = sycl::float2;
 
 /*! \internal \brief
  * GPU kernels scheduling description.

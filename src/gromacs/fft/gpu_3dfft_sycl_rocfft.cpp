@@ -254,8 +254,8 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
     // used. The stream for execution can be set at the same time.
 
     // First set up device buffers to receive the rocfft status values
-    rocfft_plan                        plan = nullptr;
-    cl::sycl::buffer<rocfft_status, 1> resultPlanCreate(1);
+    rocfft_plan                    plan = nullptr;
+    sycl::buffer<rocfft_status, 1> resultPlanCreate(1);
 
     // Submit the planning to the queue. This is necessary so that we
     // can ensure that the allocations in the planning go to the right
@@ -264,14 +264,13 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
         auto queue = pmeStream.stream();
         // Make a buffer that is a view of the existing memory for a
         // plan.
-        cl::sycl::buffer<rocfft_plan, 1> planView =
-                cl::sycl::make_async_writeback_view(&plan, cl::sycl::range(1), queue);
-        queue.submit([&](cl::sycl::handler& cgh) {
+        sycl::buffer<rocfft_plan, 1> planView =
+                sycl::make_async_writeback_view(&plan, sycl::range(1), queue);
+        queue.submit([&](sycl::handler& cgh) {
             // Make the necessary accessors
-            auto a_plan = planView.get_access(cgh, cl::sycl::write_only, cl::sycl::no_init);
-            auto a_resultPlanCreate =
-                    resultPlanCreate.get_access(cgh, cl::sycl::write_only, cl::sycl::no_init);
-            cgh.hipSYCL_enqueue_custom_operation([=](cl::sycl::interop_handle& /*h*/) {
+            auto a_plan             = planView.get_access(cgh, sycl::write_only, sycl::no_init);
+            auto a_resultPlanCreate = resultPlanCreate.get_access(cgh, sycl::write_only, sycl::no_init);
+            cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& /*h*/) {
                 const int numBatches = 1;
                 // Unlike some other FFT APIs, in rocFFT the
                 // dimension of an FFT is the (vectorial) size
@@ -338,15 +337,15 @@ public:
     float* complexGrid_;
 #else
     //! Handle to the real grid buffer
-    cl::sycl::buffer<float, 1> realGrid_;
+    sycl::buffer<float, 1> realGrid_;
     //! Handle to the complex grid buffer
-    cl::sycl::buffer<float, 1> complexGrid_;
+    sycl::buffer<float, 1> complexGrid_;
 #endif
     /*! \brief Copy of PME stream
      *
      * This copy is guaranteed by the SYCL standard to work as if
      * it was the original. */
-    cl::sycl::queue queue_;
+    sycl::queue queue_;
 };
 
 Gpu3dFft::ImplSyclRocfft::Impl::Impl(bool allocateGrids,
@@ -416,7 +415,7 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
 #if GMX_SYCL_USE_USM
     float **inputGrid = nullptr, **outputGrid = nullptr;
 #else
-    cl::sycl::buffer<float, 1>*inputGrid = nullptr, *outputGrid = nullptr;
+    sycl::buffer<float, 1>*inputGrid = nullptr, *outputGrid = nullptr;
 #endif
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
@@ -431,22 +430,22 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
         outputGrid = &impl_->realGrid_;
     }
     // Enqueue the 3D FFT work
-    impl_->queue_.submit([&](cl::sycl::handler& cgh) {
+    impl_->queue_.submit([&](sycl::handler& cgh) {
 #if !GMX_SYCL_USE_USM
-        auto inputGridAccessor = inputGrid->get_access(cgh, cl::sycl::read_only);
-        auto outputGridAccessor = outputGrid->get_access(cgh, cl::sycl::write_only, cl::sycl::no_init);
+        auto inputGridAccessor  = inputGrid->get_access(cgh, sycl::read_only);
+        auto outputGridAccessor = outputGrid->get_access(cgh, sycl::write_only, sycl::no_init);
 #endif
         // Use a hipSYCL custom operation to access the native buffers
         // needed to call rocFFT
-        cgh.hipSYCL_enqueue_custom_operation([=](cl::sycl::interop_handle& gmx_unused h) {
+        cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
 #if GMX_SYCL_USE_USM
             void* d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
             void* d_outputGrid = reinterpret_cast<void*>(*outputGrid);
 #else
-            void* d_inputGrid  = h.get_native_mem<cl::sycl::backend::hip>(inputGridAccessor);
-            void* d_outputGrid = h.get_native_mem<cl::sycl::backend::hip>(outputGridAccessor);
+            void* d_inputGrid  = h.get_native_mem<sycl::backend::hip>(inputGridAccessor);
+            void* d_outputGrid = h.get_native_mem<sycl::backend::hip>(outputGridAccessor);
 #endif
-            hipStream_t stream = h.get_native_queue<cl::sycl::backend::hip>();
+            hipStream_t stream = h.get_native_queue<sycl::backend::hip>();
             rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
             // Don't check results generated asynchronously,
             // because we don't know what to do with them

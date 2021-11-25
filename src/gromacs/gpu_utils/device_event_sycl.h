@@ -70,7 +70,7 @@ public:
         events_.reserve(1);
     }
     //! A constructor from an existing event.
-    DeviceEvent(const cl::sycl::event& event) : events_{ event } {}
+    DeviceEvent(const sycl::event& event) : events_{ event } {}
     //! A destructor.
     ~DeviceEvent() = default;
     // Disable copy, move, and assignment. They all can be allowed, but not needed yet.
@@ -125,9 +125,9 @@ public:
     //! Checks the completion of the underlying event.
     inline bool isReady()
     {
-        bool allReady = std::all_of(events_.begin(), events_.end(), [](cl::sycl::event& event) {
-            auto info       = event.get_info<cl::sycl::info::event::command_execution_status>();
-            bool isComplete = (info == cl::sycl::info::event_command_status::complete);
+        bool allReady = std::all_of(events_.begin(), events_.end(), [](sycl::event& event) {
+            auto info       = event.get_info<sycl::info::event::command_execution_status>();
+            bool isComplete = (info == sycl::info::event_command_status::complete);
             return isComplete;
         });
         return allReady;
@@ -153,7 +153,7 @@ public:
     }
 
 private:
-    std::vector<cl::sycl::event> events_;
+    std::vector<sycl::event> events_;
 #    if GMX_SYCL_HIPSYCL
     /*! \brief Flag to track event marking in hipSYCL.
      *

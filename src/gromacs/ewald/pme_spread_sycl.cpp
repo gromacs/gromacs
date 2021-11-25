@@ -72,13 +72,13 @@
  * \param[in]  itemIdx              Current thread ID.
  */
 template<int order, bool wrapX, bool wrapY, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-inline void spread_charges(const float                      atomCharge,
-                           const int                        realGridSize[DIM],
-                           const int                        realGridSizePadded[DIM],
-                           cl::sycl::global_ptr<float>      gm_grid,
-                           const cl::sycl::local_ptr<int>   sm_gridlineIndices,
-                           const cl::sycl::local_ptr<float> sm_theta,
-                           const cl::sycl::nd_item<3>&      itemIdx)
+inline void spread_charges(const float                  atomCharge,
+                           const int                    realGridSize[DIM],
+                           const int                    realGridSizePadded[DIM],
+                           sycl::global_ptr<float>      gm_grid,
+                           const sycl::local_ptr<int>   sm_gridlineIndices,
+                           const sycl::local_ptr<float> sm_theta,
+                           const sycl::nd_item<3>&      itemIdx)
 {
     //! Number of atoms processed by a single warp in spread and gather
     const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
@@ -176,7 +176,7 @@ inline void spread_charges(const float                      atomCharge,
  */
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
 auto pmeSplineAndSpreadKernel(
-        cl::sycl::handler&                                                        cgh,
+        sycl::handler&                                                            cgh,
         const int                                                                 nAtoms,
         OptionalAccessor<float, mode::read_write, spreadCharges>                  a_realGrid_0,
         OptionalAccessor<float, mode::read_write, numGrids == 2 && spreadCharges> a_realGrid_1,
@@ -233,19 +233,15 @@ auto pmeSplineAndSpreadKernel(
     }
 
     // Gridline indices, ivec
-    cl::sycl::accessor<int, 1, mode::read_write, target::local> sm_gridlineIndices(
-            cl::sycl::range<1>(atomsPerBlock * DIM), cgh);
+    sycl_2020::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
     // Charges
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_coefficients(
-            cl::sycl::range<1>(atomsPerBlock), cgh);
+    sycl_2020::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
     // Spline values
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_theta(
-            cl::sycl::range<1>(atomsPerBlock * DIM * order), cgh);
-    auto sm_fractCoords = [&]() {
+    sycl_2020::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    auto                                sm_fractCoords = [&]() {
         if constexpr (computeSplines)
         {
-            return cl::sycl::accessor<float, 1, mode::read_write, target::local>(
-                    cl::sycl::range<1>(atomsPerBlock * DIM), cgh);
+            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
         }
         else
         {
@@ -253,7 +249,7 @@ auto pmeSplineAndSpreadKernel(
         }
     }();
 
-    return [=](cl::sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
         const int blockIndex      = itemIdx.get_group_linear_id();
         const int atomIndexOffset = blockIndex * atomsPerBlock;
@@ -382,7 +378,7 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
 
 
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-cl::sycl::event
+sycl::event
 PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>::launch(
         const KernelLaunchConfig& config,
         const DeviceStream&       deviceStream)
@@ -395,14 +391,14 @@ PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, num
             PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>;
 
     // SYCL has different multidimensional layout than OpenCL/CUDA.
-    const cl::sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
-    const cl::sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
-    const cl::sycl::nd_range<3> range{ groupRange * localSize, localSize };
+    const sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
+    const sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
+    const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
-    cl::sycl::queue q = deviceStream.stream();
+    sycl::queue q = deviceStream.stream();
 
 
-    cl::sycl::event e = q.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
         auto kernel =
                 pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>(
                         cgh,

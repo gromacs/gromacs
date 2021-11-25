@@ -123,24 +123,24 @@ private:
 #elif GMX_GPU_SYCL
 
     /*! \brief
-     * Getter for the underlying \c cl::sycl:queue object.
+     * Getter for the underlying \c sycl:queue object.
      *
      * Returns a copy instead of const-reference, because it's impossible to submit to or wait
-     * on a \c const cl::sycl::queue. SYCL standard guarantees that operating on copy is
+     * on a \c const sycl::queue. SYCL standard guarantees that operating on copy is
      * equivalent to operating on the original queue.
      *
      * \throws std::bad_optional_access if the stream is not valid.
      *
-     * \returns A copy of the internal \c cl::sycl:queue.
+     * \returns A copy of the internal \c sycl:queue.
      */
-    cl::sycl::queue stream() const { return cl::sycl::queue(stream_); }
+    sycl::queue stream() const { return sycl::queue(stream_); }
     //! Getter. Can throw std::bad_optional_access if the stream is not valid.
-    cl::sycl::queue& stream() { return stream_; }
+    sycl::queue& stream() { return stream_; }
     //! Synchronize the stream. Non-const version of \c ::synchronize() for SYCL that does not do unnecessary copying.
     void synchronize();
 
 private:
-    cl::sycl::queue stream_;
+    sycl::queue stream_;
 #elif GMX_GPU_OPENCL || defined DOXYGEN
 
     //! Getter

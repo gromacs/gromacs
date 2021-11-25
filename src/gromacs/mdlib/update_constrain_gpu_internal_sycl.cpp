@@ -56,13 +56,13 @@ namespace gmx
 {
 
 //! \brief Function returning the scaling kernel lambda.
-static auto scaleKernel(cl::sycl::handler&                                         cgh,
-                        DeviceAccessor<Float3, cl::sycl::access::mode::read_write> a_x,
-                        const ScalingMatrix                                        scalingMatrix)
+static auto scaleKernel(sycl::handler&                                        cgh,
+                        DeviceAccessor<Float3, sycl::access_mode::read_write> a_x,
+                        const ScalingMatrix                                   scalingMatrix)
 {
     a_x.bind(cgh);
 
-    return [=](cl::sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx) {
         Float3 x     = a_x[itemIdx];
         x[0]         = scalingMatrix.xx * x[0] + scalingMatrix.yx * x[1] + scalingMatrix.zx * x[2];
         x[1]         = scalingMatrix.yy * x[1] + scalingMatrix.zy * x[2];
@@ -76,10 +76,10 @@ void launchScaleCoordinatesKernel(const int            numAtoms,
                                   const ScalingMatrix& mu,
                                   const DeviceStream&  deviceStream)
 {
-    const cl::sycl::range<1> rangeAllAtoms(numAtoms);
-    cl::sycl::queue          queue = deviceStream.stream();
+    const sycl::range<1> rangeAllAtoms(numAtoms);
+    sycl::queue          queue = deviceStream.stream();
 
-    cl::sycl::event e = queue.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = queue.submit([&](sycl::handler& cgh) {
         auto kernel = scaleKernel(cgh, d_coordinates, mu);
         cgh.parallel_for<ScaleKernel>(rangeAllAtoms, kernel);
     });

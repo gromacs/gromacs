@@ -274,12 +274,11 @@ else()
     endif()
     gmx_find_flag_for_source(SYCL_CXX_FLAGS_RESULT
         "#include <CL/sycl.hpp>
-         namespace sycl = cl::sycl;
          int main(){
              sycl::queue q(sycl::default_selector{});
              return 0;
          }
-         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -Wno-deprecated-declarations")
+         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl -fsycl-device-code-split=per_kernel")
     
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
         if(SYCL_CXX_FLAGS_RESULT)

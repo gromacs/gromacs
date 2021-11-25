@@ -55,8 +55,8 @@ class PmeGatherKernel : public ISyclKernelFunctor
 {
 public:
     PmeGatherKernel();
-    void            setArg(size_t argIndex, void* arg) override;
-    cl::sycl::event launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
+    void        setArg(size_t argIndex, void* arg) override;
+    sycl::event launch(const KernelLaunchConfig& config, const DeviceStream& deviceStream) override;
 
 private:
     PmeGpuGridParams*    gridParams_;

@@ -74,16 +74,16 @@ static inline void pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const rvec& r1, const r
     dr[YY] = r1[YY] - r2[YY];
     dr[ZZ] = r1[ZZ] - r2[ZZ];
 
-    float shz = cl::sycl::rint(dr[ZZ] * pbcAiuc.invBoxDiagZ);
+    float shz = sycl::rint(dr[ZZ] * pbcAiuc.invBoxDiagZ);
     dr[XX] -= shz * pbcAiuc.boxZX;
     dr[YY] -= shz * pbcAiuc.boxZY;
     dr[ZZ] -= shz * pbcAiuc.boxZZ;
 
-    float shy = cl::sycl::rint(dr[YY] * pbcAiuc.invBoxDiagY);
+    float shy = sycl::rint(dr[YY] * pbcAiuc.invBoxDiagY);
     dr[XX] -= shy * pbcAiuc.boxYX;
     dr[YY] -= shy * pbcAiuc.boxYY;
 
-    float shx = cl::sycl::rint(dr[XX] * pbcAiuc.invBoxDiagX);
+    float shx = sycl::rint(dr[XX] * pbcAiuc.invBoxDiagX);
     dr[XX] -= shx * pbcAiuc.boxXX;
 }
 

@@ -75,21 +75,21 @@
  * \param[in]  fz                 Input force partial component Z
  */
 template<int order, int atomDataSize, int workGroupSize, int subGroupSize>
-inline void reduceAtomForces(cl::sycl::nd_item<3>        itemIdx,
-                             cl::sycl::local_ptr<Float3> sm_forces,
-                             const int                   atomIndexLocal,
-                             const int                   splineIndex,
-                             const int gmx_unused        lineIndex,
-                             const float                 realGridSizeFP[3],
-                             float&                      fx, // NOLINT(google-runtime-references)
-                             float&                      fy, // NOLINT(google-runtime-references)
-                             float&                      fz)                      // NOLINT(google-runtime-references)
+inline void reduceAtomForces(sycl::nd_item<3>        itemIdx,
+                             sycl::local_ptr<Float3> sm_forces,
+                             const int               atomIndexLocal,
+                             const int               splineIndex,
+                             const int gmx_unused    lineIndex,
+                             const float             realGridSizeFP[3],
+                             float&                  fx, // NOLINT(google-runtime-references)
+                             float&                  fy, // NOLINT(google-runtime-references)
+                             float&                  fz)                  // NOLINT(google-runtime-references)
 {
     static_assert(gmx::isPowerOfTwo(order));
     // TODO: find out if this is the best in terms of transactions count
     static_assert(order == 4, "Only order of 4 is implemented");
 
-    sycl_2020::sub_group sg = itemIdx.get_sub_group();
+    sycl::sub_group sg = itemIdx.get_sub_group();
 
     static_assert(atomDataSize <= subGroupSize,
                   "TODO: rework for atomDataSize > subGroupSize (order 8 or larger)");
@@ -148,29 +148,29 @@ inline void reduceAtomForces(cl::sycl::nd_item<3>        itemIdx,
  * \param[in] gm_grid             Global memory array of the grid to use.
  */
 template<int order, int atomsPerWarp, bool wrapX, bool wrapY>
-inline void sumForceComponents(cl::sycl::private_ptr<float>            fx,
-                               cl::sycl::private_ptr<float>            fy,
-                               cl::sycl::private_ptr<float>            fz,
-                               const int                               ithyMin,
-                               const int                               ithyMax,
-                               const int                               ixBase,
-                               const int                               iz,
-                               const int                               nx,
-                               const int                               ny,
-                               const int                               pny,
-                               const int                               pnz,
-                               const int                               atomIndexLocal,
-                               const int                               splineIndexBase,
-                               const cl::sycl::float2                  tdz,
-                               const cl::sycl::local_ptr<int>          sm_gridlineIndices,
-                               const cl::sycl::local_ptr<float>        sm_theta,
-                               const cl::sycl::local_ptr<float>        sm_dtheta,
-                               const cl::sycl::global_ptr<const float> gm_grid)
+inline void sumForceComponents(sycl::private_ptr<float>            fx,
+                               sycl::private_ptr<float>            fy,
+                               sycl::private_ptr<float>            fz,
+                               const int                           ithyMin,
+                               const int                           ithyMax,
+                               const int                           ixBase,
+                               const int                           iz,
+                               const int                           nx,
+                               const int                           ny,
+                               const int                           pny,
+                               const int                           pnz,
+                               const int                           atomIndexLocal,
+                               const int                           splineIndexBase,
+                               const sycl::float2                  tdz,
+                               const sycl::local_ptr<int>          sm_gridlineIndices,
+                               const sycl::local_ptr<float>        sm_theta,
+                               const sycl::local_ptr<float>        sm_dtheta,
+                               const sycl::global_ptr<const float> gm_grid)
 {
     for (int ithy = ithyMin; ithy < ithyMax; ithy++)
     {
         const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
-        const cl::sycl::float2 tdy{ sm_theta[splineIndexY], sm_dtheta[splineIndexY] };
+        const sycl::float2 tdy{ sm_theta[splineIndexY], sm_dtheta[splineIndexY] };
 
         int iy = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
         if (wrapY & (iy >= ny))
@@ -192,9 +192,9 @@ inline void sumForceComponents(cl::sycl::private_ptr<float>            fx,
             const float gridValue = gm_grid[gridIndexGlobal];
             assertIsFinite(gridValue);
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
-            const cl::sycl::float2 tdx{ sm_theta[splineIndexX], sm_dtheta[splineIndexX] };
-            const float            fxy1 = tdz[XX] * gridValue;
-            const float            fz1  = tdz[YY] * gridValue;
+            const sycl::float2 tdx{ sm_theta[splineIndexX], sm_dtheta[splineIndexX] };
+            const float        fxy1 = tdz[XX] * gridValue;
+            const float        fz1  = tdz[YY] * gridValue;
             *fx += tdx[YY] * tdy[XX] * fxy1;
             *fy += tdx[XX] * tdy[YY] * fxy1;
             *fz += tdx[XX] * tdy[XX] * fz1;
@@ -217,14 +217,14 @@ inline void sumForceComponents(cl::sycl::private_ptr<float>            fx,
  * or FEP in state A if a single grid is used (\p multiCoefficientsSingleGrid == true).If two
  * separate grids are used this should be the coefficients of the grid in question.
  */
-inline void calculateAndStoreGridForces(cl::sycl::local_ptr<Float3>             sm_forces,
-                                        const int                               forceIndexLocal,
-                                        const int                               forceIndexGlobal,
-                                        const Float3&                           recipBox0,
-                                        const Float3&                           recipBox1,
-                                        const Float3&                           recipBox2,
-                                        const float                             scale,
-                                        const cl::sycl::global_ptr<const float> gm_coefficients)
+inline void calculateAndStoreGridForces(sycl::local_ptr<Float3>             sm_forces,
+                                        const int                           forceIndexLocal,
+                                        const int                           forceIndexGlobal,
+                                        const Float3&                       recipBox0,
+                                        const Float3&                       recipBox1,
+                                        const Float3&                       recipBox2,
+                                        const float                         scale,
+                                        const sycl::global_ptr<const float> gm_coefficients)
 {
     const Float3 atomForces     = sm_forces[forceIndexLocal];
     float        negCoefficient = -scale * gm_coefficients[forceIndexGlobal];
@@ -252,7 +252,7 @@ inline void calculateAndStoreGridForces(cl::sycl::local_ptr<Float3>             
  * \tparam subGroupSize   Size of the sub-group.
  */
 template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-auto pmeGatherKernel(cl::sycl::handler&                                 cgh,
+auto pmeGatherKernel(sycl::handler&                                     cgh,
                      const int                                          nAtoms,
                      DeviceAccessor<float, mode::read>                  a_gridA,
                      OptionalAccessor<float, mode::read, numGrids == 2> a_gridB,
@@ -310,29 +310,22 @@ auto pmeGatherKernel(cl::sycl::handler&                                 cgh,
     }
 
     // Gridline indices, ivec
-    cl::sycl::accessor<int, 1, mode::read_write, target::local> sm_gridlineIndices(
-            cl::sycl::range<1>(atomsPerBlock * DIM), cgh);
+    sycl_2020::local_accessor<int, 1> sm_gridlineIndices(sycl::range<1>(atomsPerBlock * DIM), cgh);
     // Spline values
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_theta(
-            cl::sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    sycl_2020::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
     // Spline derivatives
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_dtheta(
-            cl::sycl::range<1>(atomsPerBlock * DIM * order), cgh);
+    sycl_2020::local_accessor<float, 1> sm_dtheta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
     // Coefficients prefetch cache
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_coefficients(
-            cl::sycl::range<1>(atomsPerBlock), cgh);
+    sycl_2020::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
     // Coordinates prefetch cache
-    cl::sycl::accessor<Float3, 1, mode::read_write, target::local> sm_coordinates(
-            cl::sycl::range<1>(atomsPerBlock), cgh);
+    sycl_2020::local_accessor<Float3, 1> sm_coordinates(sycl::range<1>(atomsPerBlock), cgh);
     // Reduction of partial force contributions
-    cl::sycl::accessor<Float3, 1, mode::read_write, target::local> sm_forces(
-            cl::sycl::range<1>(atomsPerBlock), cgh);
+    sycl_2020::local_accessor<Float3, 1> sm_forces(sycl::range<1>(atomsPerBlock), cgh);
 
     auto sm_fractCoords = [&]() {
         if constexpr (!readGlobal)
         {
-            return cl::sycl::accessor<float, 1, mode::read_write, target::local>(
-                    cl::sycl::range<1>(atomsPerBlock * DIM), cgh);
+            return sycl_2020::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
         }
         else
         {
@@ -340,7 +333,7 @@ auto pmeGatherKernel(cl::sycl::handler&                                 cgh,
         }
     }();
 
-    return [=](cl::sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
         assert(blockSize == itemIdx.get_local_range().size());
         /* These are the atom indices - for the shared and global memory */
@@ -460,7 +453,7 @@ auto pmeGatherKernel(cl::sycl::handler&                                 cgh,
 
         const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
         const int splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
-        const cl::sycl::float2 tdz{ sm_theta[splineIndexZ], sm_dtheta[splineIndexZ] };
+        const sycl::float2 tdz{ sm_theta[splineIndexZ], sm_dtheta[splineIndexZ] };
 
         int       iz     = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
         const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
@@ -628,7 +621,7 @@ void PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, 
 
 
 template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom, int subGroupSize>
-cl::sycl::event PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>::launch(
+sycl::event PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>::launch(
         const KernelLaunchConfig& config,
         const DeviceStream&       deviceStream)
 {
@@ -640,13 +633,13 @@ cl::sycl::event PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threa
             PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>;
 
     // SYCL has different multidimensional layout than OpenCL/CUDA.
-    const cl::sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
-    const cl::sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
-    const cl::sycl::nd_range<3> range{ groupRange * localSize, localSize };
+    const sycl::range<3> localSize{ config.blockSize[2], config.blockSize[1], config.blockSize[0] };
+    const sycl::range<3> groupRange{ config.gridSize[2], config.gridSize[1], config.gridSize[0] };
+    const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
-    cl::sycl::queue q = deviceStream.stream();
+    sycl::queue q = deviceStream.stream();
 
-    cl::sycl::event e = q.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
         auto kernel = pmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>(
                 cgh,
                 atomParams_->nAtoms,

@@ -97,11 +97,11 @@ private:
     float* realGrid_;
     float* complexGrid_;
 #else
-    cl::sycl::buffer<float, 1> realGrid_;
-    cl::sycl::buffer<float, 1> complexGrid_;
+    sycl::buffer<float, 1> realGrid_;
+    sycl::buffer<float, 1> complexGrid_;
 #endif
-    cl::sycl::queue queue_;
-    Descriptor      r2cDescriptor_, c2rDescriptor_;
+    sycl::queue queue_;
+    Descriptor  r2cDescriptor_, c2rDescriptor_;
 
     static Descriptor initDescriptor(const ivec realGridSize);
 };

@@ -74,8 +74,8 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     {
         return 0;
     }
-    const cl::sycl::device device = nb->deviceContext_->deviceInfo().syclDevice;
-    const int numComputeUnits     = device.get_info<cl::sycl::info::device::max_compute_units>();
+    const sycl::device device          = nb->deviceContext_->deviceInfo().syclDevice;
+    const int          numComputeUnits = device.get_info<sycl::info::device::max_compute_units>();
     return balancedFactor * numComputeUnits;
 }
 

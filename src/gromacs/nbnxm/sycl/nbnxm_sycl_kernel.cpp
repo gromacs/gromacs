@@ -97,9 +97,8 @@ template<enum VdwType vdwType>
 constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwEwald;
 //@}
 
-using cl::sycl::access::fence_space;
-using cl::sycl::access::mode;
-using cl::sycl::access::target;
+using sycl::access::fence_space;
+using mode = sycl::access_mode;
 
 //! \brief Convert \p sigma and \p epsilon VdW parameters to \c c6,c12 pair.
 static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float epsilon)
@@ -114,15 +113,15 @@ static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float e
 
 //! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
 template<bool doCalcEnergies>
-static inline void ljForceSwitch(const shift_consts_t         dispersionShift,
-                                 const shift_consts_t         repulsionShift,
-                                 const float                  rVdwSwitch,
-                                 const float                  c6,
-                                 const float                  c12,
-                                 const float                  rInv,
-                                 const float                  r2,
-                                 cl::sycl::private_ptr<float> fInvR,
-                                 cl::sycl::private_ptr<float> eLJ)
+static inline void ljForceSwitch(const shift_consts_t     dispersionShift,
+                                 const shift_consts_t     repulsionShift,
+                                 const float              rVdwSwitch,
+                                 const float              c6,
+                                 const float              c12,
+                                 const float              rInv,
+                                 const float              r2,
+                                 sycl::private_ptr<float> fInvR,
+                                 sycl::private_ptr<float> eLJ)
 {
     /* force switch constants */
     const float dispShiftV2 = dispersionShift.c2;
@@ -131,7 +130,7 @@ static inline void ljForceSwitch(const shift_consts_t         dispersionShift,
     const float repuShiftV3 = repulsionShift.c3;
 
     const float r       = r2 * rInv;
-    const float rSwitch = cl::sycl::fdim(r, rVdwSwitch); // max(r - rVdwSwitch, 0)
+    const float rSwitch = sycl::fdim(r, rVdwSwitch); // max(r - rVdwSwitch, 0)
 
     *fInvR += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * rInv
               + c12 * (repuShiftV2 + repuShiftV3 * rSwitch) * rSwitch * rSwitch * rInv;
@@ -149,9 +148,9 @@ static inline void ljForceSwitch(const shift_consts_t         dispersionShift,
 
 //! \brief Fetch C6 grid contribution coefficients and return the product of these.
 template<enum VdwType vdwType>
-static inline float calculateLJEwaldC6Grid(const cl::sycl::global_ptr<const Float2> a_nbfpComb,
-                                           const int                                typeI,
-                                           const int                                typeJ)
+static inline float calculateLJEwaldC6Grid(const sycl::global_ptr<const Float2> a_nbfpComb,
+                                           const int                            typeI,
+                                           const int                            typeJ)
 {
     if constexpr (vdwType == VdwType::EwaldGeom)
     {
@@ -174,24 +173,24 @@ static inline float calculateLJEwaldC6Grid(const cl::sycl::global_ptr<const Floa
 
 //! Calculate LJ-PME grid force contribution with geometric or LB combination rule.
 template<bool doCalcEnergies, enum VdwType vdwType>
-static inline void ljEwaldComb(const cl::sycl::global_ptr<const Float2> a_nbfpComb,
-                               const float                              sh_lj_ewald,
-                               const int                                typeI,
-                               const int                                typeJ,
-                               const float                              r2,
-                               const float                              r2Inv,
-                               const float                              lje_coeff2,
-                               const float                              lje_coeff6_6,
-                               const float                              int_bit,
-                               cl::sycl::private_ptr<float>             fInvR,
-                               cl::sycl::private_ptr<float>             eLJ)
+static inline void ljEwaldComb(const sycl::global_ptr<const Float2> a_nbfpComb,
+                               const float                          sh_lj_ewald,
+                               const int                            typeI,
+                               const int                            typeJ,
+                               const float                          r2,
+                               const float                          r2Inv,
+                               const float                          lje_coeff2,
+                               const float                          lje_coeff6_6,
+                               const float                          int_bit,
+                               sycl::private_ptr<float>             fInvR,
+                               sycl::private_ptr<float>             eLJ)
 {
     const float c6grid = calculateLJEwaldC6Grid<vdwType>(a_nbfpComb, typeI, typeJ);
 
     /* Recalculate inv_r6 without exclusion mask */
     const float inv_r6_nm = r2Inv * r2Inv * r2Inv;
     const float cr2       = lje_coeff2 * r2;
-    const float expmcr2   = cl::sycl::exp(-cr2);
+    const float expmcr2   = sycl::exp(-cr2);
     const float poly      = 1.0F + cr2 + 0.5F * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
@@ -207,12 +206,12 @@ static inline void ljEwaldComb(const cl::sycl::global_ptr<const Float2> a_nbfpCo
 
 /*! \brief Apply potential switch. */
 template<bool doCalcEnergies>
-static inline void ljPotentialSwitch(const switch_consts_t        vdwSwitch,
-                                     const float                  rVdwSwitch,
-                                     const float                  rInv,
-                                     const float                  r2,
-                                     cl::sycl::private_ptr<float> fInvR,
-                                     cl::sycl::private_ptr<float> eLJ)
+static inline void ljPotentialSwitch(const switch_consts_t    vdwSwitch,
+                                     const float              rVdwSwitch,
+                                     const float              rInv,
+                                     const float              r2,
+                                     sycl::private_ptr<float> fInvR,
+                                     sycl::private_ptr<float> eLJ)
 {
     /* potential switch constants */
     const float switchV3 = vdwSwitch.c3;
@@ -287,9 +286,9 @@ static inline T lerp(T d0, T d1, T t)
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
-static inline float interpolateCoulombForceR(const cl::sycl::global_ptr<const float> a_coulombTab,
-                                             const float coulombTabScale,
-                                             const float r)
+static inline float interpolateCoulombForceR(const sycl::global_ptr<const float> a_coulombTab,
+                                             const float                         coulombTabScale,
+                                             const float                         r)
 {
     const float normalized = coulombTabScale * r;
     const int   index      = static_cast<int>(normalized);
@@ -298,7 +297,7 @@ static inline float interpolateCoulombForceR(const cl::sycl::global_ptr<const fl
     const float left  = a_coulombTab[index];
     const float right = a_coulombTab[index + 1];
 
-    return lerp(left, right, fraction); // TODO: cl::sycl::mix
+    return lerp(left, right, fraction); // TODO: sycl::mix
 }
 
 /*! \brief Reduce c_clSize j-force components using shifts and atomically accumulate into a_f.
@@ -306,14 +305,14 @@ static inline float interpolateCoulombForceR(const cl::sycl::global_ptr<const fl
  * c_clSize consecutive threads hold the force components of a j-atom which we
  * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
  */
-static inline void reduceForceJShuffle(Float3                       f,
-                                       const cl::sycl::nd_item<3>   itemIdx,
-                                       const int                    tidxi,
-                                       const int                    aidx,
-                                       cl::sycl::global_ptr<Float3> a_f)
+static inline void reduceForceJShuffle(Float3                   f,
+                                       const sycl::nd_item<3>   itemIdx,
+                                       const int                tidxi,
+                                       const int                aidx,
+                                       sycl::global_ptr<Float3> a_f)
 {
     static_assert(c_clSize == 8 || c_clSize == 4);
-    sycl_2020::sub_group sg = itemIdx.get_sub_group();
+    sycl::sub_group sg = itemIdx.get_sub_group();
 
     f[0] += sycl_2020::shift_left(sg, f[0], 1);
     f[1] += sycl_2020::shift_right(sg, f[1], 1);
@@ -358,15 +357,15 @@ static inline void reduceForceJShuffle(Float3                       f,
  * \return For thread with \p tidxi 0: sum of all \p valueToReduce. Other threads: unspecified.
  */
 template<int subGroupSize, int groupSize>
-static inline float groupReduce(const cl::sycl::nd_item<3> itemIdx,
-                                const unsigned int         tidxi,
-                                cl::sycl::local_ptr<float> sm_buf,
-                                float                      valueToReduce)
+static inline float groupReduce(const sycl::nd_item<3> itemIdx,
+                                const unsigned int     tidxi,
+                                sycl::local_ptr<float> sm_buf,
+                                float                  valueToReduce)
 {
     constexpr int numSubGroupsInGroup = groupSize / subGroupSize;
     static_assert(numSubGroupsInGroup == 1 || numSubGroupsInGroup == 2);
-    sycl_2020::sub_group sg = itemIdx.get_sub_group();
-    valueToReduce           = sycl_2020::group_reduce(sg, valueToReduce, sycl_2020::plus<float>());
+    sycl::sub_group sg = itemIdx.get_sub_group();
+    valueToReduce      = sycl::reduce_over_group(sg, valueToReduce, sycl::plus<float>());
     // If we have two sub-groups, we should reduce across them.
     if constexpr (numSubGroupsInGroup == 2)
     {
@@ -390,13 +389,13 @@ static inline float groupReduce(const cl::sycl::nd_item<3> itemIdx,
  *
  * TODO: implement binary reduction flavor for the case where cl_Size is power of two.
  */
-static inline void reduceForceJGeneric(cl::sycl::local_ptr<float>   sm_buf,
-                                       Float3                       f,
-                                       const cl::sycl::nd_item<3>   itemIdx,
-                                       const int                    tidxi,
-                                       const int                    tidxj,
-                                       const int                    aidx,
-                                       cl::sycl::global_ptr<Float3> a_f)
+static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
+                                       Float3                   f,
+                                       const sycl::nd_item<3>   itemIdx,
+                                       const int                tidxi,
+                                       const int                tidxj,
+                                       const int                aidx,
+                                       sycl::global_ptr<Float3> a_f)
 {
     static constexpr int sc_fBufferStride = c_clSizeSq;
     int                  tidx             = tidxi + tidxj * c_clSize;
@@ -424,13 +423,13 @@ static inline void reduceForceJGeneric(cl::sycl::local_ptr<float>   sm_buf,
 
 /*! \brief Reduce c_clSize j-force components using either shifts or local memory and atomically accumulate into a_f.
  */
-static inline void reduceForceJ(cl::sycl::local_ptr<float>   sm_buf,
-                                Float3                       f,
-                                const cl::sycl::nd_item<3>   itemIdx,
-                                const int                    tidxi,
-                                const int                    tidxj,
-                                const int                    aidx,
-                                cl::sycl::global_ptr<Float3> a_f)
+static inline void reduceForceJ(sycl::local_ptr<float>   sm_buf,
+                                Float3                   f,
+                                const sycl::nd_item<3>   itemIdx,
+                                const int                tidxi,
+                                const int                tidxj,
+                                const int                aidx,
+                                sycl::global_ptr<Float3> a_f)
 {
     if constexpr (!gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster))
     {
@@ -451,16 +450,16 @@ static inline void reduceForceJ(cl::sycl::local_ptr<float>   sm_buf,
  *
  * This implementation works only with power of two array sizes.
  */
-static inline void reduceForceIAndFShift(cl::sycl::local_ptr<float> sm_buf,
+static inline void reduceForceIAndFShift(sycl::local_ptr<float> sm_buf,
                                          const Float3 fCiBuf[c_nbnxnGpuNumClusterPerSupercluster],
                                          const bool   calcFShift,
-                                         const cl::sycl::nd_item<3>   itemIdx,
-                                         const int                    tidxi,
-                                         const int                    tidxj,
-                                         const int                    sci,
-                                         const int                    shift,
-                                         cl::sycl::global_ptr<Float3> a_f,
-                                         cl::sycl::global_ptr<Float3> a_fShift)
+                                         const sycl::nd_item<3>   itemIdx,
+                                         const int                tidxi,
+                                         const int                tidxj,
+                                         const int                sci,
+                                         const int                shift,
+                                         sycl::global_ptr<Float3> a_f,
+                                         sycl::global_ptr<Float3> a_fShift)
 {
     // must have power of two elements in fCiBuf
     static_assert(gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster));
@@ -548,7 +547,7 @@ static inline void reduceForceIAndFShift(cl::sycl::local_ptr<float> sm_buf,
  *
  */
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
-auto nbnxmKernel(cl::sycl::handler&                                        cgh,
+auto nbnxmKernel(sycl::handler&                                            cgh,
                  DeviceAccessor<Float4, mode::read>                        a_xq,
                  DeviceAccessor<Float3, mode::read_write>                  a_f,
                  DeviceAccessor<Float3, mode::read>                        a_shiftVec,
@@ -614,18 +613,17 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
     }
 
     // shmem buffer for i x+q pre-loading
-    cl::sycl::accessor<Float4, 1, mode::read_write, target::local> sm_xq(
-            cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+    sycl_2020::local_accessor<Float4, 1> sm_xq(
+            sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
 
     // shmem buffer for force reduction
-    cl::sycl::accessor<float, 1, mode::read_write, target::local> sm_reductionBuffer(
-            cl::sycl::range<1>(c_clSize * c_clSize * DIM), cgh);
+    sycl_2020::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(c_clSize * c_clSize * DIM), cgh);
 
     auto sm_atomTypeI = [&]() {
         if constexpr (!props.vdwComb)
         {
-            return cl::sycl::accessor<int, 1, mode::read_write, target::local>(
-                    cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl_2020::local_accessor<int, 1>(
+                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
         }
         else
         {
@@ -636,8 +634,8 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
     auto sm_ljCombI = [&]() {
         if constexpr (props.vdwComb)
         {
-            return cl::sycl::accessor<Float2, 1, mode::read_write, target::local>(
-                    cl::sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl_2020::local_accessor<Float2, 1>(
+                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
         }
         else
         {
@@ -663,7 +661,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
     gmx_unused constexpr int subGroupSize = prunedClusterPairSize;
 #endif
 
-    return [=](cl::sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
         /* thread/block/warp id-s */
         const unsigned tidxi = itemIdx.get_local_id(2);
@@ -673,7 +671,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
 
         const unsigned bidx = itemIdx.get_group(0);
 
-        const sycl_2020::sub_group sg = itemIdx.get_sub_group();
+        const sycl::sub_group sg = itemIdx.get_sub_group();
         // Could use sg.get_group_range to compute the imask & exclusion Idx, but too much of the logic relies on it anyway
         // and in cases where prunedClusterPairSize != subGroupSize we can't use it anyway
         const unsigned imeiIdx = tidx / prunedClusterPairSize;
@@ -836,7 +834,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                             /* If _none_ of the atoms pairs are in cutoff range,
                              * the bit corresponding to the current
                              * cluster-pair in imask gets set to 0. */
-                            if (!sycl_2020::group_any_of(sg, r2 < rlistOuterSq))
+                            if (!sycl::any_of_group(sg, r2 < rlistOuterSq))
                             {
                                 imask &= ~maskJI;
                             }
@@ -890,10 +888,10 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                             r2 = std::max(r2, c_nbnxnMinDistanceSquared);
 #if GMX_SYCL_HIPSYCL
                             // No fast/native functions in some compilation passes
-                            const float rInv = cl::sycl::rsqrt(r2);
+                            const float rInv = sycl::rsqrt(r2);
 #else
                             // SYCL-TODO: sycl::half_precision::rsqrt?
-                            const float rInv = cl::sycl::native::rsqrt(r2);
+                            const float rInv = sycl::native::rsqrt(r2);
 #endif
                             const float r2Inv = rInv * rInv;
                             float       r6Inv, fInvR, energyLJPair;
@@ -1008,10 +1006,9 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
                                 }
                                 if constexpr (props.elecEwald)
                                 {
-                                    energyElec +=
-                                            qi * qj
-                                            * (rInv * (pairExclMask - cl::sycl::erf(r2 * rInv * ewaldBeta))
-                                               - pairExclMask * ewaldShift);
+                                    energyElec += qi * qj
+                                                  * (rInv * (pairExclMask - sycl::erf(r2 * rInv * ewaldBeta))
+                                                     - pairExclMask * ewaldShift);
                                 }
                             }
 
@@ -1070,7 +1067,7 @@ auto nbnxmKernel(cl::sycl::handler&                                        cgh,
 
 //! \brief NBNXM kernel launch code.
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
-cl::sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
+sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
     using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>;
 
@@ -1079,14 +1076,14 @@ cl::sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int nu
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    const int                   numBlocks = numSci;
-    const cl::sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
-    const cl::sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
-    const cl::sycl::nd_range<3> range{ globalSize, blockSize };
+    const int               numBlocks = numSci;
+    const sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
+    const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
+    const sycl::nd_range<3> range{ globalSize, blockSize };
 
-    cl::sycl::queue q = deviceStream.stream();
+    sycl::queue q = deviceStream.stream();
 
-    cl::sycl::event e = q.submit([&](cl::sycl::handler& cgh) {
+    sycl::event e = q.submit([&](sycl::handler& cgh) {
         auto kernel = nbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>(
                 cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
@@ -1097,11 +1094,11 @@ cl::sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int nu
 
 //! \brief Select templated kernel and launch it.
 template<class... Args>
-cl::sycl::event chooseAndLaunchNbnxmKernel(bool          doPruneNBL,
-                                           bool          doCalcEnergies,
-                                           enum ElecType elecType,
-                                           enum VdwType  vdwType,
-                                           Args&&... args)
+sycl::event chooseAndLaunchNbnxmKernel(bool          doPruneNBL,
+                                       bool          doCalcEnergies,
+                                       enum ElecType elecType,
+                                       enum VdwType  vdwType,
+                                       Args&&... args)
 {
     return gmx::dispatchTemplatedFunction(
             [&](auto doPruneNBL_, auto doCalcEnergies_, auto elecType_, auto vdwType_) {
@@ -1122,43 +1119,43 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     const bool          doPruneNBL   = (plist->haveFreshList && !nb->didPrune[iloc]);
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
-    cl::sycl::event e = chooseAndLaunchNbnxmKernel(doPruneNBL,
-                                                   stepWork.computeEnergy,
-                                                   nbp->elecType,
-                                                   nbp->vdwType,
-                                                   deviceStream,
-                                                   plist->nsci,
-                                                   adat->xq,
-                                                   adat->f,
-                                                   adat->shiftVec,
-                                                   adat->fShift,
-                                                   adat->eElec,
-                                                   adat->eLJ,
-                                                   plist->cj4,
-                                                   plist->sci,
-                                                   plist->excl,
-                                                   adat->ljComb,
-                                                   adat->atomTypes,
-                                                   nbp->nbfp,
-                                                   nbp->nbfp_comb,
-                                                   nbp->coulomb_tab,
-                                                   adat->numTypes,
-                                                   nbp->rcoulomb_sq,
-                                                   nbp->rvdw_sq,
-                                                   nbp->two_k_rf,
-                                                   nbp->ewald_beta,
-                                                   nbp->rlistOuter_sq,
-                                                   nbp->sh_ewald,
-                                                   nbp->epsfac,
-                                                   nbp->ewaldcoeff_lj,
-                                                   nbp->c_rf,
-                                                   nbp->dispersion_shift,
-                                                   nbp->repulsion_shift,
-                                                   nbp->vdw_switch,
-                                                   nbp->rvdw_switch,
-                                                   nbp->sh_lj_ewald,
-                                                   nbp->coulomb_tab_scale,
-                                                   stepWork.computeVirial);
+    sycl::event e = chooseAndLaunchNbnxmKernel(doPruneNBL,
+                                               stepWork.computeEnergy,
+                                               nbp->elecType,
+                                               nbp->vdwType,
+                                               deviceStream,
+                                               plist->nsci,
+                                               adat->xq,
+                                               adat->f,
+                                               adat->shiftVec,
+                                               adat->fShift,
+                                               adat->eElec,
+                                               adat->eLJ,
+                                               plist->cj4,
+                                               plist->sci,
+                                               plist->excl,
+                                               adat->ljComb,
+                                               adat->atomTypes,
+                                               nbp->nbfp,
+                                               nbp->nbfp_comb,
+                                               nbp->coulomb_tab,
+                                               adat->numTypes,
+                                               nbp->rcoulomb_sq,
+                                               nbp->rvdw_sq,
+                                               nbp->two_k_rf,
+                                               nbp->ewald_beta,
+                                               nbp->rlistOuter_sq,
+                                               nbp->sh_ewald,
+                                               nbp->epsfac,
+                                               nbp->ewaldcoeff_lj,
+                                               nbp->c_rf,
+                                               nbp->dispersion_shift,
+                                               nbp->repulsion_shift,
+                                               nbp->vdw_switch,
+                                               nbp->rvdw_switch,
+                                               nbp->sh_lj_ewald,
+                                               nbp->coulomb_tab_scale,
+                                               stepWork.computeVirial);
 }
 
 } // namespace Nbnxm
