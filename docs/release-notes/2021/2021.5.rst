@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix reading of AWH user PMF reading with large PMF values
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ 
+The reading of user supplied AWH input in mdrun with PMF values larger than
+88 kT would cause mdrun to exit with an assertion failure. Now values up to
+700 kT are allowed and exceeding those causes an exit with a clear error message.
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
