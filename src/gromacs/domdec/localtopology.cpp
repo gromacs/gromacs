@@ -515,6 +515,7 @@ static inline int assignInteractionsForAtom(const AtomIndexSet&       atomIndexS
                         tiatoms[k] = entry->la;
                         continue;
                     }
+                    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                     if (entry == nullptr || entry->cell >= zones.n)
                     {
                         /* We do not have this atom of this interaction
