@@ -118,19 +118,6 @@ target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 
-set(testname "MdrunPmeTests")
-set(exename "mdrun-pme-test")
-
-gmx_add_gtest_executable(${exename}
-    CPP_SOURCE_FILES
-        pmetest.cpp
-        # pseudo-library for code for mdrun
-        $<TARGET_OBJECTS:mdrun_objlib>
-    )
-target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
-
-
 set(testname "MdrunNonIntegratorTests")
 set(exename "mdrun-non-integrator-test")
 
@@ -173,7 +160,6 @@ gmx_add_gtest_executable(${exename} MPI
         domain_decomposition.cpp
         minimize.cpp
         mimic.cpp
-        pmetest.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
@@ -226,9 +212,8 @@ gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 4 INTEGRATION_TEST IGNO
 
 # Tests that only make sense to run with multiple ranks and/or real
 # MPI are implemented here. Special case for slow PME tests
-set(testname "MdrunMpiPmeTests")
-set(exename "mdrun-mpi-pme-test")
 
+set(exename "mdrun-mpi-pme-test")
 gmx_add_gtest_executable(${exename} MPI
     CPP_SOURCE_FILES
         # files with code for tests
@@ -237,7 +222,8 @@ gmx_add_gtest_executable(${exename} MPI
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunMpi1RankPmeTests ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunMpi2RankPmeTests ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 # Slow-running tests that target testing multiple-rank coordination behaviors
 # These tests are extremely slow without optimization or OpenMP, so only run them for

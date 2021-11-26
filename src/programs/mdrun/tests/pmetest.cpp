@@ -35,16 +35,12 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic PME sanity tests.
+ * This implements basic PME sanity tests for end-to-end mdrun simulations.
  * It runs the input system with PME for several steps (on CPU and GPU, if available),
  * and checks the reciprocal and conserved energies.
- * As part of mdrun-test, this will always run single rank PME simulation.
- * As part of mdrun-mpi-test, this will run same as above when a single rank is requested,
- * or a simulation with a single separate PME rank ("-npme 1") when multiple ranks are requested.
- * \todo Extend and generalize this for more multi-rank tests (-npme 0, -npme 2, etc).
- * \todo Implement death tests (e.g. for PME GPU decomposition).
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
@@ -57,16 +53,12 @@
 #include <gtest/gtest-spi.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/hardware/detecthardware.h"
-#include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/message_string_collector.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
@@ -100,10 +92,63 @@ const char* enumValueToString(const PmeTestFlavor enumValue)
     return s_names[enumValue];
 }
 
-/*! \brief A basic PME runner
+// Paramters for parametrized test fixture: the flavor of PME test to
+// run, and options for an mdrun command line.
+using PmeTestParameters = std::tuple<PmeTestFlavor, std::string>;
+
+/*! \brief Help GoogleTest name our tests
  *
- * \todo Consider also using GpuTest class. */
-class PmeTest : public MdrunTestFixture
+ * If changes are needed here, consider making matching changes in
+ * makeRefDataFileName(). */
+std::string nameOfTest(const testing::TestParamInfo<PmeTestParameters>& info)
+{
+    std::string testName = formatString(
+            "%s_mdrun_%s", enumValueToString(std::get<0>(info.param)), std::get<1>(info.param).c_str());
+
+    // Note that the returned names must be unique and may use only
+    // alphanumeric ASCII characters. It's not supposed to contain
+    // underscores (see the GoogleTest FAQ
+    // why-should-test-suite-names-and-test-names-not-contain-underscore),
+    // but doing so works for now, is likely to remain so, and makes
+    // such test names much more readable.
+    testName = replaceAll(testName, "-", "");
+    testName = replaceAll(testName, " ", "_");
+    return testName;
+}
+
+/*! \brief Construct a refdata filename for this test
+ *
+ * We want the same reference data to apply to every mdrun command
+ * line that we test. That means we need to store it in a file whose
+ * name relates to the name of the test excluding the part related to
+ * the mdrun command line. By default, the reference data filename is
+ * set via a call to gmx::TestFileManager::getTestSpecificFileName()
+ * that queries GoogleTest and gets a string that includes the return
+ * value for nameOfTest(). This code works similarly, but removes the
+ * aforementioned part. This logic must match the implementation of
+ * nameOfTest() so that it works as intended. */
+std::string makeRefDataFileName()
+{
+    // Get the info about the test
+    const ::testing::TestInfo* testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
+
+    // Get the test name and edit it to remove the mdrun command-line
+    // part.
+    std::string testName(testInfo->name());
+    auto        separatorPos = testName.find("_mdrun");
+    testName                 = testName.substr(0, separatorPos);
+
+    // Build the complete filename like getTestSpecificFilename() does
+    // it.
+    std::string testSuiteName(testInfo->test_suite_name());
+    std::string refDataFileName = testSuiteName + "_" + testName + ".xml";
+    std::replace(refDataFileName.begin(), refDataFileName.end(), '/', '_');
+
+    return refDataFileName;
+}
+
+/*! \brief Test fixture for end-to-end execution of PME */
+class PmeTest : public MdrunTestFixture, public ::testing::WithParamInterface<PmeTestParameters>
 {
 public:
     //! Names of tpr files built by grompp in SetUpTestSuite to run in tests
@@ -121,17 +166,14 @@ public:
     /*! \brief If the mdrun command line can't run on this build or
      * hardware, we should mark it as skipped and describe why. */
     static MessageStringCollector getSkipMessagesIfNecessary(const CommandLine& commandLine);
-    //! Convenience typedef
-    using RunModesList = std::map<std::string, std::vector<const char*>>;
-    //! Runs the test with the given inputs
-    void runTest(const RunModesList& runModes, PmeTestFlavor pmeTestFlavor);
+    //! Check the energies against the reference data.
+    void checkEnergies(bool usePmeTuning) const;
 };
 
 // static
 void PmeTest::SetUpTestSuite()
 {
     MdrunTestFixture::SetUpTestSuite();
-
     // Ensure we only make one TestFileManager per process, which
     // ensures there is no race with thread-MPI. Whichever thread gets
     // the lock first initializes s_testFileManager, and by the time
@@ -240,52 +282,23 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
     return messages;
 }
 
-void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestFlavor)
+TEST_P(PmeTest, Runs)
 {
-    const std::string inputFile = "spc-and-methanol";
-    runner_.useTopGroAndNdxFromDatabase(inputFile);
-
-    // With single rank we can and will always test PP+PME as part of mdrun-test.
-    // With multiple ranks we can additionally test a single PME-only rank within mdrun-mpi-test.
-    const bool parallelRun    = (getNumberOfTestMpiRanks() > 1);
-    const bool useSeparatePme = parallelRun;
+    auto [pmeTestFlavor, mdrunCommandLine] = GetParam();
+    CommandLine commandLine(splitString(mdrunCommandLine));
 
     // Run mdrun on the tpr file that was built in SetUpTestSuite()
     runner_.tprFileName_ = s_tprFileNames[pmeTestFlavor];
 
-    TestReferenceData    refData;
-    TestReferenceChecker rootChecker(refData.rootChecker());
-    const bool           thisRankChecks = (gmx_node_rank() == 0);
-    if (!thisRankChecks)
+    const bool thisRankChecks = (gmx_node_rank() == 0);
+    // Some indentation preserved only for reviewer convenience
     {
-        EXPECT_NONFATAL_FAILURE(rootChecker.checkUnusedEntries(), ""); // skip checks on other ranks
-    }
-
-    for (const auto& mode : runModes)
-    {
-        SCOPED_TRACE("mdrun " + joinStrings(mode.second, " "));
-        runner_.edrFileName_ =
-                fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
-
-        CommandLine commandLine(mode.second);
-
-        const bool usePmeTuning = (mode.first.find("Tune") != std::string::npos);
+        // When using PME tuning on a short mdrun, nstlist needs to be set very short
+        // so that the tuning might do something while the test is running.
+        const bool usePmeTuning = commandLine.contains("-tunepme");
         if (usePmeTuning)
         {
-            commandLine.append("-tunepme");
             commandLine.addOption("-nstlist", 1); // a new grid every step
-        }
-        else
-        {
-            commandLine.append("-notunepme"); // for reciprocal energy reproducibility
-        }
-        if (useSeparatePme)
-        {
-            commandLine.addOption("-npme", 1);
-        }
-        else
-        {
-            commandLine.addOption("-npme", 0);
         }
 
         ASSERT_TRUE(commandLine.argumentOf("-npme").has_value())
@@ -295,21 +308,40 @@ void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestF
         MessageStringCollector skipMessages = getSkipMessagesIfNecessary(commandLine);
         if (!skipMessages.isEmpty())
         {
-            // For now, just write these to stdout. Later, we can use
-            // GTEST_SKIP().
-            fputs(skipMessages.toString().c_str(), stdout);
-            continue;
+            GTEST_SKIP() << skipMessages.toString();
         }
 
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
         if (thisRankChecks)
         {
+            // Check the contents of the edr file. Only the master
+            // rank should do this I/O intensive operation
+            checkEnergies(usePmeTuning);
+        }
+    }
+}
+
+void PmeTest::checkEnergies(const bool usePmeTuning) const
+{
+    // Some indentation preserved only for reviewer convenience
+    {
+        {
+            TestReferenceData    refData(makeRefDataFileName());
+            TestReferenceChecker rootChecker(refData.rootChecker());
+
             auto energyReader = openEnergyFileToReadTerms(
                     runner_.edrFileName_, { "Coul. recip.", "Total Energy", "Kinetic En." });
             auto conservedChecker  = rootChecker.checkCompound("Energy", "Conserved");
             auto reciprocalChecker = rootChecker.checkCompound("Energy", "Reciprocal");
-            bool firstIteration    = true;
+            // PME tuning causes differing grids and differing
+            // reciprocal energy, so we don't check against the same
+            // reciprocal energy computed on the CPU
+            if (usePmeTuning)
+            {
+                reciprocalChecker.disableUnusedEntriesCheck();
+            }
+            bool firstIteration = true;
             while (energyReader->readNextFrame())
             {
                 const EnergyFrame& frame            = energyReader->frame();
@@ -329,7 +361,9 @@ void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestF
                     firstIteration = false;
                 }
                 conservedChecker.checkReal(conservedEnergy, stepName.c_str());
-                if (!usePmeTuning) // with PME tuning come differing grids and differing reciprocal energy
+                // When not using PME tuning, the reciprocal energy is
+                // reproducible enough to check.
+                if (!usePmeTuning)
                 {
                     reciprocalChecker.checkReal(reciprocalEnergy, stepName.c_str());
                 }
@@ -338,32 +372,45 @@ void PmeTest::runTest(const RunModesList& runModes, const PmeTestFlavor pmeTestF
     }
 }
 
-TEST_F(PmeTest, ReproducesEnergies)
-{
-    // TODO test all proper/improper combinations in more thorough way?
-    RunModesList runModes;
-    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
-    runModes["PmeAuto"]          = { "-pme", "auto" };
-    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
-    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
-    runModes["PmeOnGpuFftAuto"]  = { "-pme", "gpu", "-pmefft", "auto" };
-    // same manual modes but marked for PME tuning
-    runModes["PmeOnCpuTune"]         = { "-pme", "cpu" };
-    runModes["PmeOnGpuFftOnCpuTune"] = { "-pme", "gpu", "-pmefft", "cpu" };
-    runModes["PmeOnGpuFftOnGpuTune"] = { "-pme", "gpu", "-pmefft", "gpu" };
+// To keep test execution time down, we check auto and pme tuning only
+// in the Basic case.
+//
+// Note that some of these cases can only run when there is one MPI
+// rank and some require more than one MPI rank. CTest has been
+// instructed to run the test binary twice, with respectively one and
+// two ranks, so that all tests that can run do run. The test binaries
+// consider the hardware, build configuration, and rank count and skip
+// those tests that they cannot run.
+const auto c_reproducesEnergies = ::testing::ValuesIn(std::vector<PmeTestParameters>{ {
+        // Here are all tests without a PME-only rank. These can
+        // always run with a single rank, but can only run with two
+        // ranks when not targeting GPUs.
+        // Note that an -npme argument is required.
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme cpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme auto" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme gpu -pmefft cpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme gpu -pmefft gpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme gpu -pmefft auto" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme cpu" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme gpu -pmefft cpu" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 0 -pme gpu -pmefft gpu" },
+        // Here are all tests with a PME-only rank, which requires
+        // more than one total rank
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme cpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme auto" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme gpu -pmefft cpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme gpu -pmefft gpu" },
+        { PmeTestFlavor::Basic, "-notunepme -npme 1 -pme gpu -pmefft auto" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme cpu" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme gpu -pmefft cpu" },
+        { PmeTestFlavor::WithWalls, "-notunepme -npme 1 -pme gpu -pmefft gpu" },
+        // All tests with PME tuning here
+        { PmeTestFlavor::Basic, "-tunepme -npme 0 -pme cpu" },
+        { PmeTestFlavor::Basic, "-tunepme -npme 0 -pme gpu -pmefft cpu" },
+        { PmeTestFlavor::Basic, "-tunepme -npme 0 -pme gpu -pmefft gpu" },
+} });
 
-    runTest(runModes, PmeTestFlavor::Basic);
-}
-
-TEST_F(PmeTest, ScalesTheBoxWithWalls)
-{
-    RunModesList runModes;
-    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
-    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
-    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
-
-    runTest(runModes, PmeTestFlavor::WithWalls);
-}
+INSTANTIATE_TEST_SUITE_P(ReproducesEnergies, PmeTest, c_reproducesEnergies, nameOfTest);
 
 } // namespace
 } // namespace test
