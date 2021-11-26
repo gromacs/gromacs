@@ -121,7 +121,7 @@ static const bool c_useAtomDataPrefetch = true;
  * \param[in] arg  Argument to check.
  */
 template<typename T>
-__device__ inline void assertIsFinite(T arg);
+static __device__ inline void assertIsFinite(T arg);
 
 template<>
 __device__ inline void assertIsFinite(float3 gmx_unused arg)
