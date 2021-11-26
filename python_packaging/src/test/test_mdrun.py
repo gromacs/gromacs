@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -72,8 +72,8 @@ formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
 #    logging.getLogger().addHandler(ch)
 
 
-@pytest.mark.usefixtures('cleandir')
-def test_run_from_tpr(spc_water_box, mdrun_kwargs):
+@pytest.mark.usefixtures('cleandir', 'mdrun_kwargs')
+def test_run_from_tpr(spc_water_box):
     assert os.path.exists(spc_water_box)
 
     md = gmx.mdrun(spc_water_box)
@@ -82,10 +82,8 @@ def test_run_from_tpr(spc_water_box, mdrun_kwargs):
 
 
 @pytest.mark.withmpi_only
-@pytest.mark.usefixtures('cleandir')
-def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
-    from mpi4py import MPI
-    current_rank = MPI.COMM_WORLD.Get_rank()
+@pytest.mark.usefixtures('cleandir', 'mdrun_kwargs')
+def test_run_trivial_ensemble(spc_water_box, caplog):
     with caplog.at_level(logging.DEBUG):
         caplog.handler.setFormatter(formatter)
         with caplog.at_level(logging.WARNING, 'gmxapi'), \
@@ -114,12 +112,12 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
             # the end of the job if running in temporary directories becomes an
             # important use case outside of testing.
             assert output_directory[0] != output_directory[1]
-            assert os.path.exists(output_directory[current_rank])
-            assert os.path.exists(md.output.trajectory.result()[current_rank])
+            assert os.path.exists(output_directory[rank_number])
+            assert os.path.exists(md.output.trajectory.result()[rank_number])
 
 
-@pytest.mark.usefixtures('cleandir')
-def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
+@pytest.mark.usefixtures('cleandir', 'mdrun_kwargs')
+def test_run_from_read_tpr_op(spc_water_box, caplog):
     with caplog.at_level(logging.DEBUG):
         caplog.handler.setFormatter(formatter)
         with caplog.at_level(logging.DEBUG, 'gmxapi'):
@@ -131,8 +129,8 @@ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
                 assert os.path.exists(md.output.trajectory.result())
 
 
-@pytest.mark.usefixtures('cleandir')
-def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
+@pytest.mark.usefixtures('cleandir', 'mdrun_kwargs')
+def test_run_from_modify_input_op(spc_water_box, caplog):
     with caplog.at_level(logging.DEBUG):
 
         simulation_input = gmx.read_tpr(spc_water_box)

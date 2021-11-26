@@ -267,11 +267,14 @@ def filemap_to_flag_list(filemap: dict = None):
                     pass
                 elif hasattr(value, 'result') and value.dtype != NDArray:
                     # TODO: Fix this ugly hack when we have proper Future slicing and can make NDArray futures.
+                    # FIXME: This should not modify the source object.
+                    # FIXME: Recursion protection (not idempotent): function may be repeatedly wrapped since dtype is
+                    #  not updated.
                     result_function = value.result
                     value.result = lambda function=result_function: [function()]
                 else:
                     value = [value]
-            result = gmx.join_arrays(front=result, back=gmx.join_arrays(front=[key], back=value))
+            result = gmx.join_arrays(front=result, back=gmx.join_arrays(front=gmx.ndarray([key]), back=value))
     return result
 
 
@@ -386,6 +389,9 @@ def commandline_operation(executable=None,
                 'shell': shell}
     cli_args.update(**kwargs)
     if stdin is not None:
+        # FIXME: No ensemble handling.
+        # FIXME: Type checking instead of blind conversion.
+        #  Maybe `stdin ? isinstance(stdin, str) : '\n'.join(str(line) for line in stdin)`
         cli_args['stdin'] = str(stdin)
 
     ##

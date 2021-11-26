@@ -71,9 +71,6 @@ RUN . $VENV/bin/activate && \
       pip install --no-cache-dir --verbose . \
     )
 
-ADD --chown=testing:testing src/test /home/testing/gmxapi/test
-ADD scripts /docker_entry_points
-
 ADD --chown=testing:testing sample_restraint /home/testing/sample_restraint
 
 # To test behavior as in GitLab CI, copy the googletest sources, export CI=1 to the cmake
@@ -95,7 +92,8 @@ RUN . $VENV/bin/activate && \
      make install \
     )
 
-# TODO: this can be in the root user section above once it is stable
+ADD --chown=testing:testing src/test /home/testing/gmxapi/test
+ADD scripts /docker_entry_points
 COPY docker/entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -58,6 +58,7 @@ import collections
 import functools
 import inspect
 import typing
+import warnings
 import weakref
 from contextlib import contextmanager
 
@@ -161,9 +162,13 @@ class EnsembleDataSource(gmx.abc.EnsembleDataSource):
     """A single source of data with ensemble data flow annotations.
 
     Note that data sources may be Futures.
+
+    Probably slated for removal, per https://gitlab.com/gromacs/gromacs/-/issues/3137.
     """
 
     def __init__(self, source=None, width=1, dtype=None):
+        warnings.warn('Ensemble and array dimensions need to be unified in the data model. '
+                      'See https://gitlab.com/gromacs/gromacs/-/issues/3137', DeprecationWarning)
         self.source = source
         self.width = width
         self.dtype = dtype
@@ -206,15 +211,17 @@ class DataSourceCollection(collections.OrderedDict):
     def __setitem__(self, key: str, value: SourceTypeVar) -> None:
         if not isinstance(key, str):
             raise exceptions.TypeError('Data must be named with str type.')
-        # TODO: Encapsulate handling of proferred data sources to Context details.
+        # TODO(#3139): Encapsulate handling of provided data sources as a detail of the relationship
+        #  between source and target Contexts.
         # Preprocessed input should be self-describing gmxapi data types. Structured
         # input must be recursively (depth-first) converted to gmxapi data types.
-        # TODO: Handle gmxapi Futures stored as dictionary elements!
+        # TODO(#3130): Handle gmxapi Futures stored in list elements.
+        # TODO(#3130): Handle gmxapi Futures stored as dictionary elements!
         if not isinstance(value, valid_source_types):
             if isinstance(value, collections.abc.Iterable):
                 # Iterables here are treated as arrays, but we do not have a robust typing system.
                 # Warning: In the initial implementation, the iterable may contain Future objects.
-                # TODO: (#2993) Revisit as we sort out data shape and Future protocol.
+                # TODO(#2993): Revisit as we sort out data shape and Future protocol.
                 try:
                     value = datamodel.ndarray(value)
                 except (exceptions.ValueError, exceptions.TypeError) as e:
@@ -441,6 +448,7 @@ class InputCollectionDescription(collections.OrderedDict):
         # For convenience, accept *args, but convert to **kwargs to pass to Operation.
         # Factory accepts an unadvertised `input` keyword argument that is used as a default kwargs dict.
         # If present, kwargs['input'] is treated as an input "pack" providing _default_ values.
+        # Additional kwargs (other than 'input' and 'output') override kwargs from 'input'.
         input_kwargs = collections.OrderedDict()
         if 'input' in kwargs:
             provided_input = kwargs.pop('input')
@@ -461,6 +469,11 @@ class InputCollectionDescription(collections.OrderedDict):
         input_kwargs = collections.OrderedDict([pair for pair in bound_arguments.arguments.items()])
         if 'output' in input_kwargs:
             input_kwargs.pop('output')
+        # Note that we have not done any type checking yet. Type and shape checking are part of
+        # the "input binding" protocol, which consists of `NodeBuilder.add_input()` (which *may* be
+        # implemented in terms of a `DataSourceCollection.__set_item__()`) and `NodeBuilder.build()`,
+        # where checks occur in the DataEdge constructor using a DataSourceCollection and a
+        # SinkTerminal (created from an InputCollectionDescription).
         return DataSourceCollection(**input_kwargs)
 
 
@@ -1301,7 +1314,10 @@ class OperationDetailsBase(OperationImplementation, InputDescription,
             raise exceptions.ApiError('Cannot dispatch operation_director for context {}'.format(context))
 
 
-# TODO: Implement observer pattern for edge->node data flow.
+# TODO(#3139): Implement observer pattern for edge->node data flow between Contexts or
+#  ResourceManagers.
+# (Lower level details would be expected to use a Futures interface, but we need ways to proxy
+# between environments to set up fulfilment of the Futures.)
 # Step 0: implement subject interface subscribe()
 # Step 1: implement subject interface get_state()
 # Step 2: implement observer interface update()
@@ -1612,6 +1628,11 @@ class DataEdge(object):
     being made in the scripting environment versus the running Session, and implementation
     details can determine whether or not new operations or data flow can occur in
     different code environments.
+
+    This part of the data flow object model will be unnecessary with a more complete Future
+    pattern and data model. Future slicing and broadcasting can be reconciled at binding time,
+    and containers like DataSourceCollection and SinkTerminal can be reduced to Protocols or
+    removed from the interface entirely.
     """
 
     class ConstantResolver(object):
@@ -1627,10 +1648,14 @@ class DataEdge(object):
         self.adapters = {}
         self.source_collection = source_collection
         self.sink_terminal = sink_terminal
+        # For each input on the sink, dispatch data dependency resolution with help from source
+        # and sink type (and shape).
         for name in sink_terminal.inputs:
+            logger.debug(f'Resolving {name} for {repr(sink_terminal)}.')
             if name not in source_collection:
                 if hasattr(sink_terminal.inputs[name], 'default'):
                     self.adapters[name] = self.ConstantResolver(sink_terminal.inputs[name])
+                    logger.debug(f'Using default value for {name} for {repr(sink_terminal)}.')
                 else:
                     # TODO: Initialize with multiple DataSourceCollections?
                     raise exceptions.ValueError('No source or default for required input "{}".'.format(name))
@@ -1638,14 +1663,17 @@ class DataEdge(object):
                 source = source_collection[name]
                 sink = sink_terminal.inputs[name]
                 if isinstance(source, (str, bool, int, float, dict)):
+                    logger.debug(f'Input {name}:({sink.__name__}) provided by a local constant of '
+                                 f'type {type(source)}.')
                     if issubclass(sink, (str, bool, int, float, dict)):
                         self.adapters[name] = self.ConstantResolver(source)
                     else:
                         assert issubclass(sink, datamodel.NDArray)
+                        # The initial version of NDArray is a primitive local-only container.
                         self.adapters[name] = self.ConstantResolver(datamodel.ndarray([source]))
                 elif isinstance(source, datamodel.NDArray):
                     if issubclass(sink, datamodel.NDArray):
-                        # TODO: shape checking
+                        # TODO(#3136): shape checking
                         # Implicit broadcast may not be what is intended
                         self.adapters[name] = self.ConstantResolver(source)
                     else:
@@ -1656,6 +1684,8 @@ class DataEdge(object):
                             self.adapters[name] = lambda member, source=source: source[member]
                 elif hasattr(source, 'result'):
                     # Handle data futures...
+                    logger.debug(f'Input {name}:({sink.__name__}) provided by a Future '
+                                 f'{source.description}')
                     # If the Future is part of an ensemble, result() will return a list.
                     # Otherwise, it will return a single object.
                     ensemble_width = source.description.width
@@ -1666,6 +1696,7 @@ class DataEdge(object):
                         self.adapters[name] = lambda member, source=source: source.result()[member]
                 else:
                     assert isinstance(source, EnsembleDataSource)
+                    logger.debug(f'Input {name}:({sink.__name__}) provided by {repr(source)}')
                     self.adapters[name] = lambda member, source=source: source.node(member)
 
     def __str__(self):
@@ -2038,11 +2069,13 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         It is left as an implementation detail whether the context manager is reusable and
         under what circumstances one may be obtained.
         """
-        # Localize data
+        # Localize data.
+        # Implementation may call `result()`, triggering recursive `update_output()` for
+        # dependencies.
         kwargs = self._input_edge.sink(node=member)
         assert 'input' not in kwargs
 
-        # Check that we have real data
+        # Check that we have real data (not a Future or operation handle or something).
         for key, value in kwargs.items():
             assert not hasattr(value, 'result')
             assert not hasattr(value, 'run')
@@ -2056,6 +2089,8 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             assert not isinstance(value_list, Future)
             assert not hasattr(value_list, 'result')
             assert not hasattr(value_list, 'run')
+            # Check one level into container objects to confirm that they aren't hiding
+            # non-localized data.
             for item in value_list:
                 assert not hasattr(item, 'result')
 
@@ -2145,7 +2180,6 @@ def wrapped_function_runner(function, output_description: OutputCollectionDescri
 
     # Determine output details for proper dispatching.
     # First check for signature with output parameter.
-    # TODO FR4: standardize typing
     if 'output' in signature.parameters:
         if not isinstance(output_description, OutputCollectionDescription):
             if not isinstance(output_description, collections.abc.Mapping):

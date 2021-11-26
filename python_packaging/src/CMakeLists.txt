@@ -228,6 +228,11 @@ else()
     # The rest of the logic in this conditional is to support the GMX_PYTHON_PACKAGE option
     # for testing the gmxapi Python packages within a full GROMACS project build_command and.
     # for building full GROMACS project documentation.
+    #
+    # Note that file copying occurs during the CMake configure phase. During development,
+    # edits may not trigger a rerun of the CMake configure phase for targets like
+    # `gmxapi-pytest` (enabled by -DGMX_PYTHON_PACKAGE=ON). Manual re-run of `cmake`
+    # may be necessary between edits and testing.
 
     set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging)
     # Instead, we should probably build a source package and alert the user of its location.

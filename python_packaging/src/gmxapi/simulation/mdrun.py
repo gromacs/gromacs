@@ -162,6 +162,7 @@ class LegacyImplementationSubscription(object):
         # 0. Determine ensemble width.
         # 1. Choose, create/check working directories.
         # 2. Create source TPR.
+        # 2.5 Update runtime arguments.
         # 3. Create workspec.
         # 3.5 Add plugin potentials, if any.
         # 4. Run.
@@ -230,6 +231,7 @@ class LegacyImplementationSubscription(object):
                         # Build the working directory and input files.
                         os.mkdir(self.workdir)
                         sim_input = fileio.read_tpr(source_file)
+                        # TODO(#3295): insertion point for updated positions and velocities.
                         for key, value in parameters.items():
                             try:
                                 sim_input.parameters.set(key=key, value=value)
@@ -261,12 +263,14 @@ class LegacyImplementationSubscription(object):
                                                                       ensemble_rank,
                                                                       self.workdir
                                                                       ))
-                    # TODO: (#3718) Normalize the way we pass run time parameters to mdrun.
+                    # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
                     kwargs = getattr(resource_manager, 'mdrun_kwargs', {})
                     for key, value in kwargs.items():
                         logger.debug('Adding mdrun run time argument: {}'.format(key + '=' + str(value)))
                     work = workflow.from_tpr(tpr_filenames, **kwargs)
                     self.workspec = work.workspec
+                    # TODO(#3145): Attach extension code, if any.
+
                     context = LegacyContext(work=self.workspec, workdir_list=workdir_list, communicator=ensemble_comm)
                     self.simulation_module_context = context
                     # Go ahead and execute immediately. No need for lazy initialization in this basic case.
@@ -315,7 +319,7 @@ class SubscriptionPublishingRunner(object):
         # Note that the resources contain a reference to a simulation ensemble that has already run.
         self.resources = resources
 
-    def run(self):
+    def __call__(self):
         """Operation implementation in the gmxapi.operation module context."""
         publisher = self.resources.output
         publisher._work_dir = self.resources.workdir
@@ -381,6 +385,16 @@ class ResourceManager(gmxapi.operation.ResourceManager):
                 # TODO: Dispatch/discover this resource factory from a canonical place.
                 assert hasattr(self._runner_director, 'input_resource_factory')
                 # Create on all ranks.
+                # Unlike gmxapi.operation.ResourceManager, here we create the input resources
+                # once for the entire ensemble, rather than once per ensemble member.
+                # This is because the simulation actually runs as an ensemble operation
+                # (in gmxapi 0.0.7 context) in order to service the input resources of this
+                # version of the mdrun operation, which in actuality merely retrieves the
+                # gmxapi 0.0.7 results for the current interface.
+                # Abstractions that could allow reunification with the parent implementation
+                # could be asyncio or concurrent processing of the ensemble members, or a `map`
+                # generalization that could be implemented in serial or parallel according to the
+                # ResourceManager and task requirements.
                 input = self._runner_director.input_resource_factory(self)
                 # End of action of the InputResourceDirector[Context, MdRunSubscription].
                 ###
@@ -391,9 +405,23 @@ class ResourceManager(gmxapi.operation.ResourceManager):
                 publishing_resources = self.publishing_resources()
                 for member in range(self.ensemble_width):
                     with publishing_resources(ensemble_member=member) as output:
-                        resources = self._resource_factory(input=input, output=output)
+                        error_message = 'Got {} while executing {} for operation {}.'
+                        try:
+                            resources = self._resource_factory(input=input, output=output)
+                        except exceptions.TypeError as e:
+                            message = error_message.format(e, self._resource_factory, self.operation_id)
+                            raise exceptions.ApiError(message) from e
+
                         runner = self._runner_director(resources)
-                        runner.run()
+                        try:
+                            runner()
+                        except Exception as e:
+                            message = error_message.format(e, runner, self.operation_id)
+                            raise exceptions.ApiError(message) from e
+            if not self.done():
+                message = 'update_output implementation failed to update all outputs for {}.'
+                message = message.format(self.operation_id)
+                raise exceptions.ApiError(message)
 
 
 class StandardInputDescription(_op.InputDescription):
@@ -407,7 +435,7 @@ class StandardInputDescription(_op.InputDescription):
 
 
 class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMeta):
-    """Provide the gmxapi compatible ReadTpr implementation."""
+    """Provide the gmxapi compatible MDRun implementation."""
 
     # This is a class method to allow the class object to be used in gmxapi.operation._make_registry_key
     @classmethod
@@ -417,11 +445,12 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
 
     @classmethod
     def namespace(self) -> str:
-        """read_tpr is importable from the gmxapi module."""
+        """modify_input is importable from the gmxapi module."""
         return 'gmxapi'
 
     @classmethod
     def director(cls, context: gmxapi.abc.Context) -> _op.OperationDirector:
+        # Currently, we only have a Directory for the gmxapi.operation.Context
         if isinstance(context, _op.Context):
             return StandardDirector(context)
 
@@ -489,6 +518,11 @@ class StandardDirector(gmxapi.abc.OperationDirector):
     def resource_factory(self,
                          source: typing.Union[gmxapi.abc.Context, ModuleObject, None],
                          target: gmxapi.abc.Context = None):
+        """Get a resource factory for use in the target context.
+
+        The returned factory takes input from the source context and provides it in a form
+        usable by the operation builder in the target context.
+        """
         # Distinguish between the UIContext, in which input is in the form
         # of function call arguments, and the StandardContext, implemented in
         # gmxapi.operation. UIContext is probably a virtual context that is
@@ -498,12 +532,17 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         if target is None:
             target = self.context
         if source is None:
+            # `source is None` implies source is coming from UI.
             if isinstance(target, _op.Context):
                 # Return a factory that can bind to function call arguments to produce a DataSourceCollection.
                 return _standard_node_resource_factory
         if isinstance(source, _op.Context):
+            # The source is a gmxapi.operation.Context when the operation is being evaluated through
+            # a gmxapi.operation.ResourceManager. i.e. at run time.
             return SubscriptionSessionResources
         if isinstance(source, ModuleObject):
+            # In the UI context, the source may be a ModuleObject instead of `None`, per `mdrun`
+            # defined below.
             if isinstance(target, _op.Context):
                 # We are creating a node in gmxapi.operation.Context from another gmxapi.simulation operation.
                 # This means that we want to subscribe to the subcontext instead of the gmxapi.operation.Context.
@@ -512,10 +551,17 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                 # members of a received object.
                 logger.info('Building mdrun operation from source {}'.format(source))
 
-                def simulation_input_workaround(input):
-                    source = input
+                def simulation_input_workaround(_simulation_input):
+                    """Allows support for the as-yet-undefined SimulationInput resource.
+
+                    Also supports a user interface in which the OutputDataProxy is not an
+                    explicit attribute. See https://gitlab.com/gromacs/gromacs/-/issues/3174
+                    """
+                    source = _simulation_input
+                    # Accept either an OutputDataProxy with appropriate members, or an abject
+                    # that provides such an OutputDataProxy.
                     if hasattr(source, 'output'):
-                        source = input.output
+                        source = _simulation_input.output
                     assert hasattr(source, '_simulation_input')
                     assert hasattr(source, 'parameters')
                     logger.info('mdrun receiving input {}: {}'.format(source._simulation_input.name,
@@ -542,7 +588,7 @@ def mdrun(input, label: str = None, context=None):
     The *output* attribute of the returned operation handle contains dynamically
     determined outputs from the operation.
 
-    `input` may be a TPR file name or a an object providing the SimulationInput interface.
+    *input* may be a TPR file name or a an object providing the SimulationInput interface.
 
     Note:
         New function names will be appearing to handle tasks that are separate
@@ -552,6 +598,14 @@ def mdrun(input, label: str = None, context=None):
         "test_particle_insertion," "legacy_simulation" (do_md), or "simulation"
         composition (which may be leap-frog, vv, and other algorithms)
     """
+    # The job of this function is to arrange for the creation of a workflow node
+    # by transforming arguments into a DataSourceCollection and providing the
+    # collection to a Director.
+    # The Director is specific to the Operation (this module) but could be generated
+    # with the help of simle metaprogramming in the future (e.g. just declare
+    # requirements or helpers in a class definition).
+    # Ref: gmxapi.abc.NodeBuilder and gmxapi.operation.NodeBuilder
+
     handle_context = context
     if handle_context is not None:
         raise gmxapi.exceptions.NotImplementedError(
@@ -560,7 +614,7 @@ def mdrun(input, label: str = None, context=None):
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
-    node_director = _op._get_operation_director(RegisteredOperation, context=target_context)
+    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation, context=target_context)
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
@@ -572,8 +626,18 @@ def mdrun(input, label: str = None, context=None):
         # Allow automatic dispatching
         source_context = None
 
+    # Depending on dispatching, the ResourceFactory may be one of several functor types.
+    # TODO: Use a standard helper function to pass data and resources to the NodeDirector.
+    #  Module-specific input processing logic should be explicit in this user-facing function
+    #  or composed into the NodeDirector for this operation.
     resource_factory = node_director.resource_factory(source=source_context, target=target_context)
-    resources = resource_factory(input)
+    # The resource_factory will ultimately produce a DataSourceCollection with help from the
+    # InputCollectionDescription defined for this module. Per InputCollectionDescription.bind()
+    # and the POSITIONAL_OR_KEYWORD property, the `input` could be provided as a positional
+    # argument (as it was previously) and get bound to `_simulation_input`. Despite the
+    # provisional nature of the `_simulation_input` input, this code is more readable when we
+    # use a named parameter.
+    resources: _op.DataSourceCollection = resource_factory(_simulation_input=input)
     handle = node_director(resources=resources, label=label)
     # Note: One effect of the assertions above is to help the type checker infer
     # the return type of the handle. It is hard to convince the type checker that

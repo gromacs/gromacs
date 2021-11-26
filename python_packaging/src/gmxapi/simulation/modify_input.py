@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ class SessionResources(object):
             _simulation_input: Unspecified. Reserved for implementation details.
 
         """
-        # For the intial implementation, _simulation_input is just a string that
+        # For the initial implementation, _simulation_input is just a string that
         # will be interpreted as a TPR file path. The typing will change in the
         # near term as we build the data flow model. Before 1.0, unusual members
         # like this will be removed or hidden in the interface of the other
@@ -196,6 +196,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         # context is used for dispatching and annotates the Context of the other arguments.
         # context == None implies inputs are from Python UI.
         if self.source_context is None:
+            # TODO: De-duplicate re: StandardDirector.resource_factory()
             if isinstance(self.target_context, _op.Context):
                 return _standard_node_resource_factory(*args, **kwargs)
         if isinstance(self.source_context, _op.Context):
@@ -228,7 +229,7 @@ class StandardInputDescription(_op.InputDescription):
 
 
 class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMeta):
-    """Provide the gmxapi compatible ReadTpr implementation."""
+    """Provide the gmxapi compatible ModifyInput implementation."""
 
     # This is a class method to allow the class object to be used in gmxapi.operation._make_registry_key
     @classmethod
@@ -238,11 +239,12 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
 
     @classmethod
     def namespace(self) -> str:
-        """read_tpr is importable from the gmxapi module."""
+        """modify_input is importable from the gmxapi module."""
         return 'gmxapi'
 
     @classmethod
-    def director(cls, context: gmxapi.abc.Context) -> _op.OperationDirector:
+    def director(cls, context: gmxapi.abc.Context):
+        # Currently, we only have a Directory for the gmxapi.operation.Context
         if isinstance(context, _op.Context):
             return StandardDirector(context)
 
@@ -316,11 +318,15 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         #
         if target is None:
             target = self.context
+        # TODO: Normalize and consolidate the context-based dispatching.
         if source is None:
+            # `source is None` implies source is coming from UI.
             if isinstance(target, _op.Context):
                 # Return a factory that can bind to function call arguments to produce a DataSourceCollection.
                 return ResourceFactory(target_context=target, source_context=source)
         if isinstance(source, _op.Context):
+            # The source is a gmxapi.operation.Context when the operation is being evaluated through
+            # a gmxapi.operation.ResourceManager. i.e. at run time.
             return ResourceFactory(target_context=target, source_context=source)
         if isinstance(source, ModuleObject):
             if isinstance(target, _op.Context):
@@ -369,7 +375,9 @@ def modify_input(input,
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
-    node_director = _op._get_operation_director(RegisteredOperation, context=target_context)
+    # TODO: For clarity, restructure code to use module-local helper functors that produce callables with clear
+    #  interfaces. (May clash with the current ABC scheme.)
+    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation, context=target_context)
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
@@ -385,7 +393,7 @@ def modify_input(input,
     # The source Context here is None (the handle Context). The resources themselves
     # may be from different Contexts, so we should dispatch at the add_resource
     # builder method, not here in the director client.
-    resource_factory = node_director.resource_factory(source=source_context, target=target_context)
-    resources = resource_factory(input=input, parameters=parameters)
+    resource_factory: ResourceFactory = node_director.resource_factory(source=source_context, target=target_context)
+    resources: _op.DataSourceCollection = resource_factory(input=input, parameters=parameters)
     handle = node_director(resources=resources, label=label)
     return handle

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -122,10 +122,10 @@ class EnsembleDataSource(ABC):
         source: object or Future of type *dtype*.
         width: ensemble width of this data source handle.
 
-    ..  todo::
+    ..  todo:: Remove
         This class should be subsumed into the core gmxapi data model. It is
         currently necessary for some type checking, but will probably disappear
-        in future versions.
+        in future versions. See https://gitlab.com/gromacs/gromacs/-/issues/3137
     """
 
     def __init__(self, source=None, width=1, dtype=None):
@@ -638,16 +638,22 @@ class OperationDirector(ABC):
             -> typing.Union[ResourceFactory, typing.Callable]:
         """Get an appropriate resource factory.
 
-        The ResourceFactor converts resources (in the form produced by the *source* Context)
+        The ResourceFactory converts resources (in the form produced by the *source* Context)
         to the form consumed by the operation in the *target* Context.
 
         A *source* of None indicates that the source is an arbitrary Python function
         signature, or to try to detect appropriate dispatching. A *target* of
         None indicates that the Context of the Director instance is the target.
 
-        As we merge the interface for a NodeBuilder and a RunnerBuilder, this
-        will not need to be specified in multiple places, but it is not yet
-        clear where.
+        As we merge the interface for a NodeBuilder and a RunnerBuilder, this will not need to be
+        specified in multiple places, but it is not yet clear where the responsibility lies.
+        Ultimately, the operation implementation should only need to provide a single-dispatching
+        helper for finalizing input preparation in a target Context when building a node.
+        Converting resources from one Context to another during edge creation is a
+        collaboration between the resource type, the providing Context, and the consuming
+        Context. It should be mediated by functions registered with the Context when the
+        Operation is registered, and such functionality should be decoupled from the
+        OperationDirector.
 
         Generally, the client should not need to call the resource_factory directly.
         The director should dispatch an appropriate factory. C++ versions need
