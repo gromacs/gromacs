@@ -596,6 +596,10 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
+    Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1. 
+    For maximum performance we strongly  suggest the latest gcc compilers,
+    LLVM 14 (when released) or ARM 22.1 (when released). 
+    Lower performance has been observed with LLVM 13 and Arm compiler 21.1.
 
 The CMake configure system will check that the compiler you have
 chosen can target the architecture you have chosen. mdrun will check
@@ -1328,9 +1332,9 @@ For this testing, we use Ubuntu 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the
 `continuous integration server used by GROMACS <https://gitlab.com/gromacs/gromacs/>`_,
-which uses GitLab runner on a local k8s x86 cluster with NVIDIA and
-AMD GPU support.
+which uses GitLab runner on a local k8s x86 cluster with NVIDIA,
+AMD, and Intel GPU support.
 
-We test irregularly on ARM v8, Cray, Power8, Power9,
-Google Native Client and other environments, and
+We test irregularly on ARM v8, Fujitsu A64FX, Cray, Power9,
+and other environments, and
 with other compilers and compiler versions, too.

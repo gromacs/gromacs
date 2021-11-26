@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,8 @@
  * length at cmake time. GCC 10 and later have the -msve-vector-bits=<len> option
  * in order to fix the vector length at compile time. This feature is currently
  * planned in LLVM 12.
- * Even with this option, svfloat32_t is considered as sizeless
- * by the compiler. However, a float __attribute((vector_size(len/8))) variable is
- * automagically converted as a svfloat32_t and can hence be used to invoke the SIMD
- * intrinsics specified by ACLE.
- * Unfortunately, there is no such thing for svbool_t, so a bit mask (SimdBool) is implemented
- * as a vector of integers.
+ * We use fixed-size SVE types with __atributte__((arm_sve_vector_bits(...)))
+ * to set the size. (See Arm C Language Extensions for SVE - version 6, chapter 3.7.3.)
  */
+
 #endif // GMX_SIMD_IMPL_ARM_SVE_H

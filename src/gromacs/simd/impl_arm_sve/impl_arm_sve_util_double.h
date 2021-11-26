@@ -65,7 +65,7 @@ inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
     // Make sure the memory pointer is aligned to half float SIMD width
     assert(std::size_t(m) % 32 == 0);
 
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t v0, v1, v2, v3;
     v0 = svld1_f64(pg, m);
     v1 = svext_f64(a.simdInternal_, a.simdInternal_, GMX_SIMD_DOUBLE_WIDTH / 2);
@@ -90,9 +90,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const double*      base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg,
-            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
-            align * sizeof(double));
+            pg, svunpklo_s64(svld1_s32(SVE_SIMD_FLOAT_HALF_DOUBLE_MASK, offset)), align * sizeof(double));
     v0->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
     offsets           = svadd_n_s64_x(pg, offsets, sizeof(double));
     v1->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
@@ -128,7 +126,7 @@ gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble*
     assert(align % 2 == 0);
 
     SimdDInt32 offsets;
-    svbool_t   pg         = svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH);
+    svbool_t   pg         = SVE_SIMD_FLOAT_HALF_DOUBLE_MASK;
     offsets.simdInternal_ = svunpklo_s64(svld1_s32(pg, offset));
     gatherLoadBySimdIntTranspose<align>(base, offsets, v0, v1);
 }
@@ -147,9 +145,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const double*      base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg,
-            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
-            align * sizeof(double));
+            pg, svunpklo_s64(svld1_s32(SVE_SIMD_FLOAT_HALF_DOUBLE_MASK, offset)), align * sizeof(double));
     v0->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
     offsets           = svadd_n_s64_x(pg, offsets, sizeof(double));
     v1->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
@@ -170,9 +166,7 @@ static inline void gmx_simdcall transposeScatterStoreU(double*            base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg,
-            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
-            align * sizeof(double));
+            pg, svunpklo_s64(svld1_s32(SVE_SIMD_FLOAT_HALF_DOUBLE_MASK, offset)), align * sizeof(double));
     svst1_scatter_s64offset_f64(pg, base, offsets, v0.simdInternal_);
     offsets = svadd_n_s64_x(pg, offsets, sizeof(double));
     svst1_scatter_s64offset_f64(pg, base, offsets, v1.simdInternal_);
@@ -193,7 +187,7 @@ transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
 #if GMX_SIMD_DOUBLE_WIDTH >= 3
-    pg = svwhilelt_b64(0, 3);
+    pg = SVE_SIMD4_DOUBLE_MASK;
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         svfloat64_t t1 = svld1_f64(pg, base + align * offset[i]);
@@ -224,7 +218,7 @@ transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
 #if GMX_SIMD_DOUBLE_WIDTH >= 3
-    pg = svwhilelt_b64(0, 3);
+    pg = SVE_SIMD4_DOUBLE_MASK;
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         svfloat64_t t1 = svld1_f64(pg, base + align * offset[i]);
@@ -305,7 +299,7 @@ reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, Sim
     sum[2] = svadda_f64(pg, 0.0, v2.simdInternal_);
     sum[3] = svadda_f64(pg, 0.0, v3.simdInternal_);
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg = svwhilelt_b64(0, 4);
+    pg = SVE_SIMD4_DOUBLE_MASK;
     _m = svld1_f64(pg, m);
     _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
@@ -324,7 +318,7 @@ reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, Sim
 static inline SimdDouble gmx_simdcall loadDualHsimd(const double* m0, const double* m1)
 {
     svfloat64_t v0, v1;
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     v0             = svld1_f64(pg, m0);
     v1             = svld1_f64(pg, m1);
     return { svsplice_f64(pg, v0, v1) };
@@ -333,7 +327,7 @@ static inline SimdDouble gmx_simdcall loadDualHsimd(const double* m0, const doub
 static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double* m)
 {
     svfloat64_t v;
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     v              = svld1_f64(pg, m);
     return { svsplice_f64(pg, v, v) };
 }
@@ -341,15 +335,15 @@ static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double* m)
 static inline SimdDouble gmx_simdcall loadU1DualHsimd(const double* m)
 {
     svfloat64_t v0, v1;
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
-    v0             = svdup_f64(m[0]);
-    v1             = svdup_f64(m[1]);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
+    v0             = svdup_n_f64(m[0]);
+    v1             = svdup_n_f64(m[1]);
     return { svsplice_f64(pg, v0, v1) };
 }
 
 static inline void gmx_simdcall storeDualHsimd(double* m0, double* m1, SimdDouble a)
 {
-    svbool_t pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svst1_f64(pg, m0, a.simdInternal_);
     pg = sveor_b_z(svptrue_b64(), pg, svptrue_b64());
     svst1_f64(pg, m1 - GMX_SIMD_DOUBLE_WIDTH / 2, a.simdInternal_);
@@ -361,7 +355,7 @@ static inline void gmx_simdcall incrDualHsimd(double* m0, double* m1, SimdDouble
     assert(std::size_t(m0) % 32 == 0);
     assert(std::size_t(m1) % 32 == 0);
 
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t v0, v2, v3;
     v0 = svld1_f64(pg, m0);
     v2 = svadd_f64_x(pg, v0, a.simdInternal_);
@@ -381,7 +375,7 @@ static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble 
 
 static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDouble v0, SimdDouble v1)
 {
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t _m, _s;
     double      sum[4];
     sum[0] = svadda_f64(pg, 0.0, v0.simdInternal_);
@@ -391,7 +385,7 @@ static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDoubl
     sum[3] = svadda_f64(pg, 0.0, v1.simdInternal_);
 
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg = svwhilelt_b64(0, 4);
+    pg = SVE_SIMD4_DOUBLE_MASK;
     _m = svld1_f64(pg, m);
     _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
@@ -415,12 +409,10 @@ static inline void gmx_simdcall gatherLoadTransposeHsimd(const double*      base
                                                          SimdDouble*        v1)
 {
     svint64_t   offsets;
-    svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
+    svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t _v0, _v1;
     offsets = svmul_n_s64_x(
-            pg,
-            svunpklo(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH / 2), offset)),
-            align * sizeof(double));
+            pg, svunpklo(svld1_s32(SVE_SIMD_FLOAT_HALF_DOUBLE_MASK, offset)), align * sizeof(double));
     _v0               = svld1_gather_s64offset_f64(pg, base0, offsets);
     _v1               = svld1_gather_s64offset_f64(pg, base1, offsets);
     v0->simdInternal_ = svsplice_f64(pg, _v0, _v1);

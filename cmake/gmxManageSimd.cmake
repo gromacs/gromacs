@@ -251,7 +251,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
                                 SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS)
 
     if(NOT SIMD_ARM_SVE_C_SUPPORTED OR NOT SIMD_ARM_SVE_CXX_SUPPORTED)
-        gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) SVE SIMD" "particularly gcc version 10.1 or later, or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
+        gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) SVE SIMD" "particularly gcc version 10.1 or later, or clang version 14 or later (when available), or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
     # If multiple flags are neeed, make them into a list

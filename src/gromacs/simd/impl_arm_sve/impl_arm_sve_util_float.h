@@ -54,12 +54,6 @@
 
 #include "impl_arm_sve_simd_float.h"
 
-#define SVE_FLOAT_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
-#define SVE_FINT32_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
-
-#define SVE_FLOAT4_MASK svptrue_pat_b32(SV_VL4)
-#define SVE_FLOAT3_MASK svptrue_pat_b32(SV_VL3)
-
 namespace gmx
 {
 
@@ -309,8 +303,8 @@ static inline SimdFloat gmx_simdcall loadU1DualHsimd(const float* m)
 {
     svfloat32_t v0, v1;
     svbool_t    pg = SVE_FLOAT_HALF_MASK;
-    v0             = svdup_f32(m[0]);
-    v1             = svdup_f32(m[1]);
+    v0             = svdup_n_f32(m[0]);
+    v1             = svdup_n_f32(m[1]);
     return { svsplice_f32(pg, v0, v1) };
 }
 
@@ -362,7 +356,7 @@ static inline float gmx_simdcall reduceIncr4ReturnSumHsimd(float* m, SimdFloat v
     svbool_t    pg2 = sveor_b_z(svptrue_b32(), pg, svptrue_b32());
     svfloat32_t _m, _s;
 
-    _s = svdup_f32(0.0f);
+    _s = svdup_n_f32(0.0f);
     _s = svinsr_n_f32(_s, svaddv_f32(pg2, v1.simdInternal_));
     _s = svinsr_n_f32(_s, svaddv_f32(pg, v1.simdInternal_));
     _s = svinsr_n_f32(_s, svaddv_f32(pg2, v0.simdInternal_));

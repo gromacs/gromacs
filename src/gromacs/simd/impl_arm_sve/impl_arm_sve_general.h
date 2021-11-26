@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2014,2015,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,16 @@ static inline void simdPrefetch(void* m)
 #endif
 }
 
+#define SVE_SIMD3_DOUBLE_MASK svwhilelt_b64(0, 3)
+#define SVE_SIMD4_DOUBLE_MASK svwhilelt_b64(0, 4)
+#define SVE_DOUBLE_MASK svptrue_b64()
+#define SVE_DINT32_MASK svptrue_b64()
+#define SVE_SIMD_FLOAT_HALF_DOUBLE_MASK svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH)
+#define SVE_SIMD_DOUBLE_HALF_MASK svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2)
+#define SVE_FLOAT_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
+#define SVE_FINT32_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
+#define SVE_FLOAT4_MASK svptrue_pat_b32(SV_VL4)
+#define SVE_FLOAT3_MASK svptrue_pat_b32(SV_VL3)
 } // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_SVE_GENERAL_H
