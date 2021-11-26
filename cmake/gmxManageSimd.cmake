@@ -226,9 +226,9 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
 
     gmx_option_multichoice(
         GMX_SIMD_ARM_SVE_LENGTH
-	"SVE vector length in bits"
-	"auto"
-	auto 128 256 512 1024 2048)
+        "SVE vector length in bits"
+        "auto"
+        auto 128 256 512 1024 2048)
 
     if (GMX_SIMD_ARM_SVE_LENGTH STREQUAL "AUTO")
         if (NOT GMX_SIMD_ARM_SVE_DETECTED_LENGTH)
@@ -237,12 +237,12 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
                 message(FATAL_ERROR "cannot automatically determine the SVE vector length, please explicitly set it via -DGMX_SIMD_ARM_SVE_LENGTH=<bits>")
             endif()
             file(READ "/proc/sys/abi/sve_default_vector_length" GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES)
-	    message(STATUS "Detected SVE vector length in bytes : ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES}")
-	    math(EXPR GMX_SIMD_ARM_SVE_DETECTED_LENGTH "${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES} * 8")
+            message(STATUS "Detected SVE vector length in bytes : ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES}")
+            math(EXPR GMX_SIMD_ARM_SVE_DETECTED_LENGTH "${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES} * 8")
             set(GMX_SIMD_ARM_SVE_DETECTED_LENGTH ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH} CACHE STRING "Detected length in bits for SVE vectors")
             message(STATUS "Detected SVE vector length of ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH} bits")
         endif()
-	set(GMX_SIMD_ARM_SVE_LENGTH_VALUE ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH})
+        set(GMX_SIMD_ARM_SVE_LENGTH_VALUE ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH})
     else()
         set(GMX_SIMD_ARM_SVE_LENGTH_VALUE ${GMX_SIMD_ARM_SVE_LENGTH})
     endif()
@@ -296,7 +296,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
         add_definitions(-DGMX_SIMD_REF_FLOAT_WIDTH=${GMX_SIMD_REF_FLOAT_WIDTH})
     endif()
     if(GMX_SIMD_REF_DOUBLE_WIDTH)
-      	add_definitions(-DGMX_SIMD_REF_DOUBLE_WIDTH=${GMX_SIMD_REF_DOUBLE_WIDTH})
+        add_definitions(-DGMX_SIMD_REF_DOUBLE_WIDTH=${GMX_SIMD_REF_DOUBLE_WIDTH})
     endif()
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)

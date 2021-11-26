@@ -189,8 +189,8 @@ if(GMX_SYCL_HIPSYCL)
             get_filename_component(HIPSYCL_SYCLCC_DIR ${HIPSYCL_SYCLCC} DIRECTORY)
             find_file(HIPSYCL_SYCLCC_JSON syclcc.json
                 HINTS ${HIPSYCL_SYCLCC_DIR}/../etc/hipSYCL
-	        DOC "location of hipSYCL JSON configuration file"
-	        )
+                DOC "location of hipSYCL JSON configuration file"
+                )
             if (HIPSYCL_SYCLCC_JSON)
                 if(NOT HIPSYCL_SYCLCC_ROCM_PATH)
                     file(READ ${HIPSYCL_SYCLCC_JSON} HIPSYCL_SYCLCC_JSON_CONTENTS)

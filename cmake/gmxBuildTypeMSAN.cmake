@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2018,2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -72,17 +72,17 @@ function(gmxManageMsanBuild)
     foreach(_language C CXX)
         string(REPLACE "X" "+" _human_readable_language ${_language})
         if (CMAKE_${_language}_COMPILER_ID MATCHES "Clang")
-	    if(${_language} MATCHES CXX)
+            if(${_language} MATCHES CXX)
                 set(_language_flags "${_flags} -nostdinc++")
-		if(GMX_MSAN_PATH)
+                if(GMX_MSAN_PATH)
                     set(_language_flags "${_language_flags} -isystem ${GMX_MSAN_PATH}/include -isystem ${GMX_MSAN_PATH}/include/c++/v1")
-		endif()
-	    else()
+                endif()
+            else()
                 set(_language_flags "${_flags}")
             endif()
             set(CMAKE_${_language}_FLAGS_MSAN ${_language_flags} CACHE STRING "${_human_readable_language} flags for Memory Sanitizer" FORCE)
             mark_as_advanced(CMAKE_${_language}_FLAGS_MSAN)
-	else()
+        else()
             message(FATAL_ERROR "The Memory Sanitizer build is only available with clang ${_human_readable_language} compiler, but it was ${CMAKE_${_language}_COMPILER_ID}.")
         endif()
     endforeach()

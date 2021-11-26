@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2017,2020, by the GROMACS development team, led by
+# Copyright (c) 2016,2017,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -55,15 +55,15 @@ macro(gmx_manage_plugin_support)
         if (NOT WIN32)
             include(gmxTestdlopen)
             gmx_test_dlopen(HAVE_DLOPEN)
-	    if(NOT HAVE_DLOPEN)
-	        message(FATAL_ERROR "dlopen() support missing - required for dynamic plugins")
+            if(NOT HAVE_DLOPEN)
+                message(FATAL_ERROR "dlopen() support missing - required for dynamic plugins")
             endif()
         endif()
 
-	message(STATUS "Checking build environment for dynamic plugins - supported")
+        message(STATUS "Checking build environment for dynamic plugins - supported")
 
-	list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
-	set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
+        list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
+        set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
 
     endif()
 endmacro()

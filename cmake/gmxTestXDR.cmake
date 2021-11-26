@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2014,2019, by the GROMACS development team, led by
+# Copyright (c) 2009,2014,2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,15 +45,15 @@ MACRO(GMX_TEST_XDR VARIABLE)
 
         MESSAGE(STATUS "Checking for system XDR support")
 
-	# First check without any special flags
+        # First check without any special flags
         TRY_COMPILE(XDR_COMPILE_OK "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestXDR.cpp")
 
         if(XDR_COMPILE_OK)
-	    MESSAGE(STATUS "Checking for system XDR support - present")
+            MESSAGE(STATUS "Checking for system XDR support - present")
         else()
             MESSAGE(STATUS "Checking for system XDR support - not present")
-      	endif()
+        endif()
 
         set(${VARIABLE} ${XDR_COMPILE_OK} CACHE INTERNAL "Result of test for system XDR support" FORCE)
 

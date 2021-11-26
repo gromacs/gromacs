@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ include(gmxOptionUtilities)
 function(GMX_TEST_LIBXML2 VARIABLE)
     if(NOT LIBXML2_FOUND)
         set(${VARIABLE} OFF PARENT_SCOPE)
-	return()
+        return()
     endif()
 
     if(HAVE_ZLIB)
@@ -72,18 +72,18 @@ function(GMX_TEST_LIBXML2 VARIABLE)
     if(LIBXML2_LINKS_OK)
         #check that xml headers can be included
         set(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR}")
-	check_include_files("libxml/parser.h" LIBXML2_INCL_OK)
-	if(NOT LIBXML2_INCL_OK)
+        check_include_files("libxml/parser.h" LIBXML2_INCL_OK)
+        if(NOT LIBXML2_INCL_OK)
             #xml headers depend on iconv.h. Test whether adding its path fixes the problem
             find_path(ICONV_INCLUDE_DIR iconv.h)
             if(ICONV_INCLUDE_DIR)
                 set(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR};${ICONV_INCLUDE_DIR}")
-		unset(LIBXML2_INCL_OK CACHE)
-		check_include_files("libxml/parser.h" LIBXML2_INCL_OK)
-		set(LIBXML2_INCLUDE_DIR "${LIBXML2_INCLUDE_DIR};${ICONV_INCLUDE_DIR}" CACHE PATH "Libxml2 include path" FORCE)
+                unset(LIBXML2_INCL_OK CACHE)
+                check_include_files("libxml/parser.h" LIBXML2_INCL_OK)
+                set(LIBXML2_INCLUDE_DIR "${LIBXML2_INCLUDE_DIR};${ICONV_INCLUDE_DIR}" CACHE PATH "Libxml2 include path" FORCE)
             endif()
         endif()
-	set(${VARIABLE} ${LIBXML2_INCL_OK} PARENT_SCOPE)
+        set(${VARIABLE} ${LIBXML2_INCL_OK} PARENT_SCOPE)
     else()
         set(${VARIABLE} OFF PARENT_SCOPE)
     endif()

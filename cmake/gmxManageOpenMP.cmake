@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,10 @@ if(GMX_OPENMP)
     find_package(OpenMP)
     if(NOT OPENMP_FOUND)
         if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
-	    message(WARNING "The Intel dpcpp compiler does not support OpenMP; consider using the icx (C) & icpx (C++) compilers from the Intel HPC toolkit instead. For now, we are turning off OpenMP.")
-	else()
+            message(WARNING "The Intel dpcpp compiler does not support OpenMP; consider using the icx (C) & icpx (C++) compilers from the Intel HPC toolkit instead. For now, we are turning off OpenMP.")
+        else()
             message(WARNING "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
-	endif()
+        endif()
         set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif()
 endif()

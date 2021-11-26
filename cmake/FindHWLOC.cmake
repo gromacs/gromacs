@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -143,15 +143,15 @@ else()
     if(HWLOC_DIR)
         set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
         find_path(HWLOC_hwloc.h_DIRS
-	    NAMES hwloc.h
-	    HINTS ${HWLOC_DIR}
-	    PATH_SUFFIXES "include" "include/hwloc")
+            NAMES hwloc.h
+            HINTS ${HWLOC_DIR}
+            PATH_SUFFIXES "include" "include/hwloc")
     else()
         set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
         find_path(HWLOC_hwloc.h_DIRS
-	    NAMES hwloc.h
-	    HINTS ${PATH_TO_LOOK_FOR}
-	    PATH_SUFFIXES "hwloc")
+            NAMES hwloc.h
+            HINTS ${PATH_TO_LOOK_FOR}
+            PATH_SUFFIXES "hwloc")
     endif()
 endif()
 mark_as_advanced(HWLOC_hwloc.h_DIRS)
@@ -188,9 +188,9 @@ else()
         string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
         if(APPLE)
-	    string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
         else()
-	    string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
         endif()
         list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
         list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -214,14 +214,14 @@ else()
     if(HWLOC_DIR)
         set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
         find_library(HWLOC_hwloc_LIBRARY
-	    NAMES hwloc
-	    HINTS ${HWLOC_DIR}
-	    PATH_SUFFIXES lib lib32 lib64)
+            NAMES hwloc
+            HINTS ${HWLOC_DIR}
+            PATH_SUFFIXES lib lib32 lib64)
     else()
         set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
         find_library(HWLOC_hwloc_LIBRARY
-	    NAMES hwloc
-	    HINTS ${PATH_TO_LOOK_FOR})
+            NAMES hwloc
+            HINTS ${PATH_TO_LOOK_FOR})
     endif()
 endif()
 mark_as_advanced(HWLOC_hwloc_LIBRARY)
@@ -277,10 +277,10 @@ if(HWLOC_LIBRARIES)
 
     if(NOT HWLOC_WORKS)
         if(NOT HWLOC_FIND_QUIETLY)
-	    message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
-	    message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	    message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	    message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+            message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
+            message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+            message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+            message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
         endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -352,7 +352,7 @@ if(HWLOC_INCLUDE_DIRS)
                             ERROR_VARIABLE  HWLOC_INFO_ERR)
 
             if(HWLOC_INFO_ERR)
-	        message(STATUS "Error executing hwloc-info: ${HWLOC_INFO_ERR}")
+                message(STATUS "Error executing hwloc-info: ${HWLOC_INFO_ERR}")
             endif()
             string(REGEX MATCH "[0-9]+.*[0-9]+" HWLOC_INFO_OUT "${HWLOC_INFO_OUT}")
             set(HWLOC_LIBRARY_VERSION ${HWLOC_INFO_OUT})
