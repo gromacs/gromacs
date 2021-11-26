@@ -24,3 +24,11 @@ There is little use and no tests of this functionality, so it is not worth attem
 maintain moving forward.
 
 :issue:`4296`
+
+The analysis tool ``gmx chi`` will be removed
+"""""""""""""""""""""""""""""""""""""""""""""
+
+This tool has not been functional for a few years.
+Please comment at the linked issue if you have any interest in it.
+
+:issue:`4108`
