@@ -133,6 +133,7 @@
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log | tee -a buildErrors.log || true
     - grep "fatal error" buildLogFile.log | tee -a buildErrors.log || true
+    - grep "error generated when compiling" buildLogFile.log | tee -a buildErrors.log || true
     - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
     - cd ..
   artifacts:
