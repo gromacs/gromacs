@@ -1450,9 +1450,6 @@ int Mdrunner::mdrunner()
         }
     }
 
-    const bool printHostName = (cr->nnodes > 1);
-    gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
-
     const bool disableNonbondedCalculation = (getenv("GMX_NO_NONBONDED") != nullptr);
     if (disableNonbondedCalculation)
     {
@@ -1481,6 +1478,8 @@ int Mdrunner::mdrunner()
                                                               useGpuForBonded,
                                                               useGpuForUpdate,
                                                               useGpuDirectHalo);
+    const bool printHostName       = (cr->nnodes > 1);
+    gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@ struct GpuTaskMapping;
 template<typename T>
 class ArrayRef;
 using GpuTaskAssignment = std::vector<GpuTaskMapping>;
+class SimulationWorkload;
 
 /*! \brief Log a report on how GPUs are being used on
  * the ranks of the physical node of rank 0 of the simulation.
@@ -72,9 +73,8 @@ using GpuTaskAssignment = std::vector<GpuTaskMapping>;
  * \param[in]  numGpuTasksOnThisNode               The number of GPU tasks on this node.
  * \param[in]  numPpRanks                          Number of PP ranks on this node
  * \param[in]  printHostName                       Print the hostname in the usage information
- * \param[in]  useGpuForBonded                     Whether GPU PP tasks will do bonded work on GPU
  * \param[in]  pmeRunMode                          Describes the execution of PME tasks
- * \param[in]  useGpuForUpdate                     Whether update will run on the GPU.
+ * \param[in]  simulationWork                      Simulation workload descriptor
  *
  * \throws     std::bad_alloc if out of memory */
 void reportGpuUsage(const MDLogger&                   mdlog,
@@ -82,9 +82,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
                     size_t                            numGpuTasksOnThisNode,
                     size_t                            numPpRanks,
                     bool                              printHostName,
-                    bool                              useGpuForBonded,
                     PmeRunMode                        pmeRunMode,
-                    bool                              useGpuForUpdate);
+                    const SimulationWorkload&         simulationWork);
 
 } // namespace gmx
 

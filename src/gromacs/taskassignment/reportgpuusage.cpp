@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
@@ -86,9 +87,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
                     size_t                            numGpuTasksOnThisNode,
                     size_t                            numRanks,
                     bool                              printHostName,
-                    bool                              useGpuForBonded,
                     PmeRunMode                        pmeRunMode,
-                    bool                              useGpuForUpdate)
+                    const SimulationWorkload&         simulationWork)
 {
     size_t numGpusInUse = countUniqueGpuIdsUsed(gpuTaskAssignmentOnRanksOfThisNode);
     if (numGpusInUse == 0)
@@ -141,9 +141,9 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         // Because there is a GPU in use, there must be a PP task on a GPU.
         output += gmx::formatString(
                 "PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
-                useGpuForBonded ? " and most bonded" : "");
+                simulationWork.useGpuBonded ? " and most bonded" : "");
         output += gmx::formatString("PP task will update and constrain coordinates on the %s\n",
-                                    useGpuForUpdate ? "GPU" : "CPU");
+                                    simulationWork.useGpuUpdate ? "GPU" : "CPU");
         if (pmeRunMode == PmeRunMode::Mixed)
         {
             output += gmx::formatString("PME tasks will do only spread and gather on the GPU\n");
@@ -151,6 +151,11 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         else if (pmeRunMode == PmeRunMode::GPU)
         {
             output += gmx::formatString("PME tasks will do all aspects on the GPU\n");
+        }
+        if (simulationWork.useGpuDirectCommunication)
+        {
+            output +=
+                    gmx::formatString("GPU direct communication will be used between MPI ranks.\n");
         }
     }
 

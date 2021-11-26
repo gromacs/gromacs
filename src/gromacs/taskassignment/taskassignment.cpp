@@ -64,6 +64,7 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/taskassignment/usergpuids.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -405,20 +406,18 @@ GpuTaskAssignments::GpuTaskAssignments(const gmx_hw_info_t& hardwareInfo) :
 {
 }
 
-void GpuTaskAssignments::reportGpuUsage(const MDLogger& mdlog,
-                                        bool            printHostName,
-                                        bool            useGpuForBonded,
-                                        PmeRunMode      pmeRunMode,
-                                        bool            useGpuForUpdate)
+void GpuTaskAssignments::reportGpuUsage(const MDLogger&           mdlog,
+                                        bool                      printHostName,
+                                        PmeRunMode                pmeRunMode,
+                                        const SimulationWorkload& simulationWork)
 {
     gmx::reportGpuUsage(mdlog,
                         assignmentForAllRanksOnThisNode_,
                         numGpuTasksOnThisNode_,
                         numRanksOnThisNode_,
                         printHostName,
-                        useGpuForBonded,
                         pmeRunMode,
-                        useGpuForUpdate);
+                        simulationWork);
 }
 
 /*! \brief Function for whether the task of \c mapping has value \c TaskType.

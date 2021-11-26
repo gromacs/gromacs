@@ -68,6 +68,7 @@ namespace gmx
 enum class TaskTarget;
 class MDLogger;
 class PhysicalNodeCommunicator;
+class SimulationWorkload;
 
 /*! \brief Types of compute tasks that can be run on a GPU.
  *
@@ -223,17 +224,15 @@ public:
      *
      * \param[in]  mdlog           Logging object.
      * \param[in]  printHostName   Print the hostname in the usage information.
-     * \param[in]  useGpuForBonded Whether GPU PP tasks will do bonded work on the GPU.
      * \param[in]  pmeRunMode      Describes the execution of PME tasks.
-     * \param[in]  useGpuForUpdate Whether the update is offloaded on the GPU.
+     * \param[in]  simulationWork  Simulation workload descriptor
      *
      * \throws     std::bad_alloc if out of memory
      */
-    void reportGpuUsage(const MDLogger& mdlog,
-                        bool            printHostName,
-                        bool            useGpuForBonded,
-                        PmeRunMode      pmeRunMode,
-                        bool            useGpuForUpdate);
+    void reportGpuUsage(const MDLogger&           mdlog,
+                        bool                      printHostName,
+                        PmeRunMode                pmeRunMode,
+                        const SimulationWorkload& simulationWork);
 
     /*! \brief Logs to \c mdlog information that may help a user
      * learn how to let mdrun make a task assignment that runs
