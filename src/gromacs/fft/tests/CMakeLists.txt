@@ -35,10 +35,11 @@
 # This test is slow with OpenCL or the OpenCL DPC++ SYCL back end so
 # label it as SLOW_TEST always. However when both those cases have
 # gone, it no longer needs this annotation.
-gmx_add_unit_test(FFTUnitTests fft-test HARDWARE_DETECTION SLOW_TEST
+gmx_add_gtest_executable(fft-test HARDWARE_DETECTION
     GPU_CPP_SOURCE_FILES
         fft.cpp
     )
+gmx_register_gtest_test(FFTUnitTests fft-test SLOW_TEST)
 
 if(Heffte_FOUND)
 gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
