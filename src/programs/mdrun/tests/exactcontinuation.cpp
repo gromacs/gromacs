@@ -407,7 +407,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // with forces on CPUs, but there is no real risk of a bug with
     // those propagators that would only be caught with a tighter
     // tolerance in this particular test.
-    int ulpToleranceInMixed  = 128;
+    int ulpToleranceInMixed  = 32;
     int ulpToleranceInDouble = 64;
     if (integrator == "bd")
     {
