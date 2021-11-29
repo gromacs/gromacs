@@ -122,6 +122,7 @@ _named_features_0_1 = []
 # fr22 MPI-based ensemble management from Python
 # fr23 Ensemble simulations can themselves use MPI
 
+_named_features_0_2 = ['mdrun_runtime_args']
 
 def api_is_at_least(major_version, minor_version=0, patch_version=0):
     """Allow client to check whether installed module supports the requested API level.
@@ -197,7 +198,7 @@ def has_feature(name='', enable_exception=False) -> bool:
             )
 
     # Check whether the feature is listed in the API specification amendments.
-    if name in _named_features_0_0 + _named_features_0_1:
+    if name in _named_features_0_0 + _named_features_0_1 + _named_features_0_2:
         return True
     else:
         if enable_exception:

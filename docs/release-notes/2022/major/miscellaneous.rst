@@ -51,3 +51,11 @@ in order to guarantee the availability of a usable output trajectory through the
 ``mdrun.output.trajectory`` result.
 
 :issue:`4285`
+
+gmxapi.mdrun accepts arbitrary runtime arguments
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Arbitrary mdrun arguments can be passed through gmxapi with the new *runtime_args* key word
+argument, accepting a dictionary of flags and values.
+
+:issue:`4284`

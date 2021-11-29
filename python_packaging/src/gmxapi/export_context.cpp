@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
+#include "gmxapi/version.h"
 #include "pycontext.h"
 
 
@@ -54,6 +55,141 @@ namespace detail
 {
 
 namespace py = pybind11;
+
+/*!
+ * \brief Normalize argument value types and construct argv.
+ *
+ * \param params named parameters from gmxapi 0.0.7
+ * \return Vector for mdrun argv.
+ */
+static std::vector<std::string> makeMDArgs_0_0_7(const py::dict& params)
+{
+    std::vector<std::string> mdargs;
+    if (params.contains("grid"))
+    {
+        if (py::len(params["grid"]) == 0)
+        {
+            throw gmxapi::UsageError("Grid argument must describe domain decomposition grid.");
+        }
+        std::vector<std::string> vals;
+        auto                     iterator = py::iter(params["grid"]);
+        while (iterator != py::iterator::sentinel())
+        {
+            vals.emplace_back(py::cast<std::string>(py::str(iterator)));
+            ++iterator;
+        }
+        mdargs.emplace_back("-dd");
+        for (auto&& val : vals)
+        {
+            mdargs.emplace_back(val);
+        }
+    }
+    if (params.contains("pme_ranks"))
+    {
+        auto val = py::cast<std::string>(py::str(params["pme_ranks"]));
+        mdargs.emplace_back("-npme");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("threads"))
+    {
+        auto val = py::cast<std::string>(py::str(params["threads"]));
+        mdargs.emplace_back("-nt");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("tmpi"))
+    {
+        auto val = py::cast<std::string>(py::str(params["tmpi"]));
+        mdargs.emplace_back("-ntmpi");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("threads_per_rank"))
+    {
+        auto val = py::cast<std::string>(py::str(params["threads_per_rank"]));
+        mdargs.emplace_back("-ntomp");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("pme_threads_per_rank"))
+    {
+        auto val = py::cast<std::string>(py::str(params["threads_per_pme_rank"]));
+        mdargs.emplace_back("-ntomp_pme");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("steps"))
+    {
+        auto val = py::cast<std::string>(py::str(params["steps"]));
+        mdargs.emplace_back("-nsteps");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("max_hours"))
+    {
+        auto val = py::cast<std::string>(py::str(params["max_hours"]));
+        mdargs.emplace_back("-maxh");
+        mdargs.emplace_back(val);
+    }
+    if (params.contains("append_output"))
+    {
+        try
+        {
+            if (!params["append_output"].cast<bool>())
+            {
+                mdargs.emplace_back("-noappend");
+            }
+        }
+        catch (const py::cast_error& e)
+        {
+            // Couldn't cast to bool for some reason.
+            // Convert to gmxapi exception (not implemented)
+            // ref. https://github.com/kassonlab/gmxapi/issues/125
+            throw;
+        }
+    }
+    return mdargs;
+}
+
+static std::vector<std::string> makeMDArgs_CLI(const py::dict& params)
+{
+    // Make sure pybind `None` has the same auto-conversion to `NoneType` as in Python.
+    assert(py::isinstance<py::none>(py::none()));
+
+    std::vector<std::string> mdargs;
+    // for key, value in params, if key.startswith('-'): mdargs.append(key); mdargs.extend(*value)
+    for (auto items : params)
+    {
+        auto key   = items.first;
+        auto value = items.second;
+        auto arg   = py::cast<std::string>(key);
+        if (arg.front() == '-')
+        {
+            mdargs.emplace_back(arg);
+            if (py::isinstance<py::none>(value))
+            {
+                continue;
+            }
+            if (py::isinstance<py::str>(value))
+            {
+                mdargs.emplace_back(py::cast<std::string>(value));
+                continue;
+            }
+            // If value is a non-string iterator, get each value.
+            try
+            {
+                auto it = py::iter(value);
+                while (it != py::iterator::sentinel())
+                {
+                    mdargs.emplace_back(py::cast<std::string>(*it));
+                    ++it;
+                }
+                continue;
+            }
+            catch (py::type_error&)
+            {
+            }
+            // Otherwise, convert the value to string.
+            mdargs.emplace_back(py::cast<std::string>(value));
+        }
+    }
+    return mdargs;
+}
 
 
 /*! \internal
@@ -72,83 +208,37 @@ namespace py = pybind11;
  */
 static void setMDArgs(std::vector<std::string>* mdargs, const py::dict& params)
 {
-    mdargs->clear();
-    if (params.contains("grid"))
+    // Note: params is processed twice, but entries may be silently ignored if
+    // neither consumer is interested.
+    // TODO: Consider copying `params` and popping values as they are processed.
+
+    // Get key-word mapped arguments from gmxapi 0.0.7
+    auto args_0_0_7 = makeMDArgs_0_0_7(params);
+
+    // Add raw hyphen-prefixed CLI args and string values without pre-checking.
+    // This doesn't check for overlap between gmxapi 0.0.7 input and gmxapi 0.1+ input.
+    // For the moment, the user is at the mercy of CLI input-checking behavior.
+    auto args_cli = makeMDArgs_CLI(params);
+
+    // This function takes complete control of the values in mdargs, and so we
+    // clear any leftover values from a previously-used Context.
+    mdargs->reserve(args_0_0_7.size() + args_cli.size());
+    *mdargs = std::move(args_0_0_7);
+    if (gmxapi::Version::isAtLeast(0, 3))
     {
-        if (py::len(params["grid"]) == 0)
+        mdargs->insert(std::end(*mdargs), std::begin(args_cli), std::end(args_cli));
+    }
+    else
+    {
+        // Before 0.3.0, mdrun parameters were strictly curated by gmxapi. The 0.3 Python package
+        // introduced the `runtime_args` key word parameter to `gmxapi.simulation.mdrun()`, but if
+        // the gmxapi library is older than 0.3.0, only the gmxapi 0.0.7 mdrun paramters are
+        // supported.
+        if (args_cli.size() > 0)
         {
-            throw gmxapi::UsageError("Grid argument must describe domain decomposition grid.");
-        }
-        std::vector<std::string> vals;
-        auto                     iterator = py::iter(params["grid"]);
-        while (iterator != py::iterator::sentinel())
-        {
-            vals.emplace_back(py::cast<std::string>(py::str(iterator)));
-            ++iterator;
-        }
-        mdargs->emplace_back("-dd");
-        for (auto&& val : vals)
-        {
-            mdargs->emplace_back(val);
-        }
-    }
-    if (params.contains("pme_ranks"))
-    {
-        auto val = py::cast<std::string>(py::str(params["pme_ranks"]));
-        mdargs->emplace_back("-npme");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("threads"))
-    {
-        auto val = py::cast<std::string>(py::str(params["threads"]));
-        mdargs->emplace_back("-nt");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("tmpi"))
-    {
-        auto val = py::cast<std::string>(py::str(params["tmpi"]));
-        mdargs->emplace_back("-ntmpi");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("threads_per_rank"))
-    {
-        auto val = py::cast<std::string>(py::str(params["threads_per_rank"]));
-        mdargs->emplace_back("-ntomp");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("pme_threads_per_rank"))
-    {
-        auto val = py::cast<std::string>(py::str(params["threads_per_pme_rank"]));
-        mdargs->emplace_back("-ntomp_pme");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("steps"))
-    {
-        auto val = py::cast<std::string>(py::str(params["steps"]));
-        mdargs->emplace_back("-nsteps");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("max_hours"))
-    {
-        auto val = py::cast<std::string>(py::str(params["max_hours"]));
-        mdargs->emplace_back("-maxh");
-        mdargs->emplace_back(val);
-    }
-    if (params.contains("append_output"))
-    {
-        try
-        {
-            if (!params["append_output"].cast<bool>())
-            {
-                mdargs->emplace_back("-noappend");
-            }
-        }
-        catch (const py::cast_error& e)
-        {
-            // Couldn't cast to bool for some reason.
-            // Convert to gmxapi exception (not implemented)
-            // ref. https://github.com/kassonlab/gmxapi/issues/125
-            throw;
+            const auto message =
+                    std::string("Invalid runtime_args for libgmxapi ") + gmxapi::Version::release();
+            throw gmxapi::UsageError(message);
         }
     }
 }
@@ -158,9 +248,10 @@ void export_context(py::module& m)
     // Add argument type before it is used for more sensible automatic bindings behavior.
     py::class_<MDArgs, std::unique_ptr<MDArgs>> mdargs(m, "MDArgs");
     mdargs.def(py::init(), "Create an empty MDArgs object.");
-    mdargs.def("set",
-               [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
-               "Assign parameters in MDArgs from Python dict.");
+    mdargs.def(
+            "set",
+            [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
+            "Assign parameters in MDArgs from Python dict.");
 
     // Export execution context class
     py::class_<PyContext, std::shared_ptr<PyContext>> context(m, "Context");

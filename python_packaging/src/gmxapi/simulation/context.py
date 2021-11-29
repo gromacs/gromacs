@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -270,7 +270,7 @@ def _get_mpi_ensemble_communicator(session_communicator, ensemble_size):
     # which we have to explicitly avoid "free"ing, so let's just get rid of it.
     # To do: don't even get the null communicator in the first place. Use a group and create instead of split.
     if ensemble_communicator == MPI.COMM_NULL:
-        ensemble_communicator = None
+        ensemble_communicator = _DummyCommunicator()
 
     return ensemble_communicator
 
@@ -382,8 +382,6 @@ def _get_ensemble_communicator(communicator, ensemble_size):
 
     Currently, only one ensemble can be managed in a session.
     """
-    ensemble_communicator = None
-
     # For trivial cases, don't bother trying to use MPI
     # Note: all ranks in communicator must agree on the size of the work!
     # Note: If running with a dummy session communicator in an MPI session (user error)

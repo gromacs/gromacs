@@ -42,6 +42,30 @@ import pytest
 
 pytest_plugins = ('gmxapi.testsupport',)
 
+try:
+    from mpi4py import MPI
+
+    rank_number = MPI.COMM_WORLD.Get_rank()
+    comm_size = MPI.COMM_WORLD.Get_size()
+except ImportError:
+    rank_number = 0
+    comm_size = 1
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
+
+old_factory = logging.getLogRecordFactory()
+
+
+def record_factory(*args, **kwargs):
+    record = old_factory(*args, **kwargs)
+    record.rank_tag = rank_tag
+    return record
+
+
+logging.setLogRecordFactory(record_factory)
+
 
 @pytest.fixture(scope='session')
 def spc_water_box_collection(gmxcli, remove_tempdir):

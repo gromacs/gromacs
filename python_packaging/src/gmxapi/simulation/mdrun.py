@@ -44,6 +44,7 @@ __all__ = ['mdrun']
 import inspect
 import os
 import typing
+import warnings
 from contextlib import contextmanager
 
 import gmxapi
@@ -105,7 +106,11 @@ _input = _op.InputCollectionDescription(
      ('parameters', inspect.Parameter('parameters',
                                       inspect.Parameter.POSITIONAL_OR_KEYWORD,
                                       annotation=dict,
-                                      default=dict()))
+                                      default=dict())),
+     ('runtime_args', inspect.Parameter('runtime_args',
+                                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                                        annotation=dict,
+                                        default=dict()))
      ])
 
 
@@ -139,7 +144,8 @@ def scoped_communicator(original_comm, requested_size: int = None):
     try:
         yield communicator
     finally:
-        communicator.Free()
+        if communicator is not None:
+            communicator.Free()
 
 
 class LegacyImplementationSubscription(object):
@@ -148,10 +154,17 @@ class LegacyImplementationSubscription(object):
     This input resource is a subscription to work that is dispatched to a sub-context.
     The resource can be created from the standard data of the simulation module.
     """
+    workdir: typing.List[str]  # Simulation working directories.
+    parameters: typing.List[dict]  # MDP dictionaries.
+    runtime_args: typing.List[dict]  # CLI args passed as gmxapi 0.0.7 work params.
 
     def __init__(self, resource_manager: _op.ResourceManager):
         from .context import Context as LegacyContext
         import gmxapi._gmxapi as _gmxapi
+        try:
+            from mpi4py.MPI import Comm as mpi4py_Comm
+        except ImportError:
+            mpi4py_Comm = None
         self._gmxapi = _gmxapi
 
         assert isinstance(resource_manager, _op.ResourceManager)
@@ -179,6 +192,7 @@ class LegacyImplementationSubscription(object):
                                                  member=member)
                         for member in range(ensemble_width)]
         parameters_dict_list = [{}] * ensemble_width
+        runtime_args_list = [{}] * ensemble_width
 
         # This is a reasonable place to start using MPI ensemble implementation details.
         # We will want better abstraction in the future, but it is best if related filesystem
@@ -198,38 +212,41 @@ class LegacyImplementationSubscription(object):
                     ensemble_rank = ensemble_comm.Get_rank()
                     # TODO: This should be a richer object that includes at least host information
                     #  and preferably the full gmxapi Future interface.
-                    self.workdir = os.path.abspath(workdir_list[ensemble_rank])
+                    workdir = os.path.abspath(workdir_list[ensemble_rank])
 
                     with resource_manager.local_input(member=ensemble_rank) as input_pack:
                         source_file = input_pack.kwargs['_simulation_input']
                         parameters = input_pack.kwargs['parameters']
+                        runtime_args = input_pack.kwargs['runtime_args']
                         # If there are any other key word arguments to process from the gmxapi.mdrun
                         # factory call, do it here.
 
                     # TODO: We should really name this file with a useful input-dependent tag.
-                    tprfile = os.path.join(self.workdir, 'topol.tpr')
+                    tprfile = os.path.join(workdir, 'topol.tpr')
 
                     expected_working_files = [tprfile]
 
-                    if os.path.exists(self.workdir):
-                        if os.path.isdir(self.workdir):
+                    if os.path.exists(workdir):
+                        if os.path.isdir(workdir):
                             # Confirm that this is a restarted simulation.
                             # It is unspecified by the API, but at least through gmxapi 0.1,
                             # all simulations are initialized with a checkpoint file named state.cpt
                             # (see src/api/cpp/context.cpp)
-                            checkpoint_file = os.path.join(self.workdir, 'state.cpt')
+                            checkpoint_file = runtime_args.get('-cpi', 'state.cpt')
+                            if not os.path.isabs(checkpoint_file):
+                                checkpoint_file = os.path.join(workdir, checkpoint_file)
                             expected_working_files.append(checkpoint_file)
 
                             for file in expected_working_files:
                                 if not os.path.exists(file):
                                     raise exceptions.ApiError(
-                                        'Cannot determine working directory state: {}'.format(self.workdir))
+                                        'Cannot determine working directory state: {}'.format(workdir))
                         else:
                             raise exceptions.ApiError(
-                                'Chosen working directory path exists but is not a directory: {}'.format(self.workdir))
+                                'Chosen working directory path exists but is not a directory: {}'.format(workdir))
                     else:
                         # Build the working directory and input files.
-                        os.mkdir(self.workdir)
+                        os.mkdir(workdir)
                         sim_input = fileio.read_tpr(source_file)
                         # TODO(#3295): insertion point for updated positions and velocities.
                         for key, value in parameters.items():
@@ -247,46 +264,84 @@ class LegacyImplementationSubscription(object):
                     # Gather the actual outputs from the ensemble members.
                     if hasattr(ensemble_comm, 'allgather'):
                         # We should not assume that abspath expands the same on different MPI ranks.
-                        workdir_list = ensemble_comm.allgather(self.workdir)
+                        workdir_list = ensemble_comm.allgather(workdir)
                         tpr_filenames = ensemble_comm.allgather(tprfile)
                         parameters = fileio.read_tpr(tprfile).parameters.extract()
                         parameters_dict_list = ensemble_comm.allgather(parameters)
+                        runtime_args_list = ensemble_comm.allgather(runtime_args)
                     else:
-                        workdir_list = [os.path.abspath(workdir) for workdir in workdir_list]
+                        workdir_list = [os.path.abspath(_workdir) for _workdir in workdir_list]
                         # TODO: If we use better input file names, they need to be updated in multiple places.
-                        tpr_filenames = [os.path.join(workdir, 'topol.tpr') for workdir in workdir_list]
+                        tpr_filenames = [os.path.join(_workdir, 'topol.tpr') for _workdir in workdir_list]
                         parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in tpr_filenames]
+                        if isinstance(runtime_args, (list, tuple)):
+                            runtime_args_list = list(runtime_args)
+                        else:
+                            assert isinstance(runtime_args, dict)
+                            runtime_args_list = list(
+                                runtime_args.copy() for _ in range(ensemble_width))
 
-                    logger.debug('Context rank {} acknowledges working directories {}'.format(context_rank,
-                                                                                             workdir_list))
+                    logger.debug('Context rank {} acknowledges working directories {}'.format(
+                        context_rank,
+                        workdir_list))
                     logger.debug('Operation {}:{} will use {}'.format(resource_manager.operation_id,
                                                                       ensemble_rank,
-                                                                      self.workdir
+                                                                      workdir
                                                                       ))
+                    if hasattr(resource_manager, 'mdrun_kwargs'):
+                        warnings.warn(DeprecationWarning(
+                            'Ignoring ResourceManager.mdrun_kwargs attribute. '
+                            'Provide runtime arguments to mdrun with the *runtime_args* kwarg.'
+                        ))
                     # TODO(#3718): Normalize the way we pass run time parameters to mdrun.
-                    kwargs = getattr(resource_manager, 'mdrun_kwargs', {})
-                    for key, value in kwargs.items():
-                        logger.debug('Adding mdrun run time argument: {}'.format(key + '=' + str(value)))
+                    kwargs = runtime_args_list[ensemble_rank].copy()
+                    for key, value in runtime_args.items():
+                        logger.debug(
+                            'Adding mdrun run time argument from user input: {}'.format(
+                                key + '=' + str(value)))
                     work = workflow.from_tpr(tpr_filenames, **kwargs)
                     self.workspec = work.workspec
                     # TODO(#3145): Attach extension code, if any.
 
-                    context = LegacyContext(work=self.workspec, workdir_list=workdir_list, communicator=ensemble_comm)
+                    context = LegacyContext(work=self.workspec,
+                                            workdir_list=workdir_list,
+                                            communicator=ensemble_comm)
                     self.simulation_module_context = context
                     # Go ahead and execute immediately. No need for lazy initialization in this basic case.
                     with self.simulation_module_context as session:
                         session.run()
                         # TODO: There may be some additional results that we need to extract...
                     # end: if context_rank < ensemble_width
+                    logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
+                    logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
+                    logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
 
                 # end scoped_communicator: ensemble_comm
 
-            if context_comm.Get_size() > 1:
-                context_comm.bcast(workdir_list, root=0)
+            # Info from other ranks might not have been available when we originally constructed
+            # the list(s)
+            context_comm_size = context_comm.Get_size()
+            if context_comm_size > ensemble_width:
+                # Extra unused ranks will not participate in the collective work, but they should
+                # still have representations of the ensemble work.
+                assert isinstance(context_comm, mpi4py_Comm)
+                synched_objects = (workdir_list,
+                                   parameters_dict_list, runtime_args_list)
+                if context_rank == 0:
+                    for inactive_member in range(ensemble_width, context_comm_size):
+                        for obj in synched_objects:
+                            context_comm.send(obj, inactive_member)
+                elif context_rank in range(ensemble_width, context_comm_size):
+                    workdir_list = context_comm.recv(source=0)
+                    parameters_dict_list = context_comm.recv(source=0)
+                    runtime_args_list = context_comm.recv(source=0)
             # end scoped_communicator: context_comm
 
-        self.workdir = workdir_list
-        self.parameters = parameters_dict_list
+        # Replace the local-specific workdir value with the ensemble values.
+        self.workdir = list(workdir_list)
+        # Set the other output attributes.
+        self.parameters = list(parameters_dict_list)
+        self.runtime_args = runtime_args_list
 
 
 class SubscriptionSessionResources(object):
@@ -299,6 +354,9 @@ class SubscriptionSessionResources(object):
     """
 
     def __init__(self, input: LegacyImplementationSubscription, output: PublishingDataProxy):
+        # This is instantiated by the ResourceManager and then provided to the task runner to update
+        # the mdrun reference. In the current implementation, mdrun has actually already run as a
+        # gmxapi 0.0.7 task, and is provided to as the input LegacyImplementationSubscription.
         assert isinstance(input, LegacyImplementationSubscription)
         assert isinstance(output, PublishingDataProxy)
         self.output = output
@@ -306,8 +364,11 @@ class SubscriptionSessionResources(object):
         # Before enabling the following, be sure we understand what is happening.
         # if member_id is None:
         #     member_id = 0
+        # We don't currently keep a reference to the gmxapi 0.0.7 work. We just grab its local
+        # output.
         self.workdir = input.workdir[member_id]
         self.parameters = input.parameters[member_id]
+        self.runtime_args = input.runtime_args[member_id]
 
 
 class SubscriptionPublishingRunner(object):
@@ -324,13 +385,19 @@ class SubscriptionPublishingRunner(object):
         publisher = self.resources.output
         publisher._work_dir = self.resources.workdir
         publisher.parameters = self.resources.parameters
-        # TODO: Make the return value a trajectory handle rather than a file path.
-        # TODO: Decide how to handle append vs. noappend output.
-        # TODO: More rigorous handling of the trajectory file(s)
-        # We have no way to query the name of the trajectory produced, and we
-        # have avoided exposing the ability to specify it, so we have to assume
-        # GROMACS default behavior.
-        publisher.trajectory = os.path.join(self.resources.workdir, 'traj.trr')
+        logger.debug(f'Session resources have runtime_args: {self.resources.runtime_args}')
+
+        # Note: the gromacs library still does not provide a way to query the outputs
+        # produced through the API!
+        # The '-o' and '-cpo' values are either provided by the user through *runtime_args*
+        # or hard-coded in the gmxapi::Context details.
+        # TODO(#3130,#3379): Make the return value a trajectory handle rather than a file path.
+        # Note: There may be some ambiguity about how best to handle append vs. noappend
+        # output, and how the user interface should represent the different possible behaviors.
+        trajectory = self.resources.runtime_args.get('-o', 'traj.trr')
+        if not os.path.isabs(trajectory):
+            trajectory = os.path.join(self.resources.workdir, trajectory)
+        publisher.trajectory = trajectory
 
 
 _next_uid = 0
@@ -551,7 +618,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                 # members of a received object.
                 logger.info('Building mdrun operation from source {}'.format(source))
 
-                def simulation_input_workaround(_simulation_input):
+                def simulation_input_workaround(_simulation_input, runtime_args):
                     """Allows support for the as-yet-undefined SimulationInput resource.
 
                     Also supports a user interface in which the OutputDataProxy is not an
@@ -567,7 +634,8 @@ class StandardDirector(gmxapi.abc.OperationDirector):
                     logger.info('mdrun receiving input {}: {}'.format(source._simulation_input.name,
                                                                       source._simulation_input.description))
                     source_collection = _input.bind(_simulation_input=source._simulation_input,
-                                                    parameters=source.parameters)
+                                                    parameters=source.parameters,
+                                                    runtime_args=runtime_args)
                     logger.info('mdrun input bound as source collection {}'.format(source_collection))
                     return source_collection
 
@@ -576,11 +644,12 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         raise gmxapi.exceptions.ValueError('No dispatching from {} context to {}'.format(source, target))
 
 
-def mdrun(input, label: str = None, context=None):
+def mdrun(input, runtime_args: dict = None, label: str = None, context=None):
     """MD simulation operation.
 
     Arguments:
         input : valid simulation input
+        runtime_args (dict): command line flags and arguments to be passed to mdrun (optional)
 
     Returns:
         runnable operation to perform the specified simulation
@@ -589,6 +658,11 @@ def mdrun(input, label: str = None, context=None):
     determined outputs from the operation.
 
     *input* may be a TPR file name or a an object providing the SimulationInput interface.
+
+    *runtime_args* allows an optional dictionary of mdrun options, using the option flag
+    (including the leading hyphen ``-``) as the dictionary key.
+    For mdrun command line options that do not take a value (e.g. ``-noappend``),
+    use ``None`` as the dictionary value.
 
     Note:
         New function names will be appearing to handle tasks that are separate
@@ -606,6 +680,9 @@ def mdrun(input, label: str = None, context=None):
     # requirements or helpers in a class definition).
     # Ref: gmxapi.abc.NodeBuilder and gmxapi.operation.NodeBuilder
 
+    if runtime_args is None:
+        runtime_args = {}
+
     handle_context = context
     if handle_context is not None:
         raise gmxapi.exceptions.NotImplementedError(
@@ -614,7 +691,8 @@ def mdrun(input, label: str = None, context=None):
     target_context = _op.current_context()
     assert isinstance(target_context, _op.Context)
     # Get a director that will create a node in the standard context.
-    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation, context=target_context)
+    node_director: StandardDirector = _op._get_operation_director(RegisteredOperation,
+                                                                  context=target_context)
     assert isinstance(node_director, StandardDirector)
     # TODO: refine this protocol
     assert handle_context is None
@@ -637,7 +715,8 @@ def mdrun(input, label: str = None, context=None):
     # argument (as it was previously) and get bound to `_simulation_input`. Despite the
     # provisional nature of the `_simulation_input` input, this code is more readable when we
     # use a named parameter.
-    resources: _op.DataSourceCollection = resource_factory(_simulation_input=input)
+    resources: _op.DataSourceCollection = resource_factory(_simulation_input=input,
+                                                           runtime_args=runtime_args)
     handle = node_director(resources=resources, label=label)
     # Note: One effect of the assertions above is to help the type checker infer
     # the return type of the handle. It is hard to convince the type checker that

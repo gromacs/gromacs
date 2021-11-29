@@ -130,7 +130,6 @@ def gmxconfig():
 def mdrun_kwargs(request, gmxconfig):
     """pytest fixture to provide a mdrun_kwargs dictionary for the mdrun ResourceManager.
     """
-    from gmxapi.simulation.mdrun import ResourceManager as _ResourceManager
     if gmxconfig is None:
         raise RuntimeError('--threads argument requires a usable gmxconfig.json')
     arg = request.config.getoption('--threads')
@@ -142,7 +141,6 @@ def mdrun_kwargs(request, gmxconfig):
     else:
         kwargs = {}
     # TODO: (#3718) Normalize the handling of run-time arguments.
-    _ResourceManager.mdrun_kwargs = dict(**kwargs)
     return kwargs
 
 
