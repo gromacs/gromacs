@@ -278,7 +278,7 @@ else()
              sycl::queue q(sycl::default_selector{});
              return 0;
          }
-         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl -fsycl-device-code-split=per_kernel")
+         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-ffast-math -fsycl -fsycl-device-code-split=per_kernel ${SYCL_CXX_FLAGS_EXTRA}")
     
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
         if(SYCL_CXX_FLAGS_RESULT)

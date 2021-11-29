@@ -480,6 +480,7 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
 
 #if GMX_SYCL_DPCPP
 INSTANTIATE(16);
+INSTANTIATE(32);
 #elif GMX_SYCL_HIPSYCL
 INSTANTIATE(32);
 INSTANTIATE(64);

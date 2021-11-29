@@ -468,6 +468,8 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float> sm_buf,
     static constexpr int clSizeLog2 = gmx::StaticLog2<c_clSize>::value;
     const int            tidx       = tidxi + tidxj * c_clSize;
     float                fShiftBuf  = 0.0F;
+
+#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
     for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
     {
         const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
@@ -547,38 +549,38 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float> sm_buf,
  *
  */
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
-auto nbnxmKernel(sycl::handler&                                            cgh,
-                 DeviceAccessor<Float4, mode::read>                        a_xq,
-                 DeviceAccessor<Float3, mode::read_write>                  a_f,
-                 DeviceAccessor<Float3, mode::read>                        a_shiftVec,
-                 DeviceAccessor<Float3, mode::read_write>                  a_fShift,
-                 OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyElec,
-                 OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyVdw,
-                 DeviceAccessor<nbnxn_cj4_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJ4,
-                 DeviceAccessor<nbnxn_sci_t, mode::read>                                 a_plistSci,
-                 DeviceAccessor<nbnxn_excl_t, mode::read>                    a_plistExcl,
-                 OptionalAccessor<Float2, mode::read, ljComb<vdwType>>       a_ljComb,
-                 OptionalAccessor<int, mode::read, !ljComb<vdwType>>         a_atomTypes,
-                 OptionalAccessor<Float2, mode::read, !ljComb<vdwType>>      a_nbfp,
-                 OptionalAccessor<Float2, mode::read, ljEwald<vdwType>>      a_nbfpComb,
-                 OptionalAccessor<float, mode::read, elecEwaldTab<elecType>> a_coulombTab,
-                 const int                                                   numTypes,
-                 const float                                                 rCoulombSq,
-                 const float                                                 rVdwSq,
-                 const float                                                 twoKRf,
-                 const float                                                 ewaldBeta,
-                 const float                                                 rlistOuterSq,
-                 const float                                                 ewaldShift,
-                 const float                                                 epsFac,
-                 const float                                                 ewaldCoeffLJ,
-                 const float                                                 cRF,
-                 const shift_consts_t                                        dispersionShift,
-                 const shift_consts_t                                        repulsionShift,
-                 const switch_consts_t                                       vdwSwitch,
-                 const float                                                 rVdwSwitch,
-                 const float                                                 ljEwaldShift,
-                 const float                                                 coulombTabScale,
-                 const bool                                                  calcShift)
+static auto nbnxmKernel(sycl::handler&                                            cgh,
+                        DeviceAccessor<Float4, mode::read>                        a_xq,
+                        DeviceAccessor<Float3, mode::read_write>                  a_f,
+                        DeviceAccessor<Float3, mode::read>                        a_shiftVec,
+                        DeviceAccessor<Float3, mode::read_write>                  a_fShift,
+                        OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyElec,
+                        OptionalAccessor<float, mode::read_write, doCalcEnergies> a_energyVdw,
+                        DeviceAccessor<nbnxn_cj4_t, doPruneNBL ? mode::read_write : mode::read> a_plistCJ4,
+                        DeviceAccessor<nbnxn_sci_t, mode::read>                     a_plistSci,
+                        DeviceAccessor<nbnxn_excl_t, mode::read>                    a_plistExcl,
+                        OptionalAccessor<Float2, mode::read, ljComb<vdwType>>       a_ljComb,
+                        OptionalAccessor<int, mode::read, !ljComb<vdwType>>         a_atomTypes,
+                        OptionalAccessor<Float2, mode::read, !ljComb<vdwType>>      a_nbfp,
+                        OptionalAccessor<Float2, mode::read, ljEwald<vdwType>>      a_nbfpComb,
+                        OptionalAccessor<float, mode::read, elecEwaldTab<elecType>> a_coulombTab,
+                        const int                                                   numTypes,
+                        const float                                                 rCoulombSq,
+                        const float                                                 rVdwSq,
+                        const float                                                 twoKRf,
+                        const float                                                 ewaldBeta,
+                        const float                                                 rlistOuterSq,
+                        const float                                                 ewaldShift,
+                        const float                                                 epsFac,
+                        const float                                                 ewaldCoeffLJ,
+                        const float                                                 cRF,
+                        const shift_consts_t                                        dispersionShift,
+                        const shift_consts_t                                        repulsionShift,
+                        const switch_consts_t                                       vdwSwitch,
+                        const float                                                 rVdwSwitch,
+                        const float                                                 ljEwaldShift,
+                        const float                                                 coulombTabScale,
+                        const bool                                                  calcShift)
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
@@ -815,6 +817,7 @@ auto nbnxmKernel(sycl::handler&                                            cgh,
 
                 Float3 fCjBuf(0.0F, 0.0F, 0.0F);
 
+#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
                 for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                 {
                     if (imask & maskJI)
@@ -885,7 +888,7 @@ auto nbnxmKernel(sycl::handler&                                            cgh,
                             const float c12 = c6c12[1];
 
                             // Ensure distance do not become so small that r^-12 overflows
-                            r2 = std::max(r2, c_nbnxnMinDistanceSquared);
+                            r2 = sycl::max(r2, c_nbnxnMinDistanceSquared);
 #if GMX_SYCL_HIPSYCL
                             // No fast/native functions in some compilation passes
                             const float rInv = sycl::rsqrt(r2);

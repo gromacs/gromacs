@@ -117,6 +117,7 @@ static int subGroupSizeFromVendor(const DeviceInformation& deviceInfo)
 
 #if GMX_SYCL_DPCPP
 INSTANTIATE(4, 16);
+INSTANTIATE(4, 32);
 #elif GMX_SYCL_HIPSYCL
 INSTANTIATE(4, 32);
 INSTANTIATE(4, 64);
@@ -209,6 +210,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     {
 #if GMX_SYCL_DPCPP
         case 16: setKernelPointers<16>(this); break;
+        case 32: setKernelPointers<32>(this); break;
 #elif GMX_SYCL_HIPSYCL
         case 32: setKernelPointers<32>(this); break;
         case 64: setKernelPointers<64>(this); break;
