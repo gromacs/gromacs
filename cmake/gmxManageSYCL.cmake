@@ -280,6 +280,7 @@ else()
          }
          " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-ffast-math -fsycl -fsycl-device-code-split=per_kernel ${SYCL_CXX_FLAGS_EXTRA}")
     
+    string(STRIP "${SYCL_CXX_FLAGS}" SYCL_CXX_FLAGS)
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
         if(SYCL_CXX_FLAGS_RESULT)
             message(STATUS "Checking for flags to enable SYCL - ${SYCL_CXX_FLAGS}")
