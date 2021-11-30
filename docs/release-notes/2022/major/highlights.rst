@@ -17,7 +17,8 @@ simulations and hardware. The new features are:
 * A new formulation of the soft-cored non-bonded interactions for free-energy calculations allows for a finer control of the alchemical transformation pathways
 * New transformation pull coordinate allows arbibrary mathematical transformations of one of more other pull coordinates
 * New interface for multi-scale Quantum Mechanics / Molecular Mechanics (QM/MM) simulations with the CP2K quantum 
-  chemistry package, supporting periodic boundary conditions. 
+  chemistry package, supporting periodic boundary conditions.
+* grompp performance improvements
 * Cool quotes music play list
 
 

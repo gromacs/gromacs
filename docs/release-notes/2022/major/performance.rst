@@ -42,3 +42,9 @@ or Infiniband across multiple nodes.
 
 :issue:`3969`
 
+``gmx grompp`` now runs 20-50% faster
+"""""""""""""""""""""""""""""""""""""
+
+After a series of improvements, the loops in the parameter- and
+atom-lookup code in ``gmx grompp`` have been transformed to
+run faster while using simpler, standard code idioms.
