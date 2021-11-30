@@ -1798,6 +1798,33 @@ void do_force(FILE*                               fplog,
         }
     }
 
+    const bool needToReceivePmeResultsFromSeparateRank =
+            (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces);
+
+    /* When running free energy perturbations steered by AWH and doing PME calculations on the
+     * GPU we must wait for the PME calculation (dhdl) results to finish before sampling the
+     * FEP dimension with AWH. */
+    const bool needEarlyPmeResults = (awh != nullptr && awh->hasFepLambdaDimension()
+                                      && pme_run_mode(fr->pmedata) != PmeRunMode::None
+                                      && stepWork.computeEnergy && stepWork.computeSlowForces);
+    if (needEarlyPmeResults)
+    {
+        if (useGpuPmeOnThisRank)
+        {
+            pme_gpu_wait_and_reduce(fr->pmedata, stepWork, wcycle,
+                                    &forceOutMtsLevel1->forceWithVirial(), enerd, lambda[efptCOUL]);
+        }
+        else if (needToReceivePmeResultsFromSeparateRank)
+        {
+            /* In case of node-splitting, the PP nodes receive the long-range
+             * forces, virial and energy from the PME nodes here.
+             */
+            pme_receive_force_ener(fr, cr, &forceOutMtsLevel1->forceWithVirial(), enerd,
+                                   simulationWork.useGpuPmePpCommunication,
+                                   stepWork.useGpuPmeFReduction, wcycle);
+        }
+    }
+
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation, imdSession, pull_work, step, t,
                          wcycle, fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
                          stepWork, &forceOutMtsLevel0.forceWithVirial(),
@@ -1927,15 +1954,18 @@ void do_force(FILE*                               fplog,
 
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
-    bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPmeOnThisRank && simulationWork.useGpuNonbonded
-                             && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
+    // When running free energy perturbations steered by AWH and calculating PME on GPU,
+    // i.e. if needEarlyPmeResults == true, the PME results have already been reduced above.
+    bool alternateGpuWait =
+            (!c_disableAlternatingWait && useGpuPmeOnThisRank && simulationWork.useGpuNonbonded
+             && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps && !needEarlyPmeResults);
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, forceOutNonbonded,
                                     forceOutMtsLevel1, enerd, lambda[efptCOUL], stepWork, wcycle);
     }
 
-    if (!alternateGpuWait && useGpuPmeOnThisRank)
+    if (!alternateGpuWait && useGpuPmeOnThisRank && !needEarlyPmeResults)
     {
         pme_gpu_wait_and_reduce(fr->pmedata, stepWork, wcycle,
                                 &forceOutMtsLevel1->forceWithVirial(), enerd, lambda[efptCOUL]);
@@ -1984,8 +2014,9 @@ void do_force(FILE*                               fplog,
 
     // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
     // TODO refactor this and unify with below default-path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces
-        && simulationWork.useGpuPmePpCommunication)
+    // When running free energy perturbations steered by AWH and calculating PME on GPU,
+    // i.e. if needEarlyPmeResults == true, the PME results have already been reduced above.
+    if (needToReceivePmeResultsFromSeparateRank && simulationWork.useGpuPmePpCommunication && !needEarlyPmeResults)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -2080,8 +2111,10 @@ void do_force(FILE*                               fplog,
     }
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication
-        && stepWork.computeSlowForces)
+    // When running free energy perturbations steered by AWH and calculating PME on GPU,
+    // i.e. if needEarlyPmeResults == true, the PME results have already been reduced above.
+    if (needToReceivePmeResultsFromSeparateRank && !simulationWork.useGpuPmePpCommunication
+        && !needEarlyPmeResults)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
