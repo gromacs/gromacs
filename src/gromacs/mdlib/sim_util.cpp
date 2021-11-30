@@ -993,9 +993,10 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     const bool rankHasGpuPmeTask = simulationWork.useGpuPme && !simulationWork.haveSeparatePmeRank;
     flags.useGpuPmeFReduction    = flags.computeSlowForces && flags.useGpuFBufferOps
                                 && (rankHasGpuPmeTask || simulationWork.useGpuPmePpCommunication);
-    flags.useGpuXHalo          = simulationWork.useGpuHaloExchange && !flags.doNeighborSearch;
-    flags.useGpuFHalo          = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
-    flags.haveGpuPmeOnThisRank = rankHasGpuPmeTask && flags.computeSlowForces;
+    flags.useGpuXHalo              = simulationWork.useGpuHaloExchange && !flags.doNeighborSearch;
+    flags.useGpuFHalo              = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
+    flags.haveGpuPmeOnThisRank     = rankHasGpuPmeTask && flags.computeSlowForces;
+    flags.computePmeOnSeparateRank = simulationWork.haveSeparatePmeRank && flags.computeSlowForces;
     flags.combineMtsForcesBeforeHaloExchange =
             (flags.computeForces && simulationWork.useMts && flags.computeSlowForces
              && flags.useOnlyMtsCombinedForceBuffer
@@ -1459,7 +1460,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (simulationWork.haveSeparatePmeRank && stepWork.computeSlowForces)
+    if (stepWork.computePmeOnSeparateRank)
     {
         /* Send particle coordinates to the pme nodes */
         if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
@@ -1714,7 +1715,12 @@ void do_force(FILE*                               fplog,
                 {
                     GMX_ASSERT(haveCopiedXFromGpu,
                                "a wait should only be triggered if copy has been scheduled");
-                    stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+                    const bool haveAlreadyWaited =
+                            (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu);
+                    if (!haveAlreadyWaited)
+                    {
+                        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+                    }
                 }
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
@@ -1802,9 +1808,11 @@ void do_force(FILE*                               fplog,
     // this wait ensures that the D2H transfer is complete.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
     {
-        const bool needCoordsOnHost  = (runScheduleWork->domainWork.haveCpuLocalForceWork
+        const bool needCoordsOnHost = (runScheduleWork->domainWork.haveCpuLocalForceWork
                                        || stepWork.computeVirial || simulationWork.computeMuTot);
-        const bool haveAlreadyWaited = simulationWork.useCpuHaloExchange;
+        const bool haveAlreadyWaited =
+                simulationWork.useCpuHaloExchange
+                || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu);
         if (needCoordsOnHost && !haveAlreadyWaited)
         {
             GMX_ASSERT(haveCopiedXFromGpu,
@@ -2317,8 +2325,7 @@ void do_force(FILE*                               fplog,
 
     // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
     // TODO refactor this and unify with below default-path call to the same function
-    if (PAR(cr) && simulationWork.haveSeparatePmeRank && simulationWork.useGpuPmePpCommunication
-        && stepWork.computeSlowForces)
+    if (PAR(cr) && stepWork.computePmeOnSeparateRank && simulationWork.useGpuPmePpCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -2411,8 +2418,7 @@ void do_force(FILE*                               fplog,
     }
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function
-    if (PAR(cr) && simulationWork.haveSeparatePmeRank && simulationWork.useCpuPmePpCommunication
-        && stepWork.computeSlowForces)
+    if (PAR(cr) && stepWork.computePmeOnSeparateRank && simulationWork.useCpuPmePpCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.

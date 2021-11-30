@@ -102,6 +102,8 @@ public:
     bool useGpuFHalo = false;
     //! Whether GPU PME work is computed on the current rank this step (can be false on PP-only ranks or on fast steps with MTS)
     bool haveGpuPmeOnThisRank = false;
+    //! Whether a separate PME rank has any work this step
+    bool computePmeOnSeparateRank = false;
     //! Whether to combine the forces for multiple time stepping before the halo exchange
     bool combineMtsForcesBeforeHaloExchange = false;
 };
