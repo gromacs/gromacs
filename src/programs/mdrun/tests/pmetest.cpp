@@ -269,9 +269,9 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && GMX_GPU_SYCL, // Issues #4219, #4274
-                          "it targets GPU execution of FFT work, which is not supported with DPC++ "
-                          "or hipSYCL");
+        messages.appendIf(
+                commandLineTargetsPmeFftOnGpu && (GMX_GPU_SYCL && GMX_SYCL_DPCPP), // Issue #4219
+                "it targets GPU execution of FFT work, which is not supported with DPC++");
 
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
