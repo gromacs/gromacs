@@ -20,6 +20,7 @@ simulations and hardware. The new features are:
   chemistry package, supporting periodic boundary conditions.
 * grompp performance improvements
 * Cool quotes music play list
+* Additional features were ported to modular simulator
 
 
 .. Note to developers!

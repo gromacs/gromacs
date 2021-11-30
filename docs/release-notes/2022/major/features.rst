@@ -48,3 +48,10 @@ More flexible sharing of biases in AWH
 With the accelerated weight histogram method, biases can now be shared between
 subsets of all simulations, without restrictions. The allows for more flexible
 ensemble simulation setups, as well as simpler launches of sets of simulations.
+
+More features implemented in modular simulator
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Several features were added to the modular simulator, including all temperature
+and pressure coupling algorithms available in the legacy simulator, expanded
+ensemble and pull.
