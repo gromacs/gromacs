@@ -19,8 +19,10 @@ simulations and hardware. The new features are:
 * New interface for multi-scale Quantum Mechanics / Molecular Mechanics (QM/MM) simulations with the CP2K quantum 
   chemistry package, supporting periodic boundary conditions.
 * grompp performance improvements
-* Cool quotes music play list
+* `Cool quotes music play list <https://open.spotify.com/playlist/4oj41X9tgIAJuLgfWPq6ZX>`_
 * Additional features were ported to modular simulator
+* Added AMD GPU support with SYCL via hipSYCL_
+* More GPU offload features supported with SYCL (PME, GPU update). 
 
 
 .. Note to developers!
