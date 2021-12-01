@@ -243,7 +243,7 @@ const char* select_res(int resnr, const char* title, gmx::ArrayRef<const RtpRena
     {
         printf("%d. %s (%s)\n",
                static_cast<int>(sel),
-               enumValueToString(sel),
+               enumValueToLongString(sel),
                res2bb_notermini(enumValueToString(sel), rr));
     }
     printf("\nType a number:");
@@ -255,7 +255,7 @@ const char* select_res(int resnr, const char* title, gmx::ArrayRef<const RtpRena
         gmx_fatal(FARGS, "Answer me for res %s %d!", title, resnr + 1);
     }
 
-    return enumValueToLongString(static_cast<EnumType>(userSelection));
+    return enumValueToString(static_cast<EnumType>(userSelection));
 }
 
 const char* get_asptp(int resnr, gmx::ArrayRef<const RtpRename> rr)
