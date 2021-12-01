@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Properly account for DeltaH contribution from PME when running AWH with FEP
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The linear dHdL contribution from PME, when PME was calculated on GPU or on a separate PME
+rank, was calculated too late to be taken into account for FEP steered by AWH.
+Please verify your simulation results from simulations running FEP steered by AWH
+with PME on GPU or using a separate PME rank.
+
+:issue:`4294`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
