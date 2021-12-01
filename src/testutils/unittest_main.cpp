@@ -66,15 +66,34 @@
 #    define TEST_USES_HARDWARE_DETECTION false
 #endif
 
+#ifndef TEST_USES_DYNAMIC_REGISTRATION
+//! Whether tests will be dynamically registered
+#    define TEST_USES_DYNAMIC_REGISTRATION false
+namespace gmx
+{
+namespace test
+{
+// Stub implementation for test suites that do not use dynamic
+// registration.
+void registerTestsDynamically() {}
+} // namespace test
+} // namespace gmx
+#endif
+
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char* argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(
-            TEST_DATA_PATH, TEST_TEMP_PATH, TEST_USES_MPI, TEST_USES_HARDWARE_DETECTION, &argc, &argv);
+    ::gmx::test::initTestUtils(TEST_DATA_PATH,
+                               TEST_TEMP_PATH,
+                               TEST_USES_MPI,
+                               TEST_USES_HARDWARE_DETECTION,
+                               TEST_USES_DYNAMIC_REGISTRATION,
+                               &argc,
+                               &argv);
     int errcode = RUN_ALL_TESTS();
-    ::gmx::test::finalizeTestUtils(TEST_USES_HARDWARE_DETECTION);
+    ::gmx::test::finalizeTestUtils(TEST_USES_HARDWARE_DETECTION, TEST_USES_DYNAMIC_REGISTRATION);
     return errcode;
 }

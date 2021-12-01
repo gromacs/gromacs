@@ -70,6 +70,8 @@ class TestDevice
 public:
     //! Returns a human-readable context description line
     std::string description() const;
+    //! Returns a numerical ID for the device
+    int id() const;
     //! Returns the device info pointer
     const DeviceInformation& deviceInfo() const;
     //! Get the device context

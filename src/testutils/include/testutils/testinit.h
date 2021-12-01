@@ -43,6 +43,10 @@
 #ifndef GMX_TESTUTILS_TESTINIT_H
 #define GMX_TESTUTILS_TESTINIT_H
 
+#include <string>
+
+#include <gtest/gtest.h>
+
 namespace gmx
 {
 
@@ -63,6 +67,8 @@ namespace test
  * \param[in] tempPath Filepath to temporary files.
  * \param[in] usesMpi  If the test is run with MPI or not.
  * \param[in] usesHardwareDetection If hardwaredetection is enabled.
+ * \param[in] registersDynamically  Whether dynamical GoogleTest registration
+ *                                  is used by this test binary
  * \param[in] argc Number of cmdline options
  * \param[in] argv Cmdline options.
  *
@@ -72,6 +78,7 @@ void initTestUtils(const char* dataPath,
                    const char* tempPath,
                    bool        usesMpi,
                    bool        usesHardwareDetection,
+                   bool        registersDynamically,
                    int*        argc,
                    char***     argv);
 
@@ -80,6 +87,8 @@ void initTestUtils(const char* dataPath,
  * Finalizes the test utilities library.
  *
  * \param[in] usesHardwareDetection If hardwaredetection is enabled.
+ * \param[in] registersDynamically  Whether dynamical GoogleTest registration
+ *                                  is used by this test binary
  *
  * Does not throw.  Terminates the program with a non-zero error code if an
  * error occurs.
@@ -88,8 +97,91 @@ void initTestUtils(const char* dataPath,
  *
  * \ingroup module_testutils
  */
-void finalizeTestUtils(bool usesHardwareDetection);
+void finalizeTestUtils(bool usesHardwareDetection, bool registersDynamically);
 //! \endcond
+
+/*! \brief Declaration of function used to dynamically register
+ * GoogleTest tests.
+ *
+ * When a test binary uses gmx_add_gtest_executable(exename
+ * DYNAMIC_REGISTRATION ...) it must provide an implementation of this
+ * method. The method is called before RUN_ALL_TESTS() and is expected
+ * to call ::testing::RegisterTest to register tests dynamically. This
+ * approach might be necessary to run the tests in a stable way over
+ * whichever hardware is detected at run time.
+ *
+ * Normal test binaries do not need to implement this function.
+ *
+ * ::gmx::test::TestHardwareEnvironment::gmxSetUp() should be called before
+ * this method, in case the test hardware environment is needed to help
+ * decide which tests to register. */
+void registerTestsDynamically();
+
+/*! \brief Register tests dynamically based on the execution context
+ *
+ * This template reduces code duplication across the dynamically
+ * registered tests, letting them register their tests more tersely.
+ *
+ * \tparam TestFixture  The type of the test fixture
+ * \tparam TestCase     The type of the test case (derived from \c TestFixture)
+ * \tparam Combinations The interal GoogleTest type describing the
+ *                        return from \c ::testing::Combine() intended
+ *                        to generate test parameters of type \c
+ *                        TestFixture::ParamType (which is typically a
+ *                        tuple).
+ *
+ * \param[in] testSuiteName           The name of the test suite that shares the \c TestFixture
+ * \param[in] makeBriefNameOfTestCase Function that will make the brief name of the test case,
+ *                                      used for naming the refdata file
+ * \param[in] makeFullNameOfTestCase  Function that will make the full name of the test case
+ * \param[in] combinations            A generator of test values produced with
+ *                                      \c ::testing::Combine()
+ *
+ * Note that \c Combinations is actually well defined relative to \c
+ * TestFixture::ParamType, but its concrete type is an internal
+ * GoogleTest type, so we do not want to express it in code. In C++20,
+ * it would be better to declare the function parameter like `const
+ * auto& combinations` to achieve the same effect of hiding the
+ * concrete type. */
+template<typename TestFixture, typename TestCase, typename Combinations>
+void registerTests(const std::string& testSuiteName,
+                   std::string (*makeBriefNameOfTestCase)(
+                           const typename ::testing::TestParamInfo<typename TestFixture::ParamType>&),
+                   std::string (*makeFullNameOfTestCase)(
+                           const typename ::testing::TestParamInfo<typename TestFixture::ParamType>&,
+                           const std::string&),
+                   const Combinations& combinations)
+{
+    // It is not good practice to use GoogleTest's internal type here,
+    // but it's a practical alternative that lets us use GoogleTest's Combine
+    // in the code that declares the values passed to registered tests.
+    //
+    // Normally the use of this type is hidden behind a call to a
+    // INSTANTIATE_TEST_SUITE_P macro. If GoogleTest do change things
+    // such that this breaks, it may be simple to fix it. Or if not,
+    // we can always manually build or enumerate the Cartesian product
+    // of values that it generates and use that in the loop below.
+    const auto testParamGenerator =
+            ::testing::internal::ParamGenerator<typename TestFixture::ParamType>(combinations);
+    for (const auto& parameters : testParamGenerator)
+    {
+        ::testing::TestParamInfo<typename TestFixture::ParamType> testParamInfo(parameters, 0);
+        std::string testName = makeBriefNameOfTestCase(testParamInfo);
+        // This returns a testing::TestInfo object that leaks. That's currently not
+        // a problem for a short-lived test binary. But if it did become one, then we
+        // should fill and return a std::vector<std::unique_ptr<TestInfo>> whose lifetime
+        // is managed in testinit.cpp.
+        ::testing::RegisterTest(testSuiteName.c_str(),
+                                makeFullNameOfTestCase(testParamInfo, testName).c_str(),
+                                nullptr,
+                                testName.c_str(),
+                                __FILE__,
+                                __LINE__,
+                                // Important to use the fixture type as the return type here, even
+                                // though we construct an object of the derived type.
+                                [=]() -> TestFixture* { return new TestCase(parameters); });
+    }
+}
 
 } // namespace test
 } // namespace gmx

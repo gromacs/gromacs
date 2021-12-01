@@ -32,7 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(EwaldUnitTests ewald-test HARDWARE_DETECTION
+gmx_add_unit_test(EwaldUnitTests ewald-test
+    HARDWARE_DETECTION
+    DYNAMIC_REGISTRATION
     CPP_SOURCE_FILES
         pmebsplinetest.cpp
         pmegathertest.cpp

@@ -333,18 +333,21 @@ FloatingPointTolerance relativeToleranceAsPrecisionDependentFloatingPoint(double
 }
 //! \endcond
 
-void checkTestNameLength()
+void checkTestNameLength(std::optional<std::string> testName)
 {
-    std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->test_suite_name());
-    testName += "_";
-    testName += ::testing::UnitTest::GetInstance()->current_test_info()->name();
+    if (!testName.has_value())
+    {
+        testName = ::testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+        testName.value() += "_";
+        testName.value() += ::testing::UnitTest::GetInstance()->current_test_info()->name();
+    }
     const int maxTestLength = 120;
-    EXPECT_LE(testName.length(), maxTestLength) << formatString(
+    EXPECT_LE(testName.value().length(), maxTestLength) << formatString(
             "Tests may not use names longer than %d characters\nThis test %s was %zu characters "
             "long",
             maxTestLength,
-            testName.c_str(),
-            testName.size());
+            testName.value().c_str(),
+            testName.value().size());
 }
 
 } // namespace test

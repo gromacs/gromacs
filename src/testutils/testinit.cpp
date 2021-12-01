@@ -173,6 +173,7 @@ void initTestUtils(const char* dataPath,
                    const char* tempPath,
                    bool        usesMpi,
                    bool        usesHardwareDetection,
+                   bool        registersDynamically,
                    int*        argc,
                    char***     argv)
 {
@@ -200,9 +201,16 @@ void initTestUtils(const char* dataPath,
             finalizeForCommandLine();
             std::exit(1);
         }
-        if (usesHardwareDetection)
+        if (registersDynamically || usesHardwareDetection)
         {
             ::gmx::test::TestHardwareEnvironment::gmxSetUp();
+        }
+        // Note that setting up the hardware environment should
+        // precede dynamic registration, in case it is needed for
+        // deciding what to register.
+        if (registersDynamically)
+        {
+            ::gmx::test::registerTestsDynamically();
         }
         g_testContext = std::make_unique<TestProgramContext>(context);
         setProgramContext(g_testContext.get());
@@ -285,9 +293,9 @@ void initTestUtils(const char* dataPath,
     }
 }
 
-void finalizeTestUtils(const bool usesHardwareDetection)
+void finalizeTestUtils(const bool usesHardwareDetection, const bool registersDynamically)
 {
-    if (usesHardwareDetection)
+    if (registersDynamically || usesHardwareDetection)
     {
         ::gmx::test::TestHardwareEnvironment::gmxTearDown();
     }

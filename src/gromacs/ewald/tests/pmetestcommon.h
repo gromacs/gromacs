@@ -37,6 +37,7 @@
  * Describes common routines and types for PME tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_ewald
  */
 #ifndef GMX_EWALD_PME_TEST_COMMON_H
@@ -44,12 +45,15 @@
 
 #include <array>
 #include <map>
+#include <optional>
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
+#include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/test_device.h"
@@ -124,6 +128,13 @@ enum class PmeSolveAlgorithm : int
 
 //! Tells if this generally valid PME input is supported for this mode
 bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inputRec, CodePath mode);
+
+/*! \brief Returns message describing why PME in this \c mode is not
+ * supported for this \c inputRec on this \c hwinfo, or empty of
+ * messages when PME is supported. */
+MessageStringCollector getSkipMessagesIfNecessary(const gmx_hw_info_t& hwinfo,
+                                                  const t_inputrec&    inputRec,
+                                                  CodePath             mode);
 
 //! Spline moduli are computed in double precision, so they're very good in single precision
 constexpr int64_t c_splineModuliSinglePrecisionUlps = 1;
@@ -210,13 +221,15 @@ struct PmeTestHardwareContext
     CodePath codePath_;
     //! Returns a human-readable context description line
     std::string description() const;
+    //! Returns an optional GPU ID, with a valid value when the context is for a GPU
+    std::optional<int> gpuId() const;
     //! Pointer to the global test hardware device (if on GPU)
     TestDevice* testDevice_ = nullptr;
     //! PME GPU program if needed
     PmeGpuProgramStorage pmeGpuProgram_ = nullptr;
-    // Constructor for CPU context
+    //! Constructor for CPU context
     PmeTestHardwareContext();
-    // Constructor for GPU context
+    //! Constructor for GPU context
     explicit PmeTestHardwareContext(TestDevice* testDevice);
 
     //! Get the code path
@@ -243,6 +256,30 @@ struct PmeTestHardwareContext
 
 //! Return a view of the current PME test hardware contexts
 ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts();
+
+/*! \brief Construct a refdata filename for a test
+ *
+ * We want the same reference data to apply to every hardware context
+ * for which we test PME. That means we need to store it in a file
+ * whose name relates to the name of the test, but excluding the part
+ * related to the context. */
+std::string makeRefDataFileName();
+
+/*! \brief Make a terse description of the hardware context suitable
+ * for use in naming the test case.
+ *
+ * The full hardware device description is used in a SCOPED_TRACE
+ * message, but that is too long for the test name and has too many
+ * possible characters that might break GoogleTest. */
+std::string makeHardwareContextName(int hardwareContextIndex);
+
+/*! \brief Functions that dynamically register test cases
+ *
+ * This are called by registerTestsDynamically and customize the
+ * range of test cases to suit the available hardware. */
+//!\{
+void registerDynamicalPmeGatherTests(Range<int> contextIndexRange);
+//!\}
 
 //! A couple of valid inputs for boxes.
 extern const std::map<std::string, Matrix3x3> c_inputBoxes;

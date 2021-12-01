@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
@@ -106,6 +107,11 @@ TestDevice::~TestDevice() = default;
 std::string TestDevice::description() const
 {
     return impl_->description();
+}
+
+int TestDevice::id() const
+{
+    return deviceInfo().id;
 }
 
 const DeviceInformation& TestDevice::deviceInfo() const

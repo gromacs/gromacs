@@ -97,7 +97,8 @@ enum class PmeSplineDataType
 enum class GridOrdering
 {
     YZX,
-    XYZ
+    XYZ,
+    Count
 };
 
 /*! \libinternal \brief

@@ -38,6 +38,7 @@
  * Implements common routines for PME tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_ewald
  */
 #include "gmxpre.h"
@@ -74,6 +75,7 @@
 
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
+#include "testutils/testinit.h"
 
 class DeviceContext;
 
@@ -106,6 +108,31 @@ bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inpu
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
     return implemented;
+}
+
+MessageStringCollector getSkipMessagesIfNecessary(const gmx_hw_info_t& hwinfo,
+                                                  const t_inputrec&    inputRec,
+                                                  const CodePath       codePath)
+{
+    // Note that we can't call GTEST_SKIP() from within this method,
+    // because it only returns from the current function. So we
+    // collect all the reasons why the test cannot run, return them
+    // and skip in a higher stack frame.
+
+    MessageStringCollector messages;
+    messages.startContext("Test is being skipped because:");
+
+    if (codePath == CodePath::CPU)
+    {
+        // Everything is implemented, no reason to skip
+        return messages;
+    }
+
+    std::string errorMessage;
+    messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
+    messages.appendIf(!pme_gpu_supports_hardware(hwinfo, &errorMessage), errorMessage);
+    messages.appendIf(!pme_gpu_supports_input(inputRec, &errorMessage), errorMessage);
+    return messages;
 }
 
 uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
@@ -929,6 +956,54 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, P
     return output;
 }
 
+std::string makeRefDataFileName()
+{
+    // By default, the reference data filename is set via a call to
+    // gmx::TestFileManager::getTestSpecificFileName() that queries
+    // GoogleTest and gets a string that includes the return value for
+    // nameOfTest(). The logic here must match that of the call to
+    // ::testing::RegisterTest, so that it works as intended. In
+    // particular, the name must include a "WorksOn" substring that
+    // precedes the name of the hardware context, so that this can be
+    // removed.
+    //
+    // Get the info about the test
+    const ::testing::TestInfo* testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
+
+    // Get the test name and prepare to remove the part describing the
+    // hardware context.
+    std::string testName(testInfo->name());
+    auto        worksOnPos = testName.find("WorksOn");
+    GMX_RELEASE_ASSERT(worksOnPos != testName.size(),
+                       "Test name must include the 'WorksOn' fragment");
+
+    // Build the complete refdata filename like
+    // getTestSpecificFilename() would do it for a non-dynamical
+    // parameterized test.
+    std::string refDataFileName = formatString("%s_%sWorksWith_%s.xml",
+                                               testInfo->test_suite_name(),
+                                               testName.substr(0, worksOnPos).c_str(),
+                                               testInfo->value_param());
+    // Use the check that the name isn't too long
+    checkTestNameLength(refDataFileName);
+    return refDataFileName;
+}
+
+std::string makeHardwareContextName(const int hardwareContextIndex)
+{
+    std::optional<int> gpuId = getPmeTestHardwareContexts()[hardwareContextIndex].gpuId();
+    std::string        description;
+    if (gpuId.has_value())
+    {
+        description = "GPU" + std::to_string(gpuId.value());
+    }
+    else
+    {
+        description = "CPU";
+    }
+    return description;
+}
+
 PmeTestHardwareContext::PmeTestHardwareContext() : codePath_(CodePath::CPU) {}
 
 PmeTestHardwareContext::PmeTestHardwareContext(TestDevice* testDevice) :
@@ -946,6 +1021,16 @@ std::string PmeTestHardwareContext::description() const
         case CodePath::CPU: return "CPU";
         case CodePath::GPU: return "GPU (" + testDevice_->description() + ")";
         default: return "Unknown code path.";
+    }
+}
+
+std::optional<int> PmeTestHardwareContext::gpuId() const
+{
+    switch (codePath_)
+    {
+        case CodePath::CPU: return std::nullopt;
+        case CodePath::GPU: return testDevice_->id();
+        default: return std::nullopt;
     }
 }
 
@@ -976,6 +1061,13 @@ ArrayRef<const PmeTestHardwareContext> getPmeTestHardwareContexts()
         }
     }
     return s_pmeTestHardwareContexts;
+}
+
+void registerTestsDynamically()
+{
+    auto       contexts = getPmeTestHardwareContexts();
+    Range<int> contextIndexRange(0, contexts.size());
+    registerDynamicalPmeGatherTests(contextIndexRange);
 }
 
 } // namespace test

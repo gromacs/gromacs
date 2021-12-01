@@ -117,7 +117,7 @@ endfunction ()
 #     All the other C++ .cpp source files needed only with neither OpenCL nor CUDA nor SYCL
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options MPI HARDWARE_DETECTION)
+        set(_options MPI HARDWARE_DETECTION DYNAMIC_REGISTRATION)
         set(_multi_value_keywords
             CPP_SOURCE_FILES
             CUDA_CU_SOURCE_FILES
@@ -148,6 +148,10 @@ function (gmx_add_gtest_executable EXENAME)
         if (ARG_HARDWARE_DETECTION)
             list(APPEND EXTRA_COMPILE_DEFINITIONS
                  TEST_USES_HARDWARE_DETECTION=true)
+        endif()
+        if (ARG_DYNAMIC_REGISTRATION)
+            list(APPEND EXTRA_COMPILE_DEFINITIONS
+                 TEST_USES_DYNAMIC_REGISTRATION=true)
         endif()
 
         if (GMX_GPU_CUDA AND NOT GMX_CLANG_CUDA)

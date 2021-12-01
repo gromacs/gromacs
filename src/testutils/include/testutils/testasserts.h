@@ -60,6 +60,7 @@
 
 #include "config.h"
 
+#include <optional>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -731,8 +732,10 @@ static inline ::testing::AssertionResult plainAssertHelper(const char* /*expr*/,
  * (e.g. because MSVC builds fail), then call this function from them
  * to help maintainers keep that length under control when working on
  * other platforms.
- */
-void checkTestNameLength();
+ *
+ * If a test computes its own name for the purposes of reference data
+ * files (e.g. PME unit tests), pass that name in here. */
+void checkTestNameLength(std::optional<std::string> testName = std::nullopt);
 
 //! \}
 

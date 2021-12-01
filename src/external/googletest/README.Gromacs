@@ -13,7 +13,8 @@ This README.Gromacs file is new, of course.
 
 Conditional compilation based on __clang_analyzer__ is used to work
 around reports from the clang static analyzer in
-googletest/include/gtest/gtest-matchers.h and
+googletest/include/gtest/gtest.h,
+googletest/include/gtest/gtest-matchers.h, and
 googlemock/include/gmock/gmock-matchers.h.
 
 Some warning-generation flags are removed from
