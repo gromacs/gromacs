@@ -245,13 +245,11 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
 
 /*! \brief Construct the GPU halo exchange object(s).
  *
- * \param[in] mdlog               The logger object.
  * \param[in] cr                  The commrec object.
  * \param[in] deviceStreamManager Manager of the GPU context and streams.
  * \param[in] wcycle              The wallclock counter.
  */
-void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
-                              const t_commrec&                cr,
+void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
                               gmx_wallcycle*                  wcycle);
 

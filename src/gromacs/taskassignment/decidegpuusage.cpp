@@ -747,14 +747,39 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
             || (updateTarget == TaskTarget::Auto && devFlags.forceGpuUpdateDefault));
 }
 
-bool decideWhetherToUseGpuForHalo(const DevelopmentFeatureFlags& devFlags,
-                                  bool                           havePPDomainDecomposition,
-                                  bool                           useGpuForNonbonded,
-                                  bool                           useModularSimulator,
-                                  bool                           doRerun,
-                                  bool                           haveEnergyMinimization)
+bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  const gmx::MDLogger&           mdlog)
 {
-    return havePPDomainDecomposition && devFlags.enableGpuHaloExchange && useGpuForNonbonded
+    const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
+
+    // issue warning note when env var disables the default
+    if (GMX_THREAD_MPI && GMX_GPU_CUDA && disableDirectGpuComm)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "GMX_DISABLE_DIRECT_GPU_COMM environment variable detected, "
+                        "disabling direct GPU communication.");
+    }
+
+    // Thread-MPI case on by deafult, can be disabled with env var.
+    bool canUseDirectGpuCommWithThreadMpi = (GMX_THREAD_MPI && GMX_GPU_CUDA && !disableDirectGpuComm);
+    // GPU-aware MPI case off by default, can be enabled with dev flag
+    // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
+    bool canUseDirectGpuCommWithMpi =
+            (GMX_LIB_MPI && GMX_GPU_CUDA && devFlags.canUseCudaAwareMpi && !disableDirectGpuComm);
+
+    return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
+}
+
+bool decideWhetherToUseGpuForHalo(bool havePPDomainDecomposition,
+                                  bool useGpuForNonbonded,
+                                  bool canUseDirectGpuComm,
+                                  bool useModularSimulator,
+                                  bool doRerun,
+                                  bool haveEnergyMinimization)
+{
+    return canUseDirectGpuComm && havePPDomainDecomposition && useGpuForNonbonded
            && !useModularSimulator && !doRerun && !haveEnergyMinimization;
 }
 

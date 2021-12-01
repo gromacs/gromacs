@@ -157,13 +157,20 @@ Performance and Run Control
         Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
 ``GMX_GPU_DD_COMMS``
-        perform domain decomposition halo exchange communication operations (on coordinate and force buffers)
-        directly on GPU memory spaces, without the staging of data through CPU memory, where possible.
+        Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
 
 ``GMX_GPU_PME_PP_COMMS``
-        when the simulation uses a separate PME rank, perform communication operations between PP and PME rank
-        (for coordinate and force buffers) directly on GPU memory spaces, without the staging of data through CPU
-        memory, where possible. 
+        Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
+
+``GMX_ENABLE_DIRECT_GPU_COMM``
+        Enable direct GPU communication in multi-rank parallel runs.
+        Use as an override for cases which do not default to using this feature;
+        currently used to enable GPU communication with CUDA-aware MPI.
+
+``GMX_DISABLE_DIRECT_GPU_COMM``
+        Disable direct GPU communication in multi-rank parallel runs.
+        Use as an override for cases which default to using this feature;
+        currently used to disable GPU communication with thread-MPI.
 
 ``GMX_GPU_SYCL_NO_SYNCHRONIZE``
         disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
@@ -239,8 +246,8 @@ Performance and Run Control
         ``mdrun -update gpu``, but (1) falls back to the CPU code-path, if set with input that is not supported and
         (2) can be used to run update on GPUs in multi-rank cases. The latter case should be
         considered experimental since it lacks substantial testing. Also, GPU update is only supported with the GPU direct
-        communications and ``GMX_FORCE_UPDATE_DEFAULT_GPU`` variable should be set simultaneously with ``GMX_GPU_DD_COMMS``
-        and ``GMX_GPU_PME_PP_COMMS`` environment variables in multi-rank case. Does not override ``mdrun -update cpu``.
+        communications and ``GMX_FORCE_UPDATE_DEFAULT_GPU`` variable should be set simultaneously with
+        ``GMX_ENABLE_DIRECT_GPU_COMM`` environment variable in multi-rank cases using library-MPI. Does not override ``mdrun -update cpu``.
 
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``

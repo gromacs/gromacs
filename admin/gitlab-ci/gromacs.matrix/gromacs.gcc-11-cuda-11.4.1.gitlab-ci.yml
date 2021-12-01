@@ -4,7 +4,7 @@
 #   GPU: CUDA newest supported with its newest supported gcc
 #   HW: dual NVIDIA GPU
 #   MPI: OpenMPI
-#   Features: GPU direct communications + update (regression tests with dual GPU)
+#   Features: GPU direct communications (manual) + update (regression tests with dual GPU)
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -56,8 +56,7 @@ gromacs:gcc-11-cuda-11.4.1:regressiontest-gpucommupd-MPI:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_GPU_DD_COMMS: 1  
-    GMX_GPU_PME_PP_COMMS: 1
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_FORCE_UPDATE_DEFAULT_GPU: 1
   tags:
     - k8s-scilifelab

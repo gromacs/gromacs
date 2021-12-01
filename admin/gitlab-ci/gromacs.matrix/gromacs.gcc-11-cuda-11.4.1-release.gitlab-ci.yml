@@ -4,6 +4,7 @@
 #   GPU: CUDA newest supported with its newest supported gcc
 #   HW: NVIDIA GPU
 #   CMake: oldest supported
+#   Features: GPU direct communication off (manual)
 #   Scope: configure, build, unit tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -59,6 +60,7 @@ gromacs:gcc-11-cuda-11.4.1:release:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - k8s-scilifelab
   needs:

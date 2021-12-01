@@ -194,84 +194,89 @@ namespace gmx
  *
  * \param[in]  mdlog                Logger object.
  * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
- * \param[in]  pmeRunMode           The PME run mode for this run
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
-                                                         const bool           useGpuForNonbonded,
-                                                         const PmeRunMode     pmeRunMode)
+                                                         const bool           useGpuForNonbonded)
 {
     DevelopmentFeatureFlags devFlags;
 
     devFlags.enableGpuBufferOps = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
                                   && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
-    devFlags.enableGpuHaloExchange = GMX_MPI && GMX_GPU_CUDA && getenv("GMX_GPU_DD_COMMS") != nullptr;
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
-    devFlags.enableGpuPmePPComm = GMX_MPI && GMX_GPU_CUDA && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
+
+    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
+    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for CUDA-aware MPI.
+    const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
+
+    // GMX_DISABLE_DIRECT_GPU_COMM is only checked for consistency reasons here,
+    // the disabling is doone in task assignment
+    if (enableDirectGpuComm && (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr))
+    {
+        GMX_THROW(
+                InconsistentInputError("GMX_DISABLE_DIRECT_GPU_COMM and GMX_ENABLE_DIRECT_GPU_COMM "
+                                       "environment variables both set,\n"
+                                       "but these are mutually exclusive.\n"));
+    }
 
     // Direct GPU comm path is being used with CUDA_AWARE_MPI
     // make sure underlying MPI implementation is CUDA-aware
-    if (!GMX_THREAD_MPI && (devFlags.enableGpuPmePPComm || devFlags.enableGpuHaloExchange))
+    if (GMX_LIB_MPI && GMX_GPU_CUDA)
     {
         const bool haveDetectedCudaAwareMpi =
                 (checkMpiCudaAwareSupport() == CudaAwareMpiStatus::Supported);
+        // allows overriding the CUDA-aware MPI detection
         const bool forceCudaAwareMpi = (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr);
 
-        if (!haveDetectedCudaAwareMpi && forceCudaAwareMpi)
+        if (enableDirectGpuComm)
         {
-            // CUDA-aware support not detected in MPI library but, user has forced it's use
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendTextFormatted(
-                            "This run has forced use of 'CUDA-aware MPI'. "
-                            "But, GROMACS cannot determine if underlying MPI "
-                            "is CUDA-aware. GROMACS recommends use of latest openMPI version "
-                            "for CUDA-aware support. "
-                            "If you observe failures at runtime, try unsetting "
-                            "GMX_FORCE_CUDA_AWARE_MPI environment variable.");
-        }
+            if (!haveDetectedCudaAwareMpi && forceCudaAwareMpi)
+            {
+                // CUDA-aware support not detected in MPI library but, user has forced it's use
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "This run has forced use of 'CUDA-aware MPI'. "
+                                "But, GROMACS cannot determine if underlying MPI "
+                                "is CUDA-aware. GROMACS recommends use of latest openMPI version "
+                                "for CUDA-aware support. "
+                                "If you observe failures at runtime, try unsetting "
+                                "GMX_FORCE_CUDA_AWARE_MPI environment variable.");
+            }
 
-        if (haveDetectedCudaAwareMpi || forceCudaAwareMpi)
-        {
-            devFlags.usingCudaAwareMpi = true;
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendTextFormatted(
-                            "Using CUDA-aware MPI for 'GPU halo exchange' or 'GPU PME-PP "
-                            "communications' feature.");
-        }
-        else
-        {
-            if (devFlags.enableGpuHaloExchange)
+            if (haveDetectedCudaAwareMpi || forceCudaAwareMpi)
+            {
+                devFlags.canUseCudaAwareMpi = true;
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, enabling"
+                                "direct GPU communication using CUDA-aware MPI. ");
+            }
+            else
             {
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
                         .appendTextFormatted(
-                                "GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
-                                "halo exchange' feature will not be enabled as GROMACS couldn't "
-                                "detect CUDA_aware support in underlying MPI implementation.");
-                devFlags.enableGpuHaloExchange = false;
+                                "CUDA-aware MPI was not detected, will not use direct GPU "
+                                "communication. "
+                                "GROMACS recommends use of latest OpenMPI version for CUDA-aware "
+                                "support. "
+                                "If you are certain about CUDA-aware support in your MPI library, "
+                                "you can force its use by setting the GMX_FORCE_CUDA_AWARE_MPI "
+                                "environment variable.");
             }
-            if (devFlags.enableGpuPmePPComm)
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendText(
-                                "GMX_GPU_PME_PP_COMMS environment variable detected, but the "
-                                "'GPU PME-PP communications' feature will not be enabled as "
-                                "GROMACS couldn't "
-                                "detect CUDA_aware support in underlying MPI implementation.");
-                devFlags.enableGpuPmePPComm = false;
-            }
-
+        }
+        else if (haveDetectedCudaAwareMpi)
+        {
+            // CUDA-aware MPI was detected, let the user know that using it may improve performance
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "GROMACS recommends use of latest OpenMPI version for CUDA-aware "
-                            "support. "
-                            "If you are certain about CUDA-aware support in your MPI library, "
-                            "you can force it's use by setting environment variable "
-                            " GMX_FORCE_CUDA_AWARE_MPI.");
+                            "CUDA-aware MPI detected, but by default GROMACS will not "
+                            "make use the direct GPU communication capabilities of MPI."
+                            "For improved performance try enabling the feature by setting "
+                            "the GMX_ENABLE_DIRECT_GPU_COMM environment variable.");
         }
     }
 
@@ -292,80 +297,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         "This run will default to '-update gpu' as requested by the "
                         "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable. GPU update with domain "
                         "decomposition lacks substantial testing and should be used with caution.");
-    }
-
-    if (devFlags.enableGpuHaloExchange)
-    {
-        if (useGpuForNonbonded)
-        {
-            if (!devFlags.enableGpuBufferOps)
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendTextFormatted(
-                                "Enabling GPU buffer operations required by GMX_GPU_DD_COMMS "
-                                "(equivalent with GMX_USE_GPU_BUFFER_OPS=1).");
-                devFlags.enableGpuBufferOps = true;
-            }
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendTextFormatted(
-                            "This run has requested the 'GPU halo exchange' feature, enabled by "
-                            "the "
-                            "GMX_GPU_DD_COMMS environment variable.");
-        }
-        else
-        {
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendTextFormatted(
-                            "GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
-                            "halo exchange' feature will not be enabled as nonbonded interactions "
-                            "are not offloaded.");
-            devFlags.enableGpuHaloExchange = false;
-        }
-    }
-
-    if (devFlags.enableGpuPmePPComm)
-    {
-        if (pmeRunMode == PmeRunMode::GPU)
-        {
-            if (!devFlags.enableGpuBufferOps)
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendTextFormatted(
-                                "Enabling GPU buffer operations required by GMX_GPU_PME_PP_COMMS "
-                                "(equivalent with GMX_USE_GPU_BUFFER_OPS=1).");
-                devFlags.enableGpuBufferOps = true;
-            }
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendTextFormatted(
-                            "This run uses the 'GPU PME-PP communications' feature, enabled "
-                            "by the GMX_GPU_PME_PP_COMMS environment variable.");
-        }
-        else
-        {
-            std::string clarification;
-            if (pmeRunMode == PmeRunMode::Mixed)
-            {
-                clarification =
-                        "PME FFT and gather are not offloaded to the GPU (PME is running in mixed "
-                        "mode).";
-            }
-            else
-            {
-                clarification = "PME is not offloaded to the GPU.";
-            }
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "GMX_GPU_PME_PP_COMMS environment variable detected, but the "
-                            "'GPU PME-PP communications' feature was not enabled as "
-                            + clarification);
-            devFlags.enableGpuPmePPComm = false;
-        }
     }
 
     return devFlags;
@@ -1012,8 +943,7 @@ int Mdrunner::mdrunner()
 
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
-    const DevelopmentFeatureFlags devFlags =
-            manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog, useGpuForNonbonded);
 
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
@@ -1337,6 +1267,8 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
+    const bool canUseDirectGpuComm = decideWhetherDirectGpuCommunicationCanBeUsed(devFlags, mdlog);
+
     bool useGpuDirectHalo = false;
 
     if (useGpuForNonbonded)
@@ -1346,9 +1278,9 @@ int Mdrunner::mdrunner()
         // Todo: remove this assumption later once auto mode has support for separate PME rank
         const int numPmeRanks = domdecOptions.numPmeRanks > 0 ? domdecOptions.numPmeRanks : 0;
         bool      havePPDomainDecomposition = (cr->sizeOfDefaultCommunicator - numPmeRanks) > 1;
-        useGpuDirectHalo                    = decideWhetherToUseGpuForHalo(devFlags,
-                                                        havePPDomainDecomposition,
+        useGpuDirectHalo = decideWhetherToUseGpuForHalo(havePPDomainDecomposition,
                                                         useGpuForNonbonded,
+                                                        canUseDirectGpuComm,
                                                         useModularSimulator,
                                                         doRerun,
                                                         EI_ENERGY_MINIMIZATION(inputrec->eI));
@@ -1492,8 +1424,10 @@ int Mdrunner::mdrunner()
                                                               pmeRunMode,
                                                               useGpuForBonded,
                                                               useGpuForUpdate,
-                                                              useGpuDirectHalo);
-    const bool printHostName       = (cr->nnodes > 1);
+                                                              useGpuDirectHalo,
+                                                              canUseDirectGpuComm);
+
+    const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
@@ -2163,7 +2097,7 @@ int Mdrunner::mdrunner()
         physicalNodeComm.barrier();
     }
 
-    if (!devFlags.usingCudaAwareMpi)
+    if (!devFlags.canUseCudaAwareMpi)
     {
         // Don't reset GPU in case of CUDA-AWARE MPI
         // UCX creates CUDA buffers which are cleaned-up as part of MPI_Finalize()

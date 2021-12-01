@@ -3179,8 +3179,7 @@ bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::
     return bCutoffAllowed;
 }
 
-void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
-                              const t_commrec&                cr,
+void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
                               gmx_wallcycle*                  wcycle)
 {
@@ -3190,16 +3189,6 @@ void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
                        "Non-local non-bonded stream should be valid when using "
                        "GPU halo exchange.");
-
-    if (cr.dd->gpuHaloExchange[0].empty())
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "NOTE: Activating the 'GPU halo exchange' feature, enabled "
-                        "by the "
-                        "GMX_GPU_DD_COMMS environment variable.");
-    }
 
     for (int d = 0; d < cr.dd->ndim; d++)
     {

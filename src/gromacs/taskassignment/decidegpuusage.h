@@ -84,12 +84,8 @@ struct DevelopmentFeatureFlags
     bool enableGpuBufferOps = false;
     //! If true, forces 'mdrun -update auto' default to 'gpu'
     bool forceGpuUpdateDefault = false;
-    //! True if the GPU halo exchange development feature is enabled
-    bool enableGpuHaloExchange = false;
-    //! True if the PME PP direct communication GPU development feature is enabled
-    bool enableGpuPmePPComm = false;
-    //! True if the CUDA-aware MPI is being used for GPU direct communication feature
-    bool usingCudaAwareMpi = false;
+    //! True if the CUDA-aware MPI can be used for GPU direct communication feature
+    bool canUseCudaAwareMpi = false;
 };
 
 
@@ -308,24 +304,38 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
                                     const DevelopmentFeatureFlags& devFlags,
                                     const gmx::MDLogger&           mdlog);
 
+/*! \brief Decide whether direct GPU communication can be used.
+ *
+ * Takes into account the build type which determines feature support as well as GPU
+ * development feature flags, determines whether this run can use direct GPU communication.
+ * The final decision whether the run will use direct communication for either of the features
+ * which rely on it is made during task assignment / simulationWorkload initialization.
+ *
+ * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  mdlog                        MD logger.
+ *
+ * \returns    Whether the MPI-parallel runs can use direct GPU communication.
+ */
+bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  const gmx::MDLogger&           mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.
  *
- * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  havePPDomainDecomposition    Whether PP domain decomposition is in use.
  * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  canUseDirectGpuComm          Whether direct GPU communication can be used.
  * \param[in]  useModularSimulator          Whether modularsimulator is in use.
  * \param[in]  doRerun                      Whether this is a rerun.
  * \param[in]  haveEnergyMinimization       Whether energy minimization is in use.
  *
  * \returns    Whether halo exchange can be run on GPU.
  */
-bool decideWhetherToUseGpuForHalo(const DevelopmentFeatureFlags& devFlags,
-                                  bool                           havePPDomainDecomposition,
-                                  bool                           useGpuForNonbonded,
-                                  bool                           useModularSimulator,
-                                  bool                           doRerun,
-                                  bool                           haveEnergyMinimization);
+bool decideWhetherToUseGpuForHalo(bool havePPDomainDecomposition,
+                                  bool useGpuForNonbonded,
+                                  bool canUseDirectGpuComm,
+                                  bool useModularSimulator,
+                                  bool doRerun,
+                                  bool haveEnergyMinimization);
 
 } // namespace gmx
 

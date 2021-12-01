@@ -7,6 +7,17 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+GPU direct communication is default with CUDA and thread-MPI
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GPU-enabled multi-rank runs using CUDA will default to using direct
+GPU communication for halo exchange and/or PP-PME communication.
+This can be disabled using the GMX_DISABLE_DIRECT_GPU_COMM
+environment variable to return to the previous default
+communication scheme (staged communication).
+Regular MPI runs still use staged communication by default.
+
+
 Dynamic pairlist generation for energy minimization
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
