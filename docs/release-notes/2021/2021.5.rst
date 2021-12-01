@@ -44,6 +44,20 @@ Fixes for ``gmx`` tools
 Previously the file was not closed explicitly, leaving the result up
 to the runtime environment. Now it will work with all environments.
 
+Out-of-bounds, overflow and incorrect outputs fixes in ``gmx spatial``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There were several issues with memory management in ``gmx spatial``, which were addressed:
+1. Out-of-bound memory writes.
+2. Confusing error message when the coordinate is exactly on the boundary (happens with .xtc files).
+3. Norm could become negative due to integer overflow.
+4. Having negative ``-ign`` (default ``-1``) led to incorrect number of grid points
+5. The coordinates of the grid points were incorrect especially when ``-ign`` is non-zero.
+6. Norm calculation was incorrect.
+7. Default ``-nab`` value is increased from 4 to 16.
+
+:issue:`3214`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

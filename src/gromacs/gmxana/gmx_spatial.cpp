@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2007,2008,2009,2010,2011 by the GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,20 +39,23 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <limits>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 static const double bohr =
         0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
@@ -77,12 +80,12 @@ int gmx_spatial(int argc, char* argv[])
         "",
         "Usage:",
         "",
-        "1. Use [gmx-make_ndx] to create a group containing the atoms around which you want the ",
-        "SDF",
-        "2. [TT]gmx trjconv -s a.tpr -f a.tng -o b.tng -boxcenter tric -ur compact -pbc none[tt]",
-        "3. [TT]gmx trjconv -s a.tpr -f b.tng -o c.tng -fit rot+trans[tt]",
-        "4. run [THISMODULE] on the [TT]c.tng[tt] output of step #3.",
-        "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface.",
+        ("  1. Use [gmx-make_ndx] to create a group containing the atoms around which you want the "
+         "SDF"),
+        "  2. [TT]gmx trjconv -s a.tpr -f a.tng -o b.tng -boxcenter tric -ur compact -pbc none[tt]",
+        "  3. [TT]gmx trjconv -s a.tpr -f b.tng -o c.tng -fit rot+trans[tt]",
+        "  4. run [THISMODULE] on the [TT]c.tng[tt] output of step #3.",
+        "  5. Load [TT]grid.cube[tt] into VMD and view as an isosurface.",
         "",
         "[BB]Note[bb] that systems such as micelles will require [TT]gmx trjconv -pbc cluster[tt] ",
         "between steps 1 and 2.",
@@ -112,13 +115,9 @@ int gmx_spatial(int argc, char* argv[])
         "option value."
     };
     const char* bugs[] = {
-        "When the allocated memory is not large enough, a segmentation fault may occur. ",
-        "This is usually detected ",
-        "and the program is halted prior to the fault while displaying a warning message ",
-        "suggesting the use of the [TT]-nab[tt] (Number of Additional Bins) ",
-        "option. However, the program does not detect all such events. If you encounter a ",
-        "segmentation fault, run it again ",
-        "with an increased [TT]-nab[tt] value."
+        "When the allocated memory is not large enough, an error may occur "
+        "suggesting the use of the [TT]-nab[tt] (Number of Additional Bins) "
+        "option or increasing the [TT]-nab[tt] value."
     };
 
     static gmx_bool bPBC         = FALSE;
@@ -126,7 +125,7 @@ int gmx_spatial(int argc, char* argv[])
     static gmx_bool bCUTDOWN     = TRUE;
     static real     rBINWIDTH    = 0.05; /* nm */
     static gmx_bool bCALCDIV     = TRUE;
-    static int      iNAB         = 4;
+    static int      iNAB         = 16;
 
     t_pargs pa[] = { { "-pbc",
                        FALSE,
@@ -169,15 +168,14 @@ int gmx_spatial(int argc, char* argv[])
     int               natoms;
     char *            grpnm, *grpnmp;
     int *             index, *indexp;
-    int               i, nidx, nidxp;
+    int               nidx, nidxp;
     int               v;
-    int               j, k;
-    int***            bin = nullptr;
     int               nbin[3];
     FILE*             flp;
-    int               x, y, z, minx, miny, minz, maxx, maxy, maxz;
+    int               minx, miny, minz, maxx, maxy, maxz;
     int               numfr, numcu;
-    int               tot, maxval, minval;
+    int               maxval, minval;
+    int64_t           tot;
     double            norm;
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
@@ -213,7 +211,7 @@ int gmx_spatial(int argc, char* argv[])
     MINBIN[XX] = MAXBIN[XX] = fr.x[0][XX];
     MINBIN[YY] = MAXBIN[YY] = fr.x[0][YY];
     MINBIN[ZZ] = MAXBIN[ZZ] = fr.x[0][ZZ];
-    for (i = 1; i < top.atoms.nr; ++i)
+    for (int i = 1; i < top.atoms.nr; ++i)
     {
         if (fr.x[i][XX] < MINBIN[XX])
         {
@@ -240,25 +238,19 @@ int gmx_spatial(int argc, char* argv[])
             MAXBIN[ZZ] = fr.x[i][ZZ];
         }
     }
-    for (i = ZZ; i >= XX; --i)
+    for (int i = ZZ; i >= XX; --i)
     {
         MAXBIN[i] = (std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH) + iNAB) * rBINWIDTH + MINBIN[i];
         MINBIN[i] -= iNAB * rBINWIDTH;
         nbin[i] = static_cast<int>(std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH));
     }
-    snew(bin, nbin[XX]);
-    for (i = 0; i < nbin[XX]; ++i)
-    {
-        snew(bin[i], nbin[YY]);
-        for (j = 0; j < nbin[YY]; ++j)
-        {
-            snew(bin[i][j], nbin[ZZ]);
-        }
-    }
+    std::vector<int> binData(nbin[XX] * nbin[YY] * nbin[ZZ], 0);
+    gmx::basic_mdspan<int, gmx::extents<gmx::dynamic_extent, gmx::dynamic_extent, gmx::dynamic_extent>> bin(
+            binData.data(), nbin[XX], nbin[YY], nbin[ZZ]);
     copy_mat(box, box_pbc);
     numfr = 0;
-    minx = miny = minz = 999;
-    maxx = maxy = maxz = 0;
+    minx = miny = minz = std::numeric_limits<int>::max();
+    maxx = maxy = maxz = std::numeric_limits<int>::min();
 
     if (bPBC)
     {
@@ -276,11 +268,12 @@ int gmx_spatial(int argc, char* argv[])
             set_pbc(&pbc, pbcType, box_pbc);
         }
 
-        for (i = 0; i < nidx; i++)
+        for (int i = 0; i < nidx; i++)
         {
-            if (fr.x[index[i]][XX] < MINBIN[XX] || fr.x[index[i]][XX] > MAXBIN[XX]
-                || fr.x[index[i]][YY] < MINBIN[YY] || fr.x[index[i]][YY] > MAXBIN[YY]
-                || fr.x[index[i]][ZZ] < MINBIN[ZZ] || fr.x[index[i]][ZZ] > MAXBIN[ZZ])
+            int x = static_cast<int>(std::floor((fr.x[index[i]][XX] - MINBIN[XX]) / rBINWIDTH));
+            int y = static_cast<int>(std::floor((fr.x[index[i]][YY] - MINBIN[YY]) / rBINWIDTH));
+            int z = static_cast<int>(std::floor((fr.x[index[i]][ZZ] - MINBIN[ZZ]) / rBINWIDTH));
+            if (x < 0 || x >= nbin[XX] || y < 0 || y >= nbin[YY] || z < 0 || z >= nbin[ZZ])
             {
                 printf("There was an item outside of the allocated memory. Increase the value "
                        "given with the -nab option.\n");
@@ -290,10 +283,8 @@ int gmx_spatial(int argc, char* argv[])
                        fr.x[index[i]][YY], fr.x[index[i]][ZZ]);
                 exit(1);
             }
-            x = static_cast<int>(std::ceil((fr.x[index[i]][XX] - MINBIN[XX]) / rBINWIDTH));
-            y = static_cast<int>(std::ceil((fr.x[index[i]][YY] - MINBIN[YY]) / rBINWIDTH));
-            z = static_cast<int>(std::ceil((fr.x[index[i]][ZZ] - MINBIN[ZZ]) / rBINWIDTH));
-            ++bin[x][y][z];
+
+            bin[x][y][z]++;
             if (x < minx)
             {
                 minx = x;
@@ -332,26 +323,41 @@ int gmx_spatial(int argc, char* argv[])
     if (!bCUTDOWN)
     {
         minx = miny = minz = 0;
-        maxx               = nbin[XX];
-        maxy               = nbin[YY];
-        maxz               = nbin[ZZ];
+        maxx               = nbin[XX] - 1;
+        maxy               = nbin[YY] - 1;
+        maxz               = nbin[ZZ] - 1;
     }
+
+    iIGNOREOUTER = std::max(iIGNOREOUTER, 0);
+    int outputStarts[DIM], outputEnds[DIM];
+
+    outputStarts[XX] = minx + iIGNOREOUTER;
+    outputStarts[YY] = miny + iIGNOREOUTER;
+    outputStarts[ZZ] = minz + iIGNOREOUTER;
+    outputEnds[XX]   = maxx - iIGNOREOUTER;
+    outputEnds[YY]   = maxy - iIGNOREOUTER;
+    outputEnds[ZZ]   = maxz - iIGNOREOUTER;
 
     /* OUTPUT */
     flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
+    /*
+      Values in .cube file represent the density at the grid point.
+     Corresponding coordinates to the binned value is the center of the bin, i.e. + 0.5 to the bin index.
+   */
     fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp,
-            (MINBIN[XX] + (minx + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr,
-            (MINBIN[YY] + (miny + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr,
-            (MINBIN[ZZ] + (minz + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxx - minx + 1 - (2 * iIGNOREOUTER),
+            (MINBIN[XX] + (outputStarts[XX] + 0.5) * rBINWIDTH) * 10. / bohr,
+            (MINBIN[YY] + (outputStarts[YY] + 0.5) * rBINWIDTH) * 10. / bohr,
+            (MINBIN[ZZ] + (outputStarts[ZZ] + 0.5) * rBINWIDTH) * 10. / bohr);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[XX] - outputStarts[XX],
             rBINWIDTH * 10. / bohr, 0., 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxy - miny + 1 - (2 * iIGNOREOUTER), 0.,
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[YY] - outputStarts[YY], 0.,
             rBINWIDTH * 10. / bohr, 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxz - minz + 1 - (2 * iIGNOREOUTER), 0., 0.,
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", outputEnds[ZZ] - outputStarts[ZZ], 0., 0.,
             rBINWIDTH * 10. / bohr);
-    for (i = 0; i < nidxp; i++)
+
+    for (int i = 0; i < nidxp; i++)
     {
         v = 2;
         if (*(top.atoms.atomname[indexp[i]][0]) == 'C')
@@ -379,98 +385,76 @@ int gmx_spatial(int argc, char* argv[])
     }
 
     tot = 0;
-    for (k = 0; k < nbin[XX]; k++)
+    for (int i = 0; i < nbin[XX]; i++)
     {
-        if (!(k < minx || k > maxx))
+        if (!(i < minx || i > maxx))
         {
             continue;
         }
-        for (j = 0; j < nbin[YY]; j++)
+        for (int j = 0; j < nbin[YY]; j++)
         {
             if (!(j < miny || j > maxy))
             {
                 continue;
             }
-            for (i = 0; i < nbin[ZZ]; i++)
+            for (int k = 0; k < nbin[ZZ]; k++)
             {
-                if (!(i < minz || i > maxz))
+                if (!(k < minz || k > maxz))
                 {
                     continue;
                 }
-                if (bin[k][j][i] != 0)
-                {
-                    printf("A bin was not empty when it should have been empty. Programming "
-                           "error.\n");
-                    printf("bin[%d][%d][%d] was = %d\n", k, j, i, bin[k][j][i]);
-                    exit(1);
-                }
+                int binValue = bin[i][j][k];
+                GMX_RELEASE_ASSERT(
+                        binValue == 0,
+                        gmx::formatString("A bin was not empty when it should have been empty. "
+                                          "Programming error.\n bin[%d][%d][%d] was = %d\n",
+                                          i, j, k, binValue)
+                                .c_str());
             }
         }
     }
 
     minval = 999;
     maxval = 0;
-    for (k = 0; k < nbin[XX]; k++)
+    for (int i = outputStarts[XX]; i < outputEnds[XX]; i++)
     {
-        if (k < minx + iIGNOREOUTER || k > maxx - iIGNOREOUTER)
+        for (int j = outputStarts[YY]; j < outputEnds[YY]; j++)
         {
-            continue;
-        }
-        for (j = 0; j < nbin[YY]; j++)
-        {
-            if (j < miny + iIGNOREOUTER || j > maxy - iIGNOREOUTER)
+            for (int k = outputStarts[ZZ]; k < outputEnds[ZZ]; k++)
             {
-                continue;
-            }
-            for (i = 0; i < nbin[ZZ]; i++)
-            {
-                if (i < minz + iIGNOREOUTER || i > maxz - iIGNOREOUTER)
+                int binValue = bin[i][j][k];
+                tot += binValue;
+                if (binValue > maxval)
                 {
-                    continue;
+                    maxval = binValue;
                 }
-                tot += bin[k][j][i];
-                if (bin[k][j][i] > maxval)
+                if (binValue < minval)
                 {
-                    maxval = bin[k][j][i];
-                }
-                if (bin[k][j][i] < minval)
-                {
-                    minval = bin[k][j][i];
+                    minval = binValue;
                 }
             }
         }
     }
 
-    numcu = (maxx - minx + 1 - (2 * iIGNOREOUTER)) * (maxy - miny + 1 - (2 * iIGNOREOUTER))
-            * (maxz - minz + 1 - (2 * iIGNOREOUTER));
+    numcu = (outputEnds[XX] - outputStarts[XX]) * (outputEnds[YY] - outputStarts[YY])
+            * (outputEnds[ZZ] - outputStarts[ZZ]);
     if (bCALCDIV)
     {
-        norm = static_cast<double>(numcu * numfr) / tot;
+        norm = double(numcu) * numfr / tot;
+        GMX_ASSERT(norm >= 0, "The norm should be non-negative.");
     }
     else
     {
         norm = 1.0;
     }
 
-    for (k = 0; k < nbin[XX]; k++)
+    for (int i = outputStarts[XX]; i < outputEnds[XX]; i++)
     {
-        if (k < minx + iIGNOREOUTER || k > maxx - iIGNOREOUTER)
+        for (int j = outputStarts[YY]; j < outputEnds[YY]; j++)
         {
-            continue;
-        }
-        for (j = 0; j < nbin[YY]; j++)
-        {
-            if (j < miny + iIGNOREOUTER || j > maxy - iIGNOREOUTER)
+            for (int k = outputStarts[ZZ]; k < outputEnds[ZZ]; k++)
             {
-                continue;
-            }
-            for (i = 0; i < nbin[ZZ]; i++)
-            {
-                if (i < minz + iIGNOREOUTER || i > maxz - iIGNOREOUTER)
-                {
-                    continue;
-                }
-                fprintf(flp, "%12.6f ", static_cast<double>(norm * bin[k][j][i]) / numfr);
+                fprintf(flp, "%12.6f ", static_cast<double>(norm * bin[i][j][k]) / numfr);
             }
             fprintf(flp, "\n");
         }
@@ -487,7 +471,7 @@ int gmx_spatial(int argc, char* argv[])
     else
     {
         printf("grid.cube contains counts per frame in all %d cubes\n", numcu);
-        printf("Raw data: average %le, min %le, max %le\n", 1.0 / norm,
+        printf("Raw data: average %le, min %le, max %le\n", static_cast<double>(tot) / numfr / numcu,
                static_cast<double>(minval) / numfr, static_cast<double>(maxval) / numfr);
     }
 
