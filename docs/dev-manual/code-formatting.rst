@@ -225,6 +225,11 @@ By default, ``update-*`` refuses to update dirty files (i.e., that differ
 between the disk and the index) to make it easy to revert the changes.
 This can be overridden by adding a ``-f``/``--force`` option.
 
+Since the behaviour of clang-format can change between versions even when using the same options,
+only clang-format from Clang 11 will give correct results. The path to the correct ``clang-format``
+binary can be specified via ``CLANG_FORMAT`` environment variable or by running
+``git config hooks.clangformatpath /path/to/clang-format-11`` in the repository root.
+
 ``clang-tidy.sh``
 ^^^^^^^^^^^^^^^^^
 
