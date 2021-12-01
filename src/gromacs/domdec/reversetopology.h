@@ -167,7 +167,9 @@ int nral_rt(int ftype);
 /*! \brief Return whether interactions of type \p ftype need to be assigned exactly once */
 bool dd_check_ftype(int ftype, const ReverseTopOptions& rtOptions);
 
-//! Molecular topology indices of a global molecule a global atom belongs to
+/*! \internal
+ *  \brief Molecular topology indices of a global molecule a global atom belongs to
+ */
 struct MolecularTopologyAtomIndices
 {
     //! The index of the molecule block

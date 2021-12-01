@@ -83,7 +83,7 @@ SplineData getSplineData(const int pmeOrder, const int atomCount)
     // they are bogus, but that should not affect the reproducibility,
     // which is what we're after.
 
-    //! A lot of random input spline values - should have at least (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 13) values
+    // A lot of random input spline values - should have at least (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 13) values
     static const std::vector<real> s_sampleSplineValuesFull{
         0.12F, 0.81F, 0.29F, 0.22F, 0.13F, 0.19F, 0.12F, 0.8F,  0.44F, 0.38F, 0.32F, 0.36F, 0.27F,
         0.11F, 0.17F, 0.94F, 0.07F, 0.9F,  0.98F, 0.96F, 0.07F, 0.94F, 0.77F, 0.24F, 0.84F, 0.16F,
@@ -111,7 +111,7 @@ SplineData getSplineData(const int pmeOrder, const int atomCount)
         0.3F,  0.0F,  0.6F,  0.99F, 0.69F,
     };
 
-    //! A lot of random input spline derivatives - should have at least (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 13) values
+    // A lot of random input spline derivatives - should have at least (max PME order = 5) * (DIM = 3) * (total unique atom number in all test cases = 13) values
     static const std::vector<real> s_sampleSplineDerivativesFull{
         0.82F, 0.88F, 0.83F, 0.11F, 0.93F, 0.32F, 0.71F, 0.37F, 0.69F, 0.88F, 0.11F, 0.38F, 0.25F,
         0.5F,  0.36F, 0.81F, 0.78F, 0.31F, 0.66F, 0.32F, 0.27F, 0.35F, 0.53F, 0.83F, 0.08F, 0.08F,

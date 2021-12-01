@@ -53,7 +53,9 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 
-/*! \brief Object to manage communications with a specific PP rank */
+/*! \internal
+ *  \brief Object to manage communications with a specific PP rank
+ */
 struct PpCommManager
 {
     //! Details of PP rank that may be updated after repartitioning

@@ -146,7 +146,7 @@ bool threadMpiTestRunner(std::function<void()> testBody);
     }                                                                                         \
     GMX_MPI_TEST_INNER;
 
-//! Helper for GMX_MPI_TEST to permit any rank count
+//! \internal \brief Helper for GMX_MPI_TEST to permit any rank count
 class AllowAnyRankCount
 {
 public:
@@ -157,7 +157,7 @@ public:
     inline static const char* s_skipReason = "UNUSED - any rank count satisfies";
 };
 
-//! Helper for GMX_MPI_TEST to permit only a specific rank count
+//! \internal \brief Helper for GMX_MPI_TEST to permit only a specific rank count
 template<int requiredNumRanks>
 class RequireRankCount
 {
@@ -169,7 +169,7 @@ public:
             std::to_string(requiredNumRanks) + " ranks are required";
 };
 
-//! Helper for GMX_MPI_TEST to permit only a specific rank count
+//! \internal \brief Helper for GMX_MPI_TEST to permit only a specific rank count
 template<int minimumNumRanks>
 class RequireMinimumRankCount
 {

@@ -90,7 +90,7 @@
 namespace gmx
 {
 
-//! Indices of the two atoms involved in a single constraint
+//! \internal Indices of the two atoms involved in a single constraint
 struct AtomPair
 {
     //! \brief Constructor, does not initialize to catch bugs and faster construction

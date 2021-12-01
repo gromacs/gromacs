@@ -62,8 +62,8 @@ namespace gmx
 namespace test
 {
 
-/*! \brief This class performs one-time test
- * initialization, enumerating the hardware
+/*! \internal
+ *  \brief This class performs one-time test initialization, enumerating the hardware
  *
  * Note that this class follows the approach of GoogleTest's
  * Environment managers but we don't actually add it with

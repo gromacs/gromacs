@@ -50,7 +50,7 @@
 struct PmeGpuConstParams;
 struct PmeGpuGridParams;
 
-//! Contains most of the parameters used by the solve kernel
+//! \internal \brief Contains most of the parameters used by the solve kernel
 struct SolveKernelParams
 {
     /*! \brief Ewald solving factor = (M_PI / pme->ewaldcoeff_q)^2 */
@@ -71,7 +71,7 @@ struct SolveKernelParams
     float elFactor;
 };
 
-//! The kernel for PME solve
+//! \internal \brief The kernel for PME solve
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, int gridIndex, int subGroupSize>
 class PmeSolveKernel : public ISyclKernelFunctor
 {

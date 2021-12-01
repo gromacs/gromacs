@@ -149,7 +149,7 @@ struct PullCoordSpatialData
     double value; /* The current value of the coordinate, units of nm or rad */
 };
 
-//! \brief Struct with parameters and force evaluation local data for a pull coordinate
+//! \internal \brief Struct with parameters and force evaluation local data for a pull coordinate
 struct pull_coord_work_t
 {
     //! Constructor

@@ -78,25 +78,25 @@ void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
 //! Wait until all processes in communicator have reached the barrier
 void gmx_barrier(MPI_Comm communicator);
 
-/*! Broadcast nbytes bytes from the master to communicator
+/*! \brief Broadcast nbytes bytes from the master to communicator
  *
  * Can be called with a single rank or without MPI
  */
 void gmx_bcast(int nbytes, void* b, MPI_Comm communicator);
 
-/*! Calculate the global sum of an array of ints
+/*! \brief Calculate the global sum of an array of ints
  *
  * Can be called with a single rank or without MPI
  */
 void gmx_sumi(int nr, int r[], const struct t_commrec* cr);
 
-/*! Calculate the global sum of an array of floats
+/*! \brief Calculate the global sum of an array of floats
  *
  * Can be called with a single rank or without MPI
  */
 void gmx_sumf(int nr, float r[], const struct t_commrec* cr);
 
-/*! Calculate the global sum of an array of doubles
+/*! \brief Calculate the global sum of an array of doubles
  *
  * Can be called with a single rank or without MPI
  */

@@ -80,7 +80,7 @@ inline void spread_charges(const float                  atomCharge,
                            const sycl::local_ptr<float> sm_theta,
                            const sycl::nd_item<3>&      itemIdx)
 {
-    //! Number of atoms processed by a single warp in spread and gather
+    // Number of atoms processed by a single warp in spread and gather
     const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
     const int atomsPerWarp        = subGroupSize / threadsPerAtomValue;
 

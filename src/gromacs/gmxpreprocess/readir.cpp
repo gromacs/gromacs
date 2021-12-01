@@ -2899,7 +2899,7 @@ static void atomGroupRangeValidation(int natoms, int groupIndex, const t_blocka&
     }
 }
 
-/*! Creates the groups of atom indices for group type \p gtype
+/*! \brief Creates the groups of atom indices for group type \p gtype
  *
  * \param[in] natoms  The total number of atoms in the system
  * \param[in,out] groups  Index \p gtype in this list of list of groups will be set

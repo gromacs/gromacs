@@ -71,8 +71,9 @@ static constexpr int64_t sc_atomInfo_HasCharge                         = 1 << 24
 //! The first 8 bits are reserved for energy-group ID
 static constexpr int64_t sc_atomInfo_EnergyGroupIdMask = 0b11111111;
 
-/*! \brief Contains information about each atom in a molecule block of
- * the global topology. */
+/*! \internal
+ *  \brief Contains information about each atom in a molecule block of the global topology.
+ */
 struct AtomInfoWithinMoleculeBlock
 {
     //! Index within the system of the first atom in the molecule block

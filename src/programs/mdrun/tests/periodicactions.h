@@ -70,7 +70,7 @@ using PropagationParameters = MdpFieldValues;
  *  not the simulation propagation. */
 using PeriodicOutputParameters = MdpFieldValues;
 
-//! Helper type of output file names for the reference mdrun call
+//! \internal \brief Helper type of output file names for the reference mdrun call
 struct ReferenceFileNames
 {
     //! Name of energy file
@@ -80,8 +80,8 @@ struct ReferenceFileNames
 //! Function type to produce sets of .mdp parameters for testing periodic output
 using OutputParameterGeneratorFunction = std::vector<PeriodicOutputParameters> (*)();
 
-/*! \brief Test fixture base for comparing a simulator with one that
- * does everything every step
+/*! \internal
+ *  \brief Test fixture base for comparing a simulator with one that does everything every step
  *
  * This test ensures that two simulator code paths called via
  * different mdp options yield identical energy trajectories,

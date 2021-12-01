@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Declares fabrique structure for QMMM MDModule class
+ * Declares factory structure for QMMM MDModule class
  *
  * \author Dmitry Morozov <dmitry.morozov@jyu.fi>
  * \author Christian Blau <blau@kth.se>
@@ -52,7 +52,8 @@ namespace gmx
 class IMDModule;
 struct MdModulesNotifier;
 
-/*! \libinternal \brief Information about the QM/MM module.
+/*! \internal
+ *  \brief Information about the QM/MM module.
  *
  * Provides name and method to create a QM/MM module.
  */

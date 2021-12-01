@@ -4,9 +4,6 @@ src/gromacs/nbnxm/cuda/nbnxm_cuda_types.h: error: NbnxmGpu: is in internal file(
 # doxygen has problems with the template construct in this file
 src/gromacs/modularsimulator/signallers.h: error: build: is documented, but does not have brief description
 
-# False positive caused by forward-declaration of BasicVector in src/testutils/refdata.h
-src/testutils/refdata.h: error: gmx::BasicVector: is in library file(s), but appears in public documentation
-
 #
 # All following suppressions are disabled while the include checker
 # is temporarily disabled pending resolution of

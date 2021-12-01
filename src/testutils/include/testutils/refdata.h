@@ -62,6 +62,7 @@ class KeyValueTreeObject;
 class KeyValueTreeValue;
 class Any;
 
+//! \internal
 template<typename ValueType>
 class BasicVector;
 

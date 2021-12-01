@@ -65,7 +65,7 @@ class ForceWithShiftForces;
 class StepWorkload;
 } // namespace gmx
 
-/*! \libinternal
+/*! \internal
  *  \brief Temporary data and methods for handling dispatching of the nbnxm free-energy kernels
  */
 class FreeEnergyDispatch

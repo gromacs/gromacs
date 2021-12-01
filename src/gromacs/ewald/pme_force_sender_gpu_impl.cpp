@@ -57,7 +57,7 @@
 namespace gmx
 {
 
-/*!\brief \internal Impl class stub. */
+/*! \internal \brief Impl class stub. */
 class PmeForceSenderGpu::Impl
 {
 };
