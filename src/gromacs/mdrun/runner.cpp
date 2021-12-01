@@ -970,16 +970,6 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
 
-    // Now the number of ranks is known to all ranks, and each knows
-    // the inputrec read by the master rank. The ranks can now all run
-    // the task-deciding functions and will agree on the result
-    // without needing to communicate.
-    // The LBFGS minimizer, test-particle insertion, normal modes and shell dynamics don't support DD
-    const bool useDomainDecomposition =
-            !(inputrec->eI == IntegrationAlgorithm::LBFGS || EI_TPI(inputrec->eI)
-              || inputrec->eI == IntegrationAlgorithm::NM
-              || gmx_mtop_particletype_count(mtop)[ParticleType::Shell] > 0);
-
     // Note that these variables describe only their own node.
     //
     // Note that when bonded interactions run on a GPU they always run
@@ -1034,6 +1024,31 @@ int Mdrunner::mdrunner()
                                                               nullptr,
                                                               doEssentialDynamics,
                                                               membedHolder.doMembed());
+
+    // Now the number of ranks is known to all ranks, and each knows
+    // the inputrec read by the master rank. The ranks can now all run
+    // the task-deciding functions and will agree on the result
+    // without needing to communicate.
+    // The LBFGS minimizer, test-particle insertion, normal modes and shell dynamics don't support DD
+    const bool canUseDomainDecomposition =
+            !(inputrec->eI == IntegrationAlgorithm::LBFGS || EI_TPI(inputrec->eI)
+              || inputrec->eI == IntegrationAlgorithm::NM
+              || gmx_mtop_particletype_count(mtop)[ParticleType::Shell] > 0);
+    GMX_RELEASE_ASSERT(!PAR(cr) || canUseDomainDecomposition,
+                       "A parallel run should not arrive here without DD support");
+
+    int useDDWithSingleRank = -1;
+    if (const char* ddSingleRankEnv = getenv("GMX_DD_SINGLE_RANK"))
+    {
+        useDDWithSingleRank = std::strtol(ddSingleRankEnv, nullptr, 10);
+    }
+
+    // The overhead of DD partitioning is only compensated when we have both non-bondeds and PME on the CPU
+    const bool useDomainDecomposition =
+            canUseDomainDecomposition
+            && (PAR(cr)
+                || (!useGpuForNonbonded && EEL_FULL(inputrec->coulombtype) && useDDWithSingleRank != 0)
+                || useDDWithSingleRank == 1);
 
     ObservablesReducerBuilder observablesReducerBuilder;
 

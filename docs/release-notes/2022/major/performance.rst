@@ -42,6 +42,16 @@ or Infiniband across multiple nodes.
 
 :issue:`3969`
 
+Domain decomposition with single MPI rank
+"""""""""""""""""""""""""""""""""""""""""
+
+When running with a single MPI rank with PME and without GPU, mdrun
+will now use the domain decomposition machinery to reorder particles.
+This can improve performance, especially for large systems. This
+behavior can be controlled with the enviroment variable
+GMX_DD_SINGLE_RANK.
+
+       
 ``gmx grompp`` now runs 20-50% faster
 """""""""""""""""""""""""""""""""""""
 

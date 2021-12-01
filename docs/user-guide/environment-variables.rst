@@ -138,6 +138,10 @@ Performance and Run Control
         to localized bonded interaction distribution; optimal value dependent on
         system and hardware, default value is 4.
 
+``GMX_DD_SINGLE_RANK``
+        Controls the use of the domain decomposition machinery when using a single MPI rank.
+        Value 0 turns DD off, 1 turns DD on. Default is automated choice based on heuristics.
+
 ``GMX_GPU_NB_EWALD_TWINCUT``
         force the use of twin-range cutoff kernel even if :mdp:`rvdw` equals
         :mdp:`rcoulomb` after PP-PME load balancing. The switch to twin-range kernels is automated,
