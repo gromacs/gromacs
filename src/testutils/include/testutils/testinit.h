@@ -106,7 +106,7 @@ void finalizeTestUtils(bool usesHardwareDetection, bool registersDynamically);
  * When a test binary uses gmx_add_gtest_executable(exename
  * DYNAMIC_REGISTRATION ...) it must provide an implementation of this
  * method. The method is called before RUN_ALL_TESTS() and is expected
- * to call ::testing::RegisterTest to register tests dynamically. This
+ * to call testing::RegisterTest to register tests dynamically. This
  * approach might be necessary to run the tests in a stable way over
  * whichever hardware is detected at run time.
  *
@@ -125,7 +125,7 @@ void registerTestsDynamically();
  * \tparam TestFixture  The type of the test fixture
  * \tparam TestCase     The type of the test case (derived from \c TestFixture)
  * \tparam Combinations The interal GoogleTest type describing the
- *                        return from \c ::testing::Combine() intended
+ *                        return from \c testing::Combine() intended
  *                        to generate test parameters of type \c
  *                        TestFixture::ParamType (which is typically a
  *                        tuple).
@@ -135,7 +135,7 @@ void registerTestsDynamically();
  *                                      used for naming the refdata file
  * \param[in] makeFullNameOfTestCase  Function that will make the full name of the test case
  * \param[in] combinations            A generator of test values produced with
- *                                      \c ::testing::Combine()
+ *                                      \c testing::Combine()
  *
  * Note that \c Combinations is actually well defined relative to \c
  * TestFixture::ParamType, but its concrete type is an internal
