@@ -122,7 +122,7 @@ _rocm_extra_packages = [
     'rocm-opencl',
     'rocm-dev',
 ]
-    
+
 # Extra packages required to build CP2K
 _cp2k_extra_packages = [
                         'autoconf',
@@ -433,8 +433,6 @@ def get_hipsycl(args):
         postinstall += [
             # https://github.com/illuhad/hipSYCL/issues/410#issuecomment-743301929
             f'sed s/_OPENMP/__OPENMP_NVPTX__/ -i /usr/lib/llvm-{args.llvm}/lib/clang/*/include/__clang_cuda_complex_builtins.h',
-            # Not needed unless we're building with CUDA 11.x, but no harm in doing always
-            'ln -s /usr/local/cuda/compat/* /usr/local/cuda/lib64/'
         ]
 
     return hpccm.building_blocks.generic_cmake(
@@ -802,7 +800,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     if args.rocm is not None:
         building_blocks['extra_packages'] += hpccm.building_blocks.packages(
             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
-            apt_repositories=[f'deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ xenial main']
+            apt_repositories=[f'deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ ubuntu main']
         )
     building_blocks['extra_packages'] += hpccm.building_blocks.packages(
         ospackages=os_packages,
