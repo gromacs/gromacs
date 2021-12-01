@@ -69,6 +69,20 @@ struct gmx_wallcycle;
 
 namespace gmx
 {
+
+/*!\brief If StatePropagatorDataGpu object is needed.
+ *
+ * \param[in] simulationWorkload Simulation workload flags.
+ *
+ * \return Whether the StatePropagatorDataGpu object is needed/was created for this run.
+ */
+inline bool needStateGpu(SimulationWorkload simulationWorkload)
+{
+    return (simulationWorkload.useGpuPme && !simulationWorkload.haveSeparatePmeRank)
+           || simulationWorkload.useGpuXBufferOps || simulationWorkload.useGpuFBufferOps
+           || simulationWorkload.useGpuHaloExchange || simulationWorkload.useGpuUpdate;
+}
+
 class DeviceStreamManager;
 
 class StatePropagatorDataGpu

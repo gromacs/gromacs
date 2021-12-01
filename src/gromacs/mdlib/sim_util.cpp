@@ -1420,8 +1420,7 @@ void do_force(FILE*                               fplog,
         haveCopiedXFromGpu = true;
     }
 
-    if (stepWork.doNeighborSearch
-        && (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps || simulationWork.useGpuFBufferOps))
+    if (stepWork.doNeighborSearch && gmx::needStateGpu(simulationWork))
     {
         // TODO refactor this to do_md, after partitioning.
         stateGpu->reinit(mdatoms->homenr,
