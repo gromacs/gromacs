@@ -79,6 +79,9 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
             bPert = (ip->u_b.thetaA != ip->u_b.thetaB || ip->u_b.kthetaA != ip->u_b.kthetaB
                      || ip->u_b.r13A != ip->u_b.r13B || ip->u_b.kUBA != ip->u_b.kUBB);
             break;
+        case F_LINEAR_ANGLES:
+            bPert = (ip->linangle.klinA != ip->linangle.klinB || ip->linangle.aA != ip->linangle.aB);
+            break;
         case F_PDIHS:
         case F_PIDIHS:
         case F_ANGRES:

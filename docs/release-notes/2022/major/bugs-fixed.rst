@@ -68,3 +68,11 @@ Avoid non-uniform rotation with Test Particle Insertion in anisotropic systems
 With anisotropic systems the random angles would not get a uniform distribution.
 
 :issue:`3558`
+
+Allow free energy calculations with a linear angle potential
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free energy calculations with a linear angle potential were not
+explicitly allowed by grompp.
+
+:issue:`3456`
