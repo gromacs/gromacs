@@ -517,7 +517,10 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
         // Use stub backend so compilation succeeds
         const FftBackend backend = FftBackend::Sycl;
         // Don't complain about unused reference data
-        checker.disableUnusedEntriesCheck();
+        if (checker.has_value())
+        {
+            checker.value().disableUnusedEntriesCheck();
+        }
         // Skip the rest of the test
         GTEST_SKIP() << "Only MKL backend is supported with DPC++";
 #            endif
