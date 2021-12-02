@@ -1496,6 +1496,7 @@ void gmx::LegacySimulator::do_md()
             if (useGpuForUpdate)
             {
                 // On search steps, update handles to device vectors
+                // TODO: this condition has redundant / unnecessary clauses
                 if (bNS && (bFirstStep || haveDDAtomOrdering(*cr) || bExchanged))
                 {
                     integrator->set(stateGpu->getCoordinates(),
@@ -1504,18 +1505,20 @@ void gmx::LegacySimulator::do_md()
                                     top->idef,
                                     *md);
 
-                    // Copy data to the GPU after buffers might have being reinitialized
+                    // Copy data to the GPU after buffers might have been reinitialized
                     /* The velocity copy is redundant if we had Center-of-Mass motion removed on
                      * the previous step. We don't check that now. */
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
-                    if (bExchanged
-                        || (!runScheduleWork->stepWork.haveGpuPmeOnThisRank
-                            && !runScheduleWork->stepWork.useGpuXBufferOps))
-                    {
-                        stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
-                        // Coordinates are later used by the integrator running in the same stream.
-                        stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
-                    }
+                }
+
+                // Copy x to the GPU unless we have already transferred in do_force().
+                // We transfer in do_force() if a GPU force task requires x (PME or x buffer ops).
+                if (!(runScheduleWork->stepWork.haveGpuPmeOnThisRank
+                      || runScheduleWork->stepWork.useGpuXBufferOps))
+                {
+                    stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                    // Coordinates are later used by the integrator running in the same stream.
+                    stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
                 }
 
                 if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
