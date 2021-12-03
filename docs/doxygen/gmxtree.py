@@ -3,7 +3,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -722,7 +722,12 @@ class GromacsTree(object):
         rootdir = self._get_dir(os.path.join('src', 'gromacs'))
         for subdir in rootdir.get_subdirectories():
             self._create_module(subdir)
+        # list of directories that aren't in the default location src/gromacs
         rootdir = self._get_dir(os.path.join('src', 'testutils'))
+        self._create_module(rootdir)
+        rootdir = self._get_dir(os.path.join('src', 'gromacs', 'applied_forces', 'awh'))
+        self._create_module(rootdir)
+        rootdir = self._get_dir(os.path.join('src', 'programs', 'mdrun', 'tests'))
         self._create_module(rootdir)
 
     def _get_rel_path(self, path):
@@ -779,6 +784,12 @@ class GromacsTree(object):
     def _create_module(self, rootdir):
         """Create module for a subdirectory."""
         name = 'module_' + rootdir.get_name()
+        # Fix for module_mdrun_integration_tests
+        # that contains files from three directories.
+        # Here we use the directory that contains
+        # nearly all files that belong to the module
+        if (name == 'module_tests'):
+            name = 'module_mdrun_integration_tests'
         moduleobj = Module(name, rootdir)
         rootdir.set_module(moduleobj)
         self._modules[name] = moduleobj
