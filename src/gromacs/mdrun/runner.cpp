@@ -515,7 +515,10 @@ namespace gmx
  * If not, and if a warning may be issued, logs a warning about
  * falling back to CPU code. With thread-MPI, only the first
  * call to this function should have \c issueWarning true. */
-static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger& mdlog, const t_inputrec& ir, bool issueWarning)
+static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger&   mdlog,
+                                               const t_inputrec& ir,
+                                               const bool        issueWarning,
+                                               const bool        doRerun)
 {
     bool        gpuIsUseful = true;
     std::string warning;
@@ -526,10 +529,13 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger& mdlog, const t_in
          * If the user requested GPUs explicitly, a fatal error is given later.
          */
         gpuIsUseful = false;
-        warning =
-                "Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
-                "For better performance, run on the GPU without energy groups and then do "
-                "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
+        if (!doRerun)
+        {
+            warning =
+                    "Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
+                    "For better performance, run on the GPU without energy groups and then do "
+                    "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
+        }
     }
 
     if (EI_TPI(ir.eI))
@@ -834,7 +840,7 @@ int Mdrunner::mdrunner()
                     userGpuTaskAssignment,
                     emulateGpuNonbonded,
                     canUseGpuForNonbonded,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, GMX_THREAD_MPI),
+                    gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, GMX_THREAD_MPI, doRerun),
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(useGpuForNonbonded,
                                                                      pmeTarget,
@@ -923,7 +929,7 @@ int Mdrunner::mdrunner()
                 userGpuTaskAssignment,
                 emulateGpuNonbonded,
                 canUseGpuForNonbonded,
-                gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI),
+                gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI, doRerun),
                 gpusWereDetected);
         useGpuForPme    = decideWhetherToUseGpusForPme(useGpuForNonbonded,
                                                     pmeTarget,
