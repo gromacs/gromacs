@@ -887,12 +887,23 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;
 
+    // The way PME decomposition is implemented for GPUs, gridline indices at borders should not be rounded
+    const bool checkRoundingAtBoundary = (runMode == PmeRunMode::CPU);
+
+    make_gridindex_to_localindex(pme->nkx,
+                                 pme->pmegrid_start_ix,
+                                 pme->pmegrid_nx - (pme->pme_order - 1),
+                                 checkRoundingAtBoundary,
+                                 &pme->nnx,
+                                 &pme->fshx);
+    make_gridindex_to_localindex(pme->nky,
+                                 pme->pmegrid_start_iy,
+                                 pme->pmegrid_ny - (pme->pme_order - 1),
+                                 checkRoundingAtBoundary,
+                                 &pme->nny,
+                                 &pme->fshy);
     make_gridindex_to_localindex(
-            pme->nkx, pme->pmegrid_start_ix, pme->pmegrid_nx - (pme->pme_order - 1), &pme->nnx, &pme->fshx);
-    make_gridindex_to_localindex(
-            pme->nky, pme->pmegrid_start_iy, pme->pmegrid_ny - (pme->pme_order - 1), &pme->nny, &pme->fshy);
-    make_gridindex_to_localindex(
-            pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, &pme->nnz, &pme->fshz);
+            pme->nkz, pme->pmegrid_start_iz, pme->pmegrid_nz_base, checkRoundingAtBoundary, &pme->nnz, &pme->fshz);
 
     pme->spline_work = make_pme_spline_work(pme->pme_order);
 

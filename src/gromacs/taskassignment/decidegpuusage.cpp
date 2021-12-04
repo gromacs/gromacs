@@ -226,6 +226,17 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
 
     // We now know that PME on GPUs might make sense, if we have any.
 
+    if (pmeTarget == TaskTarget::Gpu)
+    {
+        if ((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation < 0))
+        {
+            GMX_THROW(NotImplementedError(
+                    "PME tasks were required to run on GPUs with multiple ranks "
+                    "but the -npme option was not specified. "
+                    "A non-negative value must be specified for -npme."));
+        }
+    }
+
     if (!userGpuTaskAssignment.empty())
     {
         // Follow the user's choice of GPU task assignment, if we
@@ -411,6 +422,17 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         return false;
     }
 
+    if (pmeTarget == TaskTarget::Gpu)
+    {
+        if ((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation < 0))
+        {
+            GMX_THROW(NotImplementedError(
+                    "PME tasks were required to run on GPUs with multiple ranks "
+                    "but the -npme option was not specified. "
+                    "A non-negative value must be specified for -npme."));
+        }
+    }
+
     if (!userGpuTaskAssignment.empty())
     {
         // Specifying -gputasks requires specifying everything.
@@ -430,14 +452,6 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
     if (pmeTarget == TaskTarget::Gpu)
     {
-        if (((numRanksPerSimulation > 1) && (numPmeRanksPerSimulation == 0))
-            || (numPmeRanksPerSimulation > 1))
-        {
-            GMX_THROW(NotImplementedError(
-                    "PME tasks were required to run on GPUs, but that is not implemented with "
-                    "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
-                    "or permit PME tasks to be assigned to the CPU."));
-        }
         return true;
     }
 
@@ -586,8 +600,8 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         return false;
     }
 
-    const bool hasAnyConstraints = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
-    const bool pmeUsesCpu = (pmeRunMode == PmeRunMode::CPU || pmeRunMode == PmeRunMode::Mixed);
+    const bool hasAnyConstraints      = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
+    const bool pmeSpreadGatherUsesCpu = (pmeRunMode == PmeRunMode::CPU);
 
     std::string errorMessage;
 
@@ -606,9 +620,9 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
 
     if (havePmeOnlyRank)
     {
-        if (pmeUsesCpu)
+        if (pmeSpreadGatherUsesCpu)
         {
-            errorMessage += "With separate PME rank(s), PME must run fully on the GPU.\n";
+            errorMessage += "With separate PME rank(s), PME must run on the GPU.\n";
         }
     }
 
@@ -752,6 +766,10 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
 {
     const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
 
+    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
+    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for CUDA-aware MPI.
+    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
+
     // issue warning note when env var disables the default
     if (GMX_THREAD_MPI && GMX_GPU_CUDA && disableDirectGpuComm)
     {
@@ -766,8 +784,8 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     bool canUseDirectGpuCommWithThreadMpi = (GMX_THREAD_MPI && GMX_GPU_CUDA && !disableDirectGpuComm);
     // GPU-aware MPI case off by default, can be enabled with dev flag
     // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
-    bool canUseDirectGpuCommWithMpi =
-            (GMX_LIB_MPI && GMX_GPU_CUDA && devFlags.canUseCudaAwareMpi && !disableDirectGpuComm);
+    bool canUseDirectGpuCommWithMpi = (GMX_LIB_MPI && GMX_GPU_CUDA && devFlags.canUseCudaAwareMpi
+                                       && enableDirectGpuComm && !disableDirectGpuComm);
 
     return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
 }

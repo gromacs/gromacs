@@ -1816,28 +1816,44 @@ static DlbState forceDlbOffOrBail(DlbState             cmdlineDlbState,
  * may be altered or an error may be thrown if incompatibility of options is detected.
  *
  * \param [in] mdlog                Logger.
- * \param [in] dlbOption            Enum value for the DLB option.
+ * \param [in] options              DomdecOptions.
  * \param [in] bRecordLoad          True if the load balancer is recording load information.
  * \param [in] mdrunOptions         Options for mdrun.
  * \param [in] inputrec             Pointer mdrun to input parameters.
- * \param [in] directGpuCommUsedWithGpuUpdate     Direct GPU halo exchange and GPU update enabled
+ * \param [in] directGpuCommUsedWithGpuUpdate Direct GPU comm with update used. Disables DLB.
+ * \param [in] useGpuForPme         PME offloaded to GPU
+ * \param [in] canUseGpuPmeDecomposition         GPU pme decomposition supported
  * \returns                         DLB initial/startup state.
  */
 static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
-                                         DlbOption                dlbOption,
+                                         const DomdecOptions&     options,
                                          gmx_bool                 bRecordLoad,
                                          const gmx::MdrunOptions& mdrunOptions,
                                          const t_inputrec&        inputrec,
-                                         const bool               directGpuCommUsedWithGpuUpdate)
+                                         const bool               directGpuCommUsedWithGpuUpdate,
+                                         const bool               useGpuForPme,
+                                         const bool               canUseGpuPmeDecomposition)
 {
     DlbState dlbState = DlbState::offCanTurnOn;
 
-    switch (dlbOption)
+    switch (options.dlbOption)
     {
         case DlbOption::turnOnWhenUseful: dlbState = DlbState::offCanTurnOn; break;
         case DlbOption::no: dlbState = DlbState::offUser; break;
         case DlbOption::yes: dlbState = DlbState::onUser; break;
         default: gmx_incons("Invalid dlbOption enum value");
+    }
+
+    // Disable DLB when GPU PME decomposition is used
+    // GPU PME decomposition uses an extended halo exchange algorithm without any X/F-redistribution
+    // DLB causes changes in PP domain which doesn't work well with new PME decomposition algorithm
+
+    // ToDo: This code has an assumption that options.numPmeRanks < 0 results in no separate PME rank (which is true currently),
+    // if in future "-npme -1" option results in single separate PME rank, we shouldn't disable DLB in that case
+    if (useGpuForPme && canUseGpuPmeDecomposition && (options.numPmeRanks == 0 || options.numPmeRanks > 1))
+    {
+        std::string reasonStr = "it is not supported with GPU PME decomposition.";
+        return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
     // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple timesteps
@@ -2799,7 +2815,9 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
                                 const DomdecOptions&     options,
                                 const gmx::MdrunOptions& mdrunOptions,
                                 const t_inputrec&        ir,
-                                const bool               directGpuCommUsedWithGpuUpdate)
+                                const bool               directGpuCommUsedWithGpuUpdate,
+                                const bool               useGpuForPme,
+                                const bool               canUseGpuPmeDecomposition)
 {
     DDSettings ddSettings;
 
@@ -2832,8 +2850,14 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
         ddSettings.recordLoad = (wallcycle_have_counter() && recload > 0);
     }
 
-    ddSettings.initialDlbState = determineInitialDlbState(
-            mdlog, options.dlbOption, ddSettings.recordLoad, mdrunOptions, ir, directGpuCommUsedWithGpuUpdate);
+    ddSettings.initialDlbState = determineInitialDlbState(mdlog,
+                                                          options,
+                                                          ddSettings.recordLoad,
+                                                          mdrunOptions,
+                                                          ir,
+                                                          directGpuCommUsedWithGpuUpdate,
+                                                          useGpuForPme,
+                                                          canUseGpuPmeDecomposition);
     GMX_LOG(mdlog.info)
             .appendTextFormatted("Dynamic load balancing: %s",
                                  enumValueToString(ddSettings.initialDlbState));
@@ -2869,7 +2893,8 @@ public:
          ArrayRef<const RVec>              xGlobal,
          bool                              useGpuForNonbonded,
          bool                              useGpuForPme,
-         bool                              directGpuCommUsedWithGpuUpdate);
+         bool                              directGpuCommUsedWithGpuUpdate,
+         bool                              canUseGpuPmeDecomposition);
 
     //! Build the resulting DD manager
     gmx_domdec_t* build(LocalAtomSetManager*       atomSets,
@@ -2928,12 +2953,14 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
                                        ArrayRef<const RVec>              xGlobal,
                                        bool                              useGpuForNonbonded,
                                        bool                              useGpuForPme,
-                                       bool directGpuCommUsedWithGpuUpdate) :
+                                       bool directGpuCommUsedWithGpuUpdate,
+                                       bool canUseGpuPmeDecomposition) :
     mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir), notifiers_(notifiers)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
 
-    ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_, directGpuCommUsedWithGpuUpdate);
+    ddSettings_ = getDDSettings(
+            mdlog_, options_, mdrunOptions, ir_, directGpuCommUsedWithGpuUpdate, useGpuForPme, canUseGpuPmeDecomposition);
 
     if (ddSettings_.eFlop > 1)
     {
@@ -2959,7 +2986,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
 
     /* Checks for ability to use PME-only ranks */
     auto separatePmeRanksPermitted = checkForSeparatePmeRanks(
-            notifiers_, options_, numRanksRequested, useGpuForNonbonded, useGpuForPme);
+            notifiers_, options_, numRanksRequested, useGpuForNonbonded, useGpuForPme, canUseGpuPmeDecomposition);
 
     /* Checks for validity of requested Ranks setup */
     checkForValidRankCountRequests(numRanksRequested,
@@ -3072,7 +3099,8 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
                                                        ArrayRef<const RVec> xGlobal,
                                                        const bool           useGpuForNonbonded,
                                                        const bool           useGpuForPme,
-                                                       const bool directGpuCommUsedWithGpuUpdate) :
+                                                       const bool directGpuCommUsedWithGpuUpdate,
+                                                       const bool canUseGpuPmeDecomposition) :
     impl_(new Impl(mdlog,
                    cr,
                    options,
@@ -3087,7 +3115,8 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
                    xGlobal,
                    useGpuForNonbonded,
                    useGpuForPme,
-                   directGpuCommUsedWithGpuUpdate))
+                   directGpuCommUsedWithGpuUpdate,
+                   canUseGpuPmeDecomposition))
 {
 }
 

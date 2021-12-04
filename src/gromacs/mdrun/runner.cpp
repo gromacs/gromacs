@@ -194,10 +194,16 @@ namespace gmx
  *
  * \param[in]  mdlog                Logger object.
  * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
+ * \param[in]  pmeRunMode   Run mode indicating what resource is PME execured on.
+ * \param[in]  numRanksPerSimulation   The number of ranks in each simulation.
+ * \param[in]  numPmeRanksPerSimulation   The number of PME ranks in each simulation, can be -1
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
-                                                         const bool           useGpuForNonbonded)
+                                                         const bool           useGpuForNonbonded,
+                                                         const PmeRunMode     pmeRunMode,
+                                                         const int            numRanksPerSimulation,
+                                                         const int numPmeRanksPerSimulation)
 {
     DevelopmentFeatureFlags devFlags;
 
@@ -219,6 +225,11 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                                        "but these are mutually exclusive.\n"));
     }
 
+    // Flag use to enable CUDA-aware MPI depenendent features such PME GPU decomposition
+    // CUDA-aware MPI is marked available if it has been detected by GROMACS or detection fails but
+    // user wants to force its use
+    devFlags.canUseCudaAwareMpi = false;
+
     // Direct GPU comm path is being used with CUDA_AWARE_MPI
     // make sure underlying MPI implementation is CUDA-aware
     if (GMX_LIB_MPI && GMX_GPU_CUDA)
@@ -228,6 +239,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         // allows overriding the CUDA-aware MPI detection
         const bool forceCudaAwareMpi = (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr);
 
+        devFlags.canUseCudaAwareMpi = haveDetectedCudaAwareMpi || forceCudaAwareMpi;
         if (enableDirectGpuComm)
         {
             if (!haveDetectedCudaAwareMpi && forceCudaAwareMpi)
@@ -244,9 +256,8 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                                 "GMX_FORCE_CUDA_AWARE_MPI environment variable.");
             }
 
-            if (haveDetectedCudaAwareMpi || forceCudaAwareMpi)
+            if (devFlags.canUseCudaAwareMpi)
             {
-                devFlags.canUseCudaAwareMpi = true;
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
                         .appendTextFormatted(
@@ -298,6 +309,50 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                         "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable. GPU update with domain "
                         "decomposition lacks substantial testing and should be used with caution.");
     }
+
+    // PME decomposition is supported only with CUDA-backend in mixed mode
+    // CUDA-backend also needs CUDA-aware MPI support for decomposition to work
+    const bool pmeGpuDecompositionRequested =
+            (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed)
+            && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
+                || numPmeRanksPerSimulation > 1);
+    const bool pmeGpuDecompositionSupported =
+            (devFlags.canUseCudaAwareMpi && pmeRunMode == PmeRunMode::Mixed);
+
+    const bool forcePmeGpuDecomposition = getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
+
+    if (pmeGpuDecompositionSupported && pmeGpuDecompositionRequested)
+    {
+        // PME decomposition is supported only when it is forced using GMX_GPU_PME_DECOMPOSITION
+        if (forcePmeGpuDecomposition)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "This run has requested the 'GPU PME decomposition' feature, enabled "
+                            "by the GMX_GPU_PME_DECOMPOSITION environment variable. "
+                            "PME decomposition lacks substantial testing "
+                            "and should be used with caution.");
+        }
+        else
+        {
+            gmx_fatal(FARGS,
+                      "Multiple PME tasks were required to run on GPUs, "
+                      "but that is not supported. "
+                      "Use GMX_GPU_PME_DECOMPOSITION environment variable to enable it.");
+        }
+    }
+
+    if (!pmeGpuDecompositionSupported && pmeGpuDecompositionRequested)
+    {
+        gmx_fatal(FARGS,
+                  "PME tasks were required to run on GPUs, but that is not implemented with "
+                  "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
+                  "or permit PME tasks to be assigned to the CPU.");
+    }
+
+    devFlags.enableGpuPmeDecomposition =
+            forcePmeGpuDecomposition && pmeGpuDecompositionRequested && pmeGpuDecompositionSupported;
 
     return devFlags;
 }
@@ -949,7 +1004,8 @@ int Mdrunner::mdrunner()
 
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog, useGpuForNonbonded);
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
+            mdlog, useGpuForNonbonded, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks);
 
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
@@ -1317,7 +1373,8 @@ int Mdrunner::mdrunner()
                 positionsFromStatePointer(globalState.get()),
                 useGpuForNonbonded,
                 useGpuForPme,
-                directGpuCommUsedWithGpuUpdate);
+                directGpuCommUsedWithGpuUpdate,
+                devFlags.enableGpuPmeDecomposition);
     }
     else
     {
@@ -1414,6 +1471,11 @@ int Mdrunner::mdrunner()
                         "Disabling nonbonded calculations.");
     }
 
+    const NumPmeDomains numPmeDomains = getNumPmeDomains(cr->dd);
+    const bool useGpuPmeDecomposition = numPmeDomains.x * numPmeDomains.y > 1 && useGpuForPme;
+    GMX_RELEASE_ASSERT(!useGpuPmeDecomposition || devFlags.enableGpuPmeDecomposition,
+                       "GPU PME decomposition works only in the cases where it is supported");
+
     MdrunScheduleWorkload runScheduleWork;
 
     // Also populates the simulation constant workload description.
@@ -1431,7 +1493,8 @@ int Mdrunner::mdrunner()
                                                               useGpuForBonded,
                                                               useGpuForUpdate,
                                                               useGpuDirectHalo,
-                                                              canUseDirectGpuComm);
+                                                              canUseDirectGpuComm,
+                                                              useGpuPmeDecomposition);
 
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);

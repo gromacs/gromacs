@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -261,7 +261,7 @@ void gmx_sum_qgrid_dd(gmx_pme_t* pme, real* grid, const int direction)
             }
         }
     }
-#else  // GMX_MPI
+#else // GMX_MPI
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(grid);
     GMX_UNUSED_VALUE(direction);
@@ -844,7 +844,12 @@ void pmegrids_destroy(pmegrids_t* grids)
     }
 }
 
-void make_gridindex_to_localindex(int n, int local_start, int local_range, int** global_to_local, real** fraction_shift)
+void make_gridindex_to_localindex(int    n,
+                                  int    local_start,
+                                  int    local_range,
+                                  bool   checkRoundingAtBoundary,
+                                  int**  global_to_local,
+                                  real** fraction_shift)
 {
     /* Here we construct array for looking up the grid line index and
      * fraction for particles. This is done because it is slighlty
@@ -871,7 +876,7 @@ void make_gridindex_to_localindex(int n, int local_start, int local_range, int**
          */
         fsh[i] = 0;
         /* Check if we are using domain decomposition for PME */
-        if (local_range < n)
+        if (local_range < n && checkRoundingAtBoundary)
         {
             /* Due to rounding issues i could be 1 beyond the lower or
              * upper boundary of the local grid. Correct the index for this.

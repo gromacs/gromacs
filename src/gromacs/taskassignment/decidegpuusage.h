@@ -86,6 +86,8 @@ struct DevelopmentFeatureFlags
     bool forceGpuUpdateDefault = false;
     //! True if the CUDA-aware MPI can be used for GPU direct communication feature
     bool canUseCudaAwareMpi = false;
+    //! True if GPU PME-decomposition is enabled
+    bool enableGpuPmeDecomposition = false;
 };
 
 

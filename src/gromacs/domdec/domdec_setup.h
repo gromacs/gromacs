@@ -96,7 +96,8 @@ gmx::SeparatePmeRanksPermitted checkForSeparatePmeRanks(const gmx::MDModulesNoti
                                                         const gmx::DomdecOptions&      options,
                                                         int  numRanksRequested,
                                                         bool useGpuForNonbonded,
-                                                        bool useGpuForPme);
+                                                        bool useGpuForPme,
+                                                        bool canUseGpuPmeDecomposition);
 
 /*! \brief Checks that requests for PP and PME ranks honor basic expectations
  *

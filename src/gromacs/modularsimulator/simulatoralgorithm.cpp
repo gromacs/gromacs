@@ -74,6 +74,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 
 #include "checkpointhelper.h"
 #include "domdechelper.h"
@@ -558,7 +559,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
     // Build PME load balance helper
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions,
                                                  legacySimulatorData_->inputrec,
-                                                 legacySimulatorData_->fr))
+                                                 legacySimulatorData_->fr,
+                                                 legacySimulatorData_->runScheduleWork->simulationWork))
     {
         algorithm.pmeLoadBalanceHelper_ =
                 std::make_unique<PmeLoadBalanceHelper>(legacySimulatorData_->mdrunOptions.verbose,

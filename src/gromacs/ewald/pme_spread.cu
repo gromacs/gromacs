@@ -273,7 +273,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     }
 
     /* Spreading */
-    if (spreadCharges)
+    if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
     {
 
         if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
@@ -296,7 +296,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         {
             atomCharge = kernelParams.atoms.d_coefficients[1][atomIndexGlobal];
         }
-        if (spreadCharges)
+        if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
         {
             if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
             {

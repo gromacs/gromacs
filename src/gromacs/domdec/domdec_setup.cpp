@@ -757,29 +757,31 @@ gmx::SeparatePmeRanksPermitted checkForSeparatePmeRanks(const gmx::MDModulesNoti
                                                         const DomdecOptions&           options,
                                                         int  numRanksRequested,
                                                         bool useGpuForNonbonded,
-                                                        bool useGpuForPme)
+                                                        bool useGpuForPme,
+                                                        bool canUseGpuPmeDecomposition)
 {
     gmx::SeparatePmeRanksPermitted separatePmeRanksPermitted;
 
     /* Permit MDModules to notify whether they want to use PME-only ranks */
     notifiers.simulationSetupNotifier_.notify(&separatePmeRanksPermitted);
 
-    /* With NB GPUs we don't automatically use PME-only CPU ranks. PME ranks can
-     * improve performance with many threads per GPU, since our OpenMP
+    /* With NB GPUs we don't automatically use PME-only ranks. PME-only CPU ranks can
+     * improve performance with many ranks per GPU, since our OpenMP
      * scaling is bad, but it's difficult to automate the setup.
      */
     if (useGpuForNonbonded && options.numPmeRanks < 0)
     {
         separatePmeRanksPermitted.disablePmeRanks(
-                "PME-only CPU ranks are not automatically used when "
+                "PME-only ranks are not automatically used when "
                 "non-bonded interactions are computed on GPUs");
     }
 
-    /* If GPU is used for PME then only 1 PME rank is permitted */
-    if (useGpuForPme && (options.numPmeRanks < 0 || options.numPmeRanks > 1))
+    /* If more than one PME ranks requested, check if PME decomposition is supported */
+    if (useGpuForPme && !canUseGpuPmeDecomposition && (options.numPmeRanks < 0 || options.numPmeRanks > 1))
     {
         separatePmeRanksPermitted.disablePmeRanks(
-                "PME GPU decomposition is not supported, only one separate PME-only GPU rank "
+                "PME GPU decomposition is not supported for current build configuration, only one "
+                "separate PME-only GPU rank "
                 "can be used");
     }
 

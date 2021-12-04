@@ -1170,6 +1170,11 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }
+    else if (pmeGpu->staging.h_forces.size() != pmeGpu->kernelParams->atoms.nAtoms)
+    {
+        // re-alloc not needed but resizing is needed if nAtoms changed
+        pmeGpu->staging.h_forces.resizeWithPadding(pmeGpu->kernelParams->atoms.nAtoms);
+    }
     pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
 }
 

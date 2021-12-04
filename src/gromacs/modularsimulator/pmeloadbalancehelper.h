@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@ namespace gmx
 class MDLogger;
 struct MdrunOptions;
 class StatePropagatorData;
+class SimulationWorkload;
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -91,12 +92,13 @@ public:
     //! Final printout and deconstruction of the load balancing object
     void teardown();
     //! Whether PME load balancing printing is active \todo Check this!
-    bool pmePrinting();
+    bool pmePrinting() const;
 
     //! Whether we're doing PME load balancing
-    static bool doPmeLoadBalancing(const MdrunOptions& mdrunOptions,
-                                   const t_inputrec*   inputrec,
-                                   const t_forcerec*   fr);
+    static bool doPmeLoadBalancing(const MdrunOptions&       mdrunOptions,
+                                   const t_inputrec*         inputrec,
+                                   const t_forcerec*         fr,
+                                   const SimulationWorkload& simWorkload);
 
     //! Direct access to the load balancing object - used by reset counter
     const pme_load_balancing_t* loadBalancingObject();

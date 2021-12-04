@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,12 @@ void pmegrids_init(pmegrids_t* grids,
 
 void pmegrids_destroy(pmegrids_t* grids);
 
-void make_gridindex_to_localindex(int n, int local_start, int local_range, int** global_to_local, real** fraction_shift);
+void make_gridindex_to_localindex(int    n,
+                                  int    local_start,
+                                  int    local_range,
+                                  bool   checkRoundingAtBoundary,
+                                  int**  global_to_local,
+                                  real** fraction_shift);
 
 void set_grid_alignment(int* pmegrid_nz, int pme_order);
 

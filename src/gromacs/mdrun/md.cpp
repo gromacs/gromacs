@@ -542,9 +542,10 @@ void gmx::LegacySimulator::do_md()
         repl_ex = init_replica_exchange(fplog, ms, top_global.natoms, ir, replExParams);
     }
     /* PME tuning is only supported in the Verlet scheme, with PME for
-     * Coulomb. It is not supported with only LJ PME. */
+     * Coulomb. It is not supported with only LJ PME.
+     * Disable PME tuning with GPU PME decomposition */
     bPMETune = (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !mdrunOptions.reproducible
-                && ir->cutoff_scheme != CutoffScheme::Group);
+                && ir->cutoff_scheme != CutoffScheme::Group && !simulationWork.useGpuPmeDecomposition);
 
     pme_load_balancing_t* pme_loadbal = nullptr;
     if (bPMETune)

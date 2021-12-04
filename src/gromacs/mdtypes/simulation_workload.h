@@ -199,6 +199,8 @@ public:
     bool useGpuPmePpCommunication = false;
     //! If direct GPU-GPU communication is enabled.
     bool useGpuDirectCommunication = false;
+    //! If GPU PME decomposition is enabled.
+    bool useGpuPmeDecomposition = false;
     //! If there is an Ewald surface (dipole) term to compute
     bool haveEwaldSurfaceContribution = false;
     //! Whether to use multiple time stepping

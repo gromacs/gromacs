@@ -98,12 +98,17 @@ public:
 
     /*! \brief
      * Used for lib MPI, receives co-ordinates from PP ranks
-     * \param[in] recvbuf   coordinates buffer in GPU memory
-     * \param[in] numAtoms  starting element in buffer
-     * \param[in] numBytes  number of bytes to transfer
-     * \param[in] ppRank    PP rank to send data
+     * \param[in] recvbuf      coordinates buffer in GPU memory
+     * \param[in] numAtoms     starting element in buffer
+     * \param[in] numBytes     number of bytes to transfer
+     * \param[in] ppRank       PP rank to send data
+     * \param[in] senderIndex  Index of PP rank within those involved in communication with this PME rank
      */
-    void launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf, int numAtoms, int numBytes, int ppRank);
+    void launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
+                                               int                numAtoms,
+                                               int                numBytes,
+                                               int                ppRank,
+                                               int                senderIndex);
 
     /*! \brief
      * For lib MPI, wait for coordinates from any PP rank

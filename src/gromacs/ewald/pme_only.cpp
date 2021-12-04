@@ -437,9 +437,9 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 }
                 if (pme_pp->useGpuDirectComm)
                 {
-                    GMX_ASSERT(runMode == PmeRunMode::GPU,
+                    GMX_ASSERT((runMode == PmeRunMode::GPU || runMode == PmeRunMode::Mixed),
                                "GPU Direct PME-PP communication has been enabled, "
-                               "but PME run mode is not PmeRunMode::GPU\n");
+                               "but PME run mode does not support it\n");
 
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses and re-set atom ranges associated with transfers.
                     pme_pp->pmeCoordinateReceiverGpu->reinitCoordinateReceiver(stateGpu->getCoordinates());
@@ -457,7 +457,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             *step                   = cnb.step;
 
             /* Receive the coordinates in place */
-            nat = 0;
+            nat             = 0;
+            int senderCount = 0;
             for (const auto& sender : pme_pp->ppRanks)
             {
                 if (sender.numAtoms > 0)
@@ -472,7 +473,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                         else
                         {
                             pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpCudaMpi(
-                                    stateGpu->getCoordinates(), nat, sender.numAtoms * sizeof(rvec), sender.rankId);
+                                    stateGpu->getCoordinates(),
+                                    nat,
+                                    sender.numAtoms * sizeof(rvec),
+                                    sender.rankId,
+                                    senderCount);
                         }
                     }
                     else
@@ -495,6 +500,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                 sender.numAtoms);
                     }
                 }
+                senderCount++;
             }
 
             status = pmerecvqxX;

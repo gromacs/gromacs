@@ -71,6 +71,7 @@ struct DevelopmentFeatureFlags;
  *                               GPU(s).
  * \param[in] useGpuDirectHalo   Whether halo exchange is performed directly between GPUs.
  * \param[in] canUseDirectGpuComm Whether direct GPU communication can be used in this run.
+ * \param[in] useGpuPmeDecomposition GPU based PME decomposition used.
  *
  * \returns Simulation lifetime constant workload description.
  */
@@ -84,7 +85,8 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             bool       useGpuForBonded,
                                             bool       useGpuForUpdate,
                                             bool       useGpuDirectHalo,
-                                            bool       canUseDirectGpuComm);
+                                            bool       canUseDirectGpuComm,
+                                            bool       useGpuPmeDecomposition);
 
 } // namespace gmx
 

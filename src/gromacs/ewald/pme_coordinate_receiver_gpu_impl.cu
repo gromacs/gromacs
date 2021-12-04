@@ -126,13 +126,14 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDir
 void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
                                                                            int numAtoms,
                                                                            int numBytes,
-                                                                           int ppRank)
+                                                                           int ppRank,
+                                                                           int senderIndex)
 {
     GMX_ASSERT(GMX_LIB_MPI,
                "launchReceiveCoordinatesFromPpCudaMpi is expected to be called only for Lib-MPI");
 
 #if GMX_MPI
-    MPI_Irecv(&recvbuf[numAtoms], numBytes, MPI_BYTE, ppRank, eCommType_COORD_GPU, comm_, &(requests_[ppRank]));
+    MPI_Irecv(&recvbuf[numAtoms], numBytes, MPI_BYTE, ppRank, eCommType_COORD_GPU, comm_, &(requests_[senderIndex]));
 #else
     GMX_UNUSED_VALUE(recvbuf);
     GMX_UNUSED_VALUE(numAtoms);
@@ -215,9 +216,10 @@ void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpCudaDirect(in
 void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
                                                                      int                numAtoms,
                                                                      int                numBytes,
-                                                                     int                ppRank)
+                                                                     int                ppRank,
+                                                                     int                senderIndex)
 {
-    impl_->launchReceiveCoordinatesFromPpCudaMpi(recvbuf, numAtoms, numBytes, ppRank);
+    impl_->launchReceiveCoordinatesFromPpCudaMpi(recvbuf, numAtoms, numBytes, ppRank, senderIndex);
 }
 
 int PmeCoordinateReceiverGpu::synchronizeOnCoordinatesFromPpRank(int                 senderIndex,
