@@ -261,7 +261,7 @@ void gmx_sum_qgrid_dd(gmx_pme_t* pme, real* grid, const int direction)
             }
         }
     }
-#else // GMX_MPI
+#else  // GMX_MPI
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(grid);
     GMX_UNUSED_VALUE(direction);
