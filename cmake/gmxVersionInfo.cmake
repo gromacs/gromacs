@@ -209,7 +209,7 @@ set(GMX_VERSION_PATCH ${Gromacs_VERSION_MINOR})
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-beta1")
+set(GMX_VERSION_SUFFIX "-beta2")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -243,7 +243,7 @@ set(REGRESSIONTEST_BRANCH "master")
 # directory name within the regressiontests tarball, which affects the
 # md5sum of the tarball. The matching md5sum has to go here, and if it
 # isn't right the real release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "9e122010c6e0fea35ec621a8e6561f7f" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "c45b8e74f38fad0b907bb3dcc7dd9c72" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of
