@@ -365,6 +365,16 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
+        release-notes/2023/major/highlights.rst
+        release-notes/2023/major/features.rst
+        release-notes/2023/major/performance.rst
+        release-notes/2023/major/tools.rst
+        release-notes/2023/major/bugs-fixed.rst
+        release-notes/2023/major/removed-functionality.rst
+        release-notes/2023/major/deprecated-functionality.rst
+        release-notes/2023/major/portability.rst
+        release-notes/2023/major/miscellaneous.rst
+        release-notes/2023/major/api.rst
         release-notes/2022/major/highlights.rst
         release-notes/2022/major/features.rst
         release-notes/2022/major/performance.rst
