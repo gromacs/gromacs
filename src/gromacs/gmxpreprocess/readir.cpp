@@ -2290,8 +2290,8 @@ void get_ir(const char*     mdparin,
     ir->bRot = (getEnum<Boolean>(&inp, "rotation", wi) != Boolean::No);
     if (ir->bRot)
     {
-        snew(ir->rot, 1);
-        inputrecStrings->rotateGroupNames = read_rotparams(&inp, ir->rot, wi);
+        ir->rot                           = std::make_unique<t_rot>();
+        inputrecStrings->rotateGroupNames = read_rotparams(&inp, ir->rot.get(), wi);
     }
 
     /* Interactive MD */
@@ -3934,7 +3934,7 @@ void do_index(const char*                    mdparin,
 
     if (ir->bRot)
     {
-        make_rotation_groups(ir->rot, inputrecStrings->rotateGroupNames, defaultIndexGroups, gnames);
+        make_rotation_groups(ir->rot.get(), inputrecStrings->rotateGroupNames, defaultIndexGroups, gnames);
     }
 
     if (ir->eSwapCoords != SwapType::No)

@@ -265,7 +265,7 @@ extern void communicate_group_positions(const t_commrec* cr, /* Pointer to MPI c
 
 
 /* Determine the (weighted) sum vector from positions x */
-extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec dsumvec)
+extern double get_sum_of_positions(const rvec x[], real weight[], const int nat, dvec dsumvec)
 {
     int    i;
     rvec   x_weighted;
@@ -301,7 +301,7 @@ extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec 
 
 
 /* Determine center of structure from collective positions x */
-extern void get_center(rvec x[], real weight[], const int nr, rvec rcenter)
+extern void get_center(const rvec x[], real weight[], const int nr, rvec rcenter)
 {
     dvec   dcenter;
     double weight_sum, denom;

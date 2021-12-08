@@ -289,16 +289,10 @@ static void done_t_rot(t_rot* rot)
     {
         return;
     }
-    if (rot->grp != nullptr)
+    for (auto& grp : rot->grp)
     {
-        for (int i = 0; i < rot->ngrp; i++)
-        {
-            sfree(rot->grp[i].ind);
-            sfree(rot->grp[i].x_ref);
-        }
-        sfree(rot->grp);
+        sfree(grp.ind);
     }
-    sfree(rot);
 }
 
 static void done_t_swapCoords(t_swapcoords* swapCoords)
@@ -335,7 +329,7 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.egp_flags);
 
     done_t_swapCoords(ir->swap);
-    done_t_rot(ir->rot);
+    done_t_rot(ir->rot.get());
     delete ir->params;
 }
 
@@ -719,7 +713,7 @@ static void pr_rotgrp(FILE* fp, int indent, int g, const t_rotgrp* rotg)
     PS("rot-type", enumValueToString(rotg->eType));
     PS("rot-massw", EBOOL(rotg->bMassW));
     pr_ivec_block(fp, indent, "atom", rotg->ind, rotg->nat, TRUE);
-    pr_rvecs(fp, indent, "x-ref", rotg->x_ref, rotg->nat);
+    pr_rvecs(fp, indent, "x-ref", as_vec_array(rotg->x_ref_original.data()), rotg->x_ref_original.size());
     pr_rvec(fp, indent, "rot-vec", rotg->inputVec, DIM, TRUE);
     pr_rvec(fp, indent, "rot-pivot", rotg->pivot, DIM, TRUE);
     PR("rot-rate", rotg->rate);
@@ -738,8 +732,8 @@ static void pr_rot(FILE* fp, int indent, const t_rot* rot)
 
     PI("rot-nstrout", rot->nstrout);
     PI("rot-nstsout", rot->nstsout);
-    PI("rot-ngroups", rot->ngrp);
-    for (g = 0; g < rot->ngrp; g++)
+    PI("rot-ngroups", rot->grp.size());
+    for (g = 0; g < gmx::ssize(rot->grp); g++)
     {
         pr_rotgrp(fp, indent, g, &rot->grp[g]);
     }
@@ -1008,7 +1002,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("rotation", EBOOL(ir->bRot));
         if (ir->bRot)
         {
-            pr_rot(fp, indent, ir->rot);
+            pr_rot(fp, indent, ir->rot.get());
         }
 
         /* INTERACTIVE MD */

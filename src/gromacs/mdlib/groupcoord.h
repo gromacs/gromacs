@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,7 @@ extern void communicate_group_positions(const t_commrec* cr,
  * \param[out]  center       The (weighted) center of the positions.
  *
  */
-extern void get_center(rvec x[], real weight[], int nr, rvec center);
+extern void get_center(const rvec x[], real weight[], int nr, rvec center);
 
 
 /*! \brief Calculates the sum of the positions x locally.
@@ -167,7 +167,7 @@ extern void get_center(rvec x[], real weight[], int nr, rvec center);
  * \return Sum of weights.
  *
  */
-extern double get_sum_of_positions(rvec x[], real weight[], int nr, dvec dsumvec);
+extern double get_sum_of_positions(const rvec x[], real weight[], int nr, dvec dsumvec);
 
 
 /*! \brief Calculates the global center of all local arrays x.

@@ -226,47 +226,45 @@ struct t_expanded
 struct t_rotgrp
 {
     //! Rotation type for this group
-    EnforcedRotationGroupType eType;
+    EnforcedRotationGroupType eType = EnforcedRotationGroupType::Default;
     //! Use mass-weighed positions?
-    bool bMassW;
+    bool bMassW = false;
     //! Number of atoms in the group
-    int nat;
+    int nat = 0;
     //! The global atoms numbers
-    int* ind;
-    //! The reference positions
-    rvec* x_ref;
+    int* ind = nullptr;
+    //! The reference positions (which have not been centered)
+    std::vector<gmx::RVec> x_ref_original;
     //! The normalized rotation vector
-    rvec inputVec;
+    rvec inputVec = { 0, 0, 0 };
     //! Rate of rotation (degree/ps)
-    real rate;
+    real rate = 0;
     //! Force constant (kJ/(mol nm^2)
-    real k;
+    real k = 0;
     //! Pivot point of rotation axis (nm)
-    rvec pivot;
+    rvec pivot = { 0, 0, 0 };
     //! Type of fit to determine actual group angle
-    RotationGroupFitting eFittype;
+    RotationGroupFitting eFittype = RotationGroupFitting::Default;
     //! Number of angles around the reference angle for which the rotation potential is also evaluated (for fit type 'potential' only)
-    int PotAngle_nstep;
+    int PotAngle_nstep = 0;
     //! Distance between two angles in degrees (for fit type 'potential' only)
-    real PotAngle_step;
+    real PotAngle_step = 0;
     //! Slab distance (nm)
-    real slab_dist;
+    real slab_dist = 0;
     //! Minimum value the gaussian must have so that the force is actually evaluated
-    real min_gaussian;
+    real min_gaussian = 0;
     //! Additive constant for radial motion2 and flexible2 potentials (nm^2)
-    real eps;
+    real eps = 0;
 };
 
 struct t_rot
 {
-    //! Number of rotation groups
-    int ngrp;
     //! Output frequency for main rotation outfile
     int nstrout;
     //! Output frequency for per-slab data
     int nstsout;
     //! Groups to rotate
-    t_rotgrp* grp;
+    std::vector<t_rotgrp> grp;
 };
 
 struct t_IMD
@@ -533,7 +531,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Whether to calculate enforced rotation potential(s)
     bool bRot = false;
     //! The data for enforced rotation potentials
-    t_rot* rot = nullptr;
+    std::unique_ptr<t_rot> rot;
 
     //! Whether to do ion/water position exchanges (CompEL)
     SwapType eSwapCoords = SwapType::Default;

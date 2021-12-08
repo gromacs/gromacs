@@ -819,9 +819,12 @@ static void do_rotgrp(gmx::ISerializer* serializer, t_rotgrp* rotg)
     serializer->doIntArray(rotg->ind, rotg->nat);
     if (serializer->reading())
     {
-        snew(rotg->x_ref, rotg->nat);
+        rotg->x_ref_original.resize(rotg->nat);
     }
-    serializer->doRvecArray(rotg->x_ref, rotg->nat);
+    for (gmx::RVec& x : rotg->x_ref_original)
+    {
+        serializer->doRvec(as_rvec_array(&x));
+    }
     serializer->doRvec(&rotg->inputVec);
     serializer->doRvec(&rotg->pivot);
     serializer->doReal(&rotg->rate);
@@ -836,18 +839,18 @@ static void do_rotgrp(gmx::ISerializer* serializer, t_rotgrp* rotg)
 
 static void do_rot(gmx::ISerializer* serializer, t_rot* rot)
 {
-    int g;
+    int numGroups = rot->grp.size();
 
-    serializer->doInt(&rot->ngrp);
+    serializer->doInt(&numGroups);
     serializer->doInt(&rot->nstrout);
     serializer->doInt(&rot->nstsout);
     if (serializer->reading())
     {
-        snew(rot->grp, rot->ngrp);
+        rot->grp.resize(numGroups);
     }
-    for (g = 0; g < rot->ngrp; g++)
+    for (auto& grp : rot->grp)
     {
-        do_rotgrp(serializer, &rot->grp[g]);
+        do_rotgrp(serializer, &grp);
     }
 }
 
@@ -1542,9 +1545,9 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                snew(ir->rot, 1);
+                ir->rot = std::make_unique<t_rot>();
             }
-            do_rot(serializer, ir->rot);
+            do_rot(serializer, ir->rot.get());
         }
     }
     else

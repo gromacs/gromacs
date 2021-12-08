@@ -84,20 +84,20 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                          "Output frequency for per-slab data (angles, torques and slab centers)");
     rot->nstsout = get_eint(inp, "rot-nstsout", 1000, wi);
     printStringNoNewline(inp, "Number of rotation groups");
-    rot->ngrp = get_eint(inp, "rot-ngroups", 1, wi);
+    int numGroups = get_eint(inp, "rot-ngroups", 1, wi);
 
-    if (rot->ngrp < 1)
+    if (numGroups < 1)
     {
         gmx_fatal(FARGS, "rot-ngroups should be >= 1");
     }
 
-    snew(rot->grp, rot->ngrp);
+    rot->grp.resize(numGroups);
 
     /* Read the rotation groups */
-    std::vector<std::string> rotateGroups(rot->ngrp);
+    std::vector<std::string> rotateGroups(numGroups);
     char                     readBuffer[STRLEN];
     char                     s_vec[STRLEN];
-    for (g = 0; g < rot->ngrp; g++)
+    for (g = 0; g < numGroups; g++)
     {
         rotg = &rot->grp[g];
         printStringNoNewline(inp, "Rotation group name");
@@ -257,16 +257,16 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
 /* Extract the reference positions for the rotation group(s) */
 extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, warninp_t wi)
 {
-    int              g, i, ii;
+    int              i, ii;
     t_rotgrp*        rotg;
     gmx_trr_header_t header;   /* Header information of reference file */
     rvec             f_box[3]; /* Box from reference file */
 
-    for (g = 0; g < rot->ngrp; g++)
+    for (int g = 0; g < gmx::ssize(rot->grp); g++)
     {
         rotg = &rot->grp[g];
         fprintf(stderr, "%s group %d has %d reference positions.\n", RotStr.c_str(), g, rotg->nat);
-        snew(rotg->x_ref, rotg->nat);
+        rotg->x_ref_original.resize(rotg->nat);
 
         /* Construct the name for the file containing the reference positions for this group: */
         std::string reffileString =
@@ -298,8 +298,15 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
                           header.natoms,
                           rotg->nat);
             }
-            gmx_trr_read_single_frame(
-                    reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, nullptr, nullptr);
+            gmx_trr_read_single_frame(reffile,
+                                      &header.step,
+                                      &header.t,
+                                      &header.lambda,
+                                      f_box,
+                                      &header.natoms,
+                                      as_rvec_array(rotg->x_ref_original.data()),
+                                      nullptr,
+                                      nullptr);
 
             /* Check whether the box is unchanged and output a warning if not: */
             check_box_unchanged(f_box, box, reffile, wi);
@@ -310,9 +317,10 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
             for (i = 0; i < rotg->nat; i++)
             {
                 ii = rotg->ind[i];
-                copy_rvec(x[ii], rotg->x_ref[i]);
+                copy_rvec(x[ii], rotg->x_ref_original[i]);
             }
-            gmx_trr_write_single_frame(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, nullptr, nullptr);
+            gmx_trr_write_single_frame(
+                    reffile, g, 0.0, 0.0, box, rotg->nat, as_rvec_array(rotg->x_ref_original.data()), nullptr, nullptr);
         }
     }
 }
@@ -323,21 +331,17 @@ extern void make_rotation_groups(t_rot*                           rot,
                                  t_blocka*                        grps,
                                  char**                           gnames)
 {
-    int       g, ig = -1, i;
-    t_rotgrp* rotg;
-
-
-    for (g = 0; g < rot->ngrp; g++)
+    for (int g = 0; g < gmx::ssize(rot->grp); g++)
     {
-        rotg      = &rot->grp[g];
-        ig        = search_string(rotateGroupNames[g].c_str(), grps->nr, gnames);
-        rotg->nat = grps->index[ig + 1] - grps->index[ig];
+        t_rotgrp* rotg = &rot->grp[g];
+        int       ig   = search_string(rotateGroupNames[g].c_str(), grps->nr, gnames);
+        rotg->nat      = grps->index[ig + 1] - grps->index[ig];
 
         if (rotg->nat > 0)
         {
             fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotateGroupNames[g].c_str(), rotg->nat);
             snew(rotg->ind, rotg->nat);
-            for (i = 0; i < rotg->nat; i++)
+            for (int i = 0; i < rotg->nat; i++)
             {
                 rotg->ind[i] = grps->a[grps->index[ig] + i];
             }
