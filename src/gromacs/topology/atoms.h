@@ -42,7 +42,6 @@
 
 #include <vector>
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -114,7 +113,7 @@ typedef struct t_pdbinfo
     char          atomnm[6];    /* True atom name including leading spaces */
     real          occup;        /* Occupancy                            */
     real          bfac;         /* B-factor                             */
-    gmx_bool      bAnisotropic; /* (an)isotropic switch                 */
+    bool          bAnisotropic; /* (an)isotropic switch                 */
     int           uij[6];       /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
@@ -141,11 +140,11 @@ typedef struct t_atoms
      * For B-state parameters, both haveBState and the mass/charge/type
      * flag should be TRUE.
      */
-    gmx_bool haveMass;    /* Mass available                       */
-    gmx_bool haveCharge;  /* Charge available                     */
-    gmx_bool haveType;    /* Atom type available                  */
-    gmx_bool haveBState;  /* B-state parameters available         */
-    gmx_bool havePdbInfo; /* pdbinfo available                    */
+    bool haveMass;    /* Mass available                       */
+    bool haveCharge;  /* Charge available                     */
+    bool haveType;    /* Atom type available                  */
+    bool haveBState;  /* B-state parameters available         */
+    bool havePdbInfo; /* pdbinfo available                    */
 } t_atoms;
 
 typedef struct t_atomtypes
@@ -162,7 +161,7 @@ void done_atom(t_atoms* at);
 void done_and_delete_atoms(t_atoms* atoms);
 void done_atomtypes(t_atomtypes* at);
 
-void init_t_atoms(t_atoms* atoms, int natoms, gmx_bool bPdbinfo);
+void init_t_atoms(t_atoms* atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */
 
@@ -186,8 +185,8 @@ void t_atoms_set_resinfo(t_atoms*         atoms,
  * of atom index atom_ind.
  */
 
-void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, gmx_bool bShownumbers);
-void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, gmx_bool bShowNumbers);
+void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, bool bShownumbers);
+void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, bool bShowNumbers);
 
 /*! \brief Compare information in the t_atoms data structure.
  *
@@ -205,7 +204,7 @@ void compareAtoms(FILE* fp, const t_atoms* a1, const t_atoms* a2, real relativeT
  * If printMissingMasss = TRUE, prints details for first 10 missing masses
  * to stderr.
  */
-void atomsSetMassesBasedOnNames(t_atoms* atoms, gmx_bool printMissingMasses);
+void atomsSetMassesBasedOnNames(t_atoms* atoms, bool printMissingMasses);
 
 //! Deleter for t_atoms, needed until it has a proper destructor.
 using AtomsDataPtr = gmx::unique_cptr<t_atoms, done_and_delete_atoms>;
