@@ -79,3 +79,9 @@ This is supported only if GROMACS is compiled with external process-MPI
 and underlying MPI implementation is CUDA-aware. This feature lacks substantial testing
 and has been disabled by default but can be enabled by setting GMX_GPU_PME_DECOMPOSITION=1 
 environment variable.
+
+Performance improvements when running on Ampere-class Nvidia GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Improved performance of the short-ranged non-bonded kernels by up to 12%.
+
+:issue:`3872`
