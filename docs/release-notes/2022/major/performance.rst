@@ -17,6 +17,22 @@ environment variable to return to the previous default
 communication scheme (staged communication).
 Regular MPI runs still use staged communication by default.
 
+GPU direct communication with CUDA-aware MPI
+""""""""""""""""""""""""""""""""""""""""""""
+
+Direct GPU communication support has been extended to simulations that use
+a CUDA-aware library-MPI when running on NVIDIA GPUs. Detection of CUDA-aware MPI
+is performed both at cmake-time and runtime. The feature has been tested
+primarily with OpenMPI but any CUDA-aware MPI implementation should be suitable.
+CUDA-aware MPI support still lacks substantial testing, hence it is included
+in the current release as a development feature and should be used with caution.
+Hence, even if a suitable MPI is detected, direct communication in this case,
+unlike with thread-MPI, is not used by default, but it can be enabled using the
+GMX_ENABLE_DIRECT_GPU_COMM environment variable.
+
+:issue:`3960`
+:issue:`2915`
+
 
 Dynamic pairlist generation for energy minimization
 """""""""""""""""""""""""""""""""""""""""""""""""""
