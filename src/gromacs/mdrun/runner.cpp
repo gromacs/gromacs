@@ -704,7 +704,7 @@ static void finish_run(FILE*                     fplog,
     elapsed_time = walltime_accounting_get_time_since_reset(walltime_accounting);
     elapsed_time_over_all_threads =
             walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
-    if (cr->nnodes > 1)
+    if (GMX_MPI && cr->nnodes > 1)
     {
 #if GMX_MPI
         /* reduce elapsed_time over all MPI ranks in the current simulation */

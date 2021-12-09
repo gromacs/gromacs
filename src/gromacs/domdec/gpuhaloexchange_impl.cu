@@ -253,6 +253,7 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
 
 void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
+#if GMX_MPI
     GMX_ASSERT(coordinatesReadyOnDeviceEvent != nullptr,
                "Co-ordinate Halo exchange requires valid co-ordinate ready event");
 
@@ -273,6 +274,9 @@ void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynch
                  mpi_comm_mysim_,
                  MPI_STATUS_IGNORE);
     remoteCoordinatesReadyOnDeviceEvent->enqueueWaitEvent(*haloStream_);
+#else
+    GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
+#endif
 }
 
 GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix box,
@@ -460,6 +464,12 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaMPI(float3* sendPtr,
     MPI_Send(sendPtr, sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
 
     MPI_Wait(&request, MPI_STATUS_IGNORE);
+#else
+    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(sendRank);
+    GMX_UNUSED_VALUE(recvPtr);
+    GMX_UNUSED_VALUE(recvSize);
+    GMX_UNUSED_VALUE(recvRank);
 #endif
 }
 
