@@ -215,32 +215,6 @@ std::optional<int> PreprocessingAtomTypes::setType(int                      nt,
     return std::make_optional(nt);
 }
 
-void PreprocessingAtomTypes::printTypes(FILE* out)
-{
-    fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_atomtypes));
-    fprintf(out,
-            "; %6s  %8s  %8s  %8s  %12s  %12s\n",
-            "type",
-            "mass",
-            "charge",
-            "particle",
-            "c6",
-            "c12");
-    for (auto& entry : impl_->types)
-    {
-        fprintf(out,
-                "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
-                *(entry.name_),
-                entry.atom_.m,
-                entry.atom_.q,
-                "A",
-                entry.nb_.c0(),
-                entry.nb_.c1());
-    }
-
-    fprintf(out, "\n");
-}
-
 static int search_atomtypes(const PreprocessingAtomTypes*          ga,
                             int*                                   n,
                             gmx::ArrayRef<int>                     typelist,
@@ -387,17 +361,4 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
 
     impl_->types                  = new_types;
     plist[ftype].interactionTypes = nbsnew;
-}
-
-void PreprocessingAtomTypes::copyTot_atomtypes(t_atomtypes* atomtypes) const
-{
-    /* Copy the atomtype data to the topology atomtype list */
-    int ntype     = size();
-    atomtypes->nr = ntype;
-    snew(atomtypes->atomnumber, ntype);
-
-    for (int i = 0; i < ntype; i++)
-    {
-        atomtypes->atomnumber[i] = impl_->types[i].atomNumber_;
-    }
 }

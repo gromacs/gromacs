@@ -77,12 +77,6 @@ void init_atom(t_atoms* at)
     at->havePdbInfo = FALSE;
 }
 
-void init_atomtypes(t_atomtypes* at)
-{
-    at->nr         = 0;
-    at->atomnumber = nullptr;
-}
-
 void done_atom(t_atoms* at)
 {
     sfree(at->atom);
@@ -98,12 +92,6 @@ void done_and_delete_atoms(t_atoms* atoms)
 {
     done_atom(atoms);
     delete atoms;
-}
-
-void done_atomtypes(t_atomtypes* atype)
-{
-    atype->nr = 0;
-    sfree(atype->atomnumber);
 }
 
 void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra)
@@ -322,20 +310,6 @@ void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, gmx
         pr_strings(fp, indent, "atom", atoms->atomname, atoms->nr, bShownumbers);
         pr_strings2(fp, indent, "type", atoms->atomtype, atoms->atomtypeB, atoms->nr, bShownumbers);
         pr_resinfo(fp, indent, "residue", atoms->resinfo, atoms->nres, bShownumbers);
-    }
-}
-
-
-void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, gmx_bool bShowNumbers)
-{
-    if (available(fp, atomtypes, indent, title))
-    {
-        indent = pr_title(fp, indent, title);
-        for (int i = 0; i < atomtypes->nr; i++)
-        {
-            pr_indent(fp, indent);
-            fprintf(fp, "atomtype[%3d]={atomnumber=%4d}\n", bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
-        }
     }
 }
 

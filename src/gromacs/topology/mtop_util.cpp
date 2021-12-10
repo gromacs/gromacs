@@ -702,30 +702,6 @@ static void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool merg
     idef->ilsort = ilsortNO_FE;
 }
 
-/*! \brief Copy atomtypes from mtop
- *
- * Makes a deep copy of t_atomtypes from gmx_mtop_t.
- * Used to initialize legacy topology types.
- *
- * \param[in] mtop Reference to input mtop.
- * \param[in] atomtypes Pointer to atomtypes to populate.
- */
-static void copyAtomtypesFromMtop(const gmx_mtop_t& mtop, t_atomtypes* atomtypes)
-{
-    atomtypes->nr = mtop.atomtypes.nr;
-    if (mtop.atomtypes.atomnumber)
-    {
-        snew(atomtypes->atomnumber, mtop.atomtypes.nr);
-        std::copy(mtop.atomtypes.atomnumber,
-                  mtop.atomtypes.atomnumber + mtop.atomtypes.nr,
-                  atomtypes->atomnumber);
-    }
-    else
-    {
-        atomtypes->atomnumber = nullptr;
-    }
-}
-
 /*! \brief Generate a single list of lists of exclusions for the whole system
  *
  * \param[in] mtop  Reference to input mtop.
@@ -964,7 +940,6 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t& mtop)
 
 static void gen_t_topology(const gmx_mtop_t& mtop, bool bMergeConstr, t_topology* top)
 {
-    copyAtomtypesFromMtop(mtop, &top->atomtypes);
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         top->idef.il[ftype].nr     = 0;

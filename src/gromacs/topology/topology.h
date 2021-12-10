@@ -178,8 +178,6 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::unique_ptr<InteractionLists> intermolecular_ilist = nullptr;
     //! Number of global atoms.
     int natoms = 0;
-    //! Atomtype properties
-    t_atomtypes atomtypes;
     //! Groups of atoms for different purposes
     SimulationGroups groups;
     //! The legacy symbol table
@@ -239,12 +237,11 @@ struct gmx_localtop_t
 /* The old topology struct, completely written out, used in analysis tools */
 typedef struct t_topology
 {
-    char**      name;                        /* Name of the topology                 */
-    t_idef      idef;                        /* The interaction function definition  */
-    t_atoms     atoms;                       /* The atoms                            */
-    t_atomtypes atomtypes;                   /* Atomtype properties                  */
-    t_block     mols;                        /* The molecules                        */
-    bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
+    char**  name;                        /* Name of the topology                 */
+    t_idef  idef;                        /* The interaction function definition  */
+    t_atoms atoms;                       /* The atoms                            */
+    t_block mols;                        /* The molecules                        */
+    bool    bIntermolecularInteractions; /* Inter.mol. int. ?   */
     /* Note that the exclusions are not stored in t_topology */
     t_symtab symtab; /* The symbol table                     */
 } t_topology;

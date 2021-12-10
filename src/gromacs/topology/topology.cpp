@@ -74,7 +74,6 @@ const char* shortName(SimulationAtomGroupType type)
     return sc_simulationAtomGroupTypeShortNames[type];
 }
 
-
 gmx_moltype_t::gmx_moltype_t() : name(nullptr)
 {
     init_t_atoms(&atoms, 0, FALSE);
@@ -109,7 +108,6 @@ static int gmx_mtop_maxresnr(const gmx::ArrayRef<const gmx_moltype_t> moltypes, 
 
 gmx_mtop_t::gmx_mtop_t()
 {
-    init_atomtypes(&atomtypes);
     open_symtab(&symtab);
 }
 
@@ -119,7 +117,6 @@ gmx_mtop_t::~gmx_mtop_t()
 
     moltype.clear();
     molblock.clear();
-    done_atomtypes(&atomtypes);
 }
 
 void gmx_mtop_t::finalize()
@@ -191,9 +188,6 @@ void done_top(t_topology* top)
     done_idef(&top->idef);
     done_atom(&(top->atoms));
 
-    /* For GB */
-    done_atomtypes(&(top->atomtypes));
-
     done_symtab(&(top->symtab));
     done_block(&(top->mols));
 }
@@ -209,7 +203,6 @@ void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
             done_block(&top->mols);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
-            done_atomtypes(&(top->atomtypes));
         }
 
         // Note that the rest of mtop will be freed by the destructor
@@ -407,7 +400,6 @@ void pr_mtop(FILE* fp, int indent, const char* title, const gmx_mtop_t* mtop, gm
             }
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
-        pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
         for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt, &mtop->ffparams, bShowNumbers, bShowParameters);
@@ -424,7 +416,6 @@ void pr_top(FILE* fp, int indent, const char* title, const t_topology* top, gmx_
         pr_indent(fp, indent);
         fprintf(fp, "name=\"%s\"\n", *(top->name));
         pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
-        pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
         pr_str(fp, indent, "bIntermolecularInteractions", gmx::boolToString(top->bIntermolecularInteractions));
         pr_idef(fp, indent, "idef", &top->idef, bShowNumbers, bShowParameters);
@@ -617,17 +608,6 @@ static void compareMolblocks(FILE*                               fp,
     }
 }
 
-static void compareAtomtypes(FILE* fp, const t_atomtypes& at1, const t_atomtypes& at2)
-{
-    fprintf(fp, "comparing atomtypes\n");
-    cmp_int(fp, "nr", -1, at1.nr, at2.nr);
-    int nr = std::min(at1.nr, at2.nr);
-    for (int i = 0; i < nr; i++)
-    {
-        cmp_int(fp, "atomtype", i, at1.atomnumber[i], at2.atomnumber[i]);
-    }
-}
-
 static void compareIntermolecularExclusions(FILE*                    fp,
                                             gmx::ArrayRef<const int> ime1,
                                             gmx::ArrayRef<const int> ime2)
@@ -676,7 +656,6 @@ void compareMtop(FILE* fp, const gmx_mtop_t& mtop1, const gmx_mtop_t& mtop2, rea
     compareMoltypes(fp, mtop1.moltype, mtop2.moltype, relativeTolerance, absoluteTolerance);
     compareMolblocks(fp, mtop1.molblock, mtop2.molblock);
     compareInteractionLists(fp, mtop1.intermolecular_ilist.get(), mtop2.intermolecular_ilist.get());
-    compareAtomtypes(fp, mtop1.atomtypes, mtop2.atomtypes);
     compareAtomGroups(fp, mtop1.groups, mtop2.groups, mtop1.natoms, mtop2.natoms);
     compareIntermolecularExclusions(
             fp, mtop1.intermolecularExclusionGroup, mtop2.intermolecularExclusionGroup);

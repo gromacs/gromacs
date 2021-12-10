@@ -163,13 +163,6 @@ public:
     bool isSet(int nt) const;
 
     /*! \brief
-     * Print data to file.
-     *
-     * \param[in] out File pointer.
-     */
-    void printTypes(FILE* out);
-
-    /*! \brief
      * Set the values of an existing atom type \p nt.
      *
      * \param[in] nt Type that should be set.
@@ -217,13 +210,6 @@ public:
      * \param[in] verbose If we want to print additional info.
      */
     void renumberTypes(gmx::ArrayRef<InteractionsOfType> plist, gmx_mtop_t* mtop, int* wallAtomType, bool verbose);
-
-    /*! \brief
-     * Copy information to other structure.
-     *
-     * \param[inout] atypes Other datastructure to copy to.
-     */
-    void copyTot_atomtypes(t_atomtypes* atypes) const;
 
 private:
     class Impl;

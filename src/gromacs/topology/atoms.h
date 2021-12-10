@@ -147,19 +147,11 @@ typedef struct t_atoms
     bool havePdbInfo; /* pdbinfo available                    */
 } t_atoms;
 
-typedef struct t_atomtypes
-{
-    int  nr;         /* number of atomtypes                          */
-    int* atomnumber; /* Atomic number, used for QM/MM                */
-} t_atomtypes;
-
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
 
 void init_atom(t_atoms* at);
-void init_atomtypes(t_atomtypes* at);
 void done_atom(t_atoms* at);
 void done_and_delete_atoms(t_atoms* atoms);
-void done_atomtypes(t_atomtypes* at);
 
 void init_t_atoms(t_atoms* atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
@@ -186,7 +178,6 @@ void t_atoms_set_resinfo(t_atoms*         atoms,
  */
 
 void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, bool bShownumbers);
-void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, bool bShowNumbers);
 
 /*! \brief Compare information in the t_atoms data structure.
  *
