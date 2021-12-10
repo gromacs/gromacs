@@ -64,8 +64,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
                                               ivec                 realGridSizePadded,
                                               ivec                 complexGridSizePadded,
                                               DeviceBuffer<float>* realGrid,
-                                              DeviceBuffer<float>* complexGrid) :
-    stream_(pmeStream)
+                                              DeviceBuffer<float>* complexGrid)
 {
     const int numDomainsX = gridSizesInXForEachRank.size();
     const int numDomainsY = gridSizesInYForEachRank.size();
@@ -135,14 +134,14 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
         { 2, 0, 1 }
     };
 
-    // ToDo: useReorder=true and useAlltoall=true gave me best results in past but, verify it once again
-    const bool useReorder  = true;
-    const bool useAlltoall = true;
-    const bool usePencils  = false; // Not-used as GROMACS doesn't work with brick decomposition
-    heffte::plan_options options(useReorder, useAlltoall, usePencils);
+    // ToDo: useReorder=true and reshape_algorithm::alltoallv gave me best results in past but, verify it once again
+    const bool useReorder = true;
+    const bool usePencils = true; // Not-used as GROMACS doesn't work with brick decomposition
+    heffte::plan_options options(useReorder, heffte::reshape_algorithm::alltoallv, usePencils);
 
     // Define 3D FFT plan
-    fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(realBox, complexBox, 0, comm, options);
+    fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+            pmeStream.stream(), realBox, complexBox, 0, comm, options);
 
     // allocate grid and workspace_
     localRealGrid_    = heffte::gpu::vector<float>(fftPlan_->size_inbox());
@@ -169,11 +168,6 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
 template<typename backend_tag>
 void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-    // HeFFTe does all the computations in the default stream
-    // ToDo: We need some way to create DeviceStream class in GROMACS with default stream
-    // This way we can synchronize PME and default streams using events
-    stream_.synchronize();
-
     switch (dir)
     {
         case GMX_FFT_REAL_TO_COMPLEX:
@@ -185,9 +179,6 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
         default:
             GMX_THROW(NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
     }
-
-    // ToDo: Same as above, we need some way to create DeviceStream from default stream
-    heffte::gpu::synchronize_default_stream();
 }
 
 // instantiate relevant HeFFTe backend

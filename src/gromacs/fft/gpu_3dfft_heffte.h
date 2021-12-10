@@ -97,8 +97,6 @@ private:
     heffte::gpu::vector<std::complex<float>> workspace_;
 
     std::unique_ptr<heffte::fft3d_r2c<backend_tag, int>> fftPlan_;
-
-    const DeviceStream& stream_;
 };
 
 } // namespace gmx

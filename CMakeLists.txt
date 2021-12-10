@@ -653,7 +653,7 @@ if(GMX_USE_HEFFTE)
     if(NOT GMX_LIB_MPI)
         message(FATAL_ERROR "HeFFTe support requires a library MPI build")
     endif()
-    find_package(Heffte 2.1.0 REQUIRED CUDA)
+    find_package(Heffte 2.2.0 REQUIRED CUDA)
 endif()
 
 if(WIN32)
