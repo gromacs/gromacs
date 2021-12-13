@@ -201,12 +201,6 @@ void dd_move_x(struct gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVe
  */
 void dd_move_f(struct gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces, gmx_wallcycle* wcycle);
 
-/*! \brief Communicate a real for each atom to the neighboring cells. */
-void dd_atom_spread_real(struct gmx_domdec_t* dd, real v[]);
-
-/*! \brief Sum the contributions to a real for each atom over the neighboring cells. */
-void dd_atom_sum_real(struct gmx_domdec_t* dd, real v[]);
-
 /*! \brief Reset all the statistics and counters for total run counting */
 void reset_dd_statistics_counters(struct gmx_domdec_t* dd);
 
