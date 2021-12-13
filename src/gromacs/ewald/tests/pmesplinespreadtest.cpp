@@ -54,6 +54,7 @@
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
+#include "testutils/testinit.h"
 
 #include "pmetestcommon.h"
 
@@ -120,13 +121,30 @@ const std::unordered_map<std::string, TestSystem> c_testSystems = {
 
 /* Valid input instances */
 
-/*! \brief Convenience typedef of input parameters - unit cell box, PME interpolation order, grid
- * dimensions, particle coordinates, particle charges
- * TODO: consider inclusion of local grid offsets/sizes or PME nodes counts to test the PME DD
+/*! \brief Convenience typedef of input parameters
+ *
+ * Parameters:
+ * - unit cell box
+ * - PME interpolation order
+ * - grid dimensions
+ * - particle system (coordinates and charges)
+ * - PME hardware context index
+ * - spline/spread/fused option
+ *
+ * TODO: consider inclusion of local grid offsets/sizes or PME nodes
+ * counts to test the PME DD
  */
-typedef std::tuple<std::string, int, IVec, std::string> SplineAndSpreadInputParameters;
+typedef std::tuple<std::string, int, IVec, std::string, int, SplineAndSpreadOptions> SplineAndSpreadInputParameters;
 
-//! Help GoogleTest name our test cases
+/*! \brief Help GoogleTest name our test cases
+ *
+ * This is intended to work like a custom test-naming function that
+ * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
+ * except that we are not using that macro for these tests. Only the
+ * components of SplineAndSpreadInputParameters that affect the
+ * reference data values affect this name. Hardware context and
+ * whether the test targets spline calculation, spreading, or both
+ * does not affect this name. */
 std::string nameOfTest(const testing::TestParamInfo<SplineAndSpreadInputParameters>& info)
 {
     std::string testName = formatString(
@@ -155,12 +173,32 @@ std::string nameOfTest(const testing::TestParamInfo<SplineAndSpreadInputParamete
 
 const char* enumValueToString(SplineAndSpreadOptions enumValue)
 {
-    static constexpr gmx::EnumerationArray<SplineAndSpreadOptions, const char*> s_splineAndSpreadOptionsNames = {
-        "spline computation",
-        "charge spreading",
-        "spline computation and charge spreading (fused)",
+    static constexpr gmx::EnumerationArray<SplineAndSpreadOptions, const char*> s_strings = {
+        "spline",
+        "spread",
+        "fused spline and spread",
     };
-    return s_splineAndSpreadOptionsNames[enumValue];
+    return s_strings[enumValue];
+}
+
+/*! \brief Help GoogleTest name our test cases
+ *
+ * This is intended to work like a custom test-naming function that
+ * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
+ * except that we are not using that macro for these tests. All
+ * components of SplineAndSpreadInputParameters affect this name. */
+std::string fullNameOfTest(const testing::TestParamInfo<SplineAndSpreadInputParameters>& info,
+                           const std::string&                                            testName)
+{
+    // Note that makeRefDataFileName() relies on finding "WorksOn" in
+    // the name of the test case, so it can remove the information
+    // about the hardware context and all following text from the name
+    // of the file used for refdata.
+    const int hardwareContextIndex = std::get<4>(info.param);
+    return formatString("WorksOn_%s_%s_%s",
+                        makeHardwareContextName(hardwareContextIndex).c_str(),
+                        testName.c_str(),
+                        enumValueToString(std::get<5>(info.param)));
 }
 
 /*! \brief Test fixture for testing both atom spline parameter computation and charge spreading.
@@ -170,17 +208,42 @@ class SplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadInput
 {
 public:
     SplineAndSpreadTest() = default;
+};
 
+/*! \brief Test case whose body checks that spline and spread work
+ *
+ * Normally the declaration of this class would be produced by a call
+ * to a macro like TEST_P(SplineAndSpreadTest, WorksWith). That macro
+ * places the body of the test case in the TestBody() method, which
+ * here is done explicitly.
+ *
+ * Note that it is important to use parameters_ to access the values
+ * that describe the particular test case, rather than the usual
+ * GoogleTest function GetParam(), because the latter no longer
+ * works. */
+class SplineAndSpreadTestBody : public SplineAndSpreadTest
+{
+public:
+    //! Constructor
+    explicit SplineAndSpreadTestBody(const SplineAndSpreadInputParameters& parameters) :
+        parameters_(parameters)
+    {
+    }
+
+    //! The test parameters with which the test case was instantiated
+    SplineAndSpreadInputParameters parameters_;
     //! The test
-    static void runTest()
+    void TestBody() override
     {
         /* Getting the input */
-        int         pmeOrder;
-        IVec        gridSize;
-        std::string boxName, testSystemName;
+        int                    pmeOrder;
+        IVec                   gridSize;
+        std::string            boxName, testSystemName;
+        int                    contextIndex;
+        SplineAndSpreadOptions option;
 
-        std::tie(boxName, pmeOrder, gridSize, testSystemName) = GetParam();
-        Matrix3x3                box                          = c_inputBoxes.at(boxName);
+        std::tie(boxName, pmeOrder, gridSize, testSystemName, contextIndex, option) = parameters_;
+        Matrix3x3                box         = c_inputBoxes.at(boxName);
         const CoordinatesVector& coordinates = c_testSystems.at(testSystemName).coordinates;
         const ChargesVector&     charges     = c_testSystems.at(testSystemName).charges;
         const size_t             atomCount   = coordinates.size();
@@ -194,35 +257,23 @@ public:
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
 
-        // There is a subtle problem with multiple comparisons against same reference data:
-        // The subsequent (GPU) spreading runs at one point didn't actually copy the output grid
-        // into the proper buffer, but the reference data was already marked as checked
-        // (hasBeenChecked_) by the CPU run, so nothing failed. For now we will manually track that
-        // the count of the grid entries is the same on each run. This is just a hack for a single
-        // specific output though. What would be much better TODO is to split different codepaths
-        // into separate tests, while making them use the same reference files.
-        bool   gridValuesSizeAssigned = false;
-        size_t previousGridValuesSize;
-
-        TestReferenceData refData;
-        for (const auto& pmeTestHardwareContext : getPmeTestHardwareContexts())
+        // Extra indentation retained only to help code review, can be removed later
         {
-            pmeTestHardwareContext.activate();
-            CodePath   codePath       = pmeTestHardwareContext.codePath();
-            const bool supportedInput = pmeSupportsInputForMode(
-                    *getTestHardwareEnvironment()->hwinfo(), &inputRec, codePath);
-            if (!supportedInput)
+            const PmeTestHardwareContext& pmeTestHardwareContext =
+                    getPmeTestHardwareContexts()[contextIndex];
+            CodePath               codePath = pmeTestHardwareContext.codePath();
+            MessageStringCollector messages = getSkipMessagesIfNecessary(
+                    *getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
+            if (!messages.isEmpty())
             {
-                /* Testing the failure for the unsupported input */
-                EXPECT_THROW_GMX(pmeInitWrapper(&inputRec, codePath, nullptr, nullptr, nullptr, box),
-                                 NotImplementedError);
-                continue;
+                GTEST_SKIP() << messages.toString();
             }
+            pmeTestHardwareContext.activate();
+            SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
 
-            for (SplineAndSpreadOptions option : EnumerationWrapper<SplineAndSpreadOptions>())
+            // Extra indentation retained only to help code review, can be removed later
             {
-                /* Describing the test uniquely in case it fails */
-
+                // Describe the test uniquely in case it fails
                 SCOPED_TRACE(
                         formatString("Testing %s on %s for PME grid size %d %d %d"
                                      ", order %d, %zu atoms",
@@ -271,6 +322,7 @@ public:
                 /* Outputs correctness check */
                 /* All tolerances were picked empirically for single precision on CPU */
 
+                TestReferenceData    refData(makeRefDataFileName());
                 TestReferenceChecker rootChecker(refData.rootChecker());
 
                 const auto maxGridSize = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
@@ -279,6 +331,10 @@ public:
                  * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
                  */
 
+                TestReferenceChecker splineValuesChecker(
+                        rootChecker.checkCompound("Splines", "Values"));
+                TestReferenceChecker splineDerivativesChecker(
+                        rootChecker.checkCompound("Splines", "Derivatives"));
                 if (computeSplines)
                 {
                     const char* dimString[] = { "X", "Y", "Z" };
@@ -286,8 +342,6 @@ public:
                     /* Spline values */
                     SCOPED_TRACE(formatString("Testing spline values with tolerance of %d",
                                               ulpToleranceSplineValues));
-                    TestReferenceChecker splineValuesChecker(
-                            rootChecker.checkCompound("Splines", "Values"));
                     splineValuesChecker.setDefaultTolerance(
                             relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
                     for (int i = 0; i < DIM; i++)
@@ -303,8 +357,6 @@ public:
                     /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
                     SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %d",
                                               ulpToleranceSplineDerivatives));
-                    TestReferenceChecker splineDerivativesChecker(
-                            rootChecker.checkCompound("Splines", "Derivatives"));
                     splineDerivativesChecker.setDefaultTolerance(
                             relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
                     for (int i = 0; i < DIM; i++)
@@ -320,27 +372,25 @@ public:
                     rootChecker.checkSequence(
                             gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
                 }
+                else
+                {
+                    splineValuesChecker.disableUnusedEntriesCheck();
+                    splineDerivativesChecker.disableUnusedEntriesCheck();
+                    // Avoid warnings about failing to check gridline indices
+                    rootChecker.disableUnusedEntriesCheck();
+                }
 
+                TestReferenceChecker gridValuesChecker(
+                        rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
                 if (spreadCharges)
                 {
                     /* The wrapped grid */
                     SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), codePath);
-                    TestReferenceChecker gridValuesChecker(
-                            rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
-                    const auto ulpToleranceGrid =
+                    const auto                 ulpToleranceGrid =
                             2 * ulpToleranceSplineValues
                             * static_cast<int>(ceil(sqrt(static_cast<real>(atomCount))));
                     /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
                     SCOPED_TRACE(formatString("Testing grid values with tolerance of %d", ulpToleranceGrid));
-                    if (!gridValuesSizeAssigned)
-                    {
-                        previousGridValuesSize = nonZeroGridValues.size();
-                        gridValuesSizeAssigned = true;
-                    }
-                    else
-                    {
-                        EXPECT_EQ(previousGridValuesSize, nonZeroGridValues.size());
-                    }
 
                     gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
                     for (const auto& point : nonZeroGridValues)
@@ -348,17 +398,14 @@ public:
                         gridValuesChecker.checkReal(point.second, point.first.c_str());
                     }
                 }
+                else
+                {
+                    gridValuesChecker.disableUnusedEntriesCheck();
+                }
             }
         }
     }
 };
-
-/*! \brief Test for spline parameter computation and charge spreading. */
-TEST_P(SplineAndSpreadTest, WorksWith)
-{
-    checkTestNameLength();
-    EXPECT_NO_THROW_GMX(runTest());
-}
 
 //! Moved out from instantiations for readability
 const auto c_inputBoxNames = ::testing::Values("rect", "tric");
@@ -367,14 +414,23 @@ const auto c_inputGridNames = ::testing::Values("first", "second");
 //! Moved out from instantiations for readability
 const auto c_inputTestSystemNames = ::testing::Values("1 atom", "2 atoms", "13 atoms");
 
-INSTANTIATE_TEST_SUITE_P(Pme,
-                         SplineAndSpreadTest,
-                         ::testing::Combine(c_inputBoxNames,
-                                            ::testing::ValuesIn(c_inputPmeOrders),
-                                            ::testing::ValuesIn(c_inputGridSizes),
-                                            c_inputTestSystemNames),
-                         nameOfTest);
-
 } // namespace
+
+void registerDynamicalPmeSplineSpreadTests(const Range<int> hardwareContextIndexRange)
+{
+    // Form the Cartesian product of all test values we might check
+    const auto testCombinations = ::testing::Combine(
+            c_inputBoxNames,
+            ::testing::ValuesIn(c_inputPmeOrders),
+            ::testing::ValuesIn(c_inputGridSizes),
+            c_inputTestSystemNames,
+            ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()),
+            ::testing::Values(SplineAndSpreadOptions::SplineOnly,
+                              SplineAndSpreadOptions::SpreadOnly,
+                              SplineAndSpreadOptions::SplineAndSpreadUnified));
+    gmx::test::registerTests<SplineAndSpreadTest, SplineAndSpreadTestBody, decltype(testCombinations)>(
+            "Pme_SplineAndSpreadTest", nameOfTest, fullNameOfTest, testCombinations);
+}
+
 } // namespace test
 } // namespace gmx

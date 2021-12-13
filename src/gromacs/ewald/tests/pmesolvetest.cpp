@@ -53,6 +53,7 @@
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
+#include "testutils/testinit.h"
 
 #include "pmetestcommon.h"
 
@@ -85,23 +86,51 @@ const std::map<std::string, SparseComplexGridValuesInput> c_inputGridValues = {
       } },
 };
 
-/*! \brief Convenience typedef of the test input parameters - unit cell box, complex grid dimensions, complex grid values,
- * electrostatic constant epsilon_r, Ewald splitting parameters ewaldcoeff_q and ewaldcoeff_lj, solver type
+/*! \brief Convenience typedef of the test input parameters
+ *
+ * Parameters:
+ * - unit cell box
+ * - complex grid dimensions
+ * - complex grid values
+ * - electrostatic constant epsilon_r
+ * - Ewald splitting parameter ewaldcoeff_q
+ * - Ewald splitting parameter ewaldcoeff_lj
+ * - solver type
+ * - grid ordering
+ * - whether to compute energy and virial
+ * - PME hardware context index
+ *
  * Output: transformed local grid (Fourier space); optionally reciprocal energy and virial matrix.
  * TODO:
  * Implement and test Lorentz-Berthelot
  */
-typedef std::tuple<std::string, IVec, std::string, double, double, double, PmeSolveAlgorithm> SolveInputParameters;
+typedef std::tuple<std::string, IVec, std::string, double, double, double, PmeSolveAlgorithm, GridOrdering, bool, int> SolveInputParameters;
 
 const char* enumValueToString(PmeSolveAlgorithm enumValue)
 {
-    static constexpr gmx::EnumerationArray<PmeSolveAlgorithm, const char*> s_pmeSolveAlgorithmNames = {
-        "Coulomb", "LJ"
-    };
-    return s_pmeSolveAlgorithmNames[enumValue];
+    static constexpr gmx::EnumerationArray<PmeSolveAlgorithm, const char*> s_strings = { "Coulomb",
+                                                                                         "LJ" };
+    return s_strings[enumValue];
 }
 
-//! Help GoogleTest name our test cases
+const char* enumValueToString(GridOrdering enumValue)
+{
+    static constexpr gmx::EnumerationArray<GridOrdering, const char*> s_strings = {
+        "XYZ",
+        "YZX",
+    };
+    return s_strings[enumValue];
+}
+
+/*! \brief Help GoogleTest name our test cases
+ *
+ * This is intended to work like a custom test-naming function that
+ * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
+ * except that we are not using that macro for these tests. Only the
+ * components of SolveInputParameters that affect the reference data
+ * values affect this name. Hardware context, grid ordering, and
+ * whether this test targets energy&virial computation do not affect
+ * this name. */
 std::string nameOfTest(const testing::TestParamInfo<SolveInputParameters>& info)
 {
     std::string testName = formatString(
@@ -134,14 +163,57 @@ std::string nameOfTest(const testing::TestParamInfo<SolveInputParameters>& info)
     return testName;
 }
 
+/*! \brief Help GoogleTest name our test cases
+ *
+ * This is intended to work like a custom test-naming function that
+ * would be passed as the fourth argument to INSTANTIATE_TEST_SUITE_P,
+ * except that we are not using that macro for these tests. All
+ * components of SolveInputParameters affect this name. */
+std::string fullNameOfTest(const testing::TestParamInfo<SolveInputParameters>& info,
+                           const std::string&                                  testName)
+{
+    // Note that makeRefDataFileName() relies on finding "WorksOn" in
+    // the name of the test case, so it can remove the information
+    // about the hardware context and all following text from the name
+    // of the file used for refdata.
+    const int hardwareContextIndex = std::get<9>(info.param);
+    return formatString(
+            "WorksOn%s_%s_order_%s_"
+            "%s",
+            makeHardwareContextName(hardwareContextIndex).c_str(),
+            testName.c_str(),
+            enumValueToString(std::get<7>(info.param)),
+            std::get<8>(info.param) ? "energy" : "");
+}
+
 //! Test fixture
 class SolveTest : public ::testing::TestWithParam<SolveInputParameters>
 {
 public:
     SolveTest() = default;
+};
 
+/*! \brief Test case whose body checks that spline and spread work
+ *
+ * Normally the declaration of this class would be produced by a call
+ * to a macro like TEST_P(SolveTest, WorksWith). That macro places the
+ * body of the test case in the TestBody() method, which here is done
+ * explicitly.
+ *
+ * Note that it is important to use parameters_ to access the values
+ * that describe the particular test case, rather than the usual
+ * GoogleTest function GetParam(), because the latter no longer
+ * works. */
+class SolveTestBody : public SolveTest
+{
+public:
+    //! Constructor
+    explicit SolveTestBody(const SolveInputParameters& parameters) : parameters_(parameters) {}
+
+    //! The test parameters with which the test case was instantiated
+    SolveInputParameters parameters_;
     //! The test
-    static void runTest()
+    void TestBody() override
     {
         /* Getting the input */
         IVec              gridSize;
@@ -150,8 +222,19 @@ public:
         double            ewaldCoeff_lj;
         PmeSolveAlgorithm method;
         std::string       boxName, gridValuesName;
-        std::tie(boxName, gridSize, gridValuesName, epsilon_r, ewaldCoeff_q, ewaldCoeff_lj, method) =
-                GetParam();
+        GridOrdering      gridOrdering;
+        bool              computeEnergyAndVirial;
+        int               contextIndex;
+        std::tie(boxName,
+                 gridSize,
+                 gridValuesName,
+                 epsilon_r,
+                 ewaldCoeff_q,
+                 ewaldCoeff_lj,
+                 method,
+                 gridOrdering,
+                 computeEnergyAndVirial,
+                 contextIndex)                                = parameters_;
         Matrix3x3                           box               = c_inputBoxes.at(boxName);
         const SparseComplexGridValuesInput& nonZeroGridValues = c_inputGridValues.at(gridValuesName);
 
@@ -172,38 +255,34 @@ public:
             default: GMX_THROW(InternalError("Unknown PME solver"));
         }
 
-        TestReferenceData refData;
-        for (const auto& pmeTestHardwareContext : getPmeTestHardwareContexts())
+        // Extra indentation retained only to help code review, can be removed later
         {
-            pmeTestHardwareContext.activate();
-            CodePath   codePath       = pmeTestHardwareContext.codePath();
-            const bool supportedInput = pmeSupportsInputForMode(
-                    *getTestHardwareEnvironment()->hwinfo(), &inputRec, codePath);
-            if (!supportedInput)
+            const PmeTestHardwareContext& pmeTestHardwareContext =
+                    getPmeTestHardwareContexts()[contextIndex];
+            CodePath               codePath = pmeTestHardwareContext.codePath();
+            MessageStringCollector messages = getSkipMessagesIfNecessary(
+                    *getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
+            messages.appendIf(
+                    !pmeTestHardwareContext.gpuId().has_value() && gridOrdering == GridOrdering::XYZ,
+                    "CPU PME solve does not implement XYZ grid ordering");
+            if (!messages.isEmpty())
             {
-                /* Testing the failure for the unsupported input */
-                EXPECT_THROW_GMX(
-                        pmeInitWrapper(&inputRec, codePath, nullptr, nullptr, nullptr, box, ewaldCoeff_q, ewaldCoeff_lj),
-                        NotImplementedError);
-                continue;
+                GTEST_SKIP() << messages.toString();
             }
 
-            std::map<GridOrdering, std::string> gridOrderingsToTest = { { GridOrdering::YZX,
-                                                                          "YZX" } };
-            if (codePath == CodePath::GPU)
+            pmeTestHardwareContext.activate();
+            SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
+
+            // Extra indentation retained only to help code review, can be removed later
             {
-                gridOrderingsToTest[GridOrdering::XYZ] = "XYZ";
-            }
-            for (const auto& gridOrdering : gridOrderingsToTest)
-            {
-                for (bool computeEnergyAndVirial : { false, true })
+                // Extra indentation retained only to help code review, can be removed later
                 {
                     /* Describing the test*/
                     SCOPED_TRACE(formatString(
                             "Testing solving (%s, %s, %s energy/virial) on %s for PME grid "
                             "size %d %d %d, Ewald coefficients %g %g",
                             (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "Coulomb",
-                            gridOrdering.second.c_str(),
+                            enumValueToString(gridOrdering),
                             computeEnergyAndVirial ? "with" : "without",
                             pmeTestHardwareContext.description().c_str(),
                             gridSize[XX],
@@ -221,17 +300,18 @@ public:
                                                             box,
                                                             ewaldCoeff_q,
                                                             ewaldCoeff_lj);
-                    pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering.first, nonZeroGridValues);
+                    pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering, nonZeroGridValues);
                     const real cellVolume = box[0] * box[4] * box[8];
                     // FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
-                    pmePerformSolve(pmeSafe.get(), codePath, method, cellVolume, gridOrdering.first, computeEnergyAndVirial);
+                    pmePerformSolve(pmeSafe.get(), codePath, method, cellVolume, gridOrdering, computeEnergyAndVirial);
                     pmeFinalizeTest(pmeSafe.get(), codePath);
 
                     /* Check the outputs */
+                    TestReferenceData    refData(makeRefDataFileName());
                     TestReferenceChecker checker(refData.rootChecker());
 
                     SparseComplexGridValuesOutput nonZeroGridValuesOutput =
-                            pmeGetComplexGrid(pmeSafe.get(), codePath, gridOrdering.first);
+                            pmeGetComplexGrid(pmeSafe.get(), codePath, gridOrdering);
                     /* Transformed grid */
                     TestReferenceChecker gridValuesChecker(
                             checker.checkCompound("NonZeroGridValues", "ComplexSpaceGrid"));
@@ -271,6 +351,8 @@ public:
                         }
                     }
 
+                    TestReferenceChecker energyChecker(checker);
+                    TestReferenceChecker virialChecker(checker.checkCompound("Matrix", "Virial"));
                     if (computeEnergyAndVirial)
                     {
                         // Extract the energy and virial
@@ -295,7 +377,6 @@ public:
                                 energyMagnitude,
                                 energyUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
                                 energyUlpToleranceFactor * splineModuliDoublePrecisionUlps);
-                        TestReferenceChecker energyChecker(checker);
                         energyChecker.setDefaultTolerance(energyTolerance);
                         energyChecker.checkReal(energy, "Energy");
 
@@ -307,8 +388,6 @@ public:
                                 virialMagnitude,
                                 virialUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
                                 virialUlpToleranceFactor * splineModuliDoublePrecisionUlps);
-                        TestReferenceChecker virialChecker(
-                                checker.checkCompound("Matrix", "Virial"));
                         virialChecker.setDefaultTolerance(virialTolerance);
                         for (int i = 0; i < DIM; i++)
                         {
@@ -319,18 +398,16 @@ public:
                             }
                         }
                     }
+                    else
+                    {
+                        energyChecker.disableUnusedEntriesCheck();
+                        virialChecker.disableUnusedEntriesCheck();
+                    }
                 }
             }
         }
     }
 };
-
-/*! \brief Test for PME solving */
-TEST_P(SolveTest, Works)
-{
-    checkTestNameLength();
-    EXPECT_NO_THROW_GMX(runTest());
-}
 
 //! Moved out from instantiations for readability
 const auto c_inputBoxNames = ::testing::Values("rect", "tric");
@@ -344,57 +421,83 @@ const auto c_inputEwaldCoeff_q = ::testing::Values(2.0);
 const auto c_inputEwaldCoeff_lj = ::testing::Values(0.7);
 //! Moved out from instantiations for readability
 const auto c_inputMethods = ::testing::Values(PmeSolveAlgorithm::Coulomb, PmeSolveAlgorithm::LennardJones);
-
-//! Instantiation of the PME solving test
-INSTANTIATE_TEST_SUITE_P(Pme,
-                         SolveTest,
-                         ::testing::Combine(c_inputBoxNames,
-                                            ::testing::ValuesIn(c_inputGridSizes),
-                                            c_inputGridNames,
-                                            c_inputEpsilon_r,
-                                            c_inputEwaldCoeff_q,
-                                            c_inputEwaldCoeff_lj,
-                                            c_inputMethods),
-                         nameOfTest);
-
-//! A few more instances to check that different ewaldCoeff_q actually affects results of the Coulomb solver
-INSTANTIATE_TEST_SUITE_P(PmeDiffEwaldQ,
-                         SolveTest,
-                         ::testing::Combine(c_inputBoxNames,
-                                            ::testing::ValuesIn(c_inputGridSizes),
-                                            c_inputGridNames,
-                                            c_inputEpsilon_r,
-                                            ::testing::Values(0.4),
-                                            c_inputEwaldCoeff_lj,
-                                            ::testing::Values(PmeSolveAlgorithm::Coulomb)),
-                         nameOfTest);
-
-//! A few more instances to check that different ewaldCoeff_lj actually affects results of the Lennard-Jones solver.
-//! The value has to be approximately larger than 1 / (box dimensions) to have a meaningful output grid.
-//! Previous value of 0.3 caused one of the grid cells to be less or greater than GMX_FLOAT_MIN, depending on the architecture.
-INSTANTIATE_TEST_SUITE_P(PmeDiffEwaldLJ,
-                         SolveTest,
-                         ::testing::Combine(c_inputBoxNames,
-                                            ::testing::ValuesIn(c_inputGridSizes),
-                                            c_inputGridNames,
-                                            c_inputEpsilon_r,
-                                            c_inputEwaldCoeff_q,
-                                            ::testing::Values(2.35),
-                                            ::testing::Values(PmeSolveAlgorithm::LennardJones)),
-                         nameOfTest);
-
-//! A few more instances to check that different epsilon_r actually affects results of all solvers
-INSTANTIATE_TEST_SUITE_P(PmeDiffEps,
-                         SolveTest,
-                         ::testing::Combine(c_inputBoxNames,
-                                            ::testing::ValuesIn(c_inputGridSizes),
-                                            c_inputGridNames,
-                                            testing::Values(1.9),
-                                            c_inputEwaldCoeff_q,
-                                            c_inputEwaldCoeff_lj,
-                                            c_inputMethods),
-                         nameOfTest);
+//! Moved out from instantiations for readability
+const auto c_gridOrderings = ::testing::Values(GridOrdering::XYZ, GridOrdering::YZX);
 
 } // namespace
+
+void registerDynamicalPmeSolveTests(const Range<int> hardwareContextIndexRange)
+{
+    {
+        // Form the Cartesian product of all test values we might check
+        auto testCombinations = ::testing::Combine(
+                c_inputBoxNames,
+                ::testing::ValuesIn(c_inputGridSizes),
+                c_inputGridNames,
+                c_inputEpsilon_r,
+                c_inputEwaldCoeff_q,
+                c_inputEwaldCoeff_lj,
+                c_inputMethods,
+                c_gridOrderings,
+                ::testing::Bool(),
+                ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()));
+        gmx::test::registerTests<SolveTest, SolveTestBody, decltype(testCombinations)>(
+                "Pme_SolveTest", nameOfTest, fullNameOfTest, testCombinations);
+    }
+    {
+        // A few more instances to check that different ewaldCoeff_q actually affects results of the Coulomb solver
+        auto testCombinations = ::testing::Combine(
+                c_inputBoxNames,
+                ::testing::ValuesIn(c_inputGridSizes),
+                c_inputGridNames,
+                c_inputEpsilon_r,
+                ::testing::Values(0.4),
+                c_inputEwaldCoeff_lj,
+                ::testing::Values(PmeSolveAlgorithm::Coulomb),
+                c_gridOrderings,
+                ::testing::Bool(),
+                ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()));
+        gmx::test::registerTests<SolveTest, SolveTestBody, decltype(testCombinations)>(
+                "PmeDiffEwaldQ_SolveTest", nameOfTest, fullNameOfTest, testCombinations);
+    }
+    {
+        // A few more instances to check that different ewaldCoeff_lj
+        // actually affects results of the Lennard-Jones solver.  The
+        // value has to be approximately larger than 1 / (box dimensions)
+        // to have a meaningful output grid.  Previous value of 0.3 caused
+        // one of the grid cells to be less or greater than GMX_FLOAT_MIN,
+        // depending on the architecture.
+        auto testCombinations = ::testing::Combine(
+                c_inputBoxNames,
+                ::testing::ValuesIn(c_inputGridSizes),
+                c_inputGridNames,
+                c_inputEpsilon_r,
+                c_inputEwaldCoeff_q,
+                ::testing::Values(2.35),
+                ::testing::Values(PmeSolveAlgorithm::LennardJones),
+                c_gridOrderings,
+                ::testing::Bool(),
+                ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()));
+        gmx::test::registerTests<SolveTest, SolveTestBody, decltype(testCombinations)>(
+                "PmeDiffEwaldLJ_SolveTest", nameOfTest, fullNameOfTest, testCombinations);
+    }
+    {
+        // A few more instances to check that different epsilon_r actually affects results of all solvers
+        auto testCombinations = ::testing::Combine(
+                c_inputBoxNames,
+                ::testing::ValuesIn(c_inputGridSizes),
+                c_inputGridNames,
+                testing::Values(1.9),
+                c_inputEwaldCoeff_q,
+                c_inputEwaldCoeff_lj,
+                c_inputMethods,
+                c_gridOrderings,
+                ::testing::Bool(),
+                ::testing::Range(*hardwareContextIndexRange.begin(), *hardwareContextIndexRange.end()));
+        gmx::test::registerTests<SolveTest, SolveTestBody, decltype(testCombinations)>(
+                "PmeDiffEps_SolveTest", nameOfTest, fullNameOfTest, testCombinations);
+    }
+}
+
 } // namespace test
 } // namespace gmx

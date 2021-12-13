@@ -231,8 +231,15 @@ std::map<std::string, TestSystem> c_testSystems = {
         CoordinatesVector(13, { 1e6, 1e7, -1e8 }) } },
 };
 
-/*! \brief Convenience typedef of the test input parameters - unit cell box, PME interpolation
- * order, grid dimensions, grid values, test system, PME hardware context index.
+/*! \brief Convenience typedef of the test input parameters
+ *
+ * Parameters:
+ * - unit cell box
+ * - PME interpolation order
+ * - grid dimensions
+ * - grid values
+ * - test system
+ * - PME hardware context index
  */
 typedef std::tuple<std::string, int, IVec, std::string, std::string, int> GatherInputParameters;
 
