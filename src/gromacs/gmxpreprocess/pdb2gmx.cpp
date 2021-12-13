@@ -2346,7 +2346,7 @@ int pdb2gmx::run()
     check_occupancy(&pdba_all, inputConfFile_.c_str(), bVerbose_, logger);
 
     /* Read atomtypes... */
-    PreprocessingAtomTypes atype = read_atype(ffdir_, &symtab);
+    PreprocessingAtomTypes atype = read_atype(ffdir_);
 
     /* read residue database */
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Reading residue database... (%s)", forcefield_);

@@ -299,8 +299,7 @@ static const char* enumValueToLetterAsString(ParticleType enumValue)
     return particleTypeLetters[enumValue];
 }
 
-void push_at(t_symtab*                  symtab,
-             PreprocessingAtomTypes*    at,
+void push_at(PreprocessingAtomTypes*    at,
              PreprocessingBondAtomType* bondAtomType,
              char*                      line,
              int                        nb_funct,
@@ -570,7 +569,7 @@ void push_at(t_symtab*                  symtab,
 
     InteractionOfType interactionType({}, forceParam, "");
 
-    auto batype_nr = bondAtomType->addBondAtomType(symtab, btype);
+    auto batype_nr = bondAtomType->addBondAtomType(btype);
 
     auto atomType = at->atomTypeFromName(type);
     if (atomType.has_value())
@@ -585,7 +584,7 @@ void push_at(t_symtab*                  symtab,
                 "to suppress this warning with -maxwarn.",
                 type);
         warning(wi, message);
-        auto newAtomType = at->setType(*atomType, symtab, *atom, type, interactionType, batype_nr, atomnr);
+        auto newAtomType = at->setType(*atomType, *atom, type, interactionType, batype_nr, atomnr);
         if (!newAtomType.has_value())
         {
             auto message = gmx::formatString("Replacing atomtype %s failed", type);
@@ -594,7 +593,7 @@ void push_at(t_symtab*                  symtab,
     }
     else
     {
-        at->addType(symtab, *atom, type, interactionType, batype_nr, atomnr);
+        at->addType(*atom, type, interactionType, batype_nr, atomnr);
         /* Add space in the non-bonded parameters matrix */
         realloc_nb_params(at, nbparam, pair);
     }
@@ -2608,7 +2607,7 @@ void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp* wi)
     } while (n == 1);
 }
 
-int add_atomtype_decoupled(t_symtab* symtab, PreprocessingAtomTypes* at, t_nbparam*** nbparam, t_nbparam*** pair)
+int add_atomtype_decoupled(PreprocessingAtomTypes* at, t_nbparam*** nbparam, t_nbparam*** pair)
 {
     t_atom atom;
     int    nr;
@@ -2622,7 +2621,7 @@ int add_atomtype_decoupled(t_symtab* symtab, PreprocessingAtomTypes* at, t_nbpar
     atom.ptype = ParticleType::Atom;
 
     std::array<real, MAXFORCEPARAM> forceParam = { 0.0 };
-    nr = at->addType(symtab, atom, "decoupled", InteractionOfType({}, forceParam, ""), -1, 0);
+    nr = at->addType(atom, "decoupled", InteractionOfType({}, forceParam, ""), -1, 0);
 
     /* Add space in the non-bonded parameters matrix */
     realloc_nb_params(at, nbparam, pair);

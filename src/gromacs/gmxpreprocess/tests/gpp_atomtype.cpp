@@ -58,18 +58,17 @@ namespace
 class PreprocessingAtomTypesTest : public ::testing::Test
 {
 public:
-    PreprocessingAtomTypesTest() : nb_({}, {}) { open_symtab(&symtab_); }
+    PreprocessingAtomTypesTest() : nb_({}, {}) {}
 
     int addType(const char* name, int bondAtomType, int atomNumber)
     {
-        return atypes_.addType(&symtab_, atom_, name, nb_, bondAtomType, atomNumber);
+        return atypes_.addType(atom_, name, nb_, bondAtomType, atomNumber);
     }
 
-    ~PreprocessingAtomTypesTest() override { done_symtab(&symtab_); }
+    ~PreprocessingAtomTypesTest() override {}
 
 protected:
     PreprocessingAtomTypes atypes_;
-    t_symtab               symtab_;
     t_atom                 atom_;
     InteractionOfType      nb_;
 };
@@ -131,8 +130,8 @@ TEST_F(PreprocessingAtomTypesTest, CorrectNameFromTypeNumber)
 {
     EXPECT_EQ(addType("Foo", 1, 2), 0);
     EXPECT_EQ(addType("Bar", 3, 4), 1);
-    EXPECT_STREQ(*atypes_.atomNameFromAtomType(0), "Foo");
-    EXPECT_STREQ(*atypes_.atomNameFromAtomType(1), "Bar");
+    EXPECT_EQ(atypes_.atomNameFromAtomType(0), "Foo");
+    EXPECT_EQ(atypes_.atomNameFromAtomType(1), "Bar");
 }
 
 TEST_F(PreprocessingAtomTypesTest, NoNameFromIncorrectTypeNumber)

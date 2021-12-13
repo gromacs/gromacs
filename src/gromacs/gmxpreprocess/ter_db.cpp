@@ -151,7 +151,7 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
 
 static void print_atom(FILE* out, const t_atom& a, PreprocessingAtomTypes* atype)
 {
-    fprintf(out, "\t%s\t%g\t%g\n", *atype->atomNameFromAtomType(a.type), a.m, a.q);
+    fprintf(out, "\t%s\t%g\t%g\n", atype->atomNameFromAtomType(a.type)->c_str(), a.m, a.q);
 }
 
 static void print_ter_db(const char*                                ff,

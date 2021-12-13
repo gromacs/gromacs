@@ -52,8 +52,6 @@
 #include <optional>
 #include <string>
 
-struct t_symtab;
-
 /*! \libinternal \brief
  * Storage for all bonded atomtypes during simulation preprocessing.
  */
@@ -72,7 +70,7 @@ public:
      * \param[in] nt Internal number of atom type.
      * \returns The optional type name.
      */
-    std::optional<const char*> atomNameFromBondAtomType(int nt) const;
+    std::optional<std::string> atomNameFromBondAtomType(int nt) const;
 
     /*! \brief
      *  Get bond atom type index for atom type name if present in the database, or NOTSET.
@@ -86,15 +84,13 @@ public:
      */
     std::optional<int> bondAtomTypeFromName(const std::string& str) const;
 
-    /*! \brief
-     * Add a unique type to the database.
+    /*! \brief Add a unique type to the database.
      *
-     * \param[in] tab Symbol table.
      * \param[in] name Atom name.
      * \returns Index to the type in the database. If the type shares
      *          a name with an existing type, return the index of that type.
      */
-    int addBondAtomType(t_symtab* tab, const std::string& name);
+    int addBondAtomType(const std::string& name);
 
     /*! \brief
      * If a value is within the range of the current types or not.

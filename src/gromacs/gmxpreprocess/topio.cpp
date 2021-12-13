@@ -659,8 +659,7 @@ static char** read_topol(const char*                           infile,
 
                             break;
                         case Directive::d_atomtypes:
-                            push_at(symtab,
-                                    atypes,
+                            push_at(atypes,
                                     &bondAtomType,
                                     pline,
                                     static_cast<int>(nb_funct),
@@ -722,7 +721,7 @@ static char** read_topol(const char*                           infile,
                                         || opts->couple_lam1 == ecouplamQ))
                                 {
                                     dcatt = add_atomtype_decoupled(
-                                            symtab, atypes, &nbparam, bGenPairs ? &pair : nullptr);
+                                            atypes, &nbparam, bGenPairs ? &pair : nullptr);
                                 }
                                 ntype  = atypes->size();
                                 ncombs = (ntype * (ntype + 1)) / 2;

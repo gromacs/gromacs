@@ -218,10 +218,11 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
                 {
                     int  ni   = harmonic->ai();
                     int  nj   = harmonic->aj();
-                    real edis = search_e_diss(n2m,
-                                              t2m,
-                                              *atype->atomNameFromAtomType(mol.atoms.atom[ni].type),
-                                              *atype->atomNameFromAtomType(mol.atoms.atom[nj].type));
+                    real edis = search_e_diss(
+                            n2m,
+                            t2m,
+                            atype->atomNameFromAtomType(mol.atoms.atom[ni].type)->c_str(),
+                            atype->atomNameFromAtomType(mol.atoms.atom[nj].type)->c_str());
                     if (edis != 0)
                     {
                         real              b0         = harmonic->c0();

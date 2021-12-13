@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,13 +61,7 @@ t_nm2type* rd_nm2type(const char* ffdir, int* nnm);
 void dump_nm2type(FILE* fp, int nnm, t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
-int nm2type(int                     nnm,
-            t_nm2type               nm2t[],
-            t_symtab*               tab,
-            t_atoms*                atoms,
-            PreprocessingAtomTypes* atype,
-            int*                    nbonds,
-            InteractionsOfType*     bond);
+int nm2type(int nnm, t_nm2type nm2t[], t_atoms* atoms, PreprocessingAtomTypes* atype, int* nbonds, InteractionsOfType* bond);
 /* Try to determine the atomtype (force field dependent) for the atoms
  * with help of the bond list
  */

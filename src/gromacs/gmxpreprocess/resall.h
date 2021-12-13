@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,10 +86,9 @@ getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResid
  * Read atom types into database.
  *
  * \param[in] ffdir Force field directory.
- * \param[in] tab Symbol table for names.
  * \returns Atom type database.
  */
-PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab);
+PreprocessingAtomTypes read_atype(const char* ffdir);
 
 /*! \brief
  * Read in database, append to exisiting.

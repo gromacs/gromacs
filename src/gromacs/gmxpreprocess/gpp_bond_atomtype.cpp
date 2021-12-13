@@ -39,13 +39,10 @@
 
 #include "gpp_bond_atomtype.h"
 
-#include <cstring>
-
 #include <algorithm>
 #include <optional>
 #include <vector>
 
-#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -53,7 +50,7 @@ class PreprocessingBondAtomType::Impl
 {
 public:
     //! The atom type names.
-    std::vector<char**> typeNames;
+    std::vector<std::string> typeNames;
 };
 
 std::optional<int> PreprocessingBondAtomType::bondAtomTypeFromName(const std::string& str) const
@@ -61,7 +58,7 @@ std::optional<int> PreprocessingBondAtomType::bondAtomTypeFromName(const std::st
     /* Atom types are always case sensitive */
     auto found = std::find_if(impl_->typeNames.begin(),
                               impl_->typeNames.end(),
-                              [&str](const auto& type) { return str == std::string(*type); });
+                              [&str](const auto& type) { return str == std::string(type); });
     if (found == impl_->typeNames.end())
     {
         return std::nullopt;
@@ -72,21 +69,21 @@ std::optional<int> PreprocessingBondAtomType::bondAtomTypeFromName(const std::st
     }
 }
 
-std::optional<const char*> PreprocessingBondAtomType::atomNameFromBondAtomType(int nt) const
+std::optional<std::string> PreprocessingBondAtomType::atomNameFromBondAtomType(int nt) const
 {
-    return isSet(nt) ? *impl_->typeNames[nt] : std::optional<const char*>{};
+    return isSet(nt) ? impl_->typeNames[nt] : std::optional<std::string>{};
 }
 
 PreprocessingBondAtomType::PreprocessingBondAtomType() : impl_(new Impl) {}
 
 PreprocessingBondAtomType::~PreprocessingBondAtomType() {}
 
-int PreprocessingBondAtomType::addBondAtomType(t_symtab* tab, const std::string& name)
+int PreprocessingBondAtomType::addBondAtomType(const std::string& name)
 {
     auto position = bondAtomTypeFromName(name);
     if (!position.has_value())
     {
-        impl_->typeNames.emplace_back(put_symtab(tab, name.c_str()));
+        impl_->typeNames.emplace_back(name);
         if (auto bondAtomType = bondAtomTypeFromName(name); bondAtomType.has_value())
         {
             return *bondAtomType;

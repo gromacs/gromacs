@@ -68,8 +68,7 @@ void generate_nbparams(CombinationRule         comb,
                        PreprocessingAtomTypes* atype,
                        warninp*                wi);
 
-void push_at(struct t_symtab*           symtab,
-             PreprocessingAtomTypes*    at,
+void push_at(PreprocessingAtomTypes*    at,
              PreprocessingBondAtomType* bat,
              char*                      line,
              int                        nb_funct,
@@ -136,10 +135,7 @@ int copy_nbparams(t_nbparam** param, int ftype, InteractionsOfType* plist, int n
 
 void free_nbparam(t_nbparam** param, int nr);
 
-int add_atomtype_decoupled(struct t_symtab*        symtab,
-                           PreprocessingAtomTypes* at,
-                           t_nbparam***            nbparam,
-                           t_nbparam***            pair);
+int add_atomtype_decoupled(PreprocessingAtomTypes* at, t_nbparam*** nbparam, t_nbparam*** pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.
  */

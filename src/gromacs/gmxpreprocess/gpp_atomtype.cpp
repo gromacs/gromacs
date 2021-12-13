@@ -60,14 +60,18 @@
 struct AtomTypeData
 {
     //! Explicit constructor.
-    AtomTypeData(const t_atom& a, char** name, const InteractionOfType& nb, const int bondAtomType, const int atomNumber) :
+    AtomTypeData(const t_atom&            a,
+                 const std::string&       name,
+                 const InteractionOfType& nb,
+                 const int                bondAtomType,
+                 const int                atomNumber) :
         atom_(a), name_(name), nb_(nb), bondAtomType_(bondAtomType), atomNumber_(atomNumber)
     {
     }
     //! Actual atom data.
     t_atom atom_;
     //! Atom name.
-    char** name_;
+    std::string name_;
     //! Nonbonded data.
     InteractionOfType nb_;
     //! Bonded atomtype for the type.
@@ -102,7 +106,7 @@ std::optional<int> PreprocessingAtomTypes::atomTypeFromName(const std::string& s
     }
     else
     {
-        GMX_ASSERT(str == *impl_->types[found->second].name_,
+        GMX_ASSERT(str == impl_->types[found->second].name_,
                    "Invalid data in atomTypeFromName lookup table");
         return std::make_optional(found->second);
     }
@@ -113,9 +117,9 @@ size_t PreprocessingAtomTypes::size() const
     return impl_->size();
 }
 
-std::optional<const char*> PreprocessingAtomTypes::atomNameFromAtomType(int nt) const
+std::optional<const std::string> PreprocessingAtomTypes::atomNameFromAtomType(int nt) const
 {
-    return isSet(nt) ? std::make_optional(*(impl_->types[nt].name_)) : std::nullopt;
+    return isSet(nt) ? std::make_optional(impl_->types[nt].name_) : std::nullopt;
 }
 
 std::optional<real> PreprocessingAtomTypes::atomMassFromAtomType(int nt) const
@@ -172,8 +176,7 @@ PreprocessingAtomTypes& PreprocessingAtomTypes::operator=(PreprocessingAtomTypes
 
 PreprocessingAtomTypes::~PreprocessingAtomTypes() {}
 
-int PreprocessingAtomTypes::addType(t_symtab*                tab,
-                                    const t_atom&            a,
+int PreprocessingAtomTypes::addType(const t_atom&            a,
                                     const std::string&       name,
                                     const InteractionOfType& nb,
                                     int                      bondAtomType,
@@ -182,7 +185,7 @@ int PreprocessingAtomTypes::addType(t_symtab*                tab,
     auto position = atomTypeFromName(name);
     if (!position.has_value())
     {
-        impl_->types.emplace_back(a, put_symtab(tab, name.c_str()), nb, bondAtomType, atomNumber);
+        impl_->types.emplace_back(a, name, nb, bondAtomType, atomNumber);
         const int newType           = impl_->types.size() - 1;
         impl_->nameToAtomType[name] = newType;
         return newType;
@@ -194,7 +197,6 @@ int PreprocessingAtomTypes::addType(t_symtab*                tab,
 }
 
 std::optional<int> PreprocessingAtomTypes::setType(int                      nt,
-                                                   t_symtab*                tab,
                                                    const t_atom&            a,
                                                    const std::string&       name,
                                                    const InteractionOfType& nb,
@@ -207,7 +209,7 @@ std::optional<int> PreprocessingAtomTypes::setType(int                      nt,
     }
 
     impl_->types[nt].atom_         = a;
-    impl_->types[nt].name_         = put_symtab(tab, name.c_str());
+    impl_->types[nt].name_         = name;
     impl_->types[nt].nb_           = nb;
     impl_->types[nt].bondAtomType_ = bondAtomType;
     impl_->types[nt].atomNumber_   = atomNumber;
@@ -354,7 +356,7 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
                                 interactionType.interactionTypeName());
         }
         new_types.push_back(impl_->types[mi]);
-        impl_->nameToAtomType[std::string(*impl_->types[mi].name_)] = new_types.size() - 1;
+        impl_->nameToAtomType[std::string(impl_->types[mi].name_)] = new_types.size() - 1;
     }
 
     mtop->ffparams.atnr = nat;

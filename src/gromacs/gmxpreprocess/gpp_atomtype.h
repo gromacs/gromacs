@@ -59,7 +59,6 @@ struct t_atom;
 struct t_atomtypes;
 class InteractionOfType;
 struct InteractionsOfType;
-struct t_symtab;
 enum class ParticleType : int;
 namespace gmx
 {
@@ -103,7 +102,7 @@ public:
      * \param[in] nt Internal number of atom type.
      * \returns The optional type name.
      */
-    std::optional<const char*> atomNameFromAtomType(int nt) const;
+    std::optional<const std::string> atomNameFromAtomType(int nt) const;
 
     /*! \brief
      * Get normal mass of atom from internal atom type number.
@@ -166,7 +165,6 @@ public:
      * Set the values of an existing atom type \p nt.
      *
      * \param[in] nt Type that should be set.
-     * \param[in] tab Symbol table.
      * \param[in] a Atom information.
      * \param[in] name Atom name.
      * \param[in] nb Nonbonded parameters.
@@ -175,7 +173,6 @@ public:
      * \returns Optional number of the type set.
      */
     std::optional<int> setType(int                      nt,
-                               t_symtab*                tab,
                                const t_atom&            a,
                                const std::string&       name,
                                const InteractionOfType& nb,
@@ -185,7 +182,6 @@ public:
     /*! \brief
      * Add a unique type to the database.
      *
-     * \param[in] tab Symbol table.
      * \param[in] a Atom information.
      * \param[in] name Atom name.
      * \param[in] nb Nonbonded parameters.
@@ -194,12 +190,7 @@ public:
      * \returns Index to the type in the database. If the type shares
      *          a name with an existing type, return the index of that type.
      */
-    int addType(t_symtab*                tab,
-                const t_atom&            a,
-                const std::string&       name,
-                const InteractionOfType& nb,
-                int                      bondAtomType,
-                int                      atomNumber);
+    int addType(const t_atom& a, const std::string& name, const InteractionOfType& nb, int bondAtomType, int atomNumber);
 
     /*! \brief
      * Renumber existing atom type entries.

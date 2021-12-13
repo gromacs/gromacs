@@ -51,8 +51,6 @@
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
-#include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
@@ -60,22 +58,20 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringtoenumvalueconverter.h"
 
 #include "hackblock.h"
 
-PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
+PreprocessingAtomTypes read_atype(const char* ffdir)
 {
-    FILE*   in;
-    char    buf[STRLEN], name[STRLEN];
-    double  m;
-    t_atom* a;
+    FILE*  in;
+    char   buf[STRLEN], name[STRLEN];
+    double m;
+    auto   atom = std::make_unique<t_atom>();
 
     std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
-    snew(a, 1);
-    PreprocessingAtomTypes at;
+    PreprocessingAtomTypes   at;
 
     for (const auto& filename : files)
     {
@@ -94,8 +90,8 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
-                a->m = m;
-                at.addType(tab, *a, name, InteractionOfType({}, {}), 0, 0);
+                atom->m = m;
+                at.addType(*atom, name, InteractionOfType({}, {}), 0, 0);
             }
             else
             {
@@ -104,7 +100,6 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
         }
         gmx_ffclose(in);
     }
-    sfree(a);
     return at;
 }
 
@@ -124,7 +119,7 @@ static void print_resatoms(FILE* out, const PreprocessingAtomTypes& atype, const
         fprintf(out,
                 "%6s  %6s  %8.3f  %6d\n",
                 *(rtpDBEntry.atomname[j]),
-                *tpnm,
+                tpnm->c_str(),
                 rtpDBEntry.atom[j].q,
                 rtpDBEntry.cgnr[j]);
     }

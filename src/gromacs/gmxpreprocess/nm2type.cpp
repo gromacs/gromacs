@@ -193,13 +193,7 @@ static int match_str(const char* atom, const char* template_string)
     }
 }
 
-int nm2type(int                     nnm,
-            t_nm2type               nm2t[],
-            t_symtab*               tab,
-            t_atoms*                atoms,
-            PreprocessingAtomTypes* atype,
-            int*                    nbonds,
-            InteractionsOfType*     bonds)
+int nm2type(int nnm, t_nm2type nm2t[], t_atoms* atoms, PreprocessingAtomTypes* atype, int* nbonds, InteractionsOfType* bonds)
 {
     int cur = 0;
 #define prev (1 - cur)
@@ -341,7 +335,7 @@ int nm2type(int                     nnm,
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m = atoms->atom[i].mB = mm;
                 k                                    = atype->addType(
-                        tab, atoms->atom[i], type, InteractionOfType({}, {}), atoms->atom[i].type, atomnr);
+                        atoms->atom[i], type, InteractionOfType({}, {}), atoms->atom[i].type, atomnr);
             }
             else
             {

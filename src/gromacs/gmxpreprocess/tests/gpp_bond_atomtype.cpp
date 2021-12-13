@@ -53,20 +53,19 @@
 class PreprocessingBondAtomTypeTest : public ::testing::Test
 {
 public:
-    PreprocessingBondAtomTypeTest() { open_symtab(&symtab_); }
+    PreprocessingBondAtomTypeTest() {}
 
     int addType(const char* name);
 
-    ~PreprocessingBondAtomTypeTest() override { done_symtab(&symtab_); }
+    ~PreprocessingBondAtomTypeTest() override {}
 
 protected:
     PreprocessingBondAtomType bat_;
-    t_symtab                  symtab_;
 };
 
 int PreprocessingBondAtomTypeTest::addType(const char* name)
 {
-    return bat_.addBondAtomType(&symtab_, name);
+    return bat_.addBondAtomType(name);
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, EmptyOnCreate)
@@ -142,8 +141,8 @@ TEST_F(PreprocessingBondAtomTypeTest, CorrectNameFromTypeNumber)
 {
     EXPECT_EQ(addType("Foo"), 0);
     EXPECT_EQ(addType("Bar"), 1);
-    EXPECT_STREQ(*bat_.atomNameFromBondAtomType(0), "Foo");
-    EXPECT_STREQ(*bat_.atomNameFromBondAtomType(1), "Bar");
+    EXPECT_EQ(bat_.atomNameFromBondAtomType(0), "Foo");
+    EXPECT_EQ(bat_.atomNameFromBondAtomType(1), "Bar");
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, NoNameFromIncorrectTypeNumber)

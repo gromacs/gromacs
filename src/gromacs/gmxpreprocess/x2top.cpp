@@ -167,7 +167,6 @@ static int* set_cgnr(t_atoms* atoms, bool bUsePDBcharge, real* qtot, real* mtot)
 }
 
 static void set_atom_type(PreprocessingAtomTypes* atypes,
-                          t_symtab*               tab,
                           t_atoms*                atoms,
                           InteractionsOfType*     bonds,
                           int*                    nbonds,
@@ -178,7 +177,7 @@ static void set_atom_type(PreprocessingAtomTypes* atypes,
     int nresolved;
 
     snew(atoms->atomtype, atoms->nr);
-    nresolved = nm2type(nnm, nm2t, tab, atoms, atypes, nbonds, bonds);
+    nresolved = nm2type(nnm, nm2t, atoms, atypes, nbonds, bonds);
     if (nresolved != atoms->nr)
     {
         gmx_fatal(FARGS, "Could only find a forcefield type for %d out of %d atoms", nresolved, atoms->nr);
@@ -346,7 +345,7 @@ static void print_rtp(const char*                             filenm,
         {
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
-        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], *tpnm, atoms->atom[i].q, cgnr[i]);
+        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], tpnm->c_str(), atoms->atom[i].q, cgnr[i]);
     }
     print_pl(fp, plist, F_BONDS, "bonds", atoms->atomname);
     print_pl(fp, plist, F_ANGLES, "angles", atoms->atomname);
@@ -400,7 +399,6 @@ int gmx_x2top(int argc, char* argv[])
     int                                   natoms; /* number of atoms in one molecule  */
     PbcType                               pbcType;
     bool                                  bRTP, bTOP, bOPLS;
-    t_symtab                              symtab;
     real                                  qtot, mtot;
     char                                  n2t[STRLEN];
     gmx_output_env_t*                     oenv;
@@ -524,9 +522,8 @@ int gmx_x2top(int argc, char* argv[])
     snew(nbonds, atoms->nr);
     mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
 
-    open_symtab(&symtab);
     PreprocessingAtomTypes atypes;
-    set_atom_type(&atypes, &symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t, logger);
+    set_atom_type(&atypes, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t, logger);
 
     /* Make Angles and Dihedrals */
     snew(excls, atoms->nr);
@@ -593,7 +590,6 @@ int gmx_x2top(int argc, char* argv[])
     {
         dump_hybridization(debug, atoms, nbonds);
     }
-    close_symtab(&symtab);
 
     GMX_LOG(logger.warning)
             .asParagraph()
