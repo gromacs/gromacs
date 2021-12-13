@@ -44,6 +44,8 @@
 
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "gromacs/domdec/makebondedlinks.h"
 
 #include "gromacs/domdec/domdec_internal.h"
@@ -51,53 +53,27 @@
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/topology/mtop_util.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;
 
-/*! \brief Check if a link is stored in \p link between charge groups \p cg_gl and \p cg_gl_j and if not so, store a link */
-static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
+/*! \brief Check if a link is stored in \p links to \p atom and if this is not the case, store a link */
+static void check_link(std::vector<int>* links, const int atom)
 {
-    bool bFound = false;
-    for (int k = link->index[cg_gl]; k < link->index[cg_gl + 1]; k++)
+    const auto it = find(links->begin(), links->end(), atom);
+    if (it != links->end())
     {
-        GMX_RELEASE_ASSERT(link->a, "Inconsistent NULL pointer while making charge-group links");
-        if (link->a[k] == cg_gl_j)
-        {
-            bFound = TRUE;
-        }
-    }
-    if (!bFound)
-    {
-        GMX_RELEASE_ASSERT(link->a || link->index[cg_gl + 1] + 1 > link->nalloc_a,
-                           "Inconsistent allocation of link");
-        /* Add this charge group link */
-        if (link->index[cg_gl + 1] + 1 > link->nalloc_a)
-        {
-            link->nalloc_a = over_alloc_large(link->index[cg_gl + 1] + 1);
-            srenew(link->a, link->nalloc_a);
-        }
-        link->a[link->index[cg_gl + 1]] = cg_gl_j;
-        link->index[cg_gl + 1]++;
+        links->push_back(atom);
     }
 }
 
-void makeBondedLinks(gmx_domdec_t*                                   dd,
-                     const gmx_mtop_t&                               mtop,
-                     gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
+/*! \brief Creates and return a list of bonded links for all atoms in the system */
+static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t&                               mtop,
+                                            gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
-
-    if (!dd->comm->systemInfo.filterBondedCommunication)
-    {
-        /* Only communicate atoms based on cut-off */
-        dd->comm->bondedLinks = nullptr;
-        return;
-    }
-
-    t_blocka* link = nullptr;
+    gmx::ListOfLists<int> link;
 
     /* For each atom make a list of other atoms in the system
      * that a linked to it via bonded interactions
@@ -120,12 +96,6 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
                 *mtop.intermolecular_ilist, &atoms, rtOptions, AtomLinkRule::AllAtomsInBondeds, &ril_intermol);
     }
 
-    snew(link, 1);
-    snew(link->index, mtop.natoms + 1);
-    link->nalloc_a = 0;
-    link->a        = nullptr;
-
-    link->index[0]                 = 0;
     int indexOfFirstAtomInMolecule = 0;
     int numLinkedAtoms             = 0;
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
@@ -146,14 +116,15 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
 
         gmx::AtomInfoWithinMoleculeBlock* atomInfoOfMoleculeBlock = &atomInfoForEachMoleculeBlock[mb];
 
-        int mol = 0;
+        std::vector<int> linksForOneAtom;
+        int              mol = 0;
         for (mol = 0; mol < (mtop.bIntermolecularInteractions ? molb.nmol : 1); mol++)
         {
             for (int a = 0; a < molt.atoms.nr; a++)
             {
-                int atomIndex              = indexOfFirstAtomInMolecule + a;
-                link->index[atomIndex + 1] = link->index[atomIndex];
-                int i                      = ril.index[a];
+                const int atomIndex = indexOfFirstAtomInMolecule + a;
+                linksForOneAtom.clear();
+                int i = ril.index[a];
                 while (i < ril.index[a + 1])
                 {
                     int ftype = ril.il[i++];
@@ -165,7 +136,7 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
                         int aj = ril.il[i + j];
                         if (aj != a)
                         {
-                            check_link(link, atomIndex, indexOfFirstAtomInMolecule + aj);
+                            check_link(&linksForOneAtom, indexOfFirstAtomInMolecule + aj);
                         }
                     }
                     i += nral_rt(ftype);
@@ -186,22 +157,27 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
                              * this has been checked above.
                              */
                             int aj = ril_intermol.il[i + j];
-                            check_link(link, atomIndex, aj);
+                            check_link(&linksForOneAtom, aj);
                         }
                         i += nral_rt(ftype);
                     }
                 }
-                if (link->index[atomIndex + 1] - link->index[atomIndex] > 0)
+                if (!linksForOneAtom.empty())
                 {
                     atomInfoOfMoleculeBlock->atomInfo[a] |= gmx::sc_atomInfo_BondCommunication;
                     numLinkedAtoms++;
                 }
+                // Add the links for the current atom to the total list
+                link.pushBack(linksForOneAtom);
             }
 
             indexOfFirstAtomInMolecule += molt.atoms.nr;
+
+            GMX_ASSERT(link.size() == size_t(indexOfFirstAtomInMolecule),
+                       "We should have one link entry for each atom");
         }
-        int nlink_mol = link->index[indexOfFirstAtomInMolecule]
-                        - link->index[indexOfFirstAtomInMolecule - molt.atoms.nr];
+        int nlink_mol = link.listRangesView()[indexOfFirstAtomInMolecule]
+                        - link.listRangesView()[indexOfFirstAtomInMolecule - molt.atoms.nr];
 
         if (debug)
         {
@@ -215,19 +191,20 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
         if (molb.nmol > mol)
         {
             /* Copy the data for the rest of the molecules in this block */
-            link->nalloc_a += (molb.nmol - mol) * nlink_mol;
-            srenew(link->a, link->nalloc_a);
             for (; mol < molb.nmol; mol++)
             {
                 for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    int atomIndex              = indexOfFirstAtomInMolecule + a;
-                    link->index[atomIndex + 1] = link->index[atomIndex + 1 - molt.atoms.nr] + nlink_mol;
-                    for (int j = link->index[atomIndex]; j < link->index[atomIndex + 1]; j++)
-                    {
-                        link->a[j] = link->a[j - nlink_mol] + molt.atoms.nr;
-                    }
-                    if (link->index[atomIndex + 1] - link->index[atomIndex] > 0
+                    const int                      atomIndex = indexOfFirstAtomInMolecule + a;
+                    const gmx::ArrayRef<const int> linksForAtomInPreviousMolecule =
+                            link[atomIndex - molt.atoms.nr];
+                    link.pushBackListOfSize(linksForAtomInPreviousMolecule.size());
+                    gmx::ArrayRef<int> linksForAtom = link.back();
+                    std::transform(linksForAtomInPreviousMolecule.begin(),
+                                   linksForAtomInPreviousMolecule.end(),
+                                   linksForAtom.begin(),
+                                   [&molt](const auto a) { return a + molt.atoms.nr; });
+                    if (!linksForAtom.empty()
                         && atomIndex - atomInfoOfMoleculeBlock->indexOfFirstAtomInMoleculeBlock
                                    < gmx::ssize(atomInfoOfMoleculeBlock->atomInfo))
                     {
@@ -246,5 +223,16 @@ void makeBondedLinks(gmx_domdec_t*                                   dd,
         fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop.natoms, numLinkedAtoms);
     }
 
-    dd->comm->bondedLinks = link;
+    return link;
+}
+
+void makeBondedLinks(gmx_domdec_t*                                   dd,
+                     const gmx_mtop_t&                               mtop,
+                     gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
+{
+    if (dd->comm->systemInfo.filterBondedCommunication)
+    {
+        dd->comm->bondedLinks  = std::make_unique<gmx::ListOfLists<int>>();
+        *dd->comm->bondedLinks = genBondedLinks(mtop, atomInfoForEachMoleculeBlock);
+    }
 }

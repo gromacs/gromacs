@@ -51,6 +51,7 @@
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 
 struct t_commrec;
 
@@ -576,7 +577,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* Data for the optional filtering of communication of atoms for bonded interactions */
     /**< Links between atoms through bonded interactions */
-    t_blocka* bondedLinks = nullptr;
+    std::unique_ptr<gmx::ListOfLists<int>> bondedLinks;
 
     /* The DLB state, possible values are defined above */
     DlbState dlbState;
