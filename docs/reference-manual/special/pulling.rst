@@ -130,7 +130,7 @@ both cylinder group and the other pull group:
           F^\mathrm{radial}_i(r_i < r_\mathrm{cyl}) & = &
           F^\mathrm{pull} a_i \frac{1}{\sum_i w_i}\frac{4}{r_\mathrm{cyl}^4} r_i (r_i^2 - r_\mathrm{cyl}^2) \\
           F^\mathrm{radial}_i(r_i \geq r_\mathrm{cyl}) & = & 0\end{aligned}
-          :label: eqnpulldistmassweight
+          :label: eqnpulldistmassweightradialforce
 
 where :math:`F^\mathrm{pull}` is the pull force working between the groups
 and :math:`a_i` is the axial distance of atom :math:`i` to the center of
