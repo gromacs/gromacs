@@ -161,7 +161,7 @@ static void print_cg_move(FILE*               fplog,
                           rvec                cm_new,
                           real                pos_d)
 {
-    const gmx_domdec_comm_t* comm = dd->comm;
+    const gmx_domdec_comm_t* comm = dd->comm.get();
     std::string              mesg;
 
     fprintf(fplog, "\nStep %" PRId64 ":\n", step);
@@ -562,7 +562,7 @@ void dd_redistribute_cg(FILE*         fplog,
                         t_nrnb*       nrnb,
                         int*          ncg_moved)
 {
-    gmx_domdec_comm_t* comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm.get();
 
     if (dd->unitCellInfo.haveScrewPBC)
     {
@@ -757,7 +757,7 @@ void dd_redistribute_cg(FILE*         fplog,
 
     int* moved = getMovedBuffer(comm, 0, dd->numHomeAtoms);
 
-    clear_and_mark_ind(move, dd->globalAtomIndices, dd->ga2la, moved);
+    clear_and_mark_ind(move, dd->globalAtomIndices, dd->ga2la.get(), moved);
 
     /* Now we can remove the excess global atom-group indices from the list */
     dd->globalAtomGroupIndices.resize(dd->numHomeAtoms);
@@ -845,7 +845,7 @@ void dd_redistribute_cg(FILE*         fplog,
                 /* Check which direction this cg should go */
                 for (int d2 = d + 1; (d2 < dd->ndim && mc == -1); d2++)
                 {
-                    if (isDlbOn(dd->comm))
+                    if (isDlbOn(dd->comm->dlbState))
                     {
                         /* The cell boundaries for dimension d2 are not equal
                          * for each cell row of the lower dimension(s),

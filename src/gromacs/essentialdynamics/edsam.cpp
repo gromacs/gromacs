@@ -1991,7 +1991,7 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, struct gmx_edsam* ed)
              * if their indices differ from the average ones */
             if (!edi.bRefEqAv)
             {
-                dd_make_local_group_indices(dd->ga2la,
+                dd_make_local_group_indices(dd->ga2la.get(),
                                             edi.sref.nr,
                                             edi.sref.anrs,
                                             &edi.sref.nr_loc,
@@ -2001,7 +2001,7 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, struct gmx_edsam* ed)
             }
 
             /* Local atoms of the average structure (on these ED will be performed) */
-            dd_make_local_group_indices(dd->ga2la,
+            dd_make_local_group_indices(dd->ga2la.get(),
                                         edi.sav.nr,
                                         edi.sav.anrs,
                                         &edi.sav.nr_loc,

@@ -1424,9 +1424,10 @@ int Mdrunner::mdrunner()
     // now, because DD needs them for the LocalTopologyChecker, but
     // they do not contain valid data until after the first DD
     // partition.
-    std::unique_ptr<t_state> localStateInstance;
-    t_state*                 localState;
-    gmx_localtop_t           localTopology(mtop.ffparams);
+    std::unique_ptr<t_state>      localStateInstance;
+    t_state*                      localState;
+    gmx_localtop_t                localTopology(mtop.ffparams);
+    std::unique_ptr<gmx_domdec_t> ddManager;
 
     if (ddBuilder)
     {
@@ -1434,7 +1435,8 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        cr->dd = ddBuilder->build(&atomSets, localTopology, *localState, &observablesReducerBuilder);
+        ddManager = ddBuilder->build(&atomSets, localTopology, *localState, &observablesReducerBuilder);
+        cr->dd = ddManager.get();
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
@@ -2132,6 +2134,7 @@ int Mdrunner::mdrunner()
     // before we destroy the GPU context(s)
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
+    ddManager.reset(nullptr);
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     localStateInstance.reset(nullptr);

@@ -104,7 +104,7 @@ struct t_commrec
 
     gmx_nodecomm_t nc;
 
-    /* For domain decomposition */
+    /* Handle to domain decomposition manager, owned elsewhere in mdrunner. */
     gmx_domdec_t* dd;
 
     /* The duties of this node, see the DUTY_ defines above.

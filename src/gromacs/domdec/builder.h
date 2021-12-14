@@ -100,10 +100,10 @@ public:
     //! Destructor
     ~DomainDecompositionBuilder();
     //! Build the resulting DD manager
-    gmx_domdec_t* build(LocalAtomSetManager*       atomSets,
-                        const gmx_localtop_t&      localTopology,
-                        const t_state&             localState,
-                        ObservablesReducerBuilder* observablesReducerBuilder);
+    std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
+                                        const gmx_localtop_t&      localTopology,
+                                        const t_state&             localState,
+                                        ObservablesReducerBuilder* observablesReducerBuilder);
 
 private:
     class Impl;

@@ -555,7 +555,7 @@ void ImdSession::dd_make_local_IMD_atoms(const gmx_domdec_t* dd)
     }
 
     dd_make_local_group_indices(
-            dd->ga2la, impl_->nat, impl_->ind, &impl_->nat_loc, &impl_->ind_loc, &impl_->nalloc_loc, impl_->xa_ind);
+            dd->ga2la.get(), impl_->nat, impl_->ind, &impl_->nat_loc, &impl_->ind_loc, &impl_->nalloc_loc, impl_->xa_ind);
 }
 
 

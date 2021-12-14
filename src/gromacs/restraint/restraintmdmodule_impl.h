@@ -135,7 +135,7 @@ public:
         if (haveDDAtomOrdering(cr)) // Domain decomposition
         {
             // Get global-to-local indexing structure
-            auto* crossRef = cr.dd->ga2la;
+            auto* crossRef = cr.dd->ga2la.get();
             GMX_ASSERT(crossRef, "Domain decomposition must provide global/local cross-reference.");
             if (const auto* localIndex = crossRef->findHome(index_))
             {

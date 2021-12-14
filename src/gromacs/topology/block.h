@@ -201,6 +201,7 @@ t_blocka* new_blocka();
 /* allocate new block */
 
 void done_block(t_block* block);
+//! Deallocates memory within \c block
 void done_blocka(t_blocka* block);
 
 void copy_blocka(const t_blocka* src, t_blocka* dest);

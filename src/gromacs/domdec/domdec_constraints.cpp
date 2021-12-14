@@ -76,33 +76,6 @@
 
 using gmx::ListOfLists;
 
-/*! \brief Struct used during constraint setup with domain decomposition */
-struct gmx_domdec_constraints_t
-{
-    //! @cond Doxygen_Suppress
-    std::vector<int> molb_con_offset; /**< Offset in the constraint array for each molblock */
-    std::vector<int> molb_ncon_mol; /**< The number of constraints per molecule for each molblock */
-
-    int ncon; /**< The fully local and conneced constraints */
-    /* The global constraint number, only required for clearing gc_req */
-    std::vector<int> con_gl;     /**< Global constraint indices for local constraints */
-    std::vector<int> con_nlocat; /**< Number of local atoms (2/1/0) for each constraint */
-
-    std::vector<bool> gc_req; /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-
-    /* Hash table for keeping track of requests */
-    std::unique_ptr<gmx::HashedMap<int>> ga2la; /**< Global to local communicated constraint atom only index */
-
-    /* Multi-threading stuff */
-    int                          nthread; /**< Number of threads used for DD constraint setup */
-    std::vector<InteractionList> ils;     /**< Constraint ilist working arrays, size \p nthread */
-
-    /* Buffers for requesting atoms */
-    std::vector<std::vector<int>> requestedGlobalAtomIndices; /**< Buffers for requesting global atom indices, one per thread */
-
-    //! @endcond
-};
-
 void dd_move_x_constraints(gmx_domdec_t*            dd,
                            const matrix             box,
                            gmx::ArrayRef<gmx::RVec> x0,
@@ -112,7 +85,7 @@ void dd_move_x_constraints(gmx_domdec_t*            dd,
     if (dd->constraint_comm)
     {
         dd_move_x_specat(
-                dd, dd->constraint_comm, box, as_rvec_array(x0.data()), as_rvec_array(x1.data()), bX1IsCoord);
+                dd, dd->constraint_comm.get(), box, as_rvec_array(x0.data()), as_rvec_array(x1.data()), bX1IsCoord);
 
         ddReopenBalanceRegionCpu(dd);
     }
@@ -132,7 +105,7 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd)
 
 void dd_clear_local_constraint_indices(gmx_domdec_t* dd)
 {
-    gmx_domdec_constraints_t* dc = dd->constraints;
+    gmx_domdec_constraints_t* dc = dd->constraints.get();
 
     std::fill(dc->gc_req.begin(), dc->gc_req.end(), false);
 
@@ -304,8 +277,8 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
                                  InteractionList*                      ilc_local,
                                  std::vector<int>*                     ireq)
 {
-    gmx_domdec_constraints_t* dc  = dd->constraints;
-    gmx_domdec_specat_comm_t* dcc = dd->constraint_comm;
+    gmx_domdec_constraints_t* dc  = dd->constraints.get();
+    gmx_domdec_specat_comm_t* dcc = dd->constraint_comm.get();
 
     const gmx_ga2la_t& ga2la = *dd->ga2la;
 
@@ -419,7 +392,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     // true. dd->constraint_comm is unilaterally dereferenced before
     // the call to atoms_to_settles.
 
-    gmx_domdec_constraints_t* dc = dd->constraints;
+    gmx_domdec_constraints_t* dc = dd->constraints.get();
 
     InteractionList* ilc_local = &il_local[F_CONSTR];
     InteractionList* ils_local = &il_local[F_SETTLE];
@@ -514,7 +487,7 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     {
         at_end = setup_specat_communication(dd,
                                             ireq,
-                                            dd->constraint_comm,
+                                            dd->constraint_comm.get(),
                                             dd->constraints->ga2la.get(),
                                             at_start,
                                             2,
@@ -570,8 +543,8 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
         fprintf(debug, "Begin init_domdec_constraints\n");
     }
 
-    dd->constraints              = new gmx_domdec_constraints_t;
-    gmx_domdec_constraints_t* dc = dd->constraints;
+    dd->constraints              = std::make_unique<gmx_domdec_constraints_t>();
+    gmx_domdec_constraints_t* dc = dd->constraints.get();
 
     dc->molb_con_offset.resize(mtop.molblock.size());
     dc->molb_ncon_mol.resize(mtop.molblock.size());
@@ -600,7 +573,7 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
     dc->nthread = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
     dc->ils.resize(dc->nthread);
 
-    dd->constraint_comm = new gmx_domdec_specat_comm_t;
+    dd->constraint_comm = std::make_unique<gmx_domdec_specat_comm_t>();
 
     dc->requestedGlobalAtomIndices.resize(dc->nthread);
 }

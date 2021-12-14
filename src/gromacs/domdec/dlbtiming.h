@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,10 @@
 #ifndef GMX_DOMDEC_DLBTIMING_H
 #define GMX_DOMDEC_DLBTIMING_H
 
+#include <memory>
+
 #include "gromacs/mdtypes/commrec.h"
 
-struct BalanceRegion;
 struct gmx_domdec_t;
 struct t_nrnb;
 
@@ -201,6 +202,18 @@ private:
     bool useBalancingRegion_;
     //! A pointer to the DD struct, only valid with useBalancingRegion_=true
     gmx_domdec_t* dd_;
+};
+
+//! Object that describes a DLB balancing region
+class BalanceRegion
+{
+public:
+    BalanceRegion();
+    ~BalanceRegion();
+    // Not private because used by DDBalanceRegionHandler
+    // private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 /*! \brief Returns a pointer to a constructed \p BalanceRegion struct

@@ -5,7 +5,6 @@ leak:atoms_to_constraints
 leak:atoms_to_settles
 leak:balance_fep_lists
 leak:dd_make_reverse_top
-leak:makeBondedLinks
 leak:dd_make_local_constraints
 leak:dd_move_f
 leak:dd_partition_system
@@ -15,8 +14,6 @@ leak:do_edsam
 leak:do_inputrec
 leak:do_single_flood
 leak:get_zone_pulse_groups
-leak:gmx::DomainDecompositionBuilder::Impl::build
-leak:gmx::DomainDecompositionBuilder::Impl::Impl
 leak:gmx_check
 leak:gmx_make_edi
 leak:gmx_pme_receive_f

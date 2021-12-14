@@ -54,9 +54,9 @@ class ArrayRef;
 }
 
 /*! \brief Returns true if the DLB state indicates that the balancer is on. */
-static inline bool isDlbOn(const gmx_domdec_comm_t* comm)
+static inline bool isDlbOn(const DlbState& dlbState)
 {
-    return (comm->dlbState == DlbState::onCanTurnOff || comm->dlbState == DlbState::onUser);
+    return (dlbState == DlbState::onCanTurnOff || dlbState == DlbState::onUser);
 };
 
 /*! \brief Returns true if the DLB state indicates that the balancer is off/disabled.
@@ -64,13 +64,6 @@ static inline bool isDlbOn(const gmx_domdec_comm_t* comm)
 static inline bool isDlbDisabled(const DlbState& dlbState)
 {
     return (dlbState == DlbState::offUser || dlbState == DlbState::offForever);
-};
-
-/*! \brief Returns true if the DLB state indicates that the balancer is off/disabled.
- */
-static inline bool isDlbDisabled(const gmx_domdec_comm_t* comm)
-{
-    return isDlbDisabled(comm->dlbState);
 };
 
 /*! \brief Returns the character, x/y/z, corresponding to dimension dim */

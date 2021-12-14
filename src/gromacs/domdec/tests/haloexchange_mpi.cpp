@@ -532,9 +532,8 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
     // Set up dd
     t_inputrec   ir;
     gmx_domdec_t dd(ir);
-    dd.mpi_comm_all = MPI_COMM_WORLD;
-    gmx_domdec_comm_t comm;
-    dd.comm                      = &comm;
+    dd.mpi_comm_all              = MPI_COMM_WORLD;
+    dd.comm                      = std::make_unique<gmx_domdec_comm_t>();
     dd.unitCellInfo.haveScrewPBC = false;
 
     DDAtomRanges atomRanges;
@@ -588,9 +587,8 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
     // Set up dd
     t_inputrec   ir;
     gmx_domdec_t dd(ir);
-    dd.mpi_comm_all = MPI_COMM_WORLD;
-    gmx_domdec_comm_t comm;
-    dd.comm                      = &comm;
+    dd.mpi_comm_all              = MPI_COMM_WORLD;
+    dd.comm                      = std::make_unique<gmx_domdec_comm_t>();
     dd.unitCellInfo.haveScrewPBC = false;
 
     DDAtomRanges atomRanges;
@@ -645,9 +643,8 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
     // Set up dd
     t_inputrec   ir;
     gmx_domdec_t dd(ir);
-    dd.mpi_comm_all = MPI_COMM_WORLD;
-    gmx_domdec_comm_t comm;
-    dd.comm                      = &comm;
+    dd.mpi_comm_all              = MPI_COMM_WORLD;
+    dd.comm                      = std::make_unique<gmx_domdec_comm_t>();
     dd.unitCellInfo.haveScrewPBC = false;
 
     DDAtomRanges atomRanges;
@@ -701,9 +698,8 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
     // Set up dd
     t_inputrec   ir;
     gmx_domdec_t dd(ir);
-    dd.mpi_comm_all = MPI_COMM_WORLD;
-    gmx_domdec_comm_t comm;
-    dd.comm                      = &comm;
+    dd.mpi_comm_all              = MPI_COMM_WORLD;
+    dd.comm                      = std::make_unique<gmx_domdec_comm_t>();
     dd.unitCellInfo.haveScrewPBC = false;
 
     DDAtomRanges atomRanges;
