@@ -12,7 +12,7 @@
 #   compiler: clang-8
 
 
-.sample_restraint:clang-8:gmx2022:
+.sample_restraint:clang-8:
   extends:
     - .variables:default
     - .use-clang:base
@@ -30,7 +30,7 @@
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
-    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2022.sh
+    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint.sh
   artifacts:
     reports:
       junit:
@@ -45,25 +45,25 @@
     - job: gromacs:clang-8:build
       artifacts: true
 
-sample_restraint:clang-8:gmx2022:py-3.7.7:
+sample_restraint:clang-8:py-3.7.7:
   extends:
-    - .sample_restraint:clang-8:gmx2022
+    - .sample_restraint:clang-8
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
 
-sample_restraint:clang-8:gmx2022:py-3.8.2:
+sample_restraint:clang-8:py-3.8.2:
   extends:
-    - .sample_restraint:clang-8:gmx2022
+    - .sample_restraint:clang-8
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
 
-sample_restraint:clang-8:gmx2022:py-3.9.1:
+sample_restraint:clang-8:py-3.9.1:
   extends:
-    - .sample_restraint:clang-8:gmx2022
+    - .sample_restraint:clang-8
     - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.9"
