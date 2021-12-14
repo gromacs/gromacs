@@ -762,7 +762,6 @@ else()
     # binaries relocatable.
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
         set(CMAKE_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
-        set(CMAKE_INSTALL_NAME_DIR ${CMAKE_INSTALL_RPATH})
     else()
         set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
     endif()
