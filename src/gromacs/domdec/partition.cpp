@@ -1426,17 +1426,11 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t* cd, int nzone, int atomGro
 }
 
 //! Returns whether a link is missing.
-static gmx_bool missing_link(const gmx::ListOfLists<int>& link, const int globalAtomIndex, const gmx_ga2la_t& ga2la)
+static bool missing_link(const gmx::ListOfLists<int>& link, const int globalAtomIndex, const gmx_ga2la_t& ga2la)
 {
-    for (const int a : link[globalAtomIndex])
-    {
-        if (!ga2la.findHome(a))
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return std::any_of(link[globalAtomIndex].begin(), link[globalAtomIndex].end(), [&](const int a) {
+        return ga2la.findHome(a) == nullptr;
+    });
 }
 
 //! Domain corners for communication, a maximum of 4 i-zones see a j domain
