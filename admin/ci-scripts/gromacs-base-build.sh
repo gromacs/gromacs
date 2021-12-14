@@ -11,6 +11,7 @@ awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log \
 grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
 grep "fatal error" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
 grep "error generated when compiling" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
+grep "error:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
 
 # Find linking errors:
 grep "^/usr/bin/ld:" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
