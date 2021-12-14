@@ -39,70 +39,23 @@
 
 #include "invblock.h"
 
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/listoflists.h"
 
-int* make_invblock(const t_block* block, int nr)
+std::vector<int> make_invblock(const gmx::ListOfLists<int>& block, const int maxElement)
 {
-    int* invblock = nullptr;
+    std::vector<int> invBlock(maxElement + 1, -1);
 
-    snew(invblock, nr + 1);
-    /* Mark unused numbers */
-    for (int i = 0; i <= nr; i++)
+    for (int listIndex = 0; listIndex < block.ssize(); listIndex++)
     {
-        invblock[i] = -1;
-    }
-    for (int i = 0; (i < block->nr); i++)
-    {
-        for (int j = block->index[i]; (j < block->index[i + 1]); j++)
+        for (const int element : block[listIndex])
         {
-            if (invblock[j] == -1)
-            {
-                invblock[j] = i;
-            }
-            else
-            {
-                gmx_fatal(FARGS,
-                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
-                          " Cannot make an unambiguous inverse block.",
-                          j,
-                          i,
-                          invblock[j]);
-            }
+            GMX_ASSERT(element >= 0 && element <= maxElement,
+                       "List elements should be in range 0 <= element <= maxElement");
+            GMX_RELEASE_ASSERT(invBlock[element] == -1, "Double entries in ListOfLists");
+
+            invBlock[element] = listIndex;
         }
     }
-    return invblock;
-}
 
-int* make_invblocka(const t_blocka* block, int nr)
-{
-    int* invblock = nullptr;
-
-    snew(invblock, nr + 1);
-    /* Mark unused numbers */
-    for (int i = 0; i <= nr; i++)
-    {
-        invblock[i] = -1;
-    }
-    for (int i = 0; (i < block->nr); i++)
-    {
-        for (int j = block->index[i]; (j < block->index[i + 1]); j++)
-        {
-            if (invblock[block->a[j]] == -1)
-            {
-                invblock[block->a[j]] = i;
-            }
-            else
-            {
-                gmx_fatal(FARGS,
-                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
-                          " Cannot make an unambiguous inverse block.",
-                          j,
-                          i,
-                          invblock[block->a[j]]);
-            }
-        }
-    }
-    return invblock;
+    return invBlock;
 }

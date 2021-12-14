@@ -63,7 +63,7 @@
 #include "gromacs/topology/invblock.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/listoflists.h"
 
 namespace gmx
 {
@@ -105,15 +105,13 @@ static int pcomp(const void* p1, const void* p2)
 }
 
 //! Prints sortblocks
-static void pr_sortblock(FILE* fp, const char* title, int nsb, t_sortblock sb[])
+static void pr_sortblock(FILE* fp, const char* title, gmx::ArrayRef<const t_sortblock> sb)
 {
-    int i;
-
     fprintf(fp, "%s\n", title);
-    for (i = 0; (i < nsb); i++)
+    for (gmx::index i = 0; i < sb.ssize(); i++)
     {
         fprintf(fp,
-                "i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n",
+                "i: %5td, iatom: (%5d %5d %5d), blocknr: %5d\n",
                 i,
                 sb[i].iatom[0],
                 sb[i].iatom[1],
@@ -130,20 +128,14 @@ static void resizeLagrangianData(shakedata* shaked, int ncons)
 
 void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const int numAtoms)
 {
-    int          i, m, ncons;
-    int          bstart, bnr;
-    t_blocka     sblocks;
-    t_sortblock* sb;
-    int*         inv_sblock;
+    int bstart, bnr;
 
     /* Since we are processing the local topology,
      * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
      */
-    ncons = idef->il[F_CONSTR].size() / 3;
+    const int ncons = idef->il[F_CONSTR].size() / 3;
 
-    init_blocka(&sblocks);
-    sfree(sblocks.index); // To solve memory leak
-    gen_sblocks(nullptr, numAtoms, *idef, &sblocks, FALSE);
+    gmx::ListOfLists<int> sblocks = gen_sblocks(nullptr, numAtoms, *idef, false);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -152,55 +144,52 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
     bstart = 0;
     if (debug)
     {
-        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %d\n", ncons, bstart, sblocks.nr);
+        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %td\n", ncons, bstart, sblocks.ssize());
     }
 
     /* Calculate block number for each atom */
-    inv_sblock = make_invblocka(&sblocks, numAtoms);
-
-    done_blocka(&sblocks);
+    std::vector<int> inv_sblock = make_invblock(sblocks, numAtoms);
 
     /* Store the block number in temp array and
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
-    int* iatom = idef->il[F_CONSTR].iatoms.data();
-    snew(sb, ncons);
-    for (i = 0; (i < ncons); i++, iatom += 3)
+    gmx::ArrayRef<int>       iatom = idef->il[F_CONSTR].iatoms;
+    std::vector<t_sortblock> sb(ncons);
+    for (int i = 0; i < ncons; i++)
     {
-        for (m = 0; (m < 3); m++)
+        for (int m = 0; m < 3; m++)
         {
-            sb[i].iatom[m] = iatom[m];
+            sb[i].iatom[m] = iatom[i * 3 + m];
         }
-        sb[i].blocknr = inv_sblock[iatom[1]];
+        sb[i].blocknr = inv_sblock[iatom[i * 3 + 1]];
     }
 
     /* Now sort the blocks */
     if (debug)
     {
-        pr_sortblock(debug, "Before sorting", ncons, sb);
+        pr_sortblock(debug, "Before sorting", sb);
         fprintf(debug, "Going to sort constraints\n");
     }
 
-    std::qsort(sb, ncons, sizeof(*sb), pcomp);
+    std::qsort(sb.data(), gmx::ssize(sb), sizeof(sb[0]), pcomp);
 
     if (debug)
     {
-        pr_sortblock(debug, "After sorting", ncons, sb);
+        pr_sortblock(debug, "After sorting", sb);
     }
 
-    iatom = idef->il[F_CONSTR].iatoms.data();
-    for (i = 0; (i < ncons); i++, iatom += 3)
+    for (int i = 0; i < ncons; i++)
     {
-        for (m = 0; (m < 3); m++)
+        for (int m = 0; m < 3; m++)
         {
-            iatom[m] = sb[i].iatom[m];
+            iatom[i * 3 + m] = sb[i].iatom[m];
         }
     }
 
     shaked->sblock.clear();
     bnr = -2;
-    for (i = 0; (i < ncons); i++)
+    for (int i = 0; i < ncons; i++)
     {
         if (sb[i].blocknr != bnr)
         {
@@ -211,8 +200,6 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
     /* Last block... */
     shaked->sblock.push_back(3 * ncons);
 
-    sfree(sb);
-    sfree(inv_sblock);
     resizeLagrangianData(shaked, ncons);
 }
 

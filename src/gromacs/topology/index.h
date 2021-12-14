@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2010,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 #ifndef GMX_TOPOLOGY_INDEX_H
 #define GMX_TOPOLOGY_INDEX_H
 
-#include <stdio.h>
+#include <cstdio>
+
+#include <vector>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -77,15 +79,15 @@ void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], in
  * for the atoms in *atoms.
  */
 
-typedef struct
+struct t_cluster_ndx
 {
-    int              maxframe;
-    char**           grpname;
-    struct t_blocka* clust;
-    int*             inv_clust;
-} t_cluster_ndx;
+    int              maxframe = -1;
+    char**           grpname  = nullptr;
+    struct t_blocka* clust    = nullptr;
+    std::vector<int> inv_clust;
+};
 
-t_cluster_ndx* cluster_index(FILE* fplog, const char* ndx);
+t_cluster_ndx cluster_index(FILE* fplog, const char* ndx);
 
 
 void write_index(const char* outf, struct t_blocka* b, char** gnames, gmx_bool bDuplicate, int natoms);

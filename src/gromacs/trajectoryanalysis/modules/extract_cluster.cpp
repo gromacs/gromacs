@@ -45,6 +45,7 @@
 #include "extract_cluster.h"
 
 #include <algorithm>
+#include <optional>
 
 #include "gromacs/coordinateio/coordinatefile.h"
 #include "gromacs/coordinateio/requirements.h"
@@ -98,14 +99,14 @@ private:
     //! Storage of requirements for creating output files.
     OutputRequirementOptionDirector requirementsBuilder_;
     //! Stores the index information for the clusters. TODO refactor this!
-    t_cluster_ndx* clusterIndex_ = nullptr;
+    std::optional<t_cluster_ndx> clusterIndex_;
 };
 
 ExtractCluster::ExtractCluster() {}
 
 ExtractCluster::~ExtractCluster()
 {
-    if (clusterIndex_ != nullptr)
+    if (clusterIndex_)
     {
         if (clusterIndex_->grpname != nullptr)
         {
@@ -117,11 +118,9 @@ ExtractCluster::~ExtractCluster()
         }
         if (clusterIndex_->clust != nullptr)
         {
-            sfree(clusterIndex_->inv_clust);
             done_blocka(clusterIndex_->clust);
             sfree(clusterIndex_->clust);
         }
-        sfree(clusterIndex_);
     }
 }
 

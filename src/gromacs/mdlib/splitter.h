@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,10 +42,15 @@
 #include "gromacs/utility/basedefinitions.h"
 
 class InteractionDefinitions;
-struct t_blocka;
 
-void gen_sblocks(FILE* fp, int at_end, const InteractionDefinitions& idef, t_blocka* sblock, gmx_bool bSettle);
-/* Generate shake blocks from the constraint list. Set bSettle to yes for shake
+namespace gmx
+{
+template<typename>
+class ListOfLists;
+}
+
+gmx::ListOfLists<int> gen_sblocks(FILE* fp, int at_end, const InteractionDefinitions& idef, bool useSettles);
+/* Generate shake blocks from the constraint list. Set useSettles to yes for shake
  * blocks including settles. You normally do not want this.
  */
 

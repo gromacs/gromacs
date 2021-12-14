@@ -55,6 +55,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
@@ -984,39 +985,51 @@ void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], in
     sfree(grps);
 }
 
-t_cluster_ndx* cluster_index(FILE* fplog, const char* ndx)
+t_cluster_ndx cluster_index(FILE* fplog, const char* ndx)
 {
-    t_cluster_ndx* c = nullptr;
+    t_cluster_ndx c;
 
-    snew(c, 1);
-    c->clust    = init_index(ndx, &c->grpname);
-    c->maxframe = -1;
-    for (int i = 0; (i < c->clust->nra); i++)
+    c.clust    = init_index(ndx, &c.grpname);
+    c.maxframe = -1;
+    for (int i = 0; (i < c.clust->nra); i++)
     {
-        c->maxframe = std::max(c->maxframe, c->clust->a[i]);
+        c.maxframe = std::max(c.maxframe, c.clust->a[i]);
     }
     fprintf(fplog ? fplog : stdout,
             "There are %d clusters containing %d structures, highest framenr is %d\n",
-            c->clust->nr,
-            c->clust->nra,
-            c->maxframe);
+            c.clust->nr,
+            c.clust->nra,
+            c.maxframe);
     if (debug)
     {
-        pr_blocka(debug, 0, "clust", c->clust, TRUE);
-        for (int i = 0; (i < c->clust->nra); i++)
+        pr_blocka(debug, 0, "clust", c.clust, TRUE);
+        for (int i = 0; (i < c.clust->nra); i++)
         {
-            if ((c->clust->a[i] < 0) || (c->clust->a[i] > c->maxframe))
+            if ((c.clust->a[i] < 0) || (c.clust->a[i] > c.maxframe))
             {
                 gmx_fatal(FARGS,
-                          "Range check error for c->clust->a[%d] = %d\n"
+                          "Range check error for c.clust->a[%d] = %d\n"
                           "should be within 0 and %d",
                           i,
-                          c->clust->a[i],
-                          c->maxframe + 1);
+                          c.clust->a[i],
+                          c.maxframe + 1);
             }
         }
     }
-    c->inv_clust = make_invblocka(c->clust, c->maxframe);
+
+    GMX_RELEASE_ASSERT(c.clust->index != nullptr, "Keep clang-tidy happy");
+    std::vector<int> listRanges(c.clust->nr + 1);
+    for (int i = 0; i < c.clust->nr + 1; i++)
+    {
+        listRanges[i] = c.clust->index[i];
+    }
+    std::vector<int> elements(c.clust->nra);
+    for (int i = 0; i < c.clust->nra; i++)
+    {
+        elements[i] = c.clust->a[i];
+    }
+    gmx::ListOfLists<int> clusters(std::move(listRanges), std::move(elements));
+    c.inv_clust = make_invblock(clusters, c.maxframe);
 
     return c;
 }
