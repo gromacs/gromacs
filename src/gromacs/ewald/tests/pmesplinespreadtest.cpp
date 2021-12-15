@@ -257,152 +257,141 @@ public:
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
 
-        // Extra indentation retained only to help code review, can be removed later
+        const PmeTestHardwareContext& pmeTestHardwareContext = getPmeTestHardwareContexts()[contextIndex];
+        CodePath                      codePath               = pmeTestHardwareContext.codePath();
+        MessageStringCollector        messages =
+                getSkipMessagesIfNecessary(*getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
+        if (!messages.isEmpty())
         {
-            const PmeTestHardwareContext& pmeTestHardwareContext =
-                    getPmeTestHardwareContexts()[contextIndex];
-            CodePath               codePath = pmeTestHardwareContext.codePath();
-            MessageStringCollector messages = getSkipMessagesIfNecessary(
-                    *getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
-            if (!messages.isEmpty())
+            GTEST_SKIP() << messages.toString();
+        }
+        pmeTestHardwareContext.activate();
+        SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
+
+        // Describe the test uniquely in case it fails
+        SCOPED_TRACE(
+                formatString("Testing %s on %s for PME grid size %d %d %d"
+                             ", order %d, %zu atoms",
+                             enumValueToString(option),
+                             pmeTestHardwareContext.description().c_str(),
+                             gridSize[XX],
+                             gridSize[YY],
+                             gridSize[ZZ],
+                             pmeOrder,
+                             atomCount));
+
+        /* Running the test */
+
+        PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
+                                                codePath,
+                                                pmeTestHardwareContext.deviceContext(),
+                                                pmeTestHardwareContext.deviceStream(),
+                                                pmeTestHardwareContext.pmeGpuProgram(),
+                                                box);
+        std::unique_ptr<StatePropagatorDataGpu> stateGpu =
+                (codePath == CodePath::GPU)
+                        ? makeStatePropagatorDataGpu(*pmeSafe.get(),
+                                                     pmeTestHardwareContext.deviceContext(),
+                                                     pmeTestHardwareContext.deviceStream())
+                        : nullptr;
+
+        pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, coordinates, charges);
+
+        const bool computeSplines = (option == SplineAndSpreadOptions::SplineOnly)
+                                    || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
+        const bool spreadCharges = (option == SplineAndSpreadOptions::SpreadOnly)
+                                   || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
+
+        if (!computeSplines)
+        {
+            // Here we should set up the results of the spline computation so that the spread can run.
+            // What is lazy and works is running the separate spline so that it will set it up for us:
+            pmePerformSplineAndSpread(pmeSafe.get(), codePath, true, false);
+            // We know that it is tested in another iteration.
+            // TODO: Clean alternative: read and set the reference gridline indices, spline params
+        }
+
+        pmePerformSplineAndSpread(pmeSafe.get(), codePath, computeSplines, spreadCharges);
+        pmeFinalizeTest(pmeSafe.get(), codePath);
+
+        /* Outputs correctness check */
+        /* All tolerances were picked empirically for single precision on CPU */
+
+        TestReferenceData    refData(makeRefDataFileName());
+        TestReferenceChecker rootChecker(refData.rootChecker());
+
+        const auto maxGridSize = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
+        const auto ulpToleranceSplineValues = 4 * (pmeOrder - 2) * maxGridSize;
+        /* 4 is a modest estimate for amount of operations; (pmeOrder - 2) is a number of iterations;
+         * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
+         */
+
+        TestReferenceChecker splineValuesChecker(rootChecker.checkCompound("Splines", "Values"));
+        TestReferenceChecker splineDerivativesChecker(
+                rootChecker.checkCompound("Splines", "Derivatives"));
+        if (computeSplines)
+        {
+            const char* dimString[] = { "X", "Y", "Z" };
+
+            /* Spline values */
+            SCOPED_TRACE(formatString("Testing spline values with tolerance of %d", ulpToleranceSplineValues));
+            splineValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
+            for (int i = 0; i < DIM; i++)
             {
-                GTEST_SKIP() << messages.toString();
+                auto splineValuesDim =
+                        pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Values, i);
+                splineValuesChecker.checkSequence(
+                        splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
             }
-            pmeTestHardwareContext.activate();
-            SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
 
-            // Extra indentation retained only to help code review, can be removed later
+            /* Spline derivatives */
+            const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
+            /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
+            SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %d",
+                                      ulpToleranceSplineDerivatives));
+            splineDerivativesChecker.setDefaultTolerance(
+                    relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
+            for (int i = 0; i < DIM; i++)
             {
-                // Describe the test uniquely in case it fails
-                SCOPED_TRACE(
-                        formatString("Testing %s on %s for PME grid size %d %d %d"
-                                     ", order %d, %zu atoms",
-                                     enumValueToString(option),
-                                     pmeTestHardwareContext.description().c_str(),
-                                     gridSize[XX],
-                                     gridSize[YY],
-                                     gridSize[ZZ],
-                                     pmeOrder,
-                                     atomCount));
-
-                /* Running the test */
-
-                PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
-                                                        codePath,
-                                                        pmeTestHardwareContext.deviceContext(),
-                                                        pmeTestHardwareContext.deviceStream(),
-                                                        pmeTestHardwareContext.pmeGpuProgram(),
-                                                        box);
-                std::unique_ptr<StatePropagatorDataGpu> stateGpu =
-                        (codePath == CodePath::GPU)
-                                ? makeStatePropagatorDataGpu(*pmeSafe.get(),
-                                                             pmeTestHardwareContext.deviceContext(),
-                                                             pmeTestHardwareContext.deviceStream())
-                                : nullptr;
-
-                pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, coordinates, charges);
-
-                const bool computeSplines = (option == SplineAndSpreadOptions::SplineOnly)
-                                            || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
-                const bool spreadCharges = (option == SplineAndSpreadOptions::SpreadOnly)
-                                           || (option == SplineAndSpreadOptions::SplineAndSpreadUnified);
-
-                if (!computeSplines)
-                {
-                    // Here we should set up the results of the spline computation so that the spread can run.
-                    // What is lazy and works is running the separate spline so that it will set it up for us:
-                    pmePerformSplineAndSpread(pmeSafe.get(), codePath, true, false);
-                    // We know that it is tested in another iteration.
-                    // TODO: Clean alternative: read and set the reference gridline indices, spline params
-                }
-
-                pmePerformSplineAndSpread(pmeSafe.get(), codePath, computeSplines, spreadCharges);
-                pmeFinalizeTest(pmeSafe.get(), codePath);
-
-                /* Outputs correctness check */
-                /* All tolerances were picked empirically for single precision on CPU */
-
-                TestReferenceData    refData(makeRefDataFileName());
-                TestReferenceChecker rootChecker(refData.rootChecker());
-
-                const auto maxGridSize = std::max(std::max(gridSize[XX], gridSize[YY]), gridSize[ZZ]);
-                const auto ulpToleranceSplineValues = 4 * (pmeOrder - 2) * maxGridSize;
-                /* 4 is a modest estimate for amount of operations; (pmeOrder - 2) is a number of iterations;
-                 * maxGridSize is inverse of the smallest positive fractional coordinate (which are interpolated by the splines).
-                 */
-
-                TestReferenceChecker splineValuesChecker(
-                        rootChecker.checkCompound("Splines", "Values"));
-                TestReferenceChecker splineDerivativesChecker(
-                        rootChecker.checkCompound("Splines", "Derivatives"));
-                if (computeSplines)
-                {
-                    const char* dimString[] = { "X", "Y", "Z" };
-
-                    /* Spline values */
-                    SCOPED_TRACE(formatString("Testing spline values with tolerance of %d",
-                                              ulpToleranceSplineValues));
-                    splineValuesChecker.setDefaultTolerance(
-                            relativeToleranceAsUlp(1.0, ulpToleranceSplineValues));
-                    for (int i = 0; i < DIM; i++)
-                    {
-                        auto splineValuesDim =
-                                pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Values, i);
-                        splineValuesChecker.checkSequence(
-                                splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
-                    }
-
-                    /* Spline derivatives */
-                    const auto ulpToleranceSplineDerivatives = 4 * ulpToleranceSplineValues;
-                    /* 4 is just a wild guess since the derivatives are deltas of neighbor spline values which could differ greatly */
-                    SCOPED_TRACE(formatString("Testing spline derivatives with tolerance of %d",
-                                              ulpToleranceSplineDerivatives));
-                    splineDerivativesChecker.setDefaultTolerance(
-                            relativeToleranceAsUlp(1.0, ulpToleranceSplineDerivatives));
-                    for (int i = 0; i < DIM; i++)
-                    {
-                        auto splineDerivativesDim = pmeGetSplineData(
-                                pmeSafe.get(), codePath, PmeSplineDataType::Derivatives, i);
-                        splineDerivativesChecker.checkSequence(
-                                splineDerivativesDim.begin(), splineDerivativesDim.end(), dimString[i]);
-                    }
-
-                    /* Particle gridline indices */
-                    auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), codePath);
-                    rootChecker.checkSequence(
-                            gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
-                }
-                else
-                {
-                    splineValuesChecker.disableUnusedEntriesCheck();
-                    splineDerivativesChecker.disableUnusedEntriesCheck();
-                    // Avoid warnings about failing to check gridline indices
-                    rootChecker.disableUnusedEntriesCheck();
-                }
-
-                TestReferenceChecker gridValuesChecker(
-                        rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
-                if (spreadCharges)
-                {
-                    /* The wrapped grid */
-                    SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), codePath);
-                    const auto                 ulpToleranceGrid =
-                            2 * ulpToleranceSplineValues
-                            * static_cast<int>(ceil(sqrt(static_cast<real>(atomCount))));
-                    /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
-                    SCOPED_TRACE(formatString("Testing grid values with tolerance of %d", ulpToleranceGrid));
-
-                    gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
-                    for (const auto& point : nonZeroGridValues)
-                    {
-                        gridValuesChecker.checkReal(point.second, point.first.c_str());
-                    }
-                }
-                else
-                {
-                    gridValuesChecker.disableUnusedEntriesCheck();
-                }
+                auto splineDerivativesDim =
+                        pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Derivatives, i);
+                splineDerivativesChecker.checkSequence(
+                        splineDerivativesDim.begin(), splineDerivativesDim.end(), dimString[i]);
             }
+
+            /* Particle gridline indices */
+            auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), codePath);
+            rootChecker.checkSequence(
+                    gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
+        }
+        else
+        {
+            splineValuesChecker.disableUnusedEntriesCheck();
+            splineDerivativesChecker.disableUnusedEntriesCheck();
+            // Avoid warnings about failing to check gridline indices
+            rootChecker.disableUnusedEntriesCheck();
+        }
+
+        TestReferenceChecker gridValuesChecker(
+                rootChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
+        if (spreadCharges)
+        {
+            /* The wrapped grid */
+            SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), codePath);
+            const auto                 ulpToleranceGrid  = 2 * ulpToleranceSplineValues
+                                          * static_cast<int>(ceil(sqrt(static_cast<real>(atomCount))));
+            /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
+            SCOPED_TRACE(formatString("Testing grid values with tolerance of %d", ulpToleranceGrid));
+
+            gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
+            for (const auto& point : nonZeroGridValues)
+            {
+                gridValuesChecker.checkReal(point.second, point.first.c_str());
+            }
+        }
+        else
+        {
+            gridValuesChecker.disableUnusedEntriesCheck();
         }
     }
 };
