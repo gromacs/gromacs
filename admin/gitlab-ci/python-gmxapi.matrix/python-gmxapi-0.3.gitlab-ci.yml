@@ -1,17 +1,17 @@
-# Test goal: Continuous integration testing for gmxapi 0.3 and client Python package.
+# Test goal: Integration testing for gmxapi support and client Python package.
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
 #   GPU: unspecified
-#   GROMACS: newest supported
-#   gmxapi: gmxapi 0.3
+#   GROMACS: according to branch
+#   gmxapi: library as bundled with GROMACS
 #   Scope: build, install, test
 # Test implementation choices (free to change as needed):
-#   GROMACS branch: master
-#   gmxapi Python package: 0.3 alpha from GROMACS master
+#   GROMACS branch: repository version
+#   gmxapi Python package: sources from python_packaging/
 #   compiler: clang-8
 
 
-.gmxapi-0.3:clang-8:gmx2022:
+.gmxapi:clang-8:
   extends:
     - .variables:default
     - .use-clang:base
@@ -29,7 +29,7 @@
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
-    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.3.sh
+    - GROMACS_ROOT=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash -x admin/ci-scripts/build-and-test-py-gmxapi.sh
   artifacts:
     reports:
       junit:
@@ -48,26 +48,26 @@
     - job: gromacs:clang-8:build
       artifacts: true
 
-gmxapi-0.3:clang-8:gmx2022:py-3.7.7:
+gmxapi:clang-8:py-3.7.7:
   extends:
-    - .gmxapi-0.3:clang-8:gmx2022
-    - .rules:merge-requests:master
+    - .gmxapi:clang-8
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
 
-gmxapi-0.3:clang-8:gmx2022:py-3.8.2:
+gmxapi:clang-8:py-3.8.2:
   extends:
-    - .gmxapi-0.3:clang-8:gmx2022
-    - .rules:merge-requests:master
+    - .gmxapi:clang-8
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
 
-gmxapi-0.3:clang-8:gmx2022:py-3.9.1:
+gmxapi:clang-8:py-3.9.1:
   extends:
-    - .gmxapi-0.3:clang-8:gmx2022
-    - .rules:merge-requests:master
+    - .gmxapi:clang-8
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.9"
     PY_VER: "3.9.1"

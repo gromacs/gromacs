@@ -93,23 +93,6 @@ const std::map<std::string, Matrix3x3> c_inputBoxes = {
 //! Valid PME orders for testing
 std::vector<int> c_inputPmeOrders{ 3, 4, 5 };
 
-bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inputRec, CodePath mode)
-{
-    bool implemented;
-    switch (mode)
-    {
-        case CodePath::CPU: implemented = true; break;
-
-        case CodePath::GPU:
-            implemented = (pme_gpu_supports_build(nullptr) && pme_gpu_supports_hardware(hwinfo, nullptr)
-                           && pme_gpu_supports_input(*inputRec, nullptr));
-            break;
-
-        default: GMX_THROW(InternalError("Test not implemented for this mode"));
-    }
-    return implemented;
-}
-
 MessageStringCollector getSkipMessagesIfNecessary(const gmx_hw_info_t& hwinfo,
                                                   const t_inputrec&    inputRec,
                                                   const CodePath       codePath)
@@ -1067,6 +1050,8 @@ void registerTestsDynamically()
 {
     auto       contexts = getPmeTestHardwareContexts();
     Range<int> contextIndexRange(0, contexts.size());
+    registerDynamicalPmeSplineSpreadTests(contextIndexRange);
+    registerDynamicalPmeSolveTests(contextIndexRange);
     registerDynamicalPmeGatherTests(contextIndexRange);
 }
 

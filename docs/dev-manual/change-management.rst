@@ -2,7 +2,7 @@
 Change Management
 =================
 
-This documentation assumes the reader is already familiary with using ``git``
+This documentation assumes the reader is already familiar with using ``git``
 for managing file revisions.
 
 .. contents::
@@ -13,7 +13,7 @@ Getting started
 
 GROMACS development happens on gitlab at https://gitlab.com/gromacs/gromacs.
 Create a user account at https://gitlab.com/users/sign_in#register-pane or use
-an exisiting account at gitlab.com. For more information on how to use gitlab have 
+an existing account at gitlab.com. For more information on how to use gitlab have
 a look at their extensive user documentation at https://docs.gitlab.com/ee/user/index.html.
 We follow the workflow described in https://docs.gitlab.com/ee/topics/gitlab_flow.html. 
 

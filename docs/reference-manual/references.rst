@@ -1406,35 +1406,6 @@ Phys. Lett.*, **222** 529–539 (1994).
 
 .. raw:: html
 
-   <div id="ref-Pham2011">
-
-.. _refPham2011:
-
-:sup:`101` T.T. Pham and M.R. Shirts, "Identifying low variance pathways
-for free energy calculations of molecular transformations in solution
-phase," *J. Chem. Phys.*, **135** 034114 (2011).
-
-.. raw:: html
-
-   </div>
-
-.. raw:: html
-
-   <div id="ref-Pham2012">
-
-.. _refPham2012:
-
-:sup:`102` T.T. Pham and M.R. Shirts, "Optimal pairwise and non-pairwise
-alchemical pathways for free energy calculations of molecular
-transformation in solution phase," *J. Chem. Phys.*, **136** 124120
-(2012).
-
-.. raw:: html
-
-   </div>
-
-.. raw:: html
-
    <div id="ref-Jorgensen88">
 
 .. _refJorgensen88:

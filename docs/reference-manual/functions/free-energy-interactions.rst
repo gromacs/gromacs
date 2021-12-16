@@ -229,7 +229,8 @@ energies and forces involved at :math:`{\lambda}` values between 0 and
 
 In |Gromacs| the soft-core potentials :math:`V_{sc}` are shifted versions
 of the regular potentials, so that the singularity in the potential and
-its derivatives at :math:`r=0` is never reached:
+its derivatives at :math:`r=0` is never reached. This formulation was
+introduced by Beutler *et al.*\ :ref:`100 <refBeutler94>`:
 
 .. math:: \begin{aligned}
           V_{sc}(r) &=& {(1-{\lambda})}V^A(r_A) + {\lambda}V^B(r_B)
@@ -247,7 +248,10 @@ soft-core parameter (set with ``sc_alpha`` in the
 power (set with ``sc_power``), :math:`\sigma` is the radius
 of the interaction, which is :math:`(C_{12}/C_6)^{1/6}` or an input
 parameter (``sc_sigma``) when :math:`C_6` or :math:`C_{12}`
-is zero.
+is zero. Beutler *et al.*\ :ref:`100 <refBeutler94>` probed various
+combinations of the :math:`r` power values for the Lennard-Jones
+and Coulombic interactions. |Gromacs| uses :math:`r^6` for both,
+van der Waals and electrostatic interactions.
 
 For intermediate :math:`{\lambda}`, :math:`r_A` and :math:`r_B` alter
 the interactions very little for :math:`r > \alpha^{1/6} \sigma` and
@@ -309,24 +313,6 @@ used. When both Coulombic and Lennard-Jones interactions are turned off
 simultaneously, a soft-core potential is used, and a hydrogen is being
 introduced or deleted, the sigma is set to ``sc-sigma-min``,
 which itself defaults to ``sc-sigma-default``.
-
-Recently, a new formulation of the soft-core approach has been derived
-that in most cases gives lower and more even statistical variance than
-the standard soft-core path described above \ :ref:`101 <refPham2011>`,
-:ref:`102 <refPham2012>`. Specifically, we have:
-
-.. math:: \begin{aligned}
-          V_{sc}(r) &=& {(1-{\lambda})}V^A(r_A) + {\lambda}V^B(r_B)
-              \\
-          r_A &=& \left(\alpha \sigma_A^{48} {\lambda}^p + r^{48} \right)^\frac{1}{48}
-              \\
-          r_B &=& \left(\alpha \sigma_B^{48} {(1-{\lambda})}^p + r^{48} \right)^\frac{1}{48}\end{aligned}
-          :label: eqnnewsoftcore
-
-This “1-1-48” path is also implemented in |Gromacs|. Note that for this
-path the soft core :math:`\alpha` should satisfy
-:math:`0.001 < \alpha < 0.003`, rather than :math:`\alpha \approx
-0.5`.
 
 
 Soft-core interactions: Gapsys *et al.*

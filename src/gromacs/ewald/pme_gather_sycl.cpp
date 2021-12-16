@@ -54,6 +54,30 @@
 #include "pme_gpu_constants.h"
 #include "pme_gpu_types_host.h"
 
+/*! \brief
+ * Use loads from constant address space indexed by constant offsets rather
+ * than dynamic index-based accesses to the grid size data to avoid
+ * local memory operations and related large overhead.
+ *
+ * Drastically reduces register spills on AMD via hipSYCL, and improves performance 10x.
+ *
+ * \param[in]  realGridSizeFP     Local grid size constant
+ * \param[in]  dimIndex           Dimension index (XX, YY, ZZ)
+ *
+ * \returns The grid size of the specified dimension.
+ */
+inline float readGridSize(const float* realGridSizeFP, const int dimIndex)
+{
+    switch (dimIndex)
+    {
+        case XX: return realGridSizeFP[XX];
+        case YY: return realGridSizeFP[YY];
+        case ZZ: return realGridSizeFP[ZZ];
+    }
+    assert(false);
+    return 0.0F;
+}
+
 
 /*! \brief Reduce the partial force contributions.
  *
@@ -117,7 +141,7 @@ inline void reduceAtomForces(sycl::nd_item<3>        itemIdx,
     const int dimIndex = splineIndex;
     if (dimIndex < DIM)
     {
-        const float n                       = realGridSizeFP[dimIndex];
+        const float n                       = readGridSize(realGridSizeFP, dimIndex);
         sm_forces[atomIndexLocal][dimIndex] = fx * n;
     }
 }

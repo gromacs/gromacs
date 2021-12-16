@@ -223,8 +223,8 @@ configuring with ``GMX_SIMD_ARM_SVE_LENGTH=<len>``.
 The supported vector lengths are 128, 256, 512 and 1024. Since the SIMD short-range non-bonded kernels
 only support up to 16 floating point numbers per SIMD vector, 1024 bits vector length is only
 valid in double precision (e.g. ``-DGMX_DOUBLE=on``).
-Note that even if `mdrun` does check the SIMD vector length at runtime, running with a different
-vector length than the one used at CMake time is undefined behavior, and `mdrun` might crash before reaching
+Note that even if :ref:`mdrun <gmx mdrun>` does check the SIMD vector length at runtime, running with a different
+vector length than the one used at CMake time is undefined behavior, and :ref:`mdrun <gmx mdrun>` might crash before reaching
 the check (that would abort with a user-friendly error message).
 
 Process(-or) level parallelization via OpenMP
@@ -258,7 +258,7 @@ Compilation with thread-MPI is controlled by the ``GMX_THREAD_MPI`` CMake variab
 Thread-MPI is compatible with most :ref:`mdrun <gmx mdrun>` features and parallelization schemes,
 including OpenMP, GPUs; it is not compatible with MPI and multi-simulation runs.
 
-By default, the thread-MPI mdrun will use all available cores in the machine by starting
+By default, the thread-MPI :ref:`mdrun <gmx mdrun>` will use all available cores in the machine by starting
 an appropriate number of ranks or OpenMP threads to occupy all of them. The number of
 ranks can be controlled using the
 ``-nt`` and ``-ntmpi`` options. ``-nt`` represents the total number of threads

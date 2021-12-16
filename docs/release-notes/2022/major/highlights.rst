@@ -23,7 +23,7 @@ simulations and hardware. The new features are:
 * Additional features were ported to modular simulator
 * Added AMD GPU support with SYCL via hipSYCL_
 * More GPU offload features supported with SYCL (PME, GPU update). 
-
+* Improved parallelization with GPU-accelerated runs using CUDA and extended GPU direct communication to support multi-node simulation using CUDA-aware MPI.
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,

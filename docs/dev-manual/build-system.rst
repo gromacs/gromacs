@@ -5,7 +5,7 @@ Build system overview
 
 The |Gromacs| build system uses CMake (version
 |CMAKE_MINIMUM_REQUIRED_VERSION| or newer is required) to generate the
-actual build system for the build tool choosen by the user.  See CMake
+actual build system for the build tool chosen by the user.  See CMake
 documentation for general introduction to CMake and how to use it.  This
 documentation focuses on how the |Gromacs| build system is organized and
 implemented, and what features it provides to developers (some of which may be
@@ -55,13 +55,13 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
 **Reference**
   This build type compiles a version of |Gromacs| aimed solely at correctness. All
   parallelization and optimization possibilities are disabled. This build type is
-  compiled with gcc 5 to generate the regression test reference values, against
+  compiled with GCC 7 to generate the regression test reference values, against
   which all other |Gromacs| builds are tested.
 
 **RelWithAssert**
   As Release, but removes ``-DNDEBUG`` from compiler command lines, which makes
   all assertion statements active (and can have other safety-related side effects
-  in |Gromacs| and code upon which it depends)
+  in |Gromacs| and code upon which it depends).
 
 **Profile**
   As Release, but adds ``-pg`` for use with profiling tools. This is not
@@ -69,21 +69,21 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
   be useful for the tools.
 
 **TSAN**
-  Builds |Gromacs| for use with ThreadSanitzer in gcc and clang
-  (http://clang.llvm.org/docs/ThreadSanitizer.html) to detect
+  Builds |Gromacs| for use with ThreadSanitizer in gcc and clang
+  (https://clang.llvm.org/docs/ThreadSanitizer.html) to detect
   data races. This disables the use of atomics in ThreadMPI,
   preferring the mutex-based implementation.
 
 **ASAN**
-  Builds |Gromacs| for use with AddressSanitzer in gcc and
-  clang (http://clang.llvm.org/docs/AddressSanitizer.html) to
+  Builds |Gromacs| for use with AddressSanitizer in gcc and
+  clang (https://clang.llvm.org/docs/AddressSanitizer.html) to
   detect many kinds of memory mis-use. By default, AddressSanitizer
   includes LeakSanitizer.
 
 **MSAN**
-  Builds |Gromacs| for use with AddressSanitzer in clang
-  (http://clang.llvm.org/docs/MemorySanitizer.html) to detect
-  reads of unitialized memory. This functionality requires that
+  Builds |Gromacs| for use with MemorySanitizer in clang
+  (https://clang.llvm.org/docs/MemorySanitizer.html) to detect
+  reads of uninitialized memory. This functionality requires that
   dependencies of the |Gromacs| build have been built in a compatible
   way (roughly, static libraries with ``-g -fsanitize=memory
   -fno-omit-frame-pointer``), which generally requires at least the C++
@@ -95,7 +95,7 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
 
 For all of the sanitizer builds, to get readable stack traces, you may
 need to ensure that the ``ASAN_SYMBOLIZER_PATH`` environment variable
-(or your ``PATH``) include that of the ``llvm-symbolizer`` binary.
+(or your ``PATH``) includes that of the ``llvm-symbolizer`` binary.
 
 With some generators, CMake generates the build system for more than a
 single ``CMAKE_BUILD_TYPE`` from one pass over the ``CMakeLists.txt``
@@ -165,6 +165,12 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_BROKEN_CALLOC
 
+   Enable emulation of ``calloc`` via ``malloc``/``memset``.
+   Only needed on machines with a broken ``calloc(3)``, e.g. in ``-lgmalloc``
+   on Cray XT3.
+   Defaults to ``OFF``, and there should not be any need to change this unless
+   you are sure it is required.
+
 .. cmake:: GMX_BUILD_FOR_COVERAGE
 
    Special variable set ``ON`` by CI when doing a build for the coverage
@@ -178,7 +184,14 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_BUILD_OWN_FFTW
 
+   If set ``ON``, |Gromacs| build system will download and build FFTW from source
+   automatically. Not supported on Windows or with ``ninja`` build system.
+
 .. cmake:: GMX_BUILD_SHARED_EXE
+
+   Build executables as shared binaries. If not set, this disables ``-rpath`` and dynamic
+   linker flags in an attempt to build a static binary, but this may require setting up
+   the toolchain properly and making appropriate libraries available. Defaults to ``ON``.
 
 .. cmake:: GMX_COMPILER_WARNINGS
 
@@ -200,7 +213,7 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_ENABLE_CCACHE
 
-    If set to ``ON``, attempts to set up the `ccache <https://ccache.samba.org>`_
+    If set to ``ON``, attempts to set up the `ccache <https://ccache.dev/>`_
     caching compiler wrapper to speed up repeated builds.
     The ``ccache`` executable is searched for with ``find_package()`` if CMake
     is being run with a compatible build type.
@@ -224,18 +237,33 @@ Variables affecting compilation/linking
    which is actually either a single- or double-precision type,
    according to the value of this flag. Some parts of the code
    deliberately use single- or double-precision types, and these are
-   unaffected by this setting. See reference manual for further
-   information.
+   unaffected by this setting. See
+   :doc:`Mixed or Double precision </reference-manual/definitions>`
+   for further information.
 
 .. cmake:: GMX_EXTRAE
 
+   Add support for tracing using `Extrae <https://tools.bsc.es/extrae>`_.
+
 .. cmake:: GMX_EXTERNAL_BLAS
+
+   If not set (the default), CMake will first try to use an external BLAS library,
+   and, if unsuccessful, fall back to using the one bundled with |Gromacs|.
+   If set to ``OFF``, CMake will use the bundled one immediately.
+   If set to ``ON``, CMake will use the external one, and raise an error if it is not found.
 
 .. cmake:: GMX_EXTERNAL_LAPACK
 
+   See ``GMX_EXTERNAL_BLAS``.
+
 .. cmake:: GMX_EXTERNAL_TNG
 
+   Use external TNG library for trajectory-file handling. Default: ``OFF``.
+
 .. cmake:: GMX_FFT_LIBRARY
+
+   Choose the CPU FFT library to use. Possible values: ``fftw``, ``mkl``, ``fftpack``.
+   The default selection depends on the compiler and build type.
 
 .. cmake:: GMX_GIT_VERSION_INFO
 
@@ -248,9 +276,13 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_GPU
 
+   Choose the backend for GPU offload. Possible values: ``CUDA``, ``OpenCL``, ``SYCL``.
+   Please see the :ref:`Installation guide <gmx-gpu-support>` for more information.
+
 .. cmake:: GMX_CLANG_CUDA
 
    Use clang for compiling CUDA GPU code, both host and device.
+   Please see the :ref:`Installation guide <gmx-gpu-support>` for more information.
 
 .. cmake:: GMX_CUDA_CLANG_FLAGS
 
@@ -262,27 +294,51 @@ Variables affecting compilation/linking
    standard CMake package ``GNUInstallDirs``).
    See :doc:`relocatable-binaries` for how this influences the build.
 
-.. cmake:: GMX_LOAD_PLUGINS
+.. cmake:: GMX_USE_PLUGINS
+
+   Enable support for dynamic plugins (e.g. VMD-supported file formats).
+   Default: ``OFF``.
 
 .. cmake:: GMX_MPI
 
+   Enable MPI (not thread-MPI) support for inter-node parallelism. Defaults to ``OFF``.
+   Please see the :ref:`Installation guide <mpi-support>` for more information.
+
 .. cmake:: GMX_OPENMP
+
+   Enable OpenMP support. Default is ``ON``.
 
 .. cmake:: GMX_PREFER_STATIC_LIBS
 
+   Prefer statically linking to external libraries. Defaults to ``OFF``, unless
+   ``GMX_BUILD_SHARED_EXE`` is disabled.
+
 .. cmake:: GMX_SIMD
 
-.. cmake:: GMX_SOFTWARE_INVSQRT
+   Choose SIMD instruction set to use. Default is: ``Auto`` (best one for the current CPU).
+   Please see the :ref:`Installation guide <gmx-simd-support>` for more information.
 
 .. cmake:: GMX_THREAD_MPI
 
+   Enable thread-MPI support for inter-node parallelism. Defaults to ``ON``.
+
 .. cmake:: GMX_USE_RDTSCP
+
+   Use low-latency ``RDTSCP`` instruction for x86 CPU-based timers for mdrun execution.
+   Ignored on non-x86 machines. Might need to be set to ``OFF`` when compiling for
+   for heterogeneous environments or a very old x86 CPU.
 
 .. cmake:: GMX_USE_TNG
 
+   Use the TNG library for trajectory I/O. Defaults to ``ON``.
+
 .. cmake:: GMX_VMD_PLUGIN_PATH
 
+   Path to VMD plugins for molfile I/O. Only used when ``GMX_USE_PLUGINS`` is enabled.
+
 .. cmake:: GMX_X11
+
+   Enable ``gmx view`` tool. Default: ``OFF``. Deprecated.
 
 .. cmake:: GMX_XML
 
@@ -326,22 +382,23 @@ Variables affecting the ``all`` target
 
 .. cmake:: GMX_CLANG_TIDY
 
-  `clang-tidy <http://releases.llvm.org/9.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
-  is used for static code analysis and (some) automated fixing of issues detected. clang-tidy is easy to install. It is contained in
-  the llvm binary `package <http://releases.llvm.org/download.html#9.0.0>`_. Only
-  version 9.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
-  It is run automatically in gitlab CI for each commit. Many checks have fixes which can automatically be
+  `clang-tidy <https://releases.llvm.org/11.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  is used for static code analysis and (some) automated fixing of issues detected. clang-tidy is easy to install.
+  It is contained in
+  the llvm binary `package <http://releases.llvm.org/download.html#11.0.0>`_. Only
+  version 11.0.* is supported. Others might miss tests or give false positives.
+  It is run automatically in GitLab CI for each commit. Many checks have fixes which can automatically be
   applied. To run it, the build has to be configured with
   ``cmake -DGMX_CLANG_TIDY=ON -DCMAKE_BUILD_TYPE=Debug``.
   Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
   run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable is set with
   ``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
-  To apply the automatic fixes to the issue identified clang-tidy should be run separately (running clang-tidy
+  To apply the automatic fixes to the issues identified, clang-tidy should be run separately (running clang-tidy
   with ``-fix-errors`` as part of the build can corrupt header files). To fix a specific file run
   ``clang-tidy -fix-errors -header-filter '.*' {file}``, to fix all files in parallel
   ``run-clang-tidy.py -fix -header-filter '.*' '(?<!/selection/parser\.cpp|selection/scanner\.cpp)$'``,
   and to fix all modified files ``run-clang-tidy.py -fix -header-filter '.*' $(git diff HEAD --name-only)``.
-  The run-clang-tidy.py script is in the
+  The :file:`run-clang-tidy.py` script is in the
   ``share/clang/`` subfolder of the llvm distribution. ``clang-tidy`` has to be able to find the
   ``compile_commands.json`` file. Either run from the build folder or add a symlink to the source folder.
   :cmake:`GMX_ENABLE_CCACHE` does not work with clang-tidy.
@@ -380,7 +437,7 @@ Variables affecting special targets
 .. cmake:: GMX_BUILD_UNITTESTS
 
    If ``ON``, test binaries using Google Test are built (either as the separate
-   ``tests`` targer, or also as part of the ``all`` target, depending on
+   ``tests`` target, or also as part of the ``all`` target, depending on
    :cmake:`GMX_DEVELOPER_BUILD`).  All dependencies required for building the
    tests (Google Test and Google Mock frameworks, and tinyxml2) are
    included in :file:`src/external/`.

@@ -115,16 +115,26 @@ pull vector going through the pull group. This only works for distances
 defined in one dimension, and the cylinder is oriented with its long
 axis along this one dimension. To avoid jumps in the pull force,
 contributions of atoms are weighted as a function of distance (in
-addition to the mass weighting):
+addition to the mass weighting), for atom :math:`i`:
 
 .. math:: \begin{aligned}
-          w(r < r_\mathrm{cyl}) & = &
-          1-2 \left(\frac{r}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r}{r_\mathrm{cyl}}\right)^4 \\
-          w(r \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+          w_i(r_i < r_\mathrm{cyl}) & = &
+          1-2 \left(\frac{r_i}{r_\mathrm{cyl}}\right)^2 + \left(\frac{r_i}{r_\mathrm{cyl}}\right)^4 \\
+          w_i(r_i \geq r_\mathrm{cyl}) & = & 0\end{aligned}
           :label: eqnpulldistmassweight
 
 Note that the radial dependence on the weight causes a radial force on
-both cylinder group and the other pull group. This is an undesirable,
+both cylinder group and the other pull group:
+
+.. math:: \begin{aligned}
+          F^\mathrm{radial}_i(r_i < r_\mathrm{cyl}) & = &
+          F^\mathrm{pull} a_i \frac{1}{\sum_i w_i}\frac{4}{r_\mathrm{cyl}^4} r_i (r_i^2 - r_\mathrm{cyl}^2) \\
+          F^\mathrm{radial}_i(r_i \geq r_\mathrm{cyl}) & = & 0\end{aligned}
+          :label: eqnpulldistmassweightradialforce
+
+where :math:`F^\mathrm{pull}` is the pull force working between the groups
+and :math:`a_i` is the axial distance of atom :math:`i` to the center of
+mass of the cylinder group. This is an undesirable,
 but unavoidable effect. To minimize this effect, the cylinder radius
 should be chosen sufficiently large. The effective mass is 0.47 times
 that of a cylinder with uniform weights and equal to the mass of uniform

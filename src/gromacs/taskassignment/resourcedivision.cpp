@@ -563,16 +563,12 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
 void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
-                                        gmx_bool             bNtOmpOptionSet,
+                                        bool                 bNtOmpOptionSet,
                                         t_commrec*           cr,
                                         const gmx::MDLogger& mdlog)
 {
 #if GMX_OPENMP && GMX_MPI
     GMX_UNUSED_VALUE(hwinfo);
-
-    int         nth_omp_max;
-    char        buf[1000];
-    const char* mpi_option = GMX_THREAD_MPI ? " (option -ntmpi)" : "";
 
     /* This function should be called after thread-MPI (when configured) and
      * OpenMP have been initialized. Check that here.
@@ -585,7 +581,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Default) >= 1,
                        "Must have at least one OpenMP thread");
 
-    nth_omp_max = gmx_omp_nthreads_get(ModuleMultiThread::Default);
+    int nth_omp_max = gmx_omp_nthreads_get(ModuleMultiThread::Default);
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
@@ -621,34 +617,18 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min || nth_omp_max > nthreads_omp_mpi_ok_max)
         {
-            /* Note that we print target_max here, not ok_max */
-            sprintf(buf,
-                    "Your choice of number of MPI ranks and amount of resources results in using "
+            auto msg = gmx::formatString(
+                    "%sYour choice of number of MPI ranks and amount of resources results in using "
                     "%d OpenMP "
                     "threads per rank, which is most likely inefficient. The optimum is usually "
                     "between %d and"
                     " %d threads per rank.",
+                    bNtOmpOptionSet ? "Note: " : "",
                     nth_omp_max,
                     nthreads_omp_mpi_ok_min,
-                    nthreads_omp_mpi_target_max);
+                    nthreads_omp_mpi_ok_max);
 
-            if (bNtOmpOptionSet)
-            {
-                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("NOTE: %s", buf);
-            }
-            else
-            {
-                /* This fatal error, and the one below, is nasty, but it's
-                 * probably the only way to ensure that all users don't waste
-                 * a lot of resources, since many users don't read logs/stderr.
-                 */
-                gmx_fatal(FARGS,
-                          "%s If you want to run with this setup, specify the -ntomp option. But "
-                          "we suggest to "
-                          "change the number of MPI ranks%s.",
-                          buf,
-                          mpi_option);
-            }
+            GMX_LOG(mdlog.warning).asParagraph().appendText(msg);
         }
     }
 #else  // !GMX_OPENMP || ! GMX_MPI

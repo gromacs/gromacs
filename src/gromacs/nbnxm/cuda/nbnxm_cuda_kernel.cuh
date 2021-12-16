@@ -173,8 +173,8 @@ __launch_bounds__(THREADS_PER_BLOCK)
     const int*           atom_types  = atdat.atomTypes;
     int                  ntypes      = atdat.numTypes;
 #    else
-    const float2* lj_comb = atdat.ljComb;
-    float2        ljcp_i, ljcp_j;
+    const float2*        lj_comb = atdat.ljComb;
+    float2               ljcp_i, ljcp_j;
 #    endif
     const float4*        xq          = atdat.xq;
     float3*              f           = asFloat3(atdat.f);
@@ -203,7 +203,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
     float                beta        = nbparam.ewald_beta;
     float                ewald_shift = nbparam.sh_ewald;
 #        else
-    float reactionFieldShift = nbparam.c_rf;
+    float                reactionFieldShift = nbparam.c_rf;
 #        endif /* EL_EWALD_ANY */
     float*               e_lj        = atdat.eLJ;
     float*               e_el        = atdat.eElec;
@@ -216,7 +216,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    if NTHREAD_Z == 1
     unsigned int tidxz = 0;
 #    else
-    unsigned int  tidxz = threadIdx.z;
+    unsigned int         tidxz              = threadIdx.z;
 #    endif
     unsigned int bidx  = blockIdx.x;
     unsigned int widx  = tidx / warp_size; /* warp index */
@@ -257,6 +257,32 @@ __launch_bounds__(THREADS_PER_BLOCK)
     // - sm_61: tested and slower without preload
     // - sm_6x and earlier not tested to
     constexpr bool c_preloadCj = (GMX_PTX_ARCH < 700 || GMX_PTX_ARCH == 750);
+
+
+    // Full or partial unroll on Ampere GPUs is beneficial given the incresead L1 intruction cache
+    // Tested with CUDA 11.2-5.
+#    if GMX_PTX_ARCH == 800
+#        define DO_JM_UNROLL 1
+#        if !defined CALC_ENERGIES && !defined PRUNE_NBL
+#            if (defined EL_CUTOFF || defined EL_RF \
+                 || defined EL_EWALD_ANY && !defined LJ_FORCE_SWITCH && !defined LJ_POT_SWITCH)
+    static constexpr int jmLoopUnrollFactor = 4;
+#            else
+    static constexpr int jmLoopUnrollFactor = 2;
+#            endif
+#        else // CALC_ENERGIES
+#            if (defined EL_CUTOFF || defined EL_RF && !defined LJ_FORCE_SWITCH && !defined LJ_POT_SWITCH)
+    static constexpr int jmLoopUnrollFactor = 2;
+#            else
+    static constexpr int jmLoopUnrollFactor = 1;
+#            endif
+#        endif
+#    elif GMX_PTX_ARCH == 860
+#        define DO_JM_UNROLL 1
+    static constexpr int jmLoopUnrollFactor = 2;
+#    else
+#        define DO_JM_UNROLL 0
+#    endif
 
     /*********************************************************************
      * Set up shared memory pointers.
@@ -403,10 +429,9 @@ __launch_bounds__(THREADS_PER_BLOCK)
                 __syncwarp(c_fullWarpMask);
             }
 
-            /* Unrolling this loop
-               - with pruning leads to register spilling;
-               - on Kepler and later it is much slower;
-               Tested with up to nvcc 7.5 */
+#    if DO_JM_UNROLL
+#        pragma unroll(jmLoopUnrollFactor)
+#    endif
             for (jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 if (imask & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build and test the sample_restraint package distributed with GROMACS 2022.
+# Build and test the sample_restraint package distributed with GROMACS.
 #
 # This script is intended to support automated GROMACS testing infrastructure,
 # and may be removed without notice.
@@ -12,29 +12,15 @@
 # Make sure the script errors if any commands error.
 set -e
 
-pushd python_packaging/src
-  # Build and install gmxapi python package from local source.
-  # Note that tool chain may be provided differently across GROMACS versions.
-  if [ "2022" -eq "$GROMACS_MAJOR_VERSION" ]; then
-      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
-          python -m pip install \
-              --no-cache-dir \
-              .
-  # TODO: Get sdist artifact for other gmxapi versions.
-#    elif [ "2021" -eq "$GROMACS_MAJOR_VERSION" ]; then
-#      GMXTOOLCHAINDIR=$GROMACS_ROOT/share/cmake/gromacs \
-#          python -m pip install \
-#              --no-cache-dir \
-#              --no-deps \
-#              --no-index \
-#              dist/gmxapi*
-  else
-      echo "Logic error in GROMACS version handling."
-      exit 1
-  fi
-popd
-
+# In the build-and-test-py-gmxapi.sh script, we use the currently canonical mechanism for hinting
+# gromacs client build systems, but users have become accustomed to simply sourcing the GMXRC, so
+# we test that alternative when building the gmxapi Python package here.
 . $GROMACS_ROOT/bin/GMXRC
+
+# Build and install gmxapi python package from local source.
+# Note that tool chain may be provided differently across GROMACS versions.
+python -m pip install --no-build-isolation --no-cache-dir --no-deps --no-index python_packaging/src
+
 pushd python_packaging/sample_restraint
   rm -rf build
   mkdir build

@@ -126,9 +126,6 @@ enum class PmeSolveAlgorithm : int
 
 // Misc.
 
-//! Tells if this generally valid PME input is supported for this mode
-bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inputRec, CodePath mode);
-
 /*! \brief Returns message describing why PME in this \c mode is not
  * supported for this \c inputRec on this \c hwinfo, or empty of
  * messages when PME is supported. */
@@ -278,6 +275,8 @@ std::string makeHardwareContextName(int hardwareContextIndex);
  * This are called by registerTestsDynamically and customize the
  * range of test cases to suit the available hardware. */
 //!\{
+void registerDynamicalPmeSplineSpreadTests(Range<int> contextIndexRange);
+void registerDynamicalPmeSolveTests(Range<int> contextIndexRange);
 void registerDynamicalPmeGatherTests(Range<int> contextIndexRange);
 //!\}
 

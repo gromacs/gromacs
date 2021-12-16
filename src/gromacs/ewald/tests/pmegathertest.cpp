@@ -231,8 +231,15 @@ std::map<std::string, TestSystem> c_testSystems = {
         CoordinatesVector(13, { 1e6, 1e7, -1e8 }) } },
 };
 
-/*! \brief Convenience typedef of the test input parameters - unit cell box, PME interpolation
- * order, grid dimensions, grid values, test system, PME hardware context index.
+/*! \brief Convenience typedef of the test input parameters
+ *
+ * Parameters:
+ * - unit cell box
+ * - PME interpolation order
+ * - grid dimensions
+ * - grid values
+ * - test system
+ * - PME hardware context index
  */
 typedef std::tuple<std::string, int, IVec, std::string, std::string, int> GatherInputParameters;
 
@@ -342,79 +349,72 @@ public:
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
 
-        // Extra indentation retained only to help code review, can be removed later
+        const PmeTestHardwareContext& pmeTestHardwareContext = getPmeTestHardwareContexts()[contextIndex];
+        CodePath                      codePath               = pmeTestHardwareContext.codePath();
+        MessageStringCollector        messages =
+                getSkipMessagesIfNecessary(*getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
+        if (!messages.isEmpty())
         {
-            const PmeTestHardwareContext& pmeTestHardwareContext =
-                    getPmeTestHardwareContexts()[contextIndex];
-            CodePath               codePath = pmeTestHardwareContext.codePath();
-            MessageStringCollector messages = getSkipMessagesIfNecessary(
-                    *getTestHardwareEnvironment()->hwinfo(), inputRec, codePath);
-            if (!messages.isEmpty())
-            {
-                GTEST_SKIP() << messages.toString();
-            }
-            pmeTestHardwareContext.activate();
-            SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
-
-            // Describe the test uniquely in case it fails
-            SCOPED_TRACE(
-                    formatString("Testing force gathering on %s for PME grid size %d %d %d"
-                                 ", order %d, %d atoms",
-                                 pmeTestHardwareContext.description().c_str(),
-                                 gridSize[XX],
-                                 gridSize[YY],
-                                 gridSize[ZZ],
-                                 pmeOrder,
-                                 atomCount));
-
-            PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
-                                                    codePath,
-                                                    pmeTestHardwareContext.deviceContext(),
-                                                    pmeTestHardwareContext.deviceStream(),
-                                                    pmeTestHardwareContext.pmeGpuProgram(),
-                                                    box);
-            std::unique_ptr<StatePropagatorDataGpu> stateGpu =
-                    (codePath == CodePath::GPU)
-                            ? makeStatePropagatorDataGpu(*pmeSafe.get(),
-                                                         pmeTestHardwareContext.deviceContext(),
-                                                         pmeTestHardwareContext.deviceStream())
-                            : nullptr;
-
-            pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, testSystem.coordinates, testSystem.charges);
-
-            /* Setting some more inputs */
-            pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
-            pmeSetGridLineIndices(pmeSafe.get(), codePath, testSystem.gridLineIndices);
-            for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
-            {
-                pmeSetSplineData(pmeSafe.get(),
-                                 codePath,
-                                 splineData.splineValues[dimIndex],
-                                 PmeSplineDataType::Values,
-                                 dimIndex);
-                pmeSetSplineData(pmeSafe.get(),
-                                 codePath,
-                                 splineData.splineDerivatives[dimIndex],
-                                 PmeSplineDataType::Derivatives,
-                                 dimIndex);
-            }
-
-            /* Explicitly copying the sample forces to be able to modify them */
-            auto inputForcesFull(c_sampleForcesFull);
-            GMX_RELEASE_ASSERT(ssize(inputForcesFull) >= atomCount, "Bad input forces size");
-            auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
-
-            /* Running the force gathering itself */
-            pmePerformGather(pmeSafe.get(), codePath, forces);
-            pmeFinalizeTest(pmeSafe.get(), codePath);
-
-            /* Check the output forces correctness */
-            TestReferenceData    refData(makeRefDataFileName());
-            TestReferenceChecker forceChecker(refData.rootChecker());
-            const auto           ulpTolerance = 3 * pmeOrder;
-            forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
-            forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
+            GTEST_SKIP() << messages.toString();
         }
+        pmeTestHardwareContext.activate();
+        SCOPED_TRACE("Testing on " + pmeTestHardwareContext.description());
+
+        // Describe the test uniquely in case it fails
+        SCOPED_TRACE(
+                formatString("Testing force gathering on %s for PME grid size %d %d %d"
+                             ", order %d, %d atoms",
+                             pmeTestHardwareContext.description().c_str(),
+                             gridSize[XX],
+                             gridSize[YY],
+                             gridSize[ZZ],
+                             pmeOrder,
+                             atomCount));
+
+        PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
+                                                codePath,
+                                                pmeTestHardwareContext.deviceContext(),
+                                                pmeTestHardwareContext.deviceStream(),
+                                                pmeTestHardwareContext.pmeGpuProgram(),
+                                                box);
+        std::unique_ptr<StatePropagatorDataGpu> stateGpu =
+                (codePath == CodePath::GPU)
+                        ? makeStatePropagatorDataGpu(*pmeSafe.get(),
+                                                     pmeTestHardwareContext.deviceContext(),
+                                                     pmeTestHardwareContext.deviceStream())
+                        : nullptr;
+
+        pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, testSystem.coordinates, testSystem.charges);
+
+        /* Setting some more inputs */
+        pmeSetRealGrid(pmeSafe.get(), codePath, nonZeroGridValues);
+        pmeSetGridLineIndices(pmeSafe.get(), codePath, testSystem.gridLineIndices);
+        for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
+        {
+            pmeSetSplineData(
+                    pmeSafe.get(), codePath, splineData.splineValues[dimIndex], PmeSplineDataType::Values, dimIndex);
+            pmeSetSplineData(pmeSafe.get(),
+                             codePath,
+                             splineData.splineDerivatives[dimIndex],
+                             PmeSplineDataType::Derivatives,
+                             dimIndex);
+        }
+
+        /* Explicitly copying the sample forces to be able to modify them */
+        auto inputForcesFull(c_sampleForcesFull);
+        GMX_RELEASE_ASSERT(ssize(inputForcesFull) >= atomCount, "Bad input forces size");
+        auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
+
+        /* Running the force gathering itself */
+        pmePerformGather(pmeSafe.get(), codePath, forces);
+        pmeFinalizeTest(pmeSafe.get(), codePath);
+
+        /* Check the output forces correctness */
+        TestReferenceData    refData(makeRefDataFileName());
+        TestReferenceChecker forceChecker(refData.rootChecker());
+        const auto           ulpTolerance = 3 * pmeOrder;
+        forceChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpTolerance));
+        forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
     }
 };
 

@@ -241,6 +241,11 @@ Performance and Run Control
 ``GMX_FORCE_UPDATE``
         update forces when invoking ``mdrun -rerun``.
 
+``GMX_FORCE_CUDA_AWARE_MPI``
+        Override the result of build- and runtime CUDA-aware MPI detection and force the use of
+        direct GPU MPI communication. Aimed at cases where the user knows that the MPI library is
+        CUDA-aware, but |GROMACS| is not able to detect this.
+
 ``GMX_FORCE_UPDATE_DEFAULT_GPU``
         Force update to run on the GPU by default, overriding the ``mdrun -update auto`` option. Works similar to setting
         ``mdrun -update gpu``, but (1) falls back to the CPU code-path, if set with input that is not supported and

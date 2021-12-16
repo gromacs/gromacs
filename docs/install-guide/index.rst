@@ -646,7 +646,7 @@ be specified using the following variables:
 The respective ``include``, ``lib``, or ``bin`` is
 appended to the path. For each of these variables, a list of paths can
 be specified (on Unix, separated with ":"). These can be set as
-enviroment variables like:
+environment variables like:
 
 ::
 
@@ -945,7 +945,7 @@ library, that incorporates CP2K functionality into |Gromacs|.
 1. Download, compile and install CP2K (version 8.1 or higher is required).
 CP2K latest distribution can be downloaded `here <https://github.com/cp2k/cp2k/releases/>`_.
 For CP2K specific instructions please `follow <https://github.com/cp2k/cp2k/blob/master/INSTALL.md>`_.
-You can also check instructions on the `oficial CP2K web-page <https://www.cp2k.org/howto>`_.
+You can also check instructions on the `official CP2K web-page <https://www.cp2k.org/howto>`_.
 
 2. Make :file:`libcp2k.a` library by executing the following command::
     make ARCH=<your arch file> VERSION=<your version like psmp> libcp2k
