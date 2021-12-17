@@ -597,8 +597,8 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1. 
-    For maximum performance we strongly  suggest the latest gcc compilers,
-    LLVM 14 (when released) or ARM 22.1 (when released). 
+    For maximum performance we strongly suggest the latest gcc compilers,
+    or at least LLVM 14 (when released) or ARM 22.0 (when released). 
     Lower performance has been observed with LLVM 13 and Arm compiler 21.1.
 
 The CMake configure system will check that the compiler you have
