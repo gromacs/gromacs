@@ -15,8 +15,6 @@
 .sample_restraint:clang-8:
   extends:
     - .variables:default
-    - .use-clang:base
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -25,8 +23,6 @@
     KUBERNETES_MEMORY_REQUEST: 2Gi
     PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
-    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
-    GROMACS_MAJOR_VERSION: 2022
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
@@ -41,30 +37,42 @@
   tags:
     - k8s-scilifelab
   # The dependency means we need to use the same tag restriction as upstream.
-  needs:
-    - job: gromacs:clang-8:build
-      artifacts: true
 
 sample_restraint:clang-8:py-3.7.7:
   extends:
     - .sample_restraint:clang-8
+    - .use-clang:base
     - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
 
 sample_restraint:clang-8:py-3.8.2:
   extends:
     - .sample_restraint:clang-8
+    - .use-clang:base
     - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
 
 sample_restraint:clang-8:py-3.9.1:
   extends:
     - .sample_restraint:clang-8
+    - .use-clang:base
     - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
   variables:
     VENVPATH: "/root/venv/py3.9"
     PY_VER: "3.9.1"
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
