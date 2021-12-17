@@ -136,6 +136,12 @@ pybind11_add_module(_gmxapi
                     ${GMXAPI_PYTHON_EXTENSION_SOURCES}
                     )
 
+if (NOT DEFINED gmxapi_VERSION)
+    get_target_property(gmxapi_VERSION Gromacs::gmxapi VERSION)
+endif ()
+if (NOT DEFINED gmxapi_VERSION)
+    message(FATAL_ERROR "gmxapi library version not detected.")
+endif ()
 if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
     target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
 else()
@@ -162,9 +168,17 @@ set_target_properties(_gmxapi PROPERTIES
 if(GMXAPI_MASTER_PROJECT)
     # TODO: This requirement is probably overly restrictive.
     find_package(GROMACS 2021 REQUIRED
-                 NAMES gromacs gromacs_mpi
+                 NAMES gromacs gromacs_mpi gromacs_d
                  HINTS "$ENV{GROMACS_DIR}"
                  )
+    if (NOT DEFINED GROMACS_IS_DOUBLE)
+        message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
+    endif ()
+else()
+    if (NOT DEFINED GMX_DOUBLE)
+        message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
+    endif ()
+    set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
 endif()
 
 # Get details of GROMACS installation needed by the Python package at run time.
@@ -200,10 +214,16 @@ endif ()
 if (NOT _gmx_bindir OR NOT _gmx_executable)
     message(FATAL_ERROR "Could not get path for gmx wrapper binary.")
 endif ()
+if (GROMACS_IS_DOUBLE)
+    set(_gmx_double "true")
+else()
+    set(_gmx_double "false")
+endif()
 configure_file(gmxapi/gmxconfig.json.in ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json)
 unset(_gmx_executable)
 unset(_gmx_bindir)
 unset(_gmx_mpi_type)
+unset(_gmx_double)
 
 # scikit-build sets SKBUILD when running Python packaging tools through setup.py
 # (e.g. with pip)

@@ -22,10 +22,11 @@ get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
 get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
 get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
 add_custom_target(gmxapi_extension_pytest
-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}
-                  ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
-                  DEPENDS gmxapi_extension _gmxapi
-                  WORKING_DIRECTORY ${PLUGINPATH})
+                  COMMAND ${CMAKE_COMMAND}
+                               -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+                               ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
+                               ${CMAKE_CURRENT_SOURCE_DIR}
+                  DEPENDS gmxapi_extension _gmxapi)
 # The current test fixtures require the `gmx` tool-wrapper executable.
 add_dependencies(gmxapi_extension_pytest gmx)
 

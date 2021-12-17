@@ -2,8 +2,6 @@
 .sample_restraint:gcc-10:gmx2021:
   extends:
     - .variables:default
-    - .use-clang:base
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -12,7 +10,6 @@
     KUBERNETES_MEMORY_REQUEST: 2Gi
     PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
-    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate && GROMACS_ROOT=$CI_PROJECT_DIR/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2021.sh
@@ -26,38 +23,55 @@
   tags:
     - k8s-scilifelab
   # The dependency means we need to use the same tag restriction as upstream.
-  needs:
-    - job: gromacs:gcc-10:build
-      artifacts: true
 
 sample_restraint:gcc-10:gmx2021:py-3.6.10:
   extends:
     - .sample_restraint:gcc-10:gmx2021
+    - .use-gcc:base
     - .rules:merge-requests:release-2021
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
+  needs:
+    - job: gromacs:gcc-10:build
+      artifacts: true
 
 sample_restraint:gcc-10:gmx2021:py-3.7.7:
   extends:
     - .sample_restraint:gcc-10:gmx2021
+    - .use-gcc:base
     - .rules:merge-requests:release-2021
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
+  needs:
+    - job: gromacs:gcc-10:build
+      artifacts: true
 
 sample_restraint:gcc-10:gmx2021:py-3.8.2:
   extends:
     - .sample_restraint:gcc-10:gmx2021
+    - .use-gcc:base
     - .rules:merge-requests:release-2021
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
+  needs:
+    - job: gromacs:gcc-10:build
+      artifacts: true
 
 sample_restraint:gcc-10:gmx2021:py-3.9.1:
   extends:
     - .sample_restraint:gcc-10:gmx2021
+    - .use-gcc:base
     - .rules:merge-requests:release-2021
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     VENVPATH: "/root/venv/py3.9"
     PY_VER: "3.9.1"
+  needs:
+    - job: gromacs:gcc-10:build
+      artifacts: true
