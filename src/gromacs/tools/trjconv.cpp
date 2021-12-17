@@ -604,6 +604,9 @@ int gmx_trjconv(int argc, char* argv[])
     gmx_rmpbc_t gpbc = nullptr;
     gmx_bool    bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
     gmx_bool    bCopy, bDoIt, bIndex, bTDump = false, bSetTime, bTPS = FALSE;
+    gmx_bool    bFrameReadHasPrinted = false;
+    int         frameNumberToPrint   = 0;
+    real        frameTimeToPrint     = 0.0;
     gmx_bool    bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetXtcPrec, bNeedPrec;
     gmx_bool    bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
     gmx_bool    bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
@@ -1340,17 +1343,17 @@ int gmx_trjconv(int argc, char* argv[])
                         }
                     }
 
+                    /* Flag whenever the reading routine prints, so that we print after it and do not mangle the line */
+                    if (trxio_should_print_count(oenv, trxin))
+                    {
+                        bFrameReadHasPrinted = true;
+                    }
+
                     if (bDoIt || bTDump)
                     {
-                        /* print sometimes */
-                        if (((outframe % SKIP) == 0) || (outframe < SKIP))
-                        {
-                            fprintf(stderr,
-                                    " ->  frame %6d time %8.3f      \r",
-                                    outframe,
-                                    output_env_conv_time(oenv, frout_time));
-                            fflush(stderr);
-                        }
+                        // Whenever a frame is output, store the frame and time to be printed at the next opportunity
+                        frameNumberToPrint = outframe;
+                        frameTimeToPrint   = frout_time;
 
                         if (!bPFit)
                         {
@@ -1608,6 +1611,15 @@ int gmx_trjconv(int argc, char* argv[])
                             }
                         }
                         outframe++;
+                        if (bFrameReadHasPrinted)
+                        {
+                            fprintf(stderr,
+                                    " ->  frame %6d time %8.3f      \r",
+                                    frameNumberToPrint,
+                                    output_env_conv_time(oenv, frameTimeToPrint));
+                            fflush(stderr);
+                            bFrameReadHasPrinted = false;
+                        }
                     }
                 }
                 frame++;
@@ -1625,6 +1637,10 @@ int gmx_trjconv(int argc, char* argv[])
                     swapFrames(&fr, &nextFrame);
                 }
             } while (!(bTDump && bDumpFrame) && bHaveNextFrame);
+            fprintf(stderr,
+                    "\nLast written: frame %6d time %8.3f\n",
+                    frameNumberToPrint,
+                    output_env_conv_time(oenv, frameTimeToPrint));
         }
 
         if (!bHaveFirstFrame)

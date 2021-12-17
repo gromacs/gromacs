@@ -76,3 +76,12 @@ Free energy calculations with a linear angle potential were not
 explicitly allowed by grompp.
 
 :issue:`3456`
+
+
+Fixed progress display in trjconv and trjcat
+""""""""""""""""""""""""""""""""""""""""""""
+
+The progress information (frame number and time) shown during trajectory 
+operations in trjconv and trjcat is now correctly displayed.
+
+:issue:`4320`

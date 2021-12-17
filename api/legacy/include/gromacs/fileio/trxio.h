@@ -81,6 +81,9 @@ void setTrxFramePbcType(struct t_trxframe* fr, PbcType pbcType);
 int nframes_read(t_trxstatus* status);
 /* Returns the number of frames read from the trajectory */
 
+bool trxio_should_print_count(const gmx_output_env_t* oenv, t_trxstatus* status);
+/* True whenever the frame reading routines have printed to stderr for this frame */
+
 int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, const int* ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
