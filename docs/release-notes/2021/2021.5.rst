@@ -63,4 +63,9 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+Performance improvements when running on Ampere-class Nvidia GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Improved performance of the short-ranged non-bonded kernels by up to 12%.
+
+:issue:`3873`
 
