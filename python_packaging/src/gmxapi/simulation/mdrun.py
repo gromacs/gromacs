@@ -685,7 +685,7 @@ def mdrun(input, runtime_args: dict = None, label: str = None, context=None):
 
     handle_context = context
     if handle_context is not None:
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'context must be None. This factory is only for the Python UI right now.')
 
     target_context = _op.current_context()

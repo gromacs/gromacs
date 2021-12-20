@@ -366,7 +366,7 @@ Signal SessionResources::getMdrunnerSignal(md::signals signal)
     //// while there is only one choice...
     if (signal != md::signals::STOP)
     {
-        throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
+        throw gmxapi::MissingImplementationError("This signaller only handles stop signals.");
     }
 
     // Get a signalling proxy for the caller.

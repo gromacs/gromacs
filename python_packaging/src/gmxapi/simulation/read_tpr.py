@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
             assert 'input' in kwargs
             assert 'output' in kwargs
             return _session_resource_factory(input=kwargs['input'], output=kwargs['output'])
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'No translation from {} context to {}'.format(self.source_context, self.target_context))
 
     @typing.overload
@@ -240,7 +240,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         # method itself is not generic beyond the level of typing overloads.
         if isinstance(context, _op.Context):
             return StandardInputDescription()
-        raise gmxapi.exceptions.NotImplementedError('No input description available for {} context'.format(context))
+        raise gmxapi.exceptions.MissingImplementationError('No input description available for {} context'.format(context))
 
 
 class StandardInputDescription(_op.InputDescription):
@@ -287,7 +287,7 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
     def director(cls, context: gmxapi.abc.Context) -> _op.OperationDirector:
         if isinstance(context, _op.Context):
             return StandardDirector(context)
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'No dispatcher for context {} of type {}'.format(context, type(context)))
 
 
@@ -383,7 +383,7 @@ def read_tpr(filename, label: str = None, context=None):
     """
     handle_context = context
     if handle_context is not None:
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'context must be None. This factory is only for the Python UI right now.')
 
     # 1. Handle node creation in the scripting interface.

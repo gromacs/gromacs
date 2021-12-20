@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -150,11 +150,10 @@ public:
 };
 
 /*!
- * \brief Intended feature is not implemented.
+ * \deprecated \brief Intended feature is not implemented (Deprecated).
  *
- * Indicates a bug in the API implementation. Either a version mismatch between the client
- * and library has gone undetected, or the API has purported to offer functionality that does
- * not exist.
+ * This exception is no longer used.
+ * See, instead, MissingImplementationError and \issue 4337.
  *
  * \ingroup gmxapi_exceptions
  */
@@ -162,6 +161,24 @@ class NotImplementedError : public BasicException<NotImplementedError>
 {
 public:
     using BasicException<NotImplementedError>::BasicException;
+};
+
+/*!
+ * \brief Intended feature is not implemented.
+ *
+ * Indicates a bug in the API implementation. Either a version mismatch between the client
+ * and library has gone undetected, or the API has purported to offer functionality that does
+ * not exist.
+ *
+ * \version 0.3.1
+ * This exception replaces `gmxapi::NotImplementedError`. See \issue 4337.
+ *
+ * \ingroup gmxapi_exceptions
+ */
+class MissingImplementationError : public BasicException<MissingImplementationError>
+{
+public:
+    using BasicException<MissingImplementationError>::BasicException;
 };
 
 /*!

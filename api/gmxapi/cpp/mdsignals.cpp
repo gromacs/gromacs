@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,7 +155,7 @@ Signal SignalManager::getSignal(const std::string& name, md::signals signal)
 
     if (signal != md::signals::STOP)
     {
-        throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
+        throw gmxapi::MissingImplementationError("This signaller only handles stop signals.");
     }
 
     auto signalImpl = std::make_unique<LogicalAND>(this, name);
@@ -168,7 +168,7 @@ Signal getMdrunnerSignal(SessionResources* resources, md::signals signal)
     // while there is only one choice...
     if (signal != md::signals::STOP)
     {
-        throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
+        throw gmxapi::MissingImplementationError("This signaller only handles stop signals.");
     }
 
     if (resources == nullptr)

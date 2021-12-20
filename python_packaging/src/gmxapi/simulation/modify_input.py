@@ -205,7 +205,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
             assert 'input' in kwargs
             assert 'output' in kwargs
             return _session_resource_factory(input=kwargs['input'], output=kwargs['output'])
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'No translation from {} context to {}'.format(self.source_context, self.target_context))
 
     @typing.overload
@@ -215,7 +215,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
     def input_description(self, context: gmxapi.abc.Context):
         if isinstance(context, _op.Context):
             return StandardInputDescription()
-        raise gmxapi.exceptions.NotImplementedError('No input description available for {} context'.format(context))
+        raise gmxapi.exceptions.MissingImplementationError('No input description available for {} context'.format(context))
 
 
 class StandardInputDescription(_op.InputDescription):
@@ -369,7 +369,7 @@ def modify_input(input,
     """
     handle_context = context
     if handle_context is not None:
-        raise gmxapi.exceptions.NotImplementedError(
+        raise gmxapi.exceptions.MissingImplementationError(
             'context must be None. This factory is only for the Python UI right now.')
 
     target_context = _op.current_context()

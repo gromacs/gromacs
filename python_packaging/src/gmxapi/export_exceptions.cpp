@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
  * \ingroup module_python
  */
 #include "gmxapi/exceptions.h"
+#include "gmxapi/version.h"
 
 #include "module.h"
 
@@ -135,9 +136,22 @@ void export_exceptions(pybind11::module& m)
     }
 
     {
-        auto exception = py::register_exception<gmxapi::NotImplementedError>(
-                m, "NotImplementedError", baseException.ptr());
-        exception.doc() = "Expected feature is not implemented.";
+        const auto missing_implementation_doc =
+                "Expected feature is not implemented.\n\n"
+                ".. versionchanged:: 0.3\n"
+                "    Renamed from NotImplementedError.\n";
+        if (gmxapi::Version::isAtLeast(0, 3, 1))
+        {
+            auto exception = py::register_exception<gmxapi::MissingImplementationError>(
+                    m, "MissingImplementationError", baseException.ptr());
+            exception.doc() = missing_implementation_doc;
+        }
+        else
+        {
+            auto exception = py::register_exception<gmxapi::NotImplementedError>(
+                    m, "MissingImplementationError", baseException.ptr());
+            exception.doc() = missing_implementation_doc;
+        }
     }
 
     {

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@ __all__ = ['ApiError',
            'DataShapeError',
            'Error',
            'FeatureNotAvailableError',
-           'NotImplementedError',
+           'MissingImplementationError',
            'ProtocolError',
            'TypeError',
            'UsageError',
@@ -78,13 +78,16 @@ class DataShapeError(Error):
     """
 
 
-class NotImplementedError(Error):
+class MissingImplementationError(Error):
     """Specified feature is not implemented in the current code.
 
     This exception indicates that the implemented code does not support the
     API as specified. The calling code has used valid syntax, as documented for
     the API, but has reached incompletely implemented code, which should be
     considered a bug.
+
+    .. versionchanged:: 0.3
+        Named changed to avoid conflict with built-in :py:class:`NotImplementedError` exception
     """
     # May be useful for error checking in base classes or as a development tool
     # to avoid releasing incomplete implementations (e.g. overlooked "To do"s)

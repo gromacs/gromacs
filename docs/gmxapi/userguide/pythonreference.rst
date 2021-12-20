@@ -70,7 +70,7 @@ Exceptions
 
     Root exception for the C++ extension module. Derives from `gmxapi.exceptions.Error`.
 
-.. autoexception:: gmxapi._gmxapi.NotImplementedError
+.. autoexception:: gmxapi._gmxapi.MissingImplementationError
 
 .. autoexception:: gmxapi._gmxapi.ProtocolError
 
