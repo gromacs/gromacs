@@ -60,7 +60,7 @@
 
 #include "gromacs/math/vectypes.h"
 
-// TODO: Get from a header once the public API settles down a bit.
+// TODO(3152): Get from a header once the public API settles down a bit.
 namespace gmxapi
 {
 class SessionResources;
@@ -73,6 +73,10 @@ namespace gmx
  * \brief Provide a vector type name with a more stable interface than RVec and a more stable
  * implementation than vec3<>.
  *
+ * \warning ABI depends on compile-time value of GMX_DOUBLE, which is usually provided
+ * through the build system by `target_link_libraries(... Gromacs::libgromacs)` in the
+ * client's `CMakeLists.txt`.
+ *
  * \ingroup module_restraint
  *
  * \internal
@@ -82,6 +86,10 @@ using Vector = ::gmx::RVec;
 
 /*!
  * \brief Structure to hold the results of IRestraintPotential::evaluate().
+ *
+ * \warning ABI depends on compile-time value of GMX_DOUBLE, which is usually provided
+ * through the build system by `target_link_libraries(... Gromacs::libgromacs)` in the
+ * client's `CMakeLists.txt`.
  *
  * \ingroup module_restraint
  */
@@ -148,6 +156,10 @@ public:
  * \todo Template headers can help to build compatible calculation methods with different input
  * requirements. For reference, see https://github.com/kassonlab/sample_restraint
  *
+ * \warning ABI depends on compile-time value of GMX_DOUBLE, which is usually provided
+ * through the build system by `target_link_libraries(... Gromacs::libgromacs)` in the
+ * client's `CMakeLists.txt`.
+ *
  * \ingroup module_restraint
  */
 class IRestraintPotential
@@ -203,7 +215,7 @@ public:
      * \brief Find out what sites this restraint is configured to act on.
      * \return
      */
-    virtual std::vector<int> sites() const = 0;
+    [[nodiscard]] virtual std::vector<int> sites() const = 0;
 
     /*!
      * \brief Allow Session-mediated interaction with other resources or workflow elements.
