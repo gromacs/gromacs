@@ -56,7 +56,7 @@ Questions concerning system preparation and preprocessing
    increase the vdW radius of the atoms, to suppress such interstitial insertions.
    Recommended e.g. at a common `tutorial`_ is the use of 0.375 instead of 0.15.
 
-.. _tutorial: http://www.bevanlab.biochem.vt.edu/Pages/Personal/justin/gmx-tutorials/membrane_protein/03_solvate.html
+.. _tutorial: http://www.mdtutorials.com/gmx/lysozyme/03_solvate.html
 
 #. How do I provide multiple definitions of bonds / dihedrals in a topology?
 

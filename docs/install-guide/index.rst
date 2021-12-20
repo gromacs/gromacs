@@ -741,8 +741,7 @@ hence stock versions can be obtained from most Linux distribution
 repositories (e.g. ``opencl-headers`` and ``ocl-icd-libopencl1`` on Debian/Ubuntu).
 Only the compatibility with the required OpenCL_ version |REQUIRED_OPENCL_MIN_VERSION|
 needs to be ensured.
-Alternatively, the headers and library can also be obtained from vendor SDKs
-(e.g. `from AMD <http://developer.amd.com/appsdk>`_),
+Alternatively, the headers and library can also be obtained from vendor SDKs,
 which must be installed in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
 variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``).
 

@@ -94,7 +94,7 @@ Long bonds and/or missing atoms
 There are probably atoms missing earlier in the :ref:`pdb` file which makes :ref:`pdb2gmx <gmx pdb2gmx>` go crazy.
 Check the screen output of :ref:`pdb2gmx <gmx pdb2gmx>`, as it will tell you which one is missing. Then add
 the atoms in your :ref:`pdb` file, energy minimization will put them in the right place, or
-fix the side chain with e.g. the `WHAT IF <http://swift.cmbi.ru.nl/whatif/>`_ program.
+fix the side chain with e.g. the `WHAT IF <https://swift.cmbi.umcn.nl/whatif/>`_ program.
 
 
 Chain identifier 'X' was used in two non-sequential blocks

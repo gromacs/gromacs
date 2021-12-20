@@ -107,7 +107,7 @@ for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are
 
 .. todo:: Add new force fields to the list
 
-.. _GROMOS: http://www.igc.ethz.ch/gromos/
+.. _GROMOS: https://www.igc.ethz.ch/gromos.html
 .. _reference manual: gmx-manual-parent-dir_
 
 
