@@ -248,10 +248,35 @@ void update_pcouple_after_coordinates(FILE*                fplog,
                 /* Scale the coordinates */
                 if (scaleCoordinates)
                 {
-                    auto x = state->x.rvec_array();
+                    const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec);
+
+                    auto  x       = state->x.rvec_array();
+                    ivec* nFreeze = inputrec->opts.nFreeze;
                     for (int n = start; n < start + homenr; n++)
                     {
-                        tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                        if (!haveFrozenAtoms)
+                        {
+                            tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                        }
+                        else
+                        {
+                            int g = md->cFREEZE[n];
+                            if (!nFreeze[g][XX])
+                            {
+                                x[n][XX] = pressureCouplingMu[XX][XX] * x[n][XX]
+                                           + pressureCouplingMu[YY][XX] * x[n][YY]
+                                           + pressureCouplingMu[ZZ][XX] * x[n][ZZ];
+                            }
+                            if (!nFreeze[g][YY])
+                            {
+                                x[n][YY] = pressureCouplingMu[YY][YY] * x[n][YY]
+                                           + pressureCouplingMu[ZZ][YY] * x[n][ZZ];
+                            }
+                            if (!nFreeze[g][ZZ])
+                            {
+                                x[n][ZZ] = pressureCouplingMu[ZZ][ZZ] * x[n][ZZ];
+                            }
+                        }
                     }
                 }
             }

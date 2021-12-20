@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,12 +136,34 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     preserve_box_shape(inputrec_, boxRel_, box);
 
     // Scale the coordinates
+    const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec_);
+
     const int start  = 0;
     const int homenr = mdAtoms_->mdatoms()->homenr;
-    auto      x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto*     x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    ivec*     nFreeze = inputrec_->opts.nFreeze;
     for (int n = start; n < start + homenr; n++)
     {
-        tmvmul_ur0(mu_, x[n], x[n]);
+        if (!haveFrozenAtoms)
+        {
+            tmvmul_ur0(mu_, x[n], x[n]);
+        }
+        else
+        {
+            int g = mdAtoms_->mdatoms()->cFREEZE[n];
+            if (!nFreeze[g][XX])
+            {
+                x[n][XX] = mu_[XX][XX] * x[n][XX] + mu_[YY][XX] * x[n][YY] + mu_[ZZ][XX] * x[n][ZZ];
+            }
+            if (!nFreeze[g][YY])
+            {
+                x[n][YY] = mu_[YY][YY] * x[n][YY] + mu_[ZZ][YY] * x[n][ZZ];
+            }
+            if (!nFreeze[g][ZZ])
+            {
+                x[n][ZZ] = mu_[ZZ][ZZ] * x[n][ZZ];
+            }
+        }
     }
 }
 
