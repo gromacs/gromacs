@@ -42,7 +42,7 @@
  *
  *  Note that most of the buffer operations have an early return, if the requested operation
  *  size is zero. This allows for calling these functions with zero operation size even when
- *  the underlying buffers were not properly intialized.
+ *  the underlying buffers were not properly initialized.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  *

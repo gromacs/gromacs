@@ -78,12 +78,12 @@ a release.
   does not work. Thus refrain from optional when passing handles; in contrast to
   unique_ptr, optional has value semantics, not reference semantics.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
-  ``reinterpret_cast as appropriate``. See the point on RTTI for
+  ``reinterpret_cast`` as appropriate. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)
   use constructor syntax. For creating real constants use the user-defined literal
-  _real (e.g. 2.5_real instead of static_cast<real>(2.5)).
-* Use signed integers for arithmetic (including loop indices). Use ssize
-  (available as free function and member of ArrayRef) to avoid casting.
+  ``_real`` (e.g. ``2.5_real`` instead of ``static_cast<real>(2.5)``).
+* Use signed integers for arithmetic (including loop indices). Use ``ssize``
+  (available as free function and member of ``ArrayRef``) to avoid casting.
 * Avoid overloading functions unless all variants really do the same
   thing, just with different types. Instead, consider making the
   function names more descriptive.
@@ -213,7 +213,7 @@ Preprocessor considerations
 * Preprocessing variables used for configuring the build should be
   organized so that a valid value is always defined, i.e. we never
   test whether one of our preprocessor variables is defined, rather we
-  test what value it has. This is much more robust under maintance,
+  test what value it has. This is much more robust under maintenance,
   because a compiler can tell you that the variable is undefined.
 * Avoid code with lengthy segments whose compilation depends on #if
   (or worse, #ifdef of symbols provided from outside |Gromacs|).
@@ -224,6 +224,6 @@ Preprocessor considerations
 * Indent nested preprocessor conditions if nesting is necessary and
   the result looks clearer than without indenting.
 * Please strongly consider a comment repeating the preprocessor condition at the end
-  of the region, if a lengthy region is neccessary and benefits from
+  of the region, if a lengthy region is necessary and benefits from
   that. For long regions this greatly helps in understanding 
   and debugging the code.

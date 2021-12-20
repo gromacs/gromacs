@@ -1225,7 +1225,7 @@ std::string getCoolQuote()
         { "What is a Unix or Linux sysadmin's favourite hangout place? Foo Bar.", "Anonymous" },
         { "If you have any trouble sounding condescending, find a UNIX user to show you how it's "
           "done.",
-          "Scott Adams, Dibert Cartoonist" },
+          "Scott Adams, Dilbert Cartoonist" },
         { "There is no place like ~", "Anonymous" },
         { "Thou shalt not kill -9", "Anonymous" },
         { "printf(\"%d is the year of the linux desktop\", year+1);", "Anonymous" },

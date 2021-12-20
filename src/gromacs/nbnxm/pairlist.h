@@ -262,7 +262,7 @@ struct NbnxnPairlistCpu
  *
  * NOTE: for better performance when combining lists over threads,
  *       all vectors should use default initialization. But when
- *       changing this, excl should be intialized when adding entries.
+ *       changing this, excl should be initialized when adding entries.
  */
 struct NbnxnPairlistGpu
 {

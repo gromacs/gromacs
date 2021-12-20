@@ -1156,7 +1156,7 @@ that a tolerance is just a tiny bit too tight. Check the output files
 the script directs you too, and try a different or newer compiler if
 the errors appear to be real. If you cannot get it to pass the
 regression tests, you might try dropping a line to the
-`|Gromacs| users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
+`GROMACS users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
 but then you should include a detailed description of
 your hardware, and the output of ``gmx mdrun -version`` (which contains
 valuable diagnostic information in the header).

@@ -105,7 +105,7 @@ Making Disulfide Bonds
 The easiest way to do this is by using the mechanism implemented with the ``specbond.dat``
 file and :ref:`pdb2gmx <gmx pdb2gmx>`. You may find :ref:`pdb2gmx <gmx pdb2gmx>` ``-ss yes``
 is useful. The sulfur atoms will need to be in the same unit that :ref:`pdb2gmx <gmx pdb2gmx>`
-is converting to a ``moleculetype``, so invoking :ref:`pdb2gmx <gmx pdb2gmx>` ``-chainsep``'
+is converting to a ``moleculetype``, so invoking :ref:`pdb2gmx <gmx pdb2gmx>` ``-chainsep``
 correctly may be required. See :ref:`pdb2gmx <gmx pdb2gmx>` ``-h``. This requires that the
 two sulfur atoms be within a distance + tolerance (usually 10%) in order to be recognised
 as a disulfide. If your sulfur atoms are not this close, then either you can
