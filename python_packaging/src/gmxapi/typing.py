@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,18 +38,18 @@ Provides additional support for annotation and static type checking.
 Extends the specifications of the abstract base classes in gmxapi.abc.
 """
 
-from typing import TypeVar, Generic, NewType, Type
+from typing import Tuple, TypeVar, Generic, NewType, Type
 
 import gmxapi.abc
 
 # Use SourceTypeVar and ResultTypeVar for static type hints, annotations, and as a parameter to generics.
 # Use valid_source_types and valid_result_types for run-time type checking.
 ResultTypeVar = TypeVar('ResultTypeVar', *(str, bool, int, float, dict, gmxapi.abc.NDArray))
-valid_result_types = ResultTypeVar.__constraints__
+valid_result_types: Tuple[type] = ResultTypeVar.__constraints__
 
 SourceTypeVar = TypeVar('SourceTypeVar',
-                        *(str, bool, int, float, dict, gmxapi.abc.NDArray, gmxapi.abc.EnsembleDataSource))
-valid_source_types = SourceTypeVar.__constraints__
+                        *(str, bool, int, float, dict, gmxapi.abc.NDArray))
+valid_source_types: Tuple[type] = SourceTypeVar.__constraints__
 
 # Place holder for type annotations of Context objects.
 # TODO: Expand to support some static type checking.

@@ -66,27 +66,39 @@ import gmxapi as gmx
 from gmxapi import datamodel
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
-from gmxapi.abc import OperationImplementation, MutableResource, Node
-from gmxapi.typing import _Context, ResultTypeVar, SourceTypeVar, valid_result_types, valid_source_types
-from gmxapi.typing import Future as _Future
+from gmxapi.abc import OperationImplementation, MutableResource, NDArray, Node
+from gmxapi.abc import OperationReference as AbstractOperationReference
+from gmxapi.exceptions import ApiError
+from gmxapi.typing import _Context, \
+    ResultTypeVar, \
+    SourceTypeVar, \
+    valid_result_types, \
+    valid_source_types
+from gmxapi.typing import Future as GenericFuture
 
 # Initialize module-level logger
 logger = root_logger.getChild('operation')
 logger.info('Importing {}'.format(__name__))
 
 
-class ResultDescription:
-    """Describe what will be returned when `result()` is called."""
+class ResultDescription(typing.Generic[ResultTypeVar]):
+    """Describe what will be returned when ``result()`` is called.
 
-    def __init__(self, dtype=None, width=1):
-        assert isinstance(dtype, type)
-        assert issubclass(dtype, valid_result_types)
+    Warning:
+         *dtype* may be ``None`` if return type cannot be determined.
+    """
+
+    def __init__(self, dtype: typing.Type[ResultTypeVar] = None, width=1):
         assert isinstance(width, int)
-        self._dtype = dtype
         self._width = width
 
+        if dtype is not None \
+                and not (isinstance(dtype, type) and issubclass(dtype, valid_result_types)):
+            raise ApiError(f'dtype {repr(dtype)} is not a valid result type.')
+        self._dtype = typing.cast(typing.Type[ResultTypeVar], dtype)
+
     @property
-    def dtype(self) -> type:
+    def dtype(self) -> typing.Type[ResultTypeVar]:
         """node output type"""
         return self._dtype
 
@@ -158,31 +170,6 @@ class OutputData(object):
         self._data = [None] * self._description.width
 
 
-class EnsembleDataSource(gmx.abc.EnsembleDataSource):
-    """A single source of data with ensemble data flow annotations.
-
-    Note that data sources may be Futures.
-
-    Probably slated for removal, per https://gitlab.com/gromacs/gromacs/-/issues/3137.
-    """
-
-    def __init__(self, source=None, width=1, dtype=None):
-        warnings.warn('Ensemble and array dimensions need to be unified in the data model. '
-                      'See https://gitlab.com/gromacs/gromacs/-/issues/3137', DeprecationWarning)
-        self.source = source
-        self.width = width
-        self.dtype = dtype
-
-    def node(self, member: int):
-        return self.source[member]
-
-    def reset(self):
-        protocols = ('reset', '_reset')
-        for protocol in protocols:
-            if hasattr(self.source, protocol):
-                getattr(self.source, protocol)()
-
-
 class DataSourceCollection(collections.OrderedDict):
     """Store and describe input data handles for an operation.
 
@@ -201,8 +188,8 @@ class DataSourceCollection(collections.OrderedDict):
     def __init__(self, **kwargs):
         """Initialize from key/value pairs of named data sources.
 
-        Data sources may be any of the basic gmxapi data types, gmxapi Futures
-        of those types, or gmxapi ensemble data bundles of the above.
+        Data sources may be any of the basic gmxapi data types (or sequences thereof),
+        or gmxapi Futures of those types.
         """
         super(DataSourceCollection, self).__init__()
         for name, value in kwargs.items():
@@ -211,6 +198,7 @@ class DataSourceCollection(collections.OrderedDict):
     def __setitem__(self, key: str, value: SourceTypeVar) -> None:
         if not isinstance(key, str):
             raise exceptions.TypeError('Data must be named with str type.')
+
         # TODO(#3139): Encapsulate handling of provided data sources as a detail of the relationship
         #  between source and target Contexts.
         # Preprocessed input should be self-describing gmxapi data types. Structured
@@ -225,7 +213,8 @@ class DataSourceCollection(collections.OrderedDict):
                 try:
                     value = datamodel.ndarray(value)
                 except (exceptions.ValueError, exceptions.TypeError) as e:
-                    raise exceptions.TypeError('Iterable could not be converted to NDArray: {}'.format(value)) from e
+                    raise exceptions.TypeError(
+                        f'Iterable could not be converted to NDArray: {value}') from e
             elif hasattr(value, 'result'):
                 # A Future object.
                 pass
@@ -238,18 +227,8 @@ class DataSourceCollection(collections.OrderedDict):
         for source in self.values():
             if hasattr(source, 'reset'):
                 source.reset()
-            if hasattr(source, '_reset'):
+            elif hasattr(source, '_reset'):
                 source._reset()
-
-    def __hash__(self):
-        """Provide some sort of unique identifier.
-
-        We need a more deterministic fingerprinting scheme with well-specified
-        uniqueness semantics, but right now we just need something reasonably
-        unique.
-        """
-        hashed_keys_and_values = tuple(hash(entity) for item in self.items() for entity in item)
-        return hash(hashed_keys_and_values)
 
 
 def computed_result(function):
@@ -351,6 +330,7 @@ class InputCollectionDescription(collections.OrderedDict):
     graph Edge for subsequent execution.
     """
 
+    # TODO: consider updating signature to *parameters or **parameters.
     def __init__(self, parameters: typing.Iterable[typing.Tuple[str, inspect.Parameter]]):
         """Create the input description for an operation node from a dictionary of names and types."""
         inputs = []
@@ -364,7 +344,7 @@ class InputCollectionDescription(collections.OrderedDict):
                 # TODO: we can relax this with some more input conditioning.
                 if dtype != datamodel.NDArray:
                     raise exceptions.UsageError(
-                        'Cannot accept input type {}. Sequence type inputs must use NDArray.'.format(param))
+                        f'Cannot accept input type {param}. Sequence type inputs must use NDArray.')
             assert issubclass(dtype, valid_result_types)
             if hasattr(param, 'kind'):
                 disallowed = any([param.kind == param.POSITIONAL_ONLY,
@@ -409,7 +389,8 @@ class InputCollectionDescription(collections.OrderedDict):
                 raise exceptions.ProtocolError(
                     'Cannot wrap function. Operations must have well-defined parameter names.')
             if param.name == 'input':
-                raise exceptions.ProtocolError('Function signature includes the (reserved) "input" keyword argument.')
+                raise exceptions.ProtocolError(
+                    'Function signature includes the (reserved) "input" keyword argument.')
         description = collections.OrderedDict()
         for param in signature.parameters.values():
             if param.name == 'output':
@@ -418,7 +399,8 @@ class InputCollectionDescription(collections.OrderedDict):
                 continue
             if param.annotation == param.empty:
                 if param.default == param.empty or param.default is None:
-                    raise exceptions.ProtocolError('Could not infer parameter type for {}'.format(param.name))
+                    raise exceptions.ProtocolError(
+                        f'Could not infer parameter type for {param.name}')
                 dtype = type(param.default)
                 if isinstance(dtype, collections.abc.Iterable) \
                         and not isinstance(dtype, (str, bytes, collections.abc.Mapping)):
@@ -696,10 +678,7 @@ class Publisher(ProxyDataDescriptor):
         # Either this class is a detail of the same implementation as ResourceManager,
         # or we need to enforce that instance._resource_instance provides _data (or equivalent)
         assert isinstance(resource_manager, ResourceManager)
-        if client_id is None:
-            return getattr(resource_manager._data, self._name)
-        else:
-            return getattr(resource_manager._data, self._name)[client_id]
+        return resource_manager._data.get(self._name).data(member=client_id)
 
     def __set__(self, instance: DataProxyBase, value):
         resource_manager = instance._resource_instance
@@ -724,6 +703,10 @@ def define_publishing_data_proxy(output_description) -> typing.Type[DataProxyBas
 
     descriptors = collections.OrderedDict([(name, Publisher(name)) for name in output_description])
 
+    # TODO: Instead of a local subclass and metaclass logic, we could follow the model
+    #  of `dataclasses`.
+    # At the very least, it could be helpful to distinguish DataProxies with Publishing
+    # behavior versus Output behavior.
     class PublishingDataProxy(DataProxyBase, descriptors=descriptors):
         """Handler for write access to the `output` of an operation.
 
@@ -753,6 +736,9 @@ class SourceResource(typing.Generic[_OutputDataProxyType, _PublishingDataProxyTy
 
     # Note: ResourceManager members not yet included:
     # future(), _data, set_result.
+
+    def __init__(self):
+        self._futures = weakref.WeakValueDictionary()
 
     # This might not belong here. Maybe separate out for a OperationHandleManager?
     @abc.abstractmethod
@@ -789,7 +775,6 @@ class SourceResource(typing.Generic[_OutputDataProxyType, _PublishingDataProxyTy
         """Ensemble width of the managed resources."""
         ...
 
-    @abc.abstractmethod
     def future(self, name: str, description: ResultDescription) -> 'Future':
         """Get a Future handle for managed data.
 
@@ -799,6 +784,11 @@ class SourceResource(typing.Generic[_OutputDataProxyType, _PublishingDataProxyTy
         In addition to the interface described by gmx.abc.Future, returned objects
         provide the interface described by gmx.operation.Future.
         """
+        key = (name, description.dtype, description.width)
+        if key not in self._futures or self._futures[key] is None:
+            _future = Future(self, name, description)
+            self._futures[key] = _future
+        return self._futures[key]
 
 
 class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyType]):
@@ -817,13 +807,16 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
     """
 
     def __init__(self, *, name: str, proxied_data, width: int, function: typing.Callable):
-        assert not isinstance(proxied_data, Future)
-        if hasattr(proxied_data, 'width'):
-            # Ensemble data source
-            assert hasattr(proxied_data, 'source')
-            self._result = function(proxied_data.source)
-        else:
-            self._result = function(proxied_data)
+        super().__init__()
+        if isinstance(proxied_data, Future):
+            raise ApiError(
+                'Either StaticSourceManager is being misused, or a dispatching error has occurred for '
+                f'{name}: {repr(proxied_data)}. '
+                'StaticSourceManager is for managing local static data, '
+                'but provided data is non-local or non-static. Please report bug.')
+        self._result = function(proxied_data)
+        # When width > 1, we expect `function(proxied_data)` to have produced a non-string
+        # Iterable[dtype] of length `width`.
         if width > 1:
             if isinstance(self._result, (str, bytes)):
                 # In this case, do not implicitly broadcast
@@ -836,8 +829,10 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
             size = len(data)
             if len(data) != width:
                 raise exceptions.DataShapeError(
-                    'Expected iterable of size {} but "function" produced a {} of size {}'.format(width, type(data),
-                                                                                                  size))
+                    'Expected iterable of size {} but "function" produced a {} of size {}'.format(
+                        width,
+                        type(data),
+                        size))
             dtype = type(data[0])
         else:
             if width != 1:
@@ -867,7 +862,8 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
         return True
 
     def get(self, name: str) -> 'OutputData':
-        assert self._data.name == name
+        if name != self._data.name:
+            raise KeyError(f'{repr(self)} does not hold {name}')
         return self._data
 
     def data(self) -> _OutputDataProxyType:
@@ -885,7 +881,7 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
         pass
 
     def future(self, name: str, description: ResultDescription) -> 'Future':
-        return Future(self, name, description=description)
+        return super().future(name, description=description)
 
 
 class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyType]):
@@ -904,6 +900,7 @@ class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataP
     """
 
     def __init__(self, proxied_future: 'Future', width: int, function: typing.Callable):
+        super().__init__()
         self._done = False
         self._proxied_future = proxied_future
         self._width = width
@@ -932,11 +929,14 @@ class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataP
         if self._width != 1:
             # TODO Fix this typing nightmare:
             #  ResultDescription should be fully knowable and defined when the resource manager is initialized.
-            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result[0]), width=self._width))
+            data = OutputData(name=self.name,
+                              description=ResultDescription(dtype=type(result[0]),
+                                                            width=self._width))
             for member, value in enumerate(result):
                 data.set(value, member)
         else:
-            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result), width=self._width))
+            data = OutputData(name=self.name,
+                              description=ResultDescription(dtype=type(result), width=self._width))
             data.set(result, 0)
         return data
 
@@ -948,10 +948,10 @@ class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataP
         raise exceptions.ApiError('ProxyResourceManager cannot yet manage a full OutputDataProxy.')
 
     def future(self, name: str, description: ResultDescription):
-        return Future(self, name, description=description)
+        return super().future(name, description=description)
 
 
-class AbstractOperation(typing.Generic[_OutputDataProxyType]):
+class AbstractOperation(AbstractOperationReference, typing.Generic[_OutputDataProxyType]):
     """Client interface to an operation instance (graph node).
 
     Note that this is a generic abstract class. Subclasses should provide a
@@ -980,8 +980,10 @@ class AbstractOperation(typing.Generic[_OutputDataProxyType]):
         ...
 
 
-class OperationRegistryKey(collections.namedtuple('OperationRegistryKey', 'namespace name'), collections.abc.Hashable):
+class OperationRegistryKey(typing.NamedTuple):
     """Helper class to define the key type for OperationRegistry."""
+    namespace: str
+    name: str
 
     def __hash__(self):
         return hash((self.namespace, self.name))
@@ -1261,7 +1263,8 @@ class OperationDetailsBase(OperationImplementation, InputDescription,
 
     @classmethod
     @abc.abstractmethod
-    def resource_director(cls, *, input, output: _PublishingDataProxyType) -> _Resources[_PublishingDataProxyType]:
+    def resource_director(cls, *, input, output: _PublishingDataProxyType) \
+            -> _Resources[_PublishingDataProxyType]:
         """a Director factory that helps build the Session Resources for the function.
 
         The Session launcher provides the director with all of the resources previously
@@ -1276,7 +1279,11 @@ class OperationDetailsBase(OperationImplementation, InputDescription,
 
     # TODO: Don't run the director. Just return the correct callable.
     @classmethod
-    def operation_director(cls, *args, context: 'Context', label=None, **kwargs) -> AbstractOperation:
+    def operation_director(cls,
+                           *args,
+                           context: 'Context',
+                           label=None,
+                           **kwargs) -> AbstractOperation:
         """Dispatching Director for adding a work node.
 
         A Director for input of a particular sort knows how to reconcile
@@ -1305,10 +1312,18 @@ class OperationDetailsBase(OperationImplementation, InputDescription,
             raise exceptions.UsageError('Context instance needed for dispatch.')
         # TODO: use Context characteristics rather than isinstance checks.
         if isinstance(context, ModuleContext):
-            construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
+            construct = OperationDirector(*args,
+                                          operation_details=cls,
+                                          context=context,
+                                          label=label,
+                                          **kwargs)
             return construct()
         elif isinstance(context, SubgraphContext):
-            construct = OperationDirector(*args, operation_details=cls, context=context, label=label, **kwargs)
+            construct = OperationDirector(*args,
+                                          operation_details=cls,
+                                          context=context,
+                                          label=label,
+                                          **kwargs)
             return construct()
         else:
             raise exceptions.ApiError('Cannot dispatch operation_director for context {}'.format(context))
@@ -1330,7 +1345,7 @@ class OperationDetailsBase(OperationImplementation, InputDescription,
 #         """Recreate the Operation at the consuming end of the DataEdge."""
 
 
-class Future(_Future):
+class Future(GenericFuture[ResultTypeVar]):
     """gmxapi data handle.
 
     Future is currently more than a Future right now. (should be corrected / clarified.)
@@ -1343,19 +1358,21 @@ class Future(_Future):
 
     TODO: ``subscribe`` method allows consumers to bind as Observers.
 
-    TODO: extract the abstract class for input inspection?
     Currently abstraction is handled through SourceResource subclassing.
 
     Attributes:
         description (ResultDescription): Describes the result to be obtained from this Future.
 
     """
+    description: ResultDescription
+    name: str
+    resource_manager: SourceResource
 
     def __init__(self, resource_manager: SourceResource, name: str, description: ResultDescription):
         self.name = name
         if not isinstance(description, ResultDescription):
             raise exceptions.ValueError('Need description of requested data.')
-        self.description = description  # type: ResultDescription
+        self.description = description
         self.resource_manager = resource_manager
 
         # Deprecated. We should not "reset" futures, but reconstitute them, but we
@@ -1363,19 +1380,7 @@ class Future(_Future):
         # make Futures properly immutable and issue new ones across subgraph iterations.
         self._number_of_resets = 0
 
-    def __eq__(self, other):
-        # This function is defined because we have defined __hash__().
-        # Before customizing __eq__(), recall that Python objects that compare
-        # equal should hash to the same value.
-        # Please keep the two functions semantically correct.
-        return object.__eq__(self, other)
-
-    def __hash__(self):
-        # We cannot properly determine equivalency beyond the scope of a ResourceManager instance
-        # without more developed data flow fingerprinting.
-        return hash((id(self.resource_manager), self.name, self.description, self._number_of_resets))
-
-    def __str__(self):
+    def __repr__(self):
         return '<Future: name={}, description={}>'.format(self.name, self.description)
 
     def result(self) -> ResultTypeVar:
@@ -1469,7 +1474,8 @@ class MutableResourceDescriptor(ProxyDataDescriptor):
     which a subscriber can collaborate with lower-level protocols.
     """
 
-    def __get__(self, proxy: DataProxyBase, owner) -> typing.Union[MutableResource, 'MutableResourceDescriptor']:
+    def __get__(self, proxy: DataProxyBase, owner) \
+            -> typing.Union[MutableResource, 'MutableResourceDescriptor']:
         if proxy is None:
             # Access through class attribute of owner class. We don't have a
             # specified use case for that, so allow inspection of the data
@@ -1487,7 +1493,8 @@ class MutableResourceDescriptor(ProxyDataDescriptor):
         # earlier operations, with annotations so that we know the intended behavior.
 
 
-def define_output_data_proxy(output_description: OutputCollectionDescription) -> typing.Type[DataProxyBase]:
+def define_output_data_proxy(output_description: OutputCollectionDescription) \
+        -> typing.Type[DataProxyBase]:
     descriptors = {name: OutputDataDescriptor(name, description) for name, description in output_description.items()}
 
     class OutputDataProxy(DataProxyBase, descriptors=descriptors):
@@ -1536,8 +1543,8 @@ class SinkTerminal(object):
         self.ensemble_width = 1
         self.inputs = input_collection_description
 
-    def __str__(self):
-        return '<SinkTerminal: ensemble_width={}>'.format(self.ensemble_width)
+    def __repr__(self):
+        return f'<SinkTerminal: width={self.ensemble_width}, {self.inputs}>'
 
     def update_width(self, width: int):
         if not isinstance(width, int):
@@ -1547,14 +1554,21 @@ class SinkTerminal(object):
                 raise exceptions.TypeError('Need an integer width > 0.')
         if width < 1:
             raise exceptions.ValueError('Nonsensical ensemble width: {}'.format(int(width)))
-        if self.ensemble_width != 1:
-            if width != self.ensemble_width:
-                raise exceptions.ValueError(
-                    'Cannot change ensemble width {} to width {}.'.format(self.ensemble_width, width))
-        self.ensemble_width = width
-
+        elif width > 1:
+            if self.ensemble_width != 1:
+                if width != self.ensemble_width:
+                    raise exceptions.ValueError(
+                        'Cannot change ensemble width {} to width {}.'.format(self.ensemble_width, width))
+            self.ensemble_width = width
+        else:
+            assert width == 1
+            # source data of width 1 is compatible with all consumer widths.
     def update(self, data_source_collection: DataSourceCollection):
-        """Update the SinkTerminal with the proposed data provider."""
+        """Update the SinkTerminal with the proposed data provider.
+
+        The primary purpose for this part of the protocol is to allow the sink to widen itself
+        (assert that it is now part of an "ensemble" workflow) when implied by the shape of the input.
+        """
         for name, sink_dtype in self.inputs.items():
             if name not in data_source_collection:
                 # If/when we accept data from multiple sources, we'll need some additional sanity checking.
@@ -1585,7 +1599,9 @@ class SinkTerminal(object):
                         if source_dtype is not None:
                             assert isinstance(source_dtype, type)
                             if not issubclass(source_dtype, sink_dtype):
-                                raise exceptions.TypeError('Expected {} but got {}.'.format(sink_dtype, source_dtype))
+                                raise exceptions.TypeError('Expected {} but got {}.'.format(
+                                    sink_dtype,
+                                    source_dtype))
                         source_width = source.description.width
                         self.update_width(source_width)
 
@@ -1643,6 +1659,16 @@ class DataEdge(object):
             return self.value
 
     def __init__(self, source_collection: DataSourceCollection, sink_terminal: SinkTerminal):
+        """Reconcile the provided data source(s) with the advertised inputs.
+
+        DataSourceCollection is constructed with consideration of the named inputs, but not the
+        type or shape. (Currently) In NodeBuilder.build(), the sink is given a chance to check
+        inputs and adjust its ensemble state by inspection of the DataSourceCollection via
+        `input_sink.update(self.sources)`. The DataEdge is instantiated afterwards, so we should
+        be able to use the sink ensemble width for some short-circuit logic and/or checking of
+        invariants/assumptions.
+        """
+
         # Adapters are callables that transform a source and node ID to local data.
         # Every key in the sink has an adapter.
         self.adapters = {}
@@ -1658,7 +1684,8 @@ class DataEdge(object):
                     logger.debug(f'Using default value for {name} for {repr(sink_terminal)}.')
                 else:
                     # TODO: Initialize with multiple DataSourceCollections?
-                    raise exceptions.ValueError('No source or default for required input "{}".'.format(name))
+                    raise exceptions.ValueError(
+                        f'No source or default for required input "{name}".')
             else:
                 source = source_collection[name]
                 sink = sink_terminal.inputs[name]
@@ -1679,10 +1706,12 @@ class DataEdge(object):
                     else:
                         if source.shape[0] != sink_terminal.ensemble_width:
                             raise exceptions.ValueError(
-                                'Implicit broadcast could not match array source to ensemble sink')
+                                f'Implicit broadcast could not match array source {source} to '
+                                f'ensemble sink {sink_terminal}')
                         else:
                             self.adapters[name] = lambda member, source=source: source[member]
                 elif hasattr(source, 'result'):
+                    # TODO: Simplify data model and type checking.
                     # Handle data futures...
                     logger.debug(f'Input {name}:({sink.__name__}) provided by a Future '
                                  f'{source.description}')
@@ -1695,12 +1724,11 @@ class DataEdge(object):
                     else:
                         self.adapters[name] = lambda member, source=source: source.result()[member]
                 else:
-                    assert isinstance(source, EnsembleDataSource)
-                    logger.debug(f'Input {name}:({sink.__name__}) provided by {repr(source)}')
-                    self.adapters[name] = lambda member, source=source: source.node(member)
+                    raise ApiError(f'Input type {sink} cannot accept source {repr(source)}')
 
-    def __str__(self):
-        return '<DataEdge: source_collection={}, sink_terminal={}>'.format(self.source_collection, self.sink_terminal)
+    def __repr__(self):
+        return '<DataEdge: source_collection={}, sink_terminal={}>'.format(self.source_collection,
+                                                                           self.sink_terminal)
 
     def reset(self):
         self.source_collection.reset()
@@ -1795,10 +1823,13 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
     """
 
     @contextmanager
-    def __publishing_context(self, ensemble_member=0) -> typing.Iterator[_PublishingDataProxyType]:
-        """Get a context manager for resolving the data dependencies of this node.
+    def __publishing_context(self, ensemble_member=0) -> _PublishingDataProxyType:
+        """Context manager for resolving the data dependencies of this node.
 
-        The returned object is a Python context manager (used to open a `with` block)
+        Provides a context manager for the scope in which a PublishingDataProxy is
+        instantiated and active. Uses the factory provided to ResourceManager.__init__()
+
+        Called to open a Python context manager (used to open a `with` block)
         to define the scope in which the operation's output can be published.
         'output' type resources can be published exactly once, and only while the
         publishing context is active. (See operation.function_wrapper())
@@ -1825,7 +1856,9 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
 
         # ref: https://docs.python.org/3/library/contextlib.html#contextlib.contextmanager
         if self._done[ensemble_member]:
-            raise exceptions.ProtocolError('Attempting to publish {}[{}] more than once.'.format(self.operation_id, ensemble_member))
+            raise exceptions.ProtocolError('Attempting to publish {}[{}] more than once.'.format(
+                self.operation_id,
+                ensemble_member))
 
         try:
             resource = self.__publishing_data_proxy(instance=weakref.proxy(self),
@@ -1835,10 +1868,17 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             raise e
 
         yield resource
+
         # Note: The remaining lines are skipped if an exception occurs in the `with` block
         # for the contextmanager suite, which effectively raises at the line after 'yield'.
         logger.debug('Published output for {} member {}'.format(self.operation_id, ensemble_member))
+        # Note that ResourceManager._done is implicitly a supporting data store of
+        # __publishing_context. This leaking of responsibilities should be reconsidered.
         self._done[ensemble_member] = True
+
+    @property
+    def ensemble_width(self):
+        return self._input_edge.sink_terminal.ensemble_width
 
     def __init__(self, *,
                  source: DataEdge,
@@ -1851,11 +1891,11 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                  output_context: 'Context'):
         """Initialize a resource manager for the inputs and outputs of an operation.
         """
+        super().__init__()
         # Note: This implementation assumes there is one ResourceManager instance per data source,
         # so we only stash the inputs and dependency information for a single set of resources.
         # TODO: validate input_fingerprint as its interface becomes clear.
         self._input_edge = source
-        self.ensemble_width = self._input_edge.sink_terminal.ensemble_width
 
         # Node UID.
         self.operation_id = operation_id
@@ -1883,8 +1923,9 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         self._resource_factory = resource_factory
         assert self._resource_factory is not None
 
-        self._data = _make_datastore(output_description=self._output_description,
-                                     ensemble_width=self.ensemble_width)
+        self._data: typing.OrderedDict[str, OutputData] = \
+            _make_datastore(output_description=self._output_description,
+                            ensemble_width=self.ensemble_width)
 
         # We store a rereference to the publishing context manager implementation
         # in a data structure that can only produce one per Python interpreter
@@ -1892,8 +1933,9 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # TODO: reimplement as a data descriptor
         #  so that PublishingDataProxy does not need a bound circular reference.
         self.__publishing_resources = [self.__publishing_context]
-
+        # _done is supporting data for the __publishing_context
         self._done = [False] * self.ensemble_width
+
         self.__operation_entrance_counter = 0
 
     def width(self) -> int:
@@ -1920,17 +1962,19 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                 for item in value:
                     # In this specification, it is antithetical to publish Futures.
                     if hasattr(item, 'result'):
-                        raise exceptions.ApiError('Operation produced Future instead of real output.')
+                        raise exceptions.ApiError(
+                            'Operation produced Future instead of real output.')
             except TypeError:
                 # Ignore when `item` is not iterable.
                 pass
+        # Note that data is not considered "done" until all members have been set.
         self._data[name].set(value=value, member=member)
 
     def is_done(self, name):
         return self._data[name].done
 
-    def get(self, name: str):
-        """
+    def get(self, name: str) -> OutputData:
+        """Get managed data by name.
 
         Raises exceptions.ProtocolError if requested data is not local yet.
         Raises exceptions.ValueError if data is requested for an unknown name.
@@ -1975,13 +2019,16 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             # could even set a data descriptor to change behavior.
             self.__operation_entrance_counter += 1
             if self.__operation_entrance_counter > 1:
-                raise exceptions.ProtocolError('Bug detected: resource manager tried to execute operation twice.')
+                raise exceptions.ProtocolError(
+                    'Bug detected: resource manager tried to execute operation twice.')
             if not self.done():
                 # Note! This is a detail of the ResourceManager in a SerialContext
                 # TODO: rewrite with the pattern that this block is directing and then resolving an operation in the
                 #  operation's library/implementation context.
                 publishing_resources = self.publishing_resources()
-                for i in range(self.ensemble_width):
+                # publishing_resources is self.__publishing_context
+
+                for ensemble_member in range(self.ensemble_width):
                     # TODO: rewrite the following expression as a call to a resource factory.
                     # TODO: Consider whether the resource_factory behavior should be normalized
                     #  to always use `with` blocks to indicate the lifetime of a resource handle.
@@ -1989,10 +2036,10 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                     #  could be "yield"ed
                     #  from within the `with` block to keep the resource scope alive until the resulting
                     #  generator is exhausted. Not sure what that looks like or what the use case would be.
-                    with self.local_input(i) as input:
+                    with self.local_input(ensemble_member) as input:
                         # Note: Resources are marked "done" by the publishing system
                         # before the following context manager finishes exiting.
-                        with publishing_resources(ensemble_member=i) as output:
+                        with publishing_resources(ensemble_member=ensemble_member) as output:
                             # self._runner(*input.args, output=output, **input.kwargs)
                             ####
                             # Here we can make _runner a thing that accepts session resources, and
@@ -2018,7 +2065,9 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                             try:
                                 resources = self._resource_factory(input=input, output=output)
                             except exceptions.TypeError as e:
-                                message = error_message.format(e, self._resource_factory, self.operation_id)
+                                message = error_message.format(e,
+                                                               self._resource_factory,
+                                                               self.operation_id)
                                 raise exceptions.ApiError(message) from e
 
                             runner = self._runner_director(resources)
@@ -2051,7 +2100,7 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             message = 'Requested Future of type {} is not compatible with available type {}.'
             message = message.format(requested_dtype, available_dtype)
             raise exceptions.ApiError(message)
-        return Future(self, name, description)
+        return super().future(name, description)
 
     def data(self) -> _OutputDataProxyType:
         """Get an adapter to the output resources to access results."""
@@ -2092,7 +2141,9 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             # Check one level into container objects to confirm that they aren't hiding
             # non-localized data.
             for item in value_list:
-                assert not hasattr(item, 'result')
+                if hasattr(item, 'result'):
+                    raise ApiError(f'{repr(item)} in {repr(self._input_edge)} (key: {key}) '
+                                   f'unexpectedly looks like a Future.')
 
         input_pack = InputPack(kwargs=kwargs)
 
@@ -2131,14 +2182,30 @@ class PyFunctionRunnerResources(collections.UserDict):
 
 
 class PyFunctionRunner(abc.ABC):
-    def __init__(self, *, function: typing.Callable, output_description: OutputCollectionDescription):
+    def __init__(self, *,
+                 function: typing.Callable,
+                 output_description: OutputCollectionDescription):
+        """Instantiate the wrapper for *function* and its parameters.
+
+        *function* is a callable that does not accept PyFunctionRunnerResources directly.
+        `wrapped_function_runner()` instantiates an appropriate subclass of
+        PyFunctionRunner that will translate PyFunctionRunnerResources for *function* at
+        run time.
+
+        *function* is a callable that either returns a single value (to be captured as
+        *data*) or which assigns output values to the attributes of an *output* keyword
+        argument.
+        """
         assert callable(function)
         self.function = function
         self.output_description = output_description
 
     @abc.abstractmethod
     def __call__(self, resources: PyFunctionRunnerResources):
-        self.function(output=resources.output(), **resources.input())
+        # Subclass should implement something like
+        #     self.function(output=resources.output(), **resources.input())
+        # and should not call super().__call__
+        raise NotImplementedError
 
 
 class CapturedOutputRunner(PyFunctionRunner):
@@ -2155,7 +2222,8 @@ class OutputParameterRunner(PyFunctionRunner):
         self.function(**resources)
 
 
-def wrapped_function_runner(function, output_description: OutputCollectionDescription = None) -> PyFunctionRunner:
+def wrapped_function_runner(function,
+                            output_description: OutputCollectionDescription = None) -> PyFunctionRunner:
     """Get an adapter for a function to be wrapped.
 
     If the function does not accept a publishing data proxy as an `output`
@@ -2298,7 +2366,8 @@ class OperationPlaceholder(AbstractOperation):
         ...
 
     def run(self):
-        raise exceptions.UsageError('This placeholder operation handle is not in an executable context.')
+        raise exceptions.UsageError(
+            'This placeholder operation handle is not in an executable context.')
 
     @property
     def output(self):
@@ -2558,7 +2627,8 @@ class OutputFactory(object):
     def __init__(self, *,
                  output_proxy: typing.Callable[[SourceResource], _OutputDataProxyType],
                  output_description: OutputCollectionDescription,
-                 publishing_data_proxy: typing.Callable[[SourceResource, ClientID], _PublishingDataProxyType]):
+                 publishing_data_proxy: typing.Callable[
+                     [SourceResource, ClientID], _PublishingDataProxyType]):
         """Package the output details for an operation.
 
         Arguments:
@@ -2578,7 +2648,7 @@ class OutputFactory(object):
         self._output_description = output_description
         self._publishing_data_proxy = publishing_data_proxy
 
-    def output_proxy(self) -> typing.Callable[[_OutputDataProxyType, SourceResource], _OutputDataProxyType]:
+    def output_proxy(self) -> typing.Callable[[SourceResource], _OutputDataProxyType]:
         return self._output_proxy
 
     def output_description(self) -> OutputCollectionDescription:
@@ -2618,15 +2688,21 @@ class OperationDirector(object):
         builder.set_input_description(self.operation_details)
         builder.set_handle(OperationHandle)
 
+        # self.operation_details is a factory or class. We get an operation_details
+        # instance here.
         operation_details = self.operation_details()
+
+        # With gmxapi.abc.OperationDirector, this is the resource_factory member, which should be
+        # composed instead of hard-coded to self.operation_details().signature().bind.
         node_input_factory = operation_details.signature().bind
-        data_source_collection = node_input_factory(*self.args, **self.kwargs)
+        data_source_collection: DataSourceCollection = node_input_factory(*self.args, **self.kwargs)
         for name, source in data_source_collection.items():
             builder.add_input(name, source)
 
         def runner_director(resources):
             def runner():
                 operation_details(resources)
+
             return runner
 
         builder.set_runner_director(runner_director)
@@ -2656,7 +2732,7 @@ def _make_datastore(output_description: OutputCollectionDescription, ensemble_wi
 
     datastore = collections.OrderedDict()
     for name, dtype in output_description.items():
-        assert isinstance(dtype, type)
+        assert issubclass(dtype, valid_result_types)
         result_description = ResultDescription(dtype=dtype, width=ensemble_width)
         datastore[name] = OutputData(name=name, description=result_description)
     return datastore
@@ -2703,7 +2779,8 @@ def function_wrapper(output: dict = None):
     """
 
     if output is not None and not isinstance(output, collections.abc.Mapping):
-        raise exceptions.TypeError('If provided, `output` argument must be a mapping of data names to types.')
+        raise exceptions.TypeError(
+            'If provided, `output` argument must be a mapping of data names to types.')
 
     # TODO: (FR5+) gmxapi operations need to allow a context-dependent way to generate an implementation with input.
     # This function wrapper reproduces the wrapped function's kwargs, but does not allow chaining a
@@ -2751,7 +2828,12 @@ def function_wrapper(output: dict = None):
 
             @classmethod
             def namespace(cls) -> str:
-                return cls.__basename.rstrip('.' + cls.name())
+                suffix = '.' + cls.name()
+                try:
+                    index = cls.__basename.rindex(suffix)
+                except ValueError:
+                    index = None
+                return cls.__basename[:index]
 
             @classmethod
             def director(cls, context: _Context):
@@ -2823,6 +2905,10 @@ def function_wrapper(output: dict = None):
                 The UID is a detail of the generic Operation that _should_ be independent
                 of the Context details to allow the framework to manage when and where
                 an operation is executed.
+
+                Note:
+                    This implementation creates a new identifier with every call, even if *input*
+                    is the same, because we have not developed our Fingerprinting scheme in gmxapi 0.1+.
 
                 Design notes on further refinement:
                     TODO: Operations should not single-handedly determine their own uniqueness
@@ -2897,7 +2983,10 @@ def function_wrapper(output: dict = None):
             # This calls a dispatching function that may not be able to reconcile the input
             # and Context capabilities. This is the place to handle various exceptions for
             # whatever reasons this reconciliation cannot occur.
-            handle = OperationDetails.operation_director(*args, context=context, label=None, **kwargs)
+            handle = OperationDetails.operation_director(*args,
+                                                         context=context,
+                                                         label=None,
+                                                         **kwargs)
 
             # TODO: NOW: The input fingerprint describes the provided input
             # as (a) ensemble input, (b) static, (c) future. By the time the
@@ -3031,7 +3120,8 @@ class GraphMeta(type):
                     # namespace[name].__objclass__ = mcs
                     assert not hasattr(namespace[name], '__objclass__')
             else:
-                raise exceptions.ValueError('"variables" must be a mapping of graph variables to types or defaults.')
+                raise exceptions.ValueError(
+                    '"variables" must be a mapping of graph variables to types or defaults.')
 
         return namespace
 
@@ -3212,7 +3302,7 @@ class SubgraphBuilder(object):
         if self._editing:
             if item in self.variables:
                 if item in self._staging:
-                    logger.debug('Read access to intermediate value of subgraph variable {}'.format(item))
+                    logger.debug(f'Read access to intermediate value of subgraph variable {item}')
                     return self._staging[item]
                 else:
                     logger.debug('Read access to subgraph variable {}'.format(item))
@@ -3301,11 +3391,14 @@ class SubgraphBuilder(object):
 
         class Subgraph(object):
             def __init__(self, input_futures, update_sources):
-                self.values = collections.OrderedDict([(key, value.result()) for key, value in input_futures.items()])
+                self.values = collections.OrderedDict([(key, value.result()) for key, value in
+                                                       input_futures.items()])
                 logger.debug('subgraph initialized with {}'.format(
                     ', '.join(['{}: {}'.format(key, value) for key, value in self.values.items()])))
-                self.futures = collections.OrderedDict([(key, value) for key, value in input_futures.items()])
-                self.update_sources = collections.OrderedDict([(key, value) for key, value in update_sources.items()])
+                self.futures = collections.OrderedDict([(key, value) for key, value in
+                                                        input_futures.items()])
+                self.update_sources = collections.OrderedDict([(key, value) for key, value in
+                                                               update_sources.items()])
                 logger.debug('Subgraph updates staged:')
                 for update, source in self.update_sources.items():
                     logger.debug('    {} = {}'.format(update, source))
@@ -3317,7 +3410,8 @@ class SubgraphBuilder(object):
                     self.values[name] = result
                 # Replace the data sources in the futures.
                 for name in self.update_sources:
-                    self.futures[name].resource_manager = gmx.make_constant(self.values[name]).resource_manager
+                    self.futures[name].resource_manager = gmx.make_constant(
+                        self.values[name]).resource_manager
                 for name in self.update_sources:
                     self.update_sources[name]._reset()
 
@@ -3346,8 +3440,9 @@ class SubgraphBuilder(object):
         return False
 
     def __call__(self):
-        # TODO: After build() has been called, this should dispatch to a factory
-        #  that returns an OperationHandle.
+        # After build() has been called, SubgraphBuilder is callable and acts as a
+        # factory for the subgraph instance.
+        # TODO: the factory should return a proper OperationHandle.
         return self._factory()
 
 
@@ -3380,12 +3475,14 @@ def while_loop(*, operation, condition, max_iteration=10):
 
     Protocol:
         Warning:
-            This protocol will be changed before the 0.1 API is finalized.
+            This protocol will be changed before the API is finalized.
 
         When called, ``while_loop`` calls ``operation`` without arguments
-        and captures the return value captured as ``_operation``.
+        and captures the return value for inspection of outputs.
         The object produced by ``operation()`` must have a ``reset``,
-        a ``run`` method, and an ``output`` attribute.
+        a ``run`` method, and an ``output`` attribute. From gmxapi 0.1, an additional
+        ``values`` attribute is examined to advertise the output members that will
+        appear on the ``while_loop`` output.
 
         This is inspected
         to determine the output data proxy for the operation produced by the call
@@ -3427,12 +3524,21 @@ def while_loop(*, operation, condition, max_iteration=10):
         logger.debug('Condition: {}'.format(condition(obj)))
         while (condition(obj)):
             logger.debug('Running iteration {}'.format(iteration))
+            # WARNING: This is a dynamically generated task that can break logic based on
+            # assumptions about the sequence of execution or resolution of data Futures,
+            # if we aren't careful.
             obj.run()
             logger.debug(
                 ', '.join(['{}: {}'.format(key, obj.values[key]) for key in obj.values]))
             logger.debug('Condition: {}'.format(condition(obj)))
             iteration += 1
             if iteration > max_iteration:
+                logger.warning(
+                    f'while_loop condition still True after {iteration} iterations. '
+                    'If you are confident that the script is behaving correctly, '
+                    f'but needs more than {max_iteration} iterations, '
+                    'set a higher value for the *max_iteration* argument to `while_loop`'
+                )
                 break
         for name in outputs:
             setattr(output, name, obj.values[name])
@@ -3468,7 +3574,9 @@ def subgraph(variables=None):
 
 
 @computed_result
-def join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) -> datamodel.NDArray:
+def join_arrays(*,
+                front: datamodel.NDArray = (),
+                back: datamodel.NDArray = ()) -> datamodel.NDArray:
     """Operation that consumes two sequences and produces a concatenated single sequence.
 
     Note that the exact signature of the operation is not determined until this
@@ -3495,10 +3603,11 @@ def join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) 
 Scalar = typing.TypeVar('Scalar')
 
 
-def concatenate_lists(sublists: list = ()) -> _Future[gmx.datamodel.NDArray]:
+def concatenate_lists(sublists: typing.Sequence[typing.Sequence[Scalar]] = ()) \
+        -> GenericFuture[gmx.datamodel.NDArray]:
     """Combine data sources into a single list.
 
-    A trivial data flow restructuring operation.
+    A trivial data flow restructuring helper.
     """
     if isinstance(sublists, (str, bytes)):
         raise exceptions.ValueError('Input must be a list of lists.')
@@ -3511,7 +3620,7 @@ def concatenate_lists(sublists: list = ()) -> _Future[gmx.datamodel.NDArray]:
                                             concatenate_lists(sublists[1:])))
 
 
-def make_constant(value: Scalar) -> _Future:
+def make_constant(value: Scalar) -> GenericFuture[Scalar]:
     """Provide a predetermined value at run time.
 
     This is a trivial operation that provides a (typed) value, primarily for
@@ -3524,11 +3633,11 @@ def make_constant(value: Scalar) -> _Future:
     dtype = type(value)
     source = StaticSourceManager(name='data', proxied_data=value, width=1, function=lambda x: x)
     description = ResultDescription(dtype=dtype, width=1)
-    future = Future(source, 'data', description=description)
+    future = source.future('data', description=description)
     return future
 
 
-def logical_not(value: bool) -> _Future:
+def logical_not(value: bool) -> GenericFuture:
     """Boolean negation.
 
     If the argument is a gmxapi compatible Data or Future object, a new View or

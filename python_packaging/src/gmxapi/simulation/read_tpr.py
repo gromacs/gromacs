@@ -284,7 +284,7 @@ class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMe
         return 'gmxapi'
 
     @classmethod
-    def director(cls, context: gmxapi.abc.Context) -> _op.OperationDirector:
+    def director(cls, context: gmxapi.abc.Context) -> gmxapi.abc.OperationDirector:
         if isinstance(context, _op.Context):
             return StandardDirector(context)
         raise gmxapi.exceptions.MissingImplementationError(

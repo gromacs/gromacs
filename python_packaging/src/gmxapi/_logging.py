@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,18 @@
 Upon import, the gmxapi package sets a placeholder "NullHandler" to block
 propagation of log messages to the root logger (and sys.stderr, if not handled).
 
-If you want to see gmxapi logging output on sys.stderr, attach a
-logging.StreamHandler to the 'gmxapi' logger.
+If you want to see gmxapi logging output on `sys.stderr`, import `logging` in your
+script or module and configure it. For the simplest case, consider
+`logging.basicConfig`::
+
+    >>> import logging
+    >>> logging.basicConfig(level=logging.DEBUG)
+
+For more advanced usage, consider attaching a
+`logging.StreamHandler` to the ``gmxapi`` logger.
+
+The gmxapi logging module adds an additional ``rank_tag`` log formatter field that can
+be particularly helpful in ensemble MPI workflows.
 
 Example::
 
@@ -46,7 +56,7 @@ Example::
     # Optional: Set log level.
     ch.setLevel(logging.DEBUG)
     # Optional: create formatter and add to character stream handler
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(levelname)s %(asctime)s:%(name)s %(rank_tag)s%(message)s')
     ch.setFormatter(formatter)
     # add handler to logger
     logging.getLogger('gmxapi').addHandler(ch)
@@ -63,6 +73,7 @@ logger output.
 __all__ = ['logger']
 
 # Import system facilities
+import logging
 from logging import getLogger, DEBUG, NullHandler
 
 # Define `logger` attribute that is used by submodules to create sub-loggers.
@@ -70,4 +81,36 @@ logger = getLogger('gmxapi')
 # Prevent gmxapi logs from propagating to the root logger (and to sys.stderr)
 # if the user does not take action to handle logging.
 logger.addHandler(NullHandler(level=DEBUG))
+
+try:
+    from mpi4py import MPI
+
+    rank_number = MPI.COMM_WORLD.Get_rank()
+    comm_size = MPI.COMM_WORLD.Get_size()
+except ImportError:
+    rank_number = 0
+    comm_size = 1
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
+
+old_factory = logging.getLogRecordFactory()
+
+
+def record_factory(*args, **kwargs):
+    record = old_factory(*args, **kwargs)
+    record.rank_tag = rank_tag
+    return record
+
+
+logging.setLogRecordFactory(record_factory)
+
+# We can't (and shouldn't) forcibly update the log handlers for the user, but we could
+# provide a utility function or at least advise that we have enabled an additional
+# logging tag.
+# log_format = '%(levelname)s %(name)s %(rank_tag)s%(message)s'
+# for handler in logging.getLogger().handlers:
+#     handler.setFormatter(logging.Formatter(log_format))
+
 logger.info("Importing gmxapi.")

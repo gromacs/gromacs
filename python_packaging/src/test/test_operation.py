@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,93 +41,85 @@ import os
 import shutil
 import stat
 import tempfile
-import unittest
 
 import gmxapi as gmx
 from gmxapi import commandline_operation
 
 
-class ImmediateResultTestCase(unittest.TestCase):
-    """Test data model and data flow for basic operations."""
-
-    def test_scalar(self):
-        operation = gmx.make_constant(42)
-        assert isinstance(operation.dtype, type)
-        assert operation.dtype == int
-        assert operation.result() == 42
-
-    def test_list(self):
-        list_a = [1, 2, 3]
-
-        # TODO: test input validation
-        list_result = gmx.concatenate_lists(sublists=[list_a])
-        assert list_result.dtype == gmx.datamodel.NDArray
-        # Note: this is specifically for the built-in tuple type.
-        # Equality comparison may work differently for different sequence types.
-        assert tuple(list_result.result()) == tuple(list_a)
-        assert len(list_result.result()) == len(list_a)
-
-        list_result = gmx.concatenate_lists([list_a, list_a])
-        assert len(list_result.result()) == len(list_a) * 2
-        assert tuple(list_result.result()) == tuple(list_a + list_a)
-
-        list_b = gmx.ndarray([42])
-
-        list_result = gmx.concatenate_lists(sublists=[list_b])
-        assert list_result.result()[0] == 42
-
-        list_result = gmx.join_arrays(front=list_a, back=list_b)
-        assert len(list_result.result()) == len(list_a) + 1
-        assert tuple(list_result.result()) == tuple(list(list_a) + [42])
+def test_scalar():
+    operation = gmx.make_constant(42)
+    assert isinstance(operation.dtype, type)
+    assert operation.dtype == int
+    assert operation.result() == 42
 
 
-class OperationPipelineTestCase(unittest.TestCase):
-    """Test dependent sequence of operations."""
+def test_list():
+    list_a = [1, 2, 3]
 
-    def test_data_dependence(self):
-        """Confirm that data dependencies correctly establish resolvable execution dependencies.
+    # TODO: test input validation
+    list_result = gmx.concatenate_lists(sublists=[list_a])
+    assert list_result.dtype == gmx.datamodel.NDArray
+    # Note: this is specifically for the built-in tuple type.
+    # Equality comparison may work differently for different sequence types.
+    assert tuple(list_result.result()) == tuple(list_a)
+    assert len(list_result.result()) == len(list_a)
 
-        In a sequence of two operations, write a two-line file one line at a time.
-        Use the output of one operation as the input of another.
-        """
-        with tempfile.TemporaryDirectory() as directory:
-            file1 = os.path.join(directory, 'input')
-            file2 = os.path.join(directory, 'output')
+    list_result = gmx.concatenate_lists([list_a, list_a])
+    assert len(list_result.result()) == len(list_a) * 2
+    assert tuple(list_result.result()) == tuple(list_a + list_a)
 
-            # Make a shell script that acts like the type of tool we are wrapping.
-            scriptname = os.path.join(directory, 'clicommand.sh')
-            with open(scriptname, 'w') as fh:
-                fh.write('\n'.join(['#!' + shutil.which('bash'),
-                                    '# Concatenate an input file and a string argument to an output file.',
-                                    '# Mock a utility with the tested syntax.',
-                                    '#     clicommand.sh "some words" -i inputfile -o outputfile',
-                                    'echo $1 | cat $3 - > $5\n']))
-            os.chmod(scriptname, stat.S_IRWXU)
+    list_b = gmx.ndarray([42])
 
-            line1 = 'first line'
-            filewriter1 = commandline_operation(scriptname,
-                                                arguments=[line1],
-                                                input_files={'-i': os.devnull},
-                                                output_files={'-o': file1})
+    list_result = gmx.concatenate_lists(sublists=[list_b])
+    assert list_result.result()[0] == 42
 
-            line2 = 'second line'
-            filewriter2 = commandline_operation(scriptname,
-                                                arguments=[line2],
-                                                input_files={'-i': filewriter1.output.file['-o']},
-                                                output_files={'-o': file2})
-
-            filewriter2.run()
-            # Check that the files have the expected lines
-            with open(file1, 'r') as fh:
-                lines = [text.rstrip() for text in fh]
-            assert len(lines) == 1
-            assert lines[0] == line1
-            with open(file2, 'r') as fh:
-                lines = [text.rstrip() for text in fh]
-            assert len(lines) == 2
-            assert lines[0] == line1
-            assert lines[1] == line2
+    list_result = gmx.join_arrays(front=list_a, back=list_b)
+    assert len(list_result.result()) == len(list_a) + 1
+    assert tuple(list_result.result()) == tuple(list(list_a) + [42])
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_data_dependence(cleandir):
+    """Test dependent sequence of operations.
+
+    Confirm that data dependencies correctly establish resolvable execution dependencies.
+
+    In a sequence of two operations, write a two-line file one line at a time.
+    Use the output of one operation as the input of another.
+    """
+    with tempfile.TemporaryDirectory() as directory:
+        file1 = os.path.join(directory, 'input')
+        file2 = os.path.join(directory, 'output')
+
+        # Make a shell script that acts like the type of tool we are wrapping.
+        scriptname = os.path.join(directory, 'clicommand.sh')
+        with open(scriptname, 'w') as fh:
+            fh.write('\n'.join(['#!' + shutil.which('bash'),
+                                '# Concatenate an input file and a string argument to an output file.',
+                                '# Mock a utility with the tested syntax.',
+                                '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                                'echo $1 | cat $3 - > $5\n']))
+        os.chmod(scriptname, stat.S_IRWXU)
+
+        line1 = 'first line'
+        filewriter1 = commandline_operation(scriptname,
+                                            arguments=[line1],
+                                            input_files={'-i': os.devnull},
+                                            output_files={'-o': file1})
+
+        line2 = 'second line'
+        filewriter2 = commandline_operation(scriptname,
+                                            arguments=[line2],
+                                            input_files={'-i': filewriter1.output.file['-o']},
+                                            output_files={'-o': file2})
+
+        filewriter2.run()
+        # Check that the files have the expected lines
+        with open(filewriter1.output.file['-o'].result(), 'r') as fh:
+            lines = [text.rstrip() for text in fh]
+        assert len(lines) == 1
+        assert lines[0] == line1
+        with open(filewriter2.output.file['-o'].result(), 'r') as fh:
+            lines = [text.rstrip() for text in fh]
+        assert len(lines) == 2
+        assert lines[0] == line1
+        assert lines[1] == line2

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,25 +33,34 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 """gmxapi data types and interfaces.
+
+TBD: https://gitlab.com/gromacs/gromacs/-/issues/2993
 """
 
 __all__ = ['ndarray', 'NDArray']
 
-import collections
+import collections.abc
+import typing
 
 import gmxapi.abc
 from gmxapi import exceptions
 
 
-class NDArray(gmxapi.abc.NDArray):
+_T = typing.TypeVar('_T')
+
+
+class NDArray(gmxapi.abc.NDArray, typing.Generic[_T]):
     """N-Dimensional array type.
     """
+    dtype: typing.Type[_T] = None
+    shape: typing.Tuple[int] = ()
 
-    def __init__(self, data=None):
-        self._values = []
-        self.dtype = None
-        self.shape = ()
-        if data is not None:
+    def __init__(self, data: typing.Union[_T, typing.Sequence[_T]] = None):
+        if data is None:
+            self._values = []
+            self.dtype = None
+            self.shape = (0,)
+        else:
             if hasattr(data, 'result') or (
                     isinstance(data, collections.abc.Iterable) and any([hasattr(item, 'result') for item in data])):
                 raise exceptions.ValueError(
@@ -68,13 +77,18 @@ class NDArray(gmxapi.abc.NDArray):
                     data = [data]
             self._values = data
             if length > 0:
-                self.dtype = type(data[0])
+                self.dtype: typing.Type[_T] = type(data[0])
                 self.shape = (length,)
+        if len(self._values) > 0 or len(self.shape) > 0:
+            assert self.shape[0] == len(self._values)
 
     def to_list(self):
         return self._values
 
-    def __getitem__(self, i: int):
+    def __repr__(self):
+        return f'<gmxapi.NDArray: dtype={self.dtype}, shape={self.shape}>'
+
+    def __getitem__(self, i: int) -> _T:
         return self._values[i]
 
     def __len__(self) -> int:

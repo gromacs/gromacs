@@ -38,11 +38,13 @@ Provide command line operation.
 
 __all__ = ['commandline_operation']
 
+import collections.abc
 import functools
 import os
 import pathlib
 import shutil
 import subprocess
+from typing import Iterable, Union
 
 import gmxapi as gmx
 from gmxapi import exceptions
@@ -106,13 +108,10 @@ def cli_bindir() -> pathlib.Path:
 # the keys of the map are not implicit or set by the wrapped function.
 # For the map to be non-empty, it must be defined before the resulting helper
 # function is called.
-#
-# TODO: Operation returns the output object when called with the shorter signature.
-#
 @gmx.function_wrapper(output={'stdout': str,
                               'stderr': str,
                               'returncode': int})
-def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdin: str = ''):
+def cli(command: NDArray, shell: bool, output, stdin: str = ''):
     """Execute a command line program in a subprocess.
 
     Configure an executable in a subprocess. Executes when run in an execution
@@ -127,7 +126,7 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     think this disallows important use cases, please let us know.
 
     Arguments:
-         command: a tuple (or list) to be the subprocess arguments, including `executable`
+         command: a tuple (or list) to be the subprocess arguments, including *executable*
          output: mapping of command line flags to output filename arguments
          shell: unused (provides forward-compatibility)
          stdin (str): String input to send to STDIN (terminal input) of the executable.
@@ -147,11 +146,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     `... "a" "s" "d" "f"`. To pass a single string argument, `arguments=("asdf")`
     or `arguments=["asdf"]`.
 
-    `input` and `output` should be a dictionary with string keys, where the keys
-    name command line "flags" or options.
-
     Example:
-        Execute a command named `exe` that takes a flagged option for file name
+        Execute a command named ``exe`` that takes a flagged option for file name
         (stored in a local Python variable `my_filename`) and an `origin` flag
         that uses the next three arguments to define a vector.
 
@@ -163,15 +159,14 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
             >>> assert hasattr(result, 'returncode')
 
     Returns:
-        A data structure with attributes for each of the results `file`, `stdout`, `stderr`, and `returncode`
+        A data structure with attributes for each of the results.
 
     Result object attributes:
-        * `file`: the mapping of CLI flags to filename strings resulting from the `output` kwarg
-        * `stdout`: A string mapping from process STDOUT.
-        * `stderr`: A string mapping from process STDERR; it will be the
+        * file: the mapping of CLI flags to filename strings resulting from the `output` kwarg
+        * returncode: return code of the subprocess.
+        * stderr: A string mapping from process STDERR; it will be the
                     error output (if any) if the process failed.
-        * `returncode`: return code of the subprocess.
-
+        * stdout: A string mapping from process STDOUT.
     """
     # In the operation implementation, we expect the `shell` parameter to be intercepted by the
     # wrapper and set to False.
@@ -183,7 +178,7 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
 
     if isinstance(command, (str, bytes)):
         command = [command]
-    command = list([arg for arg in command])
+    command = list([str(arg) for arg in command])
 
     executable = shutil.which(command[0])
     if executable is None:
@@ -195,9 +190,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     # TODO: (FR9) Can OS input/output filehandles be a responsibility of
     #  the code providing 'resources'?
 
-    stdout = ''
-    stderr = ''
-    logger.debug('executing subprocess')
+    logger.debug('executing subprocess: %s', ' '.join(str(word) for word in command))
+
     try:
         completed_process = subprocess.run(command,
                                            shell=shell,
@@ -209,19 +203,6 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
                                            universal_newlines=True
                                            )
         returncode = completed_process.returncode
-        # TODO: Resource management code should manage a safe data object for `output`.
-        logger.debug('STDOUT:')
-        if completed_process.stderr is not None:
-            for line in completed_process.stdout.split('\n'):
-                logger.debug(line)
-        else:
-            logger.debug('STDOUT is empty')
-        logger.debug('STDERR:')
-        if completed_process.stderr is not None:
-            for line in completed_process.stderr.split('\n'):
-                logger.debug(line)
-        else:
-            logger.debug('STDERR is empty')
 
         stdout = completed_process.stdout
         stderr = completed_process.stderr
@@ -232,6 +213,19 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
         stdout = e.stdout
         stderr = e.stderr
         returncode = e.returncode
+
+    if stderr is not None:
+        if stdout is not None:
+            logger.debug('STDOUT:')
+            for line in stdout.split('\n'):
+                logger.debug(line)
+        else:
+            logger.debug('STDOUT is empty')
+        logger.debug('STDERR:')
+        for line in stderr.split('\n'):
+            logger.debug(line)
+    else:
+        logger.debug('STDERR is empty')
 
     # Publish outputs.
     output.stdout = stdout
@@ -283,9 +277,9 @@ def filemap_to_flag_list(filemap: dict = None):
 #  from the helper (decorated function).
 def commandline_operation(executable=None,
                           arguments=(),
-                          input_files: dict = None,
-                          output_files: dict = None,
-                          stdin: str = None,
+                          input_files: Union[dict, Iterable[dict]] = None,
+                          output_files: Union[dict, Iterable[dict]] = None,
+                          stdin: Union[str, Iterable[str]] = None,
                           **kwargs):
     """Helper function to define a new operation that executes a subprocess in gmxapi data flow.
 
@@ -316,10 +310,10 @@ def commandline_operation(executable=None,
         The output node of the resulting operation handle contains
 
         * ``file``: the mapping of CLI flags to filename strings resulting from the ``output_files`` kwarg
-        * ``stdout``: A string mapping from process STDOUT.
+        * ``returncode``: return code of the subprocess.
         * ``stderr``: A string mapping from process STDERR; it will be the
                       error output (if any) if the process failed.
-        * ``returncode``: return code of the subprocess.
+        * ``stdout``: A string mapping from process STDOUT.
 
     """
 
@@ -339,7 +333,7 @@ def commandline_operation(executable=None,
     # Warning: decorating a local function like this is counter to the notion of Operations
     # as portable (importable, serializable/deserializable). The big picture here needs
     # some more consideration.
-    # TODO: (NOW) Distinguish portable Operations from relocatable Futures.
+    # TODO(3139): Distinguish portable Operations from relocatable Futures.
     # There is nothing antithetical about objects implementing gmxapi data interfaces
     # that are only resolvable by a certain Context as long as that Context can convey
     # the results to another Context upon request. Re-instantiating Operations is

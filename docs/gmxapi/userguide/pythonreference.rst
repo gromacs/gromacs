@@ -39,8 +39,40 @@ gmxapi basic package
     import gmxapi as gmx
 
 .. automodule:: gmxapi
-   :members:
-   :member-order: groupwise
+
+.. autodecorator:: function_wrapper
+
+.. autofunction:: commandline_operation
+
+.. autofunction:: subgraph
+
+.. autofunction:: while_loop
+
+Simulation module
+=================
+
+.. automodule:: gmxapi.simulation
+
+.. py:currentmodule:: gmxapi
+
+.. autofunction:: read_tpr
+
+.. autofunction:: modify_input
+
+.. autofunction:: mdrun
+
+Utilities
+=========
+
+.. py:currentmodule:: gmxapi
+
+.. autofunction:: concatenate_lists
+
+.. autofunction:: join_arrays
+
+.. autofunction:: logical_not
+
+.. autofunction:: make_constant
 
 Status messages and Logging
 ===========================
