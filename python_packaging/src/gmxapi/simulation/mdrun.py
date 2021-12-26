@@ -64,7 +64,6 @@ from gmxapi import logger as root_logger
 logger = root_logger.getChild('mdrun')
 logger.info('Importing {}'.format(__name__))
 
-
 # Output in the gmxapi.operation Context.
 # TODO: Consider using a single base class for the DataProxy, but have distinct
 #  data descriptor behavior (or different descriptor implementations in different
@@ -95,7 +94,6 @@ _output_factory = _op.OutputFactory(output_proxy=OutputDataProxy,
                                     output_description=_output,
                                     publishing_data_proxy=PublishingDataProxy)
 
-
 # Input in the gmxapi.operation Context for the dispatching runner.
 # The default empty dictionary for parameters just means that there are no overrides
 # to the parameters already provided in _simulation_input.
@@ -123,6 +121,23 @@ def _standard_node_resource_factory(*args, **kwargs):
 
 @contextmanager
 def scoped_communicator(original_comm, requested_size: int = None):
+    """Manage the lifecycle of a new communicator.
+
+    Get a Python context manager that produces a new communicator
+    in a ``with`` statement and frees it afterwards.
+
+    The new communicator is a sub-communicator of *original_comm*, if provided.
+
+    Args:
+        original_comm: parent communicator, or *None* to determine automatically.
+        requested_size: number of ranks requested, or *None* for all available.
+
+    *original_comm* is required if *requested_size* is not *None*.
+
+    If *requested_size* is less than the size of *original_comm*, the type of object
+    produced on higher-numbered (non-participating) ranks is unspecified. Callers
+    should use ``original_comm.Get_rank()`` to decide whether to use the new comm.
+    """
     from gmxapi.simulation.context import _acquire_communicator, _get_ensemble_communicator
 
     if requested_size is None:
@@ -130,7 +145,13 @@ def scoped_communicator(original_comm, requested_size: int = None):
 
     else:
         if original_comm is None or not hasattr(original_comm, 'Get_size'):
-            raise exceptions.UsageError('A valid communicator must be provided when requesting a specific size.')
+            error = f'Cannot get Comm size {requested_size} from {repr(original_comm)}.'
+            logger.error(
+                error + ' '
+                + 'To get a scoped communicator of a specific size, provide a parent '
+                + 'communicator supporting the mpi4py.MPI.Comm interface.'
+            )
+            raise exceptions.UsageError(error)
         original_comm_size = original_comm.Get_size()
         if original_comm_size < requested_size:
             raise exceptions.FeatureNotAvailableError(
@@ -239,11 +260,16 @@ class LegacyImplementationSubscription(object):
 
                             for file in expected_working_files:
                                 if not os.path.exists(file):
+                                    logger.error(
+                                        f'Expected file {file} not found. gmxapi.mdrun task '
+                                        f'{resource_manager.operation_id} is in an unknown state. Aborting.'
+                                    )
                                     raise exceptions.ApiError(
                                         'Cannot determine working directory state: {}'.format(workdir))
                         else:
                             raise exceptions.ApiError(
-                                'Chosen working directory path exists but is not a directory: {}'.format(workdir))
+                                'Chosen working directory path exists but is not a directory: {}'.format(
+                                    workdir))
                     else:
                         # Build the working directory and input files.
                         os.mkdir(workdir)
@@ -273,7 +299,8 @@ class LegacyImplementationSubscription(object):
                         workdir_list = [os.path.abspath(_workdir) for _workdir in workdir_list]
                         # TODO: If we use better input file names, they need to be updated in multiple places.
                         tpr_filenames = [os.path.join(_workdir, 'topol.tpr') for _workdir in workdir_list]
-                        parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in tpr_filenames]
+                        parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in
+                                                tpr_filenames]
                         if isinstance(runtime_args, (list, tuple)):
                             runtime_args_list = list(runtime_args)
                         else:
@@ -439,7 +466,8 @@ class ResourceManager(gmxapi.operation.ResourceManager):
         if not self.done():
             self.__operation_entrance_counter += 1
             if self.__operation_entrance_counter > 1:
-                raise exceptions.ProtocolError('Bug detected: resource manager tried to execute operation twice.')
+                raise exceptions.ProtocolError(
+                    'Bug detected: resource manager tried to execute operation twice.')
             if not self.done():
                 # TODO: rewrite with the pattern that this block is directing and then resolving an operation in the
                 #  operation's library/implementation context.
