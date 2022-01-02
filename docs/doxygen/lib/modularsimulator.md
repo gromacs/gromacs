@@ -13,11 +13,9 @@ GROMACS will automatically use the modular simulator for the velocity
 verlet integrator (`integrator = md-vv`), if the functionality chosen
 in the other input parameters is implemented in the new framework.
 Currently, this includes NVE, NVT, NPH, and NPT simulations,
-with or without free energy perturbation, using thermodynamic
-boundary conditions
-
-* `tcoupl`: `no`, `v-rescale`, or `berendsen`
-* `pcoupl`: `no` or `parrinello-rahman`
+with or without free energy perturbation, using all available
+temperature and pressure coupling algorithms. It also includes pull and
+expanded ensemble simulations.
 
 To disable the modular simulator for cases defaulting to the new framework,
 the environment variable `GMX_DISABLE_MODULAR_SIMULATOR=ON` can be set. To
@@ -35,6 +33,7 @@ as `do_md` (MD simulations), `do_cg` and `do_steep` (minimization),
 and `do_tpi` (test-particle insertion).
 
 The legacy approach has some obvious drawbacks:
+
 * *Data management:* Each of the `do_*` functions defines local data,
   including complex objects encapsulating some data and functionality,
   but also data structures effectively used as "global variables" for
@@ -423,6 +422,7 @@ ModularSimulator note ModularSimulator [ label = "schedulingStep == N + nstlist\
 
 Acceptance tests which need to be 
 fulfilled to make the modular simulator the default code path:
+
 * End-to-end tests pass on both `do_md` and the new loop in
   Gitlab pre- and post-submit pipelines
 * Physical validation cases pass on the new loop
@@ -432,23 +432,27 @@ fulfilled to make the modular simulator the default code path:
   this purpose.
 
 After the MD bare minimum, we will want to add support for
+
 * Pulling
 * Full support of GPU (current implementation does not support
 GPU update)
 
 Using the new modular simulator framework, we will then explore
 adding new functionality to GROMACS, including
+
 * Monte Carlo barostat
 * hybrid MC/MD schemes
 * multiple-time-stepping integration
 
 We will also explore optimization opportunities, including
+
 * re-use of the same queue if conditions created by user input are 
   sufficiently favorable (by design or when observed)
 * simultaneous execution of independent tasks
 
 We will probably not prioritize support for (and might consider
 deprecating from do_md in a future GROMACS version)
+
 * Simulated annealing
 * REMD
 * Simulated tempering
@@ -538,6 +542,7 @@ comparable to fused update elements while keeping easily re-orderable
 single instructions.
 
 Currently, the (templated) implementation covers four cases:
+
  * *PositionsOnly:* Moves the position vector by the given time step
  * *VelocitiesOnly:* Moves the velocity vector by the given time step
  * *LeapFrog:* A manual fusion of the previous two propagators
@@ -713,6 +718,7 @@ straightforward re-entry point at the top of the simulator loop.
 ##### Other (older) approaches
 **Legacy checkpointing approach:** All data to be checkpointed needs to be
 stored in one of the following data structures:
+
 * `t_state`, which also holds pointers to
   - `history_t` (history for restraints)
   - `df_history_t` (history for free energy)
@@ -744,6 +750,7 @@ back the data previously stored.
 The MDModule checks off almost all requirements to a modularized checkpointing format.
 The proposed design is therefore an evolved form of this approach. Notably, two
 improvements include
+
 * Hide the implementation details of the data structure holding the data (currently,
   a KV-Tree) from the clients. This allows to change the implementation details of
   reading / writing checkpoints without touching client code.
@@ -814,6 +821,7 @@ with the global checkpoint.
 checkpointing is that data gets _copied_ into `CheckpointData`, while the legacy
 approach only took a pointer to the data and serialized it. This slightly reduces
 performance. Some thoughts on that:
+
 * By default, checkpointing happens at the start of the simulation (only if reading
 from checkpoint), every 15 minutes during simulation runs, and at the end of the
 simulation run. This makes it a low priority target for optimization. Consequently,
@@ -860,3 +868,20 @@ as ITopologyHolderClients. If they do so, they get a handle to the updated local
 topology whenever it is changed, and can rely that their handle is valid 
 until the next update. The domain decomposition element is defined as friend 
 class to be able to update the local topology when needed.
+
+### Reference temperature manager
+
+Some simulation techniques such as simulated annealing and simulated tempering need
+to be able to change the reference temperature of the simulation. The reference
+temperature manager allows elements to register callbacks so they are informed
+when the reference temperature is changed. They can then perform any action they
+need upon change of the reference temperature, such as updating a local value,
+scaling velocities, or recalculating a temperature coupling integral.
+
+When changing temperature, the clients are also informed about which
+algorithm changed the temperature. This is required for compatibility
+to the legacy implementation - different algorithms react differently
+(or not at all) to reference temperature change from different sources.
+The current implementation does not attempt to fix these inconsistencies, but
+rather makes the choices in the legacy implementation very explicit, which will
+allow to tackle these issues more easily moving forward.
