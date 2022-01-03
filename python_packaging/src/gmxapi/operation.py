@@ -1683,9 +1683,8 @@ class DataEdge(object):
                     self.adapters[name] = self.ConstantResolver(sink_terminal.inputs[name])
                     logger.debug(f'Using default value for {name} for {repr(sink_terminal)}.')
                 else:
-                    # TODO: Initialize with multiple DataSourceCollections?
                     raise exceptions.ValueError(
-                        f'No source or default for required input "{name}".')
+                        f'{repr(sink_terminal)}:{name} has no default, and no {name} in {source_collection}.')
             else:
                 source = source_collection[name]
                 sink = sink_terminal.inputs[name]

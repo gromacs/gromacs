@@ -121,6 +121,23 @@ def _standard_node_resource_factory(*args, **kwargs) -> _op.DataSourceCollection
 
 @contextmanager
 def scoped_communicator(original_comm, requested_size: int = None):
+    """Manage the lifecycle of a new communicator.
+
+    Get a Python context manager that produces a new communicator
+    in a ``with`` statement and frees it afterwards.
+
+    The new communicator is a sub-communicator of *original_comm*, if provided.
+
+    Args:
+        original_comm: parent communicator, or *None* to determine automatically.
+        requested_size: number of ranks requested, or *None* for all available.
+
+    *original_comm* is required if *requested_size* is not *None*.
+
+    If *requested_size* is less than the size of *original_comm*, the type of object
+    produced on higher-numbered (non-participating) ranks is unspecified. Callers
+    should use ``original_comm.Get_rank()`` to decide whether to use the new comm.
+    """
     from gmxapi.simulation.context import _acquire_communicator, _get_ensemble_communicator
 
     if requested_size is None:
@@ -128,8 +145,13 @@ def scoped_communicator(original_comm, requested_size: int = None):
 
     else:
         if original_comm is None or not hasattr(original_comm, 'Get_size'):
-            raise exceptions.UsageError(
-                'A valid communicator must be provided when requesting a specific size.')
+            error = f'Cannot get Comm size {requested_size} from {repr(original_comm)}.'
+            logger.error(
+                error + ' '
+                + 'To get a scoped communicator of a specific size, provide a parent '
+                + 'communicator supporting the mpi4py.MPI.Comm interface.'
+            )
+            raise exceptions.UsageError(error)
         original_comm_size = original_comm.Get_size()
         if original_comm_size < requested_size:
             raise exceptions.FeatureNotAvailableError(
@@ -238,6 +260,10 @@ class LegacyImplementationSubscription(object):
 
                             for file in expected_working_files:
                                 if not os.path.exists(file):
+                                    logger.error(
+                                        f'Expected file {file} not found. gmxapi.mdrun task '
+                                        f'{resource_manager.operation_id} is in an unknown state. Aborting.'
+                                    )
                                     raise exceptions.ApiError(
                                         f'Cannot determine working directory state: {workdir}')
                         else:
