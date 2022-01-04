@@ -184,7 +184,7 @@ private:
  *
  * The template type parameter is a class that defines a ``input_param_type`` member type
  * and which implements a constructor with the signature
- * ``R(std::vector<int>, const R::input_param_type&, std::shared_ptr<Resources>)``.
+ * ``R(std::vector<int>&&, const R::input_param_type&, std::shared_ptr<Resources>)``.
  *
  * \todo move this to a template header in gmxapi */
 template<class R>
@@ -207,7 +207,7 @@ public:
      * \param resources
      */
     RestraintModule(std::string                         name,
-                    std::vector<int>                    sites,
+                    std::vector<int>&&                  sites,
                     const typename R::input_param_type& params,
                     std::shared_ptr<Resources>          resources) :
         sites_{ std::move(sites) },

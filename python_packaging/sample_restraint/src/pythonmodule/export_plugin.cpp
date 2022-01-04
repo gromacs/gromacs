@@ -72,7 +72,7 @@ public:
     }
 
     template<typename... ArgsT>
-    explicit PyRestraint(ArgsT... args) : T{ args... }
+    explicit PyRestraint(ArgsT... args) : T{ std::forward<ArgsT>(args)... }
     {
     }
 };
