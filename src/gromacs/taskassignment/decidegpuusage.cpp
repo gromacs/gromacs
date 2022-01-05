@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -790,15 +790,35 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
 }
 
-bool decideWhetherToUseGpuForHalo(bool havePPDomainDecomposition,
-                                  bool useGpuForNonbonded,
-                                  bool canUseDirectGpuComm,
-                                  bool useModularSimulator,
-                                  bool doRerun,
-                                  bool haveEnergyMinimization)
+bool decideWhetherToUseGpuForHalo(bool                 havePPDomainDecomposition,
+                                  bool                 useGpuForNonbonded,
+                                  bool                 canUseDirectGpuComm,
+                                  bool                 useModularSimulator,
+                                  bool                 doRerun,
+                                  bool                 haveEnergyMinimization,
+                                  const gmx::MDLogger& mdlog)
 {
-    return canUseDirectGpuComm && havePPDomainDecomposition && useGpuForNonbonded
-           && !useModularSimulator && !doRerun && !haveEnergyMinimization;
+    if (!canUseDirectGpuComm || !havePPDomainDecomposition || !useGpuForNonbonded)
+    {
+        // return false without warning
+        return false;
+    }
+
+    // Now check those flags that may cause, from the user perspective, an unexpected
+    // fallback to CPU halo, and report accordingly
+    gmx::MessageStringCollector errorReasons;
+    errorReasons.startContext("GPU halo exchange will not be activated because:");
+    errorReasons.appendIf(useModularSimulator, "Modular simulator runs are not supported.");
+    errorReasons.appendIf(doRerun, "Re-runs are not supported.");
+    errorReasons.appendIf(haveEnergyMinimization, "Energy minimization is not supported.");
+    errorReasons.finishContext();
+
+    if (!errorReasons.isEmpty())
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText(errorReasons.toString());
+    }
+
+    return errorReasons.isEmpty();
 }
 
 } // namespace gmx
