@@ -88,7 +88,7 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 
-class CMakeBuild(build_ext):
+class CMakeBuild(typing.cast('setuptools.Command', build_ext)):
     """Derived distutils Command for build_extension.
 
     See https://github.com/pybind/cmake_example for the current version
