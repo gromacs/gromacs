@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,7 +117,10 @@ auto nbnxmKernelPruneOnly(sycl::handler&                                cgh,
         const int         cij4Start = nbSci.cj4_ind_start; /* first ...*/
         const int         cij4End   = nbSci.cj4_ind_end;   /* and last index of j clusters */
 
-        if (tidxz == 0)
+        // We may need only a subset of threads active for preloading i-atoms
+        // depending on the super-cluster and cluster / thread-block size.
+        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
+        if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster))
         {
             for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
             {

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -324,7 +324,10 @@ __launch_bounds__(THREADS_PER_BLOCK)
     cij4_start = nb_sci.cj4_ind_start; /* first ...*/
     cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    if (tidxz == 0)
+    // We may need only a subset of threads active for preloading i-atoms
+    // depending on the super-cluster and cluster / thread-block size.
+    constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
+    if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster))
     {
         /* Pre-load i-atom x and q into shared memory */
         ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj;
@@ -456,7 +459,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
                     fcj_buf = make_float3(0.0F);
 
 #    if !defined PRUNE_NBL
-#        pragma unroll 8
+#        pragma unroll c_nbnxnGpuNumClusterPerSupercluster
 #    endif
                     for (i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                     {

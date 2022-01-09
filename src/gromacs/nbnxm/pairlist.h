@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -149,6 +149,10 @@ constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 
 //! The number of clusters in a super-cluster, used for GPU
 constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
+static_assert(c_nbnxnGpuNumClusterPerSupercluster
+                      == c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ,
+              "c_nbnxnGpuNumClusterPerSupercluster needs to match the number of clusters per "
+              "search cell");
 
 /*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.

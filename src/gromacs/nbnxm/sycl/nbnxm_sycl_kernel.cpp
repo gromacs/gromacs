@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -693,28 +693,34 @@ static auto nbnxmKernel(sycl::handler&                                          
         const float beta2 = ewaldBeta * ewaldBeta;
         const float beta3 = ewaldBeta * ewaldBeta * ewaldBeta;
 
-        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
+        // We may need only a subset of threads active for preloading i-atoms
+        // depending on the super-cluster and cluster / thread-block size.
+        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
+        if (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster)
         {
-            /* Pre-load i-atom x and q into shared memory */
-            const int ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
-            const int ai       = ci * c_clSize + tidxi;
-            const int cacheIdx = (tidxj + i) * c_clSize + tidxi;
-
-            const Float3 shift = a_shiftVec[nbSci.shift];
-            Float4       xqi   = a_xq[ai];
-            xqi += Float4(shift[0], shift[1], shift[2], 0.0F);
-            xqi[3] *= epsFac;
-            sm_xq[cacheIdx] = xqi;
-
-            if constexpr (!props.vdwComb)
+            for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
             {
-                // Pre-load the i-atom types into shared memory
-                sm_atomTypeI[cacheIdx] = a_atomTypes[ai];
-            }
-            else
-            {
-                // Pre-load the LJ combination parameters into shared memory
-                sm_ljCombI[cacheIdx] = a_ljComb[ai];
+                /* Pre-load i-atom x and q into shared memory */
+                const int ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+                const int ai       = ci * c_clSize + tidxi;
+                const int cacheIdx = (tidxj + i) * c_clSize + tidxi;
+
+                const Float3 shift = a_shiftVec[nbSci.shift];
+                Float4       xqi   = a_xq[ai];
+                xqi += Float4(shift[0], shift[1], shift[2], 0.0F);
+                xqi[3] *= epsFac;
+                sm_xq[cacheIdx] = xqi;
+
+                if constexpr (!props.vdwComb)
+                {
+                    // Pre-load the i-atom types into shared memory
+                    sm_atomTypeI[cacheIdx] = a_atomTypes[ai];
+                }
+                else
+                {
+                    // Pre-load the LJ combination parameters into shared memory
+                    sm_ljCombI[cacheIdx] = a_ljComb[ai];
+                }
             }
         }
         itemIdx.barrier(fence_space::local_space);
