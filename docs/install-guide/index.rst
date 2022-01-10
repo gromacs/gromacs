@@ -798,6 +798,53 @@ must be set:
 
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL
 
+SYCL GPU acceleration for AMD GPUs
+""""""""""""""""""""""""""""""""""
+
+Using the most recent hipSYCL_ ``develop`` branch and the most recent ROCm
+release is recommended.
+
+Additionally, we strongly recommend using the ROCm-bundled LLVM for building
+both hipSYCL and |Gromacs|.
+
+The following CMake command can be used **when configuring hipSYCL** to ensure
+that the proper Clang is used (assuming ``ROCM_PATH``
+is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
+
+After compiling and installing hipSYCL, the following settings can be used for
+building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfx906'
+
+SYCL GPU acceleration for NVIDIA GPUs
+"""""""""""""""""""""""""""""""""""""
+
+SYCL is *not* a recommended way to target NVIDIA GPUs, please use CUDA_
+(`CUDA GPU acceleration`_).
+
+If you still want to do that, you can use either hipSYCL_ or the open-source
+`Intel LLVM <https://github.com/intel/llvm>`_.
+
+For hipSYCL, make sure that hipSYCL itself is compiled with CUDA support,
+and supply proper devices via ``HIPSYCL_TARGETS`` (e.g., ``-DHIPSYCL_TARGETS=cuda:sm_75``).
+When compiling for CUDA, we recommend using the mainline Clang, not the ROCm-bundled one.
+
+For Intel LLVM, make sure it is compiled with CUDA and OpenMP support, then use
+the following CMake invocation:
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=/path/to/intel/clang -DCMAKE_CXX_COMPILER=/path/to/intel/clang++ -DGMX_GPU=SYCL -DGMX_GPU_NB_CLUSTER_SIZE=8 -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
+
+Note that FFT is not currently supported on NVIDIA devices when using SYCL,
+so no full PME offload is possible.
+
 SYCL GPU compilation options
 """"""""""""""""""""""""""""
 
