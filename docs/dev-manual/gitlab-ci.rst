@@ -14,15 +14,7 @@ Configuration templates are found in the files in the
 Docker images used by GitLab Runner are available on `Docker Hub <https://hub.docker.com/u/gromacs>`__.
 Images are (re)built manually using details in :file:`admin/containers`.
 
-This documentation is incomplete, pending resolution of :issue:`3275`.
-
-..  todo:: Expand this documentation to resolve :issue:`3275`
-
-.. todo:: Discuss the distinct characteristics of |Gromacs| CI pipelines to relevant to job configuration.
-          (:issue:`3472` and :issue:`3617`)
-
-.. todo:: (:issue:`3472` and :issue:`3617`) Comment on the number of pipelines that can be or which are likely to be running at the same time.
-          (:issue:`3472` and :issue:`3617`)
+.. todo:: (:issue:`3617`) Comment on the number of pipelines that can be or which are likely to be running at the same time.
 
 .. note::
 
@@ -246,14 +238,6 @@ Other important variable keys are as follows.
         Can be set when launching pipelines via the GitLab web interface.
         For example, see *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
 
-    EXTRA_INSTALLS
-        List additional OS package requirements. Used in *before_script* for some
-        mix-in job definitions to install additional software dependencies. If
-        using such a job with *extends*, override this variable key with a
-        space-delimited list of packages (default: ``""``). Consider proposing a
-        patch to the base Docker images to include the dependency to reduce
-        pipeline execution time.
-
     REGRESSIONTESTBRANCH
         Use this branch of the regressiontests rather than master to allow for
         merge requests that require updated regression tests with valid CI tests.
@@ -268,10 +252,6 @@ Other important variable keys are as follows.
         run after a commit has been merged into its target branch should be executed.
         Can be set to run pipelines through the web interface or as schedules.
         For use please see the *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
-
-
-.. todo:: Define common variables.
-    ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...
 
 Setting variables
 -----------------

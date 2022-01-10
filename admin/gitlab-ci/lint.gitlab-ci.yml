@@ -78,7 +78,6 @@ clang-tidy:test:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     COMPILER_MAJOR_VERSION: 11
     BUILD_DIR: build-clang-tidy
-    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_REQUEST: 4Gi
@@ -114,7 +113,6 @@ clang-format:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
-    EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
   script:
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)

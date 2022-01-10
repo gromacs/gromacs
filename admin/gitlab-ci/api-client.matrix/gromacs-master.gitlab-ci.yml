@@ -25,7 +25,6 @@
     KUBERNETES_MEMORY_REQUEST: 2Gi
     PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
-    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
     GROMACS_MAJOR_VERSION: 2022
   script:
     - source $INSTALL_DIR/bin/GMXRC
