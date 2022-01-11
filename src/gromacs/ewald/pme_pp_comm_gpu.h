@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -73,11 +74,11 @@ public:
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      GPU stream.
      */
-    PmePpCommGpu(MPI_Comm                comm,
-                 int                     pmeRank,
-                 std::vector<gmx::RVec>* pmeCpuForceBuffer,
-                 const DeviceContext&    deviceContext,
-                 const DeviceStream&     deviceStream);
+    PmePpCommGpu(MPI_Comm                    comm,
+                 int                         pmeRank,
+                 gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+                 const DeviceContext&        deviceContext,
+                 const DeviceStream&         deviceStream);
     ~PmePpCommGpu();
 
     /*! \brief Perform steps required when buffer size changes

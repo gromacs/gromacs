@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,11 @@ public:
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      GPU stream.
      */
-    Impl(MPI_Comm                comm,
-         int                     pmeRank,
-         std::vector<gmx::RVec>* pmeCpuForceBuffer,
-         const DeviceContext&    deviceContext,
-         const DeviceStream&     deviceStream);
+    Impl(MPI_Comm                    comm,
+         int                         pmeRank,
+         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+         const DeviceContext&        deviceContext,
+         const DeviceStream&         deviceStream);
     ~Impl();
 
     /*! \brief Perform steps required when buffer size changes
@@ -167,7 +167,7 @@ private:
     //! Rank of PME task
     int pmeRank_ = -1;
     //! Buffer for PME force on CPU
-    std::vector<gmx::RVec>* pmeCpuForceBuffer_;
+    gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer_;
     //! Buffer for staging PME force on GPU
     DeviceBuffer<gmx::RVec> d_pmeForces_;
     //! number of atoms in PME force staging array

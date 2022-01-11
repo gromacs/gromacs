@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,11 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm                comm,
-                         int                     pmeRank,
-                         std::vector<gmx::RVec>* pmeCpuForceBuffer,
-                         const DeviceContext&    deviceContext,
-                         const DeviceStream&     deviceStream) :
+PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
+                         int                         pmeRank,
+                         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+                         const DeviceContext&        deviceContext,
+                         const DeviceStream&         deviceStream) :
     deviceContext_(deviceContext),
     pmePpCommStream_(deviceStream),
     comm_(comm),
@@ -223,11 +223,11 @@ GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     }
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm                comm,
-                           int                     pmeRank,
-                           std::vector<gmx::RVec>* pmeCpuForceBuffer,
-                           const DeviceContext&    deviceContext,
-                           const DeviceStream&     deviceStream) :
+PmePpCommGpu::PmePpCommGpu(MPI_Comm                    comm,
+                           int                         pmeRank,
+                           gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+                           const DeviceContext&        deviceContext,
+                           const DeviceStream&         deviceStream) :
     impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream))
 {
 }
