@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -233,10 +233,25 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
     output.returncode = returncode
 
 
-# TODO: (FR4) Make this a formal operation to properly handle gmxapi data dependencies.
-#  The consumer of this operation has an NDArray input. filemap may contain gmxapi data flow
-#  aspects that we want the framework to handle for us.
-def filemap_to_flag_list(filemap: dict = None):
+def _flatten_dict(mapping: dict):
+    """Convert a dict of cli options to a sequence of strings.
+
+    *mapping* values may be scalars or sequences. Non-string sequences will be converted to
+    individual elements.
+
+    Returns:
+        Iterable of strings.
+    """
+    for key, value in mapping.items():
+        yield str(key)
+        if isinstance(value, collections.abc.Iterable) and not isinstance(value, (str, bytes)):
+            yield from [str(element) for element in value]
+        else:
+            yield value
+
+
+@gmx.function_wrapper()
+def filemap_to_flag_list(filemap: dict) -> list:
     """Convert a map of command line flags and filenames to a list of command line arguments.
 
     Used to map inputs and outputs of command line tools to and from gmxapi data handles.
@@ -252,23 +267,8 @@ def filemap_to_flag_list(filemap: dict = None):
     Returns:
         list of strings and/or gmxapi data references
     """
-    result = []
-    if filemap is not None:
-        for key, value in filemap.items():
-            # Note that the value may be a string, a list, an ndarray, or a future
-            if not isinstance(value, (list, tuple, NDArray)):
-                if hasattr(value, 'result') and value.dtype == NDArray:
-                    pass
-                elif hasattr(value, 'result') and value.dtype != NDArray:
-                    # TODO: Fix this ugly hack when we have proper Future slicing and can make NDArray futures.
-                    # FIXME: This should not modify the source object.
-                    # FIXME: Recursion protection (not idempotent): function may be repeatedly wrapped since dtype is
-                    #  not updated.
-                    result_function = value.result
-                    value.result = lambda function=result_function: [function()]
-                else:
-                    value = [value]
-            result = gmx.join_arrays(front=result, back=gmx.join_arrays(front=gmx.ndarray([key]), back=value))
+    assert isinstance(filemap, dict)
+    result = list(_flatten_dict(filemap))
     return result
 
 
@@ -374,10 +374,12 @@ def commandline_operation(executable=None,
         output_files = {}
     if isinstance(arguments, (str, bytes)):
         arguments = [arguments]
+    input_options = filemap_to_flag_list(input_files).output.data
+    output_options = filemap_to_flag_list(output_files).output.data
     command = gmx.concatenate_lists([[executable],
                                      arguments,
-                                     filemap_to_flag_list(input_files),
-                                     filemap_to_flag_list(output_files)])
+                                     input_options,
+                                     output_options])
     shell = gmx.make_constant(False)
     cli_args = {'command': command,
                 'shell': shell}

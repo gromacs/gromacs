@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@ import pytest
 import gmxapi as gmx
 
 # Configure the `logging` module before proceeding any further.
+from gmxapi.utility import join_path
+
 gmx.logger.setLevel(logging.WARNING)
 
 try:
@@ -179,14 +181,17 @@ def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs):
     }
     runtime_args.update(mdrun_kwargs)
     md1 = gmx.mdrun(input1, runtime_args=runtime_args)
-    cpt_in = os.path.join(md1.output._work_dir.result(), 'continuation.cpt')
-    if rank_number == 0:
-        assert os.path.exists(cpt_in)
-    input2 = gmx.modify_input(tpr,
-                                 parameters={
-                                     'nsteps': 4,
-                                     'nstxout': 2
-                                 })
+
+    # TODO(#3149): Remove this early barrier with better ensemble data flow.
+    md1.run()
+
+    input2 = gmx.modify_input(
+        tpr,
+        parameters={
+            'nsteps': 4,
+            'nstxout': 2
+        })
+    cpt_in = join_path(md1.output._work_dir, 'continuation.cpt').output.data
     runtime_args = {
         '-cpi': cpt_in,
         '-cpo': 'state.cpt',

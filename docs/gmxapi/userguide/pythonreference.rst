@@ -64,6 +64,8 @@ Simulation module
 Utilities
 =========
 
+.. automodule:: gmxapi.utility
+
 .. py:currentmodule:: gmxapi
 
 .. autofunction:: concatenate_lists

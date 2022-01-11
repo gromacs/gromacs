@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -93,6 +93,24 @@ class NDArray(gmxapi.abc.NDArray, typing.Generic[_T]):
 
     def __len__(self) -> int:
         return len(self._values)
+
+
+class ArrayFuture(gmxapi.abc.Future, typing.Generic[_T]):
+    """Annotation type for gmxapi array results.
+
+    gmxapi interfaces for structured data need to be updated. Until array data
+    has a more concrete scheme, it is useful to have an abstract class for use
+    in static type hints to distinguish Futures for arrays of certain element
+    types from Futures of scalars of certain types.
+    """
+    _dtype: typing.Type[_T]
+
+    @property
+    def dtype(self) -> typing.Type[_T]:
+        return self._dtype
+
+    def result(self) -> NDArray[_T]:
+        raise NotImplementedError
 
 
 def ndarray(data=None, shape=None, dtype=None):

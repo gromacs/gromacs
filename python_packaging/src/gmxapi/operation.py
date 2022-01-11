@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -68,12 +68,12 @@ from gmxapi import exceptions
 from gmxapi import logger as root_logger
 from gmxapi.abc import OperationImplementation, MutableResource, NDArray, Node
 from gmxapi.abc import OperationReference as AbstractOperationReference
-from gmxapi.exceptions import ApiError
-from gmxapi.typing import _Context, \
-    ResultTypeVar, \
-    SourceTypeVar, \
-    valid_result_types, \
-    valid_source_types
+from gmxapi.abc import Future as FutureABC
+# TODO: Relabel FutureABC as AbstractFuture, unless we can consolidate all gmxapi Future types
+#  into a single Protocol.
+from gmxapi.datamodel import ArrayFuture
+from gmxapi.exceptions import ApiError, DataShapeError, UsageError
+from gmxapi.typing import _Context, ResultTypeVar, SourceTypeVar, valid_result_types, valid_source_types
 from gmxapi.typing import Future as GenericFuture
 
 # Initialize module-level logger
@@ -92,8 +92,7 @@ class ResultDescription(typing.Generic[ResultTypeVar]):
         assert isinstance(width, int)
         self._width = width
 
-        if dtype is not None \
-                and not (isinstance(dtype, type) and issubclass(dtype, valid_result_types)):
+        if dtype is not None and not (isinstance(dtype, type) and issubclass(dtype, valid_result_types)):
             raise ApiError(f'dtype {repr(dtype)} is not a valid result type.')
         self._dtype = typing.cast(typing.Type[ResultTypeVar], dtype)
 
@@ -195,36 +194,56 @@ class DataSourceCollection(collections.OrderedDict):
         for name, value in kwargs.items():
             self[name] = value
 
-    def __setitem__(self, key: str, value: SourceTypeVar) -> None:
+    def __setitem__(self, key: str, item: SourceTypeVar) -> None:
         if not isinstance(key, str):
             raise exceptions.TypeError('Data must be named with str type.')
 
         # TODO(#3139): Encapsulate handling of provided data sources as a detail of the relationship
         #  between source and target Contexts.
-        # Preprocessed input should be self-describing gmxapi data types. Structured
-        # input must be recursively (depth-first) converted to gmxapi data types.
-        # TODO(#3130): Handle gmxapi Futures stored in list elements.
-        # TODO(#3130): Handle gmxapi Futures stored as dictionary elements!
-        if not isinstance(value, valid_source_types):
-            if isinstance(value, collections.abc.Iterable):
-                # Iterables here are treated as arrays, but we do not have a robust typing system.
-                # Warning: In the initial implementation, the iterable may contain Future objects.
-                # TODO(#2993): Revisit as we sort out data shape and Future protocol.
+        if isinstance(item, FutureABC):
+            value = item
+        else:
+            # We check Mapping first, because a Mapping is a Sequence.
+            if isinstance(item, collections.abc.Mapping):
+                # Allow mappings of (possible) Futures to be automatically handled well.
+                value = {}
+                for name, obj in item.items():
+                    value[str(name)] = obj
+            elif isinstance(item, collections.abc.Sequence) \
+                    and not isinstance(item, (str, bytes)):
                 try:
-                    value = datamodel.ndarray(value)
+                    # Consider relaxing the requirements of ndarray, especially for the purposes
+                    # of deducing ensemble inputs.
+                    value = datamodel.ndarray(item)
                 except (exceptions.ValueError, exceptions.TypeError) as e:
-                    raise exceptions.TypeError(
-                        f'Iterable could not be converted to NDArray: {value}') from e
-            elif hasattr(value, 'result'):
-                # A Future object.
-                pass
+                    raise exceptions.TypeError('Iterable could not be converted to NDArray: {}'.format(item)) from e
+            elif isinstance(item, valid_source_types):
+                value = item
             else:
-                raise exceptions.ApiError('Cannot process data source {}'.format(value))
+                assert not isinstance(item, valid_source_types)
+                # TODO: Support arbitrary types.
+                raise exceptions.ApiError('Cannot process data source {}'.format(item))
         super().__setitem__(key, value)
+
+    @classmethod
+    def _get_resettable(cls, obj):
+        """Recursively (depth-first) yield possible data sources."""
+        has_reset = lambda source: any(callable(getattr(source, method, None)) for method in ('reset', '_reset'))
+        if has_reset(obj):
+            yield obj
+        elif isinstance(obj, collections.abc.Iterable):
+            if isinstance(obj, collections.abc.Mapping):
+                yield from cls._get_resettable(obj.values())
+            elif not isinstance(obj, (str, bytes)):
+                for element in obj:
+                    if element is obj:
+                        # Watch out for single-element iterables that return themselves.
+                        break
+                    yield from cls._get_resettable(element)
 
     def reset(self):
         """Reset all sources in the collection."""
-        for source in self.values():
+        for source in self._get_resettable(self.values()):
             if hasattr(source, 'reset'):
                 source.reset()
             elif hasattr(source, '_reset'):
@@ -926,17 +945,17 @@ class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataP
         if not self.is_done(name):
             raise exceptions.ProtocolError('Data not ready.')
         result = self.function(self._result)
-        if self._width != 1:
-            # TODO Fix this typing nightmare:
-            #  ResultDescription should be fully knowable and defined when the resource manager is initialized.
-            data = OutputData(name=self.name,
-                              description=ResultDescription(dtype=type(result[0]),
-                                                            width=self._width))
+        if self._width > 1:
+            # TODO Strengthen typing for subscripted Futures and data re-shaping.
+            # ResultDescription should be fully knowable and defined when the resource manager
+            # is initialized, but this is not possible when we allow subscripting of Futures for
+            # native `list` and `dict` types, rather than requiring strongly-typed containers.
+            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result[0]), width=self._width))
             for member, value in enumerate(result):
                 data.set(value, member)
         else:
-            data = OutputData(name=self.name,
-                              description=ResultDescription(dtype=type(result), width=self._width))
+            assert self._width == 1
+            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result), width=self._width))
             data.set(result, 0)
         return data
 
@@ -1429,11 +1448,36 @@ class Future(GenericFuture[ResultTypeVar]):
         return self.description.dtype
 
     def __getitem__(self, item):
-        """Get a more limited view on the Future."""
-        description = ResultDescription(dtype=self.dtype, width=self.description.width)
-        # TODO: Use explicit typing when we have more thorough typing.
-        description._dtype = None
-        if self.description.width == 1:
+        """Get a more limited view on a Future for subscriptable type.
+
+        The result has the same ensemble dimensions as the original Future.
+
+        For ensemble Futures, subscripting is applied to the object of each member, not to the
+        ensemble array dimension. There is not currently a facility to hold Futures for specific
+        non-local ensemble members. (Call *result()* to localize the ensemble data, then index
+        locally.)
+
+        Slicing is not supported.
+
+        See Also:
+            ArrayFuture
+        """
+        element_dtype = None
+
+        if issubclass(self.description.dtype, collections.abc.Mapping):
+            # TODO(#3130): Stronger typed gmxapi Mapping.
+            element_dtype = None
+        elif issubclass(self.description.dtype, NDArray):
+            # TODO(#3130): Use proper data shaping instead of weakly typed containers if possible.
+            # Try to extract dtype for fancier sequence-providers.
+            if hasattr(self.description.dtype, 'dtype'):
+                if isinstance(self.description.dtype.dtype, type):
+                    element_dtype = self.description.dtype.dtype
+                elif callable(self.description.dtype.dtype):
+                    element_dtype = self.description.dtype.dtype()
+
+        description = ResultDescription(dtype=element_dtype, width=self.description.width)
+        if description.width == 1:
             proxy = ProxyResourceManager(self,
                                          width=description.width,
                                          function=lambda value, key=item: value[key])
@@ -1581,8 +1625,52 @@ class SinkTerminal(object):
                 source = data_source_collection[name]
                 logger.debug('Updating Sink for source {}: {}.'.format(name, source))
                 if isinstance(source, sink_dtype):
-                    logger.debug('Source matches sink. No update necessary.')
-                    continue
+                    # Note: We do not currently have a way for sinks to advertise dimensionality.
+                    # Check containers for nested ensemble input.
+                    if issubclass(sink_dtype, collections.abc.Mapping):
+                        assert isinstance(source, collections.abc.Mapping)
+                        for value in source.values():
+                            if hasattr(value, 'description'):
+                                source_description = typing.cast(ResultDescription,
+                                                                 value.description)
+                                self.update_width(source_description.width)
+                    elif issubclass(sink_dtype, collections.abc.Sequence) \
+                            and not issubclass(sink_dtype, str):
+                        # This will need updating when Sinks can advertise greater than
+                        # 1-dimensional input.
+                        if all(not isinstance(element, str)
+                               and isinstance(element, (collections.abc.Sequence, Future, FutureABC))
+                               for element in source) and len(source) > 0:
+                            # If all elements of the list are lists or Futures, ensemble_width may be
+                            # len(source) or may need to derive from one of the widths. Let's try to
+                            # defer resolution of that ambiguity for the moment.
+                            logger.warning('Ambiguous data shape: sending fully 2-dimensional '
+                                           f'input {source} to Array consumer.')
+                            # Try our best by assuming the outer dimension is an ensemble dimension.
+                            width = len(source)
+                            self.update_width(width)
+                        else:
+                            # If any element of the list is either a list or a Future with width
+                            # greater than 1, call update for the wide element.
+                            width = 0
+                            for element in source:
+                                if isinstance(element, (collections.abc.Sequence, FutureABC, Future)) \
+                                        and not isinstance(element, str):
+                                    if hasattr(element, 'description'):
+                                        _width = typing.cast(ResultDescription, element.description).width
+                                    else:
+                                        _width = len(element)
+                                else:
+                                    _width = 1
+                                if width > 1:
+                                    if _width > 1 and _width != width:
+                                        raise DataShapeError(f'Inconsistent shape in data source {source}.')
+                                else:
+                                    width = max(width, _width)
+                            if width:
+                                self.update_width(width)
+                    else:
+                        logger.debug('Source matches sink. No update necessary.')
                 else:
                     if isinstance(source, collections.abc.Iterable) and not isinstance(source, (
                             str, bytes, collections.abc.Mapping)):
@@ -1651,12 +1739,52 @@ class DataEdge(object):
     removed from the interface entirely.
     """
 
+    # TODO: We can separate out these helpers to simplify DataEdge.
     class ConstantResolver(object):
         def __init__(self, value):
             self.value = value
 
         def __call__(self, member=None):
             return self.value
+
+    class MappingResolver:
+        """Adapter for resolving Mappings that combine Futures and static values.
+
+        Wraps a dictionary like object to support data source resolution at run time.
+        When called, produces a dictionary of localized values, calling ``value.result()``
+        for values that are gmxapi Futures. For Futures with width greater than 1,
+        results are sliced for the given ensemble member, if specified with the
+        *member* key word argument.
+
+        This class provides an explicit functor type to improve readability of the
+        "adapters" dispatching in DataEdge.
+
+        Note that gmxapi Mapping values do not support any sort of rigorous typing,
+        pending #2993.
+        """
+        def __init__(self, mapping: collections.abc.Mapping):
+            self.source = mapping
+
+        def _resolve(self, member):
+            for key, value in self.source.items():
+                if hasattr(value, 'result') and callable(value.result):
+                    # This logic allows ensemble Futures to be mixed with non-ensemble values.
+                    # In the long run, the entire data structure (or View) should encapsulate the
+                    # behavior for providing a consistent dimensionality, making appropriate
+                    # updates internally during construction.
+                    try:
+                        width = value.description.width
+                    except (TypeError, AttributeError):
+                        width = 1
+                    if width > 1 and member is not None:
+                        yield key, value.result()[member]
+                    else:
+                        yield key, value.result()
+                else:
+                    yield key, value
+
+        def __call__(self, member=None) -> dict:
+            return dict(self._resolve(member))
 
     def __init__(self, source_collection: DataSourceCollection, sink_terminal: SinkTerminal):
         """Reconcile the provided data source(s) with the advertised inputs.
@@ -1688,19 +1816,92 @@ class DataEdge(object):
             else:
                 source = source_collection[name]
                 sink = sink_terminal.inputs[name]
-                if isinstance(source, (str, bool, int, float, dict)):
+
+                # Scalar -> (Scalar, Array[Scalar])
+                if isinstance(source, (str, bool, int, float)):
                     logger.debug(f'Input {name}:({sink.__name__}) provided by a local constant of '
                                  f'type {type(source)}.')
-                    if issubclass(sink, (str, bool, int, float, dict)):
+                    if issubclass(sink, (str, bool, int, float)):
                         self.adapters[name] = self.ConstantResolver(source)
                     else:
-                        assert issubclass(sink, datamodel.NDArray)
-                        # The initial version of NDArray is a primitive local-only container.
-                        self.adapters[name] = self.ConstantResolver(datamodel.ndarray([source]))
+                        if issubclass(sink, (datamodel.NDArray, tuple, list)):
+                            # Allow simple constants to implicitly convert to single-element arrays.
+                            # The initial version of NDArray is a primitive local-only container.
+                            self.adapters[name] = self.ConstantResolver(datamodel.ndarray([source]))
+                        else:
+                            raise UsageError(f'Input {name} of type {sink} cannot accept data '
+                                             f'source {source}')
+                # (Mapping, Array[Mapping], Future[Mapping]) -> dict
+                elif issubclass(sink, dict):
+                    if isinstance(source, collections.abc.Mapping):
+                        if all(isinstance(value, valid_source_types) for value in source.values()):
+                            logger.debug(
+                                f'Input {name}:({sink.__name__}) provided by a local constant of '
+                                f'type {type(source)}.')
+                            self.adapters[name] = self.ConstantResolver(source)
+                        else:
+                            self.adapters[name] = self.MappingResolver(source)
+                    elif isinstance(source, collections.abc.Sequence) and len(source) > 0 and \
+                            isinstance(source[0], (collections.abc.Mapping, FutureABC)):
+                        if len(source) == 1:
+                            # Handle direct mapping or broadcast.
+                            source = source[0]
+                            if isinstance(source, collections.abc.Mapping):
+                                self.adapters[name] = self.MappingResolver(source)
+                            else:
+                                # If the Future is part of an ensemble, result() will return a list.
+                                # Otherwise, it will return a single object.
+                                ensemble_width = source.description.width
+                                # TODO: subscribe to futures so results can be pushed.
+                                if ensemble_width == 1:
+                                    self.adapters[name] = lambda member, source=source: source.result()
+                                else:
+                                    self.adapters[name] = lambda member, source=source: source.result()[member]
+                        else:
+                            # The sink should already be updated before we get here.
+                            assert sink_terminal.ensemble_width == len(source)
+                            # Handle parallel mapping.
+                            resolvers: typing.List[typing.Callable] = [object] * len(source)
+                            for i, element in enumerate(source):
+                                if isinstance(element, collections.abc.Mapping):
+                                    resolvers[i] = self.MappingResolver(element)
+                                else:
+                                    source_width = element.description.width
+                                    if source_width > 1:
+                                        raise DataShapeError(
+                                            f'Cannot nest {element} with width {source_width} '
+                                            f'in parallel data edge with width {sink_terminal.ensemble_width}.')
+                                    resolvers[i] = lambda member, _source=element: _source.result()
+                            self.adapters[name] \
+                                = lambda member, _resolvers=tuple(resolvers): _resolvers[member]()
+                    elif hasattr(source, 'result'):
+                        # TODO: Simplify data model and type checking.
+                        # Handle data futures...
+                        logger.debug(f'Input {name}:({sink.__name__}) provided by a Future '
+                                     f'{source.description}')
+                        # If the Future is part of an ensemble, result() will return a list.
+                        # Otherwise, it will return a single object.
+                        ensemble_width = source.description.width
+                        # TODO: subscribe to futures so results can be pushed.
+                        if ensemble_width == 1:
+                            self.adapters[name] = lambda member, source=source: source.result()
+                        else:
+                            self.adapters[name] = lambda member, source=source: source.result()[member]
+                    else:
+                        raise ApiError(f'Input type {sink} cannot accept source {repr(source)}')
+                # Array -> Array
                 elif isinstance(source, datamodel.NDArray):
                     if issubclass(sink, datamodel.NDArray):
                         # TODO(#3136): shape checking
                         # Implicit broadcast may not be what is intended
+                        if isinstance(source.dtype, type) \
+                                and issubclass(source.dtype, (list, tuple, datamodel.NDArray)):
+                            # Try to treat array of arrays as an ensemble.
+                            if len(source) == sink_terminal.ensemble_width:
+                                self.adapters[name] = lambda member, _source=source.to_list(): \
+                                    _source[member]
+                                continue
+                            # Otherwise, hope that the sink is supposed to be a list of lists...
                         self.adapters[name] = self.ConstantResolver(source)
                     else:
                         if source.shape[0] != sink_terminal.ensemble_width:
@@ -1709,6 +1910,7 @@ class DataEdge(object):
                                 f'ensemble sink {sink_terminal}')
                         else:
                             self.adapters[name] = lambda member, source=source: source[member]
+                # Future[Any] -> Any
                 elif hasattr(source, 'result'):
                     # TODO: Simplify data model and type checking.
                     # Handle data futures...
@@ -1724,6 +1926,8 @@ class DataEdge(object):
                         self.adapters[name] = lambda member, source=source: source.result()[member]
                 else:
                     raise ApiError(f'Input type {sink} cannot accept source {repr(source)}')
+        for name in sink_terminal.inputs:
+            assert name in self.adapters
 
     def __repr__(self):
         return '<DataEdge: source_collection={}, sink_terminal={}>'.format(self.source_collection,
@@ -3572,23 +3776,12 @@ def subgraph(variables=None):
     return SubgraphBuilder(variables)
 
 
-@computed_result
-def join_arrays(*,
-                front: datamodel.NDArray = (),
-                back: datamodel.NDArray = ()) -> datamodel.NDArray:
-    """Operation that consumes two sequences and produces a concatenated single sequence.
-
-    Note that the exact signature of the operation is not determined until this
-    helper is called. Helper functions may dispatch to factories for different
-    operations based on the inputs. In this case, the dtype and shape of the
-    inputs determines dtype and shape of the output. An operation instance must
-    have strongly typed output, but the input must be strongly typed on an
-    object definition so that a Context can make runtime decisions about
-    dispatching work and data before instantiating.
+@function_wrapper()
+def _join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) -> \
+        datamodel.NDArray:
     # TODO: elaborate and clarify.
     # TODO: check type and shape.
     # TODO: figure out a better annotation.
-    """
     if isinstance(front, (str, bytes)) or isinstance(back, (str, bytes)):
         raise exceptions.ValueError('Input must be a pair of lists.')
     assert isinstance(front, datamodel.NDArray)
@@ -3598,12 +3791,27 @@ def join_arrays(*,
     return datamodel.NDArray(new_list)
 
 
+def join_arrays(*, front: datamodel.NDArray = (), back: datamodel.NDArray = ()) -> \
+        Future[datamodel.NDArray]:
+    """Consumes two sequences and produces a concatenated single sequence.
+
+    Note that the exact signature of the operation is not determined until this
+    helper is called. Helper functions may dispatch to factories for different
+    operations based on the inputs. In this case, the dtype and shape of the
+    inputs determines dtype and shape of the output. An operation instance must
+    have strongly typed output, but the input must be strongly typed on an
+    object definition so that a Context can make runtime decisions about
+    dispatching work and data before instantiating.
+    """
+    return _join_arrays(front=front, back=back).output.data
+
+
 # TODO: Constrain
 Scalar = typing.TypeVar('Scalar')
 
 
 def concatenate_lists(sublists: typing.Sequence[typing.Sequence[Scalar]] = ()) \
-        -> GenericFuture[gmx.datamodel.NDArray]:
+        -> ArrayFuture[Scalar]:
     """Combine data sources into a single list.
 
     A trivial data flow restructuring helper.
@@ -3614,9 +3822,10 @@ def concatenate_lists(sublists: typing.Sequence[typing.Sequence[Scalar]] = ()) \
         return datamodel.ndarray([])
     else:
         # TODO: Fix the data model so that this can type-check properly.
-        return join_arrays(front=sublists[0],
-                           back=typing.cast(datamodel.NDArray,
-                                            concatenate_lists(sublists[1:])))
+        _front = sublists[0]
+        _back = concatenate_lists(sublists[1:])
+        return _join_arrays(front=_front,
+                            back=typing.cast(datamodel.NDArray, _back)).output.data
 
 
 def make_constant(value: Scalar) -> GenericFuture[Scalar]:

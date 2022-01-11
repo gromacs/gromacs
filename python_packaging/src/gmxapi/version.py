@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -123,6 +123,7 @@ _named_features_0_1 = []
 # fr23 Ensemble simulations can themselves use MPI
 
 _named_features_0_2 = [
+    'container_futures',
     'mdrun_runtime_args',
 ]
 
