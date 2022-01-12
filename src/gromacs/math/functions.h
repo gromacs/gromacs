@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -464,12 +464,12 @@ static inline int roundToInt(double x)
 //! Round float to int64_t
 static inline int64_t roundToInt64(float x)
 {
-    return static_cast<int>(rintf(x));
+    return static_cast<int64_t>(rintf(x));
 }
 //! Round double to int64_t
 static inline int64_t roundToInt64(double x)
 {
-    return static_cast<int>(rint(x));
+    return static_cast<int64_t>(rint(x));
 }
 
 } // namespace gmx
