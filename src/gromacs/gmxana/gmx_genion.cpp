@@ -267,7 +267,7 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
             {
                 if (bDrude)
                 {
-                    j = starta+(2*npi)+(2*nni);
+                    j = starta+(2*np)+(2*nni);
                 }
                 else
                 {
