@@ -1979,7 +1979,7 @@ int Mdrunner::mdrunner()
                                       &nrnb,
                                       wcycle.get(),
                                       fr->bMolPBC,
-                                      &observablesReducerBuilder);
+                                      PAR(cr) ? &observablesReducerBuilder : nullptr);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
