@@ -292,6 +292,12 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
         return numDevicesToUse > 0;
     }
 
+    if (numPmeRanksPerSimulation == 1)
+    {
+        // We have a single separate PME rank, that can use a GPU
+        return numDevicesToUse > 0;
+    }
+
     if (numRanksPerSimulation < 1)
     {
         // Full automated mode for thread-MPI (the default). PME can
@@ -462,6 +468,12 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         // PME can run well on a single GPU shared with NB when there
         // is one rank, so we permit mdrun to try that if we have
         // detected GPUs.
+        return gpusWereDetected;
+    }
+
+    if (numPmeRanksPerSimulation == 1)
+    {
+        // We have a single separate PME rank, that can use a GPU
         return gpusWereDetected;
     }
 
