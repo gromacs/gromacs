@@ -1577,8 +1577,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(
-            hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), mdrunOptions.ntompOptionIsSet, cr, mdlog);
+    check_resource_division_efficiency(hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), cr, mdlog);
 
     /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
