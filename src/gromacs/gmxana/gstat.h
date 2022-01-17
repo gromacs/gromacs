@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,6 @@ enum
     edPrintRO
 };
 
-#define NHISTO 360
 #define NONCHI 3
 #define MAXCHI (edMax - NONCHI)
 #define NROT 4 /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
@@ -129,7 +128,7 @@ void ana_dih_trans(const char*             fn_trans,
                    int                     nangles,
                    const char*             grpname,
                    real*                   time,
-                   gmx_bool                bRb,
+                   bool                    bRb,
                    const gmx_output_env_t* oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
@@ -154,9 +153,9 @@ void ana_dih_trans(const char*             fn_trans,
  *           (trans = 0)
  */
 
-void low_ana_dih_trans(gmx_bool                bTrans,
+void low_ana_dih_trans(bool                    bTrans,
                        const char*             fn_trans,
-                       gmx_bool                bHisto,
+                       bool                    bHisto,
                        const char*             fn_histo,
                        int                     maxchi,
                        real**                  dih,
@@ -166,7 +165,7 @@ void low_ana_dih_trans(gmx_bool                bTrans,
                        const char*             grpname,
                        int                     multiplicity[],
                        real*                   time,
-                       gmx_bool                bRb,
+                       bool                    bRb,
                        real                    core_frac,
                        const gmx_output_env_t* oenv);
 /* as above but passes dlist so can copy occupancies into it, and multiplicity[]
@@ -178,10 +177,10 @@ void low_ana_dih_trans(gmx_bool                bTrans,
 
 
 void read_ang_dih(const char*             trj_fn,
-                  gmx_bool                bAngles,
-                  gmx_bool                bSaveAll,
-                  gmx_bool                bRb,
-                  gmx_bool                bPBC,
+                  bool                    bAngles,
+                  bool                    bSaveAll,
+                  bool                    bRb,
+                  bool                    bPBC,
                   int                     maxangstat,
                   int                     angstat[],
                   int*                    nframes,
@@ -244,7 +243,7 @@ void normalize_histo(gmx::ArrayRef<const int> histo, real dx, gmx::ArrayRef<real
 
 void do_pp2shifts(FILE* fp, int nframes, gmx::ArrayRef<const t_dlist> dlist, real** dih);
 
-gmx_bool has_dihedral(int Dih, const t_dlist& dlist);
+bool has_dihedral(int Dih, const t_dlist& dlist);
 
 /*! \brief Describe the dihedrals in the residues of the \c atoms
  * structure
@@ -254,23 +253,17 @@ gmx_bool has_dihedral(int Dih, const t_dlist& dlist);
  * the residues, and a mapping from chemical peptide atom names to
  * atom indices based on the atom names. Many fields of t_dlist are
  * not yet filled. */
-std::vector<t_dlist> mk_dlist(FILE*          log,
-                              const t_atoms* atoms,
-                              gmx_bool       bPhi,
-                              gmx_bool       bPsi,
-                              gmx_bool       bChi,
-                              gmx_bool       bHChi,
-                              int            maxchi,
-                              int            r0);
+std::vector<t_dlist>
+mk_dlist(FILE* log, const t_atoms* atoms, bool bPhi, bool bPsi, bool bChi, bool bHChi, int maxchi, int r0);
 
 void pr_dlist(FILE*                        fp,
               gmx::ArrayRef<const t_dlist> dlist,
               real                         dt,
               int                          printtype,
-              gmx_bool                     bPhi,
-              gmx_bool                     bPsi,
-              gmx_bool                     bChi,
-              gmx_bool                     bOmega,
+              bool                         bPhi,
+              bool                         bPsi,
+              bool                         bChi,
+              bool                         bOmega,
               int                          maxchi);
 
 void mk_chi_lookup(int** lookup, int maxchi, gmx::ArrayRef<const t_dlist> dlist);
@@ -284,10 +277,10 @@ void get_chi_product_traj(real**                       dih,
                           real                         time[],
                           int**                        lookup,
                           int*                         multiplicity,
-                          gmx_bool                     bRb,
-                          gmx_bool                     bNormalize,
+                          bool                         bRb,
+                          bool                         bNormalize,
                           real                         core_frac,
-                          gmx_bool                     bAll,
+                          bool                         bAll,
                           const char*                  fnall,
                           const gmx_output_env_t*      oenv);
 

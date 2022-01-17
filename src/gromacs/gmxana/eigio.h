@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
 #define GMX_GMXANA_EIGIO_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 enum
@@ -52,11 +51,11 @@ enum
 
 extern void read_eigenvectors(const char* file,
                               int*        natoms,
-                              gmx_bool*   bFit,
+                              bool*       bFit,
                               rvec**      xref,
-                              gmx_bool*   bDMR,
+                              bool*       bDMR,
                               rvec**      xav,
-                              gmx_bool*   bDMA,
+                              bool*       bDMA,
                               int*        nvec,
                               int**       eignr,
                               rvec***     eigvec,
@@ -72,14 +71,14 @@ extern void read_eigenvectors(const char* file,
 extern void write_eigenvectors(const char* trrname,
                                int         natoms,
                                const real  mat[],
-                               gmx_bool    bReverse,
+                               bool        bReverse,
                                int         begin,
                                int         end,
                                int         WriteXref,
                                const rvec* xref,
-                               gmx_bool    bDMR,
+                               bool        bDMR,
                                const rvec  xav[],
-                               gmx_bool    bDMA,
+                               bool        bDMA,
                                const real* eigval);
 /* Write eigenvectors in mat to a TRR file.                           */
 /* The reference structure is written (t=-1) when WriteXref=eWXR_YES. */
@@ -91,12 +90,5 @@ extern void write_eigenvectors(const char* trrname,
 /* eigenvectors with begin <= num <= end are written (num is base-1), */
 /* the timestamp of eigenvector num is num.                           */
 /* If bReverse==TRUE, num=1 is the last vector in mat.                */
-
-
-/* Read up to nmax eigenvalues from file fn, store the values in eigval[],
- * and the corresponding indices (start counting on 0) in eigvalnr[].
- * Returns the number of values read.
- */
-int read_eigval(const char* fn, int nmax, int eigvalnr[], real eigval[]);
 
 #endif

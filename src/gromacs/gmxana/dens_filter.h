@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013,2014,2018,2019,2021, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014,2018,2019,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,11 +36,10 @@
 #ifndef GMX_GMXANA_DENS_FILTER_H
 #define GMX_GMXANA_DENS_FILTER_H
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-extern gmx_bool convolution(int dataSize, real* in, int kernelSize, const real* kernel);
-extern gmx_bool periodic_convolution(int dsize, real* in, int ksize, const real* kernel);
-extern void     gausskernel(real* out, int size, real var);
+extern bool convolution(int dataSize, real* in, int kernelSize, const real* kernel);
+extern bool periodic_convolution(int dsize, real* in, int ksize, const real* kernel);
+extern void gausskernel(real* out, int size, real var);
 
 #endif

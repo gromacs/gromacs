@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,17 +273,6 @@ real sub_xcm(rvec x[], int gnx, const int* index, const t_atom atom[], rvec xcm,
         rvec_dec(x[ii], xcm);
     }
     return tm;
-}
-
-void add_xcm(rvec x[], int gnx, const int* index, rvec xcm)
-{
-    int i, ii;
-
-    for (i = 0; (i < gnx); i++)
-    {
-        ii = index ? index[i] : i;
-        rvec_inc(x[ii], xcm);
-    }
 }
 
 void orient_princ(const t_atoms* atoms, int isize, const int* index, int natoms, rvec x[], rvec* v, rvec d)

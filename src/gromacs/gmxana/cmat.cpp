@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -89,32 +88,6 @@ void copy_t_mat(t_mat* dst, t_mat* src)
         dst->erow[i]  = src->erow[i];
         dst->m_ind[i] = src->m_ind[i];
     }
-}
-
-void enlarge_mat(t_mat* m, int deltan)
-{
-    int i, j;
-
-    srenew(m->erow, m->nn + deltan);
-    srenew(m->m_ind, m->nn + deltan);
-    srenew(m->mat, m->nn + deltan);
-
-    /* Reallocate existing rows in the matrix, and set them to zero */
-    for (i = 0; (i < m->nn); i++)
-    {
-        srenew(m->mat[i], m->nn + deltan);
-        for (j = m->nn; (j < m->nn + deltan); j++)
-        {
-            m->mat[i][j] = 0;
-        }
-    }
-    /* Allocate new rows of the matrix, set energies to zero */
-    for (i = m->nn; (i < m->nn + deltan); i++)
-    {
-        m->erow[i] = 0;
-        snew(m->mat[i], m->nn + deltan);
-    }
-    m->nn += deltan;
 }
 
 void reset_index(t_mat* m)
@@ -182,30 +155,6 @@ void swap_rows(t_mat* m, int iswap, int jswap)
         m->mat[i][iswap] = m->mat[i][jswap];
         m->mat[i][jswap] = ttt;
     }
-}
-
-void swap_mat(t_mat* m)
-{
-    t_mat* tmp;
-    int    i, j;
-
-    tmp = init_mat(m->nn, FALSE);
-    for (i = 0; (i < m->nn); i++)
-    {
-        for (j = 0; (j < m->nn); j++)
-        {
-            tmp->mat[m->m_ind[i]][m->m_ind[j]] = m->mat[i][j];
-        }
-    }
-    /*tmp->mat[i][j] =  m->mat[m->m_ind[i]][m->m_ind[j]]; */
-    for (i = 0; (i < m->nn); i++)
-    {
-        for (j = 0; (j < m->nn); j++)
-        {
-            m->mat[i][j] = tmp->mat[i][j];
-        }
-    }
-    done_mat(&tmp);
 }
 
 void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_output_env_t* oenv)

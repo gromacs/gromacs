@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011,2013,2014,2015,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
+bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
 {
     int   i, j, k;
     real* out;
@@ -55,11 +55,11 @@ gmx_bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
     /* check validity of params */
     if (!x || !kernel)
     {
-        return FALSE;
+        return false;
     }
     if (dataSize <= 0 || kernelSize <= 0)
     {
-        return FALSE;
+        return false;
     }
 
     /* start convolution from out[kernelSize-1] to out[dataSize-1] (last) */
@@ -85,23 +85,23 @@ gmx_bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
         x[i] = out[i];
     }
     sfree(out);
-    return TRUE;
+    return true;
 }
 
 /* Assuming kernel is shorter than x */
 
-gmx_bool periodic_convolution(int datasize, real* x, int kernelsize, const real* kernel)
+bool periodic_convolution(int datasize, real* x, int kernelsize, const real* kernel)
 {
     int   i, j, idx;
     real* filtered;
 
     if (!x || !kernel)
     {
-        return FALSE;
+        return false;
     }
     if (kernelsize <= 0 || datasize <= 0 || kernelsize > datasize)
     {
-        return FALSE;
+        return false;
     }
 
     snew(filtered, datasize);
@@ -121,7 +121,7 @@ gmx_bool periodic_convolution(int datasize, real* x, int kernelsize, const real*
     }
     sfree(filtered);
 
-    return TRUE;
+    return true;
 }
 
 

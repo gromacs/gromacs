@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2021, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,6 @@
 #ifndef GMX_GMXANA_CMAT_H
 #define GMX_GMXANA_CMAT_H
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_output_env_t;
@@ -56,22 +55,17 @@ typedef struct
 
 struct t_mat
 {
-    int      n1, nn;
-    int*     m_ind;
-    gmx_bool b1D;
-    real     minrms, maxrms, sumrms;
-    real*    erow;
-    real**   mat;
+    int    n1, nn;
+    int*   m_ind;
+    bool   b1D;
+    real   minrms, maxrms, sumrms;
+    real*  erow;
+    real** mat;
 };
 
-/* The matrix is indexed using the matrix index */
-#define EROW(m, i) m->erow[i]
-
-extern t_mat* init_mat(int n1, gmx_bool b1D);
+extern t_mat* init_mat(int n1, bool b1D);
 
 extern void copy_t_mat(t_mat* dst, t_mat* src);
-
-extern void enlarge_mat(t_mat* m, int deltan);
 
 extern void reset_index(t_mat* m);
 
@@ -82,8 +76,6 @@ extern void set_mat_entry(t_mat* m, int i, int j, real val);
 extern void done_mat(t_mat** m);
 
 extern real mat_energy(t_mat* mat);
-
-extern void swap_mat(t_mat* m);
 
 extern void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_output_env_t* oenv);
 

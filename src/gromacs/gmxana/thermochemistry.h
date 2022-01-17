@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
@@ -70,10 +69,7 @@ double calcZeroPointEnergy(gmx::ArrayRef<const real> eigval, real scale_factor);
  * \param[in] scale_factor Factor to scale frequencies by before computing cv
  * \return The heat capacity at constant volume (J/mol K)
  */
-double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval,
-                                   real                      temperature,
-                                   gmx_bool                  linear,
-                                   real                      scale_factor);
+double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval, real temperature, bool linear, real scale_factor);
 
 /*! \brief Compute entropy due to translational motion
  *
@@ -101,7 +97,7 @@ double calcTranslationalEntropy(real mass, real temperature, real pressure);
  * \param[in] sigma_r      Symmetry factor, should be >= 1
  * \returns The rotational entropy (J/mol K)
  */
-double calcRotationalEntropy(real temperature, int natom, gmx_bool linear, const rvec theta, real sigma_r);
+double calcRotationalEntropy(real temperature, int natom, bool linear, const rvec theta, real sigma_r);
 
 /*! \brief Compute internal energy due to vibrational motion
  *
@@ -111,10 +107,7 @@ double calcRotationalEntropy(real temperature, int natom, gmx_bool linear, const
  * \param[in] scale_factor Factor to scale frequencies by before computing E
  * \return The internal energy (J/mol K)
  */
-double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
-                                     real                      temperature,
-                                     gmx_bool                  linear,
-                                     real                      scale_factor);
+double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval, real temperature, bool linear, real scale_factor);
 
 /*! \brief Compute entropy using Schlitter formula
  *
@@ -129,7 +122,7 @@ double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval,
  * \param[in] linear       True if this is a linear molecule (typically a diatomic molecule).
  * \return the entropy (J/mol K)
  */
-double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval, real temperature, gmx_bool linear);
+double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval, real temperature, bool linear);
 
 /*! \brief Compute entropy using Quasi-Harmonic formula
  *
@@ -144,6 +137,6 @@ double calcSchlitterEntropy(gmx::ArrayRef<const real> eigval, real temperature, 
  * \param[in] scale_factor Factor to scale frequencies by before computing S0
  * \return the entropy (J/mol K)
  */
-double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval, real temperature, gmx_bool linear, real scale_factor);
+double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval, real temperature, bool linear, real scale_factor);
 
 #endif
