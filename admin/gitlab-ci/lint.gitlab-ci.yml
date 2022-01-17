@@ -78,7 +78,7 @@ clang-tidy:test:
 clang-format:
   extends:
     - .variables:default
-    - .rules:basic-push
+    - .rules:merge-requests
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs:release-2021
@@ -108,7 +108,7 @@ clang-format:
 copyright-check:
   extends:
     - .variables:default
-    - .rules:basic-push
+    - .rules:merge-requests
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs:release-2021
