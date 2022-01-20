@@ -193,7 +193,7 @@
 docs:configure:
   extends:
     - .docs:configure
-    - .rules:basic-push
+    - .rules:merge-requests
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DGMX_USE_SIMD_KERNELS=off
@@ -219,7 +219,7 @@ docs:build:
     - .use-ccache
     - .docs:build
     - .before_script:default
-    - .rules:basic-push
+    - .rules:merge-requests
   stage: documentation
   needs:
     - job: docs:configure
@@ -275,7 +275,7 @@ docs:build:
 webpage:build:
   extends:
     - .webpage:build
-    - .rules:basic-push
+    - .rules:merge-requests
   stage: post-test
   needs:
     - job: docs:build
