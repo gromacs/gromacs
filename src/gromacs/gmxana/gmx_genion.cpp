@@ -122,7 +122,7 @@ static void drudenames(const char *mname, char **ptr)
 {
 
     int     i;
-    enum    { eiK, eiNA, eiRB, eiCS, eiMG, eiCA, eiZN, eiSR, eiBA, eiF, eiCL, eiBR, eiI, eiNR };
+    enum    { eiLI, eiK, eiNA, eiRB, eiCS, eiMG, eiCA, eiZN, eiSR, eiBA, eiF, eiCL, eiBR, eiI, eiNR };
     const char *rnames[] = { "LI", "K", "NA", "RB", "CS", "MG", "CAL", "ZN", "SR", "BA", "F", "CL", "BR", "I", NULL };
     const char *inames[] = { "LI", "POT", "SOD", "RB", "CS", "MAG", "CAL", "ZN", "SR", "BA", "F", "CLA", "BR", "I", NULL };
 
