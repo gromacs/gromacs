@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -333,7 +333,9 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
 
     // wait for remote co-ordinates is implicit with process-MPI as non-local stream is synchronized before MPI calls
     // and MPI_Waitall call makes sure both neighboring ranks' non-local stream is synchronized before data transfer is initiated
-    if (GMX_THREAD_MPI && dimIndex_ == 0 && pulse_ == 0)
+    // For multi-dimensional halo exchanges, this needs to be done for every dimIndex_, since the remote ranks will be different
+    // for each. But different pulses within a dimension will communicate with the same remote ranks so we can restrict to the first pulse.
+    if (GMX_THREAD_MPI && pulse_ == 0)
     {
         enqueueWaitRemoteCoordinatesReadyEvent(dependencyEvent);
     }
