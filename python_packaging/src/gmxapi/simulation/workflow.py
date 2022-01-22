@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,7 +31,7 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-#
+
 # This file is based on the Kasson Lab gmxapi project release 0.0.7.4.
 # https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/src/gmx/workflow.py
 # # https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/LICENSE
@@ -670,6 +670,9 @@ def from_tpr(input=None, **kwargs):
     # Note: These are runner parameters, not MD parameters, and should be in the call to gmx.run() instead of here.
     # Reference https://github.com/kassonlab/gmxapi/issues/95
     params = {}
+    if '-noappend' in kwargs:
+        kwargs['append_output'] = False
+        del kwargs['-noappend']
     for arg_key in kwargs:
         if arg_key == 'grid' or arg_key == 'dd':
             params['grid'] = tuple(kwargs[arg_key])

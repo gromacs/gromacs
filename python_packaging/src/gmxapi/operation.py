@@ -148,7 +148,11 @@ class OutputData(object):
 
         Used internally to maintain the data store.
         """
-        if self._description.dtype == datamodel.NDArray:
+        # Currently, we are not able to dynamically update the set of published outputs.
+        # Allow `None` to indicate a null result.
+        if value is None:
+            self._data[member] = None
+        elif self._description.dtype == datamodel.NDArray:
             self._data[member] = datamodel.ndarray(value)
         else:
             self._data[member] = self._description.dtype(value)
@@ -2439,7 +2443,10 @@ def wrapped_function_runner(function,
         Callable with a signature `__call__(*args, **kwargs)` and no return value
 
     Collaborations:
-        OperationDetails.resource_director assigns the `capture_output` member of the returned object.
+        * OperationDetails.resource_director assigns the `capture_output` member of the
+          returned object.
+        * The publishing resources factory must be ready to make a compatible decision
+          with respect to ensemble data flow for the current MPI rank.
     """
     assert callable(function)
     signature = inspect.signature(function)
@@ -2918,6 +2925,12 @@ class OperationDirector(object):
                                        publishing_data_proxy=operation_details.publishing_data_proxy)
         builder.set_output_factory(output_factory)
 
+        # The ResourceManager gets built in builder.build(). build() will only pass the
+        # runner_director through to the ResourceManager runner_director argument. We
+        # can replace the nested function definition with an instantiation of a
+        # RunnerDirector object that we can set a *allow_duplicate* property on,
+        # which we can get from operation_details. Then we can customize the creation of
+        # call-backs while initializing the ResourceManager.
         handle = builder.build()
         return handle
 

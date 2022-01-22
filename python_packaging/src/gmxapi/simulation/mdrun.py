@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,13 +39,15 @@ not use the Python Context resource manager. It uses either the legacy 0.0.7
 Context or its own Context, also implemented in this module.
 """
 
-__all__ = ['mdrun']
+__all__ = ['mdrun', 'SimulationError']
 
+import functools
 import inspect
 import os
 import typing
 import warnings
 from contextlib import contextmanager
+from pathlib import Path
 
 import gmxapi
 import gmxapi.abc
@@ -62,6 +64,7 @@ from .abc import ModuleObject
 logger = root_logger.getChild('mdrun')
 logger.info('Importing {}'.format(__name__))
 
+
 # Output in the gmxapi.operation Context.
 # TODO: Consider using a single base class for the DataProxy, but have distinct
 #  data descriptor behavior (or different descriptor implementations in different
@@ -69,8 +72,9 @@ logger.info('Importing {}'.format(__name__))
 #  attributes of the data proxies.
 _output_descriptors = (
     _op.OutputDataDescriptor('_work_dir', str),
+    _op.OutputDataDescriptor('checkpoint', str),
+    _op.OutputDataDescriptor('parameters', dict),
     _op.OutputDataDescriptor('trajectory', str),
-    _op.OutputDataDescriptor('parameters', dict)
 )
 _publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype)
                            for desc in
@@ -119,6 +123,13 @@ def _standard_node_resource_factory(*args, **kwargs) -> _op.DataSourceCollection
     return source_collection
 
 
+class SimulationError(Error):
+    """Error occurred during simulation."""
+
+
+_current_communicator = None
+
+
 @contextmanager
 def scoped_communicator(original_comm, requested_size: int = None):
     """Manage the lifecycle of a new communicator.
@@ -138,7 +149,12 @@ def scoped_communicator(original_comm, requested_size: int = None):
     produced on higher-numbered (non-participating) ranks is unspecified. Callers
     should use ``original_comm.Get_rank()`` to decide whether to use the new comm.
     """
-    from gmxapi.simulation.context import _acquire_communicator, _get_ensemble_communicator
+    from gmxapi.simulation.context import (_acquire_communicator,
+                                           _get_ensemble_communicator,
+                                           )
+    global _current_communicator
+    if original_comm is None:
+        original_comm = _current_communicator
 
     if requested_size is None:
         communicator = _acquire_communicator(communicator=original_comm)
@@ -163,8 +179,11 @@ def scoped_communicator(original_comm, requested_size: int = None):
         communicator = _get_ensemble_communicator(original_comm, requested_size)
 
     try:
+        previous_communicator = _current_communicator
+        _current_communicator = communicator
         yield communicator
     finally:
+        _current_communicator = previous_communicator
         if communicator is not None:
             communicator.Free()
 
@@ -420,15 +439,63 @@ class SubscriptionPublishingRunner(object):
         # TODO(#3130,#3379): Make the return value a trajectory handle rather than a file path.
         # Note: There may be some ambiguity about how best to handle append vs. noappend
         # output, and how the user interface should represent the different possible behaviors.
-        trajectory = self.resources.runtime_args.get('-o', 'traj.trr')
-        if not os.path.isabs(trajectory):
-            trajectory = os.path.join(self.resources.workdir, trajectory)
-        publisher.trajectory = trajectory
+        trajectory = self.resources.runtime_args.get('-o', None)
+        if trajectory is not None:
+            trajectory = Path(trajectory)
+            if not trajectory.is_absolute():
+                trajectory = Path(self.resources.workdir) / trajectory
+        # With `-noappend`, the output filename may not be as specified by the user,
+        # and we do not have a way to query the file that is actually produced!
+        if trajectory is None or not trajectory.exists():
+            if trajectory is None:
+                stem, suffix = 'traj', '.trr'
+                dir = Path(self.resources.workdir)
+            else:
+                trajectory = Path(trajectory)
+                stem, suffix = trajectory.stem, trajectory.suffix
+                dir = trajectory.parent
+            candidates = dir.glob(f'{stem}*{suffix}')
+            trajectory = max(
+                [(candidate.stat().st_mtime, candidate) for candidate in candidates],
+                default=(None, None),
+                key=lambda x: x[0]
+            )[1]
+
+        # TODO(#3379): Make the return value a SimulationInput handle rather than a
+        #  file path.
+        checkpoint = self.resources.runtime_args.get('-cpo', 'state.cpt')
+        if not os.path.isabs(checkpoint):
+            checkpoint = os.path.join(self.resources.workdir, checkpoint)
+
+        # Developer note: since `mdrun` is used for tasks beyond MD simulation
+        # (such as energy minimization), not all output files exist in all use cases.
+        for name, output_file in (('trajectory', trajectory), ('checkpoint', checkpoint)):
+            try:
+                path = Path(output_file)
+                if path.exists():
+                    # Publish the output file.
+                    setattr(publisher, name, str(path))
+                else:
+                    logger.info(f'Output file {output_file} does not exist.')
+                    try:
+                        dir = path.parent
+                        contents = list(dir.iterdir())
+                        logger.info(
+                            f'Directory {dir} contents: '
+                            ', '.join(*contents)
+                        )
+                    except FileNotFoundError:
+                        pass
+                    # Explicitly publish a null result.
+                    setattr(publisher, name, None)
+            except TypeError:
+                logger.info(f'{name} is {output_file}')
 
 
 _next_uid = 0
 
 
+@functools.lru_cache(maxsize=None)
 def _make_uid(input) -> str:
     # Note that *input* is probably a DataEdge, which has an identity based hash (object default)
     # rather than a content-based hash.

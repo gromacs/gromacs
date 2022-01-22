@@ -124,6 +124,7 @@ _named_features_0_1 = []
 
 _named_features_0_2 = [
     'container_futures',
+    'mdrun_checkpoint_output',
     'mdrun_runtime_args',
 ]
 

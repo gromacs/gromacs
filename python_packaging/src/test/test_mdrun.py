@@ -166,45 +166,50 @@ def test_mdrun_parallel_runtime_args(spc_water_box, caplog, mdrun_kwargs):
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs):
+def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
     assert gmx.version.has_feature('mdrun_runtime_args')
+    assert gmx.version.has_feature('container_futures')
+    assert gmx.version.has_feature('mdrun_checkpoint_output')
 
-    tpr = gmx.read_tpr(spc_water_box)
-    input1 = gmx.modify_input(tpr,
-                                 parameters={
-                                     'nsteps': 2,
-                                     'nstxout': 2
-                                 })
-    runtime_args = {
-        '-cpo': 'continuation.cpt'
-    }
-    runtime_args.update(mdrun_kwargs)
-    md1 = gmx.mdrun(input1, runtime_args=runtime_args)
+    with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.WARNING, 'gmxapi'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+            tpr = gmx.read_tpr(spc_water_box)
+            parameters = dict({
+                'nsteps': 2,
+                'nstxout': 2
+            })
+            input1 = gmx.modify_input(
+                tpr,
+                parameters=parameters)
+            runtime_args = {
+                '-cpo': 'continuation.cpt'
+            }
+            runtime_args.update(mdrun_kwargs)
+            md1 = gmx.mdrun(input1, runtime_args=runtime_args)
 
-    # TODO(#3149): Remove this early barrier with better ensemble data flow.
-    md1.run()
-
-    input2 = gmx.modify_input(
-        tpr,
-        parameters={
-            'nsteps': 4,
-            'nstxout': 2
-        })
-    cpt_in = join_path(md1.output._work_dir, 'continuation.cpt').output.data
-    runtime_args = {
-        '-cpi': cpt_in,
-        '-cpo': 'state.cpt',
-        '-noappend': None
-    }
-    runtime_args.update(mdrun_kwargs)
-    md2 = gmx.mdrun(input2,
-                    runtime_args=runtime_args
-                    )
-    md2.run()
-    # By inspection of the output, we can see that the second trajectory has continued
-    # from the checkpoint, but we cannot programmatically confirm it at this point.
-    # TODO: Check more rigorously when we can read trajectory files.
+            input2 = gmx.modify_input(tpr,
+                                      parameters={
+                                          'nsteps': 4,
+                                          'nstxout': 2
+                                      })
+            runtime_args = {
+                '-cpi': md1.output.checkpoint,
+                '-cpo': 'state.cpt',
+                '-noappend': None
+            }
+            runtime_args.update(mdrun_kwargs)
+            md2 = gmx.mdrun(input2,
+                            runtime_args=runtime_args
+                            )
+            md2.run()
+            # By inspection of the output, we can see that the second trajectory has continued
+            # from the checkpoint, but we cannot programmatically confirm it at this point.
+            # TODO: Check more rigorously when we can read trajectory files.
 
 
 @pytest.mark.withmpi_only
