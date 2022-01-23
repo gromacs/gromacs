@@ -18,7 +18,7 @@ Both OpenCL and SYCL support different cluster sizes, so GMX_GPU_NB_CLUSTER_SIZE
 be used going forward.
 
 The built-in viewer ``gmx view`` will be removed
-""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""
 
 There is little use and no tests of this functionality, so it is not worth attempting to
 maintain moving forward.
@@ -32,3 +32,14 @@ This tool has not been functional for a few years.
 Please comment at the linked issue if you have any interest in it.
 
 :issue:`4108`
+
+Guessing masses and atomic radii from atom names is deprecated
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When atom masses or van-der-Waals radii are needed, we suggest building
+a proper GROMACS topology instead of using PDB files directly, even
+if the tool supports it.
+
+:issue:`3368`
+:issue:`4288`
+
