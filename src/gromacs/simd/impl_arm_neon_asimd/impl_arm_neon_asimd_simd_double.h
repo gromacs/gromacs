@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, the GROMACS development team.
+ * Copyright (c) 2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -398,7 +399,7 @@ static inline SimdDBool gmx_simdcall operator||(SimdDBool a, SimdDBool b)
 
 static inline bool gmx_simdcall anyTrue(SimdDBool a)
 {
-    return (vmaxvq_u32((uint32x4_t)(a.simdInternal_)) != 0);
+    return (vmaxvq_u32(static_cast<uint32x4_t>(a.simdInternal_)) != 0);
 }
 
 static inline SimdDouble gmx_simdcall selectByMask(SimdDouble a, SimdDBool m)
