@@ -287,7 +287,7 @@ In the plane of three atoms, with a fixed distance (:numref:`Fig. %s <fig-vsites
 
    .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{ \mathbf{r}_{ijk} } { | \mathbf{r}_{ijk} | }
              ~\mbox{ where }~
-             \mathbf{r}_{ijk} ~=~ (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk}
+             \mathbf{r}_{ijk} ~=~ \mathbf{r}_{ij} + a \mathbf{r}_{jk}
              :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three
