@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014-2018, The GROMACS development team.
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,7 +166,8 @@ transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     // TODO: should use fastMultiply
     _mm512_store_epi64(o,
                        _mm512_cvtepi32_epi64(_mm256_mullo_epi32(
-                               _mm256_load_si256((const __m256i*)(offset)), _mm256_set1_epi32(align))));
+                               _mm256_load_si256(reinterpret_cast<const __m256i*>(offset)),
+                               _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
     t6   = _mm512_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
     t7   = _mm512_unpacklo_pd(v2.simdInternal_, _mm512_setzero_pd());
@@ -228,7 +229,8 @@ transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     // TODO: should use fastMultiply
     _mm512_store_epi64(o,
                        _mm512_cvtepi32_epi64(_mm256_mullo_epi32(
-                               _mm256_load_si256((const __m256i*)(offset)), _mm256_set1_epi32(align))));
+                               _mm256_load_si256(reinterpret_cast<const __m256i*>(offset)),
+                               _mm256_set1_epi32(align))));
     t5   = _mm512_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
     t6   = _mm512_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
     t7   = _mm512_unpacklo_pd(v2.simdInternal_, _mm512_setzero_pd());
