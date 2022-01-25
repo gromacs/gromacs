@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,7 +327,7 @@ int gmx_rms(int argc, char* argv[])
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xp, nullptr, box, TRUE);
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xp, nullptr, box, bMassWeighted);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
 
@@ -362,14 +362,14 @@ int gmx_rms(int argc, char* argv[])
             if (bMassWeighted)
             {
                 w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
+                bMass             = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
             }
             else
             {
                 w_rls[ind_fit[i]] = 1;
             }
-            bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
         }
-        if (!bMass)
+        if (bMassWeighted && !bMass)
         {
             fprintf(stderr, "All masses in the fit group are 0, using masses of 1\n");
             for (i = 0; i < ifit; i++)
@@ -417,14 +417,14 @@ int gmx_rms(int argc, char* argv[])
             if (bMassWeighted)
             {
                 w_rms[ind_rms[j][i]] = top.atoms.atom[ind_rms[j][i]].m;
+                bMass                = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
             }
             else
             {
                 w_rms[ind_rms[j][i]] = 1.0;
             }
-            bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
         }
-        if (!bMass)
+        if (bMassWeighted && !bMass)
         {
             fprintf(stderr, "All masses in group %d are 0, using masses of 1\n", j);
             for (i = 0; i < irms[j]; i++)
