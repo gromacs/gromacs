@@ -33,10 +33,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# The earliest version of the CUDA toolkit that supports c++17 is 11.0
-set(REQUIRED_CUDA_VERSION 11.0)
-set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.5)
-
 set(GMX_GPU_CUDA ON)
 
 option(GMX_CLANG_CUDA "Use clang for CUDA" OFF)
