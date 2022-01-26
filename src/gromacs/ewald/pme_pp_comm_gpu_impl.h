@@ -119,17 +119,19 @@ public:
     GpuEventSynchronizer* getForcesReadySynchronizer();
 
 private:
-    /*! \brief Pull force buffer directly from GPU memory on PME
-     * rank to either GPU or CPU memory on PP task using CUDA
-     * Memory copy. This method is used with Thread-MPI.
+    /*! \brief Receive buffer from GPU memory on PME rank to either
+     * GPU or CPU memory on PP rank. Data is pushed from PME force
+     * sender object using CUDA memory copy funtionality, and this
+     * method performs the necessary synchronization on that
+     * communication. This method is used with thread-MPI.
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
     void receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu);
 
-    /*! \brief Pull force buffer directly from GPU memory on PME
-     * rank to either GPU or CPU memory on PP task using CUDA-aware
-     * MPI. This method is used with process-MPI.
-     * \param[out] recvPtr CPU buffer to receive PME force data
+    /*! \brief Receive buffer from GPU memory on PME rank to either
+     * GPU or CPU memory on PP rank using CUDA-aware MPI. This method
+     * is used with process-MPI.
+     * \param[out] recvPtr CPU or GPU buffer to receive PME force data into
      * \param[in] recvSize Number of elements to receive
      */
     void receiveForceFromPmeCudaMpi(float3* recvPtr, int recvSize);
@@ -182,6 +184,16 @@ private:
     GpuEventSynchronizer* remotePmeForceSendEvent_;
     //! Flag to track when remote PP event has been recorded, ready for enqueueing
     volatile std::atomic<bool>* remotePmeForceSendEventRecorded_;
+    //! Whether GPU to CPU communication should staged through GPU
+    //! memory rather than performed directly, for lib-MPI. Staging is
+    //! expected to have significant benefits for systems with servers
+    //! with direct links between GPUs, because it allows the device
+    //! to host transfer to be split across multiple PCIe buses, thus
+    //! accessing more bandwidth. Direct communication may have
+    //! benefits on servers with only PCIe connectivity, and/or for
+    //! small atom counts where latency is more important than
+    //! bandwidth.
+    bool stageLibMpiGpuCpuComm_ = true;
 };
 
 } // namespace gmx

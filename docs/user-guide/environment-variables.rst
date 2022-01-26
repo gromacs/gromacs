@@ -172,6 +172,20 @@ Performance and Run Control
         Use as an override for cases which default to using this feature;
         currently used to disable GPU communication with thread-MPI.
 
+``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
+        Use a staged implementation of GPU communications for PME force
+        transfers from the PME GPU to the CPU memory of a PP rank for
+        thread-MPI. The staging is done via a GPU buffer on the PP
+        GPU. This is expected to be beneficial for servers with direct
+        communication links between GPUs.
+
+``GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
+        Use direct rather than staged GPU communications for PME force
+        transfers from the PME GPU to the CPU memory of a PP
+        rank. This may have advantages in PCIe-only servers, or for
+        runs with low atom counts (which are more sensitive to latency
+        than bandwidth).
+
 ``GMX_GPU_SYCL_NO_SYNCHRONIZE``
         disable synchronizations between different GPU streams in SYCL build, instead relying on SYCL runtime to
         do scheduling based on data dependencies. Experimental.

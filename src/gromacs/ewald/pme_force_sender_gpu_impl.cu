@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,6 +80,7 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
         event            = std::make_unique<GpuEventSynchronizer>();
         ppCommEvent_[i]  = std::move(event);
     }
+    stageThreadMpiGpuCpuComm_ = (getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
 }
 
 PmeForceSenderGpu::Impl::~Impl() = default;
@@ -140,17 +141,32 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms, bool
 
 
 #if GMX_MPI
-    float3* pmeRemoteForcePtr =
-            sendForcesDirectToPpGpu ? pmeRemoteGpuForcePtr_[ppRank] : pmeRemoteCpuForcePtr_[ppRank];
+    float3* pmeRemoteForcePtr = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
+                                        ? pmeRemoteGpuForcePtr_[ppRank]
+                                        : pmeRemoteCpuForcePtr_[ppRank];
 
     pmeForcesReady_->enqueueWaitEvent(*ppCommStream_[ppRank]);
 
+    // Push data to remote GPU's memory
     cudaError_t stat = cudaMemcpyAsync(pmeRemoteForcePtr,
                                        localForcePtr_[ppRank],
                                        numAtoms * sizeof(rvec),
                                        cudaMemcpyDefault,
                                        ppCommStream_[ppRank]->stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
+
+    if (stageThreadMpiGpuCpuComm_ && !sendForcesDirectToPpGpu)
+    {
+        // Perform local D2H (from remote GPU memory to remote PP rank's CPU memory)
+        // to finalize staged data transfer
+        stat = cudaMemcpyAsync(pmeRemoteCpuForcePtr_[ppRank],
+                               pmeRemoteGpuForcePtr_[ppRank],
+                               numAtoms * sizeof(rvec),
+                               cudaMemcpyDefault,
+                               ppCommStream_[ppRank]->stream());
+        CU_RET_ERR(stat, "cudaMemcpyAsync on local device to host transfer of PME forces failed");
+    }
+
     ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
     std::atomic<bool>* tmpPpCommEventRecordedPtr =
             reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[ppRank]));
