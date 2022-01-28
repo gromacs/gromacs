@@ -730,7 +730,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 #elif GMX_GPU_SYCL
 #    if GMX_SYCL_DPCPP && GMX_FFT_MKL
         const gmx::FftBackend backend = gmx::FftBackend::SyclMkl;
-#    elif GMX_SYCL_HIPSYCL
+#    elif GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
         const gmx::FftBackend backend = gmx::FftBackend::SyclRocfft;
 #    else
         const gmx::FftBackend backend = gmx::FftBackend::Sycl;
