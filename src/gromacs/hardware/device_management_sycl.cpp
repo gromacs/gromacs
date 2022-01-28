@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,6 +102,14 @@ static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
         // While some kernels (leapfrog) can run without shared/local memory, this is a bad sign
         return DeviceStatus::Incompatible;
     }
+
+#if GMX_SYCL_DPCPP && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER == 20220000)
+    if (syclDevice.get_backend() == sycl::backend::ext_oneapi_level_zero)
+    {
+        // See Issue #4354
+        return DeviceStatus::IncompatibleLevelZeroAndOneApi2022;
+    }
+#endif
 
     if (syclDevice.is_host())
     {
@@ -231,7 +239,7 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
     return DeviceStatus::Compatible;
 }
 
-/* In DPCPP, the same physical device can appear as different virtual devices provided
+/* In DPC++, the same physical device can appear as different virtual devices provided
  * by different backends (e.g., the same GPU can be accessible via both OpenCL and L0).
  * Thus, using devices from two backends is more likely to be a user error than the
  * desired behavior. In this function, we choose the backend with the most compatible
@@ -242,7 +250,7 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
  * issues: D2D copy between different backends is not allowed. We don't use D2D in
  * SYCL yet. Additionally, hipSYCL does not implement the `sycl::platform::get_backend()`
  * function.
- * Thus, we only do the backend filtering with DPCPP.
+ * Thus, we only do the backend filtering with DPC++.
  * */
 #if GMX_SYCL_DPCPP
 static std::optional<sycl::backend> chooseBestBackend(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfos)
@@ -339,7 +347,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         {
             for (auto& deviceInfo : deviceInfos)
             {
-                if (deviceInfo->syclDevice.get_platform().get_backend() != *preferredBackend)
+                if (deviceInfo->syclDevice.get_platform().get_backend() != *preferredBackend
+                    && deviceInfo->status == DeviceStatus::Compatible)
                 {
                     deviceInfo->status = DeviceStatus::NotPreferredBackend;
                 }
