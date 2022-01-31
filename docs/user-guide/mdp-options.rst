@@ -2115,7 +2115,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-start
 
-   (0.0) [nm] or [rad]
+   (0.0) [nm] or [deg]
    Start value of the sampling interval along this dimension. The range of allowed
    values depends on the relevant pull geometry (see :mdp:`pull-coord1-geometry`).
    For dihedral geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
@@ -2127,7 +2127,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-end
 
-   (0.0) [nm] or [rad]
+   (0.0) [nm] or [deg]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
 
 .. mdp:: awh1-dim1-diffusion
