@@ -274,7 +274,7 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
                 commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclDpcpp,
                 "it targets GPU execution of FFT work, which is not supported with DPC++");
         constexpr bool sc_gpuBuildSyclHipsyclNotAmd =
-                (GMX_GPU_SYCL != 0) && (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
+                (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
         messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclHipsyclNotAmd,
                           "it targets GPU execution of FFT work, which is only supported for AMD "
                           "targets when using hipSYCL");
