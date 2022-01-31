@@ -772,13 +772,24 @@ external library, use
 SYCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~
 
+SYCL_ is a modern portable heterogeneous acceleration API, with multiple
+implementations targeting different hardware platforms (similar to OpenCL_).
+
+Currently, supported platforms in |Gromacs| are:
+
+* Intel GPUs using `Intel oneAPI DPC++`_ (both OpenCL and LevelZero backends), 
+* AMD GPUs with hipSYCL_: only discrete GPUs with GFX9 (RX Vega 64, Pro VII, 
+  Instinct MI25, Instinct MI50) and CDNA (Instinct MI100) architectures,
+* NVIDIA GPUs (experimental) using either hipSYCL_ or open-source 
+  `Intel LLVM <https://github.com/intel/llvm>`_.
+
+Feature support is broader than that of the OpenCL, but not yet on par with CUDA.
+
 The SYCL_ support in |Gromacs| is intended to eventually replace
 OpenCL_ as an acceleration mechanism for AMD and Intel hardware.
-For AMD devices, we use hipSYCL_ compiler and runtime with HIP backend, which only supports
-discrete GPUs with GFX9 (RX Vega 64, Pro VII, Instinct MI25, Instinct MI50)
-and CDNA architectures (Instinct MI100).
-For Intel devices, we use `Intel oneAPI DPC++`_ with OpenCL and LevelZero backends, which
-supports both integrated and discreet Intel GPUs.
+
+Note: SYCL_ support in |Gromacs| is less mature than either OpenCL or CUDA.
+Please, pay extra attention to simulation correctness when you are using it.
 
 SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
@@ -820,15 +831,16 @@ building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
 
 ::
 
-   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfx906'
+   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfxXYZ'
 
 SYCL GPU acceleration for NVIDIA GPUs
 """""""""""""""""""""""""""""""""""""
 
-SYCL is *not* a recommended way to target NVIDIA GPUs, please use CUDA_
-(`CUDA GPU acceleration`_).
+SYCL support for NVIDIA GPUs is highly experimental. For production, please use CUDA_
+(`CUDA GPU acceleration`_). Note that FFT is not currently supported on NVIDIA devices 
+when using SYCL, PME offload is only possible in mixed mode (``-pme gpu -pmefft cpu``).
 
-If you still want to do that, you can use either hipSYCL_ or the open-source
+NVIDIA GPUs can be used with either hipSYCL_ or the open-source
 `Intel LLVM <https://github.com/intel/llvm>`_.
 
 For hipSYCL, make sure that hipSYCL itself is compiled with CUDA support,
@@ -842,8 +854,6 @@ the following CMake invocation:
 
    cmake .. -DCMAKE_C_COMPILER=/path/to/intel/clang -DCMAKE_CXX_COMPILER=/path/to/intel/clang++ -DGMX_GPU=SYCL -DGMX_GPU_NB_CLUSTER_SIZE=8 -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
 
-Note that FFT is not currently supported on NVIDIA devices when using SYCL,
-so no full PME offload is possible.
 
 SYCL GPU compilation options
 """"""""""""""""""""""""""""
