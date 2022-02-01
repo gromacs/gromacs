@@ -260,8 +260,9 @@ BiasParams::BiasParams(const AwhParams&          awhParams,
     {
         /* The spacing in FEP dimensions is 1. The calculated coverRadius will be in lambda states
          * (cf points in other dimensions). */
-        double coverRadiusInNm = 0.5 * awhDimParams[d].coverDiameter();
-        double spacing         = gridAxis[d].spacing();
+        double coverRadiusInNm =
+                0.5 * dimParams[d].scaleUserInputToInternal(awhDimParams[d].coverDiameter());
+        double spacing  = gridAxis[d].spacing();
         coverRadius_[d] = spacing > 0 ? static_cast<int>(std::round(coverRadiusInNm / spacing)) : 0;
     }
 }

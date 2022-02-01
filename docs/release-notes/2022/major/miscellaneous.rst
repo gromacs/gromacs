@@ -33,6 +33,15 @@ an error when they are beyond the cut-off distance.
 
 :issue:`4051`
 
+The AWH cover diameter for angles now has units degrees
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using old tpr files that apply AWH to angles or dihedrals and have a non-zero cover
+diameter results in an error with the suggestion to regenerate the tpr file.
+
+:issue:`4367`
+
+
 Core spin-up code is removed
 """"""""""""""""""""""""""""""""""""""""""""""""""
 

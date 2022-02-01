@@ -1265,6 +1265,19 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
             AwhDimParams* dimParams = &awhBiasDimensionParams[d];
             if (dimParams->coordinateProvider() == AwhCoordinateProviderType::Pull)
             {
+                const t_pull_coord& pullCoordParams = pull_params.coord[dimParams->coordinateIndex()];
+                if (dimParams->coverDiameter() != 0.0
+                    && (pullCoordParams.eGeom == PullGroupGeometry::Angle
+                        || pullCoordParams.eGeom == PullGroupGeometry::Dihedral
+                        || pullCoordParams.eGeom == PullGroupGeometry::AngleAxis))
+                {
+                    warning_note(
+                            wi,
+                            "Note that the unit of the AWH cover-diameter parameter for angle and "
+                            "dihedral pull coordinates has recently changed from radian to "
+                            "degrees");
+                }
+
                 setStateDependentAwhPullDimParams(
                         dimParams, k, d, pull_params, pull_work, pbc, compressibility, wi);
             }

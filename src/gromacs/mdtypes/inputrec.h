@@ -318,6 +318,9 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     t_inputrec& operator=(const t_inputrec&) = delete;
     ~t_inputrec();
 
+    //! The tpx version number this inputrec was read from, -1 when not read from tpr
+    int tpxFileVersion = -1;
+
     //! Integration method
     IntegrationAlgorithm eI = IntegrationAlgorithm::Default;
     //! Number of steps to be taken

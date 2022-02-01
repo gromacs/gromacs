@@ -214,6 +214,9 @@ Awh::Awh(FILE*                 fplog,
         }
     }
 
+    // TPX version number tpxv_RemoveTholeRfac from tpxio.cpp, which is the version of release-2022
+    const int c_tpxVersionCoverDiameterUnitChange = 127;
+
     /* Initialize all the biases */
     const double beta          = 1 / (gmx::c_boltz * inputRecord.opts.ref_t[0]);
     const auto&  awhBiasParams = awhParams.awhBiasParams();
@@ -239,6 +242,15 @@ Awh::Awh(FILE*                 fplog,
                             "Pull geometry 'direction-periodic' is not supported by AWH"));
                 }
                 double conversionFactor = pull_conversion_factor_userinput2internal(pullCoord);
+                if (inputRecord.tpxFileVersion < c_tpxVersionCoverDiameterUnitChange
+                    && conversionFactor != 1.0 && awhDimParam.coverDiameter() != 0.0)
+                {
+                    GMX_THROW(InvalidInputError(formatString(
+                            "The units for a cover diameter parameter in AWH bias %d in the tpr "
+                            "file are radians while this code usees degrees. "
+                            "Please regenerate your tpr file.",
+                            1 + k)));
+                }
                 pullCoordIndex.push_back(awhDimParam.coordinateIndex());
                 dimParams.emplace_back(DimParams::pullDimParams(
                         conversionFactor, awhDimParam.forceConstant(), beta));

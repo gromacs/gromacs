@@ -1023,6 +1023,8 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     real     rdum;
     gmx_bool bdum = false;
 
+    ir->tpxFileVersion = file_version;
+
     if (file_version != tpx_version)
     {
         /* Give a warning about features that are not accessible */

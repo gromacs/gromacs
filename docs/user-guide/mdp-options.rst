@@ -2167,7 +2167,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-cover-diameter
 
-   (0.0) [nm] or [rad]
+   (0.0) [nm] or [deg]
    Diameter that needs to be sampled by a single simulation around a coordinate value
    before the point is considered covered in the initial stage (see :mdp-value:`awh1-growth=exp-linear`).
    A value > 0  ensures that for each covering there is a continuous transition of this diameter
