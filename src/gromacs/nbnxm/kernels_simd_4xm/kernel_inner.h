@@ -2,7 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021 by the GROMACS development team.
+ * Copyright (c) 2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -245,7 +246,7 @@
     const int cj = l_cj[cjind].cj;
 
     /* Atom indices (of the first atom in the cluster) */
-    const int   aj = cj * UNROLLJ;
+    const int gmx_unused aj = cj * UNROLLJ;
 #    if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
     /* Index for loading LJ parameters, complicated when interleaving */
 #        if UNROLLJ == STRIDE

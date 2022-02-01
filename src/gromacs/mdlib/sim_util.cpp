@@ -1069,7 +1069,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
  * \return
  */
-static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& gmx_used_in_debug simulationWork,
+static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug const SimulationWorkload& simulationWork,
                                                           const StepWorkload& stepWork,
                                                           bool pmeSendCoordinatesFromGpu)
 {
