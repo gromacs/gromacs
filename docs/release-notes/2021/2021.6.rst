@@ -16,6 +16,17 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Extend error message for free-energy exclusion beyond rlist
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy decoupling simulations an error for exclusions beyond rlist
+can occur due to a too small box. This cause is now added to the error
+message.
+
+:issue:`3403`
+:issue:`3808`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
