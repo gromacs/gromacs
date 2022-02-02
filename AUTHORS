@@ -1,8 +1,83 @@
-Current lead developers:
+CURRENT CONTRIBUTORS
+====================
+Mark Abraham
+Andrey Alekseenko
+Cathrine Bergh
+Christian Blau
+Eliane Briand
+Kevin Boyd
+Oliver Fleetwood
+Stefan Fleischmann
+Vytas Gapsys
+Gaurav Garg
+Gilles Gouaillardet
+Alan Gray
+Victor Holanda
+M. Eric Irrgang
+Joe Jordan
+Christoph Junghans
+Prashanth Kanduri
+Sebastian Kehl
+Sebastian Keller
+Carsten Kutzner
+Magnus Lundborg
+Pascal Merz
+Dmitry Morozov
+Szilard Pall
+Roland Schulz
+Michael Shirts
+David van der Spoel
+Alessandra Villa
+Sebastian Wingbermuehle
+Artem Zhmurov
 
-Mark Abraham <mark.j.abraham@gmail.com>
-David van der Spoel <spoel@gromacs.org>
-Berk Hess <hess@gromacs.org>
-Erik Lindahl <lindahl@gromacs.org>
+PREVIOUS CONTRIBUTORS
+=====================
+Emile Apol
+Rossen Apostolov
+James Barnett
+Herman J.C. Berendsen
+Par Bjelkmar
+Viacheslav Bolnykh
+Aldert van Buuren
+Carlo Camilloni
+Rudi van Drunen
+Anton Feenstra
+Gerrit Groenhof
+Bert de Groot
+Anca Hamuraru
+Vincent Hindriksen
+Aleksei Iupinov
+Dimitrios Karkoulis
+Peter Kasson
+Jiri Kraus
+Per Larsson
+Justin A. Lemkul
+Viveca Lindahl
+Erik Marklund
+Pieter Meulenhoff
+Vedran Miletic
+Teemu Murtola
+Sander Pronk
+Alexey Shvetsov
+Alfons Sijbers
+Peter Tieleman
+Jon Vincent
+Teemu Virolainen
+Christian Wennberg
+Maarten Wolf
 
-A full list of GROMACS contributors is available at http://www.gromacs.org/About_Gromacs/People
+CURRENT PROJECT LEADERS
+=======================
+Paul Bauer
+Berk Hess
+Erik Lindahl
+
+MORE INFORMATION
+================
+GROMACS is written by an international developer community.
+You are very welcome to join us; the easiest way to connect
+might be to start discussing issues and changes in the GitLab
+repository at https://gitlab.com/gromacs/gromacs , or
+reach out to any of the active developers. You can also find
+more information at https://www.gromacs.org .

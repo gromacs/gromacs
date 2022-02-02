@@ -342,6 +342,21 @@ if(GMX_IMD AND WIN32)
 endif()
 
 
+########################################################################
+# Parse present/past contributors and project leaders from AUTHORS     #
+########################################################################
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS AUTHORS)
+file(READ "${CMAKE_SOURCE_DIR}/AUTHORS" AUTHORS)
+string(REGEX REPLACE " <[^<]+>" "" AUTHORS_NO_EMAIL "${AUTHORS}")
+string(REGEX MATCH "CURRENT CONTRIBUTORS\n=+\n(.*)\n\n+PREVIOUS CONTRIBUTORS\n=+\n(.*)\n\n+CURRENT PROJECT LEADERS\n=+\n(.*)\n\n+" MATCH "${AUTHORS_NO_EMAIL}")
+
+set(GMX_CURRENT_CONTRIBUTORS ${CMAKE_MATCH_1})
+set(GMX_PREVIOUS_CONTRIBUTORS ${CMAKE_MATCH_2})
+set(GMX_CURRENT_PROJECT_LEADERS ${CMAKE_MATCH_3})
+
+string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_CURRENT_CONTRIBUTORS "${GMX_CURRENT_CONTRIBUTORS}")
+string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_PREVIOUS_CONTRIBUTORS "${GMX_PREVIOUS_CONTRIBUTORS}")
+string(REGEX REPLACE "([^\n]+)" "    \"\\1\"," GMX_CURRENT_PROJECT_LEADERS "${GMX_CURRENT_PROJECT_LEADERS}")
 
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
