@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -653,11 +653,31 @@ std::vector<iListInput> c_InputRestraints = {
     { iListInput(2e-3, 1e-8).setHarmonic(F_RESTRANGLES, 100.0, 50.0, 110.0, 45.0) }
 };
 
+//! Function types for testing bond with zero length, has zero reference length to make physical sense.
+std::vector<iListInput> c_InputBondsZeroLength = {
+    { iListInput().setHarmonic(F_BONDS, 0.0, 500.0) },
+};
+
+//! Function types for testing angles with zero angle, has zero reference angle to make physical sense.
+std::vector<iListInput> c_InputAnglesZeroAngle = {
+    { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 0.0, 50.0) },
+};
+
 //! Coordinates for testing
-std::vector<std::vector<gmx::RVec>> c_coordinatesForTests = {
+std::vector<std::vector<RVec>> c_coordinatesForTests = {
     { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.2 }, { 0.005, 0.0, 0.1 }, { -0.001, 0.1, 0.0 } },
     { { 0.5, 0.0, 0.0 }, { 0.5, 0.0, 0.15 }, { 0.5, 0.07, 0.22 }, { 0.5, 0.18, 0.22 } },
     { { -0.1143, -0.0282, 0.0 }, { 0.0, 0.0434, 0.0 }, { 0.1185, -0.0138, 0.0 }, { -0.0195, 0.1498, 0.0 } }
+};
+
+//! Coordinates for testing bonds with zero length
+std::vector<std::vector<RVec>> c_coordinatesForTestsZeroBondLength = {
+    { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.005, 0.0, 0.1 }, { 0.005, 0.0, 0.1 } }
+};
+
+//! Coordinates for testing bonds with zero length
+std::vector<std::vector<RVec>> c_coordinatesForTestsZeroAngle = {
+    { { 0.005, 0.0, 0.1 }, { 0.0, 0.0, 0.0 }, { 0.005, 0.0, 0.1 }, { 0.5, 0.18, 0.22 } }
 };
 
 //! PBC values for testing
@@ -693,6 +713,18 @@ INSTANTIATE_TEST_CASE_P(Restraints,
                         ListedForcesTest,
                         ::testing::Combine(::testing::ValuesIn(c_InputRestraints),
                                            ::testing::ValuesIn(c_coordinatesForTests),
+                                           ::testing::ValuesIn(c_pbcForTests)));
+
+INSTANTIATE_TEST_CASE_P(BondZeroLength,
+                        ListedForcesTest,
+                        ::testing::Combine(::testing::ValuesIn(c_InputBondsZeroLength),
+                                           ::testing::ValuesIn(c_coordinatesForTestsZeroBondLength),
+                                           ::testing::ValuesIn(c_pbcForTests)));
+
+INSTANTIATE_TEST_CASE_P(AngleZero,
+                        ListedForcesTest,
+                        ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
+                                           ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
                                            ::testing::ValuesIn(c_pbcForTests)));
 #endif
 } // namespace

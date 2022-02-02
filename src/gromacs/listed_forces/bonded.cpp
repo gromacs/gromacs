@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, The GROMACS development team.
+ * Copyright (c) 2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1029,12 +1030,13 @@ angles(int             nbonds,
     SimdReal                                 rijx_S, rijy_S, rijz_S;
     SimdReal                                 rkjx_S, rkjy_S, rkjz_S;
     SimdReal                                 one_S(1.0);
-    SimdReal min_one_plus_eps_S(-1.0 + 2.0 * GMX_REAL_EPS); // Smallest number > -1
+    SimdReal one_min_eps_S(1.0_real - GMX_REAL_EPS); // Largest number < 1
 
     SimdReal                         rij_rkj_S;
     SimdReal                         nrij2_S, nrij_1_S;
     SimdReal                         nrkj2_S, nrkj_1_S;
     SimdReal                         cos_S, invsin_S;
+    SimdReal                         cos2_S;
     SimdReal                         theta_S;
     SimdReal                         st_S, sth_S;
     SimdReal                         cik_S, cii_S, ckk_S;
@@ -1103,18 +1105,28 @@ angles(int             nbonds,
 
         cos_S = rij_rkj_S * nrij_1_S * nrkj_1_S;
 
-        /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
-         * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
-         * This also ensures that rounding errors would cause the argument
-         * of simdAcos to be < -1.
-         * Note that we do not take precautions for cos(0)=1, so the outer
-         * atoms in an angle should not be on top of each other.
+        /* We compute cos^2 using a division instead of squaring cos_S,
+         * as we would then get additional error contributions from
+         * the two invsqrt operations, which get amplified by
+         * the 1/sqrt(1-cos^2) for cos values close to 1.
+         *
+         * Note that the non-SIMD version of angles() avoids this issue
+         * by computing the cosine using double precision.
          */
-        cos_S = max(cos_S, min_one_plus_eps_S);
+        cos2_S = rij_rkj_S * rij_rkj_S / (nrij2_S * nrkj2_S);
+
+        /* To allow for 0 and 180 degrees, we need to avoid issues when
+         * the cosine is close to -1 and 1. For acos() the argument needs
+         * to be in that range. For cos^2 we take the min of cos^2 and 1 - 1bit,
+         * so we can safely compute 1/sin as 1/sqrt(1 - cos^2).
+         */
+        cos_S  = max(cos_S, -one_S);
+        cos_S  = min(cos_S, one_S);
+        cos2_S = min(cos2_S, one_min_eps_S);
 
         theta_S = acos(cos_S);
 
-        invsin_S = invsqrt(one_S - cos_S * cos_S);
+        invsin_S = invsqrt(one_S - cos2_S);
 
         st_S  = k_S * (theta0_S - theta_S) * invsin_S;
         sth_S = st_S * cos_S;
