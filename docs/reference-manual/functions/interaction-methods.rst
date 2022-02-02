@@ -256,8 +256,8 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In the plane of three atoms, with a fixed distance
    (:numref:`Fig. %s <fig-vsites>` 3fd):
 
-   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk}  }
-                                                  { | (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk} | }
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  \mathbf{r}_{ij} + a \mathbf{r}_{jk}  }
+                                                  { | \mathbf{r}_{ij} + a \mathbf{r}_{jk} | }
              :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three
