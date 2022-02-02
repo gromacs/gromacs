@@ -176,7 +176,7 @@ Other options:
     Do not print common startup info or quotes
 ``-[no]version``  (no)
     Print extended version information and quit
-``-[no]copyright``  (yes)
+``-[no]copyright``  (no)
     Print copyright information on startup
 ``-nice`` <int> (19)
     Set the nicelevel (default depends on command)
