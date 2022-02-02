@@ -64,6 +64,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "domdec_internal.h"
@@ -141,6 +142,19 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
     const gmx_domdec_comm_t&     comm = *dd_->comm;
     const gmx_domdec_comm_dim_t& cd   = comm.cd[dimIndex_];
     const gmx_domdec_ind_t&      ind  = cd.ind[pulse_];
+
+    if (dimIndex_ > 0 && cd.numPulses() > 1)
+    {
+        gmx_fatal(
+                FARGS,
+                "GPU direct communications cannot be used for multi-dimensional halo exchanges "
+                "with more than one pulse in the second or third dimension. Please try using fewer "
+                "ranks (or change the decomposition with '-dd'), or if that does not work then "
+                "disable GPU direct communications.");
+    }
+    GMX_RELEASE_ASSERT(cd.receiveInPlace,
+                       "The CUDA DD halo implementation only supports in place receive. "
+                       "The condition should be guaranteed by the check and fatal_error above.");
 
     numHomeAtoms_ = comm.atomRanges.numHomeAtoms(); // offset for data received by this rank
 
