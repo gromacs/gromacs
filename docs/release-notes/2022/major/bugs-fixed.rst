@@ -85,3 +85,11 @@ The progress information (frame number and time) shown during trajectory
 operations in trjconv and trjcat is now correctly displayed.
 
 :issue:`4320`
+
+Fixed GROMOS dihedral generation for disulfide bridges
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The pdb2gmx functionality now generates correct dihedrals for disulfide
+bridges with the GROMOS force field series.
+
+:issue:`4188`

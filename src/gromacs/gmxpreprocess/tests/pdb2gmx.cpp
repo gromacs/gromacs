@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,57 +178,61 @@ std::string namesOfTests(const testing::TestParamInfo<Pdb2gmxTest::ParamType>& i
 // CMakeLists.txt file we split them into separtae test binaries.
 
 #if OPLSAA
-INSTANTIATE_TEST_SUITE_P(Oplsaa,
-                         Pdb2gmxTest,
-                         ::testing::Combine(::testing::Values("oplsaa"),
-                                            ::testing::Values("tip3p", "tip4p", "tip5p"),
-                                            ::testing::Values("none", "h"),
-                                            ::testing::Values("id_or_ter"),
-                                            ::testing::Values("no"),
-                                            ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb"),
-                                            ::testing::Values(efGRO),
-                                            ::testing::Values(false)),
-                         namesOfTests);
+INSTANTIATE_TEST_SUITE_P(
+        Oplsaa,
+        Pdb2gmxTest,
+        ::testing::Combine(::testing::Values("oplsaa"),
+                           ::testing::Values("tip3p", "tip4p", "tip5p"),
+                           ::testing::Values("none", "h"),
+                           ::testing::Values("id_or_ter"),
+                           ::testing::Values("no"),
+                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb"),
+                           ::testing::Values(efGRO),
+                           ::testing::Values(false)),
+        namesOfTests);
 #endif
 
 #if GROMOS
-INSTANTIATE_TEST_SUITE_P(G43a1,
-                         Pdb2gmxTest,
-                         ::testing::Combine(::testing::Values("gromos43a1"),
-                                            ::testing::Values("spc", "spce"),
-                                            ::testing::Values("none", "h"),
-                                            ::testing::Values("id_or_ter"),
-                                            ::testing::Values("no"),
-                                            ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb"),
-                                            ::testing::Values(efGRO),
-                                            ::testing::Values(false)),
-                         namesOfTests);
+INSTANTIATE_TEST_SUITE_P(
+        G43a1,
+        Pdb2gmxTest,
+        ::testing::Combine(::testing::Values("gromos43a1"),
+                           ::testing::Values("spc", "spce"),
+                           ::testing::Values("none", "h"),
+                           ::testing::Values("id_or_ter"),
+                           ::testing::Values("no"),
+                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb"),
+                           ::testing::Values(efGRO),
+                           ::testing::Values(false)),
+        namesOfTests);
 
-INSTANTIATE_TEST_SUITE_P(G53a6,
-                         Pdb2gmxTest,
-                         ::testing::Combine(::testing::Values("gromos53a6"),
-                                            ::testing::Values("spc", "spce"),
-                                            ::testing::Values("none", "h"),
-                                            ::testing::Values("id_or_ter"),
-                                            ::testing::Values("no"),
-                                            ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb"),
-                                            ::testing::Values(efGRO),
-                                            ::testing::Values(false)),
-                         namesOfTests);
+INSTANTIATE_TEST_SUITE_P(
+        G53a6,
+        Pdb2gmxTest,
+        ::testing::Combine(::testing::Values("gromos53a6"),
+                           ::testing::Values("spc", "spce"),
+                           ::testing::Values("none", "h"),
+                           ::testing::Values("id_or_ter"),
+                           ::testing::Values("no"),
+                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb"),
+                           ::testing::Values(efGRO),
+                           ::testing::Values(false)),
+        namesOfTests);
 #endif
 
 #if AMBER
-INSTANTIATE_TEST_SUITE_P(Amber,
-                         Pdb2gmxTest,
-                         ::testing::Combine(::testing::Values("amber99sb-ildn"),
-                                            ::testing::Values("tip3p"),
-                                            ::testing::Values("none", "h"),
-                                            ::testing::Values("id_or_ter"),
-                                            ::testing::Values("no"),
-                                            ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb"),
-                                            ::testing::Values(efGRO),
-                                            ::testing::Values(false)),
-                         namesOfTests);
+INSTANTIATE_TEST_SUITE_P(
+        Amber,
+        Pdb2gmxTest,
+        ::testing::Combine(::testing::Values("amber99sb-ildn"),
+                           ::testing::Values("tip3p"),
+                           ::testing::Values("none", "h"),
+                           ::testing::Values("id_or_ter"),
+                           ::testing::Values("no"),
+                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb"),
+                           ::testing::Values(efGRO),
+                           ::testing::Values(false)),
+        namesOfTests);
 INSTANTIATE_TEST_SUITE_P(AmberTip4p,
                          Pdb2gmxTest,
                          ::testing::Combine(::testing::Values("amber99sb-ildn"),
@@ -246,14 +250,15 @@ INSTANTIATE_TEST_SUITE_P(AmberTip4p,
 INSTANTIATE_TEST_SUITE_P(
         Charmm,
         Pdb2gmxTest,
-        ::testing::Combine(::testing::Values("charmm27"),
-                           ::testing::Values("tip3p"),
-                           ::testing::Values("none", "h"),
-                           ::testing::Values("id_or_ter"),
-                           ::testing::Values("no"),
-                           ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "monomer.pdb"),
-                           ::testing::Values(efGRO),
-                           ::testing::Values(false)),
+        ::testing::Combine(
+                ::testing::Values("charmm27"),
+                ::testing::Values("tip3p"),
+                ::testing::Values("none", "h"),
+                ::testing::Values("id_or_ter"),
+                ::testing::Values("no"),
+                ::testing::Values("A.pdb", "B.pdb", "C.pdb", "D.pdb", "E.pdb", "monomer.pdb"),
+                ::testing::Values(efGRO),
+                ::testing::Values(false)),
         namesOfTests);
 
 

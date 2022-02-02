@@ -4,7 +4,8 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021 by the GROMACS development team.
+ * Copyright (c) 2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +49,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -167,7 +169,7 @@ static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, 
     return FALSE;
 }
 
-static void rename_1res(t_atoms* pdba, int resind, const char* newres, bool bVerbose)
+static void rename_1res(t_atoms* pdba, t_symtab* symtab, int resind, const char* newres, bool bVerbose)
 {
     if (bVerbose)
     {
@@ -176,12 +178,11 @@ static void rename_1res(t_atoms* pdba, int resind, const char* newres, bool bVer
                *pdba->resinfo[resind].name,
                pdba->resinfo[resind].nr);
     }
-    /* this used to free *resname, which messes up the symtab! */
-    snew(pdba->resinfo[resind].rtp, 1);
-    *pdba->resinfo[resind].rtp = gmx_strdup(newres);
+    pdba->resinfo[resind].rtp = put_symtab(symtab, newres);
 }
 
-std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInteractive, bool bVerbose)
+std::vector<DisulfideBond>
+makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive, bool bVerbose)
 {
     std::vector<SpecialBond>   specialBonds = generateSpecialBonds();
     std::vector<DisulfideBond> bonds;
@@ -313,10 +314,12 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                         if (bSwap)
                         {
                             rename_1res(pdba,
+                                        symtab,
                                         specialBondResIdxs[i],
                                         specialBonds[index_sb].newSecondResidue.c_str(),
                                         bVerbose);
                             rename_1res(pdba,
+                                        symtab,
                                         specialBondResIdxs[j],
                                         specialBonds[index_sb].newFirstResidue.c_str(),
                                         bVerbose);
@@ -324,10 +327,12 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                         else
                         {
                             rename_1res(pdba,
+                                        symtab,
                                         specialBondResIdxs[i],
                                         specialBonds[index_sb].newFirstResidue.c_str(),
                                         bVerbose);
                             rename_1res(pdba,
+                                        symtab,
                                         specialBondResIdxs[j],
                                         specialBonds[index_sb].newSecondResidue.c_str(),
                                         bVerbose);
