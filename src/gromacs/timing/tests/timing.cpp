@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -149,7 +149,6 @@ TEST_F(TimingTest, RunWallCycle)
     wallcycle_get(wcycle.get(), ref, &n2, &c2);
 
     EXPECT_EQ(n1, n2);
-    EXPECT_DOUBLE_EQ_TOL(c1, c2, relativeToleranceAsFloatingPoint(c1, 5e-3));
     EXPECT_GE(c2, c1);
 }
 
@@ -171,7 +170,6 @@ TEST_F(TimingTest, RunWallCycleSub)
         wallcycle_sub_get(wcycle.get(), ref, &n2, &c2);
 
         EXPECT_EQ(n1, n2);
-        EXPECT_DOUBLE_EQ_TOL(c1, c2, relativeToleranceAsFloatingPoint(c1, 5e-3));
         EXPECT_GE(c2, c1);
     }
 }
