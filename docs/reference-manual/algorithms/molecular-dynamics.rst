@@ -792,20 +792,42 @@ allows the true ensemble to be calculated. In either case, simulation
 with double precision may be required to get fine details of
 thermodynamics correct.
 
-Multiple time stepping
+Multiple time-stepping
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Several other simulation packages uses multiple time stepping for bonds
-and/or the PME mesh forces. In |Gromacs| we have not implemented this
-(yet), since we use a different philosophy. Bonds can be constrained
-(which is also a more sound approximation of a physical quantum
-oscillator), which allows the smallest time step to be increased to the
-larger one. This not only halves the number of force calculations, but
-also the update calculations. For even larger time steps, angle
+The leap-frog integrator in |Gromacs| supports a configurable multiple
+time-stepping scheme. This can be used to improve performance by
+computing slowly varying forces less frequently. The RESPA scheme
+:ref:`188 <refTuckerman92>` is used, which is based on a TROTTER
+decomposition and is therefore reversible and symplectic.
+
+In order to allow tuning this for each system, the integrator makes it
+possible to specify different types of bonded and non-bonded interactions
+for multiple-time step integration. 
+To avoid integration errors, it is still imperative that the integration
+interval used for each force component is short enough, and there is no
+universal formula that allows the algorithm to detect this. Since the
+slowly-varying forces are often of smaller magnitude, using time steps that
+are too large might not result in simulations crashing, so it is recommended
+to be conservative and only gradually increase intervals while ensuring you
+get proper sampling and avoid energy drifts.
+As an initial guidance, many of the most common biomolecular force fields appear
+to run into stability problems when the period of integrating Lennard-Jones
+forces is 4 fs or longer, so for now we only recommend computing long-range
+electrostatics (PME mesh contribution) less frequently than every step when
+using a base time step of 2 fs.
+Another, rather different, scenario is to use a base time step of 0.5 fs
+with non-constrained harmonic bonds, and compute other interactions
+every second or fourth step. Despite these caveats, we encourage users to test
+the functionality, assess stability and energy drifts, and either discuss your
+experience in the GROMACS forums or suggest improvements to the documentation
+so we can improve this guidance in the future.
+
+For using larger time steps for all interactions, and integration, angle
 vibrations involving hydrogen atoms can be removed using virtual
 interaction sites (see sec. :ref:`rmfast`), which brings the shortest
 time step up to PME mesh update frequency of a multiple time stepping
-scheme.
+scheme. This results in a near doubling of the simulation performance.
 
 .. _temp-coupling:
 

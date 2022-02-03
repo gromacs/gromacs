@@ -2640,6 +2640,12 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
+   <div id="refTuckerman92">
+
+.. _refTuckerman92:
+
+:sup:`188` M. Tuckerman, B. J. Berne, and G. J. Martyna, "Reversible multiple time scale molecular dynamics", *J. Chem. Phys.*, **97** 1990 (1992).
+
 .. raw:: html
 
    </div>
