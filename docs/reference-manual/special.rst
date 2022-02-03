@@ -18,6 +18,7 @@ the use of |Gromacs| for specific scientific problems.
    special/free-energy-pmf
    special/remove-fast-dgf
    special/viscosity-calculation
+   special/shearing
    special/tabulated-interaction-functions
    special/qmmm
    special/mimic-qmmm

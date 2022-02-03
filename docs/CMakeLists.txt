@@ -218,6 +218,7 @@ if (SPHINX_FOUND)
         reference-manual/special/free-energy-pmf.rst
         reference-manual/special/remove-fast-dgf.rst
         reference-manual/special/viscosity-calculation.rst
+        reference-manual/special/shearing.rst
         reference-manual/special/tabulated-interaction-functions.rst
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
