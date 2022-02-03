@@ -1,0 +1,41 @@
+GROMACS 2020.7 release notes
+----------------------------
+
+This version was released on February 3rd, 2022. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2020.6 version, to fix known issues.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed bug with GPU LINCS occasionally shifting atoms in wrong direction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Due to missing blocking synchronizations in the CUDA version of LINCS,
+the shared memory was occasionally overwritten with the new data. This
+may slightly affect the final coordinates of the shifted atoms.
+
+:issue:`4199`
+
+Fix calculation of restraint potential for large restraint deviations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The calculation in the code did not follow the description of the potential in the manual
+but the potential continued to grow quadratically instead of linearly as it should.
+
+:issue:`4346`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
