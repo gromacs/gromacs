@@ -308,7 +308,7 @@ conditions, intended to produce smoothly-varying potential and forces:
 
 The fifth-degree polynomial that has these properties is
 
-.. math:: S_V(r; r_1, r_c) = \frac{1 - 10(r-r_1)^3(r_c-r_1)^2 + 15(r-r_1)^4(r_c-r_1) - 6(r-r_1)}{(r_c-r_1)^5}
+.. math:: S_V(r; r_1, r_c) = 1 - 10\left(\frac{r-r_1}{r_c-r_1}\right)^3 + 15\left(\frac{r-r_1}{r_c-r_1}\right)^4 - 6\left(\frac{r-r_1}{r_c-r_1}\right)^5
           :label: eqn5polynomal
 
 This implementation is found in several other simulation

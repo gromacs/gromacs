@@ -16,8 +16,30 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Extend error message for free-energy exclusion beyond rlist
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy decoupling simulations an error for exclusions beyond rlist
+can occur due to a too small box. This cause is now added to the error
+message.
+
+:issue:`3403`
+:issue:`3808`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Do not try to guess atom names in ``gmx rms`` unless needed
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Guessing atomic masses based on atom names may sometimes fail.
+When ``-nomw`` switch is used, atom masses are not needed, but ``gmx rms``
+was trying to guess them anyway, throwing a fatal error when an unknown 
+element was encountered. Now, the error is only raised when masses are
+actually needed.
+
+:issue:`4356`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -25,3 +47,12 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Corrects units for AWH interval in the user guide
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+When applying AWH to angles or dihedrals, the units of bonds of the sampling
+interval listed in the mdp section of the user guide are now stated to be
+in degrees. The guide incorrectly stated that there were in radians, whereas
+the code interprets the user input as degrees.
+
+:issue:`4367`
