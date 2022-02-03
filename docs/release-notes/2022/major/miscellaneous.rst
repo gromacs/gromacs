@@ -22,6 +22,17 @@ Now all names are supported that contain at least one non-digit character.
 
 :issue:`4120`
 
+grompp now warns when exclusion forces might be missing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using PME, exclusions between non-perturbed,atom pairs should be within
+the cut-off distance, otherwise mdrun might not compute grid correction forces
+and energies. grompp now computes these distance for the starting structure
+and warns when they are beyond 90% of the cut-off distance and generates
+an error when they are beyond the cut-off distance.
+
+:issue:`4051`
+
 Core spin-up code is removed
 """"""""""""""""""""""""""""""""""""""""""""""""""
 

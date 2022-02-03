@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1734,6 +1734,99 @@ static void set_verlet_buffer(const gmx_mtop_t*    mtop,
     }
 }
 
+// Computes and returns that largest distance between non-perturbed excluded atom pairs
+static real maxNonPerturbedExclusionDistance(const gmx_mtop_t&              mtop,
+                                             const bool                     useFep,
+                                             const PbcType                  pbcType,
+                                             gmx::ArrayRef<const gmx::RVec> x,
+                                             const matrix                   box)
+{
+    t_pbc pbc;
+
+    set_pbc(&pbc, pbcType, box);
+
+    real dx2Max = 0;
+
+    int moleculeOffset = 0;
+    for (const auto& mb : mtop.molblock)
+    {
+        const gmx::ListOfLists<int>& excls = mtop.moltype[mb.type].excls;
+        const t_atoms&               atoms = mtop.moltype[mb.type].atoms;
+        GMX_RELEASE_ASSERT(gmx::ssize(excls) == atoms.nr,
+                           "There should be one exclusion list per atom");
+
+        for (int mol = 0; mol < mb.nmol; mol++)
+        {
+            for (int iAtom = 0; iAtom < atoms.nr; iAtom++)
+            {
+                if (useFep && PERTURBED(atoms.atom[iAtom]))
+                {
+                    // This atom is perturbed, so all its exclusions are perturbed
+                    continue;
+                }
+
+                const auto& jAtoms = excls[iAtom];
+                for (int jAtom : jAtoms)
+                {
+                    if (jAtom != iAtom && !(useFep && PERTURBED(atoms.atom[jAtom])))
+                    {
+                        rvec dx;
+
+                        pbc_dx(&pbc, x[moleculeOffset + iAtom], x[moleculeOffset + jAtom], dx);
+                        dx2Max = std::max(dx2Max, norm2(dx));
+                    }
+                }
+            }
+
+            moleculeOffset += atoms.nr;
+        }
+    }
+
+    return std::sqrt(dx2Max);
+}
+
+// Computes and logs the maximum exclusion distance. Checks whether (non-perturbed) excluded
+// atom pairs are close to the cut-off distance and if so, generates a warning/error
+static void checkExclusionDistances(const gmx_mtop_t&              mtop,
+                                    const t_inputrec&              ir,
+                                    gmx::ArrayRef<const gmx::RVec> x,
+                                    const matrix                   box,
+                                    const gmx::MDLogger&           logger,
+                                    warninp*                       wi)
+{
+    // Check the maximum distance for (non-perturbed) excluded pairs here,
+    // as it should not be longer than the cut-off distance, but we can't
+    // easily ensure that during the run.
+    const bool useFep               = (ir.efep != FreeEnergyPerturbationType::No);
+    const real maxExclusionDistance = maxNonPerturbedExclusionDistance(mtop, useFep, ir.pbcType, x, box);
+
+    const std::string distanceString =
+            gmx::formatString("The largest distance between%s excluded atoms is %.3f nm",
+                              useFep ? " non-perturbed" : "",
+                              maxExclusionDistance);
+
+    GMX_LOG(logger.info).asParagraph().appendText(distanceString);
+
+    const real cutoffDistance = std::max(ir.rvdw, ir.rcoulomb);
+    if (maxExclusionDistance >= cutoffDistance)
+    {
+        std::string text = gmx::formatString(
+                "%s, which is larger than the cut-off distance. This will "
+                "lead to missing long-range corrections in the forces and energies.",
+                distanceString.c_str());
+        warning_error(wi, text.c_str());
+    }
+    else if (maxExclusionDistance > 0.9_real * cutoffDistance)
+    {
+        std::string text = gmx::formatString(
+                "%s, which is larger than 90%% of the cut-off distance. "
+                "When excluded pairs go beyond the cut-off distance, this leads to missing "
+                "long-range corrections in the forces and energies.",
+                distanceString.c_str());
+        warning(wi, text.c_str());
+    }
+}
+
 int gmx_grompp(int argc, char* argv[])
 {
     const char* desc[] = {
@@ -2224,6 +2317,12 @@ int gmx_grompp(int argc, char* argv[])
 
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
+
+    if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    {
+        // We may have exclusion forces beyond the cut-off distance.
+        checkExclusionDistances(sys, *ir, state.x, state.box, logger, wi);
+    }
 
     if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0)
     {
