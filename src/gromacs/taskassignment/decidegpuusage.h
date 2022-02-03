@@ -314,11 +314,15 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
  * which rely on it is made during task assignment / simulationWorkload initialization.
  *
  * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
+ * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
  */
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  bool                           haveMts,
+                                                  bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.

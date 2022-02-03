@@ -765,6 +765,8 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
 }
 
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  bool                           haveMts,
+                                                  bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
     const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
@@ -783,12 +785,30 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                         "disabling direct GPU communication.");
     }
 
-    // Thread-MPI case on by deafult, can be disabled with env var.
-    bool canUseDirectGpuCommWithThreadMpi = (GMX_THREAD_MPI && GMX_GPU_CUDA && !disableDirectGpuComm);
+    // Now check those flags that may cause, from the user perspective, an unexpected
+    // fallback to CPU halo, and report accordingly
+    gmx::MessageStringCollector errorReasons;
+    errorReasons.startContext("GPU direct communication can not be activated because:");
+    errorReasons.appendIf(haveMts, "MTS is not supported.");
+    errorReasons.appendIf(haveSwapCoords, "Swap-coords is not supported.");
+    errorReasons.finishContext();
+
+    if (!errorReasons.isEmpty())
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText(errorReasons.toString());
+    }
+
+    bool runUsesCompatibleFeatures = errorReasons.isEmpty();
+
+    bool runAndGpuSupportDirectGpuComm =
+            (runUsesCompatibleFeatures && !disableDirectGpuComm && GMX_GPU_CUDA);
+
+    // Thread-MPI case on by default, can be disabled with env var.
+    bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);
     // GPU-aware MPI case off by default, can be enabled with dev flag
     // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
-    bool canUseDirectGpuCommWithMpi = (GMX_LIB_MPI && GMX_GPU_CUDA && devFlags.canUseCudaAwareMpi
-                                       && enableDirectGpuComm && !disableDirectGpuComm);
+    bool canUseDirectGpuCommWithMpi = (runAndGpuSupportDirectGpuComm && GMX_LIB_MPI
+                                       && devFlags.canUseCudaAwareMpi && enableDirectGpuComm);
 
     return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
 }
