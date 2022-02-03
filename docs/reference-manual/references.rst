@@ -2647,13 +2647,22 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
    </div>
 
-   </div>
 
    <div id="refSpoel2020">
 
 .. _refSpoel2020:
    
 :sup:`190` D. van der Spoel, H. Henschel, P. J. van Maaren, M. M. Ghahremanpour , and L. T. Costa, "A potential for molecular simulation of compounds with linear moieties", *J. Chem. Phys.*, **153** 084503 (2020).
+
+.. raw:: html
+
+   </div>
+
+   <div id="refTuckerman92">
+
+.. _refTuckerman92:
+
+:sup:`191` M. Tuckerman, B. J. Berne, and G. J. Martyna, "Reversible multiple time scale molecular dynamics", *J. Chem. Phys.*, **97** 1990 (1992).
 
 .. raw:: html
 
