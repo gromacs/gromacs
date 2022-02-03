@@ -32,6 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_CONTRIBUTORS_H
+#define GMX_CONTRIBUTORS_H
+
 /*! \internal \file
  * \brief
  * Contributor information from the build system.
@@ -41,28 +44,30 @@
 #include <string>
 #include <vector>
 
-namespace
+
+namespace gmx
 {
 
-const std::vector<std::string> currentContributors
+inline const std::vector<std::string> currentContributors
 {
 @GMX_CURRENT_CONTRIBUTORS@
 };
 
-const std::vector<std::string> previousContributors
+inline const std::vector<std::string> previousContributors
 {
 @GMX_PREVIOUS_CONTRIBUTORS@
 };
 
-const std::vector<std::string> currentProjectLeaders
+inline const std::vector<std::string> currentProjectLeaders
 {
 @GMX_CURRENT_PROJECT_LEADERS@
 };
 
-const std::string copyrightText
+inline const std::string copyrightText
 {
     "Copyright 1991-@PROJECT_VERSION_MAJOR@ The GROMACS Authors."
 };
 
-} // namespace anonymous
+} // namespace gmx
 
+#endif // GMX_CONTRIBUTORS_H

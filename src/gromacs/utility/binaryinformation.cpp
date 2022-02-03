@@ -174,7 +174,7 @@ void writeVectorAsSingleLine(gmx::TextWriter*                writer,
 
 void printCopyright(gmx::TextWriter* writer)
 {
-    writer->writeLine(copyrightText);
+    writer->writeLine(gmx::copyrightText);
     if (!GMX_FAHCORE)
     {
         // Folding At Home has different licence to allow digital
@@ -187,9 +187,10 @@ void printCopyright(gmx::TextWriter* writer)
     }
     writer->ensureEmptyLine();
 
-    writeVectorAsColumns(writer, "Current GROMACS contributors:", currentContributors);
-    writeVectorAsColumns(writer, "Previous GROMACS contributors:", previousContributors);
-    writeVectorAsSingleLine(writer, "Coordinated by the GROMACS project leaders:", currentProjectLeaders);
+    writeVectorAsColumns(writer, "Current GROMACS contributors:", gmx::currentContributors);
+    writeVectorAsColumns(writer, "Previous GROMACS contributors:", gmx::previousContributors);
+    writeVectorAsSingleLine(
+            writer, "Coordinated by the GROMACS project leaders:", gmx::currentProjectLeaders);
 }
 
 //! Construct a string that describes the library that provides CPU FFT support to this build
