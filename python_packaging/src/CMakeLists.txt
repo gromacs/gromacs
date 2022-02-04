@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ if(POLICY CMP0074) #3.12
 endif()
 
 find_package(Python3 3.7 COMPONENTS Interpreter Development)
-find_package(pybind11 2.6 CONFIG)
+find_package(pybind11 2.6 QUIET CONFIG)
 # If we are not running through setup.py, we may need to look for the pybind11 headers.
 if (NOT pybind11_FOUND)
     execute_process(
@@ -92,8 +92,10 @@ if (NOT pybind11_FOUND)
         "${Python3_EXECUTABLE}" -c
         "import pybind11; print(pybind11.get_cmake_dir())"
         OUTPUT_VARIABLE _tmp_dir
-        OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
     list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+    # The following should only run once, and if it runs more often than that, we would want to
+    # know about it. So we don't use `QUIET` here.
     find_package(pybind11 2.6 CONFIG)
 endif ()
 if (NOT pybind11_FOUND)
@@ -156,6 +158,12 @@ pybind11_add_module(_gmxapi
                     gmxapi/pysystem.cpp
                     )
 
+if (NOT DEFINED gmxapi_VERSION)
+    get_target_property(gmxapi_VERSION Gromacs::gmxapi VERSION)
+endif ()
+if (NOT DEFINED gmxapi_VERSION)
+    message(FATAL_ERROR "gmxapi library version not detected.")
+endif ()
 if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
     target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
 else()
@@ -174,9 +182,17 @@ set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 if(GMXAPI_MASTER_PROJECT)
     # TODO: This requirement is probably overly restrictive.
     find_package(GROMACS 2021 REQUIRED
-                 NAMES gromacs gromacs_mpi
+                 NAMES gromacs gromacs_mpi gromacs_d
                  HINTS "$ENV{GROMACS_DIR}"
                  )
+    if (NOT DEFINED GROMACS_IS_DOUBLE)
+        message(AUTHOR_WARNING "GROMACS_IS_DOUBLE undefined.")
+    endif ()
+else()
+    if (NOT DEFINED GMX_DOUBLE)
+        message(AUTHOR_WARNING "GMX_DOUBLE undefined.")
+    endif ()
+    set(GROMACS_IS_DOUBLE ${GMX_DOUBLE})
 endif()
 
 # Get details of GROMACS installation needed by the Python package at run time.
@@ -212,10 +228,16 @@ endif ()
 if (NOT _gmx_bindir OR NOT _gmx_executable)
     message(FATAL_ERROR "Could not get path for gmx wrapper binary.")
 endif ()
+if (GROMACS_IS_DOUBLE)
+    set(_gmx_double "true")
+else()
+    set(_gmx_double "false")
+endif()
 configure_file(gmxapi/gmxconfig.json.in gmxapi/gmxconfig.json)
 unset(_gmx_executable)
 unset(_gmx_bindir)
 unset(_gmx_mpi_type)
+unset(_gmx_double)
 
 if (GMXAPI_MASTER_PROJECT)
     set_target_properties(_gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)

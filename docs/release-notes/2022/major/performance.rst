@@ -58,10 +58,10 @@ up to a factor of 3.
 PME-PP GPU Direct Communication Pipelining
 """"""""""""""""""""""""""""""""""""""""""
 
-For multi-GPU runs with direct PME-PP GPU comunication enabled, the
+For multi-GPU runs with direct PME-PP GPU communication enabled, the
 PME rank can now pipeline the coordinate transfers with computation in
 the PME Spread and Spline kernel (where the coordinates are
-consumed). The data from each transfer is handled seperately, allowing
+consumed). The data from each transfer is handled separately, allowing
 computation and communication to be overlapped. This is expected to
 have most benefit on systems where hardware communication interfaces
 are shared between multiple GPUs, e.g. PCIe within multi-GPU servers
@@ -75,7 +75,7 @@ Domain decomposition with single MPI rank
 When running with a single MPI rank with PME and without GPU, mdrun
 will now use the domain decomposition machinery to reorder particles.
 This can improve performance, especially for large systems. This
-behavior can be controlled with the enviroment variable
+behavior can be controlled with the environment variable
 GMX_DD_SINGLE_RANK.
 
        

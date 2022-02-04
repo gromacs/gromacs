@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -108,53 +108,8 @@ Note: This module overly specifies the API. As we figure out the relationships.
 
 import typing
 from abc import ABC, abstractmethod
-import collections
+import collections.abc
 from typing import Type, Callable
-
-
-class EnsembleDataSource(ABC):
-    """A single source of data with ensemble data flow annotations.
-
-    Note that data sources may be Futures.
-
-    Attributes:
-        dtype (type): The underlying data type provided by this source.
-        source: object or Future of type *dtype*.
-        width: ensemble width of this data source handle.
-
-    ..  todo:: Remove
-        This class should be subsumed into the core gmxapi data model. It is
-        currently necessary for some type checking, but will probably disappear
-        in future versions. See https://gitlab.com/gromacs/gromacs/-/issues/3137
-    """
-
-    def __init__(self, source=None, width=1, dtype=None):
-        self.source = source
-        self.width = width
-        self.dtype = dtype
-
-    @abstractmethod
-    def member(self, member: int):
-        """Extract a single ensemble member from the ensemble data source."""
-        return self.source[member]
-
-    @abstractmethod
-    def reset(self):
-        """Reset the completion status of this data source.
-
-        Deprecated. This is a workaround until the data subscription model is
-        improved. We need to be able to fingerprint data sources robustly, and
-        to acquire operation factories from operation handles. In other words,
-        a Future will need both to convey its unique recreatable identity as
-        well as to be able to rebind to its subscriber(s).
-
-        Used internally to allow graph edges to be reused without rebinding
-        operation inputs.
-        """
-        protocols = ('reset', '_reset')
-        for protocol in protocols:
-            if hasattr(self.source, protocol):
-                getattr(self.source, protocol)()
 
 
 class NDArray(collections.abc.Sequence, ABC):
@@ -225,7 +180,12 @@ class Future(Resource):
     def result(self) -> typing.Any:
         ...
 
-    # TODO: abstractmethod(subscribe)
+    @classmethod
+    def __subclasshook__(cls, C):
+        if cls is Future:
+            if any("result" in B.__dict__ and callable(B.result) for B in C.__mro__):
+                return True
+        return NotImplemented
 
 
 class MutableResourceSubscriber(ABC):

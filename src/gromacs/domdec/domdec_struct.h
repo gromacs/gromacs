@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -239,7 +240,7 @@ struct gmx_domdec_t
     std::unique_ptr<gmx::LocalTopologyChecker> localTopologyChecker;
 
     /* gmx_pme_recv_f buffer */
-    std::vector<gmx::RVec> pmeForceReceiveBuffer;
+    gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
 
     /* GPU halo exchange objects: this structure supports a vector of pulses for each dimension */
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];

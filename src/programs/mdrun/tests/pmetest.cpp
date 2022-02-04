@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team.
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -269,11 +269,15 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
-        constexpr bool gpuBuildOnlySupportsMixedModePme =
-                (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
+        constexpr bool sc_gpuBuildSyclDpcpp = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
         messages.appendIf(
-                commandLineTargetsPmeFftOnGpu && gpuBuildOnlySupportsMixedModePme,
+                commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclDpcpp,
                 "it targets GPU execution of FFT work, which is not supported with DPC++");
+        constexpr bool sc_gpuBuildSyclHipsyclNotAmd =
+                (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclHipsyclNotAmd,
+                          "it targets GPU execution of FFT work, which is only supported for AMD "
+                          "targets when using hipSYCL");
 
         std::string errorMessage;
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);

@@ -50,13 +50,13 @@ External material
 * |Gromacs| `tutorial for membrane protein simulations
   <http://www.mdtutorials.com/gmx/membrane_protein/index.html>`__ - designed to demonstrate what sorts of
   questions and problems occur when simulating proteins that are embedded within a lipid bilayer.
-* `Combining the OPLS-AA forcefield with the Berger lipids <http://www.pomeslab.com/files/lipidCombinationRules.pdf>`_
+* `Combining the OPLS-AA forcefield with the Berger lipids <http://pomes.biochemistry.utoronto.ca/files/lipidCombinationRules.pdf>`_
   A detailed description of the motivation, method, and testing.
 
 * Several Topologies for membrane proteins with different force fields gaff, charmm berger
   Shirley W. I. Siu, Robert Vacha, Pavel Jungwirth, Rainer A. Böckmann: Biomolecular simulations of membranes:
   `Physical properties from different force fields <https://doi.org/10.1063/1.2897760>`_.
-* `Lipidbook <https://lipidbook.bioch.ox.ac.uk/>`_ is a public repository for force-field parameters of lipids,
+* `Lipidbook <https://www.lipidbook.org/>`_ is a public repository for force-field parameters of lipids,
   detergents and other molecules that are used in
   the simulation of membranes and membrane proteins. It is described in: J. Domański, P. Stansfeld, M.S.P. Sansom,
   and O. Beckstein. J. Membrane Biol. 236 (2010), 255—258. `doi:10.1007/s00232-010-9296-8 <http://dx.doi.org/10.1007/s00232-010-9296-8>`_.
@@ -197,7 +197,7 @@ Andrea Minoia's tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modeling Carbon Nanotubes with |Gromacs| (also archived
-as http://www.webcitation.org/66u2xJJ3O) contains
+as http://chembytes.wikidot.com/grocnt) contains
 everything to set up simple simulations of a CNT using OPLS-AA
 parameters. Structures of simple CNTs can
 be easily generated e.g. by `buildCstruct`_ (Python script that also adds

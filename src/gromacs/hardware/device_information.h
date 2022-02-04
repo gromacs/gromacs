@@ -2,7 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team.
+ * Copyright (c) 2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +98,8 @@ enum class DeviceStatus : int
      * See \c GMX_CUDA_TARGET_SM and \c GMX_CUDA_TARGET_COMPUTE CMake variables.
      */
     DeviceNotTargeted,
+    //! \brief LevelZero backend is known to cause errors with oneAPI 2022.0.1
+    IncompatibleLevelZeroAndOneApi2022,
     //! Enumeration size
     Count
 };
@@ -123,6 +126,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "non-functional",
     "unavailable",
     "not in set of targeted devices",
+    "incompatible (Level Zero backend is not stable with oneAPI 2022.0)", // Issue #4354
 };
 
 //! Device vendors

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,11 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm                comm,
-                         int                     pmeRank,
-                         std::vector<gmx::RVec>* pmeCpuForceBuffer,
-                         const DeviceContext&    deviceContext,
-                         const DeviceStream&     deviceStream) :
+PmePpCommGpu::Impl::Impl(MPI_Comm                    comm,
+                         int                         pmeRank,
+                         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+                         const DeviceContext&        deviceContext,
+                         const DeviceStream&         deviceStream) :
     deviceContext_(deviceContext),
     pmePpCommStream_(deviceStream),
     comm_(comm),
@@ -71,6 +71,7 @@ PmePpCommGpu::Impl::Impl(MPI_Comm                comm,
     pmeCpuForceBuffer_(pmeCpuForceBuffer),
     d_pmeForces_(nullptr)
 {
+    stageLibMpiGpuCpuComm_ = (getenv("GMX_DISABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") == nullptr);
 }
 
 PmePpCommGpu::Impl::~Impl() = default;
@@ -133,7 +134,25 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu
 void PmePpCommGpu::Impl::receiveForceFromPmeCudaMpi(float3* pmeForcePtr, int recvSize)
 {
 #if GMX_MPI
-    MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+    if (!stageLibMpiGpuCpuComm_)
+    {
+        MPI_Recv(pmeForcePtr, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+    }
+    else
+    {
+        // Receive data from remote GPU in memory of local GPU
+        MPI_Recv(d_pmeForces_, recvSize * DIM, MPI_FLOAT, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
+        if (pmeForcePtr != asFloat3(d_pmeForces_)) // destination is CPU memory, so finalize transfer with local D2H
+        {
+            copyFromDeviceBuffer(reinterpret_cast<RVec*>(pmeForcePtr),
+                                 &d_pmeForces_,
+                                 0,
+                                 recvSize,
+                                 pmePpCommStream_,
+                                 GpuApiCallBehavior::Sync,
+                                 nullptr);
+        }
+    }
 #else
     GMX_UNUSED_VALUE(pmeForcePtr);
     GMX_UNUSED_VALUE(recvSize);
@@ -223,11 +242,11 @@ GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     }
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm                comm,
-                           int                     pmeRank,
-                           std::vector<gmx::RVec>* pmeCpuForceBuffer,
-                           const DeviceContext&    deviceContext,
-                           const DeviceStream&     deviceStream) :
+PmePpCommGpu::PmePpCommGpu(MPI_Comm                    comm,
+                           int                         pmeRank,
+                           gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+                           const DeviceContext&        deviceContext,
+                           const DeviceStream&         deviceStream) :
     impl_(new Impl(comm, pmeRank, pmeCpuForceBuffer, deviceContext, deviceStream))
 {
 }

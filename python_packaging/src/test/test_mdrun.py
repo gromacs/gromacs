@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,12 +48,14 @@ import pytest
 
 import gmxapi as gmx
 
-
 # Configure the `logging` module before proceeding any further.
+from gmxapi.utility import join_path
+
 gmx.logger.setLevel(logging.WARNING)
 
 try:
     from mpi4py import MPI
+
     rank_number = MPI.COMM_WORLD.Get_rank()
     comm_size = MPI.COMM_WORLD.Get_size()
 except ImportError:
@@ -64,8 +66,9 @@ except ImportError:
 else:
     rank_tag = 'rank{}:'.format(rank_number)
 
+
 # Use this formatter to improve the caplog log records.
-#formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
+# formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
 
 # For additional console logging, create and attach a stream handler.
 # For example:
@@ -115,8 +118,8 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
             else:
                 assert comm_size > 1
                 output = md.output.trajectory.result()[rank_number]
-            assert(str(output).endswith(traj_name))
-            assert(os.path.exists(output))
+            assert str(output).endswith(traj_name)
+            assert os.path.exists(output)
             if comm_size > 1:
                 assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
@@ -136,15 +139,15 @@ def test_mdrun_parallel_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     tpr = gmx.read_tpr(spc_water_box)
     output_files = [f'traj{i}.trr' for i in range(comm_size)]
     # Take care not to reference the same dictionary object.
-    runtime_args = list(mdrun_kwargs.copy() for i in range(comm_size))
+    runtime_args = list(mdrun_kwargs.copy() for _ in range(comm_size))
     for i, name in enumerate(output_files):
         runtime_args[i].update({'-o': name})
     md = gmx.mdrun(tpr, runtime_args=runtime_args)
     md.run()
     logging.getLogger().debug(f'testing rank {rank_number} with comm size {comm_size}.')
     output = md.output.trajectory.result()[rank_number]
-    assert(str(output).endswith(f'traj{rank_number}.trr'))
-    assert(os.path.exists(output))
+    assert str(output).endswith(f'traj{rank_number}.trr')
+    assert os.path.exists(output)
     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
     tpr = gmx.read_tpr([spc_water_box] * comm_size)
@@ -157,48 +160,56 @@ def test_mdrun_parallel_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     logging.getLogger().debug(f'testing rank {rank_number} with comm size {comm_size}.')
     assert comm_size > 1
     output = md.output.trajectory.result()[rank_number]
-    assert(str(output).endswith(f'traj{rank_number}.trr'))
-    assert(os.path.exists(output))
+    assert str(output).endswith(f'traj{rank_number}.trr')
+    assert os.path.exists(output)
     assert md.output.trajectory.result()[0] != md.output.trajectory.result()[1]
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs):
+def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
     assert gmx.version.has_feature('mdrun_runtime_args')
+    assert gmx.version.has_feature('container_futures')
+    assert gmx.version.has_feature('mdrun_checkpoint_output')
 
-    tpr = gmx.read_tpr(spc_water_box)
-    input1 = gmx.modify_input(tpr,
-                                 parameters={
-                                     'nsteps': 2,
-                                     'nstxout': 2
-                                 })
-    runtime_args = {
-        '-cpo': 'continuation.cpt'
-    }
-    runtime_args.update(mdrun_kwargs)
-    md1 = gmx.mdrun(input1, runtime_args=runtime_args)
-    cpt_in = os.path.join(md1.output._work_dir.result(), 'continuation.cpt')
-    if rank_number == 0:
-        assert os.path.exists(cpt_in)
-    input2 = gmx.modify_input(tpr,
-                                 parameters={
-                                     'nsteps': 4,
-                                     'nstxout': 2
-                                 })
-    runtime_args = {
-        '-cpi': cpt_in,
-        '-cpo': 'state.cpt',
-        '-noappend': None
-    }
-    runtime_args.update(mdrun_kwargs)
-    md2 = gmx.mdrun(input2,
-                    runtime_args=runtime_args
-                    )
-    md2.run()
-    # By inspection of the output, we can see that the second trajectory has continued
-    # from the checkpoint, but we cannot programmatically confirm it at this point.
-    # TODO: Check more rigorously when we can read trajectory files.
+    with caplog.at_level(logging.DEBUG):
+        with caplog.at_level(logging.WARNING, 'gmxapi'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
+                caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+            tpr = gmx.read_tpr(spc_water_box)
+            parameters = dict({
+                'nsteps': 2,
+                'nstxout': 2
+            })
+            input1 = gmx.modify_input(
+                tpr,
+                parameters=parameters)
+            runtime_args = {
+                '-cpo': 'continuation.cpt'
+            }
+            runtime_args.update(mdrun_kwargs)
+            md1 = gmx.mdrun(input1, runtime_args=runtime_args)
+
+            input2 = gmx.modify_input(tpr,
+                                      parameters={
+                                          'nsteps': 4,
+                                          'nstxout': 2
+                                      })
+            runtime_args = {
+                '-cpi': md1.output.checkpoint,
+                '-cpo': 'state.cpt',
+                '-noappend': None
+            }
+            runtime_args.update(mdrun_kwargs)
+            md2 = gmx.mdrun(input2,
+                            runtime_args=runtime_args
+                            )
+            md2.run()
+            # By inspection of the output, we can see that the second trajectory has continued
+            # from the checkpoint, but we cannot programmatically confirm it at this point.
+            # TODO: Check more rigorously when we can read trajectory files.
 
 
 @pytest.mark.withmpi_only
@@ -210,7 +221,6 @@ def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
                 caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
                 caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
                 caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
-
             tpr_filename = spc_water_box
             ensemble_width = 2
             simulation_input = gmx.read_tpr([tpr_filename] * ensemble_width)
@@ -251,7 +261,6 @@ def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
 @pytest.mark.usefixtures('cleandir')
 def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
-
         simulation_input = gmx.read_tpr(spc_water_box)
         modified_input = gmx.modify_input(input=simulation_input, parameters={'nsteps': 4})
         md = gmx.mdrun(input=modified_input, runtime_args=mdrun_kwargs)

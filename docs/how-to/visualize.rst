@@ -36,7 +36,7 @@ heuristics do not always match your topology.
 .. _Rasmol: http://www.umass.edu/microbio/rasmol/index2.htm
 .. _Protein Explorer: http://www.umass.edu/microbio/rasmol/
 .. _Chimera: http://www.rbvi.ucsf.edu/chimera/
-.. _Molscript: http://www.avatar.se/molscript/
+.. _Molscript: https://github.com/pekrau/MolScript
 
 
 Extracting Trajectory Information

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -314,11 +314,15 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
  * which rely on it is made during task assignment / simulationWorkload initialization.
  *
  * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
+ * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
  */
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  bool                           haveMts,
+                                                  bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.
@@ -329,15 +333,17 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
  * \param[in]  useModularSimulator          Whether modularsimulator is in use.
  * \param[in]  doRerun                      Whether this is a rerun.
  * \param[in]  haveEnergyMinimization       Whether energy minimization is in use.
+ * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether halo exchange can be run on GPU.
  */
-bool decideWhetherToUseGpuForHalo(bool havePPDomainDecomposition,
-                                  bool useGpuForNonbonded,
-                                  bool canUseDirectGpuComm,
-                                  bool useModularSimulator,
-                                  bool doRerun,
-                                  bool haveEnergyMinimization);
+bool decideWhetherToUseGpuForHalo(bool                 havePPDomainDecomposition,
+                                  bool                 useGpuForNonbonded,
+                                  bool                 canUseDirectGpuComm,
+                                  bool                 useModularSimulator,
+                                  bool                 doRerun,
+                                  bool                 haveEnergyMinimization,
+                                  const gmx::MDLogger& mdlog);
 
 } // namespace gmx
 

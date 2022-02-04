@@ -46,7 +46,7 @@ when
   like a slanted cube after the simulation, or
 * crazy bonds all across the simulation cell appear.
 
-This is not a problem or error that is occuring, it is what you should expect.
+This is not a problem or error that is occurring, it is what you should expect.
 
 The existence of PBC means that any atom that leaves a simulation box by, say,
 the right-hand face, then enters the simulation box by the left-hand face. In
@@ -176,15 +176,15 @@ Some hints on practices that generally not a good idea to use:
 Further reading
 ^^^^^^^^^^^^^^^
 
-#. `Cheng, A. & Merz, K. M. Application of the nosé- hoover chain algorithm to
+#. Cheng, A. & Merz, K. M. Application of the Nosé-Hoover chain algorithm to
    the study of protein dynamics. *J. Phys. Chem.* **100** (5), 1927–1937
-   (1996). <http://pubs.acs.org/doi/abs/10.1021/jp951968y>`__
-#. `Mor, A., Ziv, G. & Levy, Y. Simulations of proteins with inhomogeneous
+   (`1996 <http://pubs.acs.org/doi/abs/10.1021/jp951968y>`_).
+#. Mor, A., Ziv, G. & Levy, Y. Simulations of proteins with inhomogeneous
    degrees of freedom: the effect of thermostats. *J. Comput. Chem.* **29**
-   (12), 1992–1998 (2008). <http://dx.doi.org/10.1002/jcc.20951>`__
-#. `Lingenheil, M., Denschlag, R., Reichold, R. & Tavan, P. The
+   (12), 1992–1998 (`2008 <http://dx.doi.org/10.1002/jcc.20951>`_).
+#. Lingenheil, M., Denschlag, R., Reichold, R. & Tavan, P. The
    "hot-solvent/cold-solute" problem revisited. *J. Chem. Theory Comput.* **4**
-   (8), 1293–1306 (2008). <http://pubs.acs.org/doi/abs/10.1021/ct8000365>`__
+   (8), 1293–1306 (`2008 <http://pubs.acs.org/doi/abs/10.1021/ct8000365>`__).
 
 Energy conservation
 -------------------
@@ -196,11 +196,12 @@ case:
 
 * Cut-off treatment and/or long-range electrostatics treatment (see Van Der
   Spoel, D. & van Maaren, P. J. The origin of layer structure artifacts in
-  simulations of liquid water. *J. Chem. Theor. Comp.* **2**, 1–11 (2006).)
+  simulations of liquid water. *J. Chem. Theor. Comp.* **2**, 1–11
+  (`2006 <https://doi.org/10.1021/ct0502256>`_).)
 * Treatment of pair lists,
 * Constraint algorithms (see e.g. Hess, B. P-LINCS: A parallel linear constraint
   solver for molecular simulation. *J. Chem. Theor. Comp.* **4**, 116–122
-  (`2008 <http://dx.doi.org/10.1021/ct700116n>`_).).
+  (`2008 <https://doi.org/10.1021/ct700200b>`__).).
 * The integration timestep.
 * :ref:`Temperature coupling <gmx-thermostats>` and :ref:`pressure coupling <gmx-pressure>`.
 * Round-off error (in particular in single precision), for example subtracting
@@ -379,19 +380,22 @@ for anybody wishing to use |Gromacs| and not waste time.
 Books
 ^^^^^
 
-There a several text books around.
+There are several text books around.
 
 Good introductory books are:
-* A. Leach (2001) Molecular Modeling: Principles and Applications.
-* T. Schlick (2002) Molecular Modeling and Simulation
+
+* \A. Leach (2001) Molecular Modeling: Principles and Applications.
+* \T. Schlick (2002) Molecular Modeling and Simulation
 
 With programming background:
-* D. Rapaport (1996) The Art of Molecular Dynamics Simulation
-* D. Frenkel, B. Smith (2001) Understanding Molecular Simulation
+
+* \D. Rapaport (1996) The Art of Molecular Dynamics Simulation
+* \D. Frenkel, B. Smith (2001) Understanding Molecular Simulation
 
 More from the physicist's view:
-* M. Allen, D. Tildesley (1989) Computer simulation of liquids
-* H.J.C. Berendsen (2007) Simulating the Physical World: Hierarchical Modeling from Quantum Mechanics to Fluid Dynamics
+
+* \M. Allen, D. Tildesley (1989) Computer simulation of liquids
+* \H.J.C. Berendsen (2007) Simulating the Physical World: Hierarchical Modeling from Quantum Mechanics to Fluid Dynamics
 
 Types / Ensembles
 ^^^^^^^^^^^^^^^^^

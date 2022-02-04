@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021 by the GROMACS development team.
+# Copyright (c) 2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -337,7 +338,7 @@ function(gmx_find_simd_ibm_vsx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
     find_power_vsx_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
     gmx_find_flags(SIMD_IBM_VSX_C_FLAGS_RESULT SIMD_IBM_VSX_CXX_FLAGS_RESULT
         "#include<altivec.h>
-         int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
+         int main(){__vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_IBM_VSX_C_FLAGS SIMD_IBM_VSX_CXX_FLAGS
         "-mvsx" "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -563,7 +563,6 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
 void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
-                                        bool                 bNtOmpOptionSet,
                                         t_commrec*           cr,
                                         const gmx::MDLogger& mdlog)
 {
@@ -618,12 +617,9 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         if (nth_omp_max < nthreads_omp_mpi_ok_min || nth_omp_max > nthreads_omp_mpi_ok_max)
         {
             auto msg = gmx::formatString(
-                    "%sYour choice of number of MPI ranks and amount of resources results in using "
-                    "%d OpenMP "
-                    "threads per rank, which is most likely inefficient. The optimum is usually "
-                    "between %d and"
-                    " %d threads per rank.",
-                    bNtOmpOptionSet ? "Note: " : "",
+                    "Note: Your choice of number of MPI ranks and amount of resources results in "
+                    "using %d OpenMP threads per rank, which is most likely inefficient. "
+                    "The optimum is usually between %d and %d threads per rank.",
                     nth_omp_max,
                     nthreads_omp_mpi_ok_min,
                     nthreads_omp_mpi_ok_max);
@@ -632,7 +628,6 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         }
     }
 #else  // !GMX_OPENMP || ! GMX_MPI
-    GMX_UNUSED_VALUE(bNtOmpOptionSet);
     GMX_UNUSED_VALUE(willUsePhysicalGpu);
     GMX_UNUSED_VALUE(cr);
     GMX_UNUSED_VALUE(nthreads_omp_mpi_ok_max);

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, The GROMACS development team.
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1225,7 +1226,7 @@ std::string getCoolQuote()
         { "What is a Unix or Linux sysadmin's favourite hangout place? Foo Bar.", "Anonymous" },
         { "If you have any trouble sounding condescending, find a UNIX user to show you how it's "
           "done.",
-          "Scott Adams, Dibert Cartoonist" },
+          "Scott Adams, Dilbert Cartoonist" },
         { "There is no place like ~", "Anonymous" },
         { "Thou shalt not kill -9", "Anonymous" },
         { "printf(\"%d is the year of the linux desktop\", year+1);", "Anonymous" },

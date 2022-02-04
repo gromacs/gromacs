@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -262,8 +262,8 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
         {
             if (reinitGpuPmePpComms)
             {
-                std::vector<gmx::RVec>& buffer = cr->dd->pmeForceReceiveBuffer;
-                buffer.resize(n);
+                changePinningPolicy(&cr->dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
+                cr->dd->pmeForceReceiveBuffer.resize(n);
                 fr->pmePpCommGpu->reinit(n);
             }
 
@@ -555,8 +555,8 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
         gmx_pme_send_coeffs_coords_wait(cr->dd);
     }
 
-    const int               natoms = dd_numHomeAtoms(*cr->dd);
-    std::vector<gmx::RVec>& buffer = cr->dd->pmeForceReceiveBuffer;
+    const int                   natoms = dd_numHomeAtoms(*cr->dd);
+    gmx::HostVector<gmx::RVec>& buffer = cr->dd->pmeForceReceiveBuffer;
     buffer.resize(natoms);
 
     void* recvptr = reinterpret_cast<void*>(buffer.data());

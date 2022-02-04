@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -218,6 +218,7 @@ if (SPHINX_FOUND)
         reference-manual/special/free-energy-pmf.rst
         reference-manual/special/remove-fast-dgf.rst
         reference-manual/special/viscosity-calculation.rst
+        reference-manual/special/shearing.rst
         reference-manual/special/tabulated-interaction-functions.rst
         reference-manual/special/qmmm.rst
         reference-manual/special/vmd-imd.rst
@@ -405,6 +406,7 @@ if (SPHINX_FOUND)
         release-notes/2020/2020.4.rst
         release-notes/2020/2020.5.rst
         release-notes/2020/2020.6.rst
+        release-notes/2020/2020.7.rst
         release-notes/2020/major/highlights.rst
         release-notes/2020/major/features.rst
         release-notes/2020/major/performance.rst

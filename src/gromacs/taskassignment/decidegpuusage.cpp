@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +114,10 @@ const char* const g_specifyEverythingFormatString =
         ;
 
 // The conditions below must be in sync with modeTargetsFftOnGpus check in src/programs/mdrun/tests/pmetest.cpp
-constexpr bool sc_gpuBuildOnlySupportsMixedModePme = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
+constexpr bool sc_gpuBuildSyclDpcpp = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
+constexpr bool sc_gpuBuildSyclHipsyclNotAmd = //NOLINTNEXTLINE(misc-redundant-expression)
+        (GMX_GPU_SYCL != 0) && (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
+constexpr bool sc_gpuBuildOnlySupportsMixedModePme = sc_gpuBuildSyclDpcpp || sc_gpuBuildSyclHipsyclNotAmd;
 
 } // namespace
 
@@ -762,6 +765,8 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
 }
 
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
+                                                  bool                           haveMts,
+                                                  bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
     const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
@@ -780,25 +785,63 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                         "disabling direct GPU communication.");
     }
 
-    // Thread-MPI case on by deafult, can be disabled with env var.
-    bool canUseDirectGpuCommWithThreadMpi = (GMX_THREAD_MPI && GMX_GPU_CUDA && !disableDirectGpuComm);
+    // Now check those flags that may cause, from the user perspective, an unexpected
+    // fallback to CPU halo, and report accordingly
+    gmx::MessageStringCollector errorReasons;
+    errorReasons.startContext("GPU direct communication can not be activated because:");
+    errorReasons.appendIf(haveMts, "MTS is not supported.");
+    errorReasons.appendIf(haveSwapCoords, "Swap-coords is not supported.");
+    errorReasons.finishContext();
+
+    if (!errorReasons.isEmpty())
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText(errorReasons.toString());
+    }
+
+    bool runUsesCompatibleFeatures = errorReasons.isEmpty();
+
+    bool runAndGpuSupportDirectGpuComm =
+            (runUsesCompatibleFeatures && !disableDirectGpuComm && GMX_GPU_CUDA);
+
+    // Thread-MPI case on by default, can be disabled with env var.
+    bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);
     // GPU-aware MPI case off by default, can be enabled with dev flag
     // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
-    bool canUseDirectGpuCommWithMpi = (GMX_LIB_MPI && GMX_GPU_CUDA && devFlags.canUseCudaAwareMpi
-                                       && enableDirectGpuComm && !disableDirectGpuComm);
+    bool canUseDirectGpuCommWithMpi = (runAndGpuSupportDirectGpuComm && GMX_LIB_MPI
+                                       && devFlags.canUseCudaAwareMpi && enableDirectGpuComm);
 
     return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
 }
 
-bool decideWhetherToUseGpuForHalo(bool havePPDomainDecomposition,
-                                  bool useGpuForNonbonded,
-                                  bool canUseDirectGpuComm,
-                                  bool useModularSimulator,
-                                  bool doRerun,
-                                  bool haveEnergyMinimization)
+bool decideWhetherToUseGpuForHalo(bool                 havePPDomainDecomposition,
+                                  bool                 useGpuForNonbonded,
+                                  bool                 canUseDirectGpuComm,
+                                  bool                 useModularSimulator,
+                                  bool                 doRerun,
+                                  bool                 haveEnergyMinimization,
+                                  const gmx::MDLogger& mdlog)
 {
-    return canUseDirectGpuComm && havePPDomainDecomposition && useGpuForNonbonded
-           && !useModularSimulator && !doRerun && !haveEnergyMinimization;
+    if (!canUseDirectGpuComm || !havePPDomainDecomposition || !useGpuForNonbonded)
+    {
+        // return false without warning
+        return false;
+    }
+
+    // Now check those flags that may cause, from the user perspective, an unexpected
+    // fallback to CPU halo, and report accordingly
+    gmx::MessageStringCollector errorReasons;
+    errorReasons.startContext("GPU halo exchange will not be activated because:");
+    errorReasons.appendIf(useModularSimulator, "Modular simulator runs are not supported.");
+    errorReasons.appendIf(doRerun, "Re-runs are not supported.");
+    errorReasons.appendIf(haveEnergyMinimization, "Energy minimization is not supported.");
+    errorReasons.finishContext();
+
+    if (!errorReasons.isEmpty())
+    {
+        GMX_LOG(mdlog.warning).asParagraph().appendText(errorReasons.toString());
+    }
+
+    return errorReasons.isEmpty();
 }
 
 } // namespace gmx

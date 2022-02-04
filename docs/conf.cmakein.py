@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
-# Copyright (c) 2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -207,7 +207,7 @@ rst_epilog += """
 .. |gmx-source-package-http| replace:: As https https://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: https://ftp.gromacs.org/regressiontests/regressiontests-{regressiontest_version}.tar.gz
 .. _up-to-date installation instructions: https://manual.gromacs.org/documentation/current/install-guide/index.html
-.. _CUDA: http://www.nvidia.com/object/cuda_home_new.html
+.. _CUDA: https://developer.nvidia.com/cuda-zone
 .. _OpenCL: https://www.khronos.org/opencl/
 .. _SYCL: https://www.khronos.org/sycl/
 .. _Intel oneAPI DPC++: https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html

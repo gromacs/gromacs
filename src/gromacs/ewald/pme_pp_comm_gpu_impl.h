@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,11 @@ public:
      * \param[in] deviceContext     GPU context.
      * \param[in] deviceStream      GPU stream.
      */
-    Impl(MPI_Comm                comm,
-         int                     pmeRank,
-         std::vector<gmx::RVec>* pmeCpuForceBuffer,
-         const DeviceContext&    deviceContext,
-         const DeviceStream&     deviceStream);
+    Impl(MPI_Comm                    comm,
+         int                         pmeRank,
+         gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer,
+         const DeviceContext&        deviceContext,
+         const DeviceStream&         deviceStream);
     ~Impl();
 
     /*! \brief Perform steps required when buffer size changes
@@ -119,17 +119,19 @@ public:
     GpuEventSynchronizer* getForcesReadySynchronizer();
 
 private:
-    /*! \brief Pull force buffer directly from GPU memory on PME
-     * rank to either GPU or CPU memory on PP task using CUDA
-     * Memory copy. This method is used with Thread-MPI.
+    /*! \brief Receive buffer from GPU memory on PME rank to either
+     * GPU or CPU memory on PP rank. Data is pushed from PME force
+     * sender object using CUDA memory copy funtionality, and this
+     * method performs the necessary synchronization on that
+     * communication. This method is used with thread-MPI.
      * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
     void receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu);
 
-    /*! \brief Pull force buffer directly from GPU memory on PME
-     * rank to either GPU or CPU memory on PP task using CUDA-aware
-     * MPI. This method is used with process-MPI.
-     * \param[out] recvPtr CPU buffer to receive PME force data
+    /*! \brief Receive buffer from GPU memory on PME rank to either
+     * GPU or CPU memory on PP rank using CUDA-aware MPI. This method
+     * is used with process-MPI.
+     * \param[out] recvPtr CPU or GPU buffer to receive PME force data into
      * \param[in] recvSize Number of elements to receive
      */
     void receiveForceFromPmeCudaMpi(float3* recvPtr, int recvSize);
@@ -167,7 +169,7 @@ private:
     //! Rank of PME task
     int pmeRank_ = -1;
     //! Buffer for PME force on CPU
-    std::vector<gmx::RVec>* pmeCpuForceBuffer_;
+    gmx::HostVector<gmx::RVec>* pmeCpuForceBuffer_;
     //! Buffer for staging PME force on GPU
     DeviceBuffer<gmx::RVec> d_pmeForces_;
     //! number of atoms in PME force staging array
@@ -182,6 +184,16 @@ private:
     GpuEventSynchronizer* remotePmeForceSendEvent_;
     //! Flag to track when remote PP event has been recorded, ready for enqueueing
     volatile std::atomic<bool>* remotePmeForceSendEventRecorded_;
+    //! Whether GPU to CPU communication should staged through GPU
+    //! memory rather than performed directly, for lib-MPI. Staging is
+    //! expected to have significant benefits for systems with servers
+    //! with direct links between GPUs, because it allows the device
+    //! to host transfer to be split across multiple PCIe buses, thus
+    //! accessing more bandwidth. Direct communication may have
+    //! benefits on servers with only PCIe connectivity, and/or for
+    //! small atom counts where latency is more important than
+    //! bandwidth.
+    bool stageLibMpiGpuCpuComm_ = true;
 };
 
 } // namespace gmx

@@ -19,7 +19,7 @@ simple-build:
     - .variables:default
     - .use-ccache
     - .use-clang:base
-    - .rules:basic-push
+    - .rules:merge-requests
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-12
 

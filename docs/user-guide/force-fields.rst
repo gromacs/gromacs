@@ -33,10 +33,10 @@ Information concerning the force field can be found using the following informat
   antechamber package, which is also distributed separately. There are scripts
   available for converting AMBER systems (set up, for example, with GAFF) to
   |Gromacs| (`amb2gmx.pl <https://github.com/choderalab/mmtools/blob/master/converters/amb2gmx.pl>`__,
-  or `acpypi.py <https://github.com/choderalab/mmtools/blob/master/converters/acpypi.py>`_),
-  but they do require an AMBER installation to work.
+  or `ACPYPE <https://github.com/alanwilter/acpype>`_), but they do require 
+  `AmberTools <https://ambermd.org/AmberTools.php>`_ installation to work.
 
-Older GROMACS versions need a separate installation of the ffamber ports:
+Older |Gromacs| versions need a separate installation of the ffamber ports:
 
 * `Using AMBER Force Field in GROMACS <http://chemistry.csulb.edu/ffamber/>`__
   - known as the "ffamber ports," a number of AMBER force fields, complete with documentation.
@@ -107,7 +107,7 @@ for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are
 
 .. todo:: Add new force fields to the list
 
-.. _GROMOS: http://www.igc.ethz.ch/gromos/
+.. _GROMOS: https://www.igc.ethz.ch/gromos.html
 .. _reference manual: gmx-manual-parent-dir_
 
 

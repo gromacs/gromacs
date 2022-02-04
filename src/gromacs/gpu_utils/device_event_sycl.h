@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,11 @@ public:
         isMarked_ = true;
 #    else
         // Relies on SYCL_INTEL_enqueue_barrier
+#        if __SYCL_COMPILER_VERSION >= 20211123
+        events_ = { deviceStream.stream().ext_oneapi_submit_barrier() };
+#        else
         events_ = { deviceStream.stream().submit_barrier() };
+#        endif
 #    endif
     }
 
@@ -117,7 +121,11 @@ public:
 #    else
             GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
             // Relies on SYCL_INTEL_enqueue_barrier extensions
+#        if __SYCL_COMPILER_VERSION >= 20211123
+            deviceStream.stream().ext_oneapi_submit_barrier(events_);
+#        else
             deviceStream.stream().submit_barrier(events_);
+#        endif
 #    endif
         }
     }

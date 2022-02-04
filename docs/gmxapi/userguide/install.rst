@@ -75,7 +75,7 @@ Install the gmxapi Python package
 ::
 
     . /path/to/gromacs/bin/GMXRC
-    pip install gmxapi
+    pip install --no-cache-dir gmxapi
 
 .. seealso:: :ref:`installation`
 
@@ -279,6 +279,16 @@ Locate or install GROMACS
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You need a GROMACS installation that includes the gmxapi headers and library.
+
+.. warning:: gmxapi does not recognize multiple |Gromacs| installations to the same ``CMAKE_INSTALL_PREFIX``.
+
+    The Python package uses files installed to ``.../share/cmake/gmxapi/`` to configure its C++
+    component. These configuration files are overwritten when installing GROMACS to the same
+    `CMAKE_INSTALL_PREFIX <https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html>`__.
+    Overlapping GROMACS installations may occur when GROMACS is installed for multiple
+    configurations of MPI support and floating point precision.
+    (See :issue:`4334` and related issues.)
+
 If GROMACS 2020 or higher is already installed,
 *and* was configured with ``GMXAPI=ON`` at build time (the default),
 you can just source the :ref:`GMXRC <getting access to |Gromacs|>`
@@ -295,6 +305,9 @@ If you installed to a :file:`gromacs-gmxapi` directory in your home directory as
 above and you use the :command:`bash` shell, do::
 
     source $HOME/gromacs-gmxapi/bin/GMXRC
+
+If you are using a GROMACS installation that does not provide ``GMXRC``, see
+`gmxapi cmake hints`_ and additional CMake hints below.
 
 .. _gmxapi venv:
 
@@ -370,14 +383,24 @@ Install the latest version of gmxapi
 Fetch and install the latest official version of gmxapi from the Python Packaging Index::
 
     # Get the latest official release.
-    pip install gmxapi
+    pip install --no-cache-dir gmxapi
+
+.. note:: Use ``--no-cache-dir`` to force rebuild.
+
+    ``pip`` downloads a source distribution archive for gmxapi, then builds a
+    "wheel" package for your GROMACS installation.
+    This "wheel" normally gets cached, and will be used by any later attempt to
+    ``pip install gmxapi`` instead of rebuilding. This is not what you want,
+    if you upgrade GROMACS or if you want to install the Python package for a
+    different GROMACS configuration (e.g. double-precision or different MPI option.)
+    See also :issue:`4335`
 
 The `PyPI repository <https://pypi.org/project/gmxapi/#history>`_
 may include pre-release versions,
 but :command:`pip` will ignore them unless you use the ``--pre`` flag::
 
     # Get the latest version, including pre-release versions.
-    pip install --pre gmxapi
+    pip install --no-cache-dir --pre gmxapi
 
 If :command:`pip` does not find your GROMACS installation, use one of the following
 environment variables to provide a hint.
@@ -385,6 +408,8 @@ environment variables to provide a hint.
 The installer will also look for a ``CMAKE_ARGS`` environment variable. If found,
 The ``$CMAKE_ARGS`` string will be split into additional arguments that will be
 provided to CMake when building the *gmxapi* package.
+
+.. _gmxapi cmake hints:
 
 gmxapi_ROOT
 ~~~~~~~~~~~
@@ -395,11 +420,11 @@ environment variable.
 
 Example::
 
-    gmxapi_ROOT=/path/to/gromacs pip install gmxapi
+    gmxapi_ROOT=/path/to/gromacs pip install --no-cache-dir gmxapi
 
 Note that this is equivalent to providing the CMake variable definition::
 
-    CMAKE_ARGS="-Dgmxapi_ROOT=/path/to/gromacs" pip install gmxapi
+    CMAKE_ARGS="-Dgmxapi_ROOT=/path/to/gromacs" pip install --no-cache-dir gmxapi
 
 |Gromacs| CMake hints
 ~~~~~~~~~~~~~~~~~~~~~
@@ -412,8 +437,12 @@ CMake "hints" file by including a ``-C <initial-cache>`` option with your ``CMAK
 `command line option <https://cmake.org/cmake/help/latest/manual/cmake.1.html#options>`__
 for CMake.)
 
-In the following example, ``${PREFIX}`` is the path to the directory that holds the
+In the following example, ``${UNIQUE_PREFIX}`` is the path to the directory that holds the
 |Gromacs| ``bin``, ``lib``, ``share`` directories, *etc*.
+It is *unique* because GROMACS provides CMake support for only one build configuration at a time
+through ``.../share/cmake/gmxapi/``, even if there are multiple library configurations installed to
+the same location. See :issue:`4334`.
+
 ``${SUFFIX}`` is the suffix that distinguishes the
 particular build of GROMACS you want to target (refer to GROMACS installation
 instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``.
@@ -421,8 +450,8 @@ instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``
 You can export ``CMAKE_ARGS`` in your environment, or just provide it at the beginning
 of the ``pip install`` command line::
 
-    CMAKE_ARGS="-Dgmxapi_ROOT=${PREFIX} -C ${PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints.cmake" \
-        pip install gmxapi
+    CMAKE_ARGS="-Dgmxapi_ROOT=${UNIQUE_PREFIX} -C ${UNIQUE_PREFIX}/share/cmake/gromacs${SUFFIX}/gromacs-hints.cmake" \
+        pip install --no-cache-dir gmxapi
 
 Install from source
 -------------------
@@ -552,8 +581,7 @@ https://hub.docker.com/r/gmxapi/docs for more information.
 
 .. todo::
 
-    Document sample_restraint package. Reference issue
-    `3027 <https://gitlab.com/gromacs/gromacs/-/issues/3027>`_
+    Document sample_restraint package. Reference :issue:`3027`
 
 Testing
 =======

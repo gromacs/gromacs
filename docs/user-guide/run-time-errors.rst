@@ -85,14 +85,8 @@ the options for obtaining the force field parameters are:
 * search the primary literature for publications for parameters for the
   residue that are consistent with the force field that is being used.
 
-..  todo:: gmx-add-new-residue doc target
-
-    Need gmx-add-new-residue doc target.
-
-    .. code-block:: none
-
-        Once you have determined the parameters and topology for your residue, see
-        :ref:`adding a residue to a force field <gmx-add-new-residue>` for instructions on how to proceed.
+Once you have determined the parameters and topology for your residue, see
+:ref:`adding a residue to a force field <gmx_add_residue>` for instructions on how to proceed.
 
 Long bonds and/or missing atoms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -100,7 +94,7 @@ Long bonds and/or missing atoms
 There are probably atoms missing earlier in the :ref:`pdb` file which makes :ref:`pdb2gmx <gmx pdb2gmx>` go crazy.
 Check the screen output of :ref:`pdb2gmx <gmx pdb2gmx>`, as it will tell you which one is missing. Then add
 the atoms in your :ref:`pdb` file, energy minimization will put them in the right place, or
-fix the side chain with e.g. the `WHAT IF <http://swift.cmbi.ru.nl/whatif/>`_ program.
+fix the side chain with e.g. the `WHAT IF <https://swift.cmbi.umcn.nl/whatif/>`_ program.
 
 
 Chain identifier 'X' was used in two non-sequential blocks
@@ -165,7 +159,7 @@ This means your environment is not configured to use |Gromacs| properly, because
 :ref:`pdb2gmx <gmx pdb2gmx>` cannot find its databases of forcefield information. This could
 happen because a |Gromacs| installation was moved from one location to another.
 Either follow the instructions about
-:ref:`getting access to |Gromacs| after installation <getting access to |Gromacs|>`
+:ref:`getting access to |Gromacs|`
 or re-install |Gromacs| before doing so.
 
 Errors in :ref:`grompp <gmx grompp>`
@@ -424,7 +418,7 @@ This may not be an error as such. It is simply informing you that during the ene
 minimization process mdrun reached the limit possible to minimize the structure with your
 current parameters. It does not mean that the system has not been minimized fully, but in
 some situations that may be the case. If the system has a significant amount of water present,
-then an E\ :sub:`pot` of the orderof -10\ :sup:`5` to -10\ :sup:`6` (in conjunction with an
+then an E\ :sub:`pot` of the order of -10\ :sup:`5` to -10\ :sup:`6` (in conjunction with an
 F\ :sub:`max` between 10 and 1000 kJ mol\ :sup:`-1` nm\ :sup:`-1`) is typically a reasonable value for
 starting most MD simulations from the resulting structure. The most important result is
 likely the value of F\ :sub:`max`, as it describes the slope of the potential energy

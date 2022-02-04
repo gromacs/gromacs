@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,7 +177,10 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
     int cij4_start = nb_sci.cj4_ind_start; /* first ...*/
     int cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    if (tidxz == 0)
+    // We may need only a subset of threads active for preloading i-atoms
+    // depending on the super-cluster and cluster / thread-block size.
+    constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
+    if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster))
     {
         /* Pre-load i-atom x and q into shared memory */
         int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj;
@@ -229,7 +232,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
                 __syncwarp(c_fullWarpMask);
             }
 
-#    pragma unroll 4
+#    pragma unroll c_nbnxnGpuJgroupSize
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
@@ -243,7 +246,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
                     float4 tmp = xq[aj];
                     float3 xj  = make_float3(tmp.x, tmp.y, tmp.z);
 
-#    pragma unroll 8
+#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
                     for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                     {
                         if (imaskCheck & mask_ji)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1069,7 +1069,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
  * \return
  */
-static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& gmx_used_in_debug simulationWork,
+static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug const SimulationWorkload& simulationWork,
                                                           const StepWorkload& stepWork,
                                                           bool pmeSendCoordinatesFromGpu)
 {
@@ -1216,18 +1216,24 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* runSch
 
     if (runScheduleWork->simulationWork.useGpuPme && !runScheduleWork->simulationWork.haveSeparatePmeRank)
     {
-        pmeForcePtr         = pme_gpu_get_device_f(pmedata);
-        pmeSynchronizer     = pme_gpu_get_f_ready_synchronizer(pmedata);
-        havePmeContribution = true;
+        pmeForcePtr = pme_gpu_get_device_f(pmedata);
+        if (pmeForcePtr)
+        {
+            pmeSynchronizer     = pme_gpu_get_f_ready_synchronizer(pmedata);
+            havePmeContribution = true;
+        }
     }
     else if (runScheduleWork->simulationWork.useGpuPmePpCommunication)
     {
         pmeForcePtr = pmePpCommGpu->getGpuForceStagingPtr();
-        if (GMX_THREAD_MPI)
+        if (pmeForcePtr)
         {
-            pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
+            if (GMX_THREAD_MPI)
+            {
+                pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
+            }
+            havePmeContribution = true;
         }
-        havePmeContribution = true;
     }
 
     if (havePmeContribution)

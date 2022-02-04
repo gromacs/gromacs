@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ public:
      *     auto signal = sessionResources->getMdrunnerSignal(md::signals::STOP);
      *     signal();
      *
-     * \throws gmxapi::NotImplementedError if an implementation is not available for the requested signal.
+     * \throws gmxapi::MissingImplementationError if an implementation is not available for the requested signal.
      * \throws gmxapi::ProtocolError if the Session or Signaller is not available.
      */
     Signal getMdrunnerSignal(md::signals signal);

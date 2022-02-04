@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -61,16 +61,26 @@ import pytest
 
 mpi_status = 'Test requires mpi4py managing 2 MPI ranks.'
 skip_mpi = False
+rank_number = 0
+comm_size = 1
+rank_tag = ''
+comm = None
 try:
     from mpi4py import MPI
 
     if not MPI.Is_initialized():
         skip_mpi = True
         mpi_status += ' MPI is not initialized'
-    elif MPI.COMM_WORLD.Get_size() < 2:
-        skip_mpi = True
-        mpi_status += ' MPI context is too small.'
+    else:
+        comm = MPI.COMM_WORLD
+        if comm.Get_size() < 2:
+            skip_mpi = True
+            mpi_status += ' MPI context is too small.'
+        else:
+            rank_number = comm.Get_rank()
+            comm_size = comm.Get_size()
 except ImportError:
+    MPI = None
     skip_mpi = True
     mpi_status += ' mpi4py is not available.'
 
@@ -197,6 +207,11 @@ def _cleandir(remove_tempdir: Union[str, RmOption]):
         # I.e. If the user specified `--rm success`, then we need to toggle from `warn` to `remove`.
         if remove_tempdir != RmOption.never:
             callback = remove
+
+        # Make sure that the temporary directory is not removed before all ranks have done
+        # the file checks.
+        if comm_size > 1:
+            comm.barrier()
     finally:
         callback()
 

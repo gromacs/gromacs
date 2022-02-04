@@ -57,11 +57,11 @@ simulations. Some stages are optional for some kinds of simulations.
    <http://swissparam.ch/>`_ (for CHARMM forcefield), `PRODRG
    <http://davapc1.bioch.dundee.ac.uk/cgi-bin/prodrg>`_ (for GROMOS96
    43A1), `Automated Topology Builder
-   <http://compbio.biosci.uq.edu.au/atb/>`_ (for GROMOS96 53A6),
+   <https://atb.uq.edu.au/>`_ (for GROMOS96 53A6),
    `MKTOP <http://www.aribeiro.net.br/mktop>`_ (for OPLS/AA) or your
    favourite text editor in concert with chapter 5 of the |Gromacs|
    `Reference Manual`_. For the AMBER force fields, `antechamber
-   <http://amber.scripps.edu/antechamber/antechamber.html>`__ or
+   <https://ambermd.org/antechamber/antechamber.html>`__ or
    `acpype <https://github.com/alanwilter/acpype>`__
    might be appropriate.
 

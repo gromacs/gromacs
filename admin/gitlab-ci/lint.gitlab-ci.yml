@@ -1,10 +1,10 @@
 # Repository cleanliness. Source tidiness, linting, and policy compliance.
 
-clang-tidy:configure-push:
+clang-tidy:configure-mr:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:basic-push
+    - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
@@ -69,11 +69,11 @@ clang-tidy:test:
   extends:
     - .gromacs:base:build
     - .variables:default
-    - .rules:basic-push
+    - .rules:merge-requests
   stage: source-check
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
   needs:
-    - job: clang-tidy:configure-push
+    - job: clang-tidy:configure-mr
   variables:
     CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     COMPILER_MAJOR_VERSION: 11
@@ -104,7 +104,7 @@ clang-tidy:test:
 clang-format:
   extends:
     - .variables:default
-    - .rules:basic-push
+    - .rules:merge-requests
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
@@ -134,7 +134,7 @@ clang-format:
 copyright-check:
   extends:
     - .variables:default
-    - .rules:basic-push
+    - .rules:merge-requests
   cache: {}
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
@@ -169,7 +169,7 @@ check-source:
     - .variables:default
     - .docs:build
     - .before_script:default
-    - .rules:basic-push
+    - .rules:merge-requests
   cache: {}
   stage: source-check
   needs:

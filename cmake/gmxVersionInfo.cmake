@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -244,7 +244,7 @@ set(REGRESSIONTEST_BRANCH "master")
 # directory name within the regressiontests tarball, which affects the
 # md5sum of the tarball. The matching md5sum has to go here, and if it
 # isn't right the real release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "c45b8e74f38fad0b907bb3dcc7dd9c72" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "b07d8d8a61df6c6cb706cf1491ae6775" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of

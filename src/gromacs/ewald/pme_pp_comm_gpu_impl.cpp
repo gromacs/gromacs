@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ class PmePpCommGpu::Impl
 /*!\brief Constructor stub. */
 PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
                            int /* pmeRank */,
-                           std::vector<gmx::RVec>* /* pmeCpuForceBuffer */,
+                           gmx::HostVector<gmx::RVec>* /* pmeCpuForceBuffer */,
                            const DeviceContext& /* deviceContext */,
                            const DeviceStream& /* deviceStream */) :
     impl_(nullptr)
@@ -77,6 +77,7 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
 PmePpCommGpu::~PmePpCommGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::reinit(int /* size */)
 {
     GMX_ASSERT(!impl_,
@@ -84,6 +85,7 @@ void PmePpCommGpu::reinit(int /* size */)
                "correct implementation.");
 }
 
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::receiveForceFromPme(RVec* /* recvPtr */, int /* recvSize */, bool /* receivePmeForceToGpu */)
 {
     GMX_ASSERT(!impl_,
@@ -91,6 +93,7 @@ void PmePpCommGpu::receiveForceFromPme(RVec* /* recvPtr */, int /* recvSize */, 
                "implementation.");
 }
 
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
                                                int /* sendSize */,
                                                GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
@@ -100,6 +103,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
                "implementation.");
 }
 
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */,
                                                int /* sendSize */,
                                                GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
@@ -109,6 +113,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */,
                "implementation.");
 }
 
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
 {
     GMX_ASSERT(!impl_,
@@ -117,6 +122,7 @@ DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
     return DeviceBuffer<gmx::RVec>{};
 }
 
+//NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
 {
     GMX_ASSERT(!impl_,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
+ * Copyright (c) 2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,8 @@ class DeviceContext;
 #endif
 
 #include <cstddef>
+#pragma clang diagnostic ignored "-Wsuggest-override" // can be removed when support for 2022.0 is dropped
+#pragma clang diagnostic ignored "-Wundefined-func-template"
 #include <oneapi/mkl/dfti.hpp>
 #include <oneapi/mkl/exceptions.hpp>
 #include <mkl_version.h>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
  *
  *  Note that most of the buffer operations have an early return, if the requested operation
  *  size is zero. This allows for calling these functions with zero operation size even when
- *  the underlying buffers were not properly intialized.
+ *  the underlying buffers were not properly initialized.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  *

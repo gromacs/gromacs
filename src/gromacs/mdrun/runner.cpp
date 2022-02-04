@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -306,8 +306,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                 .asParagraph()
                 .appendTextFormatted(
                         "This run will default to '-update gpu' as requested by the "
-                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable. GPU update with domain "
-                        "decomposition lacks substantial testing and should be used with caution.");
+                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
     // PME decomposition is supported only with CUDA-backend in mixed mode
@@ -1329,7 +1328,8 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const bool canUseDirectGpuComm = decideWhetherDirectGpuCommunicationCanBeUsed(devFlags, mdlog);
+    const bool canUseDirectGpuComm = decideWhetherDirectGpuCommunicationCanBeUsed(
+            devFlags, inputrec->useMts, (inputrec->eSwapCoords != SwapType::No), mdlog);
 
     bool useGpuDirectHalo = false;
 
@@ -1345,7 +1345,8 @@ int Mdrunner::mdrunner()
                                                         canUseDirectGpuComm,
                                                         useModularSimulator,
                                                         doRerun,
-                                                        EI_ENERGY_MINIMIZATION(inputrec->eI));
+                                                        EI_ENERGY_MINIMIZATION(inputrec->eI),
+                                                        mdlog);
     }
 
     // This builder is necessary while we have multi-part construction
@@ -1578,8 +1579,7 @@ int Mdrunner::mdrunner()
     }
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(
-            hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), mdrunOptions.ntompOptionIsSet, cr, mdlog);
+    check_resource_division_efficiency(hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), cr, mdlog);
 
     /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
@@ -1980,7 +1980,7 @@ int Mdrunner::mdrunner()
                                       &nrnb,
                                       wcycle.get(),
                                       fr->bMolPBC,
-                                      &observablesReducerBuilder);
+                                      PAR(cr) ? &observablesReducerBuilder : nullptr);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),

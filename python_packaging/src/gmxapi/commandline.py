@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,13 @@ Provide command line operation.
 
 __all__ = ['commandline_operation']
 
+import collections.abc
 import functools
 import os
 import pathlib
 import shutil
 import subprocess
+from typing import Iterable, Union
 
 import gmxapi as gmx
 from gmxapi import exceptions
@@ -106,13 +108,10 @@ def cli_bindir() -> pathlib.Path:
 # the keys of the map are not implicit or set by the wrapped function.
 # For the map to be non-empty, it must be defined before the resulting helper
 # function is called.
-#
-# TODO: Operation returns the output object when called with the shorter signature.
-#
 @gmx.function_wrapper(output={'stdout': str,
                               'stderr': str,
                               'returncode': int})
-def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdin: str = ''):
+def cli(command: NDArray, shell: bool, output, stdin: str = ''):
     """Execute a command line program in a subprocess.
 
     Configure an executable in a subprocess. Executes when run in an execution
@@ -127,7 +126,7 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     think this disallows important use cases, please let us know.
 
     Arguments:
-         command: a tuple (or list) to be the subprocess arguments, including `executable`
+         command: a tuple (or list) to be the subprocess arguments, including *executable*
          output: mapping of command line flags to output filename arguments
          shell: unused (provides forward-compatibility)
          stdin (str): String input to send to STDIN (terminal input) of the executable.
@@ -147,11 +146,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     `... "a" "s" "d" "f"`. To pass a single string argument, `arguments=("asdf")`
     or `arguments=["asdf"]`.
 
-    `input` and `output` should be a dictionary with string keys, where the keys
-    name command line "flags" or options.
-
     Example:
-        Execute a command named `exe` that takes a flagged option for file name
+        Execute a command named ``exe`` that takes a flagged option for file name
         (stored in a local Python variable `my_filename`) and an `origin` flag
         that uses the next three arguments to define a vector.
 
@@ -163,15 +159,14 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
             >>> assert hasattr(result, 'returncode')
 
     Returns:
-        A data structure with attributes for each of the results `file`, `stdout`, `stderr`, and `returncode`
+        A data structure with attributes for each of the results.
 
     Result object attributes:
-        * `file`: the mapping of CLI flags to filename strings resulting from the `output` kwarg
-        * `stdout`: A string mapping from process STDOUT.
-        * `stderr`: A string mapping from process STDERR; it will be the
+        * file: the mapping of CLI flags to filename strings resulting from the `output` kwarg
+        * returncode: return code of the subprocess.
+        * stderr: A string mapping from process STDERR; it will be the
                     error output (if any) if the process failed.
-        * `returncode`: return code of the subprocess.
-
+        * stdout: A string mapping from process STDOUT.
     """
     # In the operation implementation, we expect the `shell` parameter to be intercepted by the
     # wrapper and set to False.
@@ -183,7 +178,7 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
 
     if isinstance(command, (str, bytes)):
         command = [command]
-    command = list([arg for arg in command])
+    command = list([str(arg) for arg in command])
 
     executable = shutil.which(command[0])
     if executable is None:
@@ -195,9 +190,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
     # TODO: (FR9) Can OS input/output filehandles be a responsibility of
     #  the code providing 'resources'?
 
-    stdout = ''
-    stderr = ''
-    logger.debug('executing subprocess')
+    logger.debug('executing subprocess: %s', ' '.join(str(word) for word in command))
+
     try:
         completed_process = subprocess.run(command,
                                            shell=shell,
@@ -209,19 +203,6 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
                                            universal_newlines=True
                                            )
         returncode = completed_process.returncode
-        # TODO: Resource management code should manage a safe data object for `output`.
-        logger.debug('STDOUT:')
-        if completed_process.stderr is not None:
-            for line in completed_process.stdout.split('\n'):
-                logger.debug(line)
-        else:
-            logger.debug('STDOUT is empty')
-        logger.debug('STDERR:')
-        if completed_process.stderr is not None:
-            for line in completed_process.stderr.split('\n'):
-                logger.debug(line)
-        else:
-            logger.debug('STDERR is empty')
 
         stdout = completed_process.stdout
         stderr = completed_process.stderr
@@ -233,16 +214,44 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
         stderr = e.stderr
         returncode = e.returncode
 
+    if stderr is not None:
+        if stdout is not None:
+            logger.debug('STDOUT:')
+            for line in stdout.split('\n'):
+                logger.debug(line)
+        else:
+            logger.debug('STDOUT is empty')
+        logger.debug('STDERR:')
+        for line in stderr.split('\n'):
+            logger.debug(line)
+    else:
+        logger.debug('STDERR is empty')
+
     # Publish outputs.
     output.stdout = stdout
     output.stderr = stderr
     output.returncode = returncode
 
 
-# TODO: (FR4) Make this a formal operation to properly handle gmxapi data dependencies.
-#  The consumer of this operation has an NDArray input. filemap may contain gmxapi data flow
-#  aspects that we want the framework to handle for us.
-def filemap_to_flag_list(filemap: dict = None):
+def _flatten_dict(mapping: dict):
+    """Convert a dict of cli options to a sequence of strings.
+
+    *mapping* values may be scalars or sequences. Non-string sequences will be converted to
+    individual elements.
+
+    Returns:
+        Iterable of strings.
+    """
+    for key, value in mapping.items():
+        yield str(key)
+        if isinstance(value, collections.abc.Iterable) and not isinstance(value, (str, bytes)):
+            yield from [str(element) for element in value]
+        else:
+            yield value
+
+
+@gmx.function_wrapper()
+def filemap_to_flag_list(filemap: dict) -> list:
     """Convert a map of command line flags and filenames to a list of command line arguments.
 
     Used to map inputs and outputs of command line tools to and from gmxapi data handles.
@@ -258,23 +267,8 @@ def filemap_to_flag_list(filemap: dict = None):
     Returns:
         list of strings and/or gmxapi data references
     """
-    result = []
-    if filemap is not None:
-        for key, value in filemap.items():
-            # Note that the value may be a string, a list, an ndarray, or a future
-            if not isinstance(value, (list, tuple, NDArray)):
-                if hasattr(value, 'result') and value.dtype == NDArray:
-                    pass
-                elif hasattr(value, 'result') and value.dtype != NDArray:
-                    # TODO: Fix this ugly hack when we have proper Future slicing and can make NDArray futures.
-                    # FIXME: This should not modify the source object.
-                    # FIXME: Recursion protection (not idempotent): function may be repeatedly wrapped since dtype is
-                    #  not updated.
-                    result_function = value.result
-                    value.result = lambda function=result_function: [function()]
-                else:
-                    value = [value]
-            result = gmx.join_arrays(front=result, back=gmx.join_arrays(front=gmx.ndarray([key]), back=value))
+    assert isinstance(filemap, dict)
+    result = list(_flatten_dict(filemap))
     return result
 
 
@@ -283,9 +277,9 @@ def filemap_to_flag_list(filemap: dict = None):
 #  from the helper (decorated function).
 def commandline_operation(executable=None,
                           arguments=(),
-                          input_files: dict = None,
-                          output_files: dict = None,
-                          stdin: str = None,
+                          input_files: Union[dict, Iterable[dict]] = None,
+                          output_files: Union[dict, Iterable[dict]] = None,
+                          stdin: Union[str, Iterable[str]] = None,
                           **kwargs):
     """Helper function to define a new operation that executes a subprocess in gmxapi data flow.
 
@@ -316,10 +310,10 @@ def commandline_operation(executable=None,
         The output node of the resulting operation handle contains
 
         * ``file``: the mapping of CLI flags to filename strings resulting from the ``output_files`` kwarg
-        * ``stdout``: A string mapping from process STDOUT.
+        * ``returncode``: return code of the subprocess.
         * ``stderr``: A string mapping from process STDERR; it will be the
                       error output (if any) if the process failed.
-        * ``returncode``: return code of the subprocess.
+        * ``stdout``: A string mapping from process STDOUT.
 
     """
 
@@ -339,7 +333,7 @@ def commandline_operation(executable=None,
     # Warning: decorating a local function like this is counter to the notion of Operations
     # as portable (importable, serializable/deserializable). The big picture here needs
     # some more consideration.
-    # TODO: (NOW) Distinguish portable Operations from relocatable Futures.
+    # TODO(3139): Distinguish portable Operations from relocatable Futures.
     # There is nothing antithetical about objects implementing gmxapi data interfaces
     # that are only resolvable by a certain Context as long as that Context can convey
     # the results to another Context upon request. Re-instantiating Operations is
@@ -380,10 +374,12 @@ def commandline_operation(executable=None,
         output_files = {}
     if isinstance(arguments, (str, bytes)):
         arguments = [arguments]
+    input_options = filemap_to_flag_list(input_files).output.data
+    output_options = filemap_to_flag_list(output_files).output.data
     command = gmx.concatenate_lists([[executable],
                                      arguments,
-                                     filemap_to_flag_list(input_files),
-                                     filemap_to_flag_list(output_files)])
+                                     input_options,
+                                     output_options])
     shell = gmx.make_constant(False)
     cli_args = {'command': command,
                 'shell': shell}

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 # release string. For roadmap details, see https://gitlab.com/gromacs/gromacs/-/issues/2585
 set(GMXAPI_MAJOR 0)
 set(GMXAPI_MINOR 3)
-set(GMXAPI_PATCH 0)
+set(GMXAPI_PATCH 1)
 set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
 
 add_library(gmxapi)

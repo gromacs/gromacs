@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
     // do nothing if the added Gaussian will never reach the lattice
     if (spreadRange.empty())
     {
-        return {};
+        return { 0., 0., 0. };
     }
 
     for (int dimension = XX; dimension <= ZZ; ++dimension)

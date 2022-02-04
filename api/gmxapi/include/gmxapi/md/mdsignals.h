@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,7 @@ private:
  * \param signal type of signal the client would like to issue.
  * \return Callable function object handle to issue a stop signal.
  *
- * \throws gmxapi::NotImplementedError for unknown values of signal.
+ * \throws gmxapi::MissingImplementationError for unknown values of signal.
  * \throws gmxapi::UsageError for invalid resources argument.
  *
  * \ingroup gmxapi_md

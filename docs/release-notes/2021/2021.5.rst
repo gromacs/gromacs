@@ -1,7 +1,7 @@
 GROMACS 2021.5 release notes
 ----------------------------
 
-This version was released on TODO, 2021. These release notes
+This version was released on January 14th, 2022. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2021.4 version, to fix known issues. It also incorporates all
 fixes made in version 2020.6 and earlier, which you can find described
@@ -15,6 +15,16 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Do not scale coordinates of frozen atoms during Parrinello-Rahman pressure coupling
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When Parrinello-Rahman pressure coupling was used, the box scaling was applied to all the atoms,
+causing frozen atoms to shift. The effect is more drastic towards the sides of the box and when the
+pressure is changed significantly during the simulations. Now, the frozen atoms will be ignored by
+the coupling and atoms with frozen dimensions shall keep such values.
+
+:issue:`3075`
 
 Properly account for DeltaH contribution from PME when running AWH with FEP
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -63,4 +73,9 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+Performance improvements when running on Ampere-class Nvidia GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Improved performance of the short-ranged non-bonded kernels by up to 12%.
+
+:issue:`3873`
 

@@ -597,8 +597,8 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
     Minimum required compiler versions are GNU >= 10, LLVM >=13, or ARM >= 21.1. 
-    For maximum performance we strongly  suggest the latest gcc compilers,
-    LLVM 14 (when released) or ARM 22.1 (when released). 
+    For maximum performance we strongly suggest the latest gcc compilers,
+    or at least LLVM 14 (when released) or ARM 22.0 (when released). 
     Lower performance has been observed with LLVM 13 and Arm compiler 21.1.
 
 The CMake configure system will check that the compiler you have
@@ -741,8 +741,7 @@ hence stock versions can be obtained from most Linux distribution
 repositories (e.g. ``opencl-headers`` and ``ocl-icd-libopencl1`` on Debian/Ubuntu).
 Only the compatibility with the required OpenCL_ version |REQUIRED_OPENCL_MIN_VERSION|
 needs to be ensured.
-Alternatively, the headers and library can also be obtained from vendor SDKs
-(e.g. `from AMD <http://developer.amd.com/appsdk>`_),
+Alternatively, the headers and library can also be obtained from vendor SDKs,
 which must be installed in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
 variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``).
 
@@ -773,13 +772,24 @@ external library, use
 SYCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~
 
+SYCL_ is a modern portable heterogeneous acceleration API, with multiple
+implementations targeting different hardware platforms (similar to OpenCL_).
+
+Currently, supported platforms in |Gromacs| are:
+
+* Intel GPUs using `Intel oneAPI DPC++`_ (both OpenCL and LevelZero backends), 
+* AMD GPUs with hipSYCL_: only discrete GPUs with GFX9 (RX Vega 64, Pro VII, 
+  Instinct MI25, Instinct MI50) and CDNA (Instinct MI100) architectures,
+* NVIDIA GPUs (experimental) using either hipSYCL_ or open-source 
+  `Intel LLVM <https://github.com/intel/llvm>`_.
+
+Feature support is broader than that of the OpenCL, but not yet on par with CUDA.
+
 The SYCL_ support in |Gromacs| is intended to eventually replace
 OpenCL_ as an acceleration mechanism for AMD and Intel hardware.
-For AMD devices, we use hipSYCL_ compiler and runtime with HIP backend, which only supports
-discrete GPUs with GFX9 (RX Vega 64, Pro VII, Instinct MI25, Instinct MI50)
-and CDNA architectures (Instinct MI100).
-For Intel devices, we use `Intel oneAPI DPC++`_ with OpenCL and LevelZero backends, which
-supports both integrated and discreet Intel GPUs.
+
+Note: SYCL_ support in |Gromacs| is less mature than either OpenCL or CUDA.
+Please, pay extra attention to simulation correctness when you are using it.
 
 SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
@@ -798,6 +808,52 @@ must be set:
 ::
 
    cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DGMX_GPU=SYCL
+
+SYCL GPU acceleration for AMD GPUs
+""""""""""""""""""""""""""""""""""
+
+Using the most recent hipSYCL_ ``develop`` branch and the most recent ROCm
+release is recommended.
+
+Additionally, we strongly recommend using the ROCm-bundled LLVM for building
+both hipSYCL and |Gromacs|.
+
+The following CMake command can be used **when configuring hipSYCL** to ensure
+that the proper Clang is used (assuming ``ROCM_PATH``
+is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
+
+After compiling and installing hipSYCL, the following settings can be used for
+building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ -DGMX_GPU=SYCL -DGMX_SYCL_HIPSYCL=ON -DHIPSYCL_TARGETS='hip:gfxXYZ'
+
+SYCL GPU acceleration for NVIDIA GPUs
+"""""""""""""""""""""""""""""""""""""
+
+SYCL support for NVIDIA GPUs is highly experimental. For production, please use CUDA_
+(`CUDA GPU acceleration`_). Note that FFT is not currently supported on NVIDIA devices 
+when using SYCL, PME offload is only possible in mixed mode (``-pme gpu -pmefft cpu``).
+
+NVIDIA GPUs can be used with either hipSYCL_ or the open-source
+`Intel LLVM <https://github.com/intel/llvm>`_.
+
+For hipSYCL, make sure that hipSYCL itself is compiled with CUDA support,
+and supply proper devices via ``HIPSYCL_TARGETS`` (e.g., ``-DHIPSYCL_TARGETS=cuda:sm_75``).
+When compiling for CUDA, we recommend using the mainline Clang, not the ROCm-bundled one.
+
+For Intel LLVM, make sure it is compiled with CUDA and OpenMP support, then use
+the following CMake invocation:
+
+::
+
+   cmake .. -DCMAKE_C_COMPILER=/path/to/intel/clang -DCMAKE_CXX_COMPILER=/path/to/intel/clang++ -DGMX_GPU=SYCL -DGMX_GPU_NB_CLUSTER_SIZE=8 -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
+
 
 SYCL GPU compilation options
 """"""""""""""""""""""""""""
@@ -1156,7 +1212,7 @@ that a tolerance is just a tiny bit too tight. Check the output files
 the script directs you too, and try a different or newer compiler if
 the errors appear to be real. If you cannot get it to pass the
 regression tests, you might try dropping a line to the
-`|Gromacs| users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
+`GROMACS users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
 but then you should include a detailed description of
 your hardware, and the output of ``gmx mdrun -version`` (which contains
 valuable diagnostic information in the header).

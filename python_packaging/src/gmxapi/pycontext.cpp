@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,8 @@ void PyContext::addMDModule(const pybind11::object& force_object) const
 {
     if (!::gmxapi::Version::isAtLeast(0, 2, 1))
     {
-        throw ::gmxapi::NotImplementedError("Feature requires gmxapi 0.2.1 with GROMACS 2021.3.");
+        throw ::gmxapi::MissingImplementationError(
+                "Feature requires gmxapi 0.2.1 with GROMACS 2021.3.");
     }
     // If force_object has a bind method, give it a PyCapsule with a pointer
     // to our C++ object.

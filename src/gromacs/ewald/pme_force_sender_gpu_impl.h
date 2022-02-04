@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,6 +132,13 @@ private:
     std::vector<float3*> pmeRemoteCpuForcePtr_;
     //! Vector of GPU force buffer pointers for multiple remote PP tasks
     std::vector<float3*> pmeRemoteGpuForcePtr_;
+    //! Whether GPU to CPU communication should be staged as GPU to
+    //! GPU via P2P cudaMemcpy, then local D2H, for thread-MPI This
+    //! may be beneficial when using servers with direct links between
+    //! GPUs, but direct communication is expected to be advantageous
+    //! for PCIe-only servers or for low atom counts (for which
+    //! latency is important).
+    bool stageThreadMpiGpuCpuComm_ = false;
 };
 
 } // namespace gmx

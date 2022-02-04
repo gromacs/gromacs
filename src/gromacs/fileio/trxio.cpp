@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -182,12 +182,17 @@ int nframes_read(t_trxstatus* status)
     return status->currentFrame;
 }
 
+bool trxio_should_print_count(const gmx_output_env_t* oenv, t_trxstatus* status)
+{
+    return ((status->currentFrame < 2 * SKIP1 || status->currentFrame % SKIP1 == 0)
+            && (status->currentFrame < 2 * SKIP2 || status->currentFrame % SKIP2 == 0)
+            && (status->currentFrame < 2 * SKIP3 || status->currentFrame % SKIP3 == 0)
+            && output_env_get_trajectory_io_verbosity(oenv) != 0);
+}
+
 static void printcount_(t_trxstatus* status, const gmx_output_env_t* oenv, const char* l, real t)
 {
-    if ((status->currentFrame < 2 * SKIP1 || status->currentFrame % SKIP1 == 0)
-        && (status->currentFrame < 2 * SKIP2 || status->currentFrame % SKIP2 == 0)
-        && (status->currentFrame < 2 * SKIP3 || status->currentFrame % SKIP3 == 0)
-        && output_env_get_trajectory_io_verbosity(oenv) != 0)
+    if (trxio_should_print_count(oenv, status))
     {
         fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->currentFrame, output_env_conv_time(oenv, t));
         fflush(stderr);

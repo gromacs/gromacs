@@ -1,0 +1,58 @@
+GROMACS 2021.6 release notes
+----------------------------
+
+This version was released on TODO, 2022. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2021.5 version, to fix known issues. It also incorporates all
+fixes made in version 2020.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Extend error message for free-energy exclusion beyond rlist
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy decoupling simulations an error for exclusions beyond rlist
+can occur due to a too small box. This cause is now added to the error
+message.
+
+:issue:`3403`
+:issue:`3808`
+
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Do not try to guess atom names in ``gmx rms`` unless needed
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Guessing atomic masses based on atom names may sometimes fail.
+When ``-nomw`` switch is used, atom masses are not needed, but ``gmx rms``
+was trying to guess them anyway, throwing a fatal error when an unknown 
+element was encountered. Now, the error is only raised when masses are
+actually needed.
+
+:issue:`4356`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Corrects units for AWH interval in the user guide
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+When applying AWH to angles or dihedrals, the units of bonds of the sampling
+interval listed in the mdp section of the user guide are now stated to be
+in degrees. The guide incorrectly stated that there were in radians, whereas
+the code interprets the user input as degrees.
+
+:issue:`4367`

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -230,111 +230,114 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
     return nh;
 }
 
+static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&               dihedral,
+                                           gmx::ArrayRef<const InteractionOfType> improperDihedrals)
+{
+    return std::any_of(improperDihedrals.begin(), improperDihedrals.end(), [&dihedral](const auto& improper) {
+        return is_dihedral_on_same_bond(dihedral, improper);
+    });
+}
+
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
-static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> dih,
-                                                gmx::ArrayRef<const InteractionOfType> improper,
+static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> originalDihedrals,
+                                                gmx::ArrayRef<const InteractionOfType> improperDihedrals,
                                                 t_atoms*                               atoms,
                                                 bool bKeepAllGeneratedDihedrals,
                                                 bool bRemoveDihedralIfWithImproper)
 {
-    /* Construct the list of the indices of the dihedrals
-     * (i.e. generated or read) that might be kept. */
-    std::vector<std::pair<InteractionOfType, int>> newDihedrals;
-    if (bKeepAllGeneratedDihedrals)
+    std::vector<InteractionOfType> newDihedrals;
+
+    // Note this outer loop starts to iterate over dihedrals, but once we find one to add we
+    // also look for additional subsequent dihedrals over the same bond, so each outer iteration
+    // might process several dihedrals from the input, while resulting in one or zero
+    // new dihedral(s) in the output.
+    for (auto dihedralIt = originalDihedrals.begin(); dihedralIt != originalDihedrals.end();)
     {
-        fprintf(stderr, "Keeping all generated dihedrals\n");
-        int i = 0;
-        for (const auto& dihedral : dih)
+        if (!was_dihedral_set_in_rtp(*dihedralIt) && bRemoveDihedralIfWithImproper
+            && dihedralIsOnSameBondAsImproper(*dihedralIt, improperDihedrals))
         {
-            newDihedrals.emplace_back(dihedral, i++);
+            // This is a generated dihedral where the two central atoms are identical
+            // to an improper definition. We filter these out before considering
+            // whether to keep all (normal) generated dihedrals. Continue to next iteration.
+            dihedralIt++;
+            continue;
         }
-    }
-    else
-    {
-        /* Check if generated dihedral i should be removed. The
-         * dihedrals have been sorted by dcomp() above, so all those
-         * on the same two central atoms are together, with those from
-         * the .rtp file preceding those that were automatically
-         * generated. We remove the latter if the former exist. */
-        int i = 0;
-        for (auto dihedral = dih.begin(); dihedral != dih.end(); dihedral++)
+        else if (bKeepAllGeneratedDihedrals)
         {
-            /* Keep the dihedrals that were defined in the .rtp file,
-             * and the dihedrals that were generated and different
-             * from the last one (whether it was generated or not). */
-            if (was_dihedral_set_in_rtp(*dihedral) || dihedral == dih.begin()
-                || !is_dihedral_on_same_bond(*dihedral, *(dihedral - 1)))
-            {
-                newDihedrals.emplace_back(*dihedral, i++);
-            }
-        }
-    }
-    int k = 0;
-    for (auto dihedral = newDihedrals.begin(); dihedral != newDihedrals.end();)
-    {
-        bool bWasSetInRTP = was_dihedral_set_in_rtp(dihedral->first);
-        bool bKeep        = true;
-        if (!bWasSetInRTP && bRemoveDihedralIfWithImproper)
-        {
-            /* Remove the dihedral if there is an improper on the same
-             * bond. */
-            for (auto imp = improper.begin(); imp != improper.end() && bKeep; ++imp)
-            {
-                bKeep = !is_dihedral_on_same_bond(dihedral->first, *imp);
-            }
+            // If we are keeping all generated dihedrals, this one can go straight
+            // to the newDihedrals and we continue with the next iteration.
+            newDihedrals.emplace_back(*dihedralIt++);
+            continue;
         }
 
-        if (bKeep)
+        // If we get here, there are two possible scenarios:
+        //
+        // 1. The dihedral was explicitly listed in the RTP section,
+        //    and should be added - but we still need to check if other
+        //    dihedrals with the same two central atoms as this one should
+        //    be removed. That should be done by keeping the dihedral with
+        //    most heavy atoms (i.e., remove the ones with more hydrogens).
+        //    Here we *could* end up in the undefined behaviour situation
+        //    that the explicitly listed dihedral has more hydrogens.
+        //    In that case we assume the user actually wanted that, and keep
+        //    the explicit one - but warn about it. This way it's at least
+        //    possible to change the behavior by changing the RTP entry.
+        // 2. It was rather a generated dihedral. In this case we run the
+        //    same overlap check, but don't have to worry about any
+        //    explicitly listed RTP having higher priority. We just keep the
+        //    dihedral with fewest hydrogens.
+
+        // Let beginSameBondIt point to the dihedral we are tentatively planning
+        // to add, and then search from next dihedral until we find one that
+        // either is not on the same bond, or another diehdral that was also
+        // explicitly set in the RTP.
+        const auto beginSameBondIt = dihedralIt++;
+        dihedralIt = std::find_if(dihedralIt, originalDihedrals.end(), [&beginSameBondIt](const auto& dih) {
+            return !is_dihedral_on_same_bond(*beginSameBondIt, dih) || was_dihedral_set_in_rtp(dih);
+        });
+
+        // [beginSameBondIt,dihedralIt[ now specifies a range of dihedrals with the same central bond.
+        // Find the element (dihedral) with the smallest number of hydrogens in this range.
+        // Since the range is non-empty (it includes at least the element beginSameBondIt points
+        // to), there will be a valid match.
+        const auto bestMatchIt =
+                std::min_element(beginSameBondIt, dihedralIt, [atoms](const auto& d1, const auto& d2) {
+                    return n_hydro(d1.atoms(), atoms->atomname) < n_hydro(d2.atoms(), atoms->atomname);
+                });
+
+        // If the original candidate (beginSameBondIt) dihedral was not explicitly set in the RTP,
+        // we just add the dihedral that is the best match in the sense of fewest hydrogens in
+        // positions 1,4.  Note that this *could* be the first one (i.e., *beginSameBondIt).
+        if (!was_dihedral_set_in_rtp(*beginSameBondIt))
         {
-            /* If we don't want all dihedrals, we want to select the
-             * ones with the fewest hydrogens. Note that any generated
-             * dihedrals on the same bond as an .rtp dihedral may have
-             * been already pruned above in the construction of
-             * index[]. However, their parameters are still present,
-             * and l is looping over this dihedral and all of its
-             * pruned siblings. */
-            int bestl = dihedral->second;
-            if (!bKeepAllGeneratedDihedrals && !bWasSetInRTP)
-            {
-                /* Minimum number of hydrogens for i and l atoms */
-                int minh = 2;
-                int next = dihedral->second + 1;
-                for (int l = dihedral->second;
-                     (l < next && is_dihedral_on_same_bond(dihedral->first, dih[l]));
-                     l++)
-                {
-                    int nh = n_hydro(dih[l].atoms(), atoms->atomname);
-                    if (nh < minh)
-                    {
-                        minh  = nh;
-                        bestl = l;
-                    }
-                    if (0 == minh)
-                    {
-                        break;
-                    }
-                }
-                dihedral->first = dih[bestl];
-            }
-            if (k == bestl)
-            {
-                ++dihedral;
-            }
-            k++;
+            newDihedrals.emplace_back(*bestMatchIt);
         }
         else
         {
-            dihedral = newDihedrals.erase(dihedral);
+            // Since beginSameBondIt was explicitly listed in RTP we should definitely add it.
+            newDihedrals.emplace_back(*beginSameBondIt);
+            // However, since we did the checks above, we can issue warning a warning
+            // that the RTP entry really wasn't the best match. This should not happen in normal
+            // usage, but might help catch typos or RTP errors.
+            if (n_hydro(bestMatchIt->atoms(), atoms->atomname)
+                < n_hydro(beginSameBondIt->atoms(), atoms->atomname))
+            {
+                fprintf(stderr,
+                        "WARNING: Generated dihedral %d-%d-%d-%d with more heavy atoms is\n"
+                        "         ignored since %d-%d-%d-%d was set in the rtp entry.\n",
+                        bestMatchIt->ai() + 1,
+                        bestMatchIt->aj() + 1,
+                        bestMatchIt->ak() + 1,
+                        bestMatchIt->al() + 1,
+                        beginSameBondIt->ai() + 1,
+                        beginSameBondIt->aj() + 1,
+                        beginSameBondIt->ak() + 1,
+                        beginSameBondIt->al() + 1);
+            }
         }
     }
-    std::vector<InteractionOfType> finalDihedrals;
-    finalDihedrals.reserve(newDihedrals.size());
-    for (const auto& param : newDihedrals)
-    {
-        finalDihedrals.emplace_back(param.first);
-    }
-    return finalDihedrals;
+    return newDihedrals;
 }
 
 static std::vector<InteractionOfType> get_impropers(t_atoms*                             atoms,

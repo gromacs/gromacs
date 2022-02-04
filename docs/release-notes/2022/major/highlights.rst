@@ -15,11 +15,11 @@ simulations and hardware. The new features are:
 * Free-energy kernels are accelerated using SIMD, which make free-energy
   calculations up to three times as fast when using GPUs
 * A new formulation of the soft-cored non-bonded interactions for free-energy calculations allows for a finer control of the alchemical transformation pathways
-* New transformation pull coordinate allows arbibrary mathematical transformations of one of more other pull coordinates
+* New transformation pull coordinate allows arbitrary mathematical transformations of one of more other pull coordinates
 * New interface for multi-scale Quantum Mechanics / Molecular Mechanics (QM/MM) simulations with the CP2K quantum 
   chemistry package, supporting periodic boundary conditions.
 * grompp performance improvements
-* `Cool quotes music play list <https://open.spotify.com/playlist/4oj41X9tgIAJuLgfWPq6ZX>`_
+* `Cool quotes music playlist <https://open.spotify.com/playlist/4oj41X9tgIAJuLgfWPq6ZX>`_
 * Additional features were ported to modular simulator
 * Added AMD GPU support with SYCL via hipSYCL_
 * More GPU offload features supported with SYCL (PME, GPU update). 

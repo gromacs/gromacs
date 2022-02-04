@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "domdec_internal.h"
@@ -141,6 +142,19 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
     const gmx_domdec_comm_t&     comm = *dd_->comm;
     const gmx_domdec_comm_dim_t& cd   = comm.cd[dimIndex_];
     const gmx_domdec_ind_t&      ind  = cd.ind[pulse_];
+
+    if (dimIndex_ > 0 && cd.numPulses() > 1)
+    {
+        gmx_fatal(
+                FARGS,
+                "GPU direct communications cannot be used for multi-dimensional halo exchanges "
+                "with more than one pulse in the second or third dimension. Please try using fewer "
+                "ranks (or change the decomposition with '-dd'), or if that does not work then "
+                "disable GPU direct communications.");
+    }
+    GMX_RELEASE_ASSERT(cd.receiveInPlace,
+                       "The CUDA DD halo implementation only supports in place receive. "
+                       "The condition should be guaranteed by the check and fatal_error above.");
 
     numHomeAtoms_ = comm.atomRanges.numHomeAtoms(); // offset for data received by this rank
 
@@ -333,7 +347,9 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
 
     // wait for remote co-ordinates is implicit with process-MPI as non-local stream is synchronized before MPI calls
     // and MPI_Waitall call makes sure both neighboring ranks' non-local stream is synchronized before data transfer is initiated
-    if (GMX_THREAD_MPI && dimIndex_ == 0 && pulse_ == 0)
+    // For multi-dimensional halo exchanges, this needs to be done for every dimIndex_, since the remote ranks will be different
+    // for each. But different pulses within a dimension will communicate with the same remote ranks so we can restrict to the first pulse.
+    if (GMX_THREAD_MPI && pulse_ == 0)
     {
         enqueueWaitRemoteCoordinatesReadyEvent(dependencyEvent);
     }

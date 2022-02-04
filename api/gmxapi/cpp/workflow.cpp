@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ NodeKey Workflow::addNode(std::unique_ptr<NodeSpecification> spec)
 {
     // TODO capture provided NodeSpecification.
     // Relates to gmxapi milestone 7, described at https://gitlab.com/gromacs/gromacs/-/issues/2585
-    throw gmxapi::NotImplementedError("Member function not yet implemented or used.");
+    throw gmxapi::MissingImplementationError("Member function not yet implemented or used.");
     (void)spec;
     return {};
 }

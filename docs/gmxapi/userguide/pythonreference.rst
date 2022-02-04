@@ -39,8 +39,42 @@ gmxapi basic package
     import gmxapi as gmx
 
 .. automodule:: gmxapi
-   :members:
-   :member-order: groupwise
+
+.. autodecorator:: function_wrapper
+
+.. autofunction:: commandline_operation
+
+.. autofunction:: subgraph
+
+.. autofunction:: while_loop
+
+Simulation module
+=================
+
+.. automodule:: gmxapi.simulation
+
+.. py:currentmodule:: gmxapi
+
+.. autofunction:: read_tpr
+
+.. autofunction:: modify_input
+
+.. autofunction:: mdrun
+
+Utilities
+=========
+
+.. automodule:: gmxapi.utility
+
+.. py:currentmodule:: gmxapi
+
+.. autofunction:: concatenate_lists
+
+.. autofunction:: join_arrays
+
+.. autofunction:: logical_not
+
+.. autofunction:: make_constant
 
 Status messages and Logging
 ===========================
@@ -70,7 +104,7 @@ Exceptions
 
     Root exception for the C++ extension module. Derives from `gmxapi.exceptions.Error`.
 
-.. autoexception:: gmxapi._gmxapi.NotImplementedError
+.. autoexception:: gmxapi._gmxapi.MissingImplementationError
 
 .. autoexception:: gmxapi._gmxapi.ProtocolError
 
