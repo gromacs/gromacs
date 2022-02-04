@@ -1356,9 +1356,9 @@ int Mdrunner::mdrunner()
     std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
     if (useDomainDecomposition)
     {
-        // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple
-        // timesteps. DLB needs to be disabled in that case
-        const bool directGpuCommUsedWithGpuUpdate = GMX_THREAD_MPI && useGpuDirectHalo && useGpuForUpdate;
+        // With GPU update, since reduction is done on the GPU we can not measure any meaningful CPU
+        // force load, hence DLB needs to be disabled.
+        const bool directGpuCommUsedWithGpuUpdate = useGpuDirectHalo && useGpuForUpdate;
         ddBuilder                                 = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
                 cr,

@@ -4,7 +4,7 @@
  * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
  * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1856,8 +1856,8 @@ static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
         return forceDlbOffOrBail(dlbState, reasonStr, mdlog);
     }
 
-    // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple timesteps
-    // DLB needs to be disabled in that case
+    // With GPU update, since reduction is done on the GPU we can not measure any meaningful CPU
+    // force load, hence DLB needs to be disabled in that case
     if (directGpuCommUsedWithGpuUpdate)
     {
         std::string reasonStr =
