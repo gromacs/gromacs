@@ -139,6 +139,9 @@ constexpr int nthreads_omp_mpi_ok_min_cpu = 1;
 constexpr int nthreads_omp_mpi_ok_min_gpu = 2;
 constexpr int nthreads_omp_mpi_target_max = 6;
 
+// Too many ranks per GPU can lead to large overhead so we cap the
+// tMPI rank count choosen automatically.
+constexpr int c_maxAutoTmpiRanksPerGpu = 4;
 /**@}*/
 
 /*! \brief Returns the maximum OpenMP thread count for which using a single MPI rank
@@ -254,16 +257,16 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t* hwinfo,
              */
             int nshare;
 
-            /* Increase the rank count as long as have we more than 6 OpenMP
-             * threads per rank or the number of hardware threads is not
-             * divisible by the rank count. Don't go below 2 OpenMP threads.
-             */
+            // Increase the rank count as long as have we more than nthreads_omp_mpi_target_max OpenMP
+            // threads per rank or either the number of hardware threads is not
+            // divisible by the rank count or we would have >4 ranks per GPU (which is inefficient).
+            // Don't go below nthreads_omp_mpi_ok_min_gpu OpenMP threads/rank.
             nshare = 1;
             do
             {
                 nshare++;
                 nrank = ngpu * nshare;
-            } while (nthreads_tot / nrank > nthreads_omp_mpi_target_max
+            } while ((nthreads_tot / nrank > nthreads_omp_mpi_target_max && nshare < c_maxAutoTmpiRanksPerGpu)
                      || (nthreads_tot / (ngpu * (nshare + 1)) >= nthreads_omp_mpi_ok_min_gpu
                          && nthreads_tot % nrank != 0));
         }
@@ -515,11 +518,11 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
             /* If we use GPUs, the number of ranks must be divisible by the number of GPUs,
              * unless the GPUs are very different (and if they are, user should manually
              * select the parallelization scheme).
-             * Rounding down the number of ranks, or setting it to ngpu, whichever is smaller.
+             * Rounding down the number of ranks and limiting the total count per GPU.
              * */
             if (nrank_new > ngpu)
             {
-                nrank_new = (nrank_new / ngpu) * ngpu;
+                nrank_new = std::min(nrank_new / ngpu, c_maxAutoTmpiRanksPerGpu) * ngpu;
             }
             else
             {
