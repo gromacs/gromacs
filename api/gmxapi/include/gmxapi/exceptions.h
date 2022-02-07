@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ public:
     Exception(Exception&& /*unused*/) noexcept;
     Exception& operator=(Exception&& /*unused*/) noexcept;
 
-    const char* what() const noexcept override;
+    [[nodiscard]] const char* what() const noexcept override;
     //! \endcond
 };
 
@@ -129,7 +129,7 @@ public:
      * It is the responsibility of the caller to keep the Exception object alive while the char
      * pointer is in use.
      */
-    const char* what() const noexcept override { return what_.c_str(); }
+    [[nodiscard]] const char* what() const noexcept override { return what_.c_str(); }
 };
 
 /*! \brief Behavioral protocol violated.

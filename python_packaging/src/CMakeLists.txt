@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,6 @@ endif ()
 pybind11_add_module(_gmxapi
                     gmxapi/module.cpp
                     gmxapi/export_context.cpp
-                    gmxapi/export_exceptions.cpp
                     gmxapi/export_system.cpp
                     gmxapi/export_tprfile.cpp
                     gmxapi/pycontext.cpp
@@ -164,11 +163,16 @@ endif ()
 if (NOT DEFINED gmxapi_VERSION)
     message(FATAL_ERROR "gmxapi library version not detected.")
 endif ()
-if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
-    target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
-else()
+if (gmxapi_VERSION VERSION_LESS 0.3.1)
     message(WARNING "Found an old gmxapi library version. Please consider updating your GROMACS installation.")
-    target_sources(_gmxapi PRIVATE gmxapi/launch_020.cpp)
+    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_2_0.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_3_1.cpp)
+endif()
+if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
+    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_1.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_0.cpp)
 endif()
 
 target_include_directories(_gmxapi PRIVATE

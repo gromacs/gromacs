@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,6 +71,8 @@ namespace py = pybind11;
 
 void export_exceptions(pybind11::module& m)
 {
+    assert(!gmxapi::Version::isAtLeast(0, 3, 1) && "CMake found the wrong source file.");
+
     // These two lines could cause exceptions, but they are already handled,
     // causing an ImportError for the _gmxapi submodule raised from the
     // ImportError or AttributeError that caused the failure.
@@ -138,20 +140,14 @@ void export_exceptions(pybind11::module& m)
     {
         const auto missing_implementation_doc =
                 "Expected feature is not implemented.\n\n"
-                ".. versionchanged:: 0.3\n"
-                "    Renamed from NotImplementedError.\n";
-        if (gmxapi::Version::isAtLeast(0, 3, 1))
-        {
-            auto exception = py::register_exception<gmxapi::MissingImplementationError>(
-                    m, "MissingImplementationError", baseException.ptr());
-            exception.doc() = missing_implementation_doc;
-        }
-        else
-        {
-            auto exception = py::register_exception<gmxapi::NotImplementedError>(
-                    m, "MissingImplementationError", baseException.ptr());
-            exception.doc() = missing_implementation_doc;
-        }
+                ".. deprecated:: 0.3\n"
+                "    Use MissingImplementationError instead.\n";
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        auto exception = py::register_exception<gmxapi::NotImplementedError>(
+                m, "NotImplementedError", baseException.ptr());
+#pragma clang diagnostic pop
+        exception.doc() = missing_implementation_doc;
     }
 
     {
