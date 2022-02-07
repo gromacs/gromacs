@@ -55,3 +55,13 @@ More features implemented in modular simulator
 Several features were added to the modular simulator, including all temperature
 and pressure coupling algorithms available in the legacy simulator, expanded
 ensemble and pull.
+
+Free energy calculations now support all non-perturbed bonded interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously |Gromacs| did not permit any usage of a few more special bonded
+interactions (restricted angles/dihedrals or combined bending-torsion potentials)
+in free energy calculations. These are now allowed, as long as the interaction
+itself is not perturbed.
+
+:issue:`3691`

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,17 +123,31 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
             break;
         case F_CMAP: bPert = FALSE; break;
         case F_RESTRANGLES:
+            bPert = (ip->harmonic.rA != ip->harmonic.rB) || (ip->harmonic.krA != ip->harmonic.krB);
+            break;
         case F_RESTRDIHS:
+            bPert = (ip->pdihs.phiA != ip->pdihs.phiB) || (ip->pdihs.cpA != ip->pdihs.cpB);
+            break;
         case F_CBTDIHS:
-            gmx_fatal(FARGS,
-                      "Function type %s does not support currentely free energy calculations",
-                      interaction_function[ftype].longname);
+            bPert = false;
+            for (int i = 0; i < NR_CBTDIHS && !bPert; i++)
+            {
+                bPert = ip->cbtdihs.cbtcA[i] != ip->cbtdihs.cbtcB[i];
+            }
+            break;
         default:
             gmx_fatal(FARGS,
                       "Function type %s not implemented in ip_pert",
                       interaction_function[ftype].longname);
     }
 
+    if (bPert && (ftype == F_RESTRANGLES || ftype == F_RESTRDIHS || ftype == F_CBTDIHS))
+    {
+        gmx_fatal(FARGS,
+                  "Function type %s does not currently support being perturbed in free energy "
+                  "calculations",
+                  interaction_function[ftype].longname);
+    }
     return bPert;
 }
 
