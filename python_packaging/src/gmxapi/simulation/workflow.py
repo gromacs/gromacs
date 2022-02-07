@@ -514,7 +514,7 @@ class WorkElement(object):
                        'params': self.params,
                        'depends': self.depends
                        }
-        serialization = json.dumps(output_dict)
+        serialization = json.dumps(output_dict, default=lambda x: x.to_list())
         return to_utf8(serialization)
 
     @classmethod
@@ -669,6 +669,11 @@ def from_tpr(input=None, **kwargs):
 
     # Note: These are runner parameters, not MD parameters, and should be in the call to gmx.run() instead of here.
     # Reference https://github.com/kassonlab/gmxapi/issues/95
+    # Also note that it is not well defined whether or which arguments should be allowed to differ within
+    # an ensemble. But to allow parallel trajectory continuation, we have to accept distinct `-cpi` arguments.
+    # Note that this violates the traditional gmxapi assumption that all ranks see the same
+    # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
+    # to the rank that sees it.
     params = {}
     if '-noappend' in kwargs:
         kwargs['append_output'] = False

@@ -250,16 +250,25 @@ class LegacyImplementationSubscription(object):
                 if context_rank < ensemble_width:
                     assert ensemble_comm.Get_size() == ensemble_width
                     ensemble_rank = ensemble_comm.Get_rank()
+                else:
+                    ensemble_rank = None
+
+                source_file, parameters, runtime_args = None, None, None
+                # For the interim subscription system between MPI ranks,
+                # ResourceManager.update_output() needs to be called on all ranks.
+                for ensemble_member in range(ensemble_width):
+                    with resource_manager.local_input(member=ensemble_member) as input_pack:
+                        if ensemble_member == ensemble_rank:
+                            source_file = input_pack.kwargs['_simulation_input']
+                            parameters = input_pack.kwargs['parameters']
+                            runtime_args = input_pack.kwargs['runtime_args']
+                            # If there are any other key word arguments to process from the
+                            # gmxapi.mdrun factory call, do it here.
+
+                if ensemble_rank is not None:
                     # TODO: This should be a richer object that includes at least host information
                     #  and preferably the full gmxapi Future interface.
                     workdir = os.path.abspath(workdir_list[ensemble_rank])
-
-                    with resource_manager.local_input(member=ensemble_rank) as input_pack:
-                        source_file = input_pack.kwargs['_simulation_input']
-                        parameters = input_pack.kwargs['parameters']
-                        runtime_args = input_pack.kwargs['runtime_args']
-                        # If there are any other key word arguments to process from the gmxapi.mdrun
-                        # factory call, do it here.
 
                     # TODO: We should really name this file with a useful input-dependent tag.
                     tprfile = os.path.join(workdir, 'topol.tpr')
@@ -344,6 +353,9 @@ class LegacyImplementationSubscription(object):
                         logger.debug(
                             'Adding mdrun run time argument from user input: {}'.format(
                                 key + '=' + str(value)))
+                    # Note that this violates the traditional gmxapi assumption that all ranks see the same
+                    # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
+                    # to the rank that sees it.
                     work = workflow.from_tpr(tpr_filenames, **kwargs)
                     self.workspec = work.workspec
                     # TODO(#3145): Attach extension code, if any.
@@ -416,9 +428,17 @@ class SubscriptionSessionResources(object):
         self.runtime_args = input.runtime_args[member_id]
 
 
+class SubscriptionPublishingRunnerDirector(_op.AbstractRunnerDirector):
+
+    def __init__(self):
+        self.allow_duplicate = False
+
+    def __call__(self, resources) -> typing.Callable[[], None]:
+        return SubscriptionPublishingRunner(resources=resources)
+
+
 class SubscriptionPublishingRunner(object):
     """Handle execution in the gmxapi.operation context as a subscription to the gmxapi.simulation.context."""
-    input_resource_factory = LegacyImplementationSubscription
 
     def __init__(self, resources: SubscriptionSessionResources):
         assert isinstance(resources, SubscriptionSessionResources)
@@ -655,7 +675,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
         # The runner in the gmxapi.operation context is the servicer for the legacy context.
-        builder.set_runner_director(SubscriptionPublishingRunner)
+        builder.set_runner_director(SubscriptionPublishingRunnerDirector())
         builder.set_output_factory(_output_factory)
         builder.set_resource_manager(ResourceManager)
 

@@ -134,8 +134,10 @@ _input = _op.InputCollectionDescription(
      ])
 
 
-def _session_resource_factory(input: _op.InputPack, output: PublishingDataProxy) -> SessionResources:
+def _session_resource_factory(input: _op.InputPack, output: PublishingDataProxy, **kwargs
+                              ) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
+    # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
     filename = input.kwargs['_simulation_input']
     parameters = input.kwargs['parameters']
     return SessionResources(_simulation_input=filename, parameters=parameters, publisher=output)
@@ -283,11 +285,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        def runner_director(resources):
-            def runner():
-                _run(resources)
-
-            return runner
+        runner_director = _op.RunnerDirector(runner=_run)
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)

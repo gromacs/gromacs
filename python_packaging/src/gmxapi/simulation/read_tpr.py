@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021, by the GROMACS development team, led by
+# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -113,8 +113,11 @@ _input = _op.InputCollectionDescription(
 
 
 # TODO: Clarify. The actual input and output arguments passed are customized for this operation.
-def _session_resource_factory(input: _op.InputPack, output: 'PublishingDataProxy') -> SessionResources:
+def _session_resource_factory(input: _op.InputPack, output: 'PublishingDataProxy',
+                              **kwargs
+                              ) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
+    # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
     filename = input.kwargs['filename']
     return SessionResources(tpr_filename=filename, publisher=output)
 
@@ -323,10 +326,9 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        def runner_director(resources):
-            def runner():
-                _run(resources)
-            return runner
+        runner_director = _op.RunnerDirector(
+            runner=_run
+        )
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)
