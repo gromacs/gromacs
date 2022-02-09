@@ -663,46 +663,38 @@ static void computeSpecialForces(FILE*                          fplog,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
+    const int  pullMtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
+    const bool doPulling    = (inputrec.bPull && pull_have_potential(*pull_work)
+                            && (pullMtsLevel == 0 || stepWork.computeSlowForces));
+
     /* pull_potential_wrapper(), awh->applyBiasForcesAndUpdateBias(), pull_apply_forces()
      * have to be called in this order
      */
-    if (inputrec.bPull && pull_have_potential(*pull_work))
+    if (doPulling)
     {
-        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
-        if (mtsLevel == 0 || stepWork.computeSlowForces)
-        {
-            pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
-        }
+        pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
     }
-    if (awh)
+    if (awh && (pullMtsLevel == 0 || stepWork.computeSlowForces))
     {
-        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
-        if (mtsLevel == 0 || stepWork.computeSlowForces)
+        const bool          needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
+        std::vector<double> foreignLambdaDeltaH, foreignLambdaDhDl;
+        if (needForeignEnergyDifferences)
         {
-            const bool needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
-            std::vector<double> foreignLambdaDeltaH, foreignLambdaDhDl;
-            if (needForeignEnergyDifferences)
-            {
-                enerd->foreignLambdaTerms.finalizePotentialContributions(
-                        enerd->dvdl_lin, lambda, *inputrec.fepvals);
-                std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
-            }
+            enerd->foreignLambdaTerms.finalizePotentialContributions(
+                    enerd->dvdl_lin, lambda, *inputrec.fepvals);
+            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
+        }
 
-            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
-        }
+        enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
+                inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
     }
-    if (inputrec.bPull && pull_have_potential(*pull_work))
+    if (doPulling)
     {
-        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
-        if (mtsLevel == 0 || stepWork.computeSlowForces)
-        {
-            wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
-            auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-            pull_apply_forces(
-                    pull_work, gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr), cr, forceWithVirial);
-            wallcycle_stop(wcycle, WallCycleCounter::PullPot);
-        }
+        wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
+        auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
+        pull_apply_forces(
+                pull_work, gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr), cr, forceWithVirial);
+        wallcycle_stop(wcycle, WallCycleCounter::PullPot);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
