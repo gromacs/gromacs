@@ -26,6 +26,14 @@ message.
 :issue:`3403`
 :issue:`3808`
 
+Fix running with LJ PME only
+""""""""""""""""""""""""""""
+
+Simulations with only LJ PME but not electrostatic PME would fail to run due
+to an error in task assignment.
+
+:issue:`4362`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^

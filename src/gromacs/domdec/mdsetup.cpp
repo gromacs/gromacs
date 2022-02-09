@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         listedForces.setup(top->idef, fr->natoms_force, fr->gpuBonded != nullptr);
     }
 
-    if (EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
+    if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
     {
         /* This handles the PP+PME rank case where fr->pmedata is valid.
          * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().

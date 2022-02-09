@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -772,8 +772,12 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real
                            ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            fprintf(fp, "Initialized non-bonded Ewald tables, spacing: %.2e size: %zu\n\n",
-                    1 / ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
+            if (EEL_PME_EWALD(ic->eeltype))
+            {
+                fprintf(fp,
+                        "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
+                        1 / ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
+            }
         }
     }
 }
