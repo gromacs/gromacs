@@ -1,12 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2015,2018,2019, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 1991- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -20,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -29,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 
 #ifndef GMX_FILEIO_GMX_SYSTEM_XDR_H
@@ -148,25 +145,25 @@ struct XDR
     enum xdr_op x_op; /* operation; fast additional param */
     struct xdr_ops
     {
-        bool_t (*x_getbytes)(XDR* __xdrs, char* __addr, unsigned int __len);
+        bool_t (*x_getbytes)(XDR* xdrs, char* addr, unsigned int len);
         /* get some bytes from " */
-        bool_t (*x_putbytes)(XDR* __xdrs, char* __addr, unsigned int __len);
+        bool_t (*x_putbytes)(XDR* xdrs, char* addr, unsigned int len);
         /* put some bytes to " */
-        unsigned int (*x_getpostn)(XDR* __xdrs);
+        unsigned int (*x_getpostn)(XDR* xdrs);
         /* returns bytes off from beginning */
-        bool_t (*x_setpostn)(XDR* __xdrs, unsigned int __pos);
+        bool_t (*x_setpostn)(XDR* xdrs, unsigned int pos);
         /* lets you reposition the stream */
-        xdr_int32_t* (*x_inline)(XDR* __xdrs, int __len);
+        xdr_int32_t* (*x_inline)(XDR* xdrs, int len);
         /* buf quick ptr to buffered data */
-        void (*x_destroy)(XDR* __xdrs);
+        void (*x_destroy)(XDR* xdrs);
         /* free privates of this xdr_stream */
-        bool_t (*x_getint32)(XDR* __xdrs, xdr_int32_t* __ip);
+        bool_t (*x_getint32)(XDR* xdrs, xdr_int32_t* ip);
         /* get a int from underlying stream */
-        bool_t (*x_putint32)(XDR* __xdrs, xdr_int32_t* __ip);
+        bool_t (*x_putint32)(XDR* xdrs, xdr_int32_t* ip);
         /* put a int to " */
-        bool_t (*x_getuint32)(XDR* __xdrs, xdr_uint32_t* __ip);
+        bool_t (*x_getuint32)(XDR* xdrs, xdr_uint32_t* ip);
         /* get a unsigned int from underlying stream */
-        bool_t (*x_putuint32)(XDR* __xdrs, xdr_uint32_t* __ip);
+        bool_t (*x_putuint32)(XDR* xdrs, xdr_uint32_t* ip);
         /* put a int to " */
     } * x_ops;
     char* x_public;  /* users' data */
@@ -227,21 +224,21 @@ typedef bool_t (*xdrproc_t)(XDR*, void*, ...);
 
 
 bool_t xdr_void();
-bool_t xdr_int(XDR* __xdrs, int* __ip);
-bool_t xdr_u_int(XDR* __xdrs, unsigned int* __ip);
-bool_t xdr_short(XDR* __xdrs, short* __ip);
-bool_t xdr_u_short(XDR* __xdrs, unsigned short* __ip);
-bool_t xdr_bool(XDR* __xdrs, int* __bp);
-bool_t xdr_opaque(XDR* __xdrs, char* __cp, unsigned int __cnt);
-bool_t xdr_string(XDR* __xdrs, char** __cpp, unsigned int __maxsize);
-bool_t xdr_char(XDR* __xdrs, char* __cp);
-bool_t xdr_u_char(XDR* __xdrs, unsigned char* __cp);
-bool_t xdr_vector(XDR* __xdrs, char* __basep, unsigned int __nelem, unsigned int __elemsize, xdrproc_t __xdr_elem);
-bool_t xdr_float(XDR* __xdrs, float* __fp);
-bool_t xdr_double(XDR* __xdrs, double* __dp);
-void   xdrstdio_create(XDR* __xdrs, FILE* __file, enum xdr_op __xop);
+bool_t xdr_int(XDR* _xdrs, int* _ip);
+bool_t xdr_u_int(XDR* _xdrs, unsigned int* _ip);
+bool_t xdr_short(XDR* _xdrs, short* _ip);
+bool_t xdr_u_short(XDR* _xdrs, unsigned short* _ip);
+bool_t xdr_bool(XDR* _xdrs, int* _bp);
+bool_t xdr_opaque(XDR* _xdrs, char* _cp, unsigned int _cnt);
+bool_t xdr_string(XDR* _xdrs, char** _cpp, unsigned int _maxsize);
+bool_t xdr_char(XDR* _xdrs, char* _cp);
+bool_t xdr_u_char(XDR* _xdrs, unsigned char* _cp);
+bool_t xdr_vector(XDR* _xdrs, char* _basep, unsigned int _nelem, unsigned int _elemsize, xdrproc_t _xdr_elem);
+bool_t xdr_float(XDR* _xdrs, float* _fp);
+bool_t xdr_double(XDR* _xdrs, double* _dp);
+void   xdrstdio_create(XDR* _xdrs, FILE* _file, enum xdr_op _xop);
 
 /* free memory buffers for xdr */
-void xdr_free(xdrproc_t __proc, char* __objp);
+void xdr_free(xdrproc_t _proc, char* _objp);
 
 #endif /* GMX_FILEIO_GMX_SYSTEM_XDR_H */
