@@ -163,7 +163,7 @@ the research papers on the package. Check out https://www.gromacs.org.
 
         if state.first_year:
             first_year = state.first_year
-            if current_year <= first_year:
+            if current_year < first_year:
                 if options.update_year:
                     need_update = True
                     first_year = current_year
