@@ -572,7 +572,10 @@ real ta_disres(int             nfa,
             /* Correct the force for the number of restraints */
             if (bConservative)
             {
-                f_scal = std::max(f_scal, fmax_scal);
+                if (-f_scal / k0 > up2 - up1)
+                {
+                    f_scal = fmax_scal;
+                }
                 if (!bMixed)
                 {
                     f_scal *= Rtav / Rtav_6[res];
@@ -587,7 +590,10 @@ real ta_disres(int             nfa,
             else
             {
                 f_scal /= npair;
-                f_scal = std::max(f_scal, fmax_scal);
+                if (-f_scal / k0 > up2 - up1)
+                {
+                    f_scal = fmax_scal;
+                }
             }
 
             /* Exert the force ... */

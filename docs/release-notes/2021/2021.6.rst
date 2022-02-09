@@ -56,3 +56,13 @@ in degrees. The guide incorrectly stated that there were in radians, whereas
 the code interprets the user input as degrees.
 
 :issue:`4367`
+
+Fix distance restraint force calculation in case of negative prefactor
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When calculating distance restraint forces, the quadratic regime for weak
+restraint violation and the linear regime for strong restraint violation were
+interchanged in case of a negative force constant.
+
+:issue:`4347`
+
