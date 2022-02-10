@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2016- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
@@ -229,9 +228,10 @@ TEST_F(PullTest, TransformationCoordSimple)
     EXPECT_REAL_EQ_TOL(pull.coord[1].spatialData.value, -dist, defaultRealTolerance());
 
     // 2) check that a force on the transformation coord propagates to the original pull coordinate
-    const double force = 10; // The force on the transformation coordinate
-    applyTransformationPullCoordForce(
-            &pull.coord[1], gmx::ArrayRef<pull_coord_work_t>(pull.coord).subArray(0, 1), force);
+    const double force        = 10; // The force on the transformation coordinate
+    pull.coord[1].scalarForce = force;
+    distributeTransformationPullCoordForce(
+            &pull.coord[1], gmx::ArrayRef<pull_coord_work_t>(pull.coord).subArray(0, 1));
     EXPECT_REAL_EQ_TOL(force, pull.coord[1].scalarForce, defaultRealTolerance());
     EXPECT_REAL_EQ_TOL(-force,
                        pull.coord[0].scalarForce,
@@ -302,54 +302,37 @@ TEST_F(PullTest, TransformationCoordAdvanced)
         double expectedX4 = v1 - 0.5 * v2 * v2 * v2 + expectedX3 * expectedX3 + 3;
         EXPECT_REAL_EQ_TOL(pull.coord[3].spatialData.value, expectedX4, defaultRealTolerance());
 
-        // 2.1) check derivatives and force on normal pull coordinates with a direct relationship
         double transformationForcex3 = v2 / 9 + 1;
-        applyTransformationPullCoordForce(&pull.coord[2],
-                                          gmx::ArrayRef<pull_coord_work_t>(pull.coord).subArray(0, 2),
-                                          transformationForcex3);
-
-        double expectedFx1 = transformationForcex3 * 2 * v1;
-        // the theoretical error of first order numerical derivation is 0.5*f''(x)*h (not taking the numerical precision into account)
-        double tolX3 = 1e-4; // * x3.dx; // numerical error tolerance
-        EXPECT_REAL_EQ_TOL(expectedFx1,
-                           pull.coord[0].scalarForce,
-                           test::relativeToleranceAsFloatingPoint(expectedFx1, tolX3));
-
-        double expectedFx2 = 0;
-        EXPECT_REAL_EQ_TOL(expectedFx2, pull.coord[1].scalarForce, defaultRealTolerance());
-
-        double expectedFx3 = transformationForcex3;
-        EXPECT_REAL_EQ_TOL(expectedFx3, pull.coord[2].scalarForce, defaultRealTolerance());
-
-        double expectedFx4 = 0;
-        EXPECT_REAL_EQ_TOL(expectedFx4, pull.coord[3].scalarForce, defaultRealTolerance());
-
-        // 2.2) check derivatives and force on normal pull coordinates
-        // also taking inner derivatives accounts (remembering that x3 = x1^2)
-        // Only x4 has non-zero scalar force here
+        pull.coord[2].scalarForce += transformationForcex3;
         double transformationForcex4 = v1 + 4.5;
-        double tolX4                 = 1e-2;
-        applyTransformationPullCoordForce(&pull.coord[3],
-                                          gmx::ArrayRef<pull_coord_work_t>(pull.coord).subArray(0, 3),
-                                          transformationForcex4);
+        pull.coord[3].scalarForce    = transformationForcex4;
 
-        expectedFx1 += transformationForcex4
-                       * (1 + 4 * v1 * v1 * v1); // Note that we expect the inner derivative to work here
+        // Distribute the transformation coordinate forces
+        pull.comm.bParticipate = true;
+        pull_apply_forces(&pull, {}, nullptr, nullptr);
+
+        // 2) check forces on transformation and normal pull coordinates with a direct relationship
+        double tolX4 = 1e-2;
+
+        // Note: sum of direct force from pull.coord[2] and indirect force of pull.coord[3]
+        double expectedFx1 =
+                transformationForcex3 * 2 * v1 + transformationForcex4 * (1 + 4 * v1 * v1 * v1);
         EXPECT_REAL_EQ_TOL(expectedFx1,
                            pull.coord[0].scalarForce,
                            test::relativeToleranceAsFloatingPoint(expectedFx1, tolX4));
 
-        expectedFx2 += -1.5 * v2 * v2 * transformationForcex4;
+        double expectedFx2 = -1.5 * v2 * v2 * transformationForcex4;
         EXPECT_REAL_EQ_TOL(expectedFx2,
                            pull.coord[1].scalarForce,
                            test::relativeToleranceAsFloatingPoint(expectedFx2, tolX4));
 
-        expectedFx3 += 2 * expectedX3 * transformationForcex4;
+        // Note: sum of direct force plus the force of the transformation from pull.coord[3]
+        double expectedFx3 = transformationForcex3 + 2 * expectedX3 * transformationForcex4;
         EXPECT_REAL_EQ_TOL(expectedFx3,
                            pull.coord[2].scalarForce,
                            test::relativeToleranceAsFloatingPoint(expectedFx3, tolX4));
 
-        expectedFx4 += transformationForcex4;
+        double expectedFx4 = transformationForcex4;
         EXPECT_REAL_EQ_TOL(expectedFx4, pull.coord[3].scalarForce, defaultRealTolerance());
     }
 }

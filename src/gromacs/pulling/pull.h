@@ -1,13 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 1991- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -21,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -30,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 
 /*! \libinternal \file
@@ -139,24 +135,17 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
 /*! \brief Apply forces of an external potential to a pull coordinate.
  *
  * This function applies the external scalar force \p coord_force to
- * the pull coordinate, distributing it over the atoms in the groups
- * involved in the pull coordinate. The corresponding potential energy
+ * the pull coordinate. The corresponding potential energy
  * value should be added to the pull or the module's potential energy term
  * separately by the module itself.
- * This function should be called after pull_potential has been called and,
- * obviously, before the coordinates are updated uses the forces.
+ * This function should be called after pull_potential() has been called and,
+ * before calling pull_apply_forces().
  *
  * \param[in,out] pull             The pull struct.
  * \param[in]     coord_index      The pull coordinate index to set the force for.
  * \param[in]     coord_force      The scalar force for the pull coordinate.
- * \param[in]     masses           Atoms masses.
- * \param[in,out] forceWithVirial  Force and virial buffers.
  */
-void apply_external_pull_coord_force(struct pull_t*            pull,
-                                     int                       coord_index,
-                                     double                    coord_force,
-                                     gmx::ArrayRef<const real> masses,
-                                     gmx::ForceWithVirial*     forceWithVirial);
+void apply_external_pull_coord_force(pull_t* pull, int coord_index, double coord_force);
 
 /*! \brief Set the all the pull forces to zero.
  *
@@ -165,7 +154,15 @@ void apply_external_pull_coord_force(struct pull_t*            pull,
 void clear_pull_forces(pull_t* pull);
 
 
-/*! \brief Determine the COM pull forces and add them to f, return the potential
+/*! \brief Computes the COM pull forces, returns the potential
+ *
+ * The function computes the COMs of the pull groups and the potentials and forces
+ * acting on the pull groups, except for external potential coordinates, which forces
+ * are set by calls to \p apply_external_pull_coord_force() after calling this function.
+ * To finalize the pull application, a call to \p pull_apply_forces() is required to
+ * distribute the forces on the COMs to the atoms.
+ *
+ * Note: performance global MPI communication, potentially on a subset of the MPI ranks.
  *
  * \param[in,out] pull   The pull struct.
  * \param[in]     masses Atoms masses.
@@ -174,7 +171,6 @@ void clear_pull_forces(pull_t* pull);
  * \param[in]     t      Time.
  * \param[in]     lambda The value of lambda in FEP calculations.
  * \param[in]     x      Positions.
- * \param[in,out] force  Forces and virial.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
  *
  * \returns The pull potential energy.
@@ -186,9 +182,30 @@ real pull_potential(pull_t*                        pull,
                     double                         t,
                     real                           lambda,
                     gmx::ArrayRef<const gmx::RVec> x,
-                    gmx::ForceWithVirial*          force,
                     real*                          dvdlambda);
 
+/*! \brief Applies the computed COM pull forces to the atoms and accumulates the virial
+ *
+ * When \p force!=nullptr, distributes the pull force on the COM of each normal pull
+ * group to the atoms in the group (using mass weighting).
+ *
+ * Also performs the recursion for transformation pull coordinates, when present,
+ * distributing the force on transformation coordinates to the COM of groups involved.
+ *
+ * This function should be called after calling \p pull_potential() and also after
+ * other modules, e.g. AWH, have called \p apply_external_pull_coord_force().
+ *
+ * Note: this function is fully local and does not perform MPI communication.
+ *
+ * \param[in,out] pull   The pull struct.
+ * \param[in]     masses Atoms masses.
+ * \param[in]     cr     Struct for communication info.
+ * \param[in,out] force  Forces and virial.
+ */
+void pull_apply_forces(struct pull_t*            pull,
+                       gmx::ArrayRef<const real> masses,
+                       const t_commrec*          cr,
+                       gmx::ForceWithVirial*     force);
 
 /*! \brief Constrain the coordinates xp in the directions in x
  * and also constrain v when v != NULL.

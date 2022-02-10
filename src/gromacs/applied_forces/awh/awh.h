@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2015- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 
 /*! \libinternal
@@ -160,12 +159,12 @@ public:
      * Convergence of the bias and free energy estimate is achieved by
      * updating the AWH bias state after a certain number of samples has been collected.
      *
-     * \note Requires that pull_potential from pull.h has been called first
+     * \note Requires that pull_potential() from pull.h has been called first
      * since AWH needs the current coordinate values (the pull code checks
-     * for this).
+     * for this). Requires that pull_apply_forces() is called after this
+     * to take into account the updated pull forces AWH might be applied to.
      *
      * \param[in]     pbcType          Type of periodic boundary conditions.
-     * \param[in]     masses           Atoms masses.
      * \param[in]     neighborLambdaEnergies An array containing the energy of the system
      * in neighboring lambdas. The array is of length numLambdas+1, where numLambdas is
      * the number of free energy lambda states. Element 0 in the array is the energy
@@ -179,7 +178,6 @@ public:
      * neighboring lambda states (also including the current state). When there are no free
      * energy lambda state dimensions this can be empty.
      * \param[in]     box              Box vectors.
-     * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
      * \param[in]     t                Time.
      * \param[in]     step             The current MD step.
      * \param[in,out] wallcycle        Wallcycle counter, can be nullptr.
@@ -187,11 +185,9 @@ public:
      * \returns the potential energy for the bias.
      */
     real applyBiasForcesAndUpdateBias(PbcType                pbcType,
-                                      ArrayRef<const real>   masses,
                                       ArrayRef<const double> neighborLambdaEnergies,
                                       ArrayRef<const double> neighborLambdaDhdl,
                                       const matrix           box,
-                                      gmx::ForceWithVirial*  forceWithVirial,
                                       double                 t,
                                       int64_t                step,
                                       gmx_wallcycle*         wallcycle,

@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2015- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 
 /*! \internal \file
@@ -64,7 +63,6 @@
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/mdtypes/state.h"
@@ -138,18 +136,6 @@ static bool anyDimUsesProvider(const AwhParams& awhParams, const AwhCoordinatePr
                        [&awhCoordProvider](const auto& awhBiasParam) {
                            return anyDimUsesProvider(awhBiasParam, awhCoordProvider);
                        });
-}
-
-/*! \brief Checks whether any dimension uses pulling as a coordinate provider.
- *
- * \param[in] biasCoupledToSystem The AWH biases to check.
- * \returns true if any dimension of the provided biases is linked to pulling.
- */
-static bool anyDimUsesPull(const ArrayRef<BiasCoupledToSystem> biasCoupledToSystem)
-{
-    return std::any_of(biasCoupledToSystem.begin(), biasCoupledToSystem.end(), [](const auto& biasCts) {
-        return !biasCts.pullCoordIndex_.empty();
-    });
 }
 
 BiasCoupledToSystem::BiasCoupledToSystem(Bias bias, const std::vector<int>& pullCoordIndex) :
@@ -303,21 +289,14 @@ bool Awh::isOutputStep(int64_t step) const
 }
 
 real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
-                                       ArrayRef<const real>   masses,
                                        ArrayRef<const double> neighborLambdaEnergies,
                                        ArrayRef<const double> neighborLambdaDhdl,
                                        const matrix           box,
-                                       gmx::ForceWithVirial*  forceWithVirial,
                                        double                 t,
                                        int64_t                step,
                                        gmx_wallcycle*         wallcycle,
                                        FILE*                  fplog)
 {
-    if (anyDimUsesPull(biasCoupledToSystem_))
-    {
-        GMX_ASSERT(forceWithVirial, "Need a valid ForceWithVirial object");
-    }
-
     wallcycle_start(wallcycle, WallCycleCounter::Awh);
 
     t_pbc pbc;
@@ -383,11 +362,8 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         {
             if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
-                apply_external_pull_coord_force(pull_,
-                                                biasCts.pullCoordIndex_[d - numLambdaDimsCounted],
-                                                biasForce[d],
-                                                masses,
-                                                forceWithVirial);
+                apply_external_pull_coord_force(
+                        pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted], biasForce[d]);
             }
             else
             {

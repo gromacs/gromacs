@@ -1,12 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020,2021,2022, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 1991- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -20,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -29,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gmxpre.h"
 
@@ -188,7 +185,6 @@ static void pull_potential_wrapper(const t_commrec*               cr,
                                    const t_inputrec&              ir,
                                    const matrix                   box,
                                    gmx::ArrayRef<const gmx::RVec> x,
-                                   gmx::ForceWithVirial*          force,
                                    const t_mdatoms*               mdatoms,
                                    gmx_enerdata_t*                enerd,
                                    pull_t*                        pull_work,
@@ -213,7 +209,6 @@ static void pull_potential_wrapper(const t_commrec*               cr,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
                            x,
-                           force,
                            &dvdl);
     enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Restraint] += dvdl;
     wallcycle_stop(wcycle, WallCycleCounter::PullPot);
@@ -668,14 +663,15 @@ static void computeSpecialForces(FILE*                          fplog,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
+    /* pull_potential_wrapper(), awh->applyBiasForcesAndUpdateBias(), pull_apply_forces()
+     * have to be called in this order
+     */
     if (inputrec.bPull && pull_have_potential(*pull_work))
     {
         const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
         if (mtsLevel == 0 || stepWork.computeSlowForces)
         {
-            auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-            pull_potential_wrapper(
-                    cr, inputrec, box, x, forceWithVirial, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
+            pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
         }
     }
     if (awh)
@@ -692,20 +688,23 @@ static void computeSpecialForces(FILE*                          fplog,
                 std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
             }
 
-            auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
             enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec.pbcType,
-                    gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
-                    foreignLambdaDeltaH,
-                    foreignLambdaDhDl,
-                    box,
-                    forceWithVirial,
-                    t,
-                    step,
-                    wcycle,
-                    fplog);
+                    inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
         }
     }
+    if (inputrec.bPull && pull_have_potential(*pull_work))
+    {
+        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
+        if (mtsLevel == 0 || stepWork.computeSlowForces)
+        {
+            wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
+            auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
+            pull_apply_forces(
+                    pull_work, gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr), cr, forceWithVirial);
+            wallcycle_stop(wcycle, WallCycleCounter::PullPot);
+        }
+    }
+
     /* Add the forces from enforced rotation potentials (if any) */
     if (inputrec.bRot)
     {
