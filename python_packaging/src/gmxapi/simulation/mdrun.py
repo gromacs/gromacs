@@ -264,7 +264,8 @@ class LegacyImplementationSubscription(object):
                             # If there are any other key word arguments to process from the
                             # gmxapi.mdrun factory call, do it here.
 
-                if ensemble_rank is not None:
+                _current_rank_participates = ensemble_rank is not None
+                if _current_rank_participates:
                     # TODO: This should be a richer object that includes at least host information
                     #  and preferably the full gmxapi Future interface.
                     workdir = os.path.abspath(workdir_list[ensemble_rank])
@@ -367,10 +368,10 @@ class LegacyImplementationSubscription(object):
                     with self.simulation_module_context as session:
                         session.run()
                         # TODO: There may be some additional results that we need to extract...
-                    # end: if context_rank < ensemble_width
                     logger.debug(f'workdir[{ensemble_rank}] = {workdir_list[ensemble_rank]}')
                     logger.debug(f'parameters[{ensemble_rank}] = {parameters_dict_list[ensemble_rank]}')
                     logger.debug(f'runtime_args[{ensemble_rank}] = {runtime_args_list[ensemble_rank]}')
+                    # end if _current_rank_participates
 
                 # end scoped_communicator: ensemble_comm
 
@@ -391,6 +392,13 @@ class LegacyImplementationSubscription(object):
                     workdir_list = context_comm.recv(source=0)
                     parameters_dict_list = context_comm.recv(source=0)
                     runtime_args_list = context_comm.recv(source=0)
+            if hasattr(context_comm, 'barrier'):
+                logger.debug('Waiting for simulations to complete on all ranks before publishing results.')
+                # This is heavy-handed. Hopefully we can replace the explicit MPI calls with a Future
+                # abstraction and only wait on individual results when they are actually consumed.
+                # As of gmxapi 0.3, SubscriptionPublishingRunner takes responsibility for the full
+                # ensemble results on all ranks, and checks for file existence before publishing.
+                context_comm.barrier()
             # end scoped_communicator: context_comm
 
         # Replace the local-specific workdir value with the ensemble values.
@@ -430,7 +438,8 @@ class SubscriptionSessionResources(object):
 class SubscriptionPublishingRunnerDirector(_op.AbstractRunnerDirector):
 
     def __init__(self):
-        self.allow_duplicate = False
+        # We expect the gmxapi 0.0.7 MD runner to be run on all ranks.
+        self.allow_duplicate = True
 
     def __call__(self, resources) -> typing.Callable[[], None]:
         return SubscriptionPublishingRunner(resources=resources)
@@ -446,7 +455,8 @@ class SubscriptionPublishingRunner(object):
 
     def __call__(self):
         """Operation implementation in the gmxapi.operation module context."""
-        publisher = self.resources.output
+        publisher: PublishingDataProxy = self.resources.output
+        assert isinstance(publisher, PublishingDataProxy)
         publisher._work_dir = self.resources.workdir
         publisher.parameters = self.resources.parameters
         logger.debug(f'Session resources have runtime_args: {self.resources.runtime_args}')
@@ -486,44 +496,53 @@ class SubscriptionPublishingRunner(object):
         if not os.path.isabs(checkpoint):
             checkpoint = os.path.join(self.resources.workdir, checkpoint)
 
+        if trajectory:
+            path = Path(trajectory)
+            if path.exists():
+                # Publish the output file.
+                publisher.trajectory = str(path)
+            else:
+                logger.info(f'Output file {trajectory} does not exist.')
+                try:
+                    dir = path.parent
+                    contents = list(str(item) for item in dir.iterdir())
+                    logger.info(
+                        f'Directory {dir} contents: '
+                        ', '.join(contents)
+                    )
+                except FileNotFoundError:
+                    # We weren't able to get a dir listing to log.
+                    pass
+                # Explicitly publish a null result.
+                publisher.trajectory = None
+        else:
+            logger.info(f'Missing output. *trajectory* is "{str(trajectory)}"')
+            publisher.trajectory = None
+
         # Developer note: since `mdrun` is used for tasks beyond MD simulation
         # (such as energy minimization), not all output files exist in all use cases.
-        for name, output_file in (('trajectory', trajectory), ('checkpoint', checkpoint)):
-            try:
-                path = Path(output_file)
-                if path.exists():
-                    # Publish the output file.
-                    setattr(publisher, name, str(path))
-                else:
-                    logger.info(f'Output file {output_file} does not exist.')
-                    try:
-                        dir = path.parent
-                        contents = list(dir.iterdir())
-                        logger.info(
-                            f'Directory {dir} contents: '
-                            ', '.join(*contents)
-                        )
-                    except FileNotFoundError:
-                        pass
-                    # Explicitly publish a null result.
-                    setattr(publisher, name, None)
-            except TypeError:
-                logger.info(f'{name} is {output_file}')
-
-
-_next_uid = 0
-
-
-@functools.lru_cache(maxsize=None)
-def _make_uid(input) -> str:
-    # Note that *input* is probably a DataEdge, which has an identity based hash (object default)
-    # rather than a content-based hash.
-    # TODO: Use input fingerprint for more useful identification.
-    salt = hash(input)
-    global _next_uid
-    new_uid = 'mdrun_{}_{}'.format(_next_uid, salt)
-    _next_uid += 1
-    return new_uid
+        if checkpoint:
+            path = Path(checkpoint)
+            if path.exists():
+                # Publish the output file.
+                publisher.checkpoint = str(path)
+            else:
+                logger.info(f'Output file {checkpoint} does not exist.')
+                try:
+                    dir = path.parent
+                    contents = list(str(item) for item in dir.iterdir())
+                    logger.info(
+                        f'Directory {dir} contents: '
+                        ', '.join(contents)
+                    )
+                except FileNotFoundError:
+                    # We weren't able to get a dir listing to log.
+                    pass
+                # Explicitly publish a null result.
+                publisher.checkpoint = None
+        else:
+            logger.info(f'Missing output. *checkpoint* is "{str(checkpoint)}"')
+            publisher.checkpoint = None
 
 
 #
@@ -539,8 +558,12 @@ class ResourceManager(gmxapi.operation.ResourceManager):
     """
 
     def future(self, name: str, description: _op.ResultDescription):
-        tpr_future = super().future(name=name, description=description)
-        return tpr_future
+        # gmxapi 0.3 introduces some subscriptions and callbacks to synchronize results across MPI ranks.
+        # It will become increasingly important to optimize out unnecessary data transfers with greater
+        # awareness of data locality and data flow dependencies. This is one place to evolve additional
+        # hooks during or after progress on issue #3379
+        _future = super().future(name=name, description=description)
+        return _future
 
     def data(self) -> OutputDataProxy:
         return OutputDataProxy(self)
@@ -555,7 +578,7 @@ class ResourceManager(gmxapi.operation.ResourceManager):
             if self.__operation_entrance_counter > 1:
                 raise exceptions.ProtocolError(
                     'Bug detected: resource manager tried to execute operation twice.')
-            if not self.done():
+            with self.publishing_resources() as publishing_resources:
                 # TODO: rewrite with the pattern that this block is directing and then resolving an operation in the
                 #  operation's library/implementation context.
 
@@ -582,10 +605,8 @@ class ResourceManager(gmxapi.operation.ResourceManager):
 
                 # We are giving the director a resource that contains the subscription
                 # to the dispatched work.
-
-                publishing_resources = self.publishing_resources()
                 for member in range(self.ensemble_width):
-                    with publishing_resources(ensemble_member=member) as output:
+                    with publishing_resources.publishing_context(ensemble_member=member) as output:
                         error_message = 'Got {} while executing {} for operation {}.'
                         try:
                             resources = self._resource_factory(input=input, output=output)
@@ -601,19 +622,41 @@ class ResourceManager(gmxapi.operation.ResourceManager):
                         except Exception as e:
                             message = error_message.format(e, runner, self.operation_id)
                             raise exceptions.ApiError(message) from e
-            if not self.done():
-                message = f'update_output implementation failed to update all outputs for {self.operation_id}.'
-                raise exceptions.ApiError(message)
 
 
 class StandardInputDescription(_op.InputDescription):
-    """Provide the ReadTpr input description in gmxapi.operation Contexts."""
+    """Provide the MdRun input description in gmxapi.operation Contexts."""
+
+    # TODO: Improve fingerprinting.
+    # If _make_uid can't make sufficiently unique IDs, use additional "salt".
+    # Without fingerprinting, we cannot consistently hash *input* across processes,
+    # but we can consistently generate integers in the same sequence the first time
+    # we see each distinct input.
+    _next_uid: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
+
+    @classmethod
+    def _make_uid(cls, input) -> str:
+        # TODO: Use input fingerprint for more useful identification.
+        # WARNING: The built-in hash will use memory locations, and so will not be consistent across
+        # process ranks, even if the input should be the same.
+        salt = hash(input)
+        if salt not in cls._uids:
+            cls._uids[salt] = cls._next_uid
+            cls._next_uid += 1
+        else:
+            logger.debug(
+                f'Reissuing uid for mdrun({input}): {cls._uids[salt]}'
+            )
+        new_uid = 'mdrun_{}'.format(cls._uids[salt])
+        return new_uid
 
     def signature(self) -> _op.InputCollectionDescription:
         return _input
 
     def make_uid(self, input: _op.DataEdge) -> str:
-        return _make_uid(input)
+        assert isinstance(input, _op.DataEdge)
+        return self._make_uid(input)
 
 
 class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMeta):

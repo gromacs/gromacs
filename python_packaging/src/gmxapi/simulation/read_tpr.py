@@ -159,14 +159,6 @@ class ResourceManager(gmxapi.operation.ResourceManager):
     def data(self) -> OutputDataProxy:
         return OutputDataProxy(self)
 
-    def update_output(self):
-        logger.debug('Updating output for {}.'.format(self.operation_id))
-        super().update_output()
-        for descriptor in _output_descriptors:
-            name = descriptor._name
-            if not self.is_done(name):
-                raise gmxapi.exceptions.ApiError('Expected output {} not updated.'.format(name))
-
 # TODO: Consider making Generic in source and target context type variables,
 #  or leave unspecified and use generic function or pair of single_dispatch functions.
 #  Need to know the right home for input_description, if needed.
@@ -249,18 +241,27 @@ class StandardInputDescription(_op.InputDescription):
     """Provide the ReadTpr input description in gmxapi.operation Contexts."""
 
     # TODO: Improve fingerprinting.
-    # If _make_uid can't make sufficiently unique IDs, use additional "salt":
-    # _next_uid = 0
+    # If _make_uid can't make sufficiently unique IDs, use additional "salt".
+    # Without fingerprinting, we cannot consistently hash *input* across processes,
+    # but we can consistently generate integers in the same sequence the first time
+    # we see each distinct input.
+    _next_uid: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
 
-    @staticmethod
-    def _make_uid(input) -> str:
+    @classmethod
+    def _make_uid(cls, input) -> str:
         # TODO: Use input fingerprint for more useful identification.
+        # WARNING: The built-in hash will use memory locations, and so will not be consistent across
+        # process ranks, even if the input should be the same.
         salt = hash(input)
-        # If can't make sufficiently unique IDs, use additional "salt"
-        # from a class data member. E.g.
-        #     new_uid = 'read_tpr_{}_{}'.format(_next_uid, salt)
-        #     _next_uid += 1
-        new_uid = 'read_tpr_{}'.format(salt)
+        if salt not in cls._uids:
+            cls._uids[salt] = cls._next_uid
+            cls._next_uid += 1
+        else:
+            logger.debug(
+                f'Reissuing uid for read_tpr({input}): {cls._uids[salt]}'
+            )
+        new_uid = 'read_tpr_{}'.format(cls._uids[salt])
         return new_uid
 
     def signature(self) -> InputCollectionDescription:
@@ -326,7 +327,8 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_handle(StandardOperationHandle)
 
         runner_director = _op.RunnerDirector(
-            runner=_run
+            runner=_run,
+            allow_duplicate=True
         )
 
         builder.set_runner_director(runner_director)

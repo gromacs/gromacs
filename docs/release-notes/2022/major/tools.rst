@@ -95,3 +95,17 @@ residue. Grompp would use the default torsion angle instead. To avoid silent err
 the charged glutamine residue was removed from the OPLS-AA forcefield.
 
 :issue:`3054`
+
+``gmxapi.commandline_operation`` isolates working directories.
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Subprocesses launched for wrapped command line operations now run in unique subdirectories. Users
+who rely on the *output_files* input and *file* output mapping should not be affected. Users who
+rely on assumptions about where wrapped commands are executed will need to adjust their scripts.
+
+The *stderr*, *stdout*, and *file* output members are still the primary
+supported means to access command output. Additionally, a new *directory* output gives the
+filesystem path that was used for the subprocess.
+See :py:func:`gmxapi.commandline_operation` for details.
+
+:issue:`3130`

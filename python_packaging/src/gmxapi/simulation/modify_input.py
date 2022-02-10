@@ -50,7 +50,7 @@ import gmxapi.abc
 import gmxapi.exceptions
 import gmxapi.operation as _op
 import gmxapi.typing
-from gmxapi.operation import InputCollectionDescription
+from gmxapi.operation import InputCollectionDescription, ResourceManager
 from .abc import ModuleObject
 
 # Initialize module-level logger
@@ -158,29 +158,6 @@ def _run(resources: SessionResources):
         setattr(resources.output, named_data, source_value)
 
 
-_next_uid = 0
-
-
-def _make_uid(input) -> str:
-    # TODO: Use input fingerprint for more useful identification.
-    salt = hash(input)
-    global _next_uid
-    new_uid = 'read_tpr_{}_{}'.format(_next_uid, salt)
-    _next_uid += 1
-    return new_uid
-
-
-class ResourceManager(gmxapi.operation.ResourceManager):
-
-    def update_output(self):
-        logger.debug('Updating output for {}.'.format(self.operation_id))
-        super().update_output()
-        for descriptor in _output_descriptors:
-            name = descriptor._name
-            if not self.is_done(name):
-                raise gmxapi.exceptions.ApiError('Expected output {} not updated.'.format(name))
-
-
 # Note: this is a class because we attach the input_description functionality,
 # but all of its functionality can be composed from dispatching functions.
 # TODO: Consider replacing this unique class with a pattern of composed instances of a common class.
@@ -220,13 +197,38 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
 
 
 class StandardInputDescription(_op.InputDescription):
-    """Provide the ReadTpr input description in gmxapi.operation Contexts."""
+    """Provide the ModifyInput input description in gmxapi.operation Contexts."""
+
+    # TODO: Improve fingerprinting.
+    # If _make_uid can't make sufficiently unique IDs, use additional "salt".
+    # Without fingerprinting, we cannot consistently hash *input* across processes,
+    # but we can consistently generate integers in the same sequence the first time
+    # we see each distinct input.
+    _next_uid: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
+
+    @classmethod
+    def _make_uid(cls, input) -> str:
+        # TODO: Use input fingerprint for more useful identification.
+        # WARNING: The built-in hash will use memory locations, and so will not be consistent across
+        # process ranks, even if the input should be the same.
+        salt = hash(input)
+        if salt not in cls._uids:
+            cls._uids[salt] = cls._next_uid
+            cls._next_uid += 1
+        else:
+            logger.debug(
+                f'Reissuing uid for modify_input({input}): {cls._uids[salt]}'
+            )
+        new_uid = 'modify_input_{}'.format(cls._uids[salt])
+        return new_uid
 
     def signature(self) -> InputCollectionDescription:
         return _input
 
     def make_uid(self, input: _op.DataEdge) -> str:
-        return _make_uid(input)
+        assert isinstance(input, _op.DataEdge)
+        return self._make_uid(input)
 
 
 class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMeta):
@@ -284,7 +286,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        runner_director = _op.RunnerDirector(runner=_run)
+        runner_director = _op.RunnerDirector(runner=_run, allow_duplicate=True)
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)

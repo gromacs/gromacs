@@ -40,9 +40,45 @@ import os
 import shutil
 import stat
 import tempfile
+from typing import NamedTuple
 
 import gmxapi as gmx
 from gmxapi import commandline_operation
+from gmxapi.operation import ResultDescription
+
+
+def test_comparison():
+    int_array_description = ResultDescription(
+        dtype=int,
+        width=3
+    )
+    same_description = ResultDescription(
+        dtype=int,
+        width=3
+    )
+    different_type_description = ResultDescription(
+        dtype=float,
+        width=3
+    )
+    different_width_description = ResultDescription(
+        dtype=int,
+        width=1
+    )
+    assert int_array_description == same_description
+    assert int_array_description != different_width_description
+    assert int_array_description != different_type_description
+
+    class CompatibleRepresentation(NamedTuple):
+        dtype: type
+        width: int
+
+    equivalent_description = CompatibleRepresentation(dtype=int, width=3)
+    assert int_array_description == equivalent_description
+    assert equivalent_description == int_array_description
+    assert equivalent_description != different_type_description
+    assert different_type_description != equivalent_description
+    assert equivalent_description != different_width_description
+    assert different_width_description != equivalent_description
 
 
 def test_scalar():

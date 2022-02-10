@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -40,33 +39,63 @@ the high-level machinery of the package, effectively serving as integration
 tests of the operation-building utilities in the modules depended on by
 commandline.py.
 """
-
+import logging
 import os
 import shutil
 import stat
 
+import pytest
+
 import gmxapi as gmx
 import gmxapi.operation
-import pytest
 from gmxapi import commandline
+from gmxapi.testsupport import scoped_chdir
+
+try:
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank_number = comm.Get_rank()
+    comm_size = comm.Get_size()
+except ImportError:
+    comm = None
+    rank_number = 0
+    comm_size = 1
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
+
+
+# if rank_number == 1:
+#     import pydevd_pycharm
+#     pydevd_pycharm.settrace('localhost', port=12345, stdoutToServer=True, stderrToServer=True)
 
 
 def test_true_base(cleandir):
     """Test a command known to produce a return code of 0."""
-    command = shutil.which('true')
-    operation = commandline.cli(command=[command], shell=False)
+    work_dir = cleandir
+    if comm_size > 1:
+        work_dir = comm.bcast(work_dir, root=0)
+    if rank_number != 0:
+        assert work_dir != cleandir
+    with scoped_chdir(work_dir):
+        current_dir = os.getcwd()
+        logging.warning(f'{current_dir}')
+        command = shutil.which('true')
+        operation = commandline.cli(command=[command], shell=False)
 
-    # Note: getitem not implemented.
-    # assert 'stdout' in operation.output
-    # assert 'stderr' in operation.output
-    assert hasattr(operation.output, 'stdout')
-    assert hasattr(operation.output, 'stderr')
-    assert not hasattr(operation.output, 'erroroutput')
-    assert hasattr(operation.output, 'returncode')
+        # Note: getitem not implemented.
+        # assert 'stdout' in operation.output
+        # assert 'stderr' in operation.output
+        assert hasattr(operation.output, 'stdout')
+        assert hasattr(operation.output, 'stderr')
+        assert not hasattr(operation.output, 'erroroutput')
+        assert hasattr(operation.output, 'returncode')
 
-    operation.run()
-    # assert operation.output.returncode.result() == 0
-    assert operation.output.returncode.result() == 0
+        operation.run()
+        # assert operation.output.returncode.result() == 0
+        assert operation.output.returncode.result() == 0
 
 
 def test_false_explicit(cleandir):
@@ -179,6 +208,69 @@ def test_file_dependency_chain(cleandir):
     assert lines[0] == line1
     assert lines[1] == line2
 
+    # Make sure that the temporary directory is not removed before all ranks have done
+    # the file checks.
+    if comm_size > 1:
+        comm.barrier()
+
+
+def test_file_dependency_ensemble_chain(cleandir):
+    """Test the command line wrapper input/output file handling.
+
+    Operation output can be used as operation input.
+    """
+    file1 = (os.path.join(cleandir, 'input1'), os.path.join(cleandir, 'input2'))
+    file2 = 'output'
+
+    # Make a shell script that acts like the type of tool we are wrapping.
+    scriptname = os.path.join(cleandir, 'clicommand.sh')
+    with open(scriptname, 'w') as fh:
+        fh.write('\n'.join(['#!' + shutil.which('bash'),
+                            '# Concatenate an input file and a string argument to an output file.',
+                            '# Mock a utility with the tested syntax.',
+                            '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                            'echo $1 | cat $3 - > $5\n']))
+    os.chmod(scriptname, stat.S_IRWXU)
+
+    line1 = ['first line A', 'first line B']
+    filewriter1 = gmx.commandline_operation(scriptname,
+                                            arguments=[[line] for line in line1],
+                                            input_files={'-i': os.devnull},
+                                            output_files=[{'-o': name} for name in file1])
+    assert isinstance(filewriter1.output, gmxapi.operation.DataProxyBase)
+    assert filewriter1.output.ensemble_width == 2
+
+    line2 = 'second line'
+    filewriter2 = gmx.commandline_operation(scriptname,
+                                            arguments=[line2],
+                                            input_files={'-i': filewriter1.output.file['-o']},
+                                            output_files={'-o': file2})
+    assert filewriter2.output.ensemble_width == 2
+    filewriter2.run()
+
+    # Check that the files have the expected lines
+    for member in range(2):
+        with open(filewriter1.output.file['-o'].result()[member], 'r') as fh:
+            lines = [text.rstrip() for text in fh]
+        assert len(lines) == 1
+        assert lines[0] == line1[member]
+
+    outputs = filewriter2.output.file['-o'].result()
+    assert len(outputs) == 2
+    assert outputs[0] != outputs[1]
+    for member in range(2):
+        path = outputs[member]
+        assert os.path.exists(path)
+        with open(path, 'r') as fh:
+            lines = [text.rstrip() for text in fh]
+            assert len(lines) == 2
+            assert lines[0] == line1[member]
+            assert lines[1] == line2
+    # Make sure that the temporary directory is not removed before all ranks have done
+    # the file checks.
+    if comm_size > 1:
+        comm.barrier()
+
 
 def test_failure(cleandir):
     """The operation should not deliver file output if the subprocess fails."""
@@ -203,6 +295,22 @@ def test_failure(cleandir):
                                             input_files={'-i': filewriter1.output.file['-o']},
                                             output_files={'-o': file2})
 
-    # filewriter1 has a non-zero exit code and should have no output files available.
-    with pytest.raises(KeyError):
-        filewriter2.run()
+    with pytest.warns(UserWarning, match=r'Trouble getting .*'):
+        # We expect this to generate errors, warnings, and log messages.
+        # We assert the exception and warning, and suppress the logged error
+        # to avoid misleading output from the test suite.
+
+        class _Filter(logging.Filter):
+            def filter(self, record: logging.LogRecord):
+                if record.name == 'gmxapi.operation' and 'Trouble getting' in record.msg:
+                    return 0
+                else:
+                    return 1
+
+        _filter = _Filter()
+        logging.getLogger('gmxapi.operation').addFilter(_filter)
+
+        with pytest.raises(KeyError):
+            filewriter2.run()
+
+        logging.getLogger('gmxapi.operation').removeFilter(_filter)

@@ -125,7 +125,7 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
 
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures('cleandir')
-def test_mdrun_parallel_runtime_args(spc_water_box, caplog, mdrun_kwargs):
+def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     """Test that array input of *runtime_args* is respected.
 
     Confirm proper resolution of ensemble data flow.

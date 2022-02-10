@@ -43,12 +43,17 @@ import os
 import pathlib
 import shutil
 import subprocess
-from typing import Iterable, Union
+import typing
+from typing import Iterable
+from typing import Union
 
 import gmxapi as gmx
+import gmxapi.operation
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
 from gmxapi.datamodel import NDArray
+from gmxapi.exceptions import MissingImplementationError
+from gmxapi.exceptions import UsageError
 from gmxapi.operation import OutputCollectionDescription
 
 # Module-level logger
@@ -92,6 +97,9 @@ def cli_bindir() -> pathlib.Path:
     raise exceptions.FeatureNotAvailableError('GROMACS installation unavailable.')
 
 
+_seen = set()
+
+
 # Create an Operation that consumes a list and a boolean to produce a string and an integer.
 #
 # Wrap the defined function using a decorator that
@@ -107,15 +115,30 @@ def cli_bindir() -> pathlib.Path:
 # the keys of the map are not implicit or set by the wrapped function.
 # For the map to be non-empty, it must be defined before the resulting helper
 # function is called.
-@gmx.function_wrapper(output={'stdout': str,
-                              'stderr': str,
-                              'returncode': int})
-def cli(command: NDArray, shell: bool, output, stdin: str = ''):
+@gmx.function_wrapper(
+    output={
+        'directory': str,
+        'returncode': int,
+        'stderr': str,
+        'stdout': str,
+    })
+def cli(command: NDArray, shell: bool, output, stdin: str = '', _exist_ok=True):
     """Execute a command line program in a subprocess.
 
     Configure an executable in a subprocess. Executes when run in an execution
-    Context, as part of a work graph or via gmx.run(). Runs in the current
-    working directory.
+    Context, as part of a work graph or via gmx.run().
+
+    Subprocesses should be run in separate working directories. The directory name is
+    the responsibility of the workflow manager and execution manager (and derived from
+    the operation id, tied to fingerprinting information).
+
+    Until gmxapi can provide some support for workflow checkpointing, it is unclear
+    how to react to the presence of working directories from previous invocations.
+    Starting with gmxapi 0.3.0, users may (optionally) set *_exist_ok=False* to
+    force an error when an existing working directory for the task is found.
+    Otherwise, the command is executed (as with previous gmxapi releases), and
+    the command is responsible for determining how to react to the presence of
+    prior working files or output, if necessary.
 
     Shell processing is not enabled, but can be considered for a future version.
     This means that shell expansions such as environment variables, globbing (`*`),
@@ -125,6 +148,8 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
     think this disallows important use cases, please let us know.
 
     Arguments:
+         _exist_ok: If ``True`` (default), it is not an error for the
+             working directory to exist already.
          command: a tuple (or list) to be the subprocess arguments, including *executable*
          output: mapping of command line flags to output filename arguments
          shell: unused (provides forward-compatibility)
@@ -184,7 +209,41 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
         executable = shutil.which(command[0], path=str(cli_bindir()))
     if executable is None:
         raise exceptions.ValueError('"{}" is not found or not executable.'.format(command[0]))
-    command[0] = executable
+    command[0] = str(executable)
+
+    # The SessionResources concept only exists in the form of the PublishingDataProxy provided as
+    # *output* at run time.
+    resource_manager: gmxapi.operation.SourceResource = typing.cast(gmxapi.operation.DataProxyBase,
+                                                                    output)._resource_instance
+    try:
+        op_id = typing.cast(gmxapi.operation.ResourceManager, resource_manager).operation_id
+    except AttributeError as e:
+        # Note that the SourceResource interface does not yet specify a means to get a canonical identifier
+        # for the node in the work graph.
+        raise MissingImplementationError(
+            f'{resource_manager} does not provide required interface. gmxapi.commandline.cli() only '
+            f'supports gmxapi.operation.ResourceManager.'
+        ) from e
+    assert op_id
+
+    ensemble_member = typing.cast(gmxapi.operation.DataProxyBase,
+                                  output)._client_identifier
+    uid = str(op_id)
+    if ensemble_member:
+        uid += f'_{ensemble_member}'
+    assert uid not in _seen
+    _seen.add(uid)
+
+    # Note that `abspath` does not resolve symbolic links. (See `pathlib.Path.resolve`)
+    # Some users may find it useful to preserve that abstraction.
+    _cwd = os.path.abspath(uid)
+    if os.path.exists(_cwd):
+        message = f'Work directory {_cwd} already exists.'
+        if _exist_ok:
+            logger.info(message)
+        else:
+            raise UsageError(message)
+    os.makedirs(_cwd, exist_ok=_exist_ok)
 
     # TODO: (FR9) Can OS input/output filehandles be a responsibility of
     #  the code providing 'resources'?
@@ -193,6 +252,7 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
 
     try:
         completed_process = subprocess.run(command,
+                                           cwd=_cwd,
                                            shell=shell,
                                            input=stdin,
                                            check=True,
@@ -207,8 +267,8 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
         stderr = completed_process.stderr
 
     except subprocess.CalledProcessError as e:
-        logger.info("commandline operation had non-zero return status"
-                    "when calling {}".format(e.cmd))
+        logger.info(
+            f'Non-zero return status when calling {e.cmd} in {_cwd}')
         stdout = e.stdout
         stderr = e.stderr
         returncode = e.returncode
@@ -227,6 +287,7 @@ def cli(command: NDArray, shell: bool, output, stdin: str = ''):
         logger.debug('STDERR is empty')
 
     # Publish outputs.
+    output.directory = _cwd
     output.stdout = stdout
     output.stderr = stderr
     output.returncode = returncode
@@ -305,15 +366,37 @@ def commandline_operation(executable=None,
     If you have a use case that requires streaming input or binary input,
     please open an issue or contact the author(s).
 
+    .. versionchanged:: 0.3.0
+        output_files paths are converted to absolute paths at run time.
+
+    If non-absolute paths are provided to *output_files*, paths are resolved relative to the
+    working directory of the command instance (not relative to the working directory of the
+    workflow script).
+
     Output:
         The output node of the resulting operation handle contains
 
+        * ``directory``: filesystem path that was used as the working directory for the subprocess
         * ``file``: the mapping of CLI flags to filename strings resulting from the ``output_files`` kwarg
         * ``returncode``: return code of the subprocess.
         * ``stderr``: A string mapping from process STDERR; it will be the
                       error output (if any) if the process failed.
         * ``stdout``: A string mapping from process STDOUT.
 
+    .. versionchanged:: 0.3
+        Subprocesses run in directories managed by gmxapi.
+    .. versionadded:: 0.3
+        The *directory* output.
+
+    Working directory names are details of the gmxapi implementation; the naming scheme is not
+    yet specified by the API, but is intended to be related to the operation ID.
+
+    Note that re-executing a gmxapi script in the same directory will cause
+    commands to be executed again in the same directories. If this presents a
+    risk of data corruption (or just wasted compute cycles), you may include
+    the key word argument ``_exist_ok=False`` to force an error. Please consider
+    contacting the developers through any of the various GROMACS community
+    channels to further discuss your use case.
     """
 
     # Implementation details: When used in a script, this function returns an
@@ -342,14 +425,19 @@ def commandline_operation(executable=None,
     #
     # TODO: (FR4+) Characterize the `file` dictionary key type:
     #  explicitly sequences rather than maybe-string/maybe-sequence-of-strings
-    @gmx.function_wrapper(output={'stdout': str,
-                                  'stderr': str,
-                                  'returncode': int,
-                                  'file': dict})
+    @gmx.function_wrapper(
+        output={
+            'directory': str,
+            'file': dict,
+            'returncode': int,
+            'stderr': str,
+            'stdout': str,
+        })
     def merged_ops(stdout: str = None,
                    stderr: str = None,
                    returncode: int = None,
                    file: dict = None,
+                   directory: str = None,
                    output: OutputCollectionDescription = None):
         assert stdout is not None
         assert stderr is not None
@@ -359,8 +447,14 @@ def commandline_operation(executable=None,
         output.returncode = returncode
         output.stdout = stdout
         output.stderr = stderr
+        output.directory = directory
+        file_map = file.copy()
+        for key, value in file_map.items():
+            if not os.path.isabs(value):
+                value = os.path.abspath(os.path.join(directory, value))
+            file_map[key] = value
         if returncode == 0:
-            output.file = file
+            output.file = file_map
         else:
             output.file = {}
 
@@ -371,6 +465,12 @@ def commandline_operation(executable=None,
         input_files = {}
     if output_files is None:
         output_files = {}
+    try:
+        executable = str(executable)
+    except Exception as e:
+        raise gmxapi.exceptions.TypeError(
+            'gmxapi typing currently requires paths and names to be strings. *executable* argument is '
+            f'{type(executable)}.')
     if isinstance(arguments, (str, bytes)):
         arguments = [arguments]
     input_options = filemap_to_flag_list(input_files).output.data
@@ -380,14 +480,13 @@ def commandline_operation(executable=None,
                                      input_options,
                                      output_options])
     shell = gmx.make_constant(False)
-    cli_args = {'command': command,
-                'shell': shell}
+    cli_args = {
+        'command': command,
+        'shell': shell,
+    }
     cli_args.update(**kwargs)
     if stdin is not None:
-        # FIXME: No ensemble handling.
-        # FIXME: Type checking instead of blind conversion.
-        #  Maybe `stdin ? isinstance(stdin, str) : '\n'.join(str(line) for line in stdin)`
-        cli_args['stdin'] = str(stdin)
+        cli_args['stdin'] = stdin
 
     ##
     # 3. Merge operations
@@ -402,6 +501,7 @@ def commandline_operation(executable=None,
     merged_result = merged_ops(stdout=cli_result.output.stdout,
                                stderr=cli_result.output.stderr,
                                returncode=cli_result.output.returncode,
+                               directory=cli_result.output.directory,
                                file=output_files,
                                **kwargs)
 

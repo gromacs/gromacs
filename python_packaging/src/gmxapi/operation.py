@@ -53,18 +53,23 @@ __all__ = ['computed_result',
            ]
 
 import abc
-import collections
 import collections.abc
+import contextlib
 import functools
 import inspect
 import typing
+import warnings
 import weakref
 from contextlib import contextmanager
+from copy import copy
 
 import gmxapi as gmx
+import gmxapi.exceptions
 from gmxapi import datamodel
 from gmxapi import exceptions
 from gmxapi import logger as root_logger
+from gmxapi._transform import broadcast
+from gmxapi._transform import identity
 from gmxapi.abc import Future as FutureABC
 from gmxapi.abc import MutableResource
 from gmxapi.abc import NDArray
@@ -77,6 +82,8 @@ from gmxapi.abc import OperationReference as AbstractOperationReference
 from gmxapi.datamodel import ArrayFuture
 from gmxapi.exceptions import ApiError
 from gmxapi.exceptions import DataShapeError
+from gmxapi.exceptions import ProtocolError
+from gmxapi.exceptions import TypeError as GmxapiTypeError
 from gmxapi.exceptions import UsageError
 from gmxapi.typing import _Context
 from gmxapi.typing import Future as GenericFuture
@@ -89,9 +96,9 @@ from gmxapi.typing import valid_source_types
 logger = root_logger.getChild('operation')
 logger.info('Importing {}'.format(__name__))
 
-
 try:
     from mpi4py import MPI
+
     # TODO: Allow user to specify communicator.
     comm = MPI.COMM_WORLD
     rank_number = comm.Get_rank()
@@ -131,37 +138,69 @@ class ResultDescription(typing.Generic[ResultTypeVar]):
     def __repr__(self):
         return '{}(dtype={}, width={})'.format(self.__class__.__name__, self.dtype, self.width)
 
+    def __eq__(self, other):
+        return self._dtype == typing.cast(ResultDescription, other).dtype \
+               and self._width == typing.cast(ResultDescription, other).width
 
-class OutputData(object):
-    """Encapsulate the description and storage of a data output."""
 
-    def __init__(self, name: str, description: ResultDescription):
+class OutputData(typing.Generic[ResultTypeVar]):
+    """Encapsulate the description and storage of a data output.
+
+    Allows a single signal to be issued when the object is "done".
+    """
+    _instance_count = 0
+    _member_done: typing.List[bool]
+
+    def __init__(self,
+                 name: str,
+                 description: ResultDescription[ResultTypeVar],
+                 done_callback: typing.Optional[typing.Callable[['OutputData'], None]] = None):
         assert name != ''
         self._name = name
         assert isinstance(description, ResultDescription)
         self._description = description
         # Warning: do not confuse OutputData._done with ResourceManager._done.
-        self._done = [False] * self._description.width
+        self._member_done = [False] * self._description.width
         self._data = [None] * self._description.width
+        self._reset_count = 0
+        OutputData._instance_count += 1
+        self._done_callback = done_callback
+
+    @property
+    def width(self):
+        return self._description.width
+
+    def __repr__(self):
+        representation = f'<{self.__class__.__name__}({self._description}) "{self._name}": ['
+        representation += ', '.join(
+            repr(self._data[i]) if self._member_done[i] else 'not done'
+            for i in range(self._description.width))
+        representation += ']>'
+        return representation
 
     @property
     def name(self):
         """The name of the published output."""
         return self._name
 
-    # TODO: Change to regular member function and add ensemble member arg.
-    @property
-    def done(self):
+    def done(self, member=None):
         """Ensemble completion status for this output."""
-        return all(self._done)
+        if member is not None:
+            return self._member_done[member]
+        else:
+            return all(self._member_done)
+
+    @typing.overload
+    def data(self) -> typing.List[ResultTypeVar]:
+        ...
+
+    @typing.overload
+    def data(self, member: int) -> ResultTypeVar:
+        ...
 
     def data(self, member: int = None):
         """Access the raw data for localized output for the ensemble or the specified member."""
-        if member is None:
-            done = all(self._done)
-        else:
-            done = self._done[member]
-        if not done:
+        if not self.done(member):
             raise exceptions.ApiError('Attempt to read before data has been published.')
         if member is not None:
             result = self._data[member]
@@ -172,20 +211,39 @@ class OutputData(object):
         #     raise exceptions.ApiError('Data marked "done" but contains null value.')
         return result
 
-    def set(self, value, member: int):
+    def set(self, value: ResultTypeVar, member: int):
         """Set local data and mark as completed.
 
         Used internally to maintain the data store.
         """
         # Currently, we are not able to dynamically update the set of published outputs.
         # Allow `None` to indicate a null result.
+        if self._member_done[member]:
+            raise ApiError(
+                f'{self}[{self.name}][{member}] is already set to {self._data[member]}!'
+            )
         if value is None:
             self._data[member] = None
-        elif self._description.dtype == datamodel.NDArray:
+        elif self._description.dtype is not None and issubclass(self._description.dtype, gmxapi.abc.NDArray):
+            # Normalize sequence types to a gmxapi-specific type to aid in annotation and dispatching.
+            # (Ultimately, we should use a gromacs-native data interface with universal shaped-type support,
+            # but to simplify expression of new operations (e.g. function_wrapper) early gmxapi releases
+            # use type annotations in familiar Python native types, where originally deemed feasible.)
             self._data[member] = datamodel.ndarray(value)
         else:
-            self._data[member] = self._description.dtype(value)
-        self._done[member] = True
+            if callable(self._description.dtype):
+                try:
+                    value = self._description.dtype(value)
+                except TypeError as e:
+                    logger.exception(
+                        f'While trying to set {self} ({self._description}) to {value}: ',
+                        exc_info=e
+                    )
+                    raise e
+            self._data[member] = value
+        self._member_done[member] = True
+        if all(self._member_done) and callable(self._done_callback):
+            self._done_callback(self)
 
     def reset(self):
         """Reinitialize the data store.
@@ -198,8 +256,9 @@ class OutputData(object):
             reinstantiate on new Contexts and/or with new inputs.
 
         """
-        self._done = [False] * self._description.width
+        self._member_done = [False] * self._description.width
         self._data = [None] * self._description.width
+        self._reset_count += 1
 
 
 class DataSourceCollection(collections.OrderedDict):
@@ -519,6 +578,9 @@ class ProxyDataDescriptor(object):
     """
 
     def __init__(self, name: str, dtype: ResultTypeVar = None):
+        # Since Python 3.6, we have the opportunity to get the attribute name during
+        # class creation using the __set_name__ hook.
+        # TODO(4116): Simplify data descriptor set-up.
         self._name = name
         # TODO: We should not allow dtype==None, but we currently have a weak data
         #  model that does not allow good support of structured Futures.
@@ -526,6 +588,13 @@ class ProxyDataDescriptor(object):
             assert isinstance(dtype, type)
             assert issubclass(dtype, valid_result_types)
         self._dtype = dtype
+
+    def __set_name__(self, owner, name):
+        self._owner_name = owner.__qualname__
+        if name != self._name:
+            raise ApiError(
+                f'Attribute name {self._owner_name}.{name} does not match '
+                f'{self.__class__.__name__}._name: {self._name}')
 
 
 class DataProxyMeta(abc.ABCMeta):
@@ -902,6 +971,8 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
                     data = [str(self._result)]
             else:
                 data = [self._result]
+        if isinstance(None, dtype):
+            dtype = None
         description = ResultDescription(dtype=dtype, width=width)
         self._data = OutputData(name=name, description=description)
         for member in range(width):
@@ -915,7 +986,7 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
 
     def get(self, name: str) -> 'OutputData':
         if name != self._data.name:
-            raise KeyError(f'{repr(self)} does not hold {name}')
+            raise KeyError(f'{repr(self)} does not hold "{name}"')
         return self._data
 
     def data(self) -> _OutputDataProxyType:
@@ -945,56 +1016,133 @@ class ProxyResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataP
         proxied_future: An object implementing the Future interface.
         width: Size of (one-dimensional) shaped data produced by function.
         function: Transformation to perform on the result of proxied_future.
+        dtype: (optional) Apply a check on the output data type.
 
-    The callable passed as ``function`` must accept a single argument, which will
+    The callable passed as *function* must accept a single argument, which will
     be an iterable when proxied_future represents an ensemble, or an object of
     type proxied_future.description.dtype otherwise.
+
+    If *width* is 1, *function* *should* produce a value with the intended output type.
+    If *width* is greater than 1, *function* *should* produce a sequence with *width* elements.
+
+    Warning:
+        The GROMACS team has not yet approved a structured typing model for the API,
+        so we cannot strongly assert source and target data type and shape. Data
+        shape transformations may be ambiguous. If the heuristics for run-time
+        transformations do not seem correct, please report bugs or comment at
+        :issue:`2993`
     """
 
-    def __init__(self, proxied_future: 'Future', width: int, function: typing.Callable):
+    def __init__(self, proxied_future: 'Future', width: int, function: typing.Callable,
+                 dtype: typing.Optional[typing.Type] = None,
+                 # name: typing.Optional[str] = None
+                 ):
         super().__init__()
-        self._done = False
+        self._proxied_result_available = False
         self._proxied_future = proxied_future
         self._width = width
+        # if name is None:
+        #     self.name = self._proxied_future.name
+        # else:
+        #     if not isinstance(name, str):
+        #         raise GmxapiTypeError('*name* must be a string, or None.')
+        #     self.name = name
         self.name = self._proxied_future.name
         self._result = None
         assert callable(function)
         self.function = function
 
+        # Optional type hint for run time validation.
+        self._dtype = dtype
+
+        # Inferred data type of the transformed / proxied result.
+        self._output_dtype = None
+
+    def __repr__(self):
+        status = 'done' if self._done else 'pending'
+        dtype = self._output_dtype if self._output_dtype else self._dtype
+        type_annotation = f' ({dtype.__name__})' if isinstance(dtype, type) else ''
+        representation = f'<{self.__class__.__name__} {self._width}{type_annotation} {status}>'
+        return representation
+
     def width(self) -> int:
         return self._width
 
     def reset(self):
-        self._done = False
+        self._proxied_result_available = False
         self._proxied_future._reset()
         self._result = None
+        self._output_dtype = None
 
     def is_done(self, name: str) -> bool:
-        return self._done
+        return self._proxied_result_available
+
+    def _broadcast(self, result: ResultTypeVar, *, dtype: typing.Union[None, typing.Type[ResultTypeVar]]):
+        """Broadcast a scalar result to an ensemble."""
+        if isinstance(dtype, type):
+            if not isinstance(result, dtype):
+                raise ApiError(f'{result} not compatible with {dtype}.')
+        if dtype is None:
+            dtype = type(result)
+        data = OutputData(name=self.name,
+                          description=ResultDescription(dtype=dtype, width=self._width))
+        for member in range(self._width):
+            data.set(result, member)
+        return data
+
+    def _map(self, result: collections.abc.Sequence, *, dtype):
+        """Map elements of a result to the ensemble members."""
+        if isinstance(result, str) or not isinstance(result, collections.abc.Sequence):
+            raise ApiError(f'Expected array-like data. Got {result}.')
+        data = OutputData(name=self.name,
+                          description=ResultDescription(dtype=dtype, width=self._width))
+        for member in range(self._width):
+            data.set(result[member], member)
+        return data
 
     def get(self, name: str):
         if name != self.name:
             raise exceptions.ValueError('Request for unknown data.')
         if not self.is_done(name):
             raise exceptions.ProtocolError('Data not ready.')
-        result = self.function(self._result)
-        if self._width > 1:
-            # TODO Strengthen typing for subscripted Futures and data re-shaping.
-            # ResultDescription should be fully knowable and defined when the resource manager
-            # is initialized, but this is not possible when we allow subscripting of Futures for
-            # native `list` and `dict` types, rather than requiring strongly-typed containers.
-            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result[0]), width=self._width))
-            for member, value in enumerate(result):
-                data.set(value, member)
+        result = self._result
+
+        if self._width == 1:
+            return self._broadcast(result, dtype=self._output_dtype)
         else:
-            assert self._width == 1
-            data = OutputData(name=self.name, description=ResultDescription(dtype=type(result), width=self._width))
-            data.set(result, 0)
-        return data
+            assert isinstance(result, collections.abc.Sequence)
+            assert not isinstance(result, str)
+            return self._map(result, dtype=self._output_dtype)
 
     def update_output(self):
-        self._result = self._proxied_future.result()
-        self._done = True
+        if not self._proxied_result_available:
+            source = self._proxied_future.result()
+            result = self.function(source)
+            if self._dtype is None:
+                if self._width == 1:
+                    self._output_dtype = type(result)
+                else:
+                    assert self._width > 1
+                    if isinstance(result, str) or not isinstance(result, collections.abc.Sequence):
+                        raise ApiError(
+                            f'{self} must map a sequence of results to ensemble members. Got {result}.'
+                        )
+                    elif len(result) != self._width:
+                        raise DataShapeError(
+                            f'Expected sequence of width {self._width}. Got {result}.'
+                        )
+                    self._output_dtype = type(result[0])
+            else:
+                assert self._dtype is not None
+                if isinstance(result, self._dtype):
+                    self._output_dtype = type(result)
+                else:
+                    # We can try to implicitly broadcast as necessary, but let's try to leave that
+                    # responsibility with the caller.
+                    raise ApiError(f'Expected {self._dtype} but got {result}.')
+
+            self._result = result
+            self._proxied_result_available = True
 
     def data(self) -> _OutputDataProxyType:
         raise exceptions.ApiError('ProxyResourceManager cannot yet manage a full OutputDataProxy.')
@@ -1408,7 +1556,7 @@ class Future(GenericFuture[ResultTypeVar]):
     used as input for another Operation can be decomposed such that the Operation
     factory has only Future objects in its input.
 
-    TODO: ``subscribe`` method allows consumers to bind as Observers.
+    TODO(#3139): ``add_done_callback`` method allows consumers to bind as Observers.
 
     Currently abstraction is handled through SourceResource subclassing.
 
@@ -1426,6 +1574,11 @@ class Future(GenericFuture[ResultTypeVar]):
             raise exceptions.ValueError('Need description of requested data.')
         self.description = description
         self.resource_manager = resource_manager
+        # Note that we cannot confirm at this time that resource_manager can provide *name* because
+        # SourceResource does not specify how implementations represent their output other than the
+        # existence of a data() method. SourceResource.data() may lazily instantiate an OutputDataProxy
+        # that only exposes output names as Future instances, which would cause an infinite recursion loop
+        # if we tried to inspect here.
 
         # Deprecated. We should not "reset" futures, but reconstitute them, but we
         # need to move the data model to a subscription-based system so that we can
@@ -1433,20 +1586,23 @@ class Future(GenericFuture[ResultTypeVar]):
         self._number_of_resets = 0
 
     def __repr__(self):
-        return '<Future: name={}, description={}>'.format(self.name, self.description)
+        return "<Future: name='{}', description={}>".format(self.name, self.description)
 
-    def result(self) -> ResultTypeVar:
+    def result(self) -> typing.Union[ResultTypeVar, typing.List[ResultTypeVar]]:
         """Fetch data to the caller's Context.
 
         Returns an object of the concrete type specified according to
         the operation that produces this Result.
 
         Ensemble data are returned as a list. Scalar results or results from single
-        member ensembles are returned as scalars.
+        member ensembles are returned as scalars. If this behavior is confusing or
+        problematic for you, please reopen https://gitlab.com/gromacs/gromacs/-/issues/3179
+        or a new issue and join the discussion.
         """
         self.resource_manager.update_output()
         # Return ownership of concrete data
-        handle = self.resource_manager.get(self.name)
+        handle: OutputData[ResultTypeVar] = self.resource_manager.get(self.name)
+        assert isinstance(handle, OutputData)
 
         # For intuitive use in non-ensemble cases, we represent data as bare scalars
         # when possible. It is easier for users to cast scalars to lists of length 1
@@ -1459,10 +1615,20 @@ class Future(GenericFuture[ResultTypeVar]):
         # that data objects assume the minimum dimensionality necessary unless told
         # otherwise, and we could make that a hard rule if it doesn't make other things
         # too difficult.
-        if self.description.width == 1:
-            return handle.data(member=0)
+        _width = self.description.width
+        if _width == 1:
+            result = handle.data(member=0)
         else:
-            return handle.data()
+            result = handle.data()
+        # Normalize non-native sequences to a type that has general
+        # serialization support and built-in dispatching.
+        if isinstance(result, gmxapi.abc.NDArray):
+            result = list(result)
+        if (_width > 1) and (len(result) != _width):
+            assert len(result) == 1
+            # Implicitly broadcast
+            result = [copy(result[0]) for _ in range(_width)]
+        return result
 
     def _reset(self):
         """Mark the Future "not done" to allow reexecution.
@@ -1640,6 +1806,7 @@ class SinkTerminal(object):
         else:
             assert width == 1
             # source data of width 1 is compatible with all consumer widths.
+
     def update(self, data_source_collection: DataSourceCollection):
         """Update the SinkTerminal with the proposed data provider.
 
@@ -1795,26 +1962,49 @@ class DataEdge(object):
         Note that gmxapi Mapping values do not support any sort of rigorous typing,
         pending #2993.
         """
+
         def __init__(self, mapping: collections.abc.Mapping):
             self.source = mapping
 
         def _resolve(self, member):
             for key, value in self.source.items():
-                if hasattr(value, 'result') and callable(value.result):
-                    # This logic allows ensemble Futures to be mixed with non-ensemble values.
-                    # In the long run, the entire data structure (or View) should encapsulate the
-                    # behavior for providing a consistent dimensionality, making appropriate
-                    # updates internally during construction.
-                    try:
-                        width = value.description.width
-                    except (TypeError, AttributeError):
-                        width = 1
-                    if width > 1 and member is not None:
-                        yield key, value.result()[member]
+                try:
+                    if hasattr(value, 'result') and callable(value.result):
+                        # This logic allows ensemble Futures to be mixed with non-ensemble values.
+                        # In the long run, the entire data structure (or View) should encapsulate the
+                        # behavior for providing a consistent dimensionality, making appropriate
+                        # updates internally during construction.
+                        _result = value.result()
+                        try:
+                            width = value.description.width
+                        except (TypeError, AttributeError):
+                            width = 1
+                        if width > 1 and member is not None:
+                            # Make sure that list indices are valid.
+                            try:
+                                _result[member]
+                            except Exception as e:
+                                raise e
+                            yield key, value.result()[member]
+                        else:
+                            yield key, _result
                     else:
-                        yield key, value.result()
-                else:
-                    yield key, value
+                        yield key, value
+                except Exception as e:
+                    message = f'Trouble getting "{key}" for {self}. {value}.result() raised: '
+                    warnings.warn(message + str(e))
+                    logger.exception(
+                        message,
+                        exc_info=e
+                    )
+                    # At some point, we should try to continue to allow debugging without immediate MPI_ABORT.
+                    # We should also (https://gitlab.com/gromacs/gromacs/-/issues/3394) capture errors in a
+                    # richer result representation so that the consumer (an operation-specific resource
+                    # directory, runner director, or runner, or the client of a Future protocol) can take
+                    # responsibility for interpreting the error and deciding what to do about it.
+                    # Currently, however, we expect exceptions to propagate.
+                    # yield key, None
+                    raise e
 
         def __call__(self, member=None) -> dict:
             return dict(self._resolve(member))
@@ -1848,6 +2038,8 @@ class DataEdge(object):
                         f'{repr(sink_terminal)}:{name} has no default, and no {name} in {source_collection}.')
             else:
                 source = source_collection[name]
+                # Design note: The following dispatching is a bit awkward. Suggestion for future
+                # implementation: Dispatch first on sink type, then source type.
                 sink = sink_terminal.inputs[name]
 
                 # Scalar -> (Scalar, Array[Scalar])
@@ -1998,6 +2190,125 @@ class AbstractRunnerDirector(abc.ABC):
         ...
 
 
+class PublishingManager(typing.Generic[_PublishingDataProxyType], contextlib.AbstractContextManager):
+    """Manages the output phase of task fulfilment for ResourceManager.
+
+    * Generates the context managers for publishing operation results.
+    * Provide a synchronization point in the otherwise flexible update_output() protocol.
+    * Helps to ensure that each operation does not execute more than the expected number of times to
+      provide output to consumers.
+
+    Create one instance of PublishingManager for each ResourceManager.
+
+    When entered as a Python context manager, the PublishingManager is "activated"
+    and can provide context managers for PublishingDataProxies for each ensemble
+    member exactly once (unless *reset*).
+
+    When the main PublishingManager context is exited, a sequence of observers are contacted.
+    The observers may be responsible for actually publishing the results of the operation,
+    so the data state is not inspected until after the observers have been notified.
+
+    After the visitors have been called, the main context manager checks whether
+    all expected outputs have been published. If output is missing, and if no exceptions
+    are already propagating, an exception is raised.
+    """
+
+    def __init__(
+            self,
+            resource_manager: 'ResourceManager',
+            publisher_factory: typing.Type[_PublishingDataProxyType]):
+        # Design Note: we could make this class into a Data Descriptor in order to
+        # avoid storing a reference to the ResourceManager.
+        self._manager = weakref.ref(resource_manager)
+
+        assert callable(publisher_factory)
+        self._factory: typing.Callable[[...], _PublishingDataProxyType] = publisher_factory
+        self._active = False
+        self.publishing_data_proxies: typing.Dict[str, _PublishingDataProxyType] = {}
+        self._observers: typing.List[typing.Callable[['PublishingManager'], None]] = []
+
+    @contextmanager
+    def publishing_context(self, ensemble_member=0) -> _PublishingDataProxyType:
+        """Get a data proxy to which results may be published."""
+        if not self._active:
+            raise ApiError('Before calling *publishing_context*, activate the PublishingManager by entering '
+                           'it as a Python context manager.')
+        manager = self._manager()
+        if manager is None:
+            # Probably due to inappropriate use outside a ResourceManager instance.
+            raise ApiError('ResourceManager does not exist.')
+
+        if manager.done(ensemble_member):
+            raise exceptions.ProtocolError('Attempting to publish {}[{}] more than once.'.format(
+                manager.operation_id,
+                ensemble_member))
+
+        if ensemble_member in self.publishing_data_proxies:
+            raise exceptions.ProtocolError(
+                f'Publishing resources for {manager}[{ensemble_member}] already active.')
+
+        try:
+            resource = self._factory(instance=manager,
+                                     client_id=ensemble_member)
+        except Exception as e:
+            logger.debug('Publishing context could not be created due to {}'.format(e))
+            raise e
+        self.publishing_data_proxies[ensemble_member] = resource
+        yield resource
+
+    def reset(self):
+        """Allow the manager to be used again.
+
+        Generally, a ResourceManager executes an operation once to publish results,
+        and PublishingManager helps enforce this by preventing context managers
+        from acquiring a PublishingDataProxy for the same output more than once.
+        In the gmxapi 0.1 while_loop implementation, ResourceManagers persist for
+        all iterations of a subgraph and get reset for each iteration.
+
+        We want to preserve the subscribed callbacks across iterations, so the
+        PublishingManager gets reset, too.
+        """
+        if self._active:
+            raise gmxapi.exceptions.ProtocolError('Attempt to reset PublishingManager while still in use.')
+        self.publishing_data_proxies.clear()
+        self._observers = []
+
+    def register_observer(self, cb: typing.Callable[['PublishingManager'], None]):
+        self._observers.append(cb)
+
+    def __enter__(self):
+        assert len(self.publishing_data_proxies) == 0
+        self._active = True
+        return self
+
+    def __exit__(self,
+                 __exc_type,
+                 __exc_value,
+                 __traceback):
+        manager = self._manager()
+        if __exc_value:
+            logger.info(f'Exception occurred while updating {manager}. {self} exiting early.')
+        else:
+            for member in range(manager.ensemble_width):
+                if member not in self.publishing_data_proxies:
+                    logger.warning(
+                        'PublishingManager has not been used for all ensemble members.')
+            assert all(isinstance(resource, DataProxyBase) for resource in self.publishing_data_proxies.values())
+            for observer in self._observers:
+                try:
+                    observer(self)
+                except Exception as e:
+                    logger.exception(
+                        f'Exception while notifying PublishingManager observer {observer}',
+                        exc_info=e
+                    )
+            if not manager.done():
+                logger.warning(f'Publishing resources are being released, but {manager} does not appear done.')
+        self._active = False
+        # Allow __exc_value to be reraised:
+        return False
+
+
 class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyType]):
     """Provides data publication and subscription services.
 
@@ -2059,66 +2370,12 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
     Only the final line is intended to be literal. The preceding code, if it
     exists in entirety, may be spread across several code comments.
 
-    TODO: Data should be pushed, not pulled.
+    TODO(#3139: Data should be pushed, not pulled.
     Early implementations executed operation code and extracted results directly.
     While we need to be able to "wait for" results and alert the data provider that
     we are ready for input, we want to defer execution management and data flow to
-    the framework.
+    the framework. Some forward motion is prototyped in a *add_done_callback* method.
     """
-
-    @contextmanager
-    def __publishing_context(self, ensemble_member=0) -> _PublishingDataProxyType:
-        """Context manager for resolving the data dependencies of this node.
-
-        Provides a context manager for the scope in which a PublishingDataProxy is
-        instantiated and active. Uses the factory provided to ResourceManager.__init__()
-
-        Called to open a Python context manager (used to open a `with` block)
-        to define the scope in which the operation's output can be published.
-        'output' type resources can be published exactly once, and only while the
-        publishing context is active. (See operation.function_wrapper())
-
-        Used internally to implement ResourceManager.publishing_resources()
-
-        Responsibilities of the context manager are to:
-            * (TODO) Make sure dependencies are resolved.
-            * Make sure outputs are marked 'done' when leaving the context.
-
-        """
-
-        # TODO:
-        # if self._data.done():
-        #     raise exceptions.ProtocolError('Resources have already been published.')
-
-        # I don't think we want the OperationDetails to need to know about ensemble data,
-        # (though the should probably be allowed to), so we may need a separate interface
-        # for the resource manager with built-in scope-limiting to a single ensemble member.
-        # Right now, one Operation handle owns one ResourceManager (which takes care of
-        # the ensemble details), which owns one OperationDetails (which has no ensemble knowledge).
-        # It is the responsibility of the calling code to make sure the PublishingDataProxy
-        # gets used correctly.
-
-        # ref: https://docs.python.org/3/library/contextlib.html#contextlib.contextmanager
-        if self._done[ensemble_member]:
-            raise exceptions.ProtocolError('Attempting to publish {}[{}] more than once.'.format(
-                self.operation_id,
-                ensemble_member))
-
-        try:
-            resource = self.__publishing_data_proxy(instance=weakref.proxy(self),
-                                                    client_id=ensemble_member)
-        except Exception as e:
-            logger.debug('Publishing context could not be created due to {}'.format(e))
-            raise e
-
-        yield resource
-
-        # Note: The remaining lines are skipped if an exception occurs in the `with` block
-        # for the contextmanager suite, which effectively raises at the line after 'yield'.
-        logger.debug('Published output for {} member {}'.format(self.operation_id, ensemble_member))
-        # Note that ResourceManager._done is implicitly a supporting data store of
-        # __publishing_context. This leaking of responsibilities should be reconsidered.
-        self._done[ensemble_member] = True
 
     @property
     def ensemble_width(self):
@@ -2157,27 +2414,30 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         self._output_description = output_description
         assert self._output_description is not None
 
-        self.__publishing_data_proxy = publishing_data_proxy
-        assert self.__publishing_data_proxy is not None
-        assert callable(self.__publishing_data_proxy)
-
         self._runner_director = runner_director
         assert self._runner_director is not None
+        # Discover from the RunnerDirector whether the task (whose resources we
+        # are managing) should be executed on each rank where its results are
+        # needed or whether we will have to synchronize its outputs across ranks
+        # after executing in a single place.
+        self._allow_duplicate = runner_director.allow_duplicate
+
         self._resource_factory = resource_factory
         assert self._resource_factory is not None
 
-        self._data: typing.OrderedDict[str, OutputData] = \
-            _make_datastore(output_description=self._output_description,
-                            ensemble_width=self.ensemble_width)
+        self._data = DataStore(
+            output_description=self._output_description,
+            ensemble_width=self.ensemble_width,
+            done_callback=self._receive_completion_signal)
 
-        # We store a rereference to the publishing context manager implementation
-        # in a data structure that can only produce one per Python interpreter
-        # (using list.pop()).
         # TODO: reimplement as a data descriptor
-        #  so that PublishingDataProxy does not need a bound circular reference.
-        self.__publishing_resources = [self.__publishing_context]
-        # _done is supporting data for the __publishing_context
-        self._done = [False] * self.ensemble_width
+        #  so that PublishingManager (and PublishingDataProxy) do not need a bound circular reference.
+        self.__publishing_resources = PublishingManager(
+            resource_manager=self,
+            publisher_factory=publishing_data_proxy)
+
+        """Functions to call when the resource is brought up to date."""
+        self._callbacks: typing.List[typing.Callable[[ResourceManager], None]] = []
 
         self.__operation_entrance_counter = 0
         self.__reset_counter = 0
@@ -2187,25 +2447,61 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
         return f'{self._base_operation_id}_i{self.__reset_counter}'
 
+    @property
+    def operation_id(self):
+        # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
+        return f'{self._base_operation_id}_i{self.__reset_counter}'
+
+    def _receive_completion_signal(self, obj: 'DataStore'):
+        # Finalize. Confirm that the runner calls succeeded in finalizing the work graph node.
+        #
+        # Note that ResourceManager subclasses may have
+        # differently structured update_output that have an ensemble-wide
+        # publishing_resources instead of using one for each ensemble member in sequence.
+        # However, we need a general solution for ResourceManagers that are relying on
+        # subscriptions to the ResourceManagers of other ranks for their results.
+        # The providers need to run their callbacks, and the subscribers need to run a
+        # corresponding set of callbacks in the same sequence at the same point in the data flow
+        # resolution (then publish their results).
+        #
+        # Clearly, if we will continue to subclass ResourceManager and provide different algorithms for
+        # bringing output up to date, we need to break up this function into the separate required
+        # protocols versus extensible behaviors.
+
+        if comm_size > 1:
+            logger.debug(
+                f'Synchronizing {self.operation_id} update_output().'
+            )
+
+        self._run_callbacks()
+
+        # This is probably overly conservative, but we can revisit for optimization
+        # after the gmxapi 0.3.0 release.
+        if comm_size > 1:
+            comm.barrier()
+            logger.debug(
+                'Passed barrier.'
+            )
+
     def width(self) -> int:
         return self.ensemble_width
 
     def reset(self):
         self.__operation_entrance_counter = 0
-        self._done = [False] * self.ensemble_width
         # TODO: Update details of subscription relationships.
-        self.__publishing_resources = [self.__publishing_context]
-        for data in self._data.values():
-            data.reset()
+        # TODO: Update details of subscription relationships.
+        self.__publishing_resources.reset()
+        self._data.reset()
         self._input_edge.reset()
+        self._callbacks = []
         assert self.__operation_entrance_counter == 0
         self.__reset_counter += 1
 
     def done(self, member=None):
-        if member is None:
-            return all(self._done)
-        else:
-            return self._done[member]
+        return all(data.done(member) for data in self._data.values())
+
+    def is_done(self, name, member=None):
+        return self._data[name].done(member=member)
 
     def set_result(self, name, value, member: int):
         if not isinstance(value, (str, bytes)):
@@ -2221,8 +2517,98 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # Note that data is not considered "done" until all members have been set.
         self._data[name].set(value=value, member=member)
 
-    def is_done(self, name):
-        return self._data[name].done
+    def _make_done_callback(self,
+                            func: typing.Callable[[OutputData], None],
+                            name: str,
+                            member: int
+                            ) -> typing.Callable[['ResourceManager'], None]:
+        """Wrap a callback prototype for ResourceManager.add_done_callback.
+
+        This shim helps us to independently evolve the ResourceManager interface,
+        the Future interface, and the core callback functions that we need.
+
+        We need to reconcile our notions of
+        Future slicing and adopt a more conventional interface where `add_done_callback()`
+        can be serviced by Future.
+        """
+        if member >= self.ensemble_width:
+            raise gmxapi.exceptions.ValueError(
+                f'No member {member} in {self} (width {self.ensemble_width}).')
+        if name not in self._data:
+            raise gmxapi.exceptions.ValueError(
+                f'No output "{name}" in {self}.'
+            )
+        return self._wrap_callback(func, name, self.operation_id)
+
+    @staticmethod
+    @functools.lru_cache()
+    def _wrap_callback(func: typing.Callable[[OutputData], None],
+                       name: str,
+                       operation_id) -> typing.Callable[['ResourceManager'], None]:
+        """Wrap and cache a callback prototype for ResourceManager._make_done_callback.
+
+        This is a separate static member to avoid potential circular reference problems with
+        caching member functions, but we do want the ResourceManager identity to be
+        part of the cache key.
+
+        We would like ResourceManager.add_done_callback to be able to check whether
+        specific callbacks have already been added, but we can't do that if we generate
+        a new functools.partial object with each call to ResourceManager._make_done_callback.
+        So this avoids making a new partially bound function if we have already done so.
+        """
+
+        def _filter(obj: ResourceManager):
+            return func(obj._data[name])
+
+        logger.debug(
+            f'Created wrapper function {_filter} for {operation_id}[{name}] callback {func}.'
+        )
+
+        return _filter
+
+    def add_done_callback(self, func: typing.Callable[['ResourceManager'], None]):
+        """Attaches the callable to the collection of managed resources.
+
+        *func* will be called, with the ResourceManager as its only argument, when the
+        operation finishes running.
+
+        If the operation has already completed, *func* will be called immediately.
+
+        Note that this signature is not yet normative.
+
+        This is a step in the direction of callbacks for individual Futures.
+        This implementation would have to accept *name* and *member* parameters
+        in order to register callbacks to specific Futures. For the moment, we
+        leave the responsibility with the caller to pick out the particular data
+        it needs. The callback receives a reference to the ResourceManager itself,
+        rather than a Future object. In the mean time, internally we use a helper
+        functions to provide a bridge.
+
+        """
+
+        if func in self._callbacks:
+            raise UsageError('Function {func} already registered in {self} callbacks.')
+        self._callbacks.append(func)
+        if self.done():
+            try:
+                func(self)
+            except Exception as e:
+                logger.exception(
+                    'Exception during callbacks for {self}[{self.name}][{member}].',
+                    exc_info=e
+                )
+
+    def _run_callbacks(self):
+        """Run all the scheduled callbacks when this operation is complete.
+        """
+        for cb in self._callbacks:
+            try:
+                cb(self)
+            except Exception as e:
+                logger.exception(
+                    f'Exception in ResourceManager callback {cb}.',
+                    exc_info=e
+                )
 
     def get(self, name: str) -> OutputData:
         """Get managed data by name.
@@ -2231,11 +2617,14 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         Raises exceptions.ValueError if data is requested for an unknown name.
         """
         if name not in self._data:
-            raise exceptions.ValueError('Request for unknown data.')
+            raise exceptions.ValueError(
+                f'Request for unknown data: {self.operation_id}:{name}')
         if not self.is_done(name):
-            raise exceptions.ProtocolError('Data not ready.')
-        assert isinstance(self._data[name], OutputData)
-        return self._data[name]
+            raise exceptions.ProtocolError(
+                f'{self.operation_id}:{name} not ready.')
+        data = self._data[name]
+        assert isinstance(data, OutputData)
+        return data
 
     # TODO: Normalize. This is the no-argument, no-return callable member of an
     #  operation handle that dispatches to another Context (the operation implementation).
@@ -2255,6 +2644,8 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
 
         TODO: More comprehensive error handling for operations that fail to execute.
 
+        When overriding this function, subclasses MUST use the PublishingManager
+        context manager to ensure correct data flow.
         TODO: We need a different implementation for an operation whose output
          is served by multiple resource managers. E.g. an operation whose output
          is available across the ensemble, but which should only be executed on
@@ -2272,13 +2663,8 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
             if self.__operation_entrance_counter > 1:
                 raise exceptions.ProtocolError(
                     'Bug detected: resource manager tried to execute operation twice.')
-            if not self.done():
+            with self.publishing_resources() as publisher:
                 # Note! This is a detail of the ResourceManager in a SerialContext
-                # TODO: rewrite with the pattern that this block is directing and then resolving an operation in the
-                #  operation's library/implementation context.
-                publishing_resources = self.publishing_resources()
-                # publishing_resources is self.__publishing_context
-
                 for ensemble_member in range(self.ensemble_width):
                     # TODO: rewrite the following expression as a call to a resource factory.
                     # TODO: Consider whether the resource_factory behavior should be normalized
@@ -2290,7 +2676,7 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                     with self.local_input(ensemble_member) as input:
                         # Note: Resources are marked "done" by the publishing system
                         # before the following context manager finishes exiting.
-                        with publishing_resources(ensemble_member=ensemble_member) as output:
+                        with publisher.publishing_context(ensemble_member=ensemble_member) as output:
                             # self._runner(*input.args, output=output, **input.kwargs)
                             ####
                             # Here we can make _runner a thing that accepts session resources, and
@@ -2313,8 +2699,14 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                             # the runner builder.
                             # option 2: Pass resource_builder to input_director and then output_director.
                             error_message = 'Got {} while executing {} for operation {}.'
+
+                            # output is a PublishingDataProxy
                             try:
-                                resources = self._resource_factory(input=input, output=output)
+                                # TODO: Provide runtime session resources with
+                                #  consideration for what the operation actually needs
+                                #  (see builder proposal above).
+                                resources = self._resource_factory(input=input,
+                                                                   output=output)
                             except exceptions.TypeError as e:
                                 message = error_message.format(e,
                                                                self._resource_factory,
@@ -2327,10 +2719,32 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                             except Exception as e:
                                 message = error_message.format(e, runner, self.operation_id)
                                 raise exceptions.ApiError(message) from e
-            if not self.done():
-                message = 'update_output implementation failed to update all outputs for {}.'
-                message = message.format(self.operation_id)
-                raise exceptions.ApiError(message)
+                            # end `with publishing_context`
+                        # end `with local_input`
+                    # end `for ensemble_member`
+                # end `with publisher`
+            # PublishingManager will have made its observer callbacks now.
+
+            # For gmxapi 0.3, we require that all implementations of ResourceManager.update_output()
+            # also use PublishingManager instances to ensure synchronization of output publishing.
+            # PublishingManager services callbacks when all runners have completed but before
+            # asserting that the publishing_resources are "done". This is necessary as a bug fix,
+            # to allow results to come through callbacks rather than from the runners, but it is not
+            # necessarily a long-term feature.
+            #
+            # We could handle this better in a few different ways. We would either
+            # need to communicate with a workflow manager to negotiate publishing to subscribers
+            # (or just to receive a list of synchronizations or additional calls to make), or we would
+            # need to allow asynchronous/concurrent finalization of tasks in `update_output`.
+            # This is well beyond the scope of gmxapi 0.3.
+
+        # We want to be sure that the ResourceManager will _receive_completion_signal
+        # and call the registered callbacks immediately after this function ends.
+        # Subclasses are advised to do the same until we have a more robust behavioral composition.
+        if not self.done():
+            message = 'update_output implementation failed to update all outputs for {}.'
+            message = message.format(self.operation_id)
+            raise exceptions.ApiError(message)
 
     def future(self, name: str, description: ResultDescription):
         """Retrieve a Future for a named output.
@@ -2355,6 +2769,12 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
 
     def data(self) -> _OutputDataProxyType:
         """Get an adapter to the output resources to access results."""
+        # In the gmxapi 0.1 spec, the OutputDataProxy never binds to a specific
+        # ensemble member (using the DataProxyBase *client_id* parameter).
+        # This will probably not be changed before flattening the OutputDataProxy
+        # into a set of Data Descriptors directly in the OperationHandle namespace
+        # (remove the 'output' attribute: issue #3174), and should be coupled to
+        # consideration of issue #3179.
         return self._output_data_proxy(self)
 
     @contextmanager
@@ -2403,17 +2823,145 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # the @contextmanager decorator
         yield input_pack
 
-    def publishing_resources(self):
+    def publishing_resources(self) -> PublishingManager:
         """Get a context manager for resolving the data dependencies of this node.
 
-        Use the returned object as a Python context manager.
+        Activate the publishing resource factory by entering it as a Python context manager.
+
+        Use the *publishing_context* method on the activated factory to get a publishing data proxy for a
+        given ensemble_member.
+
+        When these context managers are exited, the output publishing protocol is automatically satisfied.
+
         'output' type resources can be published exactly once, and only while the
         publishing context is active.
 
         Write access to publishing resources can be granted exactly once during the
-        resource manager lifetime and conveys exclusive access.
+        resource manager lifetime and conveys exclusive access. However, this state can be *reset*.
         """
-        return self.__publishing_resources.pop()
+        publishing_resource_factory: PublishingManager = self.__publishing_resources
+        # The ensemble_width is certainly fixed by now, and this seems like a
+        # reasonable place to establish subscription relationships between ranks.
+        # self.publishing_resources() gets the (single-use) context manager
+        # creation function (self.__publishing_context) that will take a member
+        # id as an argument.
+        if comm_size > 1 and not self._allow_duplicate:
+            # owning_rank is the process where the work is actually executed. This is
+            # hard-coded in the initial implementation. It is subject to optimization
+            # and increased flexibility in future version.
+            owning_rank = 0
+
+            # Confirm that this code is executed everywhere we think it is.
+            logger.debug(
+                f'Synchronizing {self} on all ranks with a Comm.barrier.'
+            )
+            # This is probably overly conservative, but we can revisit for optimization
+            # after the gmxapi 0.3.0 release.
+            comm.barrier()
+
+            for member in range(self.ensemble_width):
+                for name, output in self._data.items():
+                    assert isinstance(output, OutputData)
+                    assert output.name == name
+                    # For each member of OutputData, either add a publishing callback for the Future or a
+                    # subscriber callback to the publishing resource factory.
+                    # Set up proxy subscribers for each member of each OutputData
+                    if rank_number == owning_rank:
+                        # Set up the callbacks for the owning rank to push updates.
+                        for subscriber in [rank for rank in range(comm_size) if rank != owning_rank]:
+                            outputdata_cb = functools.partial(
+                                _subscription_provider_callback,
+                                ensemble_member=member,
+                                subscriber=subscriber
+                            )
+                            # Convert from a callback that takes OutputData to one that takes ResourceManager
+                            cb = self._make_done_callback(
+                                func=outputdata_cb,
+                                name=name,
+                                member=member
+                            )
+                            self.add_done_callback(
+                                func=cb
+                            )
+                    else:
+                        # We are on the subscribing rank.
+
+                        publisher_cb: typing.Callable[[_PublishingDataProxyType], None] = functools.partial(
+                            _subscriber_callback,
+                            name=name,
+                            ensemble_member=member,
+                            owner=owning_rank
+                        )
+                        # Convert from a callback that takes OutputData to one that takes PublishingManager
+                        cb = self._make_publisher_callback(
+                            func=publisher_cb,
+                            name=name,
+                            member=member
+                        )
+                        publishing_resource_factory.register_observer(cb)
+
+        return publishing_resource_factory
+
+    def _make_publisher_callback(
+            self,
+            func: typing.Callable[[_PublishingDataProxyType], None],
+            name: str,
+            member: int
+    ):
+        logger.debug(
+            f'Wrapping publisher callback for {self} {name}[{member}]: {func}.'
+        )
+
+        def callback(obj: PublishingManager):
+            output = obj.publishing_data_proxies[member]
+            return func(output)
+
+        return callback
+
+
+def _subscription_provider_callback(obj: OutputData, ensemble_member: int, subscriber: int):
+    """Support a subscription to the given element of the named output.
+
+    We arrange for this to be called by the ResourceManager
+
+    This function is a prototype: it holds the necessary behavior, but must be
+    rewrapped into the correct signature.
+    Partially bind the extra arguments to achieve the signature needed.
+    """
+    # This callback will be called just after ResourceManager.update_output()
+    # when triggered by the successful publishing of all outputs on the
+    # owning rank.
+    result = obj.data(member=ensemble_member)
+    try:
+        result = result.to_list()
+    except AttributeError:
+        pass
+    try:
+        result = result.tolist()
+    except AttributeError:
+        pass
+    if not isinstance(result, (str, bool, int, float, dict, list)):
+        raise ApiError()
+    logger.debug(f'Sending {obj.name}[{ensemble_member}]={result} to {subscriber}')
+    comm.send(result, dest=subscriber)
+    logger.debug(f'Sent {obj.name}[{ensemble_member}] to {subscriber}')
+
+
+def _subscriber_callback(output: _PublishingDataProxyType, name: str, ensemble_member: int, owner: int):
+    """Receive a callback from the PublishingManager to be called before it is finalized.
+
+    This function prototype assigns output in the way a runner would, but we use a hook
+    in the PublishingManager to achieve correct synchronization with the ResourceManager
+    "done" callbacks.
+    """
+    # The callback will be called when the publishing resources are being finalized
+    # at the end of the ResourceManager.update_output() method.
+    # Note that PublishingDataProxies hide the ensemble dimension.
+    # We account for that here in wrapping code.
+    logger.debug(f'Waiting for {name}[{ensemble_member}] from {owner}')
+    result = comm.recv(source=owner)
+    logger.debug(f'Received {name}[{ensemble_member}]={result}. Publishing locally.')
+    setattr(output, name, result)
 
 
 class PyFunctionRunnerResources(collections.UserDict):
@@ -2473,8 +3021,26 @@ class OutputParameterRunner(PyFunctionRunner):
         self.function(**resources)
 
 
-def wrapped_function_runner(function,
-                            output_description: OutputCollectionDescription = None) -> PyFunctionRunner:
+class NoOpRunner(PyFunctionRunner):
+    """Function runner that does not execute on the current rank.
+
+    Alternative PyFunctionRunner for ranks where function should not be executed.
+
+    Output will be synchronized separately through the ResourceManager facilities.
+    """
+
+    def __call__(self, resources: PyFunctionRunnerResources):
+        logger.debug(
+            f'null runner received {resources}.'
+        )
+
+
+def wrapped_function_runner(
+        function,
+        output_description: OutputCollectionDescription = None,
+        owning_rank: int = 0,
+        allow_duplicate=False
+) -> PyFunctionRunner:
     """Get an adapter for a function to be wrapped.
 
     If the function does not accept a publishing data proxy as an `output`
@@ -2492,8 +3058,16 @@ def wrapped_function_runner(function,
         * The publishing resources factory must be ready to make a compatible decision
           with respect to ensemble data flow for the current MPI rank.
     """
+    # WARNING:  The hard-coded value for the owning rank is duplicated in the
+    # ResourceManager.publishing_resources function. To deduplicate would require
+    # either a global setting or more run-time dispatching logic. Currently,
+    # this factory is called while dynamically defining the OperationDetails class for
+    # function_wrapper. Another option would be to use additional information from
+    # function_wrapper when calling this factory.
+
     assert callable(function)
     signature = inspect.signature(function)
+    logger.debug(f'Creating runner for signature {signature}.')
 
     # Implementation note: this function dispatches an implementation with the
     # logic below. A better factoring would be a "chain of responsibility" in
@@ -2507,12 +3081,12 @@ def wrapped_function_runner(function,
             if not isinstance(output_description, collections.abc.Mapping):
                 raise exceptions.UsageError(
                     'Function passes output through call argument, but output is not described.')
-            return OutputParameterRunner(
+            runner = OutputParameterRunner(
                 function=function,
                 output_description=OutputCollectionDescription(**output_description))
         else:
-            return OutputParameterRunner(function=function,
-                                         output_description=output_description)
+            runner = OutputParameterRunner(function=function,
+                                           output_description=output_description)
     # Next try output_description parameter or function return annotation.
     else:
         if isinstance(output_description, OutputCollectionDescription):
@@ -2527,15 +3101,23 @@ def wrapped_function_runner(function,
             if signature.return_annotation != signature.empty:
                 if signature.return_annotation != output_description['data']:
                     raise exceptions.ApiError(
-                        'Wrapped function with return-value-capture provided with non-matching output description.')
+                        'Wrapped function with return-value-capture provided with non-matching output '
+                        'description.')
             return_type = output_description['data']
         else:
             # Use return type inferred from function signature.
             return_type = signature.return_annotation
         if return_type == signature.empty or return_type is None:
             raise exceptions.ApiError('No return annotation or output_description for {}'.format(function))
-        return CapturedOutputRunner(function=function,
-                                    output_description=OutputCollectionDescription(data=return_type))
+        runner = CapturedOutputRunner(function=function,
+                                      output_description=OutputCollectionDescription(data=return_type))
+    if rank_number != owning_rank and not allow_duplicate:
+        # Only do actual execution on the root rank. This rank will subscribe to
+        # results from the root rank.
+        # Replace the runner acquired above.
+        runner = NoOpRunner(function=runner.function, output_description=runner.output_description)
+
+    return runner
 
 
 # TODO: Refactor in terms of reference to a node in a Context.
@@ -2568,12 +3150,16 @@ class OperationHandle(AbstractOperation[_OutputDataProxyType]):
         executes and produces output.
         """
         # TODO: When the resource manager can be kept alive by an enclosing or
-        #  module-level Context, convert to a weakref.
+        #  module-level Context, convert to a weakref or look up based on stored node uid.
         self.__resource_manager = resource_manager
+
+    @property
+    def node_uid(self):
         # The unique identifier for the operation node allows the Context implementation
         # to manage the state of the handle. Reproducibility of node_uid is TBD, but
         # it must be unique in a Context where it references a different operation node.
-        self.node_uid = None
+        uid = getattr(self.__resource_manager, 'operation_id', None)
+        return uid
 
     @property
     def output(self) -> _OutputDataProxyType:
@@ -2748,7 +3334,6 @@ class NodeBuilder(gmx.abc.NodeBuilder):
         self.context.work_graph[uid] = manager
         # TODO: Replace with a call to Node.handle()
         handle = self._handle(self.context.work_graph[uid])
-        handle.node_uid = uid
         return handle
 
     def add_input(self, name, source):
@@ -2953,8 +3538,10 @@ class OperationDirector(object):
         for name, source in data_source_collection.items():
             builder.add_input(name, source)
 
+        allow_duplicate = getattr(operation_details, '_allow_duplicate', False)
         runner_director = RunnerDirector(
             runner=operation_details,
+            allow_duplicate=allow_duplicate
         )
 
         builder.set_runner_director(runner_director)
@@ -2978,37 +3565,86 @@ class OperationDirector(object):
 
 
 class RunnerDirector(AbstractRunnerDirector):
-    def __init__(self, runner: typing.Callable):
+    def __init__(self, runner: typing.Callable, allow_duplicate=False):
         self._runner = runner
+        self.allow_duplicate = allow_duplicate
 
     def __call__(self, resources):
         runner = functools.partial(self._runner, resources)
         return runner
 
 
-def _make_datastore(output_description: OutputCollectionDescription, ensemble_width: int):
-    """Create the data store for an operation with the described output.
+class DataStore(collections.OrderedDict, typing.Mapping[str, OutputData]):
+    """A container to hold the resources for an operation node.
 
-    Create a container to hold the resources for an operation node.
     Used internally by the resource manager when setting up the node.
     Evolution of the C++ framework for creating the Operation SessionResources
     object will inform the future of this and the resource_director method, but
     this data store is how the Context manages output data sources for resources
     that it manages.
     """
+    _frozen = False
+    _named_data_done: typing.MutableMapping[str, bool]
 
-    datastore = collections.OrderedDict()
-    for name, dtype in output_description.items():
-        assert issubclass(dtype, valid_result_types)
-        result_description = ResultDescription(dtype=dtype, width=ensemble_width)
-        datastore[name] = OutputData(name=name, description=result_description)
-    return datastore
+    def __init__(self,
+                 output_description: OutputCollectionDescription,
+                 ensemble_width: int,
+                 done_callback: typing.Optional[typing.Callable[['DataStore'], None]] = None
+                 ):
+        self._done_callback = done_callback
+
+        elements = []
+        for name, dtype in output_description.items():
+            assert issubclass(dtype, valid_result_types)
+            result_description = ResultDescription(dtype=dtype, width=ensemble_width)
+            elements.append((name, OutputData(name=name,
+                                              description=result_description,
+                                              done_callback=self._mark_as_done)))
+
+        collections.OrderedDict.__init__(self, elements)
+        self._named_data_done = {name: False for name in self.keys()}
+        self._frozen = True
+
+    def _mark_as_done(self, key):
+        """Mark the named element as done.
+
+        Provided as a callback to the OutputData members. We collect the results
+        and issue a signal of our own when the whole DataStore is done.
+        """
+        if isinstance(key, OutputData):
+            key = key.name
+        if self._named_data_done[key]:
+            logger.warning(
+                f'{self}[{key}] is being marked "done" more than once.'
+            )
+        else:
+            self._named_data_done[key] = True
+            if all(self._named_data_done.values()) and callable(self._done_callback):
+                self._done_callback(self)
+
+    def __setitem__(self, k: str, v: OutputData) -> None:
+        if self._frozen:
+            raise UsageError('DataStore structure is immutable after initialization.')
+        else:
+            super().__setitem__(k, v)
+
+    def __delitem__(self, v) -> None:
+        if self._frozen:
+            raise UsageError('DataStore structure is immutable after initialization.')
+        else:
+            super().__delitem__(v)
+
+    def reset(self):
+        self._named_data_done = {name: False for name in self.keys()}
+        for output in self.values():
+            if isinstance(output, OutputData):
+                output.reset()
 
 
 # TODO: For outputs, distinguish between "results" and "events".
 #  Both are published to the resource manager in the same way, but the relationship
 #  with subscribers is potentially different.
-def function_wrapper(output: dict = None):
+def function_wrapper(output: dict = None, allow_duplicate=False):
     # Suppress warnings in the example code.
     # noinspection PyUnresolvedReferences
     """Generate a decorator for wrapped functions with signature manipulation.
@@ -3086,11 +3722,14 @@ def function_wrapper(output: dict = None):
             _runner = wrapped_function_runner(
                 function=function,
                 output_description=provided_output_map,
+                allow_duplicate=allow_duplicate
             )
             _output_description = _runner.output_description
             _output_data_proxy_type = define_output_data_proxy(_output_description)
             _publishing_data_proxy_type = define_publishing_data_proxy(_output_description)
             _SourceResource = SourceResource[_output_data_proxy_type, _publishing_data_proxy_type]
+
+            _allow_duplicate = allow_duplicate
 
             @classmethod
             def name(cls) -> str:
@@ -3129,7 +3768,7 @@ def function_wrapper(output: dict = None):
                 return self._output_description
 
             def publishing_data_proxy(self, *,
-                                      instance: _SourceResource,
+                                      instance: SourceResource,
                                       client_id: int
                                       ) -> _publishing_data_proxy_type:
                 """Factory for Operation output publishing resources.
@@ -3199,11 +3838,12 @@ def function_wrapper(output: dict = None):
 
             @classmethod
             def resource_director(cls, *, input=None,
-                                  output: _publishing_data_proxy_type = None,
+                                  output: _publishing_data_proxy_type = None
+                                  ,
                                   ) -> PyFunctionRunnerResources:
                 """a Director factory that helps build the Session Resources for the function.
 
-                The Session launcher provides the director with all of the resources previously
+                The Session launcher provides the director with all resources previously
                 requested/negotiated/registered by the Operation. The director uses details of
                 the operation to build the resources object required by the operation runner.
 
@@ -3284,6 +3924,121 @@ def function_wrapper(output: dict = None):
     return decorator
 
 
+def ensure_future(
+        source,
+        description: typing.Optional[ResultDescription] = None,
+        # name: typing.Optional[str] = None,
+        _propagate_reset=True) -> Future:
+    """Get a Future of the given description from a data source.
+
+    If *source* is already a Future matching the provided description, return
+    *source*. Otherwise, wrap *source* appropriately in a new Future instance.
+    """
+    # Our current convention is that unnamed data sources get called "data".
+    # Set the default name of the returned Future.
+    name = 'data'
+
+    # Note that the *reset* behavior for Futures is problematic and needs to be
+    # replaced with a scheme by which an Operation can be duplicated or prototyped
+    # or otherwise re-instantiated with new inputs in `while_loop`s, etc.
+    #
+    # Until then, we have to allow for Futures passed into a subgraph from outer
+    # scopes to be excluded from the `reset` chain.
+    if isinstance(source, Future):
+        name = source.name
+        source_description: ResultDescription = source.description
+
+        if not _propagate_reset:
+            logger.debug(f'Getting data event from {source}. Non-optimal data flow, pending work on #3139.')
+            # WARNING: Initial implementation forces execution in order to convert Future to local constant
+            # before re-wrapping. This is a potential performance issue, and interferes with evolution of
+            # the execution dispatching, but is a necessary simplification for a minimal initial
+            # implementation.
+            #
+            # If we follow up on #3139 to remove reset() and improve the prototyping of
+            # new workflow nodes for a better Subgraph implementation, we can improve the situation. Please
+            # raise discussion if this is important to you.
+            logger.info(f'Localizing {source} to get a reference that will not be subject to Future.reset().')
+            source = source.result()
+            if source_description.dtype is None:
+                if source_description.width == 1:
+                    _source_type = type(source)
+                else:
+                    assert source_description.width > 1
+                    assert len(source) == source_description.width
+                    _source_type = type(source[0])
+                # Replace ResultDescription if we could infer something other than None (or NoneType)
+                if _source_type is not None and not isinstance(None, _source_type):
+                    source_description = ResultDescription(dtype=_source_type, width=source_description.width)
+        else:
+            # Future.reset() will be propagated to source, if applicable.
+            # There may not be anything interesting to log yet, though.
+            ...
+    else:
+        assert not isinstance(source, Future)
+        # Resetting a constant has no effect, but for generality we do not forbid it.
+        logger.debug(
+            f'_propagate_reset={_propagate_reset} is ignored for non-Future data sources.')
+        # Note that we do not currently provide a way to assert an ensemble
+        # subgraph with pure constant variable initialization.
+        _source_type = type(source) if source is not None else None
+        source_description = ResultDescription(dtype=_source_type, width=1)
+
+    if description is None:
+        description = source_description
+
+    target_dtype = description.dtype
+    target_width = description.width
+    if isinstance(source, Future):
+        if target_width != source_description.width and source_description.width != 1:
+            raise DataShapeError(
+                f'{source} incompatible with {description}.')
+        if target_dtype is not None:
+            if source_description.dtype is not None and not issubclass(source_description.dtype,
+                                                                       target_dtype):
+                raise GmxapiTypeError(
+                    f'{source} incompatible with {description}.'
+                )
+
+        # We may be able to pass through or thinly wrap the Future.
+        if description == source_description:
+            return source
+
+        if target_width == source_description.width:
+            transform = identity
+        elif target_width > 1:
+            transform = functools.partial(broadcast, width=target_width)
+        else:
+            raise ProtocolError('Unknown bug. This line should not be reachable.')
+        return ProxyResourceManager(
+            proxied_future=source,
+            width=target_width,
+            function=transform
+        ).future(name, description)
+
+    else:
+        assert not isinstance(source, Future)
+        if target_width == 1:
+            if target_dtype is not None and not isinstance(source, target_dtype):
+                raise GmxapiTypeError(
+                    f'{source} incompatible with {description}.'
+                )
+        if source_description.width == target_width:
+            transform = identity
+        elif source_description.width == 1:
+            transform = functools.partial(broadcast, width=target_width)
+        else:
+            raise DataShapeError(f'Cannot map {source} to {description}.')
+        future = StaticSourceManager(
+            name=name,
+            proxied_data=source,
+            width=target_width,
+            function=transform
+        ).future(name, description)
+
+    return future
+
+
 class GraphVariableDescriptor(object):
     def __init__(self, name: str = None, dtype=None, default=None):
         self.name = name
@@ -3346,16 +4101,8 @@ class GraphMeta(type):
     """
     _prepare_keywords = ('variables',)
 
-    # TODO: Python 3.7.2 introduces typing.OrderedDict
-    # In practice, we are using collections.OrderedDict, but we should use the generic
-    # ABC from the typing module to avoid being overly restrictive with type hints.
-    try:
-        from typing import OrderedDict
-    except ImportError:
-        from collections import OrderedDict
-
     @classmethod
-    def __prepare__(mcs, name, bases, variables: OrderedDict = None, **kwargs):
+    def __prepare__(mcs, name, bases, variables: typing.OrderedDict = None, **kwargs):
         """Prepare the class namespace.
 
         Keyword Args:
@@ -3550,44 +4297,95 @@ class SubgraphBuilder(object):
     Instances of SubgraphBuilder are returned by the ``subgraph()`` utility function.
     """
 
-    def __init__(self, variables):
-        self.__dict__.update({'variables': variables,
-                              '_staging': collections.OrderedDict(),
-                              '_editing': False,
-                              '_subgraph_context': None,
-                              '_subgraph_instance': None,
-                              '_fused_operation': None,
-                              '_factory': None})
-        # Return a placeholder that we can update during iteration.
-        # Long term, this is probably implemented with data descriptors
-        # that will be moved to a new Subgraph type object.
-        for name in self.variables:
-            if not isinstance(self.variables[name], Future):
-                self.variables[name] = gmx.make_constant(self.variables[name])
+    def __init__(self, variables: collections.abc.Mapping):
+        # Instances have different attribute access behavior depending whether the subgraph is actively
+        # being edited or not, and we override the attribute accessors to provide a different view of the
+        # namespace than what is really under the hood. This is confusing and needs to change. If we stay
+        # with the current pattern, SubgraphBuilder would be sensibly split into a separate SubgraphManager
+        # and SubgraphEditor class, at least. However, we should instead focus on reimplementing such that
+        # Subgraph (sub)classes can be defined in terms of Data Descriptors (the class definition block
+        # takes the place of the `with` block).
+        self.__dict__.update({
+            'variables': dict(),
+            '_editing': False,
+            '_factory': None,
+            '_fused_operation': None,
+            '_initial_width': 1,
+            '_internal_state': dict(),
+            '_staging': collections.OrderedDict(),
+            '_subgraph_context': None,
+            '_subgraph_instance': None,
+        })
+        # Establish the initial ensemble width. (If all variables have width 1,
+        # we may widen the ensemble when creating the Subgraph instance.)
+        for name, value in variables.items():
+            if isinstance(value, Future):
+                self._update_width(value.description.width)
+            self.__dict__['variables'][name] = ensure_future(
+                source=value,
+                _propagate_reset=False
+            )
 
-        # class MySubgraph(Subgraph, variables=variables):
-        #     pass
-        #
-        # self._subgraph_instance = MySubgraph()
+        self._subgraph_instance = None
+
+    def _update_width(self, width: int):
+        if self._initial_width == 1:
+            self._initial_width = width
+        elif width != 1 and width != self._initial_width:
+            raise DataShapeError(
+                f'Cannot map source of width {width} to subgraph width {self._initial_width}.')
+        return self._initial_width
 
     def __getattr__(self, item):
+        # Note that obj.__getattr__ is called only if *item* is not an existing attribute.
         if self._editing:
+            # This is where we are staging variables updates while initially defining the subgraph. The
+            # instance has not yet been created.
             if item in self.variables:
                 if item in self._staging:
                     logger.debug(f'Read access to intermediate value of subgraph variable {item}')
                     return self._staging[item]
                 else:
                     logger.debug('Read access to subgraph variable {}'.format(item))
-                    return self.variables[item]
+                    # Note that the Future returned here needs to represent a point in the internal data
+                    # flow of the subgraph, but if the variable is assigned to later in the definition,
+                    # the subgraph instance needs to make sure that this reference is updated during
+                    # Subgraph.run() to point to the correct resource at the next iteration.
+                    if item not in self._internal_state:
+                        self._internal_state[item] = self.variables[item]
+                    else:
+                        assert self._internal_state[item] is self.variables[item]
+                    return self._internal_state[item]
             else:
                 raise AttributeError('Invalid attribute: {}'.format(item))
         else:
-            # TODO: this is not quite the described interface...
-            return SubgraphVariable(subgraph=self, item=item)
+            # The variable is being accessed outside the scope of the definition process (the `with`
+            # block). Usually this represents either direct access by a user or internal usage by the
+            # `while_loop` implementation.
+            if not self._subgraph_instance:
+                logger.debug(f'Read access to initial value of {item} through before building subgraph.')
+                return self.variables[item]
+            # TODO: this is not quite the interface described for operation.Subgraph or gmxapi.subgraph...
+            return SubgraphVariable(subgraph=self._subgraph_instance, item=item)
+        # Conceivably, there is different preferred behavior for subgraph variable reading through the Builder
+        #    * before starting to define the subgraph data flow
+        #    * during subgraph definition (editing)
+        #    * after finalizing the subgraph definition, but before executing
+        #    * during execution of the while_loop wrapper
+        #    * during execution of the lower-level Subgraph.run()
+        #    * after Subgraph.run() has executed (at least once)
+        #    * once the while_loop wrapper has finished
+        # This is too much responsibility for one function. Most of these use cases are not currently well
+        # specified. But they illustrate that we need a clearer distinction between the participants of
+        # subgraph specification (its Builder, type, or metatype), instantiation of subgraph frames,
+        # and use in iteration. Instead of stateful access logic, we should clarify distinct behavioral
+        # protocols, as needed, and try to minimize misuse or accessibility of unspecified access in the
+        # meantime.
 
     def __setattr__(self, key, value):
         """Part of the builder interface."""
         if key in self.__dict__:
+            logger.debug(f'Replacing {self}.{key} with {value}. (Was {self.__dict__[key]}.)')
             self.__dict__[key] = value
         else:
             if self._editing:
@@ -3596,18 +4394,45 @@ class SubgraphBuilder(object):
                 raise exceptions.UsageError('Subgraph is not in an editable state.')
 
     def add_update(self, key, value):
-        """Add a variable update to the internal subgraph."""
-        if key not in self.variables:
-            raise AttributeError('No such attribute: {}'.format(key))
+        """Add a variable update to the internal subgraph.
+
+        The new value must be consistent with the existing type, but is allowed to
+        convert a single-element variable to an ensemble variable.
+        """
+        # To avoid potential confusion, do this check before triggering the conditionals
+        # in __getattr__ or __setattr__.
         if not self._editing:
             raise exceptions.UsageError('Subgraph is not in an editable state.')
         # Else, stage the potential final value for the iteration.
-        logger.debug('Staging subgraph update {} = {}'.format(key, value))
-        # Return a placeholder that we can update during iteration.
+
+        if key not in self.variables:
+            raise AttributeError('No such attribute: {}'.format(key))
+
+        if not isinstance(self.variables[key], Future):
+            raise ApiError(
+                'SubgraphBuilder initialization should have normalized Futures for variables. '
+                f'Found {key}: {self.variables[key]}')
+
+        target_description: ResultDescription = self.variables[key].description
+        if not isinstance(value, Future):
+            warnings.warn(
+                f'Updating Subgraph.{key} with {value}, which is not a Future and will not be recalculated '
+                f'at each iteration. If this is intentional, please contact the GROMACS team to help us '
+                f'understand your use case, so we can replace this warning with a more appropriate check.')
+        else:
+            assert isinstance(value, Future)
+            if target_description.dtype is not None and value.description.dtype is not None:
+                if not issubclass(value.description.dtype, target_description.dtype):
+                    raise ApiError(
+                        f'Cannot update {key}: {target_description} from {value}.'
+                    )
+            target_description._width = self._update_width(width=value.description.width)
+        value = ensure_future(value, target_description)
+        logger.debug(f'Staging subgraph update to {key} from {value}.')
+
+        # Set a placeholder that we can update during iteration.
         # Long term, this is probably implemented with data descriptors
         # that will be moved to a new Subgraph type object.
-        if not isinstance(value, Future):
-            value = gmx.make_constant(value)
         self._staging[key] = value
         self._staging.move_to_end(key)
 
@@ -3654,56 +4479,165 @@ class SubgraphBuilder(object):
          references to its output, including check-point machinery.
         """
         logger.debug('Finalizing subgraph definition.')
-        inputs = collections.OrderedDict()
-        for key, value in self.variables.items():
-            # TODO: What if we don't want to provide default values?
-            inputs[key] = value
 
+        # Updates to the subgraph output variables, as staged by assignments made while defining the subgraph.
         updates = self._staging
 
+        # References (potentially) held by operations in the subgraph. These are references that were
+        # initialized from input variable values, but which need to be updated for iterations after the
+        # first, if the subgraph variable has an update staged in the subgraph specification.
+        internal_state = self._internal_state
+
+        # We can use the width inferred by the Builder to set the width for the
+        # instance we will create.
+        initial_width = self._initial_width
+
+        # Whether we allow updates to the Subgraph after creation is a separate and uncoupled design
+        # question, but the solution implemented in this closure assumes subgraph width and while_loop
+        # width will remain *initial_width*
+
+        # Establish the input data flow for the subgraph variables.
+        inputs = collections.OrderedDict()
+        for name, value in self.variables.items():
+            # Variables *should* be initialized with clearly typed initial values or Futures.
+            if isinstance(value, Future):
+                dtype = value.description.dtype
+            else:
+                dtype = type(value)
+            if dtype is type(None):
+                dtype = None
+            # Since Futures are not yet robustly typed, we may have to try to infer type from the staged
+            # update.
+            if dtype is None:
+                update = updates.get(name, None)
+                if isinstance(update, Future):
+                    dtype = update.description.dtype
+            logger.debug(
+                'Inferred type {} for variable {}'.format(
+                    'None' if dtype is None else dtype.__class__.__name__,
+                    name
+                ))
+            description = ResultDescription(dtype=dtype, width=initial_width)
+
+            # Get a placeholder that we can update during iteration.
+            # Long term, this is probably implemented with data descriptors
+            # that will be moved to a new Subgraph type object.
+            inputs[name] = ensure_future(
+                source=value,
+                description=description,
+                _propagate_reset=False
+            )
+
         class Subgraph(object):
-            def __init__(self, input_futures, update_sources):
-                self.values = collections.OrderedDict([(key, value.result()) for key, value in input_futures.items()])
+            # Note: Historically, it makes sense to distinguish fused operations as distinct types,
+            # but there is not a technical reason why this class needs to be local to this closure.
+            # Readability would likely be improved by refining the protocol for composing subgraph
+            # definitions in terms of module-level classes.
+            def __init__(self, *,
+                         input_variables: collections.OrderedDict,
+                         output_variables: collections.OrderedDict,
+                         state_variables: dict):
+                # Current (instantaneous) values of subgraph variables.
+                self.values = collections.OrderedDict(
+                    [(_name, _source.result()) for _name, _source in input_variables.items()])
                 self.value_width = {key: None for key in self.values}
                 logger.debug('subgraph initialized with {}'.format(
-                    ', '.join(['{}: {}'.format(key, value) for key, value in self.values.items()])))
-                self.futures = collections.OrderedDict([(key, value) for key, value in input_futures.items()])
-                self.update_sources = collections.OrderedDict([(key, value) for key, value in update_sources.items()])
-                if len(self.update_sources) > 0:
+                    ', '.join(['{}: {}'.format(_name, _source) for _name, _source in self.values.items()])))
+
+                # Initialize the Futures supporting the output variables.
+                self.futures = collections.OrderedDict([(_name, _source) for _name, _source in input_variables.items()])
+
+                # Stash the sequenced updates to the output variables, as gathered from assignments made
+                # while editing the subgraph.
+                self.output_variable_updates = collections.OrderedDict(
+                    [(_name, _source) for _name, _source in output_variables.items()])
+                if len(self.output_variable_updates) > 0:
                     logger.debug('Subgraph updates staged:')
-                    for update, source in self.update_sources.items():
-                        logger.debug('    {} = {}'.format(update, source))
+                    for _name, source in self.output_variable_updates.items():
+                        logger.debug('    {} = {}'.format(_name, source))
+
+                # Operations in the subgraph are referencing subgraph variables that are updated
+                # when the subgraph is run. Make sure these Futures get the same updates as the
+                # Futures supporting the output variables, but only after the operation results are
+                # consumed within the iteration.
+                self.internal_references = {_name: _future for _name, _future in state_variables.items() if
+                                            _name in self.output_variable_updates}
 
             def run(self):
+                # Bring the stored Futures up to date for the current iteration.
+                # For Futures that depend on subgraph-internal data flow, re-stage updates for the next
+                # iteration.
                 futures_updates = {}
-                for name in self.update_sources:
-                    source_description = self.update_sources[name].description
-                    result = self.update_sources[name].result()
+                for name in self.output_variable_updates:
+                    _future: Future = self.output_variable_updates[name]
+                    source_description = _future.description
+                    try:
+                        logger.debug(
+                            f'Getting update from {_future.resource_manager}[{_future.name}].'
+                        )
+                        result = _future.result()
+                    except Exception as e:
+                        logger.error(f'Could not update {name}. Got exception: ',
+                                     exc_info=e)
+                        raise e
                     logger.debug('Update: {} = {}'.format(name, result))
                     self.value_width[name] = source_description.width
                     self.values[name] = result
+
+                    # Get a new ResourceManager for the Future serving the subgraph variable (for the next
+                    # iteration).
+                    # TODO: If the width changes, we need to serve the correct member.
+                    # if source_description.width > 1 and self.futures[name].description.width == 1 or
+                    #         self.internal_references[name].description.width == 1: transform = slice_by_rank
                     new_source = StaticSourceManager(
-                        name=name,
+                        name=_future.name,
                         proxied_data=result,
                         width=source_description.width,
-                        function=lambda x: x
+                        function=identity
                     )
                     futures_updates[name] = {
-                        'description': self.update_sources[name].description,
+                        'key': _future.name,
+                        'description': _future.description,
                         'resource_manager': new_source
                     }
                 # Replace the data sources in the futures.
-                for name in self.update_sources:
+                for name in self.output_variable_updates:
                     attrs = futures_updates[name]
-                    self.futures[name].name = name
-                    self.futures[name].resource_manager = attrs['resource_manager']
-                    self.futures[name].description = attrs['description']
-                for name in self.update_sources:
-                    self.update_sources[name]._reset()
+                    _output: Future = self.futures[name]
+                    _output.name = attrs['key']
+                    _output.resource_manager = attrs['resource_manager']
+                    _output.description = attrs['description']
+                    if name in self.internal_references:
+                        _internal: Future = self.internal_references[name]
+                        # The following assertions test the author's assumptions, not specified behavior.
+                        assert _internal is not _output
+                        assert _internal is not futures_updates[name]
+                        # WARNING: Need to make sure things behave as expected if we change the width after
+                        # initial binding.
+                        if _internal.description != _output.description:
+                            raise ProtocolError(
+                                f'Attempting to update {_internal} with incompatible source: {_output}')
+                        _internal.resource_manager = self.futures[name].resource_manager
+                        _internal.name = self.futures[name].name
+                for _future in self.output_variable_updates.values():
+                    _future._reset()
 
-        subgraph = Subgraph(inputs, updates)
+        self._subgraph_instance = Subgraph(
+            input_variables=inputs,
+            output_variables=updates,
+            state_variables=internal_state
+        )
 
-        return lambda subgraph=subgraph: subgraph
+        def factory():
+            # Imitate the creation pattern for OperationHandles, but hold the (pre)built Subgraph in the
+            # `build()` closure, rather than creating when the factory is called. This is a convenient and
+            # minimal solution while the Subgraph class definition encapsulates the inputs. A more complete
+            # Subgraph implementation should allow input descriptions to be specified in the definition,
+            # but bound to actual inputs at instantiation to make Subgraphs more useful as general reusable
+            # fused operations.
+            return self._subgraph_instance
+
+        return factory
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """End the Subgraph editing session and finalize the Subgraph build.
@@ -3733,15 +4667,37 @@ class SubgraphBuilder(object):
 
 
 class SubgraphVariable:
-    def __init__(self, subgraph: SubgraphBuilder, item):
-        self._subgraph = weakref.ref(subgraph)
+    """Provide access to the instantaneous value of a subgraph variable."""
+
+    # Conundrum: For user access, we would expect a Future interface. To support the `while_loop`,
+    # we expect to use the instance to get a peek at the value of the internal variable at the end of each
+    # iteration.
+    def __init__(self, subgraph, item):
+        # TODO: Move nested Subgraph class to module level and add type checking.
+        assert subgraph.__class__.__name__ == 'Subgraph'
+        self._subgraph = subgraph
         self._item = item
 
     def __call__(self, obj):
-        # obj is an instance of the (local) Subgraph class dynamically defined by
-        # SubgraphBuilder. If necessary, we could evaluate these with respect to each
-        # other. For now, we exercise the weakref to have it for debugging purposes.
-        subgraph: SubgraphBuilder = self._subgraph()
+        """Condition callback.
+
+        Support the while_loop *condition* callback. This protocol is a work in progress and should not be
+        relied upon outside the `while_loop` implementation.
+        """
+        # This behavior is a work in progress. The original concept was akin to a Data Descriptor. The
+        # while_loop would hold the Data Descriptor for a derived Subgraph class object and then provide
+        # the instance at run time. This is probably still the scheme we want, but currently the while_loop
+        # gets an attribute of an instance of a SubgraphBuilder (which is not a class object and not part
+        # of the subgraph instance's MRO in any way).
+        # Since we currently create a single subgraph instance for the subgraph builder, it seems redundant
+        # to hold a reference to the owning subgraph at instantiation _and_ to accept the instance at the
+        # time of reading. However, this is part of an evolution towards a model in which subgraphs look
+        # more like regular Operations, with a base class instead of the current SubgraphBuilder,
+        # and where the current class becomes a Data Descriptor for specific Subgraphs.
+        if obj is not self._subgraph:
+            raise ProtocolError(
+                f'Received {obj} for a callback expecting {self._subgraph}.'
+            )
         return obj.values[self._item]
 
 
@@ -3810,9 +4766,22 @@ def while_loop(*, operation, condition, max_iteration=10):
     # 5. Initialize the subgraph with the outputs.
     # 6. Go to 3 if condition is not met.
 
+    # TODO: Add type hint after moving Subgraph to module level.
     obj = operation()
     assert hasattr(obj, 'values')
-    outputs = collections.OrderedDict([(key, type(value)) for key, value in obj.values.items()])
+    # Note: Usually, we derive the ensemble width of an operation handle from the
+    # inputs, but we have encapsulated the inputs in the subgraph and don't have
+    # that information here. `while_loop` implicitly does an ensemble `gather`.
+    # However, we can inspect the subgraph at this point to revise the output
+    # descriptions.
+    # TODO: Conditionally handle Subgraph versus standard OperationHandle.
+    outputs = dict()
+    for key, value in obj.futures.items():
+        assert isinstance(value, Future)
+        if value.description.width > 1:
+            outputs[key] = NDArray
+        else:
+            outputs[key] = value.description.dtype
 
     def evaluate_condition():
         result = condition(obj)
@@ -3824,7 +4793,7 @@ def while_loop(*, operation, condition, max_iteration=10):
         else:
             raise ApiError('while_loop *condition* must produce boolean values.')
 
-    @function_wrapper(output=outputs)
+    @function_wrapper(output=outputs, allow_duplicate=True)
     def run_loop(output: OutputCollectionDescription):
         iteration = 0
         obj = operation()
@@ -3837,7 +4806,7 @@ def while_loop(*, operation, condition, max_iteration=10):
         logger.debug(message)
         logger.debug('Condition: {}'.format(condition(obj)))
 
-        while (evaluate_condition()):
+        while evaluate_condition():
             logger.debug('Running iteration {}'.format(iteration))
             # WARNING: This is a dynamically generated task that can break logic based on
             # assumptions about the sequence of execution or resolution of data Futures,
@@ -3858,12 +4827,10 @@ def while_loop(*, operation, condition, max_iteration=10):
         for name in outputs:
             setattr(output, name, obj.values[name])
 
-        return obj
-
     return run_loop
 
 
-def subgraph(variables=None):
+def subgraph(variables: collections.abc.Mapping = None):
     """Allow operations to be configured in a sub-context.
 
     The object returned functions as a Python context manager. When entering the
@@ -3976,6 +4943,7 @@ def logical_not(value):
                 return list(not item for item in result)
             else:
                 return not result
+
         return negate
 
     # TODO: Small data transformations like this don't need to be formal Operations.

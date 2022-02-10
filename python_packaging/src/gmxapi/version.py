@@ -71,7 +71,7 @@ from .exceptions import FeatureNotAvailableError
 _major = 0
 _minor = 3
 _micro = 0
-_suffix = 'b7'
+_suffix = ''
 
 # Reference https://www.python.org/dev/peps/pep-0440/
 # and https://packaging.pypa.io/en/latest/version/
