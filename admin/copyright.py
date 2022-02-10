@@ -293,12 +293,12 @@ def select_comment_handler(override, filename):
             dummy, ext2 = os.path.splitext(root)
             if ext2:
                 ext = ext2
-        if ext in ('.c', '.cu', '.cpp', '.cl', '.h', '.cuh', '.clh', '.y', '.l', '.pre', '.bm'):
+        if ext in ('.c', '.cu', '.cpp', '.cl', '.h', '.hpp', '.cuh', '.clh', '.y', '.l', '.pre', '.bm'):
             filetype = 'c'
         elif ext in ('.tex',):
             filetype = 'tex'
         elif basename in ('CMakeLists.txt', 'GMXRC', 'git-pre-commit') or \
-                ext in ('.cmake', '.cmakein', '.py', '.sh', '.bash', '.csh', '.zsh'):
+                ext in ('.cmake', '.cmakein', '.in', '.py', '.sh', '.bash', '.csh', '.zsh'):
             filetype = 'sh'
     if filetype in comment_handlers:
         return comment_handlers[filetype]
