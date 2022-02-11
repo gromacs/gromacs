@@ -1510,6 +1510,23 @@ int Mdrunner::mdrunner()
                                                               canUseDirectGpuComm,
                                                               useGpuPmeDecomposition);
 
+
+    if (isSimulationMasterRank && GMX_GPU_SYCL)
+    {
+        const SimulationWorkload& simWorkload    = runScheduleWork.simulationWork;
+        bool                      haveAnyGpuWork = simWorkload.useGpuPme || simWorkload.useGpuBonded
+                              || simWorkload.useGpuNonbonded || simWorkload.useGpuUpdate;
+        if (haveAnyGpuWork)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "\nNOTE: SYCL GPU support in GROMACS is still new and less tested than "
+                            "other backends.\n"
+                            "Please, pay extra attention to the correctness of your results.");
+        }
+    }
+
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
