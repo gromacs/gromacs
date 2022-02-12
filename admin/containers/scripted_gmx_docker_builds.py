@@ -113,11 +113,12 @@ _opencl_extra_packages = [
 _rocm_extra_packages = [
     # The following require
     #             apt_keys=['http://repo.radeon.com/rocm/rocm.gpg.key'],
-    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/4.0.1/ xenial main']
+    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/X.Y.Z/ ubuntu main']
     'clinfo',
     'hipfft',
     'libelf1',
     'rocfft',
+    'rocfft-dev',
     'rocm-opencl',
     'rocm-dev',
 ]
