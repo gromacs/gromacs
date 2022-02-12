@@ -30,6 +30,10 @@ $CMAKE .. \
       $CMAKE_GMXAPI_OPTIONS \
       -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON \
       2>&1 | tee cmakeLog.log
+
+EXITCODE=$?
+
 awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
-if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
+awk '/CMake Error/,/^--|^$/' cmakeLog.log | tee -a cmakeErrors.log
+if [ -s cmakeErrors.log  ] || [ $EXITCODE != 0 ]; then echo "Found CMake warning or error while processing build"; cat cmakeErrors.log ; exit 1; fi
 cd ..
