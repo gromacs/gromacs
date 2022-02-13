@@ -309,7 +309,7 @@ auto settleKernel(sycl::handler&                                               c
         if constexpr (computeVirial)
         {
             // This is to ensure that all threads saved the data before reduction starts
-            subGroupBarrier(itemIdx);
+            itemIdx.barrier(fence_space::local_space);
             constexpr int blockSize    = sc_workGroupSize;
             const int     subGroupSize = itemIdx.get_sub_group().get_max_local_range()[0];
             // Reduce up to one virial per thread block
@@ -330,6 +330,10 @@ auto settleKernel(sycl::handler&                                               c
                     }
                 }
                 if (dividedAt > subGroupSize / 2)
+                {
+                    itemIdx.barrier(fence_space::local_space);
+                }
+                else
                 {
                     subGroupBarrier(itemIdx);
                 }
