@@ -60,14 +60,6 @@ class PhysicalNodeCommunicator;
  */
 std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm);
 
-/*! \brief Sanity check hardware topology and print some notes to log
- *
- *  \param mdlog            Logger.
- *  \param hardwareTopology Reference to hardwareTopology object.
- */
-void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger&         mdlog,
-                                          const gmx::HardwareTopology& hardwareTopology);
-
 /*! \brief Issue warnings to mdlog that were decided during detection
  *
  * \param[in] mdlog                Logger

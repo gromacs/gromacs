@@ -45,17 +45,23 @@
 #include "config.h"
 
 #include <algorithm>
+#include <array>
+#include <map>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
+
 namespace
 {
 
-// There is no way we can compare to any reference data since that
-// depends on the architecture, but we can at least make sure that it
-// works to execute the tests and that they are self-consistent
+// Simple tests that execute actual hardware detection. We cannot compare
+// the exact output to any reference, since it is hardware-dependent.
 
 // Although it is not strictly an error, for the very basic execution tests
 // we also report if we cannot extract the hardware topology on systems
@@ -99,31 +105,36 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
 
     if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
     {
-        SCOPED_TRACE(gmx::formatString("Logical Processor count %d", hwTop.machine().logicalProcessorCount));
+        SCOPED_TRACE(gmx::formatString("max threads from hardware topology: %d", hwTop.maxThreads()));
 
-        int socketsInMachine = hwTop.machine().sockets.size();
-        int coresPerSocket   = hwTop.machine().sockets[0].cores.size();
-        int hwThreadsPerCore = hwTop.machine().sockets[0].cores[0].hwThreads.size();
+        int packagesInTopology = hwTop.machine().packages.size();
 
         auto logicalProcessors = hwTop.machine().logicalProcessors;
         for (auto logicalProcessorIt = logicalProcessors.begin();
              logicalProcessorIt != logicalProcessors.end();
              ++logicalProcessorIt)
         {
+            int packageRankInTopology = logicalProcessorIt->packageRankInTopology;
+            int coreRankInPackage     = logicalProcessorIt->coreRankInPackage;
+            int puRankInCore          = logicalProcessorIt->processingUnitRankInCore;
+
+            int coresInPackage = hwTop.machine().packages[packageRankInTopology].cores.size();
+            int pusInCore      = hwTop.machine()
+                                    .packages[packageRankInTopology]
+                                    .cores[coreRankInPackage]
+                                    .processingUnits.size();
+
             // Check that logical processor information contains
             // reasonable values.
-            SCOPED_TRACE(gmx::formatString("Socket rank in machine: %d",
-                                           logicalProcessorIt->socketRankInMachine));
+            SCOPED_TRACE(gmx::formatString("Socket rank in topology: %d",
+                                           logicalProcessorIt->packageRankInTopology));
             SCOPED_TRACE(gmx::formatString("Core rank in socket:    %d",
-                                           logicalProcessorIt->coreRankInSocket));
-            SCOPED_TRACE(gmx::formatString("Hw thread rank in core: %d",
-                                           logicalProcessorIt->hwThreadRankInCore));
-            EXPECT_TRUE(logicalProcessorIt->socketRankInMachine >= 0
-                        && logicalProcessorIt->socketRankInMachine < socketsInMachine);
-            EXPECT_TRUE(logicalProcessorIt->coreRankInSocket >= 0
-                        && logicalProcessorIt->coreRankInSocket < coresPerSocket);
-            EXPECT_TRUE(logicalProcessorIt->hwThreadRankInCore >= 0
-                        && logicalProcessorIt->hwThreadRankInCore < hwThreadsPerCore);
+                                           logicalProcessorIt->coreRankInPackage));
+            SCOPED_TRACE(gmx::formatString("PU rank in core: %d",
+                                           logicalProcessorIt->processingUnitRankInCore));
+            EXPECT_TRUE(packageRankInTopology >= 0 && packageRankInTopology < packagesInTopology);
+            EXPECT_TRUE(coreRankInPackage >= 0 && coreRankInPackage < coresInPackage);
+            EXPECT_TRUE(puRankInCore >= 0 && puRankInCore < pusInCore);
             // Check that logical processor information is distinct
             // for each logical processor.
 
@@ -131,16 +142,17 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
                  remainingLogicalProcessorIt != logicalProcessors.end();
                  ++remainingLogicalProcessorIt)
             {
-                SCOPED_TRACE(gmx::formatString("Other socket rank in machine: %d",
-                                               remainingLogicalProcessorIt->socketRankInMachine));
+                SCOPED_TRACE(gmx::formatString("Other socket rank in topology: %d",
+                                               remainingLogicalProcessorIt->packageRankInTopology));
                 SCOPED_TRACE(gmx::formatString("Other core rank in socket:    %d",
-                                               remainingLogicalProcessorIt->coreRankInSocket));
+                                               remainingLogicalProcessorIt->coreRankInPackage));
                 SCOPED_TRACE(gmx::formatString("Other hw thread rank in core: %d",
-                                               remainingLogicalProcessorIt->hwThreadRankInCore));
-                EXPECT_TRUE((logicalProcessorIt->socketRankInMachine != remainingLogicalProcessorIt->socketRankInMachine)
-                            || (logicalProcessorIt->coreRankInSocket != remainingLogicalProcessorIt->coreRankInSocket)
-                            || (logicalProcessorIt->hwThreadRankInCore
-                                != remainingLogicalProcessorIt->hwThreadRankInCore))
+                                               remainingLogicalProcessorIt->processingUnitRankInCore));
+                EXPECT_TRUE((logicalProcessorIt->packageRankInTopology
+                             != remainingLogicalProcessorIt->packageRankInTopology)
+                            || (logicalProcessorIt->coreRankInPackage != remainingLogicalProcessorIt->coreRankInPackage)
+                            || (logicalProcessorIt->processingUnitRankInCore
+                                != remainingLogicalProcessorIt->processingUnitRankInCore))
                         << "This pair of logical processors have the same descriptive information, "
                            "which is an error";
             }
@@ -164,25 +176,25 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         int processorsinNumaNudes = 0;
         for (const auto& n : hwTop.machine().numa.nodes)
         {
-            processorsinNumaNudes += n.logicalProcessorId.size();
+            processorsinNumaNudes += n.processingUnits.size();
         }
-        EXPECT_EQ(processorsinNumaNudes, hwTop.machine().logicalProcessorCount);
+        EXPECT_EQ(processorsinNumaNudes, hwTop.machine().logicalProcessors.size());
 
         // Check that every processor is in a numa domain (i.e., that they are unique)
-        std::vector<int> v(hwTop.machine().logicalProcessorCount);
+        std::vector<int> v(hwTop.machine().logicalProcessors.size());
         for (auto& elem : v)
         {
             elem = 0;
         }
         for (const auto& n : hwTop.machine().numa.nodes)
         {
-            for (const auto& idx : n.logicalProcessorId)
+            for (const auto& idx : n.processingUnits)
             {
                 v[idx] = 1;
             }
         }
         int uniqueProcessorsinNumaNudes = std::count(v.begin(), v.end(), 1);
-        EXPECT_EQ(uniqueProcessorsinNumaNudes, hwTop.machine().logicalProcessorCount);
+        EXPECT_EQ(uniqueProcessorsinNumaNudes, hwTop.machine().logicalProcessors.size());
 
         // We must have some memory in a numa node
         for (const auto& n : hwTop.machine().numa.nodes)
@@ -220,6 +232,5 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
         // values returned by hwloc.
     }
 }
-
 
 } // namespace

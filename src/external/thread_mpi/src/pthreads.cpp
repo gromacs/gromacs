@@ -362,13 +362,7 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t tmpi_unused thread,
                                    unsigned int  tmpi_unused nr)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY
-    unsigned int nt = static_cast<unsigned int>(tMPI_Thread_get_hw_number());
     cpu_set_t set;
-
-    if (nt < nr)
-    {
-        return TMPI_ERR_PROCNR;
-    }
 
     CPU_ZERO(&set);
     CPU_SET(nr, &set);

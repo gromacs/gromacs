@@ -1,0 +1,555 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <HardwareTopology>
+    <Machine>
+      <Sequence Name="LogicalProcessors">
+        <Int Name="Length">32</Int>
+        <LogicalProcessorInfo>
+          <Int Name="puId">0</Int>
+          <Int Name="osId">0</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">0</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">1</Int>
+          <Int Name="osId">1</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">0</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">2</Int>
+          <Int Name="osId">2</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">0</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">3</Int>
+          <Int Name="osId">3</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">0</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">4</Int>
+          <Int Name="osId">4</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">1</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">5</Int>
+          <Int Name="osId">5</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">1</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">6</Int>
+          <Int Name="osId">6</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">1</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">7</Int>
+          <Int Name="osId">7</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">1</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">8</Int>
+          <Int Name="osId">8</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">2</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">9</Int>
+          <Int Name="osId">9</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">2</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">10</Int>
+          <Int Name="osId">10</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">2</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">11</Int>
+          <Int Name="osId">11</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">2</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">12</Int>
+          <Int Name="osId">12</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">3</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">13</Int>
+          <Int Name="osId">13</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">3</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">14</Int>
+          <Int Name="osId">14</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">3</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">15</Int>
+          <Int Name="osId">15</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">3</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">16</Int>
+          <Int Name="osId">16</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">4</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">17</Int>
+          <Int Name="osId">17</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">4</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">18</Int>
+          <Int Name="osId">18</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">4</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">19</Int>
+          <Int Name="osId">19</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">4</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">20</Int>
+          <Int Name="osId">20</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">5</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">21</Int>
+          <Int Name="osId">21</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">5</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">22</Int>
+          <Int Name="osId">22</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">5</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">23</Int>
+          <Int Name="osId">23</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">5</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">24</Int>
+          <Int Name="osId">24</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">6</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">25</Int>
+          <Int Name="osId">25</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">6</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">26</Int>
+          <Int Name="osId">26</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">6</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">27</Int>
+          <Int Name="osId">27</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">6</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">28</Int>
+          <Int Name="osId">28</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">7</Int>
+          <Int Name="processingUnitRankInCore">0</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">29</Int>
+          <Int Name="osId">29</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">7</Int>
+          <Int Name="processingUnitRankInCore">1</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">30</Int>
+          <Int Name="osId">30</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">7</Int>
+          <Int Name="processingUnitRankInCore">2</Int>
+        </LogicalProcessorInfo>
+        <LogicalProcessorInfo>
+          <Int Name="puId">31</Int>
+          <Int Name="osId">31</Int>
+          <Int Name="packageRankInTopology">0</Int>
+          <Int Name="coreRankInPackage">7</Int>
+          <Int Name="processingUnitRankInCore">3</Int>
+        </LogicalProcessorInfo>
+      </Sequence>
+      <Sequence Name="OsIdToPuIdMap">
+        <Int Name="Length">32</Int>
+        <MapEntry>
+          <Int Name="osId">0</Int>
+          <Int Name="puId">0</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">1</Int>
+          <Int Name="puId">1</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">2</Int>
+          <Int Name="puId">2</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">3</Int>
+          <Int Name="puId">3</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">4</Int>
+          <Int Name="puId">4</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">5</Int>
+          <Int Name="puId">5</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">6</Int>
+          <Int Name="puId">6</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">7</Int>
+          <Int Name="puId">7</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">8</Int>
+          <Int Name="puId">8</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">9</Int>
+          <Int Name="puId">9</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">10</Int>
+          <Int Name="puId">10</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">11</Int>
+          <Int Name="puId">11</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">12</Int>
+          <Int Name="puId">12</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">13</Int>
+          <Int Name="puId">13</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">14</Int>
+          <Int Name="puId">14</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">15</Int>
+          <Int Name="puId">15</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">16</Int>
+          <Int Name="puId">16</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">17</Int>
+          <Int Name="puId">17</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">18</Int>
+          <Int Name="puId">18</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">19</Int>
+          <Int Name="puId">19</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">20</Int>
+          <Int Name="puId">20</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">21</Int>
+          <Int Name="puId">21</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">22</Int>
+          <Int Name="puId">22</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">23</Int>
+          <Int Name="puId">23</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">24</Int>
+          <Int Name="puId">24</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">25</Int>
+          <Int Name="puId">25</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">26</Int>
+          <Int Name="puId">26</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">27</Int>
+          <Int Name="puId">27</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">28</Int>
+          <Int Name="puId">28</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">29</Int>
+          <Int Name="puId">29</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">30</Int>
+          <Int Name="puId">30</Int>
+        </MapEntry>
+        <MapEntry>
+          <Int Name="osId">31</Int>
+          <Int Name="puId">31</Int>
+        </MapEntry>
+      </Sequence>
+      <Sequence Name="Packages">
+        <Int Name="Length">1</Int>
+        <Package>
+          <Int Name="id">0</Int>
+          <Sequence Name="processingUnits">
+            <Int Name="Length">8</Int>
+            <Core>
+              <Int Name="id">0</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">0</Int>
+                  <Int Name="osId">0</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">1</Int>
+                  <Int Name="osId">1</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">2</Int>
+                  <Int Name="osId">2</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">3</Int>
+                  <Int Name="osId">3</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">1</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">4</Int>
+                  <Int Name="osId">4</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">5</Int>
+                  <Int Name="osId">5</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">6</Int>
+                  <Int Name="osId">6</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">7</Int>
+                  <Int Name="osId">7</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">2</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">8</Int>
+                  <Int Name="osId">8</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">9</Int>
+                  <Int Name="osId">9</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">10</Int>
+                  <Int Name="osId">10</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">11</Int>
+                  <Int Name="osId">11</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">3</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">12</Int>
+                  <Int Name="osId">12</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">13</Int>
+                  <Int Name="osId">13</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">14</Int>
+                  <Int Name="osId">14</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">15</Int>
+                  <Int Name="osId">15</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">4</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">16</Int>
+                  <Int Name="osId">16</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">17</Int>
+                  <Int Name="osId">17</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">18</Int>
+                  <Int Name="osId">18</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">19</Int>
+                  <Int Name="osId">19</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">5</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">20</Int>
+                  <Int Name="osId">20</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">21</Int>
+                  <Int Name="osId">21</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">22</Int>
+                  <Int Name="osId">22</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">23</Int>
+                  <Int Name="osId">23</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">6</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">24</Int>
+                  <Int Name="osId">24</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">25</Int>
+                  <Int Name="osId">25</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">26</Int>
+                  <Int Name="osId">26</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">27</Int>
+                  <Int Name="osId">27</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+            <Core>
+              <Int Name="id">7</Int>
+              <Sequence Name="processingUnits">
+                <Int Name="Length">4</Int>
+                <ProcessingUnit>
+                  <Int Name="id">28</Int>
+                  <Int Name="osId">28</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">29</Int>
+                  <Int Name="osId">29</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">30</Int>
+                  <Int Name="osId">30</Int>
+                </ProcessingUnit>
+                <ProcessingUnit>
+                  <Int Name="id">31</Int>
+                  <Int Name="osId">31</Int>
+                </ProcessingUnit>
+              </Sequence>
+            </Core>
+          </Sequence>
+        </Package>
+      </Sequence>
+    </Machine>
+    <Int Name="SupportLevel">2</Int>
+    <Bool Name="IsThisSystem">false</Bool>
+    <Real Name="CpuLimit">-1</Real>
+    <Int Name="MaxThreads">32</Int>
+  </HardwareTopology>
+</ReferenceData>

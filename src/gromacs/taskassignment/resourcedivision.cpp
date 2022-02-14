@@ -236,7 +236,7 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t* hwinfo,
         GMX_RELEASE_ASSERT(hw_opt.nthreads_omp >= 0,
                            "nthreads_omp is negative, but previous checks should "
                            "have prevented this");
-        while (nrank * hw_opt.nthreads_omp > hwinfo->nthreads_hw_avail && nrank > 1)
+        while (nrank * hw_opt.nthreads_omp > hwinfo->hardwareTopology->maxThreads() && nrank > 1)
         {
             nrank--;
         }
@@ -291,11 +291,28 @@ gmx_unused static int get_tmpi_omp_thread_division(const gmx_hw_info_t* hwinfo,
     return nrank;
 }
 
-//! Return whether hyper threading is enabled.
-static bool gmxSmtIsEnabled(const gmx::HardwareTopology& hwTop)
+//! Return whether hyper threading is used on ALL cores.
+static bool gmxSmtIsUsedOnAllCores(const gmx::HardwareTopology& hwTop)
 {
-    return (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic
-            && hwTop.machine().sockets[0].cores[0].hwThreads.size() > 1);
+    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
+    {
+        std::size_t minSmt = 999999999;
+        std::size_t maxSmt = 0;
+
+        for (const auto& p : hwTop.machine().packages)
+        {
+            for (const auto& c : p.cores)
+            {
+                minSmt = std::min(minSmt, c.processingUnits.size());
+                maxSmt = std::max(maxSmt, c.processingUnits.size());
+            }
+        }
+        if (minSmt == maxSmt && minSmt > 1)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 namespace
@@ -411,7 +428,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
     }
 
     // Now implement automatic selection of number of thread-MPI ranks
-    nthreads_hw = hwinfo->nthreads_hw_avail;
+    nthreads_hw = hwinfo->hardwareTopology->maxThreads();
 
     if (nthreads_hw <= 0)
     {
@@ -469,7 +486,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
         nrank_new = std::max(1, mtop.natoms / min_atoms_per_mpi_rank);
 
         /* Avoid partial use of Hyper-Threading */
-        if (gmxSmtIsEnabled(hwTop) && nrank_new > nthreads_hw / 2 && nrank_new < nthreads_hw)
+        if (gmxSmtIsUsedOnAllCores(hwTop) && nrank_new > nthreads_hw / 2 && nrank_new < nthreads_hw)
         {
             nrank_new = nthreads_hw / 2;
         }
@@ -543,7 +560,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
             nt_omp_max = nthreads_omp_efficient_max(nrank, cpuInfo, ngpu >= 1);
 
-            if (nrank * nt_omp_max < hwinfo->nthreads_hw_avail)
+            if (nrank * nt_omp_max < hwinfo->hardwareTopology->maxThreads())
             {
                 /* Limit the number of OpenMP threads to start */
                 hw_opt->nthreads_omp = nt_omp_max;
@@ -567,8 +584,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         t_commrec*           cr,
                                         const gmx::MDLogger& mdlog)
 {
-#if GMX_OPENMP && GMX_MPI
     GMX_UNUSED_VALUE(hwinfo);
+#if GMX_OPENMP && GMX_MPI
 
     /* This function should be called after thread-MPI (when configured) and
      * OpenMP have been initialized. Check that here.
@@ -633,10 +650,10 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
     GMX_UNUSED_VALUE(cr);
     GMX_UNUSED_VALUE(nthreads_omp_mpi_ok_max);
     GMX_UNUSED_VALUE(nthreads_omp_mpi_ok_min_cpu);
-    /* Check if we have more than 1 physical core, if detected,
-     * or more than 1 hardware thread if physical cores were not detected.
-     */
-    if (!GMX_OPENMP && !GMX_MPI && hwinfo->hardwareTopology->numberOfCores() > 1)
+
+    // Since even an Apple watch comes with 2 cores today, we can probably safely assume we
+    // aren't running on a single-core device and warn the user if we can't use many threads.
+    if (!GMX_OPENMP && !GMX_MPI)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
@@ -905,11 +922,8 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
      * We currently only limit SMT for simulations using a single rank.
      * TODO: Consider limiting also for multi-rank simulations.
      */
-    bool canChooseNumOpenmpThreads = (GMX_OPENMP && hw_opt->nthreads_omp <= 0);
-    bool haveSmtSupport =
-            (hwinfo.hardwareTopology->supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic
-             && hwinfo.hardwareTopology->machine().logicalProcessorCount
-                        > hwinfo.hardwareTopology->numberOfCores());
+    bool canChooseNumOpenmpThreads      = (GMX_OPENMP && hw_opt->nthreads_omp <= 0);
+    bool haveSmtSupport                 = gmxSmtIsUsedOnAllCores(*hwinfo.hardwareTopology);
     bool simRunsSingleRankNBAndPmeOnGpu = (cr->nnodes == 1 && pmeRunMode == PmeRunMode::GPU);
 
     if (canChooseNumOpenmpThreads && haveSmtSupport && simRunsSingleRankNBAndPmeOnGpu)
@@ -923,9 +937,15 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
         int numCoresPerRank = hwinfo.ncore_tot / numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold * gmx::square(numCoresPerRank))
         {
-            /* Choose one OpenMP thread per physical core */
-            hw_opt->nthreads_omp =
-                    std::max(1, hwinfo.hardwareTopology->numberOfCores() / numRanksOnThisNode);
+            // Don't run more than one thread per core
+            int nCores = 0;
+            for (const auto& p : hwinfo.hardwareTopology->machine().packages)
+            {
+                nCores += p.cores.size();
+            }
+            int maxThreads = std::min(nCores, hwinfo.hardwareTopology->maxThreads());
+
+            hw_opt->nthreads_omp = std::max(1, maxThreads / numRanksOnThisNode);
         }
     }
 
@@ -970,7 +990,7 @@ void checkHardwareOversubscription(int                             numThreadsOnT
 #endif
     }
 
-    if (numThreadsOnThisNode > hwTop.machine().logicalProcessorCount)
+    if (numThreadsOnThisNode > hwTop.maxThreads())
     {
         std::string mesg = "WARNING: ";
         if (GMX_LIB_MPI)
@@ -981,8 +1001,8 @@ void checkHardwareOversubscription(int                             numThreadsOnT
         {
             mesg += "O";
         }
-        mesg += formatString("versubscribing the available %d logical CPU cores",
-                             hwTop.machine().logicalProcessorCount);
+        mesg += formatString("versubscribing the recommended max load of %d logical CPUs",
+                             hwTop.maxThreads());
         if (GMX_LIB_MPI)
         {
             mesg += " per node";

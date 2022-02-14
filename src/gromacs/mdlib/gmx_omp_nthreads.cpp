@@ -234,7 +234,7 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
 static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
                                             const t_commrec*     cr,
                                             bool                 bOMP,
-                                            int                  nthreads_hw_avail,
+                                            int                  maxThreads,
                                             int                  omp_nthreads_req,
                                             int                  omp_nthreads_pme_req,
                                             gmx_bool gmx_unused  bThisNodePMEOnly,
@@ -295,7 +295,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     else if (bOMP)
     {
         /* max available threads per node */
-        nth = nthreads_hw_avail;
+        nth = maxThreads;
 
         /* divide the threads among the MPI ranks */
         if (nth >= numRanksOnThisNode)
@@ -444,7 +444,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
 
 void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
                            t_commrec*           cr,
-                           int                  nthreads_hw_avail,
+                           int                  maxThreads,
                            int                  numRanksOnThisNode,
                            int                  omp_nthreads_req,
                            int                  omp_nthreads_pme_req,
@@ -456,15 +456,8 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
 
     bSepPME = (thisRankHasDuty(cr, DUTY_PP) != thisRankHasDuty(cr, DUTY_PME));
 
-    manage_number_of_openmp_threads(mdlog,
-                                    cr,
-                                    bOMP,
-                                    nthreads_hw_avail,
-                                    omp_nthreads_req,
-                                    omp_nthreads_pme_req,
-                                    bThisNodePMEOnly,
-                                    numRanksOnThisNode,
-                                    bSepPME);
+    manage_number_of_openmp_threads(
+            mdlog, cr, bOMP, maxThreads, omp_nthreads_req, omp_nthreads_pme_req, bThisNodePMEOnly, numRanksOnThisNode, bSepPME);
 #if GMX_THREAD_MPI
     /* Non-master threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain

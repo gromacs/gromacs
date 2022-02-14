@@ -950,12 +950,6 @@ int Mdrunner::mdrunner()
 
     PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
 
-    // If we detected the topology on this system, double-check that it makes sense
-    if (hwinfo_->hardwareTopology->isThisSystem())
-    {
-        hardwareTopologyDoubleCheckDetection(mdlog, *hwinfo_->hardwareTopology);
-    }
-
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
@@ -1586,14 +1580,14 @@ int Mdrunner::mdrunner()
     // that existing affinity setting was from OpenMP or something
     // else, so we run this code both before and after we initialize
     // the OpenMP support.
-    gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->nthreads_hw_avail, FALSE);
+    gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), FALSE);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(
             &hw_opt, *hwinfo_, cr, ms, physicalNodeComm.size_, pmeRunMode, mtop, *inputrec);
 
     gmx_omp_nthreads_init(mdlog,
                           cr,
-                          hwinfo_->nthreads_hw_avail,
+                          hwinfo_->hardwareTopology->maxThreads(),
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
@@ -1635,7 +1629,7 @@ int Mdrunner::mdrunner()
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
-        gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->nthreads_hw_avail, TRUE);
+        gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE);
 
         int numThreadsOnThisNode, intraNodeThreadOffset;
         analyzeThreadsOnThisNode(

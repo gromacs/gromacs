@@ -77,12 +77,12 @@ TEST(CpuInfoTest, SupportLevel)
         // Make sure assigned numbers are reasonable if we have them
         for (const auto& l : c.logicalProcessors())
         {
-            EXPECT_GE(l.socketRankInMachine, 0)
-                    << "Impossible socket index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.coreRankInSocket, 0)
+            EXPECT_GE(l.packageIdInMachine, 0)
+                    << "Impossible package index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.coreIdInPackage, 0)
                     << "Impossible core index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.hwThreadRankInCore, 0)
-                    << "Impossible hwthread index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.puIdInCore, 0)
+                    << "Impossible pu index for logical processor. " << commonMsg << std::endl;
         }
     }
 }

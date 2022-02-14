@@ -114,7 +114,7 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithAuto)
     ThreadAffinityTestHelper helper;
     const int                threadsPerRank = 2;
     helper.setLogicalProcessorCount(threadsPerRank * getNumberOfTestMpiRanks() - 1);
-    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper.setAffinity(threadsPerRank);
 }
 
@@ -125,7 +125,7 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
     const int                threadsPerRank = 2;
     helper.setAffinityOption(ThreadAffinity::On);
     helper.setLogicalProcessorCount(threadsPerRank * getNumberOfTestMpiRanks() - 1);
-    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper.setAffinity(threadsPerRank);
 }
 
@@ -157,7 +157,8 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 2, 1);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs",
+                                        isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -172,7 +173,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 1, 2);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs", currentNode() == 0);
     if (currentNode() >= 1)
     {
         helper.expectPinningMessage(false, 1);
@@ -187,7 +188,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 2, 0);
-    helper.expectWarningMatchingRegexIf("No information on available cores",
+    helper.expectWarningMatchingRegexIf("No information on available logical cpus",
                                         isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
@@ -202,7 +203,8 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
     GMX_MPI_TEST(RequireEvenRankCountWithAtLeastFourRanks);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, 2, 1);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs",
+                                        isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -216,7 +218,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
     GMX_MPI_TEST(RequireEvenRankCountWithAtLeastFourRanks);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, 1, 2);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs", currentNode() == 0);
     if (currentNode() >= 1)
     {
         helper.expectPinningMessage(false, 1);

@@ -72,7 +72,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooFewUserSetThreads)
 TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyUserSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
-    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper_.setAffinity(8);
 }
 
@@ -80,7 +80,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithAutoAndTooManyAutoSetThreads)
 {
     helper_.setLogicalProcessorCount(4);
     helper_.setTotNumThreadsIsAuto(true);
-    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper_.setAffinity(8);
 }
 
@@ -88,7 +88,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithUnknownHardware)
 {
     helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(0);
-    helper_.expectWarningMatchingRegex("No information on available cores");
+    helper_.expectWarningMatchingRegex("No information on available logical cpus");
     helper_.setAffinity(2);
 }
 
@@ -96,7 +96,7 @@ TEST_F(ThreadAffinityTest, DoesNothingWithTooManyThreads)
 {
     helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(4);
-    helper_.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper_.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper_.setAffinity(8);
 }
 

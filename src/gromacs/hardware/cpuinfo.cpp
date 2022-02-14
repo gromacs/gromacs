@@ -101,6 +101,11 @@
 
 #include "architecture.h"
 
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+#endif
+
 namespace gmx
 {
 
@@ -460,98 +465,92 @@ void detectX86Features(std::string* brand, int* family, int* model, int* steppin
     }
 }
 
+/*! \brief internal structure to return os logical cpu id together with APIC info for it */
+struct ApicInfo
+{
+    int          osId;   //!< OS index of logical cpu/processor
+    unsigned int apicId; //!< APIC id obtained from cpuid when running on the osId processor
+};
 
-/*! \brief Return a vector with x86 APIC IDs for all threads
+/*! \brief Return a vector with x86 APIC info for all processing units
  *
  *  \param haveX2Apic  True if the processors supports x2APIC, otherwise vanilla APIC.
  *
- *  \returns A new std::vector of unsigned integer APIC IDs, one for each
- *           logical processor in the system.
+ *  \returns A new vector with os-provided logical cpu id and corresponding hardware APIC id.
  */
-std::vector<unsigned int> detectX86ApicIDs(bool gmx_unused haveX2Apic)
+std::vector<ApicInfo> detectX86ApicInfo(bool gmx_unused haveX2Apic)
 {
-    std::vector<unsigned int> apicID;
+    std::vector<ApicInfo> apicInfo;
 
     // We cannot just ask for all APIC IDs, but must force execution on each
     // hardware thread and extract the APIC id there.
+    // Since the thread might have been pinned, we cannot use the present
+    // CPU set, but must try all possible CPUs and check the return code
+    // if we were allowed to run on that CPU, and eventually restore
+    // the original cpu set.
 #if HAVE_SCHED_AFFINITY && defined HAVE_SYSCONF
     unsigned int eax, ebx, ecx, edx;
     unsigned int nApic = sysconf(_SC_NPROCESSORS_ONLN);
     cpu_set_t    saveCpuSet;
-    cpu_set_t    cpuSet;
     sched_getaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
-    CPU_ZERO(&cpuSet);
+    // We only test threads up to the number of CPUs in the system, not the
+    // (much larger) max value of the data structures.
     for (unsigned int i = 0; i < nApic; i++)
     {
+        cpu_set_t cpuSet;
+        CPU_ZERO(&cpuSet);
         CPU_SET(i, &cpuSet);
-        sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
-        if (haveX2Apic)
+        if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet) == 0)
         {
-            executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
-            apicID.push_back(edx);
+            // 0 means the affinity could be set
+            if (haveX2Apic)
+            {
+                executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
+                apicInfo.push_back({ static_cast<int>(i), edx });
+            }
+            else
+            {
+                executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
+                apicInfo.push_back({ static_cast<int>(i), ebx >> 24 });
+            }
         }
-        else
-        {
-            executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
-            apicID.push_back(ebx >> 24);
-        }
-        CPU_CLR(i, &cpuSet);
     }
     sched_setaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
 #elif GMX_NATIVE_WINDOWS
     unsigned int eax, ebx, ecx, edx;
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
-    unsigned int nApic = sysinfo.dwNumberOfProcessors;
-    unsigned int saveAffinity = SetThreadAffinityMask(GetCurrentThread(), 1);
-    for (DWORD_PTR i = 0; i < nApic; i++)
+
+    GetCurrentProcess()
+            // calling SetThreadAffinityMask returns the current affinity mask if it succeeds,
+            // otherwise zero - so try all processors until we are successful with one so
+            // we can save the original affinity mask.
+            unsigned int saveThreadAffinity = 0;
+    for (DWORD_PTR i = 0; i < sysinfo.dwNumberOfProcessors && saveThreadAffinity == 0; i++)
     {
-        SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1) << i));
-        Sleep(0);
-        if (haveX2Apic)
+        saveThreadAffinity = SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1) << i));
+    }
+
+    for (DWORD_PTR i = 0; i < sysinfo.dwNumberOfProcessors; i++)
+    {
+        if (SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1) << i)) != 0)
         {
-            executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
-            apicID.push_back(edx);
-        }
-        else
-        {
-            executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
-            apicID.push_back(ebx >> 24);
+            // On windows, the call will have returned the old mask (non-zero) if it succeeded
+            if (haveX2Apic)
+            {
+                executeX86CpuID(0xb, 0, &eax, &ebx, &ecx, &edx);
+                apicInfo.push_back({ static_cast<int>(i), edx });
+            }
+            else
+            {
+                executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
+                apicInfo.push_back({ static_cast<int>(i), ebx >> 24 });
+            }
         }
     }
     SetThreadAffinityMask(GetCurrentThread(), saveAffinity);
 #endif
-    return apicID;
-}
-
-
-/*! \brief Utility to renumber indices extracted from APIC IDs
- *
- * \param v  Vector with unsigned integer indices
- *
- * This routine returns the number of unique different elements found in the vector,
- * and renumbers these starting from 0. For example, the vector {0,1,2,8,9,10,8,9,10,0,1,2}
- * will be rewritten to {0,1,2,3,4,5,3,4,5,0,1,2}, and it returns 6 for the
- * number of unique elements.
- */
-void renumberIndex(std::vector<unsigned int>* v)
-{
-    std::vector<unsigned int> sortedV(*v);
-    std::sort(sortedV.begin(), sortedV.end());
-
-    std::vector<unsigned int> uniqueSortedV(sortedV);
-    auto                      it = std::unique(uniqueSortedV.begin(), uniqueSortedV.end());
-    uniqueSortedV.resize(std::distance(uniqueSortedV.begin(), it));
-
-    for (std::size_t i = 0; i < uniqueSortedV.size(); i++)
-    {
-        unsigned int val = uniqueSortedV[i];
-        std::replace_if(
-                v->begin(),
-                v->end(),
-                [val](unsigned int& c) -> bool { return c == val; },
-                static_cast<unsigned int>(i));
-    }
+    return apicInfo;
 }
 
 /*! \brief The layout of the bits in the APIC ID */
@@ -631,7 +630,7 @@ ApicIdLayout detectAmdApicIdLayout(unsigned int maxExtLevel)
  *  If x2APIC support is present, this is our first choice, otherwise we
  *  attempt to use old vanilla APIC.
  *
- *  \return A new vector of entries with socket, core, hwthread information
+ *  \return A new vector of entries with package, core, processing unit information
  *          for each logical processor.
  */
 std::vector<CpuInfo::LogicalProcessor> detectX86LogicalProcessors()
@@ -693,46 +692,25 @@ std::vector<CpuInfo::LogicalProcessor> detectX86LogicalProcessors()
             }
         }
 
-        std::vector<unsigned int> apicID = detectX86ApicIDs(haveX2Apic);
-
-        if (!apicID.empty())
+        std::vector<ApicInfo> apicInfo = detectX86ApicInfo(haveX2Apic);
+        if (!apicInfo.empty())
         {
             // APIC IDs can be buggy, and it is always a mess. Typically more bits are
             // reserved than needed, and the numbers might not increment by 1 even in
-            // a single socket or core. Extract, renumber, and check that things make sense.
-            unsigned int              hwThreadMask = (1 << layout.hwThreadBits) - 1;
-            unsigned int              coreMask     = (1 << layout.coreBits) - 1;
-            std::vector<unsigned int> hwThreadRanks;
-            std::vector<unsigned int> coreRanks;
-            std::vector<unsigned int> socketRanks;
+            // a single package or core.
+            // We sheepishly avoid dealing with that here, but just extract the information
+            // and leave the renumbering to the hardware topology.
+            unsigned int hwThreadMask = (1 << layout.hwThreadBits) - 1;
+            unsigned int coreMask     = (1 << layout.coreBits) - 1;
 
-            for (auto a : apicID)
+            for (const auto& a : apicInfo)
             {
-                hwThreadRanks.push_back(static_cast<int>(a & hwThreadMask));
-                coreRanks.push_back(static_cast<int>((a >> layout.hwThreadBits) & coreMask));
-                socketRanks.push_back(static_cast<int>(a >> (layout.coreBits + layout.hwThreadBits)));
-            }
-
-            renumberIndex(&hwThreadRanks);
-            renumberIndex(&coreRanks);
-            renumberIndex(&socketRanks);
-
-            unsigned int hwThreadRankSize =
-                    1 + *std::max_element(hwThreadRanks.begin(), hwThreadRanks.end());
-            unsigned int coreRankSize = 1 + *std::max_element(coreRanks.begin(), coreRanks.end());
-            unsigned int socketRankSize = 1 + *std::max_element(socketRanks.begin(), socketRanks.end());
-
-            if (socketRankSize * coreRankSize * hwThreadRankSize == apicID.size())
-            {
-                // Alright, everything looks consistent, so put it in the result
-                for (std::size_t i = 0; i < apicID.size(); i++)
-                {
-                    // While the internal APIC IDs are always unsigned integers, we also cast to
-                    // plain integers for the externally exposed vectors, since that will make
-                    // it possible to use '-1' for invalid entries in the future.
-                    logicalProcessors.push_back(
-                            { int(socketRanks[i]), int(coreRanks[i]), int(hwThreadRanks[i]) });
-                }
+                // Note that these labels are arbitrary and local to the package/core;
+                // they will in general NOT correspond to what we later have in the hardware topology
+                int packageId = a.apicId >> (layout.coreBits + layout.hwThreadBits);
+                int coreId    = (a.apicId >> layout.hwThreadBits) & coreMask;
+                int puId      = a.apicId & hwThreadMask;
+                logicalProcessors.push_back({ packageId, coreId, puId, a.osId });
             }
         }
     }
@@ -1240,7 +1218,7 @@ int main(int argc, char** argv)
         // GROMACS cmake code, surrounding whitespace is first
         // stripped by the CPU detection routine, and then added back
         // in the code for making the SIMD suggestion.
-        for (auto& f : cpuInfo.featureSet())
+        for (const auto& f : cpuInfo.featureSet())
         {
             printf("%s ", cpuInfo.featureString(f).c_str());
         }
@@ -1249,10 +1227,14 @@ int main(int argc, char** argv)
     else if (arg == "-topology")
     {
         // Undocumented debug option, usually not present in standalone version
-        for (auto& t : cpuInfo.logicalProcessors())
+        printf("// logical processors we were allowed to run on, mapped to\n"
+               "// packageIdInMachine, coreIdInPackage, and puIdInCore\n"
+               "{\n");
+        for (const auto& t : cpuInfo.logicalProcessors())
         {
-            printf("%3u %3u %3u\n", t.socketRankInMachine, t.coreRankInSocket, t.hwThreadRankInCore);
+            printf("    { %3u , { %3u, %3u, %3u } },\n", t.osId, t.packageIdInMachine, t.coreIdInPackage, t.puIdInCore);
         }
+        printf("};\n");
     }
     return 0;
 }

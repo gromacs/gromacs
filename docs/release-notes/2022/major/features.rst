@@ -65,3 +65,16 @@ in free energy calculations. These are now allowed, as long as the interaction
 itself is not perturbed.
 
 :issue:`3691`
+
+Adapt number of threads to actually permitted hardware
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, |Gromacs| would attempt to start as many threads as there are processors
+in the system, and try to pin threads on processing units. This would fail whenever
+we are not allowed to use all those processors, e.g. when Slurm only provides part
+of a node to a job, or on A64fx where some processors are reserved for the system.
+We would also start far too many threads in container environments. As part of
+improved hardware detection, we now only detect processors on which we are allowed
+to run, and adapt the number of threads whenever there is a cpu limit set, which
+will improve performance both for containers and make |Gromacs| do the right thing
+when Slurm or other queue systems allocate part of a node.

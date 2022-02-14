@@ -61,29 +61,25 @@ struct gmx_hw_info_t
 
     /* Data for our local physical node */
 
-    /*! \brief Number of hardware threads available.
-     *
-     * This number is based on the number of CPUs reported as
-     * available by the OS at the time of detection. */
-    int nthreads_hw_avail;
-
-
     std::unique_ptr<gmx::CpuInfo>          cpuInfo; /* Information about CPU capabilities */
     std::unique_ptr<gmx::HardwareTopology> hardwareTopology; /* Information about hardware topology */
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList; /* Information about GPUs detected on this physical node */
 
 
     /* Data reduced through MPI over all physical nodes */
-    int nphysicalnode;       /* Number of physical nodes */
-    int ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
-    int ncore_min;           /* Min #cores over all nodes */
-    int ncore_max;           /* Max #cores over all nodes */
-    int nhwthread_tot;       /* Sum of #hwthreads over all nodes */
-    int nhwthread_min;       /* Min #hwthreads over all nodes */
-    int nhwthread_max;       /* Max #hwthreads over all nodes */
-    int ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
-    int ngpu_compatible_min; /* Min #GPUs over all nodes */
-    int ngpu_compatible_max; /* Max #GPUs over all nodes */
+    int nphysicalnode;        /* Number of physical nodes */
+    int ncore_tot;            /* Sum of #cores over all nodes, can be 0 */
+    int ncore_min;            /* Min #cores over all nodes */
+    int ncore_max;            /* Max #cores over all nodes */
+    int nProcessingUnits_tot; /* Sum of # available processing units over all nodes */
+    int nProcessingUnits_min; /* Min # available processing units over all nodes */
+    int nProcessingUnits_max; /* Max # available processing units over all nodes */
+    int maxThreads_tot;       /* Sum of # recommended threads to start over all nodes */
+    int maxThreads_min;       /* Min # recommended threads to start over all nodes */
+    int maxThreads_max;       /* Max # recommended threads to start over all nodes */
+    int ngpu_compatible_tot;  /* Sum of #GPUs over all nodes */
+    int ngpu_compatible_min;  /* Min #GPUs over all nodes */
+    int ngpu_compatible_max;  /* Max #GPUs over all nodes */
 
     int simd_suggest_min; /* Highest SIMD instruction set supported by all ranks */
     int simd_suggest_max; /* Highest SIMD instruction set supported by at least one rank */
