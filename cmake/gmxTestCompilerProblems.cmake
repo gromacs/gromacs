@@ -99,4 +99,16 @@ TestStruct::TestStruct() : b(0) {}
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
 
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        check_cxx_source_compiles(
+"#if !defined(__cray__) || !__cray__
+#error Not Cray
+#endif
+int main(void){return 0;}" HAVE_CRAY_MACRO)
+        if (HAVE_CRAY_MACRO AND GMX_OPENMP AND GMX_THREAD_MPI)
+            message(WARNING "Clang-based Cray compiler works poorly with OpenMP and threadMPI. Consider enabling libMPI with -DGMX_MPI=ON.")
+        endif()
+    endif()
+
+
 endmacro(gmx_test_compiler_problems)
