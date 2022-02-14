@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include <array>
 #include <map>
 #include <string>
 #include <vector>

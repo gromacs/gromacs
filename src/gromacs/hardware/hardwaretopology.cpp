@@ -49,6 +49,7 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <iterator>
 #include <limits>
