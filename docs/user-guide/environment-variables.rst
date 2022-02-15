@@ -166,6 +166,10 @@ Performance and Run Control
         Enable direct GPU communication in multi-rank parallel runs.
         Use as an override for cases which do not default to using this feature;
         currently used to enable GPU communication with CUDA-aware MPI.
+	Note that domain decomposition with CUDA-aware MPI does not support
+	multiple pulses along the second and third decomposition dimension.
+	This will occur with at least 6 MPI ranks for very small systems or at
+	extreme parallelization, but this can cause regression tests to fail.
 
 ``GMX_DISABLE_DIRECT_GPU_COMM``
         Disable direct GPU communication in multi-rank parallel runs.
