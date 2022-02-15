@@ -65,7 +65,7 @@ set_target_properties(nblib PROPERTIES
         RELEASE ${NBLIB_RELEASE}
         VERSION ${NBLIB_RELEASE}
         LINKER_LANGUAGE CXX
-        OUTPUT_NAME "nblib")
+        OUTPUT_NAME "nblib_gmx")
 
 if (GMX_GPU_CUDA)
     if(${CMAKE_VERSION} VERSION_LESS "3.17.0")
