@@ -1341,12 +1341,25 @@ void do_force(FILE*                               fplog,
     runScheduleWork->stepWork = setupStepWorkload(legacyFlags, inputrec.mtsLevels, step, simulationWork);
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
-    if (stepWork.useGpuFHalo && !runScheduleWork->domainWork.haveCpuLocalForceWork)
+    if (stepWork.doNeighborSearch && gmx::needStateGpu(simulationWork))
+    {
+        // TODO refactor this to do_md, after partitioning.
+        stateGpu->reinit(mdatoms->homenr,
+                         getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition));
+        if (stepWork.haveGpuPmeOnThisRank)
+        {
+            // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
+            pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
+        }
+    }
+
+    if (stepWork.useGpuFHalo && !runScheduleWork->domainWork.haveCpuLocalForceWork && !stepWork.doNeighborSearch)
     {
         // GPU Force halo exchange will set a subset of local atoms with remote non-local data
         // First clear local portion of force array, so that untouched atoms are zero.
         // The dependency for this is that forces from previous timestep have been consumed,
         // which is satisfied when getCoordinatesReadyOnDeviceEvent has been marked.
+        // On NS steps, the buffer could have already cleared in stateGpu->reinit.
         stateGpu->clearForcesOnGpu(AtomLocality::Local,
                                    stateGpu->getCoordinatesReadyOnDeviceEvent(
                                            AtomLocality::Local, simulationWork, stepWork));
@@ -1415,18 +1428,6 @@ void do_force(FILE*                               fplog,
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         haveCopiedXFromGpu = true;
-    }
-
-    if (stepWork.doNeighborSearch && gmx::needStateGpu(simulationWork))
-    {
-        // TODO refactor this to do_md, after partitioning.
-        stateGpu->reinit(mdatoms->homenr,
-                         getLocalAtomCount(cr->dd, *mdatoms, simulationWork.havePpDomainDecomposition));
-        if (stepWork.haveGpuPmeOnThisRank)
-        {
-            // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
-            pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
-        }
     }
 
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
