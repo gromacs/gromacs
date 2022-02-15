@@ -521,11 +521,10 @@ std::vector<ApicInfo> detectX86ApicInfo(bool gmx_unused haveX2Apic)
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
 
-    GetCurrentProcess()
-            // calling SetThreadAffinityMask returns the current affinity mask if it succeeds,
-            // otherwise zero - so try all processors until we are successful with one so
-            // we can save the original affinity mask.
-            unsigned int saveThreadAffinity = 0;
+    // calling SetThreadAffinityMask returns the current affinity mask if it succeeds,
+    // otherwise zero - so try all processors until we are successful with one so
+    // we can save the original affinity mask.
+    unsigned int saveThreadAffinity = 0;
     for (DWORD_PTR i = 0; i < sysinfo.dwNumberOfProcessors && saveThreadAffinity == 0; i++)
     {
         saveThreadAffinity = SetThreadAffinityMask(GetCurrentThread(), (((DWORD_PTR)1) << i));
@@ -548,7 +547,7 @@ std::vector<ApicInfo> detectX86ApicInfo(bool gmx_unused haveX2Apic)
             }
         }
     }
-    SetThreadAffinityMask(GetCurrentThread(), saveAffinity);
+    SetThreadAffinityMask(GetCurrentThread(), saveThreadAffinity);
 #endif
     return apicInfo;
 }
