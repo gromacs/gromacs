@@ -1351,6 +1351,15 @@ void check_ir(const char*                    mdparin,
                 ir->nstcomm,
                 enumValueToString(ir->etc));
         CHECK(ir->nstcomm > 1 && (ir->etc == TemperatureCoupling::Andersen));
+        if (opts->nshake != 0)
+        {
+            auto message = gmx::formatString(
+                    "%s temperature control does not work with constraints. "
+                    "Use %s instead",
+                    enumValueToString(TemperatureCoupling::Andersen),
+                    enumValueToString(TemperatureCoupling::AndersenMassive));
+            warning_error(wi, message);
+        }
     }
 
     if (ir->etc == TemperatureCoupling::Berendsen)
