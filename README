@@ -6,6 +6,8 @@ install GROMACS. GROMACS uses only the CMake build sytem, and our
 installation guide can be found at
 http://manual.gromacs.org/documentation/current/install-guide/index.html
 
+Visit http://forums.gromacs.org/ for discussions and advice.
+Report bugs at https://gitlab.com/gromacs/gromacs/-/issues
 Of course we will do our utmost to help you with any problems, but PLEASE 
 READ THE INSTALLATION INSTRUCTIONS BEFORE CONTACTING US!
 

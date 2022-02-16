@@ -1396,3 +1396,13 @@ AMD, and Intel GPU support.
 We test irregularly on ARM v8, Fujitsu A64FX, Cray, Power9,
 and other environments, and
 with other compilers and compiler versions, too.
+
+Support
+-------
+
+Please refer to the `manual <http://manual.gromacs.org/>`_ for documentation,
+downloads, and release notes for any GROMACS release.
+
+Visit the `user forums <http://forums.gromacs.org/>`_ for discussions and advice.
+
+Report bugs at https://gitlab.com/gromacs/gromacs/-/issues
