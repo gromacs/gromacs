@@ -78,3 +78,15 @@ improved hardware detection, we now only detect processors on which we are allow
 to run, and adapt the number of threads whenever there is a cpu limit set, which
 will improve performance both for containers and make |Gromacs| do the right thing
 when Slurm or other queue systems allocate part of a node.
+
+Enable use of more OpenMP threads
+"""""""""""""""""""""""""""""""""
+The thread-force-reduction code in |Gromacs| will now allow up to 128 OpenMP
+threads by default, and we have changed the internal logic so we just limit
+the number of threads rather than refuse to run. This only applies within
+each rank; you can use an unlimited number of threads by combining OpenMP
+threading with multiple ranks. For large machines with many cores this is
+usually faster since the domain decomposition used with multiple ranks is
+better adapted to non-uniform memory access hardware.
+
+:issue:`4370`

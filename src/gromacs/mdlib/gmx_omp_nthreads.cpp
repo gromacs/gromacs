@@ -243,6 +243,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
 {
     int   nth;
     char* env;
+    bool  threadLimitApplied{ false };
 
 #if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
@@ -308,6 +309,12 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
         }
     }
 
+    if (nth > GMX_OPENMP_MAX_THREADS)
+    {
+        nth                = GMX_OPENMP_MAX_THREADS;
+        threadLimitApplied = true;
+    }
+
     /* now we have the global values, set them:
      * - 1 if not compiled with OpenMP
      * - nth for the verlet scheme when compiled with OpenMP
@@ -335,6 +342,21 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     else
     {
         modth.gnth_pme = 0;
+    }
+
+    if (modth.gnth_pme > GMX_OPENMP_MAX_THREADS)
+    {
+        modth.gnth_pme     = GMX_OPENMP_MAX_THREADS;
+        threadLimitApplied = true;
+    }
+
+    if (threadLimitApplied)
+    {
+        GMX_LOG(mdlog.info)
+                .appendTextFormatted(
+                        "Applying OpenMP thread count limit of %d (imposed by the "
+                        "GMX_OPENMP_MAX_THREADS compile-time setting).",
+                        GMX_OPENMP_MAX_THREADS);
     }
 
     /* now set the per-module values */
