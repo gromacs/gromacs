@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2021, by the GROMACS development team, led by
+# Copyright (c) 2021,2022, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,11 +36,11 @@
 #
 #  GMX_TEST_CUDA_AWARE_MPI()
 #
-#  GMX_TEST_CUDA_AWARE_MPI puts HAVE_CUDA_AWARE_MPI variable in cache
+#  GMX_TEST_CUDA_AWARE_MPI puts HAVE_MPI_EXT, MPI_SUPPORTS_CUDA_AWARE_DETECTION variables in cache
 #
 include(CheckCXXSourceCompiles)
 function(GMX_TEST_CUDA_AWARE_MPI)
-  if (NOT DEFINED HAVE_CUDA_AWARE_MPI)
+  if (NOT DEFINED HAVE_MPI_EXT OR NOT DEFINED MPI_SUPPORTS_CUDA_AWARE_DETECTION)
     MESSAGE(STATUS "Checking for CUDA_AWARE_MPI")
     list(JOIN MPI_COMPILE_FLAGS " " CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
@@ -53,17 +53,31 @@ function(GMX_TEST_CUDA_AWARE_MPI)
       #include <mpi-ext.h>
       int main(void) 
       {
-      #if defined(MPIX_CUDA_AWARE_SUPPORT) && (MPIX_CUDA_AWARE_SUPPORT==1)
         return 0;
-      #else
-      #error MPI implementation is not CUDA-aware
-      #endif
-      }" HAVE_CUDA_AWARE_MPI)
+      }" HAVE_MPI_EXT)
 
-    if(HAVE_CUDA_AWARE_MPI)
-      MESSAGE(STATUS "Checking for CUDA_AWARE_MPI - yes")
+    if(NOT HAVE_MPI_EXT)
+      set(HAVE_MPI_EXT 0)
+    endif()
+
+    list(APPEND CMAKE_REQUIRED_DEFINITIONS -DHAVE_MPI_EXT=${HAVE_MPI_EXT})
+
+    check_cxx_source_compiles(
+    "#include <mpi.h>
+    #if HAVE_MPI_EXT
+    #include <mpi-ext.h>
+    #endif
+    int main(void) 
+    {
+      return MPIX_Query_cuda_support();
+    }" MPI_SUPPORTS_CUDA_AWARE_DETECTION)
+
+    list(REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -DHAVE_MPI_EXT)
+
+    if(MPI_SUPPORTS_CUDA_AWARE_DETECTION)
+      MESSAGE(STATUS "Checking for MPI_SUPPORTS_CUDA_AWARE_DETECTION - yes")
     else()
-      MESSAGE(STATUS "Checking for CUDA_AWARE_MPI - no")
+      MESSAGE(STATUS "Checking for MPI_SUPPORTS_CUDA_AWARE_DETECTION - no")
       MESSAGE(WARNING "GROMACS cannot determine if underlying MPI is CUDA-aware, " 
       "for better multi-GPU performance consider using a more recent CUDA-aware MPI.")
     endif()
