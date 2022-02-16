@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2022, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -351,6 +351,10 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
             if (dividedAt > warpSize / 2)
             {
                 __syncthreads();
+            }
+            else
+            {
+                __syncwarp();
             }
         }
         // First 6 threads in the block add the 6 components of virial to the global memory address

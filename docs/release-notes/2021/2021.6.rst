@@ -34,6 +34,28 @@ to an error in task assignment.
 
 :issue:`4362`
 
+Fix missing synchronization in CUDA update kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using GPU update with SETTLE or LINCS constraints, virial calculations
+could have been incorrect on Volta and newer NVIDIA GPUs, which in turn
+would lead to incorrect pressure. The GPU update is not enabled by default,
+so the error can only appear in simulations where it was manually selected,
+and even in this case the error might be rare since we have not observed it
+in practice in the testing we have performed.
+
+To check whether your runs could have been affected, please examine your mdrun log file:
+
+- Look for the line "GPU support:        CUDA";
+- Look for the line "PP task will update and constrain coordinates on the GPU";
+- Check whether any GPU the value of "compute cap." 7.0 or higher in the "GPU Info:" section.
+
+If all three are present, than the bug could have perturbed the virial calculation and,
+in turn, led to incorrect pressure coupling. All |Gromacs| version prior to 2021.6 and 2022.0
+that allow offloading of the update and constraint calculations to GPUs are affected.
+
+:issue:`4393`
+
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
