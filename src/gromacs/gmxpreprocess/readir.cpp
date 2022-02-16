@@ -791,8 +791,17 @@ void check_ir(const char*                    mdparin,
             }
         }
 
-        if ((fep->sc_alpha > 0) && (!fep->bScCoul))
+        // the following warning needs to be triggered for the cases where vdw and coul of atoms are changing, but
+        //    a) Beutler softcore is used with the softened LJ, yet not softened Coulomb
+        bool softcoreConditionCheckBeutler = (fep->softcoreFunction == SoftcoreType::Beutler)
+                                             && (fep->sc_alpha > 0) && (!fep->bScCoul);
+        //    b) Gapsys softcore is used with the softened LJ, yet not softened Coulomb
+        bool softcoreConditionCheckGapsys = (fep->softcoreFunction == SoftcoreType::Gapsys)
+                                            && (fep->scGapsysScaleLinpointLJ > 0)
+                                            && (fep->scGapsysScaleLinpointQ == 0);
+        if (softcoreConditionCheckBeutler || softcoreConditionCheckGapsys)
         {
+
             for (i = 0; i < fep->n_lambda; i++)
             {
                 sprintf(err_buf,
@@ -811,8 +820,13 @@ void check_ir(const char*                    mdparin,
             }
         }
 
-        if ((fep->bScCoul) && (EEL_PME(ir->coulombtype)))
+        if ((fep->softcoreFunction == SoftcoreType::Beutler) && (fep->bScCoul) && (EEL_PME(ir->coulombtype)))
         {
+            // PME is formulated for computing 1/r potential, whereas the Coulombic potential softened by means of Beutler softcore no longer has this functional form.
+            // This Warning is issued when PME is used for electrostatics and Beutler softcore is applied to the Coulombic interactions.
+            // For the Gapsys softcore there is no such issue, because for the interactions more distant than the Coulombic linearization point, the potential takes the standard form of 1/r.
+            // It is ensured that this linearization point does not exceed the short range electrostatic cutoff.
+
             real sigma, lambda, r_sc;
 
             sigma = 0.34;
