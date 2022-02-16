@@ -1576,7 +1576,62 @@ std::string getCoolQuote()
           "Martin Vögele" },
         { "A little less conversation, a little more action, please.", "Elvis Presley" },
         { "Friends don't let friends use Berendsen!", "John Chodera (on Twitter)" },
-        { "The plural of regex is regrets", "Steve McCarthy (on Twitter)" }
+        { "The plural of regex is regrets", "Steve McCarthy (on Twitter)" },
+        { "Culture eats strategy for breakfast", "Peter Drucker" },
+        { "Roses are read // Violets are blue // Unexpected '}' on line 32", "Anonymous" },
+        { "We cannot wait for Nature's good graces - to take them from her is our goal",
+          "Ivan Michurin" },
+        { "By three methods we may learn wisdom: First, by reflection, which is noblest; "
+          "Second, by imitation, which is easiest; "
+          "and third by experience, which is the bitterest.",
+          "Confucius" },
+        { "There are three types of people: Those who see, those who see when they are shown, "
+          "and those who do not see.",
+          "Leonardo da Vinci" },
+        { "Hey, it's me - Pandora. Welcome to my new unboxing video!", "Anonymous" },
+        { "It is an unfortunate fact that when you raise the question of the reliability of many "
+          "simulations you are often told about how much manpower went into it, how large & fast "
+          "the computer is, how important the problem is, and such things, which are completely "
+          "irrelevant to the question that was asked.",
+          "Richard Hamming" },
+        { "Sie haben also recht gehabt, Sie Spitzbube. [You were right after all, you rascal.]",
+          "Albert Einstein (letter to Wolfgang Pauli)" },
+        { "You should call it 'entropy'. No one knows what entropy really is, so in a debate you "
+          "will always have the advantage.",
+          "John von Neumann to Claude Shannon, "
+          "on why he should borrow the term for information theory" },
+        { "We must have perseverance and above all confidence in ourselves. We must believe that "
+          "we are gifted for something and that this thing must be attained.",
+          "Marie Curie" },
+        { "Courage is like - it's a habitus, a habit, a virtue: you get it by courageous acts. "
+          "It's like you learn to swim by swimming. You learn courage by couraging.",
+          "Marie Daly" },
+        { "We will always have STEM with us. Some things will drop out of the public eye and "
+          "will go away, but there will always be science, engineering, and technology. And there "
+          "will always, always be mathematics.",
+          "Katherine Johnson" },
+        { "If you want to change the future, start living as if you're already there.",
+          "Lynn Conway" },
+        { "What you do makes a difference, and you have to decide what kind of difference you want "
+          "to make.",
+          "Jane Goodall" },
+        { "I don't fear death because I don't fear anything I don't understand.", "Hedy Lamarr" },
+        { "You cannot hope to build a better world without improving the individuals.",
+          "Marie Curie" },
+        { "Forget this world and all its troubles and, if possible, it's multitudinous Charlatans "
+          "- everything, in short, but the Enchantress of Numbers",
+          "Ada Lovelace" },
+        { "We had the quaint notion at the time that software should be completely, absolutely "
+          "free of bugs. Unfortunately it's a notion that never really quite caught on.",
+          "Mary Allen Wilkes" },
+        { "Like what you do, and then you will do your best.", "Katherine Johnson" },
+        { "All creative people want to do the unexpected", "Hedy Lamarr" },
+        { "Unlike teachers or doctors, our efforts improve the lives of people we'll never meet.",
+          "Katie Busch-Sorensen" },
+        { "Numbers have life; they’re not just symbols on paper.", "Shakuntala Devi" },
+        { "Not everyone is capable of madness; and of those lucky enough to be capable, not many "
+          "have the courage for it.",
+          "August Strindberg" }
     };
 
     if (beCool())
