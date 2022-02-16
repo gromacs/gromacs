@@ -324,11 +324,12 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
     }
 }
 
-static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t& mtop, const bool setMassesToOne)
+static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t& mtop,
+                                                               const bool        setMassesToOne,
+                                                               const bool        useFep)
 {
     std::vector<VerletbufAtomtype> att;
     int                            ft, i, a1, a2, a3, a;
-    const t_iparams*               ip;
 
     for (const gmx_molblock_t& molblock : mtop.molblock)
     {
@@ -350,7 +351,20 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
 
             for (i = 0; i < il.size(); i += 1 + NRAL(ft))
             {
-                ip         = &mtop.ffparams.iparams[il.iatoms[i]];
+                const t_iparams& ip = mtop.ffparams.iparams[il.iatoms[i]];
+                /* When using free-energy perturbation constraint can be perturbed.
+                 * As we can have a dynamic lamdba, we might not know the constraint length.
+                 * And even with fixed lambda we would here need to have the constraint lambda
+                 * value. So we skip the optimization for a perturbed constraint, this results in a
+                 * more conservative buffer estimate.
+                 */
+                if (useFep && ip.constr.dB != ip.constr.dA)
+                {
+                    continue;
+                }
+                GMX_RELEASE_ASSERT(ip.constr.dA > 0,
+                                   "We should only have positive constraint lengths here");
+
                 a1         = il.iatoms[i + 1];
                 a2         = il.iatoms[i + 2];
                 real mass1 = getMass(*atoms, a1, setMassesToOne);
@@ -358,12 +372,12 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
                 if (mass2 > prop[a1].con_mass)
                 {
                     prop[a1].con_mass = mass2;
-                    prop[a1].con_len  = ip->constr.dA;
+                    prop[a1].con_len  = ip.constr.dA;
                 }
                 if (mass1 > prop[a2].con_mass)
                 {
                     prop[a2].con_mass = mass1;
-                    prop[a2].con_len  = ip->constr.dA;
+                    prop[a2].con_len  = ip.constr.dA;
                 }
             }
         }
@@ -372,7 +386,8 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
 
         for (i = 0; i < il.size(); i += 1 + NRAL(F_SETTLE))
         {
-            ip = &mtop.ffparams.iparams[il.iatoms[i]];
+            const t_iparams* ip = &mtop.ffparams.iparams[il.iatoms[i]];
+
             a1 = il.iatoms[i + 1];
             a2 = il.iatoms[i + 2];
             a3 = il.iatoms[i + 3];
@@ -913,7 +928,8 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
      *       to avoid scattering the code with (or forgetting) checks.
      */
     const bool setMassesToOne = (ir.eI == IntegrationAlgorithm::BD && ir.bd_fric > 0);
-    const auto att            = getVerletBufferAtomtypes(mtop, setMassesToOne);
+    const auto att =
+            getVerletBufferAtomtypes(mtop, setMassesToOne, ir.efep != FreeEnergyPerturbationType::No);
     GMX_ASSERT(!att.empty(), "We expect at least one type");
 
     if (debug)
@@ -1333,7 +1349,8 @@ real minCellSizeForAtomDisplacement(const gmx_mtop_t&      mtop,
 
     const bool setMassesToOne = (ir.eI == IntegrationAlgorithm::BD && ir.bd_fric > 0);
 
-    const auto atomtypes = getVerletBufferAtomtypes(mtop, setMassesToOne);
+    const auto atomtypes =
+            getVerletBufferAtomtypes(mtop, setMassesToOne, ir.efep != FreeEnergyPerturbationType::No);
 
     const real kT_fac = displacementVariance(ir, temperature, ir.nstlist * ir.delta_t);
 
