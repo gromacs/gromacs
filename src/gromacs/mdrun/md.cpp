@@ -1878,7 +1878,7 @@ void gmx::LegacySimulator::do_md()
                                                    fr->fcdata.get(),
                                                    awh.get());
             }
-            if (do_log && ir->bDoAwh && awh->hasFepLambdaDimension())
+            if (do_log && ((ir->bDoAwh && awh->hasFepLambdaDimension()) || ir->fepvals->delta_lambda != 0))
             {
                 const bool isInitialOutput = false;
                 printLambdaStateToLog(fplog, state->lambda, isInitialOutput);

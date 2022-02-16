@@ -108,7 +108,7 @@ double currentGlobalLambda(const int64_t step,
 
 /*! \brief Returns an array of lambda values from linear interpolation of a lambda value matrix.
  *
- * \note If there is nothing to interpolate, fills the array with the global current lambda.
+ * \note If there is nothing to interpolate, fills the array with max(0,currentGlobalLambda).
  * \note Returns array boundary values if currentGlobalLambda <0 or >1 .
  *
  * \param[in] currentGlobalLambda determines at which position in the lambda array to interpolate
@@ -120,37 +120,26 @@ interpolatedLambdas(const double                             currentGlobalLambda
                     gmx::ArrayRef<const std::vector<double>> lambdaArray,
                     const int                                lambdaArrayExtent)
 {
+    // Both as an interpolation parameter and as a physical parameter, lambda must not be less than zero.
+    const double halfCappedLambda = (currentGlobalLambda < 0 ? 0 : currentGlobalLambda);
+
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda;
-    // when there is no lambda value array, set all lambdas to steps * deltaLambdaPerStep
+    // if there is no lambda value array, set all lambdas to halfCappedLambda
     if (lambdaArrayExtent <= 0)
     {
-        std::fill(std::begin(lambda), std::end(lambda), currentGlobalLambda);
+        std::fill(std::begin(lambda), std::end(lambda), halfCappedLambda);
         return lambda;
     }
 
-    // if we run over the boundary of the lambda array, return the boundary array values
-    if (currentGlobalLambda <= 0)
-    {
-        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
-        {
-            lambda[i] = lambdaArray[i][0];
-        }
-        return lambda;
-    }
-    if (currentGlobalLambda >= 1)
-    {
-        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
-        {
-            lambda[i] = lambdaArray[i][lambdaArrayExtent - 1];
-        }
-        return lambda;
-    }
+    // Below, lambda has no physical meaning but just interpolates the lambda value array.
+    // Make sure that it is in [0,1].
+    const double fullyCappedLambda = (halfCappedLambda > 1 ? 1 : halfCappedLambda);
 
     // find out between which two value lambda array elements to interpolate
-    const int fepStateLeft = static_cast<int>(std::floor(currentGlobalLambda * (lambdaArrayExtent - 1)));
-    const int fepStateRight = fepStateLeft + 1;
+    const int fepStateLeft = static_cast<int>(std::floor(fullyCappedLambda * (lambdaArrayExtent - 1)));
+    const int fepStateRight = (fepStateLeft == lambdaArrayExtent - 1 ? fepStateLeft : fepStateLeft + 1);
     // interpolate between this state and the next
-    const double fracBetween = currentGlobalLambda * (lambdaArrayExtent - 1) - fepStateLeft;
+    const double fracBetween = fullyCappedLambda * (lambdaArrayExtent - 1) - fepStateLeft;
     for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
     {
         lambda[i] = lambdaArray[i][fepStateLeft]

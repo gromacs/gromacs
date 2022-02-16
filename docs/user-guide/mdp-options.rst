@@ -2434,7 +2434,9 @@ Free energy calculations
    starting value for lambda (float). Generally, this should only be
    used with slow growth (*i.e.* nonzero :mdp:`delta-lambda`). In
    other cases, :mdp:`init-lambda-state` should be specified
-   instead. Must be greater than or equal to 0.
+   instead. If a lambda vector is given, :mdp: `init-lambda` is used to
+   interpolate the vector instead of setting lambda directly.
+   Must be greater than or equal to 0.
 
 .. mdp:: delta-lambda
 
@@ -2457,7 +2459,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Free energy differences
+   steps. Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Free energy differences
    between different lambda values can then be determined with
    :ref:`gmx bar`. :mdp:`fep-lambdas` is different from the
    other -lambdas keywords because all components of the lambda vector
@@ -2469,7 +2472,9 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the electrostatic
+   steps. Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. If soft-core potentials are
+   used, values must be between 0 and 1. Only the electrostatic
    interactions are controlled with this component of the lambda
    vector (and only if the lambda=0 and lambda=1 states have differing
    electrostatic interactions).
@@ -2479,7 +2484,9 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the van der Waals
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. If soft-core potentials are
+   used, values must be between 0 and 1. Only the van der Waals
    interactions are controlled with this component of the lambda
    vector.
 
@@ -2488,7 +2495,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the bonded interactions
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the bonded interactions
    are controlled with this component of the lambda vector.
 
 .. mdp:: restraint-lambdas
@@ -2496,7 +2504,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the restraint
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the restraint
    interactions: dihedral restraints, and the pull code restraints are
    controlled with this component of the lambda vector.
 
@@ -2505,7 +2514,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the particle masses are
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the particle masses are
    controlled with this component of the lambda vector.
 
 .. mdp:: temperature-lambdas
@@ -2513,7 +2523,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the temperatures
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the temperatures are
    controlled with this component of the lambda vector. Note that
    these lambdas should not be used for replica exchange, only for
    simulated tempering.
