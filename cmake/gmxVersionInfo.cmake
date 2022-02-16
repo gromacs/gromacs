@@ -258,7 +258,9 @@ set(GMX_VERSION_STRING_OF_FORK "" CACHE INTERNAL
     "Version string for forks of GROMACS to set to describe themselves")
 mark_as_advanced(GMX_VERSION_STRING_OF_FORK)
 if (GMX_VERSION_STRING_OF_FORK)
-    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${GMX_VERSION_STRING_OF_FORK}")
+    # Remove dashes from GMX_VERSION_STRING_OF_FORK to avoid confusing pkg-config. Issue #4363
+    string(REPLACE "-" "_" _VERSION_STRING_OF_FORK_CLEAN "${GMX_VERSION_STRING_OF_FORK}")
+    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${_VERSION_STRING_OF_FORK_CLEAN}")
 endif()
 
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
