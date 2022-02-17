@@ -162,8 +162,10 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
 
 static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
 {
-    bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
-                     || (pmeFftTarget == TaskTarget::Auto && sc_gpuBuildOnlySupportsMixedModePme);
+    const bool syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
+    bool       useCpuFft        = (pmeFftTarget == TaskTarget::Cpu)
+                     || (pmeFftTarget == TaskTarget::Auto && !syclGpuFftForced
+                         && sc_gpuBuildOnlySupportsMixedModePme);
     return !useCpuFft;
 }
 
@@ -493,9 +495,13 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
     {
         if (sc_gpuBuildOnlySupportsMixedModePme && pmeFftTarget == TaskTarget::Gpu)
         {
-            gmx_fatal(FARGS,
-                      "SYCL build does not support fully offloading PME to GPUs. Please use "
-                      "-pmefft cpu.");
+            const bool syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
+            if (!syclGpuFftForced)
+            {
+                gmx_fatal(FARGS,
+                          "SYCL build is not stable when fully offloading PME to GPUs. Please use "
+                          "-pmefft cpu or set GMX_GPU_SYCL_USE_GPU_FFT=1 to override.");
+            }
         }
         if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
         {

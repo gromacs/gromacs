@@ -267,10 +267,11 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         std::optional<std::string_view> pmeFftOptionArgument = commandLine.argumentOf("-pmefft");
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
+        const bool syclGpuFftForced         = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
         constexpr bool sc_gpuBuildSyclDpcpp = (GMX_GPU_SYCL != 0) && (GMX_SYCL_DPCPP != 0); // Issue #4219
-        messages.appendIf(
-                commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclDpcpp,
-                "it targets GPU execution of FFT work, which is not supported with DPC++");
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && !syclGpuFftForced && sc_gpuBuildSyclDpcpp,
+                          "it targets GPU execution of FFT work, which is not stable with DPC++ "
+                          "(use GMX_GPU_SYCL_USE_GPU_FFT=1 to override)");
         constexpr bool sc_gpuBuildSyclHipsyclNotAmd =
                 (GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET == 0);
         messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclHipsyclNotAmd,

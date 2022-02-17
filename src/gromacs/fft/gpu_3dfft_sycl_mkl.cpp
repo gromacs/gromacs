@@ -42,8 +42,8 @@
  *  In DPC++, we use Intel oneMKL to perform the FFT. It requires using the binary version of
  *  MKL, since the open-source one does not support FFT yet (https://github.com/oneapi-src/oneMKL/issues/27).
  *
- *  There are issues with out-of-place transform, existing at least in oneAPI 2021.2-2021.4, so
- *  we allow only in-place transforms.
+ *  There are issues with out-of-place transform, existing in oneAPI 2021.2-2021.4, so
+ *  we allow only in-place transforms for these versions.
  */
 
 #include "gmxpre.h"
@@ -75,7 +75,8 @@ class DeviceContext;
 #include <oneapi/mkl/exceptions.hpp>
 #include <mkl_version.h>
 
-// oneAPI 2021.2.0 to 2021.4.0 have issues with backward out-of-place transform
+// oneAPI 2021.2.0 to 2021.4.0 have issues with backward out-of-place transform.
+// The issue is fixed in 2022.0.1 (20220000).
 static constexpr bool sc_mklHasBuggyOutOfPlaceFFT = (INTEL_MKL_VERSION <= 20210004);
 
 namespace gmx
