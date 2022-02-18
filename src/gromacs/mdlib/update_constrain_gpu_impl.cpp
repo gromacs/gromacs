@@ -183,7 +183,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     d_v_ = d_v;
     d_f_ = d_f;
 
-    numAtoms_ = md.nr;
+    numAtoms_ = md.homenr;
 
     reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
 
