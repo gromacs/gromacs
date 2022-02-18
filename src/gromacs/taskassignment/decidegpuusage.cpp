@@ -486,7 +486,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
 PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec)
 {
-    if (!EEL_PME(inputrec.coulombtype))
+    if (!EEL_PME(inputrec.coulombtype) && !EVDW_PME(inputrec.vdwtype))
     {
         return PmeRunMode::None;
     }

@@ -142,7 +142,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr);
     }
 
-    if (EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
+    if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
     {
         /* This handles the PP+PME rank case where fr->pmedata is valid.
          * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().

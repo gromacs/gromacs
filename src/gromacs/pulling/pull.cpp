@@ -774,8 +774,6 @@ static double get_pull_coord_deviation(const pull_t& pull, pull_coord_work_t* pc
 
     get_pull_coord_distance(pull, pcrd, pbc);
 
-    get_pull_coord_distance(pull, pcrd, pbc);
-
     /* Determine the deviation */
     dev = pcrd->spatialData.value - pcrd->value_ref;
 

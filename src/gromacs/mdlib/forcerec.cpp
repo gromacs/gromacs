@@ -631,10 +631,13 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real
                 *ic, rlist, tableExtensionLength, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            fprintf(fp,
-                    "Initialized non-bonded Ewald tables, spacing: %.2e size: %zu\n\n",
-                    1 / ic->coulombEwaldTables->scale,
-                    ic->coulombEwaldTables->tableF.size());
+            if (EEL_PME_EWALD(ic->eeltype))
+            {
+                fprintf(fp,
+                        "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
+                        1 / ic->coulombEwaldTables->scale,
+                        ic->coulombEwaldTables->tableF.size());
+            }
         }
     }
 }
