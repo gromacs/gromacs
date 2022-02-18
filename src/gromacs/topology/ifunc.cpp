@@ -138,7 +138,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_dihedral("CBTDIHS", "CBT Dih.", 4, 6, 6),
     def_dihedral("FOURDIHS", "Fourier Dih.", 4, 4, 4),
     def_dihedral("IDIHS", "Improper Dih.", 4, 2, 2),
-    def_dihedral("PIDIHS", "Improper Dih.", 4, 3, 3),
+    def_dihedral("PIDIHS", "Periodic Improper Dih.", 4, 3, 3),
     def_dihedral_tabulated("TABDIHS", "Tab. Dih.", 4, 2, 2),
     def_dihedral("CMAP", "CMAP Dih.", 5, -1, -1),
     def_nofc("GB12", "GB 1-2 Pol. (unused)"),

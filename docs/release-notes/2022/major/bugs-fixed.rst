@@ -93,3 +93,11 @@ The pdb2gmx functionality now generates correct dihedrals for disulfide
 bridges with the GROMOS force field series.
 
 :issue:`4188`
+
+Fixed energy term naming for periodic improper dihedrals
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Those used the same name internally as the non-periodic version for printing
+to energy files and reading from them. This could cause tools being confused
+when trying to compare terms from files where the terms where written in
+a different order.
