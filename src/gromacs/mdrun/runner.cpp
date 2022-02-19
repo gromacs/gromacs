@@ -124,6 +124,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -603,6 +604,20 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger&   mdlog,
                     "For better performance, run on the GPU without energy groups and then do "
                     "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
         }
+    }
+
+    /* There are resource handling issues in the GPU code paths with MTS on anything else than only
+     * PME. Also those code paths need more testing.
+     */
+    MtsLevel mtsLevelOnlyPme;
+    mtsLevelOnlyPme.forceGroups.set(static_cast<int>(MtsForceGroups::LongrangeNonbonded));
+    if (ir.useMts && !(ir.mtsLevels.size() == 2 && ir.mtsLevels[1].forceGroups == mtsLevelOnlyPme.forceGroups))
+    {
+        gpuIsUseful = false;
+        warning     = gmx::formatString(
+                "Multiple time stepping is only supported with GPUs when MTS is only applied to %s "
+                "forces.",
+                mtsForceGroupNames[MtsForceGroups::LongrangeNonbonded].c_str());
     }
 
     if (EI_TPI(ir.eI))

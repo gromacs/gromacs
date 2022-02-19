@@ -164,6 +164,9 @@ TEST_P(MtsComparisonTest, WithinTolerances)
                                                           ComparisonConditions::NoComparison,
                                                           ComparisonConditions::MustCompare };
     TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
+    // Tolerances for force comparison needs to be somewhat higher than the current default
+    // when comparing between forces CPU and GPU, due to summation order differences
+    trajectoryTolerances.forces = relativeToleranceAsFloatingPoint(1000.0, GMX_DOUBLE ? 1.0e-7 : 1.0e-4);
 
     // Build the functor that will compare reference and test
     // trajectory frames in the chosen way.

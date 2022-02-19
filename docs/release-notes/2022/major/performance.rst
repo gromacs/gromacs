@@ -78,6 +78,14 @@ This can improve performance, especially for large systems. This
 behavior can be controlled with the environment variable
 GMX_DD_SINGLE_RANK.
 
+Restricted GPU support with multiple time stepping
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GPUs can be used in combination with MTS, but for now this is limited
+to the setup where only the long-range nonbonded force is applied
+in longer timesteps (and computed on the CPU), while all other 
+components are are calculated every step (which can be on the GPU).
+
        
 ``gmx grompp`` now runs 20-50% faster
 """""""""""""""""""""""""""""""""""""
