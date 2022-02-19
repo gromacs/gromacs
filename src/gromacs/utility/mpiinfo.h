@@ -42,7 +42,8 @@ enum class GpuAwareMpiStatus : int
 {
     Supported,    //!< GPU-aware support available.
     NotSupported, //!< GPU-aware support NOT available.
-    NotKnown      //!< GPU-aware support status not known.
+    NotKnown,     //!< GPU-aware support status not known.
+    Forced        //!< GPU-aware support forced using env variable
 };
 
 

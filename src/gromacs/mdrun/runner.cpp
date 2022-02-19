@@ -234,8 +234,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     if (GMX_LIB_MPI && GMX_GPU_CUDA)
     {
         // Allow overriding the detection for GPU-aware MPI
-        const bool forceGpuAwareMpi        = (getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr);
-        const bool haveDetectedGpuAwareMpi = (checkMpiCudaAwareSupport() == GpuAwareMpiStatus::Supported);
+        GpuAwareMpiStatus gpuAwareMpiStatus = checkMpiCudaAwareSupport();
+        const bool        forceGpuAwareMpi  = gpuAwareMpiStatus == GpuAwareMpiStatus::Forced;
+        const bool haveDetectedGpuAwareMpi  = gpuAwareMpiStatus == GpuAwareMpiStatus::Supported;
         if (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr)
         {
             GMX_LOG(mdlog.warning)
