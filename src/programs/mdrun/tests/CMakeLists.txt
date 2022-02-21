@@ -97,14 +97,11 @@ gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST
 # To avoid running into test timeouts, some end-to-end tests of mdrun
 # functionality are split off. This can be rearranged in future as we
 # see fit.
-set(testname "MdrunTests")
 set(exename "mdrun-test")
 
-gmx_add_gtest_executable(${exename}
+gmx_add_gtest_executable(${exename} MPI
     CPP_SOURCE_FILES
-        ewaldsurfaceterm.cpp
         multiple_time_stepping.cpp
-        orires.cpp
         swapcoords.cpp
         tabulated_bonded_interactions.cpp
         freezegroups.cpp
@@ -113,8 +110,22 @@ gmx_add_gtest_executable(${exename}
         $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunTestsOneRank ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(MdrunTestsTwoRanks ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
+# The orires test is separate, as it supports only a single MPI rank
+set(testname "MdrunSingleRankAlgorithmsTests")
+set(exename "mdrun-single-rank-algorithms-test")
+
+gmx_add_gtest_executable(${exename}
+    CPP_SOURCE_FILES
+        ewaldsurfaceterm.cpp
+        orires.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 set(testname "MdrunNonIntegratorTests")
 set(exename "mdrun-non-integrator-test")
