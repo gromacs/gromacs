@@ -76,4 +76,10 @@ void set_ddbox_cr(DDRole                         ddRole,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t*                   ddbox);
 
+/*! \brief Computes and returns a domain decomposition box */
+gmx_ddbox_t get_ddbox(const ivec&                    numDomains,
+                      const t_inputrec&              ir,
+                      const matrix                   box,
+                      gmx::ArrayRef<const gmx::RVec> x);
+
 #endif

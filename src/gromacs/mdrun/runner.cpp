@@ -1378,10 +1378,13 @@ int Mdrunner::mdrunner()
     std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
     if (useDomainDecomposition)
     {
-        // With GPU update, since reduction is done on the GPU we can not measure any meaningful CPU
-        // force load, hence DLB needs to be disabled.
-        const bool directGpuCommUsedWithGpuUpdate = useGpuDirectHalo && useGpuForUpdate;
-        ddBuilder                                 = std::make_unique<DomainDecompositionBuilder>(
+        // The DD builder will disable useGpuDirectHalo if the Y or Z component of any domain is
+        // smaller than twice the communication distance, since GPU-direct communication presently
+        // only works with a single pulse in these dimensions, and we want to avoid box scaling
+        // resulting in fatal errors far into the simulation. Such small systems will not
+        // perform well on multiple GPUs in any case, but it is important that our core functionality
+        // (in particular for testing) does not break depending on GPU direct communication being enabled.
+        ddBuilder = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
                 cr,
                 domdecOptions,
@@ -1396,7 +1399,8 @@ int Mdrunner::mdrunner()
                 positionsFromStatePointer(globalState.get()),
                 useGpuForNonbonded,
                 useGpuForPme,
-                directGpuCommUsedWithGpuUpdate,
+                useGpuForUpdate,
+                &useGpuDirectHalo,
                 devFlags.enableGpuPmeDecomposition);
     }
     else

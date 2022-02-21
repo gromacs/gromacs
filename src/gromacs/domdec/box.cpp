@@ -317,3 +317,16 @@ void set_ddbox_cr(DDRole                         ddRole,
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, communicator);
 }
+
+gmx_ddbox_t get_ddbox(const ivec&                    numDomains,
+                      const t_inputrec&              ir,
+                      const matrix                   box,
+                      gmx::ArrayRef<const gmx::RVec> x)
+{
+    gmx_ddbox_t ddbox;
+
+    low_set_ddbox(
+            numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), &numDomains, box, true, x, nullptr, &ddbox);
+
+    return ddbox;
+}
