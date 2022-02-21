@@ -99,9 +99,9 @@ namespace sycl_2020
 {
 namespace detail
 {
-#if GMX_SYCL_DPCPP
+#if GMX_SYCL_DPCPP && defined(__INTEL_LLVM_COMPILER) && (__INTEL_LLVM_COMPILER < 20220100)
 namespace origin = sycl::ext::oneapi;
-#elif GMX_SYCL_HIPSYCL
+#elif GMX_SYCL_HIPSYCL || GMX_SYCL_DPCPP
 namespace origin = ::sycl;
 #else
 #    error "Unsupported version of SYCL compiler"
