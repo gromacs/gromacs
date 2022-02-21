@@ -110,7 +110,7 @@ struct gmx_pme_pp
     //@{
     /**< Vectors of A- and B-state parameters used to transfer vectors to PME ranks  */
     gmx::PaddedHostVector<real> chargeA;
-    std::vector<real>           chargeB;
+    gmx::PaddedHostVector<real> chargeB;
     std::vector<real>           sqrt_c6A;
     std::vector<real>           sqrt_c6B;
     std::vector<real>           sigmaA;
@@ -350,7 +350,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             }
             if (cnb.flags & PP_PME_CHARGEB)
             {
-                pme_pp->chargeB.resize(nat);
+                pme_pp->chargeB.resizeWithPadding(nat);
             }
             if (cnb.flags & PP_PME_SQRTC6)
             {
@@ -668,6 +668,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         GMX_RELEASE_ASSERT(deviceStreamManager->streamIsValid(gmx::DeviceStreamType::Pme),
                            "Device stream can not be nullptr when using GPU in PME-only rank");
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
+        changePinningPolicy(&pme_pp->chargeB, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
         if (useGpuPmePpCommunication)
         {
