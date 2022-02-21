@@ -37,7 +37,7 @@
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
 #include "gromacs/utility/gmxmpi.h"
 
-#if HAVE_CUDA_AWARE_MPI
+#if HAVE_MPI_EXT
 #    include <mpi-ext.h>
 #endif
 
@@ -46,7 +46,7 @@ namespace gmx
 
 GpuAwareMpiStatus checkMpiCudaAwareSupport()
 {
-#if defined(MPIX_CUDA_AWARE_SUPPORT)
+#if MPI_SUPPORTS_CUDA_AWARE_DETECTION
     // With OMPI version <=4.x, this function doesn't check if UCX PML is built with CUDA-support
     // or if CUDA is disabled at runtime.
     // Expect this function to work only if OMPI uses OB1 PML

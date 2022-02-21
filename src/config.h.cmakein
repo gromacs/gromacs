@@ -243,7 +243,8 @@
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 
 /* Use CUDA-aware MPI.  */
-#cmakedefine01 HAVE_CUDA_AWARE_MPI
+#cmakedefine01 HAVE_MPI_EXT
+#cmakedefine01 MPI_SUPPORTS_CUDA_AWARE_DETECTION
 
 /* Define if HeFFTe library found */
 #cmakedefine01 Heffte_FOUND
