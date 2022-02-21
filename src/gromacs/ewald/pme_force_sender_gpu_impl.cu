@@ -109,20 +109,23 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
 
-        localForcePtr_[i] = &d_f[ind_start];
-        // NOLINTNEXTLINE(bugprone-sizeof-expression)
-        MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
-        // NOLINTNEXTLINE(bugprone-sizeof-expression)
-        MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
-        // Send address of event and associated flag to PP rank, to allow remote enqueueing
-        // NOLINTNEXTLINE(bugprone-sizeof-expression)
-        MPI_Send(&ppCommEvent_[i], sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
+        if (receiver.numAtoms > 0)
+        {
+            localForcePtr_[i] = &d_f[ind_start];
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            // Send address of event and associated flag to PP rank, to allow remote enqueueing
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Send(&ppCommEvent_[i], sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
 
-        std::atomic<bool>* tmpPpCommEventRecordedPtr =
-                reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[i]));
-        tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
-        // NOLINTNEXTLINE(bugprone-sizeof-expression)
-        MPI_Send(&tmpPpCommEventRecordedPtr, sizeof(std::atomic<bool>*), MPI_BYTE, receiver.rankId, 0, comm_);
+            std::atomic<bool>* tmpPpCommEventRecordedPtr =
+                    reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[i]));
+            tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
+            // NOLINTNEXTLINE(bugprone-sizeof-expression)
+            MPI_Send(&tmpPpCommEventRecordedPtr, sizeof(std::atomic<bool>*), MPI_BYTE, receiver.rankId, 0, comm_);
+        }
         i++;
     }
 

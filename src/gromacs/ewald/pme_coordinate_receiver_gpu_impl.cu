@@ -92,7 +92,8 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         ppCommManager.atomRange = std::make_tuple(indStart, indEnd);
 
         // Need to send address to PP rank only for thread-MPI as PP rank pushes data using cudamemcpy
-        if (GMX_THREAD_MPI)
+        // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
+        if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
             // Data will be transferred directly from GPU.
             void* sendBuf = reinterpret_cast<void*>(&d_x[indStart]);
@@ -186,7 +187,10 @@ void PmeCoordinateReceiverGpu::Impl::synchronizeOnCoordinatesFromAllPpRanks(cons
 {
     for (int i = 0; i < static_cast<int>(ppCommManagers_.size()); i++)
     {
-        synchronizeOnCoordinatesFromPpRank(i, deviceStream);
+        if (ppCommManagers_[i].ppRank.numAtoms > 0)
+        {
+            synchronizeOnCoordinatesFromPpRank(i, deviceStream);
+        }
     }
 }
 DeviceStream* PmeCoordinateReceiverGpu::Impl::ppCommStream(int senderIndex)

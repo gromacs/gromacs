@@ -105,6 +105,11 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(bool receivePmeForceToGpu
 #if GMX_MPI
     // Wait until remote PME task has pushed data, and then enqueue remote event to local stream.
 
+    if (d_pmeForcesSize_ <= 0)
+    {
+        return;
+    }
+
     // Spin until PME rank sets flag
     while (!(remotePmeForceSendEventRecorded_->load(std::memory_order_acquire))) {};
 
