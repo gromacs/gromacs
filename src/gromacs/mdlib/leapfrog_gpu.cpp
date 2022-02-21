@@ -73,10 +73,6 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
                             const float                       dtPressureCouple,
                             const matrix                      prVelocityScalingMatrix)
 {
-    if (numAtoms_ == 0)
-    {
-        return;
-    }
 
     if (doTemperatureScaling)
     {
