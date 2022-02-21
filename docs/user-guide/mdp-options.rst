@@ -1398,8 +1398,11 @@ Bonds
    the same order is applied on top of the normal expansion only for
    the couplings within such triangles. For "normal" MD simulations an
    order of 4 usually suffices, 6 is needed for large time-steps with
-   virtual sites or BD. For accurate energy minimization an order of 8
-   or more might be required. With domain decomposition, the cell size
+   virtual sites or BD. For accurate energy minimization in double
+   precision an order of 8 or more might be required. Note that in
+   single precision an order higher than 6 will often lead to worse
+   accuracy due to amplification of rounding errors.
+   With domain decomposition, the cell size
    is limited by the distance spanned by :mdp:`lincs-order` +1
    constraints. When one wants to scale further than this limit, one
    can decrease :mdp:`lincs-order` and increase :mdp:`lincs-iter`,
@@ -1412,7 +1415,10 @@ Bonds
    Number of iterations to correct for rotational lengthening in
    LINCS. For normal runs a single step is sufficient, but for NVE
    runs where you want to conserve energy accurately or for accurate
-   energy minimization you might want to increase it to 2.
+   energy minimization in double precision you might want to increase
+   it to 2. Note that in single precision using more than 1 iteration
+   will often lead to worse accuracy due to amplification of rounding
+   errors.
 
 .. mdp:: lincs-warnangle
 
