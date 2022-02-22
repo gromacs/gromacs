@@ -785,21 +785,10 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
-    const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
-    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for CUDA-aware MPI.
-    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // issue warning note when env var disables the default
-    if (GMX_THREAD_MPI && GMX_GPU_CUDA && disableDirectGpuComm)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "GMX_DISABLE_DIRECT_GPU_COMM environment variable detected, "
-                        "disabling direct GPU communication.");
-    }
+    // Direct GPU communication is presently turned off due to insufficient testing
+    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
+                                                || (getenv("GMX_GPU_DD_COMMS") != nullptr)
+                                                || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
     // Now check those flags that may cause, from the user perspective, an unexpected
     // fallback to CPU halo, and report accordingly
@@ -817,7 +806,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     bool runUsesCompatibleFeatures = errorReasons.isEmpty();
 
     bool runAndGpuSupportDirectGpuComm =
-            (runUsesCompatibleFeatures && !disableDirectGpuComm && GMX_GPU_CUDA);
+            (runUsesCompatibleFeatures && enableDirectGpuComm && GMX_GPU_CUDA);
 
     // Thread-MPI case on by default, can be disabled with env var.
     bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);

@@ -209,20 +209,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                                   && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
 
-    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
-    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for GPU-aware MPI.
-    const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // GMX_DISABLE_DIRECT_GPU_COMM is only checked for consistency reasons here,
-    // the disabling is doone in task assignment
-    if (enableDirectGpuComm && (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr))
-    {
-        GMX_THROW(
-                InconsistentInputError("GMX_DISABLE_DIRECT_GPU_COMM and GMX_ENABLE_DIRECT_GPU_COMM "
-                                       "environment variables both set,\n"
-                                       "but these are mutually exclusive.\n"));
-    }
-
     // Flag use to enable GPU-aware MPI depenendent features such PME GPU decomposition
     // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
     // user wants to force its use
@@ -247,7 +233,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         }
 
         devFlags.canUseGpuAwareMpi = haveDetectedGpuAwareMpi || forceGpuAwareMpi;
-        if (enableDirectGpuComm)
+        if (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
         {
             if (!haveDetectedGpuAwareMpi && forceGpuAwareMpi)
             {
