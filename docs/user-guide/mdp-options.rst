@@ -971,6 +971,9 @@ Temperature coupling
       temperature :mdp:`ref-t`, with time constant
       :mdp:`tau-t`. Several groups can be coupled separately, these
       are specified in the :mdp:`tc-grps` field separated by spaces.
+      This is a historical thermostat needed to be able to reproduce
+      previous simulations, but we strongly recommend not to use it
+      for new production runs. Consult the manual for details.
 
    .. mdp-value:: nose-hoover
 
@@ -1070,17 +1073,19 @@ Pressure coupling
    .. mdp-value:: Berendsen
 
       Exponential relaxation pressure coupling with time constant
-      :mdp:`tau-p`. The box is scaled every :mdp:`nstpcouple` steps. It has been
-      argued that this does not yield a correct thermodynamic
-      ensemble, but it is the most efficient way to scale a box at the
-      beginning of a run.
+      :mdp:`tau-p`. The box is scaled every :mdp:`nstpcouple` steps.
+      This barostat does not yield a correct thermodynamic ensemble;
+      it is only included to be able to reproduce previous runs,
+      and we strongly recommend against using it for new simulations.
+      See the manual for details.
 
    .. mdp-value:: C-rescale
 
       Exponential relaxation pressure coupling with time constant
       :mdp:`tau-p`, including a stochastic term to enforce correct
       volume fluctuations.  The box is scaled every :mdp:`nstpcouple`
-      steps. It can be used for both equilibration and production.
+      steps. It can be used for both equilibration and production,
+      but presently it cannot be used for full anisotropic coupling.
 
    .. mdp-value:: Parrinello-Rahman
 
