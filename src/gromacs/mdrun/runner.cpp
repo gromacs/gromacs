@@ -2196,14 +2196,16 @@ int Mdrunner::mdrunner()
         physicalNodeComm.barrier();
     }
 
-    const bool usingGpuAwareMpiFeatures = GMX_LIB_MPI && GMX_GPU_CUDA
-                                          && (runScheduleWork.simulationWork.useGpuDirectCommunication
-                                              || runScheduleWork.simulationWork.useGpuPmeDecomposition);
-    if (!usingGpuAwareMpiFeatures)
+    const bool haveDetectedOrForcedCudaAwareMpi =
+            (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+             || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+    if (!haveDetectedOrForcedCudaAwareMpi)
     {
         // Don't reset GPU in case of GPU-AWARE MPI
         // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
         // resetting the device before MPI_Finalize() results in crashes inside UCX
+        // This can also cause issues in tests that invoke mdrunner() multiple
+        // times in the same process; ref #3952.
         releaseDevice(deviceInfo);
     }
 

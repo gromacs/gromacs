@@ -197,8 +197,10 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
     // Skip context teardown when using CUDA-aware MPI because this can lead to
     // corruption and a crash in MPI when when mdrunner is invoked multiple times
     // in the same process in gmxapi or mdrun integration tests. Ref #3952
-    if (gmx::checkMpiCudaAwareSupport() != gmx::GpuAwareMpiStatus::Supported
-        || gmx::checkMpiCudaAwareSupport() != gmx::GpuAwareMpiStatus::Forced)
+    const bool haveDetectedOrForcedCudaAwareMpi =
+            (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+             || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+    if (!haveDetectedOrForcedCudaAwareMpi)
     {
         cu_err = cudaDeviceReset();
         CU_RET_ERR(cu_err, "cudaDeviceReset failed");
