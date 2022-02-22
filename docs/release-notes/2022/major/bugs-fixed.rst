@@ -101,3 +101,15 @@ Those used the same name internally as the non-periodic version for printing
 to energy files and reading from them. This could cause tools being confused
 when trying to compare terms from files where the terms where written in
 a different order.
+
+gmx density now always uses relative coordinates
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+There is no realistic use case for using absolute coordinates in binning
+when the box dimension is changing, so gmx density now always uses
+relative coordinates internally. This also avoids issues with output
+scaling to the last instead of average box size when users forget
+this option, ensures the output is always correct, and gets rid of
+occassional segfaults.
+
+:issue:`3830`
