@@ -144,7 +144,8 @@ TEST_P(ReplicaExchangeTest, Works)
     const int numSteps       = 16;
     const int exchangePeriod = 4;
     // grompp warns about generating velocities and using parrinello-rahman
-    const int maxWarnings = (pcoupl == PressureCoupling::ParrinelloRahman ? 1 : 0);
+    const int maxWarnings =
+            (pcoupl == PressureCoupling::ParrinelloRahman || pcoupl == PressureCoupling::Berendsen ? 1 : 0);
 
     mdrunCaller_->addOption("-replex", exchangePeriod);
     // Seeds need to be reproducible for regression, but can be different per simulation

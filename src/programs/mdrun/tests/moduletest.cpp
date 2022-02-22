@@ -109,6 +109,7 @@ SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
     mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
 
     nsteps_(-2),
+    maxwarn_(0),
     mdpSource_(SimulationRunnerMdpSource::Undefined),
     fileManager_(*fileManager)
 {
@@ -190,6 +191,11 @@ void SimulationRunner::useTopGroAndMdpFromFepTestDatabase(const std::string& nam
             gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/grompp.mdp");
 }
 
+void SimulationRunner::setMaxWarn(int maxwarn)
+{
+    maxwarn_ = maxwarn;
+}
+
 int SimulationRunner::callGromppOnThisRank(const CommandLine& callerRef)
 {
     std::string mdpInputFileName;
@@ -217,6 +223,10 @@ int SimulationRunner::callGromppOnThisRank(const CommandLine& callerRef)
 
     caller.addOption("-po", mdpOutputFileName_);
     caller.addOption("-o", tprFileName_);
+    if (maxwarn_ != 0)
+    {
+        caller.addOption("-maxwarn", maxwarn_);
+    }
 
     return gmx_grompp(caller.argc(), caller.argv());
 }

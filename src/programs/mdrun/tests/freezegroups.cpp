@@ -206,8 +206,14 @@ TEST_P(FreezeGroupTest, WithinTolerances)
     // Run grompp
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
-    // Allow one warning for COMM removal + partially frozen atoms
-    runGrompp(&runner_, { SimulationOptionTuple("-maxwarn", "1") });
+    // Allow one warning for COMM removal + partially frozen atoms, and one for berendsen t-coupling
+    int maxWarn = 1;
+    if (pcoupling == "berendsen")
+    {
+        maxWarn++;
+    }
+    runner_.setMaxWarn(maxWarn);
+    runGrompp(&runner_);
     // Run mdrun
     runMdrun(&runner_);
 
@@ -223,6 +229,6 @@ INSTANTIATE_TEST_SUITE_P(
         FreezeGroupTest,
         ::testing::Combine(::testing::Values("md", "md-vv", "sd", "bd"),
                            ::testing::Values("no"),
-                           ::testing::Values("no", "berendsen", "parrinello-rahman")));
+                           ::testing::Values("no", "c-rescale", "parrinello-rahman")));
 } // namespace
 } // namespace gmx::test

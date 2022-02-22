@@ -92,7 +92,6 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 
     int maxNumWarnings = 0;
 
-    const bool isAndersen     = (tcoupling == "andersen-massive" || tcoupling == "andersen");
     const bool hasConstraints = (simulationName != "argon12");
 
     // TODO At some point we should also test PME-only ranks.
@@ -115,7 +114,12 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
-    if (isAndersen && pcoupling == "berendsen")
+    if (tcoupling == "berendsen")
+    {
+        // "Using Berendsen temperature coupling invalidates the true ensemble
+        maxNumWarnings++;
+    }
+    if (pcoupling == "berendsen")
     {
         // "Using Berendsen pressure coupling invalidates the true ensemble for the thermostat"
         maxNumWarnings++;
@@ -132,11 +136,6 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         {
             // Combination not allowed by legacy do_md.
             return;
-        }
-        else
-        {
-            // "Using Berendsen pressure coupling invalidates the true ensemble for the thermostat"
-            maxNumWarnings++;
         }
     }
 
@@ -177,6 +176,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         mdpFieldValues["nstcomm"]       = "1";
         mdpFieldValues["nstcalcenergy"] = "1";
     }
+
     if (pcoupling == "mttk")
     {
         // Standard parameters use compressibility of 5e-5
@@ -242,7 +242,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
     runner_.useTopGroAndNdxFromDatabase(simulationName);
     runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
-    runGrompp(&runner_, { SimulationOptionTuple("-maxwarn", std::to_string(maxNumWarnings)) });
+    runner_.setMaxWarn(maxNumWarnings);
+    runGrompp(&runner_);
 
     // Backup current state of both environment variables and unset them
     const char* environmentVariableBackupOn  = getenv(envVariableModSimOn.c_str());

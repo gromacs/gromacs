@@ -146,7 +146,8 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     // Run grompp
     runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
     runner_.useTopGroAndMdpFromFepTestDatabase(simulationName);
-    runGrompp(&runner_, { SimulationOptionTuple("-maxwarn", std::to_string(maxNumWarnings)) });
+    runner_.setMaxWarn(maxNumWarnings);
+    runGrompp(&runner_);
 
     // Do mdrun
     runner_.fullPrecisionTrajectoryFileName_ = simulationTrajectoryFileName;
@@ -205,26 +206,26 @@ INSTANTIATE_TEST_SUITE_P(
         FreeEnergyReferenceTest,
         ::testing::Values(
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_coul",
-                                               MaxNumWarnings(0),
+                                               MaxNumWarnings(1),
                                                { F_DVDL_COUL, F_DVDL_VDW } },
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_vdw",
-                                               MaxNumWarnings(0),
+                                               MaxNumWarnings(1),
                                                { F_DVDL_COUL, F_DVDL_VDW } },
-                FreeEnergyReferenceTestParams{ "coulandvdwtogether", MaxNumWarnings(0), { F_DVDL } },
-                FreeEnergyReferenceTestParams{ "expanded", MaxNumWarnings(0), { F_DVDL_COUL, F_DVDL_VDW } },
+                FreeEnergyReferenceTestParams{ "coulandvdwtogether", MaxNumWarnings(1), { F_DVDL } },
+                FreeEnergyReferenceTestParams{ "expanded", MaxNumWarnings(1), { F_DVDL_COUL, F_DVDL_VDW } },
                 // Tolerated warnings: No default bonded interaction types for perturbed atoms (10x)
                 FreeEnergyReferenceTestParams{ "relative",
-                                               MaxNumWarnings(10),
+                                               MaxNumWarnings(11),
                                                { F_DVDL, F_DVDL_COUL, F_DVDL_VDW, F_DVDL_BONDED } },
                 // Tolerated warnings: No default bonded interaction types for perturbed atoms (10x)
                 FreeEnergyReferenceTestParams{
                         "relative-position-restraints",
-                        MaxNumWarnings(10),
+                        MaxNumWarnings(11),
                         { F_DVDL, F_DVDL_COUL, F_DVDL_VDW, F_DVDL_BONDED, F_DVDL_RESTRAINT } },
-                FreeEnergyReferenceTestParams{ "restraints", MaxNumWarnings(0), { F_DVDL_RESTRAINT } },
-                FreeEnergyReferenceTestParams{ "simtemp", MaxNumWarnings(0), {} },
-                FreeEnergyReferenceTestParams{ "transformAtoB", MaxNumWarnings(0), { F_DVDL } },
-                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(0), { F_DVDL } }),
+                FreeEnergyReferenceTestParams{ "restraints", MaxNumWarnings(1), { F_DVDL_RESTRAINT } },
+                FreeEnergyReferenceTestParams{ "simtemp", MaxNumWarnings(1), {} },
+                FreeEnergyReferenceTestParams{ "transformAtoB", MaxNumWarnings(1), { F_DVDL } },
+                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(1), { F_DVDL } }),
         FreeEnergyReferenceTest::PrintParametersToString());
 #else
 INSTANTIATE_TEST_SUITE_P(
@@ -232,26 +233,26 @@ INSTANTIATE_TEST_SUITE_P(
         FreeEnergyReferenceTest,
         ::testing::Values(
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_coul",
-                                               MaxNumWarnings(0),
+                                               MaxNumWarnings(1),
                                                { F_DVDL_COUL, F_DVDL_VDW } },
                 FreeEnergyReferenceTestParams{ "coulandvdwsequential_vdw",
-                                               MaxNumWarnings(0),
+                                               MaxNumWarnings(1),
                                                { F_DVDL_COUL, F_DVDL_VDW } },
-                FreeEnergyReferenceTestParams{ "coulandvdwtogether", MaxNumWarnings(0), { F_DVDL } },
-                FreeEnergyReferenceTestParams{ "expanded", MaxNumWarnings(0), { F_DVDL_COUL, F_DVDL_VDW } },
+                FreeEnergyReferenceTestParams{ "coulandvdwtogether", MaxNumWarnings(1), { F_DVDL } },
+                FreeEnergyReferenceTestParams{ "expanded", MaxNumWarnings(1), { F_DVDL_COUL, F_DVDL_VDW } },
                 // Tolerated warnings: No default bonded interaction types for perturbed atoms (10x)
                 FreeEnergyReferenceTestParams{ "relative",
-                                               MaxNumWarnings(10),
+                                               MaxNumWarnings(11),
                                                { F_DVDL, F_DVDL_COUL, F_DVDL_VDW, F_DVDL_BONDED } },
                 // Tolerated warnings: No default bonded interaction types for perturbed atoms (10x)
                 FreeEnergyReferenceTestParams{
                         "relative-position-restraints",
-                        MaxNumWarnings(10),
+                        MaxNumWarnings(11),
                         { F_DVDL, F_DVDL_COUL, F_DVDL_VDW, F_DVDL_BONDED, F_DVDL_RESTRAINT } },
-                FreeEnergyReferenceTestParams{ "restraints", MaxNumWarnings(0), { F_DVDL_RESTRAINT } },
-                FreeEnergyReferenceTestParams{ "simtemp", MaxNumWarnings(0), {} },
-                FreeEnergyReferenceTestParams{ "transformAtoB", MaxNumWarnings(0), { F_DVDL } },
-                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(0), { F_DVDL } }),
+                FreeEnergyReferenceTestParams{ "restraints", MaxNumWarnings(1), { F_DVDL_RESTRAINT } },
+                FreeEnergyReferenceTestParams{ "simtemp", MaxNumWarnings(1), {} },
+                FreeEnergyReferenceTestParams{ "transformAtoB", MaxNumWarnings(1), { F_DVDL } },
+                FreeEnergyReferenceTestParams{ "vdwalone", MaxNumWarnings(1), { F_DVDL } }),
         FreeEnergyReferenceTest::PrintParametersToString());
 #endif
 

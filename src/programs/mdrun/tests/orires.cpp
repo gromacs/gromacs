@@ -69,7 +69,7 @@ TEST_F(OriresTest, OriresCanRun)
     const std::string mdpContents = R"(
         dt            = 0.002
         nsteps        = 10
-        tcoupl        = Berendsen
+        tcoupl        = V-rescale
         tc-grps       = System
         tau-t         = 0.5
         ref-t         = 300

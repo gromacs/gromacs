@@ -244,7 +244,7 @@ void runTest(TestFileManager*            fileManager,
         // tests always expect the right number.
         CommandLine caller;
         caller.append("grompp");
-        caller.addOption("-maxwarn", maxWarningsTolerated);
+        runner->setMaxWarn(maxWarningsTolerated);
         runner->useTopGroAndNdxFromDatabase(simulationName);
         runner->useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
         runner->tprFileName_ = fullRunTprFileName;
@@ -259,7 +259,7 @@ void runTest(TestFileManager*            fileManager,
         // tests always expect the right number.
         CommandLine caller;
         caller.append("grompp");
-        caller.addOption("-maxwarn", maxWarningsTolerated);
+        runner->setMaxWarn(maxWarningsTolerated);
         runner->useTopGroAndNdxFromDatabase(simulationName);
         auto firstPartMdpFieldValues      = mdpFieldValues;
         firstPartMdpFieldValues["nsteps"] = splitPoint;
@@ -452,6 +452,14 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     }
 
     int numWarningsToTolerate = 1;
+    if (temperatureCoupling == "berendsen")
+    {
+        numWarningsToTolerate++;
+    }
+    if (pressureCoupling == "berendsen")
+    {
+        numWarningsToTolerate++;
+    }
     runTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues, energyTermsToCompare);
 }
 

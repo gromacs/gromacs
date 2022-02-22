@@ -192,9 +192,18 @@ void MultiSimTest::runGrompp(SimulationRunner* runner, int numSteps, bool doRegr
         const auto& simulator = std::get<1>(GetParam());
         const auto& tcoupl    = std::get<2>(GetParam());
         const auto& pcoupl    = std::get<3>(GetParam());
+        int         maxWarn   = maxWarnings;
+        if (pcoupl == PressureCoupling::Berendsen)
+        {
+            maxWarn++;
+        }
+        if (tcoupl == TemperatureCoupling::Berendsen)
+        {
+            maxWarn++;
+        }
         organizeMdpFile(runner, simulator, tcoupl, pcoupl, numSteps, doRegression);
+        runner->setMaxWarn(maxWarn);
         CommandLine caller;
-        caller.addOption("-maxwarn", maxWarnings);
         EXPECT_EQ(0, runner->callGromppOnThisRank(caller));
     }
 

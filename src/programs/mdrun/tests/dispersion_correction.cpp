@@ -69,7 +69,7 @@ TEST_F(DispersionCorrectionTest, DispersionCorrectionCanRun)
     const std::string mdpContents = R"(
         dt            = 0.002
         nsteps        = 200
-        tcoupl        = Berendsen
+        tcoupl        = V-rescale
         tc-grps       = System
         tau-t         = 0.5
         ref-t         = 300

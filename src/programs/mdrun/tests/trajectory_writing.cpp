@@ -45,6 +45,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -59,17 +61,18 @@ namespace
 //! Test fixture for mdrun trajectory writing
 class TrajectoryWritingTest :
     public gmx::test::MdrunTestFixture,
-    public ::testing::WithParamInterface<const char*>
+    public ::testing::WithParamInterface<std::string>
 {
 public:
     //! The file name of the MDP file
     std::string theMdpFile;
 
     //! Execute the trajectory writing test
-    void runTest()
+    void runTest(int maxwarn)
     {
         runner_.useStringAsMdpFile(theMdpFile);
         runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+        runner_.setMaxWarn(maxwarn);
         EXPECT_EQ(0, runner_.callGrompp());
 
         runner_.fullPrecisionTrajectoryFileName_ =
@@ -93,7 +96,8 @@ typedef TrajectoryWritingTest Trajectories;
    frequencies */
 TEST_P(Trajectories, ThatDifferInNstxout)
 {
-    theMdpFile = gmx::formatString(
+    const auto nstxout = GetParam();
+    theMdpFile         = gmx::formatString(
             "integrator = md\n"
             "nsteps = 6\n"
             "nstxout = %s\n"
@@ -105,8 +109,8 @@ TEST_P(Trajectories, ThatDifferInNstxout)
             "tau-t = 1\n"
             "ref-t = 298\n"
             "compressed-x-grps = Sol\n",
-            GetParam());
-    runTest();
+            nstxout.c_str());
+    runTest(0);
 }
 
 //! Helper typedef for naming test cases like sentences
@@ -115,7 +119,9 @@ typedef TrajectoryWritingTest NptTrajectories;
 /* This test ensures mdrun can write trajectories in TNG format from NPT ensembles. */
 TEST_P(NptTrajectories, WithDifferentPcoupl)
 {
-    theMdpFile = gmx::formatString(
+    const auto& pcouple = GetParam();
+    int         maxwarn = (pcouple == "Berendsen") ? 1 : 0;
+    theMdpFile          = gmx::formatString(
             "integrator = md\n"
             "nsteps = 2\n"
             "nstxout = 2\n"
@@ -128,8 +134,8 @@ TEST_P(NptTrajectories, WithDifferentPcoupl)
             "tc-grps = System\n"
             "tau-t = 1\n"
             "ref-t = 298\n",
-            GetParam());
-    runTest();
+            pcouple.c_str());
+    runTest(maxwarn);
 }
 
 // TODO Consider spamming more of the parameter space when we don't

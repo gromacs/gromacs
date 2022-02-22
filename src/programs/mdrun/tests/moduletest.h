@@ -127,6 +127,8 @@ public:
     void useNdxFromDatabase(const std::string& name);
     //! Use .top, .gro, and .mdp from FEP test database
     void useTopGroAndMdpFromFepTestDatabase(const std::string& name);
+    //! Set a maxmum number of acceptable warnings.
+    void setMaxWarn(int maxwarn);
     //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
     int callGrompp(const CommandLine& callerRef);
     //! Convenience wrapper for a default call to \c callGrompp
@@ -172,6 +174,7 @@ public:
     std::string swapFileName_;
     std::string dhdlFileName_;
     int         nsteps_;
+    int         maxwarn_;
     //@}
     //! How the mdp options are defined
     SimulationRunnerMdpSource mdpSource_;

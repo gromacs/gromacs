@@ -1365,23 +1365,29 @@ void check_ir(const char*                    mdparin,
     if (ir->etc == TemperatureCoupling::Berendsen)
     {
         sprintf(warn_buf,
-                "The %s thermostat does not generate the correct kinetic energy distribution. You "
-                "might want to consider using the %s thermostat.",
+                "The %s thermostat does not generate the correct kinetic energy distribution, "
+                "and should not be used for new production simulations (in our opinion). "
+                "We would recommend the %s thermostat.",
                 enumValueToString(ir->etc),
                 enumValueToString(TemperatureCoupling::VRescale));
-        warning_note(wi, warn_buf);
-    }
-
-    if ((ir->etc == TemperatureCoupling::NoseHoover || ETC_ANDERSEN(ir->etc))
-        && ir->epc == PressureCoupling::Berendsen)
-    {
-        sprintf(warn_buf,
-                "Using Berendsen pressure coupling invalidates the "
-                "true ensemble for the thermostat");
         warning(wi, warn_buf);
     }
 
     /* PRESSURE COUPLING */
+    if (ir->epc == PressureCoupling::Berendsen)
+    {
+        sprintf(warn_buf,
+                "The %s barostat does not generate any strictly correct ensemble, "
+                "and should not be used for new production simulations (in our opinion). "
+                "For isotropic scaling we would recommend the %s barostat that also "
+                "ensures fast relaxation without oscillations, and for anisotropic "
+                "scaling you likely want to use the %s barostat.",
+                enumValueToString(ir->epc),
+                enumValueToString(PressureCoupling::CRescale),
+                enumValueToString(PressureCoupling::ParrinelloRahman));
+        warning(wi, warn_buf);
+    }
+
     if (ir->epc == PressureCoupling::Isotropic)
     {
         ir->epc = PressureCoupling::Berendsen;

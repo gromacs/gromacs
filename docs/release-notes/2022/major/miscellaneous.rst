@@ -100,3 +100,12 @@ Additional development is needed for more optimal use
 of resources and to reduce unnecessary data transfers.
 
 :issue:`3138`
+
+Further discouraged use of Berendsen coupling algorithms
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Those algorithms have been proven to cause incorrect sampling of their
+respective distributions and are mainly provided as a means to provide
+backwards compatibility for older simulations. This is why their
+use has been further discouraged by changing the current notes about
+their use to actual warnings at grompp time.

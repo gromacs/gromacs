@@ -74,7 +74,7 @@ TEST_F(CompelTest, SwapCanRun)
     const std::string mdpContents = R"(
         dt                       = 0.005
         nsteps                   = 2
-        tcoupl                   = Berendsen
+        tcoupl                   = V-rescale
         tc-grps                  = System
         tau-t                    = 0.5
         ref-t                    = 300

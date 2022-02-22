@@ -900,7 +900,10 @@ averages will not be affected significantly, except for the distribution
 of the kinetic energy itself. However, fluctuation properties, such as
 the heat capacity, will be affected. A similar thermostat which does
 produce a correct ensemble is the velocity rescaling
-thermostat \ :ref:`30 <refBussi2007a>` described below.
+thermostat \ :ref:`30 <refBussi2007a>` described below, so while the
+Berendsen thermostat is supported for historical reasons, including
+the ability to reproduce old simulations, we strongly recommend
+against using it for new simulations.
 
 The heat flow into or out of the system is affected by scaling the
 velocities of each particle every step, or every :math:`n_\mathrm{TC}`
@@ -1197,7 +1200,8 @@ Pressure coupling
 In the same spirit as the temperature coupling, the system can also be
 coupled to a *pressure bath.* |Gromacs| supports both the Berendsen
 algorithm \ :ref:`26 <refBerendsen84>` that scales coordinates and box
-vectors every step, the extended-ensemble Parrinello-Rahman
+vectors every step (we strongly recommend not to use it), a new
+stochastic cell rescaling algorithm, the extended-ensemble Parrinello-Rahman
 approach \ :ref:`38 <refParrinello81>`, :ref:`39 <refNose83>`, and for the
 velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein (MTTK)
 implementation of pressure control \ :ref:`35 <refMartyna1996>`.
@@ -1272,10 +1276,23 @@ in the other direction(s).
 
 If you allow full anisotropic deformations and use constraints you might
 have to scale more slowly or decrease your timestep to avoid errors from
-the constraint algorithms. It is important to note that although the
+the constraint algorithms.
+
+It is important to note that although the
 Berendsen pressure control algorithm yields a simulation with the
 correct average pressure, it does not yield the exact NPT ensemble, and
 it is not yet clear exactly what errors this approximation may yield.
+We strongly advise against using it for new simulations. The only
+useful role it has had recently is to ensure fast relaxation without
+oscillations, e.g. at the start of a simulation for from equilibrium,
+but this is now provided by the stochastic cell rescaling, which should
+be used instead. For full anisotropic simulations you need to use the
+Parrinello-Rahman barostat (for now). This does have the same
+oscillation problems as many other correct-ensemble barostats, so if
+you cannot get your initial system stable you might need to use
+Berendsen briefly - but the warnings/errors you get are a reminder
+it should not be used for production runs.
+
 
 Stochastic cell rescaling
 ^^^^^^^^^^^^^^^^^^^^^^^^^
