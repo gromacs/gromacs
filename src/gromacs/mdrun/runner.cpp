@@ -283,13 +283,16 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     }
     else
     {
-        // Cannot force use of GPU-aware MPI in this build configuration
-        GMX_LOG(mdlog.info)
-                .asParagraph()
-                .appendText(
-                        "A CUDA build with an external MPI library is required in order to "
-                        "benefit from GMX_FORCE_GPU_AWARE_MPI. That environment variable is "
-                        "being ignored because such a build is not in use.");
+        if (getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+        {
+            // Cannot force use of GPU-aware MPI in this build configuration
+            GMX_LOG(mdlog.info)
+                    .asParagraph()
+                    .appendText(
+                            "A CUDA build with an external MPI library is required in order to "
+                            "benefit from GMX_FORCE_GPU_AWARE_MPI. That environment variable is "
+                            "being ignored because such a build is not in use.");
+        }
     }
 
     if (devFlags.enableGpuBufferOps)
