@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -193,8 +194,15 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
         return DeviceStatus::NonFunctional;
     }
 
-    cu_err = cudaDeviceReset();
-    CU_RET_ERR(cu_err, "cudaDeviceReset failed");
+    // Skip context teardown when using CUDA-aware MPI because this can lead to
+    // corruption and a crash in MPI when when mdrunner is invoked multiple times
+    // in the same process in gmxapi or mdrun integration tests. Ref #3952
+    if (gmx::checkMpiCudaAwareSupport() != gmx::GpuAwareMpiStatus::Supported
+        || gmx::checkMpiCudaAwareSupport() != gmx::GpuAwareMpiStatus::Forced)
+    {
+        cu_err = cudaDeviceReset();
+        CU_RET_ERR(cu_err, "cudaDeviceReset failed");
+    }
 
     return DeviceStatus::Compatible;
 }
