@@ -47,6 +47,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -96,6 +97,46 @@ static void p_integrate(double* result, const double data[], int ndata, double s
     }
 }
 
+static void center_coords(const t_atoms* atoms, const int* index_center, int ncenter, matrix box, rvec x0[])
+{
+    int  i, k, m;
+    real tmass, mm;
+    rvec com, shift, box_center;
+
+    tmass = 0;
+    clear_rvec(com);
+    for (k = 0; (k < ncenter); k++)
+    {
+        i = index_center[k];
+        if (i >= atoms->nr)
+        {
+            gmx_fatal(FARGS,
+                      "Index %d refers to atom %d, which is larger than natoms (%d).",
+                      k + 1,
+                      i + 1,
+                      atoms->nr);
+        }
+        mm = atoms->atom[i].m;
+        tmass += mm;
+        for (m = 0; (m < DIM); m++)
+        {
+            com[m] += mm * x0[i][m];
+        }
+    }
+    for (m = 0; (m < DIM); m++)
+    {
+        com[m] /= tmass;
+    }
+    calc_box_center(ecenterDEF, box, box_center);
+    rvec_sub(com, box_center, shift);
+
+    /* Important - while the center was calculated based on a group, we should move all atoms */
+    for (i = 0; (i < atoms->nr); i++)
+    {
+        rvec_dec(x0[i], shift);
+    }
+}
+
 static void calc_potential(const char*             fn,
                            int**                   index,
                            int                     gnx[],
@@ -110,6 +151,9 @@ static void calc_potential(const char*             fn,
                            double*                 slWidth,
                            double                  fudge_z,
                            gmx_bool                bSpherical,
+                           gmx_bool                bCenter,
+                           const int*              index_center,
+                           int                     ncenter,
                            gmx_bool                bCorrect,
                            int                     cb,
                            int                     ce,
@@ -119,43 +163,31 @@ static void calc_potential(const char*             fn,
     matrix       box;    /* box (3x3) */
     int          natoms; /* nr. atoms in trj */
     t_trxstatus* status;
-    int          i, n,                                   /* loop indices */
-            teller = 0, ax1 = 0, ax2 = 0, nr_frames = 0, /* number of frames */
-            slice;                                       /* current slice */
-    double      slVolume; /* volume of slice for spherical averaging */
-    double      qsum, nn;
-    real        t;
-    double      z;
-    rvec        xcm;
-    gmx_rmpbc_t gpbc = nullptr;
-
-    switch (axis)
-    {
-        case 0:
-            ax1 = 1;
-            ax2 = 2;
-            break;
-        case 1:
-            ax1 = 0;
-            ax2 = 2;
-            break;
-        case 2:
-            ax1 = 0;
-            ax2 = 1;
-            break;
-        default: gmx_fatal(FARGS, "Invalid axes. Terminating\n");
-    }
+    int          i, n;
+    int          teller    = 0;
+    int          nr_frames = 0;
+    int          slice;
+    double       qsum, nn;
+    real         t;
+    double       z;
+    rvec         xcm;
+    real         boxSize;
+    real         sliceWidth;
+    double       averageBoxSize;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
         gmx_fatal(FARGS, "Could not read coordinates from statusfile\n");
     }
 
+    averageBoxSize = 0;
+
     if (!*nslices)
     {
         *nslices = static_cast<int>(box[axis][axis] * 10.0); /* default value */
+        fprintf(stderr, "\nDividing the box in %d slices\n", *nslices);
     }
-    fprintf(stderr, "\nDividing the box in %d slices\n", *nslices);
 
     snew(*slField, nr_grps);
     snew(*slCharge, nr_grps);
@@ -174,13 +206,23 @@ static void calc_potential(const char*             fn,
     /*********** Start processing trajectory ***********/
     do
     {
-        *slWidth = box[axis][axis] / static_cast<real>((*nslices));
         teller++;
         gmx_rmpbc(gpbc, natoms, box, x0);
+
+        // Translate atoms so the com of the center-group is in the
+        // box geometrical center.
+        if (bCenter)
+        {
+            center_coords(&top->atoms, index_center, ncenter, box, x0);
+        }
 
         /* calculate position of center of mass based on group 1 */
         calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
         svmul(-1, xcm, xcm);
+
+        boxSize    = box[axis][axis];
+        sliceWidth = boxSize / *nslices;
+        averageBoxSize += boxSize;
 
         for (n = 0; n < nr_grps; n++)
         {
@@ -200,7 +242,7 @@ static void calc_potential(const char*             fn,
                 {
                     rvec_add(x0[index[n][i]], xcm, x0[index[n][i]]);
                     /* only distance from origin counts, not sign */
-                    slice = static_cast<int>(norm(x0[index[n][i]]) / (*slWidth));
+                    slice = static_cast<int>(norm(x0[index[n][i]]) / sliceWidth);
 
                     /* this is a nice check for spherical groups but not for
                        all water in a cubic box since a lot will fall outside
@@ -218,14 +260,30 @@ static void calc_potential(const char*             fn,
                     z = z + fudge_z;
                     if (z < 0)
                     {
-                        z += box[axis][axis];
+                        z += boxSize;
                     }
-                    if (z > box[axis][axis])
+                    if (z > boxSize)
                     {
-                        z -= box[axis][axis];
+                        z -= boxSize;
                     }
                     /* determine which slice atom is in */
-                    slice = static_cast<int>((z / (*slWidth)));
+                    if (bCenter)
+                    {
+                        const real positionRelativeToCenter = z - boxSize / 2.0;
+                        // Always round down since relative position might be negative.
+                        const real sliceIndexOffset = std::floor(positionRelativeToCenter / sliceWidth);
+                        // We kept sliceIndexOffset as floating-point in case nslices was odd
+                        slice = static_cast<int>(sliceIndexOffset + *nslices / 2.0);
+                    }
+                    else
+                    {
+                        slice = static_cast<int>(z / sliceWidth);
+                    }
+                    // Safeguard to avoid potential rounding errors during truncation
+                    // Add nslices first (in case sliceIndex was negative),
+                    // then clamp with modulo operation.
+                    slice = (slice + *nslices) % *nslices;
+
                     (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
                 }
             }
@@ -242,6 +300,8 @@ static void calc_potential(const char*             fn,
        frames. Now divide by nr_frames and integrate twice
      */
 
+    averageBoxSize /= nr_frames;
+    *slWidth = averageBoxSize / (*nslices);
 
     if (bSpherical)
     {
@@ -264,22 +324,20 @@ static void calc_potential(const char*             fn,
                 /* charge per volume is now the summed charge, divided by the nr
                    of frames and by the volume of the slice it's in, 4pi r^2 dr
                  */
-                slVolume = 4 * M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
-                if (slVolume == 0)
+                double sliceVolume = 4 * M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
+                if (sliceVolume == 0)
                 {
                     (*slCharge)[n][i] = 0;
                 }
                 else
                 {
-                    (*slCharge)[n][i] = (*slCharge)[n][i] / (nr_frames * slVolume);
+                    (*slCharge)[n][i] /= (nr_frames * sliceVolume);
                 }
             }
             else
             {
-                /* get charge per volume */
-                (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices)
-                                    / (static_cast<real>(nr_frames) * box[axis][axis]
-                                       * box[ax1][ax1] * box[ax2][ax2]);
+                double sliceVolume = (box[XX][XX] * box[YY][YY] * box[ZZ][ZZ]) / (*nslices);
+                (*slCharge)[n][i] /= (nr_frames * sliceVolume);
             }
         }
         /* Now we have charge densities */
@@ -378,38 +436,69 @@ static void plot_potential(double*                 potential[],
                            int                     nr_grps,
                            const char* const       grpname[],
                            double                  slWidth,
+                           gmx_bool                bCenter,
+                           gmx_bool                bSymmetrize,
                            int                     cb,
                            int                     ce,
                            const gmx_output_env_t* oenv)
 {
-    FILE *pot,     /* xvgr file with potential */
-            *cha,  /* xvgr file with charges   */
-            *fie;  /* xvgr files with fields   */
-    char buf[256]; /* for xvgr title */
-    int  slice, n;
+    FILE *pot,    /* xvgr file with potential */
+            *cha, /* xvgr file with charges   */
+            *fie; /* xvgr files with fields   */
+    int         slice, n;
+    const char* title  = nullptr;
+    const char* xlabel = nullptr;
 
-    sprintf(buf, "Electrostatic Potential");
-    pot = xvgropen(afile, buf, "Box (nm)", "Potential (V)", oenv);
+    xlabel = bCenter ? "Average relative position from center (nm)" : "Average coordinate (nm)";
+
+    title = bSymmetrize ? "Symmetrized electrostatic potential" : "Electrostatic Potential";
+    pot   = xvgropen(afile, title, xlabel, "Potential (V)", oenv);
     xvgr_legend(pot, nr_grps, grpname, oenv);
 
-    sprintf(buf, "Charge Distribution");
-    cha = xvgropen(bfile, buf, "Box (nm)", "Charge density (q/nm\\S3\\N)", oenv);
+    title = bSymmetrize ? "Symmetrized charge distribution" : "Charge Distribution";
+    cha   = xvgropen(bfile, title, xlabel, "Charge density (q/nm\\S3\\N)", oenv);
     xvgr_legend(cha, nr_grps, grpname, oenv);
 
-    sprintf(buf, "Electric Field");
-    fie = xvgropen(cfile, buf, "Box (nm)", "Field (V/nm)", oenv);
+    title = bSymmetrize ? "Symmetrized electric field" : "Electric Field";
+    fie   = xvgropen(cfile, title, xlabel, "Field (V/nm)", oenv);
     xvgr_legend(fie, nr_grps, grpname, oenv);
 
     for (slice = cb; slice < (nslices - ce); slice++)
     {
-        fprintf(pot, "%20.16g  ", slice * slWidth);
-        fprintf(cha, "%20.16g  ", slice * slWidth);
-        fprintf(fie, "%20.16g  ", slice * slWidth);
+        float axisPosition;
+        if (bCenter)
+        {
+            axisPosition = (slice - nslices / 2.0) * slWidth;
+        }
+        else
+        {
+            axisPosition = slice * slWidth;
+        }
+
+        fprintf(pot, "%20.16g  ", axisPosition);
+        fprintf(cha, "%20.16g  ", axisPosition);
+        fprintf(fie, "%20.16g  ", axisPosition);
         for (n = 0; n < nr_grps; n++)
         {
-            fprintf(pot, "   %20.16g", potential[n][slice]);
-            fprintf(fie, "   %20.16g", field[n][slice] / 1e9); /* convert to V/nm */
-            fprintf(cha, "   %20.16g", charge[n][slice]);
+            float potentialValue;
+            float fieldValue;
+            float chargeValue;
+
+            if (bSymmetrize)
+            {
+                potentialValue = (potential[n][slice] + potential[n][nslices - slice - 1]) / 2.0;
+                fieldValue     = (field[n][slice] + field[n][nslices - slice - 1]) / 2.0;
+                chargeValue    = (charge[n][slice] + charge[n][nslices - slice - 1]) / 2.0;
+            }
+            else
+            {
+                potentialValue = potential[n][slice];
+                fieldValue     = field[n][slice];
+                chargeValue    = charge[n][slice];
+            }
+            fprintf(pot, "   %20.16g", potentialValue);
+            fprintf(fie, "   %20.16g", fieldValue / 1e9); // convert to V/nm
+            fprintf(cha, "   %20.16g", chargeValue);
         }
         fprintf(pot, "\n");
         fprintf(cha, "\n");
@@ -431,19 +520,31 @@ int gmx_potential(int argc, char* argv[])
         "the box. It is also possible to calculate the potential in spherical",
         "coordinates as function of r by calculating a charge distribution in",
         "spherical slices and twice integrating them. epsilon_r is taken as 1,",
-        "but 2 is more appropriate in many cases."
+        "but 2 is more appropriate in many cases.",
+        "",
+        "Option [TT]-center[tt] performs the histogram binning and potential",
+        "calculation relative to the center of an arbitrary group, in absolute box",
+        "coordinates. If you are calculating profiles along the Z axis box dimension bZ,",
+        "output would be from -bZ/2 to bZ/2 if you center based on the entire system.",
+
+        "Option [TT]-symm[tt] symmetrizes the output around the center. This will",
+        "automatically turn on [TT]-center[tt] too.",
+
     };
     gmx_output_env_t*  oenv;
-    static int         axis       = 2; /* normal to memb. default z  */
-    static const char* axtitle    = "Z";
-    static int         nslices    = 10; /* nr of slices defined       */
-    static int         ngrps      = 1;
-    static gmx_bool    bSpherical = FALSE; /* default is bilayer types   */
-    static real        fudge_z    = 0;     /* translate coordinates      */
-    static gmx_bool    bCorrect   = false;
-    int                cb         = 0;
-    int                ce         = 0;
-    t_pargs            pa[]       = {
+    static int         axis        = 2; /* normal to memb. default z  */
+    static const char* axtitle     = "Z";
+    static int         nslices     = 10; /* nr of slices defined       */
+    static int         ngrps       = 1;
+    static gmx_bool    bSpherical  = FALSE; /* default is bilayer types   */
+    static real        fudge_z     = 0;     /* translate coordinates      */
+    static gmx_bool    bCorrect    = false;
+    int                cb          = 0;
+    int                ce          = 0;
+    static gmx_bool    bSymmetrize = false;
+    static gmx_bool    bCenter     = false;
+
+    t_pargs pa[] = {
         { "-d",
           FALSE,
           etSTR,
@@ -472,6 +573,18 @@ int gmx_potential(int argc, char* argv[])
           "Translate all coordinates by this distance in the direction of the box" },
         { "-spherical", FALSE, etBOOL, { &bSpherical }, "Calculate in spherical coordinates" },
         { "-ng", FALSE, etINT, { &ngrps }, "Number of groups to consider" },
+        { "-center",
+          FALSE,
+          etBOOL,
+          { &bCenter },
+          "Perform the binning relative to the center of the (changing) box. Useful for "
+          "bilayers." },
+        { "-symm",
+          FALSE,
+          etBOOL,
+          { &bSymmetrize },
+          "Symmetrize the density along the axis, with respect to the center. Useful for "
+          "bilayers." },
         { "-correct",
           FALSE,
           etBOOL,
@@ -480,15 +593,18 @@ int gmx_potential(int argc, char* argv[])
     };
     const char* bugs[] = { "Discarding slices for integration should not be necessary." };
 
-    double **potential,  /* potential per slice        */
-            **charge,    /* total charge per slice     */
-            **field,     /* field per slice            */
-            slWidth;     /* width of one slice         */
-    char**      grpname; /* groupnames                 */
-    int*        ngx;     /* sizes of groups            */
-    t_topology* top;     /* topology        */
+    double **potential,         /* potential per slice        */
+            **charge,           /* total charge per slice     */
+            **field,            /* field per slice            */
+            slWidth;            /* width of one slice         */
+    char**      grpname;        /* groupnames                 */
+    char*       grpname_center; /* centering group name     */
+    int*        ngx;            /* sizes of groups            */
+    t_topology* top;            /* topology        */
     PbcType     pbcType;
-    int**       index; /* indices for all groups     */
+    int*        index_center; /* index for centering group  */
+    int         ncenter;      /* size of centering group    */
+    int**       index;        /* indices for all groups     */
     t_filenm    fnm[] = {
         /* files for g_order       */
         { efTRX, "-f", nullptr, ffREAD },      /* trajectory file             */
@@ -507,6 +623,13 @@ int gmx_potential(int argc, char* argv[])
         return 0;
     }
 
+    if (bSpherical && (bCenter || bSymmetrize))
+    {
+        fprintf(stderr,
+                "Centering/symmetrization not supported for spherical potential. Disabling.\n");
+        bCenter     = false;
+        bSymmetrize = false;
+    }
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
@@ -518,6 +641,20 @@ int gmx_potential(int argc, char* argv[])
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
 
+    if (bCenter)
+    {
+        fprintf(stderr,
+                "\nNote: that the center of mass is calculated inside the box without applying\n"
+                "any special periodicity. If necessary, it is your responsibility to first use\n"
+                "trjconv to make sure atoms in this group are placed in the right periodicity.\n\n"
+                "Select the group to center density profiles around:\n");
+        get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ncenter, &index_center, &grpname_center);
+    }
+    else
+    {
+        ncenter      = 0;
+        index_center = nullptr;
+    }
 
     calc_potential(ftp2fn(efTRX, NFILE, fnm),
                    index,
@@ -533,6 +670,9 @@ int gmx_potential(int argc, char* argv[])
                    &slWidth,
                    fudge_z,
                    bSpherical,
+                   bCenter,
+                   index_center,
+                   ncenter,
                    bCorrect,
                    cb,
                    ce,
@@ -548,6 +688,8 @@ int gmx_potential(int argc, char* argv[])
                    ngrps,
                    grpname,
                    slWidth,
+                   bCenter,
+                   bSymmetrize,
                    cb,
                    ce,
                    oenv);

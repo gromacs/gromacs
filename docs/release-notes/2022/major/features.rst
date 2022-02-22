@@ -90,3 +90,10 @@ usually faster since the domain decomposition used with multiple ranks is
 better adapted to non-uniform memory access hardware.
 
 :issue:`4370`
+
+Centering and symmetrization supported in gmx potential
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+gmx potential now supports the same centering and symmetrization options
+as gmx density, which is particularly useful for membranes.
+
+:issue:`3579`
