@@ -2,11 +2,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2013- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -20,7 +18,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -29,10 +27,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 """Checks and/or updates copyright headers in GROMACS source files.
 
@@ -53,23 +51,21 @@ class CopyrightState(object):
 
     """Information about an existing (or non-existing) copyright header."""
 
-    def __init__(self, has_copyright, is_correct, is_newstyle, years, other_copyrights):
+    def __init__(self, has_copyright, is_correct, is_newstyle, first_year):
         self.has_copyright = has_copyright
         self.is_correct = is_correct
         self.is_newstyle = is_newstyle
-        self.years = years
-        self.other_copyrights = other_copyrights
+        self.first_year = first_year
 
 class CopyrightChecker(object):
 
     """Logic for analyzing existing copyright headers and generating new ones."""
 
     _header = ["", "This file is part of the GROMACS molecular simulation package.", ""]
-    _copyright = "Copyright (c) {0}, by the GROMACS development team, led by"
+    _copyright = "Copyright {0}- The GROMACS Authors"
     _footer = """
-Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-and including many others, as listed in the AUTHORS file in the
-top-level source directory and at http://www.gromacs.org.
+and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 
 GROMACS is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public License
@@ -83,7 +79,7 @@ Lesser General Public License for more details.
 
 You should have received a copy of the GNU Lesser General Public
 License along with GROMACS; if not, see
-http://www.gnu.org/licenses, or write to the Free Software Foundation,
+https://www.gnu.org/licenses, or write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 
 If you want to redistribute modifications to GROMACS, please
@@ -92,40 +88,48 @@ control is crucial - bugs must be traceable. We will be happy to
 consider code for inclusion in the official distribution, but
 derived work must not be called official GROMACS. Details are found
 in the README & COPYING files - if they are missing, get the
-official version at http://www.gromacs.org.
+official version at https://www.gromacs.org.
 
 To help us fund GROMACS development, we humbly ask that you cite
-the research papers on the package. Check out http://www.gromacs.org.
+the research papers on the package. Check out https://www.gromacs.org.
 """.strip().splitlines()
 
     def check_copyright(self, comment_block):
         """Analyze existing copyright header for correctness and extract information."""
-        copyright_re = r'Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),? by the GROMACS development team,'
+        copyright_re_new = r'Copyright ([0-9]{4})- The GROMACS Authors'
+        copyright_re_old = r'Copyright \(c\) (([0-9]{4}[,-])*[0-9]{4}),?.*'
         has_copyright = False
         is_newstyle = True
         is_correct = True
+        found_old_style_line = False
         next_header_line = 0
         next_footer_line = 0
-        append_next_line_to_other_copyrights = False
-        existing_years = ''
-        other_copyrights = []
+        first_year = ''
         for line in comment_block:
-            if append_next_line_to_other_copyrights:
-                other_copyrights[-1] += ' ' + line
-                append_next_line_to_other_copyrights = False
-                continue
             if 'Copyright' in line:
                 has_copyright = True
-                match = re.match(copyright_re, line)
-                if match:
-                    existing_years = match.group(1)
-                    new_line = self._copyright.format(existing_years)
+                old_match = re.match(copyright_re_old, line)
+                match = re.match(copyright_re_new, line)
+                if ((old_match and not match) and not found_old_style_line):
+                    is_newstyle = False
+                    found_old_style_line = True
+                    get_first_year_re = r'Copyright \(c\) ([0-9]{4}[,-]).*'
+                    first_year_line_match = re.match(get_first_year_re, line)
+                    first_year_line = first_year_line_match.group(1)
+                    # decide which separator to use for finding first year
+                    if ('-' in first_year_line):
+                        pos = first_year_line.find('-')
+                        first_year = first_year_line[:pos]
+                    elif (',' in first_year_line):
+                        pos = first_year_line.find(',')
+                        first_year = first_year_line[:pos]
+                    else:
+                        raise Exception("Can't find expected separator!")
+                elif match:
+                    first_year = match.group(1)
+                    new_line = self._copyright.format(first_year)
                     if line != new_line:
                         is_correct = False
-                else:
-                    other_copyrights.append(line[line.find('Copyright'):])
-                    if not line.startswith('Copyright'):
-                        append_next_line_to_other_copyrights = True
                 if next_header_line != -1 or next_footer_line != 0:
                     is_correct = False
                 continue
@@ -151,30 +155,22 @@ the research papers on the package. Check out http://www.gromacs.org.
         if next_header_line != -1 or next_footer_line != -1:
             is_correct = False
 
-        return CopyrightState(has_copyright, is_correct, is_newstyle, existing_years, other_copyrights)
+        return CopyrightState(has_copyright, is_correct, is_newstyle, first_year)
 
-    def process_copyright(self, state, options, current_years, reporter):
-        """Determine whether a copyrigth header needs to be updated and report issues."""
+    def process_copyright(self, state, options, first_year, current_year, reporter):
+        """Determine whether a copyright header needs to be updated and report issues."""
         need_update = False
 
-        if state.years:
-            if options.replace_years:
-                if state.years != current_years:
+        if state.first_year:
+            first_year = state.first_year
+            if current_year < first_year:
+                if options.update_year:
                     need_update = True
-                    reporter.report('copyright years replaced')
-                new_years = current_years
-            else:
-                new_years = state.years
-                if not new_years.endswith(current_years):
-                    if options.update_year:
-                        need_update = True
-                        new_years += ',' + current_years
-                    if options.check or not need_update:
-                        reporter.report('copyright year outdated')
-                    else:
-                        reporter.report('copyright year added')
-        else:
-            new_years = current_years
+                    first_year = current_year
+                if options.check or not need_update:
+                    reporter.report('initial copyright year wrong')
+                else:
+                    reporter.report('initial copyright year corrected')
 
         if not state.has_copyright:
             if options.add_missing:
@@ -199,21 +195,14 @@ the research papers on the package. Check out http://www.gromacs.org.
                 else:
                     reporter.report('copyright header updated')
 
-        return need_update, new_years
+        return need_update, first_year
 
-    def get_copyright_text(self, years, other_copyrights):
+    def get_copyright_text(self, first_year):
         """Construct a new copyright header."""
         output = []
         output.extend(self._header)
-        if other_copyrights:
-            for line in other_copyrights:
-                outline = line.rstrip()
-                if outline.endswith(','):
-                    outline = outline[:-1]
-                if not outline.endswith('.'):
-                    outline += '.'
-                output.append(outline)
-        output.append(self._copyright.format(years))
+
+        output.append(self._copyright.format(first_year))
         output.extend(self._footer)
         return output
 
@@ -273,7 +262,7 @@ class CommentHandlerSimple(object):
                 break
             comment_block.append(line.lstrip(self._comment_char + ' ').rstrip())
             line_index += 1
-            if line == self._comment_char + ' the research papers on the package. Check out http://www.gromacs.org.':
+            if line == self._comment_char + ' the research papers on the package. Check out https://www.gromacs.org.':
                 break
         while line_index < len(content_lines):
             line = content_lines[line_index].rstrip()
@@ -304,12 +293,12 @@ def select_comment_handler(override, filename):
             dummy, ext2 = os.path.splitext(root)
             if ext2:
                 ext = ext2
-        if ext in ('.c', '.cu', '.cpp', '.cl', '.h', '.cuh', '.clh', '.y', '.l', '.pre', '.bm'):
+        if ext in ('.c', '.cu', '.cpp', '.cl', '.h', '.hpp', '.cuh', '.clh', '.y', '.l', '.pre', '.bm'):
             filetype = 'c'
         elif ext in ('.tex',):
             filetype = 'tex'
         elif basename in ('CMakeLists.txt', 'GMXRC', 'git-pre-commit') or \
-                ext in ('.cmake', '.cmakein', '.py', '.sh', '.bash', '.csh', '.zsh'):
+                ext in ('.cmake', '.cmakein', '.in', '.py', '.sh', '.bash', '.csh', '.zsh'):
             filetype = 'sh'
     if filetype in comment_handlers:
         return comment_handlers[filetype]
@@ -321,13 +310,13 @@ def select_comment_handler(override, filename):
         sys.stderr.write("No file name or file type provided.\n")
     sys.exit(1)
 
-def create_copyright_header(years, other_copyrights=None, language='c'):
+def create_copyright_header(current_year, language='c'):
     if language not in comment_handlers:
-        sys.strerr.write("Unsupported language: {0}\n".format(language))
+        sys.stderr.write("Unsupported language: {0}\n".format(language))
         sys.exit(1)
     copyright_checker = CopyrightChecker()
     comment_handler = comment_handlers[language]
-    copyright_lines = copyright_checker.get_copyright_text(years, other_copyrights)
+    copyright_lines = copyright_checker.get_copyright_text(current_year)
     comment_lines = comment_handler.create_comment_block(copyright_lines)
     return '\n'.join(comment_lines) + '\n'
 
@@ -336,8 +325,8 @@ def process_options():
     parser = OptionParser()
     parser.add_option('-l', '--lang',
                       help='Comment type to use (c or sh)')
-    parser.add_option('-y', '--years',
-                      help='Comma-separated list of years')
+    parser.add_option('--first_year',
+                      help='Value for initial year to set in copyright file.')
     parser.add_option('-F', '--files',
                       help='File to read list of files from')
     parser.add_option('--check', action='store_true',
@@ -346,8 +335,6 @@ def process_options():
                            'but produce output as if only --check was provided.')
     parser.add_option('--update-year', action='store_true',
                       help='Update the copyright year if outdated')
-    parser.add_option('--replace-years', action='store_true',
-                      help='Replace the copyright years with those given with --years')
     parser.add_option('--update-header', action='store_true',
                       help='Update the copyright header if outdated')
     parser.add_option('--replace-header', action='store_true',
@@ -376,12 +363,9 @@ def process_options():
 def main():
     """Do processing as a stand-alone script."""
     options, filenames = process_options()
-    years = options.years
-    if not years:
-        years = str(datetime.date.today().year)
-    if years.endswith(','):
-        years = years[:-1]
-
+    first_year = options.first_year
+    current_year = str(datetime.date.today().year)
+    
     checker = CopyrightChecker()
 
     # Process each input file in turn.
@@ -413,17 +397,16 @@ def main():
         # Analyze the first comment block in the file.
         comment_block, line_count = comment_handler.extract_first_comment_block(contents)
         state = checker.check_copyright(comment_block)
-        need_update, file_years = checker.process_copyright(state, options, years, reporter)
-        if state.other_copyrights and options.remove_old_copyrights:
+        need_update, first_year = checker.process_copyright(state, options, first_year, current_year, reporter)
+        if options.remove_old_copyrights:
             need_update = True
-            state.other_copyrights = []
             reporter.report('old copyrights removed')
 
         if need_update:
             # Remove the original comment if it was a copyright comment.
             if state.has_copyright:
                 contents = contents[line_count:]
-            new_block = checker.get_copyright_text(file_years, state.other_copyrights)
+            new_block = checker.get_copyright_text(first_year)
             output.extend(comment_handler.create_comment_block(new_block))
 
         # Write the output file if required.
