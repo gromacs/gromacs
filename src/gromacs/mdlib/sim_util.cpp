@@ -2091,12 +2091,13 @@ void do_force(FILE*                               fplog,
     }
 
     const bool needToReceivePmeResultsFromSeparateRank = (PAR(cr) && stepWork.computePmeOnSeparateRank);
+    const bool needToReceivePmeResults =
+            (stepWork.haveGpuPmeOnThisRank || needToReceivePmeResultsFromSeparateRank);
 
     /* When running free energy perturbations steered by AWH and doing PME calculations on the
      * GPU we must wait for the PME calculation (dhdl) results to finish before sampling the
      * FEP dimension with AWH. */
-    const bool needEarlyPmeResults = (awh != nullptr && awh->hasFepLambdaDimension()
-                                      && pme_run_mode(fr->pmedata) != PmeRunMode::None
+    const bool needEarlyPmeResults = (awh != nullptr && awh->hasFepLambdaDimension() && needToReceivePmeResults
                                       && stepWork.computeEnergy && stepWork.computeSlowForces);
     if (needEarlyPmeResults)
     {

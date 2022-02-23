@@ -16,6 +16,13 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix crash when steering FEP with AWH without PME or with separate PME rank
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There would be a segfault when deciding whether early PME results are needed.
+
+:issue:`4413`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
