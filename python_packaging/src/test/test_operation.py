@@ -158,3 +158,12 @@ def test_data_dependence(cleandir):
         assert len(lines) == 2
         assert lines[0] == line1
         assert lines[1] == line2
+
+        try:
+            # If we're running with MPI, check that the file is accessible
+            # on all ranks, but make sure that we don't delete the temporary
+            # directory before all ranks have looked for it.
+            from mpi4py import MPI
+            MPI.COMM_WORLD.barrier()
+        except ImportError:
+            pass
