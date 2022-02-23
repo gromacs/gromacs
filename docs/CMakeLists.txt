@@ -802,6 +802,8 @@ if (HTML_BUILD_IS_POSSIBLE)
     # Add a top-level target that builds everything related to the webpage,
     # for CI (and possibly others) to use
     add_custom_target(webpage ${_webpage_target_properties}
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "Webpage output: file://${HTML_OUTPUT_DIR}/index.html"
         COMMENT "Building webpage"
         VERBATIM)
     add_dependencies(webpage webpage-sphinx doxygen-all)
