@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 # This file is based on the Kasson Lab gmxapi project release 0.0.7.4.
 # https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/src/gmx/workflow.py
@@ -514,7 +513,7 @@ class WorkElement(object):
                        'params': self.params,
                        'depends': self.depends
                        }
-        serialization = json.dumps(output_dict)
+        serialization = json.dumps(output_dict, default=lambda x: x.to_list())
         return to_utf8(serialization)
 
     @classmethod
@@ -669,6 +668,11 @@ def from_tpr(input=None, **kwargs):
 
     # Note: These are runner parameters, not MD parameters, and should be in the call to gmx.run() instead of here.
     # Reference https://github.com/kassonlab/gmxapi/issues/95
+    # Also note that it is not well defined whether or which arguments should be allowed to differ within
+    # an ensemble. But to allow parallel trajectory continuation, we have to accept distinct `-cpi` arguments.
+    # Note that this violates the traditional gmxapi assumption that all ranks see the same
+    # instructions. The "md_sim" element of the gmxapi 0.0.7 workspec ends up being unique
+    # to the rank that sees it.
     params = {}
     if '-noappend' in kwargs:
         kwargs['append_output'] = False

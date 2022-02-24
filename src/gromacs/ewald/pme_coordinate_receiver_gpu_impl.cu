@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2019- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
  *
@@ -93,7 +92,8 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         ppCommManager.atomRange = std::make_tuple(indStart, indEnd);
 
         // Need to send address to PP rank only for thread-MPI as PP rank pushes data using cudamemcpy
-        if (GMX_THREAD_MPI)
+        // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
+        if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
             // Data will be transferred directly from GPU.
             void* sendBuf = reinterpret_cast<void*>(&d_x[indStart]);
@@ -128,7 +128,7 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpCudaDir
 #endif
 }
 
-/*! \brief Receive coordinate data using CUDA-aware MPI */
+/*! \brief Receive coordinate data using GPU-aware MPI */
 void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaMpi(DeviceBuffer<RVec> recvbuf,
                                                                            int numAtoms,
                                                                            int numBytes,
@@ -187,7 +187,10 @@ void PmeCoordinateReceiverGpu::Impl::synchronizeOnCoordinatesFromAllPpRanks(cons
 {
     for (int i = 0; i < static_cast<int>(ppCommManagers_.size()); i++)
     {
-        synchronizeOnCoordinatesFromPpRank(i, deviceStream);
+        if (ppCommManagers_[i].ppRank.numAtoms > 0)
+        {
+            synchronizeOnCoordinatesFromPpRank(i, deviceStream);
+        }
     }
 }
 DeviceStream* PmeCoordinateReceiverGpu::Impl::ppCommStream(int senderIndex)

@@ -6,9 +6,9 @@
       <Energy Name="Pressure">
         <Real Name="Time 0.000000 Step 0 in frame 0">7047.8843</Real>
         <Real Name="Time 0.005000 Step 5 in frame 1">6813.9585</Real>
-        <Real Name="Time 0.010000 Step 10 in frame 2">6432.3613</Real>
-        <Real Name="Time 0.015000 Step 15 in frame 3">5985.5601</Real>
-        <Real Name="Time 0.020000 Step 20 in frame 4">5571.9185</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">6445.6309</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">5999.9272</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">5587.6021</Real>
       </Energy>
       <Energy Name="Kinetic En.">
         <Real Name="Time 0.000000 Step 0 in frame 0">1627.3685</Real>
@@ -25,11 +25,11 @@
         <Real Name="Time 0.020000 Step 20 in frame 4">-7988.6768</Real>
       </Energy>
       <Energy Name="COM Pull En.">
-        <Real Name="Time 0.000000 Step 0 in frame 0">0.031361848</Real>
-        <Real Name="Time 0.005000 Step 5 in frame 1">0.039091855</Real>
-        <Real Name="Time 0.010000 Step 10 in frame 2">0.047064677</Real>
-        <Real Name="Time 0.015000 Step 15 in frame 3">0.055442076</Real>
-        <Real Name="Time 0.020000 Step 20 in frame 4">0.064478263</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 0">0.31361783</Real>
+        <Real Name="Time 0.005000 Step 5 in frame 1">0.38983712</Real>
+        <Real Name="Time 0.010000 Step 10 in frame 2">0.46617639</Real>
+        <Real Name="Time 0.015000 Step 15 in frame 3">0.54360449</Real>
+        <Real Name="Time 0.020000 Step 20 in frame 4">0.62403768</Real>
       </Energy>
     </PullSetup>
   </Simulation>

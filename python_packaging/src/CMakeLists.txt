@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 # This CMakeLists.txt is not intended to be used directly, but either through
 # setup.py or as an inclusion of the full GROMACS project.
@@ -151,7 +150,6 @@ endif ()
 pybind11_add_module(_gmxapi
                     gmxapi/module.cpp
                     gmxapi/export_context.cpp
-                    gmxapi/export_exceptions.cpp
                     gmxapi/export_system.cpp
                     gmxapi/export_tprfile.cpp
                     gmxapi/pycontext.cpp
@@ -164,11 +162,16 @@ endif ()
 if (NOT DEFINED gmxapi_VERSION)
     message(FATAL_ERROR "gmxapi library version not detected.")
 endif ()
-if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
-    target_sources(_gmxapi PRIVATE gmxapi/launch_021.cpp)
-else()
+if (gmxapi_VERSION VERSION_LESS 0.3.1)
     message(WARNING "Found an old gmxapi library version. Please consider updating your GROMACS installation.")
-    target_sources(_gmxapi PRIVATE gmxapi/launch_020.cpp)
+    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_2_0.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/export_exceptions_0_3_1.cpp)
+endif()
+if (gmxapi_VERSION VERSION_GREATER_EQUAL 0.2.1)
+    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_1.cpp)
+else()
+    target_sources(_gmxapi PRIVATE gmxapi/launch_0_2_0.cpp)
 endif()
 
 target_include_directories(_gmxapi PRIVATE

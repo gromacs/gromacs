@@ -3,7 +3,6 @@
 #   OS: Ubuntu oldest supported
 #   GPU: CUDA oldest supported
 #   HW: NVIDIA GPU
-#   Features: GPU direct communication off (manual)
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
@@ -52,7 +51,6 @@ gromacs:clang-8-cuda-11.0:release:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
-    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - k8s-scilifelab
   needs:
@@ -72,7 +70,6 @@ gromacs:clang-8-cuda-11.0:release:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - k8s-scilifelab
   needs:

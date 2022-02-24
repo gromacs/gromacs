@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2021- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gmxpre.h"
 
@@ -128,31 +127,17 @@ static double computeDerivativeForTransformationPullCoord(pull_coord_work_t* coo
     return derivative;
 }
 
-
-/*!
- * \brief Distributes the force from a transformation pull coordiante to the dependent pull
- * coordinates by computing the inner derivatives
- *
- * \param pcrd The transformation pull coord
- * \param variableCoords The dependent pull coordinates
- * \param transformationCoordForce The force to distribute
- */
-static void distributeTransformationPullCoordForce(pull_coord_work_t*               pcrd,
-                                                   gmx::ArrayRef<pull_coord_work_t> variableCoords,
-                                                   const double transformationCoordForce)
+void distributeTransformationPullCoordForce(pull_coord_work_t*               pcrd,
+                                            gmx::ArrayRef<pull_coord_work_t> variableCoords)
 {
-    if (std::abs(transformationCoordForce) < 1e-9)
-    {
-        // the force is effectively 0. Don't proceed and distribute it recursively
-        return;
-    }
     GMX_ASSERT(pcrd->params.eGeom == PullGroupGeometry::Transformation,
                "We shouldn't end up here when not using a transformation pull coordinate.");
     GMX_ASSERT(ssize(variableCoords) == pcrd->params.coordIndex,
                "We should have as many variable coords as the coord index of the transformation "
                "coordinate");
 
-    // pcrd->scalarForce += transformationCoordForce;
+    const double transformationCoordForce = pcrd->scalarForce;
+
     for (auto& variableCoord : variableCoords)
     {
         const double derivative =
@@ -179,39 +164,8 @@ static void distributeTransformationPullCoordForce(pull_coord_work_t*           
             // Note that we add to the force here, in case multiple biases act on the same pull
             // coord (although that is not recommended it should still work)
             variableCoord.scalarForce += variablePcrdForce;
-            if (variableCoord.params.eGeom == PullGroupGeometry::Transformation)
-            {
-                /*
-                 * We can have a transformation pull coordinate depend on another transformation pull coordinate
-                 * which in turn leads to inner derivatives between pull coordinates.
-                 * Here we redistribute the force via the inner product
-                 *
-                 * Note that this only works properly if the lower ranked transformation pull coordinate has it's scalarForce set to zero
-                 */
-                distributeTransformationPullCoordForce(
-                        &variableCoord,
-                        variableCoords.subArray(0, variableCoord.params.coordIndex),
-                        variablePcrdForce);
-            }
         }
     }
 }
-
-void applyTransformationPullCoordForce(pull_coord_work_t*               pcrd,
-                                       gmx::ArrayRef<pull_coord_work_t> variableCoords,
-                                       const double                     transformationCoordForce)
-{
-    pcrd->scalarForce = transformationCoordForce;
-    // Note on why we need to call another method here:
-    // applyTransformationPullCoordForce is the method that should be called by the rest of the pull code.
-    // It's non-recursive and called exactly once for every transformation coordinate for every timestep.
-    // In it, we set the force on the transformation coordinate,
-    // then pass the force on to the other pull coordinates via the method distributeTransformationPullCoordForce.
-    // The latter method is recursive to account for inner derivatives.
-    // Note that we don't set the force on the top-level transformation coordinate in distributeTransformationPullCoordForce,
-    // we only add to the force, which is why it can be recursive.
-    distributeTransformationPullCoordForce(pcrd, variableCoords, transformationCoordForce);
-}
-
 
 } // namespace gmx

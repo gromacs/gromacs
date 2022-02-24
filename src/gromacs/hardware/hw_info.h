@@ -1,11 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2012- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -28,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
@@ -63,29 +61,25 @@ struct gmx_hw_info_t
 
     /* Data for our local physical node */
 
-    /*! \brief Number of hardware threads available.
-     *
-     * This number is based on the number of CPUs reported as
-     * available by the OS at the time of detection. */
-    int nthreads_hw_avail;
-
-
     std::unique_ptr<gmx::CpuInfo>          cpuInfo; /* Information about CPU capabilities */
     std::unique_ptr<gmx::HardwareTopology> hardwareTopology; /* Information about hardware topology */
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList; /* Information about GPUs detected on this physical node */
 
 
     /* Data reduced through MPI over all physical nodes */
-    int nphysicalnode;       /* Number of physical nodes */
-    int ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
-    int ncore_min;           /* Min #cores over all nodes */
-    int ncore_max;           /* Max #cores over all nodes */
-    int nhwthread_tot;       /* Sum of #hwthreads over all nodes */
-    int nhwthread_min;       /* Min #hwthreads over all nodes */
-    int nhwthread_max;       /* Max #hwthreads over all nodes */
-    int ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
-    int ngpu_compatible_min; /* Min #GPUs over all nodes */
-    int ngpu_compatible_max; /* Max #GPUs over all nodes */
+    int nphysicalnode;        /* Number of physical nodes */
+    int ncore_tot;            /* Sum of #cores over all nodes, can be 0 */
+    int ncore_min;            /* Min #cores over all nodes */
+    int ncore_max;            /* Max #cores over all nodes */
+    int nProcessingUnits_tot; /* Sum of # available processing units over all nodes */
+    int nProcessingUnits_min; /* Min # available processing units over all nodes */
+    int nProcessingUnits_max; /* Max # available processing units over all nodes */
+    int maxThreads_tot;       /* Sum of # recommended threads to start over all nodes */
+    int maxThreads_min;       /* Min # recommended threads to start over all nodes */
+    int maxThreads_max;       /* Max # recommended threads to start over all nodes */
+    int ngpu_compatible_tot;  /* Sum of #GPUs over all nodes */
+    int ngpu_compatible_min;  /* Min #GPUs over all nodes */
+    int ngpu_compatible_max;  /* Max #GPUs over all nodes */
 
     int simd_suggest_min; /* Highest SIMD instruction set supported by all ranks */
     int simd_suggest_max; /* Highest SIMD instruction set supported by at least one rank */

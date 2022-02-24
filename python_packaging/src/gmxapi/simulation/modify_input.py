@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 """modify_input operation module
 
@@ -51,7 +50,7 @@ import gmxapi.abc
 import gmxapi.exceptions
 import gmxapi.operation as _op
 import gmxapi.typing
-from gmxapi.operation import InputCollectionDescription
+from gmxapi.operation import InputCollectionDescription, ResourceManager
 from .abc import ModuleObject
 
 # Initialize module-level logger
@@ -134,8 +133,10 @@ _input = _op.InputCollectionDescription(
      ])
 
 
-def _session_resource_factory(input: _op.InputPack, output: PublishingDataProxy) -> SessionResources:
+def _session_resource_factory(input: _op.InputPack, output: PublishingDataProxy, **kwargs
+                              ) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
+    # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
     filename = input.kwargs['_simulation_input']
     parameters = input.kwargs['parameters']
     return SessionResources(_simulation_input=filename, parameters=parameters, publisher=output)
@@ -155,29 +156,6 @@ def _run(resources: SessionResources):
         source_value = getattr(resources, named_data)
         logger.debug('modify_input publishing {} to {}'.format(source_value, named_data))
         setattr(resources.output, named_data, source_value)
-
-
-_next_uid = 0
-
-
-def _make_uid(input) -> str:
-    # TODO: Use input fingerprint for more useful identification.
-    salt = hash(input)
-    global _next_uid
-    new_uid = 'read_tpr_{}_{}'.format(_next_uid, salt)
-    _next_uid += 1
-    return new_uid
-
-
-class ResourceManager(gmxapi.operation.ResourceManager):
-
-    def update_output(self):
-        logger.debug('Updating output for {}.'.format(self.operation_id))
-        super().update_output()
-        for descriptor in _output_descriptors:
-            name = descriptor._name
-            if not self.is_done(name):
-                raise gmxapi.exceptions.ApiError('Expected output {} not updated.'.format(name))
 
 
 # Note: this is a class because we attach the input_description functionality,
@@ -219,13 +197,38 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
 
 
 class StandardInputDescription(_op.InputDescription):
-    """Provide the ReadTpr input description in gmxapi.operation Contexts."""
+    """Provide the ModifyInput input description in gmxapi.operation Contexts."""
+
+    # TODO: Improve fingerprinting.
+    # If _make_uid can't make sufficiently unique IDs, use additional "salt".
+    # Without fingerprinting, we cannot consistently hash *input* across processes,
+    # but we can consistently generate integers in the same sequence the first time
+    # we see each distinct input.
+    _next_uid: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
+
+    @classmethod
+    def _make_uid(cls, input) -> str:
+        # TODO: Use input fingerprint for more useful identification.
+        # WARNING: The built-in hash will use memory locations, and so will not be consistent across
+        # process ranks, even if the input should be the same.
+        salt = hash(input)
+        if salt not in cls._uids:
+            cls._uids[salt] = cls._next_uid
+            cls._next_uid += 1
+        else:
+            logger.debug(
+                f'Reissuing uid for modify_input({input}): {cls._uids[salt]}'
+            )
+        new_uid = 'modify_input_{}'.format(cls._uids[salt])
+        return new_uid
 
     def signature(self) -> InputCollectionDescription:
         return _input
 
     def make_uid(self, input: _op.DataEdge) -> str:
-        return _make_uid(input)
+        assert isinstance(input, _op.DataEdge)
+        return self._make_uid(input)
 
 
 class RegisteredOperation(_op.OperationImplementation, metaclass=_op.OperationMeta):
@@ -283,11 +286,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        def runner_director(resources):
-            def runner():
-                _run(resources)
-
-            return runner
+        runner_director = _op.RunnerDirector(runner=_run, allow_duplicate=True)
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)

@@ -25,9 +25,12 @@ if grep -qF 'intel.com/gpu' <<< "$KUBERNETES_EXTENDED_RESOURCE_NAME"; then
     export SYCL_CACHE_PERSISTENT=1; # Issue #4218
 fi
 ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
+
+EXITCODE=$?
+
 awk '/The following tests FAILED/,/^Errors while running CTest|^$/' ctestLog.log | tee ctestErrors.log
 xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/*.xml > JUnitTestResults.xml
-if [ -s ctestErrors.log ] ; then
+if [ -s ctestErrors.log ] || [ $EXITCODE != 0 ] ; then
     echo "Error during running ctest";
     exit 1;
 fi

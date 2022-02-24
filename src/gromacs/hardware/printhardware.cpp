@@ -1,11 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2012- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -28,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gmxpre.h"
 
@@ -146,7 +144,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
     {
         s += gmx::formatString(" %d cores,", hwinfo->ncore_tot);
     }
-    s += gmx::formatString(" %d logical cores", hwinfo->nhwthread_tot);
+    s += gmx::formatString(" %d processing units", hwinfo->nProcessingUnits_tot);
     if (canPerformDeviceDetection(nullptr))
     {
         s += gmx::formatString(", %d compatible GPU%s",
@@ -178,10 +176,17 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
             }
             s += gmx::formatString("\n");
         }
-        s += gmx::formatString("  Logical cores per node:   %2d", hwinfo->nhwthread_min);
-        if (hwinfo->nhwthread_max > hwinfo->nhwthread_min)
+        s += gmx::formatString("  Logical processing units per node:   %2d", hwinfo->nProcessingUnits_min);
+        if (hwinfo->nProcessingUnits_max > hwinfo->nProcessingUnits_min)
         {
-            s += gmx::formatString(" - %2d", hwinfo->nhwthread_max);
+            s += gmx::formatString(" - %2d", hwinfo->nProcessingUnits_max);
+        }
+        s += gmx::formatString("\n");
+        s += gmx::formatString("  OS CPU Limit / recommended threads to start per node:   %2d",
+                               hwinfo->maxThreads_min);
+        if (hwinfo->maxThreads_max > hwinfo->maxThreads_min)
+        {
+            s += gmx::formatString(" - %2d", hwinfo->maxThreads_max);
         }
         s += gmx::formatString("\n");
         if (bGPUBinary)
@@ -290,32 +295,37 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
     {
         if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic)
         {
-            s += gmx::formatString("    Sockets, cores, and logical processors:\n");
+            s += gmx::formatString("    Packages, cores, and logical processors:\n");
+            s += gmx::formatString("    [indices refer to OS logical processors]\n");
 
-            for (const auto& socket : hwTop.machine().sockets)
+            for (const auto& package : hwTop.machine().packages)
             {
-                s += gmx::formatString("      Socket %2d:", socket.id);
-                for (const auto& c : socket.cores)
+                s += gmx::formatString("      Package %2d:", package.id);
+                for (const auto& c : package.cores)
                 {
                     s += gmx::formatString(" [");
-                    for (const auto& t : c.hwThreads)
+                    for (const auto& pu : c.processingUnits)
                     {
-                        s += gmx::formatString(" %3d", t.logicalProcessorId);
+                        s += gmx::formatString(" %3d", pu.osId);
                     }
                     s += gmx::formatString("]");
                 }
                 s += gmx::formatString("\n");
             }
         }
+        s += gmx::formatString(
+                "    CPU limit set by OS: %g   Recommended max number of threads: %d\n",
+                hwTop.cpuLimit(),
+                hwTop.maxThreads());
         if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Full)
         {
             s += gmx::formatString("    Numa nodes:\n");
             for (const auto& n : hwTop.machine().numa.nodes)
             {
                 s += gmx::formatString("      Node %2d (%zu bytes mem):", n.id, n.memory);
-                for (const auto& l : n.logicalProcessorId)
+                for (const auto& l : n.processingUnits)
                 {
-                    s += gmx::formatString(" %3d", l);
+                    s += gmx::formatString(" %3d", hwTop.machine().logicalProcessors[l].osId);
                 }
                 s += gmx::formatString("\n");
             }

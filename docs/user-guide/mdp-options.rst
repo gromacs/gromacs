@@ -1403,8 +1403,11 @@ Bonds
    the same order is applied on top of the normal expansion only for
    the couplings within such triangles. For "normal" MD simulations an
    order of 4 usually suffices, 6 is needed for large time-steps with
-   virtual sites or BD. For accurate energy minimization an order of 8
-   or more might be required. With domain decomposition, the cell size
+   virtual sites or BD. For accurate energy minimization in double
+   precision an order of 8 or more might be required. Note that in
+   single precision an order higher than 6 will often lead to worse
+   accuracy due to amplification of rounding errors.
+   With domain decomposition, the cell size
    is limited by the distance spanned by :mdp:`lincs-order` +1
    constraints. When one wants to scale further than this limit, one
    can decrease :mdp:`lincs-order` and increase :mdp:`lincs-iter`,
@@ -1417,7 +1420,10 @@ Bonds
    Number of iterations to correct for rotational lengthening in
    LINCS. For normal runs a single step is sufficient, but for NVE
    runs where you want to conserve energy accurately or for accurate
-   energy minimization you might want to increase it to 2.
+   energy minimization in double precision you might want to increase
+   it to 2. Note that in single precision using more than 1 iteration
+   will often lead to worse accuracy due to amplification of rounding
+   errors.
 
 .. mdp:: lincs-warnangle
 
@@ -2172,7 +2178,7 @@ AWH adaptive biasing
 
 .. mdp:: awh1-dim1-cover-diameter
 
-   (0.0) [nm] or [rad]
+   (0.0) [nm] or [deg]
    Diameter that needs to be sampled by a single simulation around a coordinate value
    before the point is considered covered in the initial stage (see :mdp-value:`awh1-growth=exp-linear`).
    A value > 0  ensures that for each covering there is a continuous transition of this diameter
@@ -2439,7 +2445,9 @@ Free energy calculations
    starting value for lambda (float). Generally, this should only be
    used with slow growth (*i.e.* nonzero :mdp:`delta-lambda`). In
    other cases, :mdp:`init-lambda-state` should be specified
-   instead. Must be greater than or equal to 0.
+   instead. If a lambda vector is given, :mdp: `init-lambda` is used to
+   interpolate the vector instead of setting lambda directly.
+   Must be greater than or equal to 0.
 
 .. mdp:: delta-lambda
 
@@ -2462,7 +2470,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Free energy differences
+   steps. Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Free energy differences
    between different lambda values can then be determined with
    :ref:`gmx bar`. :mdp:`fep-lambdas` is different from the
    other -lambdas keywords because all components of the lambda vector
@@ -2474,7 +2483,9 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the electrostatic
+   steps. Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. If soft-core potentials are
+   used, values must be between 0 and 1. Only the electrostatic
    interactions are controlled with this component of the lambda
    vector (and only if the lambda=0 and lambda=1 states have differing
    electrostatic interactions).
@@ -2484,7 +2495,9 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the van der Waals
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. If soft-core potentials are
+   used, values must be between 0 and 1. Only the van der Waals
    interactions are controlled with this component of the lambda
    vector.
 
@@ -2493,7 +2506,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the bonded interactions
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the bonded interactions
    are controlled with this component of the lambda vector.
 
 .. mdp:: restraint-lambdas
@@ -2501,7 +2515,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the restraint
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the restraint
    interactions: dihedral restraints, and the pull code restraints are
    controlled with this component of the lambda vector.
 
@@ -2510,7 +2525,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the particle masses are
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the particle masses are
    controlled with this component of the lambda vector.
 
 .. mdp:: temperature-lambdas
@@ -2518,7 +2534,8 @@ Free energy calculations
    [array]
    Zero, one or more lambda values for which Delta H values will be
    determined and written to dhdl.xvg every :mdp:`nstdhdl`
-   steps. Values must be between 0 and 1. Only the temperatures
+   steps.  Values must be greater than or equal to 0; values greater than
+   1 are allowed but should be used carefully. Only the temperatures are
    controlled with this component of the lambda vector. Note that
    these lambdas should not be used for replica exchange, only for
    simulated tempering.

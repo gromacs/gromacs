@@ -234,13 +234,15 @@ and add ``-DGMX_MPI=on`` to the cmake options. It is possible to set
 the compiler to the MPI compiler wrapper but it is neither necessary
 nor recommended.
 
-CUDA-Aware MPI support
+GPU-aware MPI support
 ~~~~~~~~~~~~~~~~~~~~~~
 
-In simulations using multiple NVIDIA GPUs, an MPI implementation with CUDA support
-(also called "CUDA-aware") allows communication to be performed directly between the
+In simulations using multiple GPUs, an MPI implementation with GPU support
+allows communication to be performed directly between the
 distinct GPU memory spaces without staging through CPU memory, often
-resulting in higher bandwidth and lower latency communication.  For
+resulting in higher bandwidth and lower latency communication. The only
+current support for this in |Gromacs| is with a CUDA build targeting
+Nvidia GPUs using "CUDA-aware" MPI libraries.  For
 more details, see `Introduction to CUDA-aware MPI
 <https://developer.nvidia.com/blog/introduction-cuda-aware-mpi/>`_.
 
@@ -251,11 +253,11 @@ been performed using these versions. OpenMPI with CUDA-aware support can
 be built following the procedure in `these OpenMPI build instructions
 <https://www.open-mpi.org/faq/?category=buildcuda>`_.
 
-With ``GPU_MPI=ON``, GROMACS attempts to automatically detect CUDA support
+With ``GMX_MPI=ON``, |Gromacs| attempts to automatically detect CUDA support
 in the underlying MPI library at compile time, and enables direct GPU 
 communication when this is detected.  However, there are some cases when
 GROMACS may fail to detect existing CUDA-aware support, in which case
-it can be manually enabled by setting environment variable ``GMX_FORCE_CUDA_AWARE_MPI=1``
+it can be manually enabled by setting environment variable ``GMX_FORCE_GPU_AWARE_MPI=1``
 at runtime (although such cases still lack substantial
 testing, so we urge the user to carefully check correctness of results
 against those using default build options, and report any issues).
@@ -1394,3 +1396,13 @@ AMD, and Intel GPU support.
 We test irregularly on ARM v8, Fujitsu A64FX, Cray, Power9,
 and other environments, and
 with other compilers and compiler versions, too.
+
+Support
+-------
+
+Please refer to the `manual <http://manual.gromacs.org/>`_ for documentation,
+downloads, and release notes for any GROMACS release.
+
+Visit the `user forums <http://forums.gromacs.org/>`_ for discussions and advice.
+
+Report bugs at https://gitlab.com/gromacs/gromacs/-/issues

@@ -1,0 +1,14 @@
+13:rdma:/
+12:memory:/user.slice/user-10007.slice/session-5142.scope
+11:freezer:/
+10:blkio:/user.slice
+9:pids:/user.slice/user-10007.slice/session-5142.scope
+8:devices:/user.slice
+7:cpu,cpuacct:/user.slice
+6:perf_event:/
+5:hugetlb:/
+4:cpuset:/
+3:net_cls,net_prio:/
+2:misc:/
+1:name=systemd:/user.slice/user-10007.slice/session-5142.scope
+0::/user.slice/user-10007.slice/session-5142.scope

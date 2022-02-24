@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2015- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \libinternal \file
  * \brief
@@ -154,12 +153,20 @@ public:
         X86_Hygon        //!< This is a Hygon x86 processor
     };
 
-    /*! \libinternal \brief Entry with basic information for a single logical processor */
+    /*! \libinternal \brief Entry with basic information for a single processing unit.
+     *
+     * To avoid duplicating functionality with the hardware topology, be aware
+     * that the ids in this structure correspond to the raw APIC (or similar) ids
+     * reported by the hardware. These are not necessarily ranks, so some
+     * ids might not be present, and others might be larger than the total
+     * number of such elements present - be careful when using them.
+     */
     struct LogicalProcessor
     {
-        int socketRankInMachine; //!< Relative rank of the current socket in the system
-        int coreRankInSocket;    //!< Relative rank of the current core in its socket
-        int hwThreadRankInCore;  //!< Relative rank of logical processor in its core
+        int packageIdInMachine; //!< Id of the current package in the system
+        int coreIdInPackage;    //!< Id of the current core in its package
+        int puIdInCore;         //!< Id of logical cpu inside its core
+        int osId;               //!< Id corresponding to OS logical cpu enumeration
     };
 
     /*! \brief Perform detection and construct a CpuInfo class from the results.
@@ -234,12 +241,11 @@ public:
 
     /*! \brief Reference to processing unit topology
      *
-     *  Only a few systems (x86) provide logical processor information in cpuinfo.
+     *  Only a few systems (e.g. x86) provide logical processor information in cpuinfo.
      *  This method returns a reference to a vector, whose length will either be
-     *  zero (if topology information is not available) or the number of enabled
-     *  processing units, as defined by the operating system. In the latter
-     *  case, each entry will contain information about the relative rank in the
-     *  core and socket of this hardware thread.
+     *  zero (if topology information is not available) or the number of
+     *  processing units on which we were allowed to execute, as defined
+     *  e.g. by cpu sets.
      *
      *  This is only meant to be use as a fallback implementation for our
      *  HardwareTopology class; any user code that needs access to hardware

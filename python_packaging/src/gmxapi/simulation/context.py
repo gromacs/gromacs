@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,14 +26,15 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
-#
+# the research papers on the package. Check out https://www.gromacs.org.
+
 # This file is based on the Kasson Lab gmxapi project release 0.0.7.4.
 # https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/src/gmx/context.py
 # https://github.com/kassonlab/gmxapi/blob/v0.0.7.4/LICENSE
+
 """
 Execution Context
 =================
@@ -52,6 +52,9 @@ from gmxapi import logger as root_logger
 import gmxapi._gmxapi as _gmxapi
 
 # Module-level logger
+from gmxapi.exceptions import ApiError
+from gmxapi.exceptions import DataShapeError
+
 logger = root_logger.getChild('simulation.context')
 logger.info('Importing {}'.format(__name__))
 
@@ -139,34 +142,112 @@ def _md(context, element):
             for neighbor in self.input_nodes:
                 dag.add_edge(neighbor, name)
             infile = self.infile
-            assert not infile is None
+            assert infile is not None
             potential_list = self.potential
-            assert dag.graph['width'] >= len(infile)
+
+            # We may have to widen the graph according to runtime_params.
+            # We also ensure that the ensemble data is represented as a list of dict.
+            if isinstance(self.runtime_params, list):
+                runtime_params = self.runtime_params
+                params_width = len(runtime_params)
+            else:
+                assert isinstance(self.runtime_params, dict)
+                # First, determine the final width
+                params_width = 1
+                for key, value in self.runtime_params.items():
+                    if isinstance(value, list):
+                        value_length = len(value)
+                        if params_width == 1:
+                            params_width = value_length
+                        elif (value_length > 1) and (params_width != value_length):
+                            raise DataShapeError(
+                                f'runtime parameter {key}={value} not compatible with ensemble width '
+                                f'{params_width}'
+                            )
+                # Get the list of flattened params dicts
+                runtime_params = [dict() for _ in range(params_width)]
+                for param, value in self.runtime_params.items():
+                    if not isinstance(value, list):
+                        for member in range(params_width):
+                            runtime_params[member][param] = value
+                    elif len(value) == 1:
+                        value = value[0]
+                        for member in range(params_width):
+                            runtime_params[member][param] = value
+                    else:
+                        assert isinstance(value, list)
+                        value_length = len(value)
+                        assert value_length > 1
+                        assert value_length == params_width
+                        for member in range(params_width):
+                            runtime_params[member][param] = value[member]
+            assert isinstance(runtime_params, list)
+            assert params_width == len(runtime_params)
+
+            input_width = len(infile)
+
+            dag_width = dag.graph['width']
+            required_width = max((dag_width, input_width, params_width))
+
+            if required_width > 1:
+                if (dag_width != 1) and (dag_width != required_width):
+                    raise DataShapeError(
+                        f'Inputs {infile} and params {runtime_params} cannot be fit to current data flow '
+                        f'graph of width {dag_width}.'
+                    )
+                if input_width == 1:
+                    infile = [infile[0]] * required_width
+                elif input_width != required_width:
+                    raise DataShapeError(
+                        f'Inputs {infile} incompatible with required ensemble width {required_width}.'
+                    )
+                if params_width == 1:
+                    _params: dict = runtime_params[0]
+                    runtime_params = [_params.copy() for _ in range(required_width)]
+                elif params_width != required_width:
+                    raise DataShapeError(
+                        f'Params {runtime_params} incompatible with required ensemble width {required_width}.'
+                    )
+
+            self.infile = infile
+            self.runtime_params = runtime_params
+            dag.graph['width'] = required_width
 
             # Provide closure with which to execute tasks for this node.
             def launch(rank=None):
-                assert not rank is None
+                assert rank is not None
+                # Note that gmxapi 0.0.7 does not support any consumers of mdrun, so the graph cannot be
+                # further widened, and launch can assume that *rank* <= dag width.
+                assert dag.graph['width'] == required_width
+                assert len(self.infile) == required_width
+                assert len(self.runtime_params) == required_width
+                if rank > required_width:
+                    raise ApiError(
+                        f'Trying to launch MD on rank {rank}, but ensemble has width {required_width}.'
+                    )
+                infile = self.infile[rank]
+                runtime_params = self.runtime_params[rank]
 
                 # Copy and update, if required by `end_time` parameter.
                 temp_filename = None
-                if 'end_time' in self.runtime_params:
+                if 'end_time' in runtime_params:
                     # Note that mkstemp returns a file descriptor as the first part of the tuple.
                     # We can make this cleaner in 0.0.7 with a separate node that manages the
                     # altered input.
                     _, temp_filename = tempfile.mkstemp(suffix='.tpr')
                     logger.debug('Updating input. Using temp file {}'.format(temp_filename))
-                    _gmxapi.rewrite_tprfile(source=infile[rank],
+                    _gmxapi.rewrite_tprfile(source=infile,
                                          destination=temp_filename,
-                                         end_time=self.runtime_params['end_time'])
+                                         end_time=runtime_params['end_time'])
                     tpr_file = temp_filename
                 else:
-                    tpr_file = infile[rank]
+                    tpr_file = infile
 
                 logger.info('Loading TPR file: {}'.format(tpr_file))
                 system = _gmxapi.from_tpr(tpr_file)
                 dag.nodes[name]['system'] = system
                 mdargs = _gmxapi.MDArgs()
-                mdargs.set(self.runtime_params)
+                mdargs.set(runtime_params)
                 # Workaround to give access to plugin potentials used in a context.
                 pycontext = element.workspec._context
                 pycontext.potentials = potential_list
@@ -177,7 +258,7 @@ def _md(context, element):
                 dag.nodes[name]['session'] = system.launch(context)
                 dag.nodes[name]['close'] = dag.nodes[name]['session'].close
 
-                if 'end_time' in self.runtime_params:
+                if 'end_time' in runtime_params:
                     def special_close():
                         dag.nodes[name]['session'].close()
                         logger.debug("Unlinking temporary TPR file {}.".format(temp_filename))

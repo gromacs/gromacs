@@ -33,6 +33,15 @@ an error when they are beyond the cut-off distance.
 
 :issue:`4051`
 
+The AWH cover diameter for angles now has units degrees
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using old tpr files that apply AWH to angles or dihedrals and have a non-zero cover
+diameter results in an error with the suggestion to regenerate the tpr file.
+
+:issue:`4367`
+
+
 Core spin-up code is removed
 """"""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -71,6 +80,27 @@ argument, accepting a dictionary of flags and values.
 
 :issue:`4284`
 
+Improved MPI awareness and task uniqueness for gmxapi Python runner
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, only the Python components in :py:mod:`gmxapi.simulation` reacted to the presence
+of an MPI context. This could result in duplicate work or even invalid file access.
+
+:py:func:`gmxapi.commandline_operation` now executes tasks in unique working directories.
+
+For all gmxapi operations, tasks are only launched from one process (per ensemble member).
+If `mpi4py <https://mpi4py.readthedocs.io/en/stable/>`__ is available,
+the MPI environment is inspected.
+If multiple ranks are discovered, the ``ResourceManager`` instances on the various ranks coordinate
+to make sure that ``update`` is only called for each member of each task once. Results are
+broadcast to all ranks from the ``ResourceManager`` where the work occurred.
+
+These changes merely constitute a bug-fix.
+Additional development is needed for more optimal use
+of resources and to reduce unnecessary data transfers.
+
+:issue:`3138`
+
 Further discouraged use of Berendsen coupling algorithms
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -79,4 +109,3 @@ respective distributions and are mainly provided as a means to provide
 backwards compatibility for older simulations. This is why their
 use has been further discouraged by changing the current notes about
 their use to actual warnings at grompp time.
-

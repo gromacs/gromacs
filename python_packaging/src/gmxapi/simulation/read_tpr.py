@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 """read_tpr operation module
 
@@ -113,8 +112,11 @@ _input = _op.InputCollectionDescription(
 
 
 # TODO: Clarify. The actual input and output arguments passed are customized for this operation.
-def _session_resource_factory(input: _op.InputPack, output: 'PublishingDataProxy') -> SessionResources:
+def _session_resource_factory(input: _op.InputPack, output: 'PublishingDataProxy',
+                              **kwargs
+                              ) -> SessionResources:
     """Translate resources from the gmxapi.operation Context to the ReadTpr implementation."""
+    # TODO: Either get rid of **kwargs or clarify the roadmap and timeline for doing so.
     filename = input.kwargs['filename']
     return SessionResources(tpr_filename=filename, publisher=output)
 
@@ -156,14 +158,6 @@ class ResourceManager(gmxapi.operation.ResourceManager):
 
     def data(self) -> OutputDataProxy:
         return OutputDataProxy(self)
-
-    def update_output(self):
-        logger.debug('Updating output for {}.'.format(self.operation_id))
-        super().update_output()
-        for descriptor in _output_descriptors:
-            name = descriptor._name
-            if not self.is_done(name):
-                raise gmxapi.exceptions.ApiError('Expected output {} not updated.'.format(name))
 
 # TODO: Consider making Generic in source and target context type variables,
 #  or leave unspecified and use generic function or pair of single_dispatch functions.
@@ -247,18 +241,27 @@ class StandardInputDescription(_op.InputDescription):
     """Provide the ReadTpr input description in gmxapi.operation Contexts."""
 
     # TODO: Improve fingerprinting.
-    # If _make_uid can't make sufficiently unique IDs, use additional "salt":
-    # _next_uid = 0
+    # If _make_uid can't make sufficiently unique IDs, use additional "salt".
+    # Without fingerprinting, we cannot consistently hash *input* across processes,
+    # but we can consistently generate integers in the same sequence the first time
+    # we see each distinct input.
+    _next_uid: typing.ClassVar[int] = 0
+    _uids: typing.ClassVar[typing.MutableMapping[int, int]] = {}
 
-    @staticmethod
-    def _make_uid(input) -> str:
+    @classmethod
+    def _make_uid(cls, input) -> str:
         # TODO: Use input fingerprint for more useful identification.
+        # WARNING: The built-in hash will use memory locations, and so will not be consistent across
+        # process ranks, even if the input should be the same.
         salt = hash(input)
-        # If can't make sufficiently unique IDs, use additional "salt"
-        # from a class data member. E.g.
-        #     new_uid = 'read_tpr_{}_{}'.format(_next_uid, salt)
-        #     _next_uid += 1
-        new_uid = 'read_tpr_{}'.format(salt)
+        if salt not in cls._uids:
+            cls._uids[salt] = cls._next_uid
+            cls._next_uid += 1
+        else:
+            logger.debug(
+                f'Reissuing uid for read_tpr({input}): {cls._uids[salt]}'
+            )
+        new_uid = 'read_tpr_{}'.format(cls._uids[salt])
         return new_uid
 
     def signature(self) -> InputCollectionDescription:
@@ -323,10 +326,10 @@ class StandardDirector(gmxapi.abc.OperationDirector):
         builder.set_input_description(StandardInputDescription())
         builder.set_handle(StandardOperationHandle)
 
-        def runner_director(resources):
-            def runner():
-                _run(resources)
-            return runner
+        runner_director = _op.RunnerDirector(
+            runner=_run,
+            allow_duplicate=True
+        )
 
         builder.set_runner_director(runner_director)
         builder.set_output_factory(_output_factory)

@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,12 +26,28 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
+import os
 
 import gmxapi as gmx
+
+try:
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank_number = comm.Get_rank()
+    comm_size = comm.Get_size()
+except ImportError:
+    comm = None
+    rank_number = 0
+    comm_size = 1
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
 
 
 @gmx.function_wrapper(output={'data': float})
@@ -58,6 +73,63 @@ def test_subgraph_function():
     loop = gmx.while_loop(operation=subgraph, condition=subgraph.bool_data)
     handle = loop()
     assert handle.output.float_with_default.result() == 6
+
+
+_previous_cpt = [''] * comm_size
+
+
+@gmx.function_wrapper(output={'data': bool})
+def _is_new(current_cpt: str, output):
+    # Is the simulation new or is it continuing from a checkpoint?
+    global _previous_cpt
+    # TODO: Don't use private details of the publishing data proxy.
+    # Either use another subgraph variable for previous_cpt, distribute function_wrapper tasks by MPI rank,
+    # or develop the interface for session resources provided to tasks.
+    executing_member = output._client_identifier
+    previous_cpt = _previous_cpt[executing_member]
+    _previous_cpt[executing_member] = current_cpt
+    if current_cpt != previous_cpt and os.path.exists(previous_cpt):
+        output.data = False
+    else:
+        output.data = True
+
+
+def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
+    tpr_list = gmx.read_tpr([spc_water_box] * comm_size)
+    input_list = gmx.modify_input(tpr_list, parameters={'nsteps': 10 ** 6})
+    subgraph = gmx.subgraph(
+        variables={
+            'new': True,
+            'checkpoint': '',
+            # 'previous': '',
+        })
+    with subgraph:
+        md = gmx.mdrun(
+            input_list,
+            runtime_args={
+                '-cpi': subgraph.checkpoint,
+                '-maxh': '0.001',
+                '-noappend': None
+            })
+
+        subgraph.new = _is_new(md.output.checkpoint).output.data
+
+        subgraph.checkpoint = md.output.checkpoint
+
+    folding_loop = gmx.while_loop(
+        operation=subgraph,
+        condition=subgraph.new)()
+
+    folding_loop.run()
+    _cpt_output = folding_loop.output.checkpoint
+    final_checkpoint = _cpt_output.result()
+    loop_condition = folding_loop.output.new.result()
+    if comm_size > 1:
+        final_checkpoint = final_checkpoint[rank_number]
+        loop_condition = loop_condition[rank_number]
+    assert isinstance(final_checkpoint, str)
+    assert isinstance(loop_condition, bool)
+    assert os.path.exists(final_checkpoint)
 
 
 def test_local_tools_and_assumptions():

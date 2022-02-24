@@ -1,10 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2019- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 """Tests the interfaces defined in operation.py and behavior of simple operations.
 
@@ -41,9 +40,45 @@ import os
 import shutil
 import stat
 import tempfile
+from typing import NamedTuple
 
 import gmxapi as gmx
 from gmxapi import commandline_operation
+from gmxapi.operation import ResultDescription
+
+
+def test_comparison():
+    int_array_description = ResultDescription(
+        dtype=int,
+        width=3
+    )
+    same_description = ResultDescription(
+        dtype=int,
+        width=3
+    )
+    different_type_description = ResultDescription(
+        dtype=float,
+        width=3
+    )
+    different_width_description = ResultDescription(
+        dtype=int,
+        width=1
+    )
+    assert int_array_description == same_description
+    assert int_array_description != different_width_description
+    assert int_array_description != different_type_description
+
+    class CompatibleRepresentation(NamedTuple):
+        dtype: type
+        width: int
+
+    equivalent_description = CompatibleRepresentation(dtype=int, width=3)
+    assert int_array_description == equivalent_description
+    assert equivalent_description == int_array_description
+    assert equivalent_description != different_type_description
+    assert different_type_description != equivalent_description
+    assert equivalent_description != different_width_description
+    assert different_width_description != equivalent_description
 
 
 def test_scalar():
@@ -123,3 +158,12 @@ def test_data_dependence(cleandir):
         assert len(lines) == 2
         assert lines[0] == line1
         assert lines[1] == line2
+
+        try:
+            # If we're running with MPI, check that the file is accessible
+            # on all ranks, but make sure that we don't delete the temporary
+            # directory before all ranks have looked for it.
+            from mpi4py import MPI
+            MPI.COMM_WORLD.barrier()
+        except ImportError:
+            pass

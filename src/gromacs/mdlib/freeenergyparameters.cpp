@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2020- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
  *
@@ -109,7 +108,7 @@ double currentGlobalLambda(const int64_t step,
 
 /*! \brief Returns an array of lambda values from linear interpolation of a lambda value matrix.
  *
- * \note If there is nothing to interpolate, fills the array with the global current lambda.
+ * \note If there is nothing to interpolate, fills the array with max(0,currentGlobalLambda).
  * \note Returns array boundary values if currentGlobalLambda <0 or >1 .
  *
  * \param[in] currentGlobalLambda determines at which position in the lambda array to interpolate
@@ -121,37 +120,26 @@ interpolatedLambdas(const double                             currentGlobalLambda
                     gmx::ArrayRef<const std::vector<double>> lambdaArray,
                     const int                                lambdaArrayExtent)
 {
+    // Both as an interpolation parameter and as a physical parameter, lambda must not be less than zero.
+    const double halfCappedLambda = (currentGlobalLambda < 0 ? 0 : currentGlobalLambda);
+
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda;
-    // when there is no lambda value array, set all lambdas to steps * deltaLambdaPerStep
+    // if there is no lambda value array, set all lambdas to halfCappedLambda
     if (lambdaArrayExtent <= 0)
     {
-        std::fill(std::begin(lambda), std::end(lambda), currentGlobalLambda);
+        std::fill(std::begin(lambda), std::end(lambda), halfCappedLambda);
         return lambda;
     }
 
-    // if we run over the boundary of the lambda array, return the boundary array values
-    if (currentGlobalLambda <= 0)
-    {
-        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
-        {
-            lambda[i] = lambdaArray[i][0];
-        }
-        return lambda;
-    }
-    if (currentGlobalLambda >= 1)
-    {
-        for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
-        {
-            lambda[i] = lambdaArray[i][lambdaArrayExtent - 1];
-        }
-        return lambda;
-    }
+    // Below, lambda has no physical meaning but just interpolates the lambda value array.
+    // Make sure that it is in [0,1].
+    const double fullyCappedLambda = (halfCappedLambda > 1 ? 1 : halfCappedLambda);
 
     // find out between which two value lambda array elements to interpolate
-    const int fepStateLeft = static_cast<int>(std::floor(currentGlobalLambda * (lambdaArrayExtent - 1)));
-    const int fepStateRight = fepStateLeft + 1;
+    const int fepStateLeft = static_cast<int>(std::floor(fullyCappedLambda * (lambdaArrayExtent - 1)));
+    const int fepStateRight = (fepStateLeft == lambdaArrayExtent - 1 ? fepStateLeft : fepStateLeft + 1);
     // interpolate between this state and the next
-    const double fracBetween = currentGlobalLambda * (lambdaArrayExtent - 1) - fepStateLeft;
+    const double fracBetween = fullyCappedLambda * (lambdaArrayExtent - 1) - fepStateLeft;
     for (int i = 0; i < static_cast<int>(FreeEnergyPerturbationCouplingType::Count); i++)
     {
         lambda[i] = lambdaArray[i][fepStateLeft]

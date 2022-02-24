@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2021- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,23 +26,24 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #ifndef GMX_UTILITY_MPI_INFO_H
 #define GMX_UTILITY_MPI_INFO_H
 
 namespace gmx
 {
-/*! \brief Enum describing CUDA-aware support in underlying MPI library.
+/*! \brief Enum describing GPU-aware support in underlying MPI library.
  */
-enum class CudaAwareMpiStatus : int
+enum class GpuAwareMpiStatus : int
 {
-    Supported,    //!< CUDA-aware support available.
-    NotSupported, //!< CUDA-aware support NOT available.
-    NotKnown      //!< CUDA-aware support status not known.
+    Supported,    //!< GPU-aware support available.
+    NotSupported, //!< GPU-aware support NOT available.
+    NotKnown,     //!< GPU-aware support status not known.
+    Forced        //!< GPU-aware support forced using env variable
 };
 
 
@@ -54,8 +54,8 @@ enum class CudaAwareMpiStatus : int
  * robust enough to detect CUDA-aware support at runtime correcly e.g. when UCX PML is used
  * or CUDA is disabled at runtime
  *
- * \returns     CUDA-aware status in MPI implementation */
-CudaAwareMpiStatus checkMpiCudaAwareSupport();
+ * \returns     GPU-aware status in MPI implementation */
+GpuAwareMpiStatus checkMpiCudaAwareSupport();
 
 } // namespace gmx
 

@@ -1,11 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020,2021,2022, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2015- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -28,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Defines functionality for deciding whether tasks will run on GPUs.
@@ -164,8 +162,10 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
 
 static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
 {
-    bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
-                     || (pmeFftTarget == TaskTarget::Auto && sc_gpuBuildOnlySupportsMixedModePme);
+    const bool syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
+    bool       useCpuFft        = (pmeFftTarget == TaskTarget::Cpu)
+                     || (pmeFftTarget == TaskTarget::Auto && !syclGpuFftForced
+                         && sc_gpuBuildOnlySupportsMixedModePme);
     return !useCpuFft;
 }
 
@@ -291,6 +291,12 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
     {
         // PME can run well on a GPU shared with NB, and we permit
         // mdrun to default to try that.
+        return numDevicesToUse > 0;
+    }
+
+    if (numPmeRanksPerSimulation == 1)
+    {
+        // We have a single separate PME rank, that can use a GPU
         return numDevicesToUse > 0;
     }
 
@@ -467,6 +473,12 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         return gpusWereDetected;
     }
 
+    if (numPmeRanksPerSimulation == 1)
+    {
+        // We have a single separate PME rank, that can use a GPU
+        return gpusWereDetected;
+    }
+
     // Not enough support for PME on GPUs for anything else
     return false;
 }
@@ -474,7 +486,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
 PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec)
 {
-    if (!EEL_PME(inputrec.coulombtype))
+    if (!EEL_PME(inputrec.coulombtype) && !EVDW_PME(inputrec.vdwtype))
     {
         return PmeRunMode::None;
     }
@@ -483,9 +495,13 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
     {
         if (sc_gpuBuildOnlySupportsMixedModePme && pmeFftTarget == TaskTarget::Gpu)
         {
-            gmx_fatal(FARGS,
-                      "SYCL build does not support fully offloading PME to GPUs. Please use "
-                      "-pmefft cpu.");
+            const bool syclGpuFftForced = getenv("GMX_GPU_SYCL_USE_GPU_FFT") != nullptr;
+            if (!syclGpuFftForced)
+            {
+                gmx_fatal(FARGS,
+                          "SYCL build is not stable when fully offloading PME to GPUs. Please use "
+                          "-pmefft cpu or set GMX_GPU_SYCL_USE_GPU_FFT=1 to override.");
+            }
         }
         if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
         {
@@ -769,21 +785,10 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
-    const bool gmx_unused disableDirectGpuComm = (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
-    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for CUDA-aware MPI.
-    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // issue warning note when env var disables the default
-    if (GMX_THREAD_MPI && GMX_GPU_CUDA && disableDirectGpuComm)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "GMX_DISABLE_DIRECT_GPU_COMM environment variable detected, "
-                        "disabling direct GPU communication.");
-    }
+    // Direct GPU communication is presently turned off due to insufficient testing
+    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
+                                                || (getenv("GMX_GPU_DD_COMMS") != nullptr)
+                                                || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
     // Now check those flags that may cause, from the user perspective, an unexpected
     // fallback to CPU halo, and report accordingly
@@ -801,14 +806,14 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     bool runUsesCompatibleFeatures = errorReasons.isEmpty();
 
     bool runAndGpuSupportDirectGpuComm =
-            (runUsesCompatibleFeatures && !disableDirectGpuComm && GMX_GPU_CUDA);
+            (runUsesCompatibleFeatures && enableDirectGpuComm && GMX_GPU_CUDA);
 
     // Thread-MPI case on by default, can be disabled with env var.
     bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);
     // GPU-aware MPI case off by default, can be enabled with dev flag
     // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
     bool canUseDirectGpuCommWithMpi = (runAndGpuSupportDirectGpuComm && GMX_LIB_MPI
-                                       && devFlags.canUseCudaAwareMpi && enableDirectGpuComm);
+                                       && devFlags.canUseGpuAwareMpi && enableDirectGpuComm);
 
     return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
 }

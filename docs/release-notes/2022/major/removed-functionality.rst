@@ -44,3 +44,10 @@ Files in .pdo format were written by |Gromacs| versions prior to 4.0.
 That is so long ago that being able to read them is no longer
 relevant, so this capability was deprecated in version 2021. If you do
 need to read such files, please use an older version of |Gromacs|.
+
+Removed 32bit support
+"""""""""""""""""""""
+
+We deprecated 32bit support in 2020 and have had no way to test it ourselves for a while
+before that. Those architectures are no longer relevant in HPC, so we officially no longer
+support building |Gromacs| on them.

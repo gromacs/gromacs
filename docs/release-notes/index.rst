@@ -27,6 +27,14 @@ can be found on the `issue tracker`_ at that issue number.
 
 .. todolist::
 
+Patch releases
+^^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 1
+
+   2022/2022.1
+
+
 Major release
 ^^^^^^^^^^^^^
 

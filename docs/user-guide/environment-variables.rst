@@ -164,13 +164,9 @@ Performance and Run Control
 
 ``GMX_ENABLE_DIRECT_GPU_COMM``
         Enable direct GPU communication in multi-rank parallel runs.
-        Use as an override for cases which do not default to using this feature;
-        currently used to enable GPU communication with CUDA-aware MPI.
-
-``GMX_DISABLE_DIRECT_GPU_COMM``
-        Disable direct GPU communication in multi-rank parallel runs.
-        Use as an override for cases which default to using this feature;
-        currently used to disable GPU communication with thread-MPI.
+	Note that domain decomposition with CUDA-aware MPI does not support
+	multiple pulses along the second and third decomposition dimension,
+	so for very small systems the feature will be disabled internally.
 
 ``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
         Use a staged implementation of GPU communications for PME force
@@ -193,6 +189,12 @@ Performance and Run Control
 ``GMX_GPU_SYCL_USE_SUBDEVICES``
         partition the GPUs that support it into sub-devices, and treat each one as an independent device.
         GPUs that can not be split are ignored. Intended for use with multi-tile GPUs.
+
+``GMX_GPU_SYCL_USE_GPU_FFT``
+        enable the use of GPU FFT with DPC++ on Intel GPUs. Unless this variable is set, only Mixed Mode PME is
+        available on Intel GPUs. It has been tested with oneAPI 2022.0.1 and OpenCL backend; older oneAPI
+        versions will not work or will produce wrong results. For hipSYCL builds, GPU FFT is always enabled on AMD GPUs,
+        and not affected by this variable.
 
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
@@ -255,10 +257,11 @@ Performance and Run Control
 ``GMX_FORCE_UPDATE``
         update forces when invoking ``mdrun -rerun``.
 
-``GMX_FORCE_CUDA_AWARE_MPI``
-        Override the result of build- and runtime CUDA-aware MPI detection and force the use of
+``GMX_FORCE_GPU_AWARE_MPI``
+        Override the result of build- and runtime GPU-aware MPI detection and force the use of
         direct GPU MPI communication. Aimed at cases where the user knows that the MPI library is
-        CUDA-aware, but |GROMACS| is not able to detect this.
+        GPU-aware, but |GROMACS| is not able to detect this. Note that only CUDA builds support
+        such functionality.
 
 ``GMX_FORCE_UPDATE_DEFAULT_GPU``
         Force update to run on the GPU by default, overriding the ``mdrun -update auto`` option. Works similar to setting

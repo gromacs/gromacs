@@ -1,11 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020,2021,2022, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# Copyright 2014- The GROMACS Authors
+# and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+# Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +17,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with GROMACS; if not, see
-# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# https://www.gnu.org/licenses, or write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
 #
 # If you want to redistribute modifications to GROMACS, please
@@ -28,10 +26,10 @@
 # consider code for inclusion in the official distribution, but
 # derived work must not be called official GROMACS. Details are found
 # in the README & COPYING files - if they are missing, get the
-# official version at http://www.gromacs.org.
+# official version at https://www.gromacs.org.
 #
 # To help us fund GROMACS development, we humbly ask that you cite
-# the research papers on the package. Check out http://www.gromacs.org.
+# the research papers on the package. Check out https://www.gromacs.org.
 
 # Sets version information variables and provides CMake functions for
 # generating files based on them
@@ -244,7 +242,7 @@ set(REGRESSIONTEST_BRANCH "master")
 # directory name within the regressiontests tarball, which affects the
 # md5sum of the tarball. The matching md5sum has to go here, and if it
 # isn't right the real release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "b07d8d8a61df6c6cb706cf1491ae6775" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "d0e16baf3d341a80eaf590e8461071c9" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 # If you are making a custom fork of GROMACS, please describe your
 # fork, perhaps with its version number, in the value of
@@ -261,7 +259,9 @@ set(GMX_VERSION_STRING_OF_FORK "" CACHE INTERNAL
     "Version string for forks of GROMACS to set to describe themselves")
 mark_as_advanced(GMX_VERSION_STRING_OF_FORK)
 if (GMX_VERSION_STRING_OF_FORK)
-    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${GMX_VERSION_STRING_OF_FORK}")
+    # Remove dashes from GMX_VERSION_STRING_OF_FORK to avoid confusing pkg-config. Issue #4363
+    string(REPLACE "-" "_" _VERSION_STRING_OF_FORK_CLEAN "${GMX_VERSION_STRING_OF_FORK}")
+    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${_VERSION_STRING_OF_FORK_CLEAN}")
 endif()
 
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)

@@ -1,12 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020,2021,2022, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 1991- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -20,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -29,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
  *
@@ -127,6 +124,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/observablesreducer.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -211,83 +209,89 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                                   && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
 
-    // Direct GPU communication for both halo and PP-PME is the default with thread-MPI
-    // GMX_ENABLE_DIRECT_GPU_COMM permits the same default for CUDA-aware MPI.
-    const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr);
-
-    // GMX_DISABLE_DIRECT_GPU_COMM is only checked for consistency reasons here,
-    // the disabling is doone in task assignment
-    if (enableDirectGpuComm && (getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr))
-    {
-        GMX_THROW(
-                InconsistentInputError("GMX_DISABLE_DIRECT_GPU_COMM and GMX_ENABLE_DIRECT_GPU_COMM "
-                                       "environment variables both set,\n"
-                                       "but these are mutually exclusive.\n"));
-    }
-
-    // Flag use to enable CUDA-aware MPI depenendent features such PME GPU decomposition
-    // CUDA-aware MPI is marked available if it has been detected by GROMACS or detection fails but
+    // Flag use to enable GPU-aware MPI depenendent features such PME GPU decomposition
+    // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
     // user wants to force its use
-    devFlags.canUseCudaAwareMpi = false;
+    devFlags.canUseGpuAwareMpi = false;
 
-    // Direct GPU comm path is being used with CUDA_AWARE_MPI
-    // make sure underlying MPI implementation is CUDA-aware
+    // Direct GPU comm path is being used with GPU-aware MPI
+    // make sure underlying MPI implementation is GPU-aware
+
     if (GMX_LIB_MPI && GMX_GPU_CUDA)
     {
-        const bool haveDetectedCudaAwareMpi =
-                (checkMpiCudaAwareSupport() == CudaAwareMpiStatus::Supported);
-        // allows overriding the CUDA-aware MPI detection
-        const bool forceCudaAwareMpi = (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr);
-
-        devFlags.canUseCudaAwareMpi = haveDetectedCudaAwareMpi || forceCudaAwareMpi;
-        if (enableDirectGpuComm)
+        // Allow overriding the detection for GPU-aware MPI
+        GpuAwareMpiStatus gpuAwareMpiStatus = checkMpiCudaAwareSupport();
+        const bool        forceGpuAwareMpi  = gpuAwareMpiStatus == GpuAwareMpiStatus::Forced;
+        const bool haveDetectedGpuAwareMpi  = gpuAwareMpiStatus == GpuAwareMpiStatus::Supported;
+        if (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr)
         {
-            if (!haveDetectedCudaAwareMpi && forceCudaAwareMpi)
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_FORCE_CUDA_AWARE_MPI environment variable is inactive. "
+                            "Please use GMX_FORCE_GPU_AWARE_MPI instead.");
+        }
+
+        devFlags.canUseGpuAwareMpi = haveDetectedGpuAwareMpi || forceGpuAwareMpi;
+        if (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
+        {
+            if (!haveDetectedGpuAwareMpi && forceGpuAwareMpi)
             {
-                // CUDA-aware support not detected in MPI library but, user has forced it's use
+                // GPU-aware support not detected in MPI library but, user has forced it's use
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
-                        .appendTextFormatted(
-                                "This run has forced use of 'CUDA-aware MPI'. "
-                                "But, GROMACS cannot determine if underlying MPI "
-                                "is CUDA-aware. GROMACS recommends use of latest openMPI version "
-                                "for CUDA-aware support. "
-                                "If you observe failures at runtime, try unsetting "
-                                "GMX_FORCE_CUDA_AWARE_MPI environment variable.");
+                        .appendText(
+                                "This run has forced use of 'GPU-aware MPI', ie. 'CUDA-aware MPI'. "
+                                "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
+                                "GROMACS recommends use of latest OpenMPI version for GPU-aware "
+                                "support. If you observe failures at runtime, try unsetting the "
+                                "GMX_FORCE_GPU_AWARE_MPI environment variable.");
             }
 
-            if (devFlags.canUseCudaAwareMpi)
+            if (devFlags.canUseGpuAwareMpi)
             {
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
-                        .appendTextFormatted(
-                                "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, enabling"
-                                "direct GPU communication using CUDA-aware MPI. ");
+                        .appendText(
+                                "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, "
+                                "enabling direct GPU communication using GPU-aware MPI.");
             }
             else
             {
                 GMX_LOG(mdlog.warning)
                         .asParagraph()
-                        .appendTextFormatted(
-                                "CUDA-aware MPI was not detected, will not use direct GPU "
-                                "communication. "
-                                "GROMACS recommends use of latest OpenMPI version for CUDA-aware "
-                                "support. "
-                                "If you are certain about CUDA-aware support in your MPI library, "
-                                "you can force its use by setting the GMX_FORCE_CUDA_AWARE_MPI "
-                                "environment variable.");
+                        .appendText(
+                                "GPU-aware MPI was not detected, will not use direct GPU "
+                                "communication. GROMACS recommends use of latest OpenMPI version "
+                                "for GPU-aware support. If you are certain about GPU-aware support "
+                                "in your MPI library, you can force its use by setting the "
+                                "GMX_FORCE_GPU_AWARE_MPI environment variable. Note that such "
+                                "support is often called \"CUDA-aware MPI.\"");
             }
         }
-        else if (haveDetectedCudaAwareMpi)
+        else if (haveDetectedGpuAwareMpi)
         {
-            // CUDA-aware MPI was detected, let the user know that using it may improve performance
+            // GPU-aware MPI was detected, let the user know that using it may improve performance
             GMX_LOG(mdlog.warning)
                     .asParagraph()
-                    .appendTextFormatted(
-                            "CUDA-aware MPI detected, but by default GROMACS will not "
-                            "make use the direct GPU communication capabilities of MPI."
+                    .appendText(
+                            "GPU-aware MPI detected, but by default GROMACS will not "
+                            "make use the direct GPU communication capabilities of MPI. "
                             "For improved performance try enabling the feature by setting "
                             "the GMX_ENABLE_DIRECT_GPU_COMM environment variable.");
+        }
+    }
+    else
+    {
+        if (getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+        {
+            // Cannot force use of GPU-aware MPI in this build configuration
+            GMX_LOG(mdlog.info)
+                    .asParagraph()
+                    .appendText(
+                            "A CUDA build with an external MPI library is required in order to "
+                            "benefit from GMX_FORCE_GPU_AWARE_MPI. That environment variable is "
+                            "being ignored because such a build is not in use.");
         }
     }
 
@@ -310,13 +314,13 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     }
 
     // PME decomposition is supported only with CUDA-backend in mixed mode
-    // CUDA-backend also needs CUDA-aware MPI support for decomposition to work
+    // CUDA-backend also needs GPU-aware MPI support for decomposition to work
     const bool pmeGpuDecompositionRequested =
             (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed)
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            (devFlags.canUseCudaAwareMpi && pmeRunMode == PmeRunMode::Mixed);
+            (devFlags.canUseGpuAwareMpi && pmeRunMode == PmeRunMode::Mixed);
 
     const bool forcePmeGpuDecomposition = getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
 
@@ -590,6 +594,20 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger&   mdlog,
                     "For better performance, run on the GPU without energy groups and then do "
                     "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
         }
+    }
+
+    /* There are resource handling issues in the GPU code paths with MTS on anything else than only
+     * PME. Also those code paths need more testing.
+     */
+    MtsLevel mtsLevelOnlyPme;
+    mtsLevelOnlyPme.forceGroups.set(static_cast<int>(MtsForceGroups::LongrangeNonbonded));
+    if (ir.useMts && !(ir.mtsLevels.size() == 2 && ir.mtsLevels[1].forceGroups == mtsLevelOnlyPme.forceGroups))
+    {
+        gpuIsUseful = false;
+        warning     = gmx::formatString(
+                "Multiple time stepping is only supported with GPUs when MTS is only applied to %s "
+                "forces.",
+                mtsForceGroupNames[MtsForceGroups::LongrangeNonbonded].c_str());
     }
 
     if (EI_TPI(ir.eI))
@@ -936,12 +954,6 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
     PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
-
-    // If we detected the topology on this system, double-check that it makes sense
-    if (hwinfo_->hardwareTopology->isThisSystem())
-    {
-        hardwareTopologyDoubleCheckDetection(mdlog, *hwinfo_->hardwareTopology);
-    }
 
     if (PAR(cr))
     {
@@ -1356,10 +1368,13 @@ int Mdrunner::mdrunner()
     std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
     if (useDomainDecomposition)
     {
-        // P2P GPU comm + GPU update leads to case in which we enqueue async work for multiple
-        // timesteps. DLB needs to be disabled in that case
-        const bool directGpuCommUsedWithGpuUpdate = GMX_THREAD_MPI && useGpuDirectHalo && useGpuForUpdate;
-        ddBuilder                                 = std::make_unique<DomainDecompositionBuilder>(
+        // The DD builder will disable useGpuDirectHalo if the Y or Z component of any domain is
+        // smaller than twice the communication distance, since GPU-direct communication presently
+        // only works with a single pulse in these dimensions, and we want to avoid box scaling
+        // resulting in fatal errors far into the simulation. Such small systems will not
+        // perform well on multiple GPUs in any case, but it is important that our core functionality
+        // (in particular for testing) does not break depending on GPU direct communication being enabled.
+        ddBuilder = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
                 cr,
                 domdecOptions,
@@ -1374,7 +1389,8 @@ int Mdrunner::mdrunner()
                 positionsFromStatePointer(globalState.get()),
                 useGpuForNonbonded,
                 useGpuForPme,
-                directGpuCommUsedWithGpuUpdate,
+                useGpuForUpdate,
+                &useGpuDirectHalo,
                 devFlags.enableGpuPmeDecomposition);
     }
     else
@@ -1499,6 +1515,23 @@ int Mdrunner::mdrunner()
                                                               canUseDirectGpuComm,
                                                               useGpuPmeDecomposition);
 
+
+    if (isSimulationMasterRank && GMX_GPU_SYCL)
+    {
+        const SimulationWorkload& simWorkload    = runScheduleWork.simulationWork;
+        bool                      haveAnyGpuWork = simWorkload.useGpuPme || simWorkload.useGpuBonded
+                              || simWorkload.useGpuNonbonded || simWorkload.useGpuUpdate;
+        if (haveAnyGpuWork)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "\nNOTE: SYCL GPU support in GROMACS is still new and less tested than "
+                            "other backends.\n"
+                            "Please, pay extra attention to the correctness of your results.");
+        }
+    }
+
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
@@ -1558,14 +1591,14 @@ int Mdrunner::mdrunner()
     // that existing affinity setting was from OpenMP or something
     // else, so we run this code both before and after we initialize
     // the OpenMP support.
-    gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->nthreads_hw_avail, FALSE);
+    gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), FALSE);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(
             &hw_opt, *hwinfo_, cr, ms, physicalNodeComm.size_, pmeRunMode, mtop, *inputrec);
 
     gmx_omp_nthreads_init(mdlog,
                           cr,
-                          hwinfo_->nthreads_hw_avail,
+                          hwinfo_->hardwareTopology->maxThreads(),
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
@@ -1607,7 +1640,7 @@ int Mdrunner::mdrunner()
          * - which indicates that probably the OpenMP library has changed it
          * since we first checked).
          */
-        gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->nthreads_hw_avail, TRUE);
+        gmx_check_thread_affinity_set(mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE);
 
         int numThreadsOnThisNode, intraNodeThreadOffset;
         analyzeThreadsOnThisNode(
@@ -2169,14 +2202,16 @@ int Mdrunner::mdrunner()
         physicalNodeComm.barrier();
     }
 
-    const bool usingCudaAwareMpiFeatures = GMX_LIB_MPI && GMX_GPU_CUDA
-                                           && (runScheduleWork.simulationWork.useGpuDirectCommunication
-                                               || runScheduleWork.simulationWork.useGpuPmeDecomposition);
-    if (!usingCudaAwareMpiFeatures)
+    const bool haveDetectedOrForcedCudaAwareMpi =
+            (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+             || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+    if (!haveDetectedOrForcedCudaAwareMpi)
     {
-        // Don't reset GPU in case of CUDA-AWARE MPI
-        // UCX creates CUDA buffers which are cleaned-up as part of MPI_Finalize()
+        // Don't reset GPU in case of GPU-AWARE MPI
+        // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
         // resetting the device before MPI_Finalize() results in crashes inside UCX
+        // This can also cause issues in tests that invoke mdrunner() multiple
+        // times in the same process; ref #3952.
         releaseDevice(deviceInfo);
     }
 

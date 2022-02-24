@@ -1,10 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2016- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -18,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -27,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gmxpre.h"
 
@@ -115,7 +114,7 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithAuto)
     ThreadAffinityTestHelper helper;
     const int                threadsPerRank = 2;
     helper.setLogicalProcessorCount(threadsPerRank * getNumberOfTestMpiRanks() - 1);
-    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper.setAffinity(threadsPerRank);
 }
 
@@ -126,7 +125,7 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
     const int                threadsPerRank = 2;
     helper.setAffinityOption(ThreadAffinity::On);
     helper.setLogicalProcessorCount(threadsPerRank * getNumberOfTestMpiRanks() - 1);
-    helper.expectWarningMatchingRegex("Oversubscribing the CPU");
+    helper.expectWarningMatchingRegex("Oversubscribing available/permitted CPUs");
     helper.setAffinity(threadsPerRank);
 }
 
@@ -158,7 +157,8 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 2, 1);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs",
+                                        isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -173,7 +173,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsOnNonMasterOnly)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 1, 2);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs", currentNode() == 0);
     if (currentNode() >= 1)
     {
         helper.expectPinningMessage(false, 1);
@@ -188,7 +188,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, HandlesUnknownHardwareOnNonMaster)
     ThreadAffinityTestHelper helper;
     helper.setAffinityOption(ThreadAffinity::On);
     setupNodes(&helper, 2, 0);
-    helper.expectWarningMatchingRegexIf("No information on available cores",
+    helper.expectWarningMatchingRegexIf("No information on available logical cpus",
                                         isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
@@ -203,7 +203,8 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnMasterOnly)
     GMX_MPI_TEST(RequireEvenRankCountWithAtLeastFourRanks);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, 2, 1);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", isMaster() || currentNode() == 1);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs",
+                                        isMaster() || currentNode() == 1);
     if (currentNode() == 0)
     {
         helper.expectPinningMessage(false, 1);
@@ -217,7 +218,7 @@ TEST_F(ThreadAffinityHeterogeneousNodesTest, PinsAutomaticallyOnNonMasterOnly)
     GMX_MPI_TEST(RequireEvenRankCountWithAtLeastFourRanks);
     ThreadAffinityTestHelper helper;
     setupNodes(&helper, 1, 2);
-    helper.expectWarningMatchingRegexIf("Oversubscribing the CPU", currentNode() == 0);
+    helper.expectWarningMatchingRegexIf("Oversubscribing available/permitted CPUs", currentNode() == 0);
     if (currentNode() >= 1)
     {
         helper.expectPinningMessage(false, 1);

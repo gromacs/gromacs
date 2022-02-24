@@ -1,11 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright 2012- The GROMACS Authors
+ * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
+ * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -19,7 +17,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * https://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
  *
  * If you want to redistribute modifications to GROMACS, please
@@ -28,10 +26,10 @@
  * consider code for inclusion in the official distribution, but
  * derived work must not be called official GROMACS. Details are found
  * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * official version at https://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the research papers on the package. Check out https://www.gromacs.org.
  */
 #include "gmxpre.h"
 
@@ -135,7 +133,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
     // Read-only access is enforced with providing those ranks with a
     // handle to a const object, so usage is also free of races.
     GMX_UNUSED_VALUE(physicalNodeComm);
-    isMasterRankOfPhysicalNode        = true;
+    isMasterRankOfPhysicalNode         = true;
 #endif
 
     /* The SYCL and OpenCL support requires us to run detection on all
@@ -202,7 +200,18 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
                                      const PhysicalNodeCommunicator& physicalNodeComm,
                                      gmx_hw_info_t*                  hardwareInfo)
 {
-    const int ncore = hardwareInfo->hardwareTopology->numberOfCores();
+    int nCores           = 0;
+    int nProcessingUnits = 0;
+    for (const auto& p : hardwareInfo->hardwareTopology->machine().packages)
+    {
+        nCores += p.cores.size();
+        for (const auto& c : p.cores)
+        {
+            nProcessingUnits += c.processingUnits.size();
+        }
+    }
+    int maxThreads = hardwareInfo->hardwareTopology->maxThreads();
+
     /* Zen1 is assumed for:
      * - family=23 with the below listed models;
      * - Hygon as vendor.
@@ -211,10 +220,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
 
     int numCompatibleDevices = getCompatibleDevices(hardwareInfo->deviceInfoList).size();
 #if GMX_LIB_MPI
-    int nhwthread;
     int gpu_hash;
 
-    nhwthread = hardwareInfo->nthreads_hw_avail;
     /* Create a unique hash of the GPU type(s) in this node */
     gpu_hash = 0;
     /* Here it might be better to only loop over the compatible GPU, but we
@@ -231,7 +238,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         gpu_hash ^= gmx_string_fullhash_func(deviceInfoString.c_str(), gmx_string_hash_init);
     }
 
-    constexpr int                      numElementsCounts = 4;
+    constexpr int                      numElementsCounts = 5;
     std::array<int, numElementsCounts> countsReduced;
     {
         std::array<int, numElementsCounts> countsLocal = { { 0 } };
@@ -241,114 +248,76 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         if (isMasterRankOfPhysicalNode)
         {
             countsLocal[0] = 1;
-            countsLocal[1] = ncore;
-            countsLocal[2] = nhwthread;
-            countsLocal[3] = numCompatibleDevices;
+            countsLocal[1] = nCores;
+            countsLocal[2] = nProcessingUnits;
+            countsLocal[3] = maxThreads;
+            countsLocal[4] = numCompatibleDevices;
         }
 
         MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
 
-    constexpr int                   numElementsMax = 11;
+    constexpr int                   numElementsMax = 13;
     std::array<int, numElementsMax> maxMinReduced;
     {
         std::array<int, numElementsMax> maxMinLocal;
         /* Store + and - values for all ranks,
          * so we can get max+min with one MPI call.
          */
-        maxMinLocal[0]  = ncore;
-        maxMinLocal[1]  = nhwthread;
-        maxMinLocal[2]  = numCompatibleDevices;
-        maxMinLocal[3]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
-        maxMinLocal[4]  = gpu_hash;
-        maxMinLocal[5]  = -maxMinLocal[0];
-        maxMinLocal[6]  = -maxMinLocal[1];
-        maxMinLocal[7]  = -maxMinLocal[2];
-        maxMinLocal[8]  = -maxMinLocal[3];
-        maxMinLocal[9]  = -maxMinLocal[4];
-        maxMinLocal[10] = (cpuIsAmdZen1 ? 1 : 0);
+        maxMinLocal[0]  = nCores;
+        maxMinLocal[1]  = nProcessingUnits;
+        maxMinLocal[2]  = maxThreads;
+        maxMinLocal[3]  = numCompatibleDevices;
+        maxMinLocal[4]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
+        maxMinLocal[5]  = gpu_hash;
+        maxMinLocal[6]  = -maxMinLocal[0];
+        maxMinLocal[7]  = -maxMinLocal[1];
+        maxMinLocal[8]  = -maxMinLocal[2];
+        maxMinLocal[9]  = -maxMinLocal[3];
+        maxMinLocal[10] = -maxMinLocal[4];
+        maxMinLocal[11] = -maxMinLocal[5];
+        maxMinLocal[12] = (cpuIsAmdZen1 ? 1 : 0);
 
         MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     }
 
-    hardwareInfo->nphysicalnode       = countsReduced[0];
-    hardwareInfo->ncore_tot           = countsReduced[1];
-    hardwareInfo->ncore_min           = -maxMinReduced[5];
-    hardwareInfo->ncore_max           = maxMinReduced[0];
-    hardwareInfo->nhwthread_tot       = countsReduced[2];
-    hardwareInfo->nhwthread_min       = -maxMinReduced[6];
-    hardwareInfo->nhwthread_max       = maxMinReduced[1];
-    hardwareInfo->ngpu_compatible_tot = countsReduced[3];
-    hardwareInfo->ngpu_compatible_min = -maxMinReduced[7];
-    hardwareInfo->ngpu_compatible_max = maxMinReduced[2];
-    hardwareInfo->simd_suggest_min    = -maxMinReduced[8];
-    hardwareInfo->simd_suggest_max    = maxMinReduced[3];
-    hardwareInfo->bIdenticalGPUs      = (maxMinReduced[4] == -maxMinReduced[9]);
-    hardwareInfo->haveAmdZen1Cpu      = (maxMinReduced[10] > 0);
+    hardwareInfo->nphysicalnode        = countsReduced[0];
+    hardwareInfo->ncore_tot            = countsReduced[1];
+    hardwareInfo->ncore_min            = -maxMinReduced[6];
+    hardwareInfo->ncore_max            = maxMinReduced[0];
+    hardwareInfo->nProcessingUnits_tot = countsReduced[2];
+    hardwareInfo->nProcessingUnits_min = maxMinReduced[7];
+    hardwareInfo->nProcessingUnits_max = maxMinReduced[1];
+    hardwareInfo->maxThreads_tot       = countsReduced[3];
+    hardwareInfo->maxThreads_min       = -maxMinReduced[8];
+    hardwareInfo->maxThreads_max       = maxMinReduced[2];
+    hardwareInfo->ngpu_compatible_tot  = countsReduced[4];
+    hardwareInfo->ngpu_compatible_min  = -maxMinReduced[9];
+    hardwareInfo->ngpu_compatible_max  = maxMinReduced[3];
+    hardwareInfo->simd_suggest_min     = -maxMinReduced[10];
+    hardwareInfo->simd_suggest_max     = maxMinReduced[4];
+    hardwareInfo->bIdenticalGPUs       = (maxMinReduced[5] == -maxMinReduced[11]);
+    hardwareInfo->haveAmdZen1Cpu       = (maxMinReduced[12] > 0);
+
 #else
-    hardwareInfo->nphysicalnode       = 1;
-    hardwareInfo->ncore_tot           = ncore;
-    hardwareInfo->ncore_min           = ncore;
-    hardwareInfo->ncore_max           = ncore;
-    hardwareInfo->nhwthread_tot       = hardwareInfo->nthreads_hw_avail;
-    hardwareInfo->nhwthread_min       = hardwareInfo->nthreads_hw_avail;
-    hardwareInfo->nhwthread_max       = hardwareInfo->nthreads_hw_avail;
-    hardwareInfo->ngpu_compatible_tot = numCompatibleDevices;
-    hardwareInfo->ngpu_compatible_min = numCompatibleDevices;
-    hardwareInfo->ngpu_compatible_max = numCompatibleDevices;
-    hardwareInfo->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
-    hardwareInfo->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
-    hardwareInfo->bIdenticalGPUs      = TRUE;
-    hardwareInfo->haveAmdZen1Cpu      = cpuIsAmdZen1;
+    hardwareInfo->nphysicalnode        = 1;
+    hardwareInfo->ncore_tot            = nCores;
+    hardwareInfo->ncore_min            = nCores;
+    hardwareInfo->ncore_max            = nCores;
+    hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
+    hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
+    hardwareInfo->nProcessingUnits_tot = nProcessingUnits;
+    hardwareInfo->maxThreads_tot       = maxThreads;
+    hardwareInfo->maxThreads_min       = maxThreads;
+    hardwareInfo->maxThreads_max       = maxThreads;
+    hardwareInfo->ngpu_compatible_tot  = numCompatibleDevices;
+    hardwareInfo->ngpu_compatible_min  = numCompatibleDevices;
+    hardwareInfo->ngpu_compatible_max  = numCompatibleDevices;
+    hardwareInfo->simd_suggest_min     = static_cast<int>(simdSuggested(cpuInfo));
+    hardwareInfo->simd_suggest_max     = static_cast<int>(simdSuggested(cpuInfo));
+    hardwareInfo->bIdenticalGPUs       = TRUE;
+    hardwareInfo->haveAmdZen1Cpu       = cpuIsAmdZen1;
     GMX_UNUSED_VALUE(physicalNodeComm);
-#endif
-}
-
-void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused& mdlog,
-                                          const gmx::HardwareTopology gmx_unused& hardwareTopology)
-{
-#if defined HAVE_SYSCONF && defined(_SC_NPROCESSORS_CONF)
-    if (hardwareTopology.supportLevel() < gmx::HardwareTopology::SupportLevel::LogicalProcessorCount)
-    {
-        return;
-    }
-
-    int countFromDetection = hardwareTopology.machine().logicalProcessorCount;
-    int countConfigured    = sysconf(_SC_NPROCESSORS_CONF);
-
-    /* BIOS, kernel or user actions can take physical processors
-     * offline. We already cater for the some of the cases inside the hardwareToplogy
-     * by trying to spin up cores just before we detect, but there could be other
-     * cases where it is worthwhile to hint that there might be more resources available.
-     */
-    if (countConfigured >= 0 && countConfigured != countFromDetection)
-    {
-        GMX_LOG(mdlog.info)
-                .appendTextFormatted(
-                        "Note: %d CPUs configured, but only %d were detected to be online.\n",
-                        countConfigured,
-                        countFromDetection);
-
-        if (c_architecture == Architecture::X86 && countConfigured == 2 * countFromDetection)
-        {
-            GMX_LOG(mdlog.info)
-                    .appendText(
-                            "      X86 Hyperthreading is likely disabled; enable it for better "
-                            "performance.");
-        }
-        // For PowerPC (likely Power8) it is possible to set SMT to either 2,4, or 8-way hardware threads.
-        // We only warn if it is completely disabled since default performance drops with SMT8.
-        if (c_architecture == Architecture::PowerPC && countConfigured == 8 * countFromDetection)
-        {
-            GMX_LOG(mdlog.info)
-                    .appendText(
-                            "      PowerPC SMT is likely disabled; enable SMT2/SMT4 for better "
-                            "performance.");
-        }
-    }
-#else
-    GMX_UNUSED_VALUE(mdlog);
-    GMX_UNUSED_VALUE(hardwareTopology);
 #endif
 }
 
@@ -359,9 +328,6 @@ std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicato
     auto hardwareInfo = std::make_unique<gmx_hw_info_t>(
             std::make_unique<CpuInfo>(CpuInfo::detect()),
             std::make_unique<HardwareTopology>(HardwareTopology::detect()));
-
-    // TODO: Get rid of this altogether.
-    hardwareInfo->nthreads_hw_avail = hardwareInfo->hardwareTopology->machine().logicalProcessorCount;
 
     // Detect GPUs
     // Open a nested scope so no temporary variables can

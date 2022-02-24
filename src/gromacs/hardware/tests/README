@@ -1,0 +1,43 @@
+Since the cpuinfo and hardware topology tests by nature rely on reading
+properties of the hardware on which we execute the binary, the tests
+partly rely on mocking detection and relying on previously collected
+data. Although you can set this manually, in general it is better to
+collect the data with the same methods that we will later test.
+
+1. To capture an initializer list of x86 CPU APIC indices, compile a
+   standalone version of cpuinfo.cpp with
+
+   g++ -std=c++17 -DGMX_CPUINFO_STANDALONE -DHAVE_SCHED_H -DHAVE_UNISTD_H \
+        -DGMX_X86_GCC_INLINE_ASM=1 -DHAVE_SCHED_AFFINITY=1 -DHAVE_SYSCONF \
+	cpuinfo.cpp -o cpuinfo
+
+   ... and execute it as "./cpuinfo -topology".
+
+2. To capture Linux sys/fs files to detect processor topology, use
+   the script
+
+   capture-topology.sh <output_root_path>
+
+3. To capture Linux cgroups information (for cpu load), use the script
+
+   capture-cgroups.sh <output_root_path>
+   
+For both the scripts, the output path can be either absolute or relative
+to the current working directory - it will be created if it does not
+exist. The entire tree of (relevant, meaning 'used') files to perform
+the detection will be copied from the actual root to this path.
+
+To avoid creating too many files (even if they are small), note that you
+do not need the topology files for the tests that generate a
+hardware topology directory from APIC IDs (but we will check cgroups).
+
+To capture the logical CPU IDs of processors you are actually
+allowed to run on, by far the easiest solution is to just call 'lstopo'
+from hwloc.
+
+Finally, when it comes to generating the reference date, the best option
+is likely to first run the test in non-mocking mode, i.e. properly
+detecting the topology for the setup you want to test. Then you should
+only need to capture the relevant input files and change the field
+IsThisSystem in the reference data to 'false' - after which you should
+get the same result with the mocking test.

@@ -7,28 +7,19 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
-GPU direct communication is default with CUDA and thread-MPI
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-GPU-enabled multi-rank runs using CUDA will default to using direct
-GPU communication for halo exchange and/or PP-PME communication.
-This can be disabled using the GMX_DISABLE_DIRECT_GPU_COMM
-environment variable to return to the previous default
-communication scheme (staged communication).
-Regular MPI runs still use staged communication by default.
-
 GPU direct communication with CUDA-aware MPI
 """"""""""""""""""""""""""""""""""""""""""""
 
 Direct GPU communication support has been extended to simulations that use
 a CUDA-aware library-MPI when running on NVIDIA GPUs. Detection of CUDA-aware MPI
 is performed both at cmake-time and runtime. The feature has been tested
-primarily with OpenMPI but any CUDA-aware MPI implementation should be suitable.
+primarily with OpenMPI but any CUDA-aware MPI implementation should be suitable,
+and it is also possible to use with the thread-MPI implementation in |Gromacs|.
 CUDA-aware MPI support still lacks substantial testing, hence it is included
 in the current release as a development feature and should be used with caution.
-Hence, even if a suitable MPI is detected, direct communication in this case,
-unlike with thread-MPI, is not used by default, but it can be enabled using the
-GMX_ENABLE_DIRECT_GPU_COMM environment variable.
+Hence, even if a suitable MPI is detected, direct communication is not used by
+default, but it can be enabled using the GMX_ENABLE_DIRECT_GPU_COMM environment
+variable.
 
 :issue:`3960`
 :issue:`2915`
@@ -77,6 +68,14 @@ will now use the domain decomposition machinery to reorder particles.
 This can improve performance, especially for large systems. This
 behavior can be controlled with the environment variable
 GMX_DD_SINGLE_RANK.
+
+Restricted GPU support with multiple time stepping
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+GPUs can be used in combination with MTS, but for now this is limited
+to the setup where only the long-range nonbonded force is applied
+in longer timesteps (and computed on the CPU), while all other 
+components are are calculated every step (which can be on the GPU).
 
        
 ``gmx grompp`` now runs 20-50% faster

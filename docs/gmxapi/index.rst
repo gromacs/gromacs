@@ -20,7 +20,12 @@ Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gm
 
 .. seealso::
 
-    gmxapi was first described by
+    gmxapi publications
+
+    Irrgang, M. E., Davis, C., & Kasson, P. M.
+    gmxapi: A GROMACS-native Python interface for molecular dynamics with ensemble and plugin support.
+    *PLOS Comput Biol* 2022.
+    DOI: `10.1371/journal.pcbi.1009835 <https://dx.plos.org/10.1371/journal.pcbi.1009835>`_
 
     Irrgang, M. E., Hays, J. M., & Kasson, P. M.
     gmxapi: a high-level interface for advanced control and extension of molecular dynamics simulations.
