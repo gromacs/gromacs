@@ -26,6 +26,14 @@ There would be a segfault when deciding whether early PME results are needed.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Add polyproline helix coloring to DSSP maps
+"""""""""""""""""""""""""""""""""""""""""""
+
+DSSP-4.0 can detect polyproline type-2 helices, so we now also
+have a dark blue-green color entry for this in the generated maps.
+
+:issue:`4410`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
