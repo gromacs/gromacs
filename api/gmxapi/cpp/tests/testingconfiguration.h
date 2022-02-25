@@ -49,17 +49,15 @@
 #include "programs/mdrun/tests/moduletest.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
+#if GMX_THREAD_MPI
+#    include "testutils/mpitest.h"
+#endif
 
 namespace gmxapi
 {
 
 namespace testing
 {
-
-#if GMX_OPENMP || defined(DOXYGEN)
-//! Number of OpenMP threads for child mdrun call.
-static constexpr int g_numOpenMPThreads = 2;
-#endif
 
 /*! \brief Helper function to get step size as floating point number.
  *
@@ -178,15 +176,13 @@ public:
             mdArgs.emplace_back(runner_.cptOutputFileName_);
         }
 #if GMX_THREAD_MPI
-        /* This should be handled through the actual API we have for getting
-         * ranks, but currently this leads to data races right now */
         mdArgs.emplace_back("-ntmpi");
-        mdArgs.emplace_back("1");
+        mdArgs.emplace_back(std::to_string(gmx::test::getNumberOfTestMpiRanks()));
 #endif
 
 #if GMX_OPENMP
         mdArgs.emplace_back("-ntomp");
-        mdArgs.emplace_back(std::to_string(g_numOpenMPThreads));
+        mdArgs.emplace_back(std::to_string(gmx::test::getNumberOfTestOpenMPThreads()));
 #endif
 
         return mdArgs;

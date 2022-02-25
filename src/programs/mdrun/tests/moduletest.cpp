@@ -391,5 +391,14 @@ MdrunTestFixture::~MdrunTestFixture()
 #endif
 }
 
+int getNumberOfTestOpenMPThreads()
+{
+#if GMX_OPENMP
+    return g_numOpenMPThreads;
+#else
+    return 1;
+#endif
+}
+
 } // namespace test
 } // namespace gmx

@@ -251,6 +251,14 @@ class ParameterizedMdrunTestFixture :
 {
 };
 
+/*! \internal
+ * \brief
+ * Returns the number of OpenMP threads to use.
+ *
+ * \returns the number specified using \c -ntomp option, or the default.
+ */
+int getNumberOfTestOpenMPThreads();
+
 } // namespace test
 } // namespace gmx
 
