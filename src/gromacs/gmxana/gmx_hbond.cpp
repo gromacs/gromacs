@@ -2844,11 +2844,9 @@ int gmx_hbond(int argc, char* argv[])
 #    define __ADIST adist // NOLINT(bugprone-reserved-identifier)
 #    define __RDIST rdist // NOLINT(bugprone-reserved-identifier)
 #    define __HBDATA hb   // NOLINT(bugprone-reserved-identifier)
-#else                     /* GMX_OPENMP ==================================================    \
-                           * Set up the OpenMP stuff,                                       | \
-                           * like the number of threads and such                            | \
-                           * Also start the parallel loop.                                  | \
-                           */
+#else
+// Set up the OpenMP stuff, like the number of threads and such
+// Also start the parallel loop.
 #    define __ADIST p_adist[threadNr] // NOLINT(bugprone-reserved-identifier)
 #    define __RDIST p_rdist[threadNr] // NOLINT(bugprone-reserved-identifier)
 #    define __HBDATA p_hb[threadNr]   // NOLINT(bugprone-reserved-identifier)
@@ -2896,32 +2894,8 @@ int gmx_hbond(int argc, char* argv[])
     /* Make a thread pool here,
      * instead of forking anew at every frame. */
 
-#pragma omp parallel firstprivate(i) private(j,         \
-                                             h,         \
-                                             xi,        \
-                                             yi,        \
-                                             zi,        \
-                                             xj,        \
-                                             yj,        \
-                                             zj,        \
-                                             threadNr,  \
-                                             dist,      \
-                                             ang,       \
-                                             icell,     \
-                                             jcell,     \
-                                             grp,       \
-                                             ogrp,      \
-                                             ai,        \
-                                             aj,        \
-                                             xjj,       \
-                                             yjj,       \
-                                             zjj,       \
-                                             ihb,       \
-                                             resdist,   \
-                                             k,         \
-                                             bTric,     \
-                                             bEdge_xjj, \
-                                             bEdge_yjj) default(shared)
+#pragma omp parallel firstprivate(i, h, dist, ang) private( \
+        j, xi, yi, zi, xj, yj, zj, threadNr, icell, jcell, grp, ogrp, ai, aj, xjj, yjj, zjj, ihb, resdist, k, bTric, bEdge_xjj, bEdge_yjj) default(shared)
     { /* Start of parallel region */
         if (bOMP)
         {
