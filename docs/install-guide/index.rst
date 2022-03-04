@@ -1012,12 +1012,10 @@ The library archive (*e.g.* :file:`libcp2k.a`) should appear in the :file:`{<cp2
 
 3. Configure |Gromacs| with :command:`cmake`, adding the following flags.
 
-Build should be static:
-* ``-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF``
+Build should be static: ``-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF``
 
 Double precision in general is better than single for QM/MM 
-(however both options are viable):
-* ``-DGMX_DOUBLE=ON``
+(however both options are viable): ``-DGMX_DOUBLE=ON``
 
 FFT, BLAS and LAPACK libraries should be the same between CP2K and |Gromacs|.
 Use the following flags to do so:
@@ -1032,13 +1030,14 @@ Use the following flags to do so:
     Activates QM/MM interface compilation
 ``-DCP2K_DIR="<path to cp2k>/lib/local/psmp``
     Directory with libcp2k.a library
-``-DCP2K_LINKER_FLAGS="<combination of LDFLAGS and LIBS>"``
+``-DCP2K_LINKER_FLAGS="<combination of LDFLAGS and LIBS>"`` (optional for CP2K 9.1 or newer)
     Other libraries used by CP2K. Typically that should be combination 
     of LDFLAGS and LIBS from the ARCH file used for CP2K compilation.
     Sometimes ARCH file could have several lines defining LDFLAGS and LIBS
-    or even split one line into several using "\". In that case all of them
+    or even split one line into several using "\\". In that case all of them
     should be concatenated into one long string without any extra slashes 
-    or quotes.
+    or quotes. For CP2K versions 9.1 or newer, CP2K_LINKER_FLAGS is not required
+    but still might be used in very specific situations.
 
 .. _suffixes:
 
