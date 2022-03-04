@@ -215,18 +215,15 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
         }
     }
 
-#if GMX_LIB_MPI
-    int  rank;
     char host[STRLEN];
-
     gmx_gethostname(host, STRLEN);
 
+#if GMX_LIB_MPI
+    int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    // TODO Use a wrapper around MPI_Get_processor_name instead.
     s += gmx::formatString("Hardware detected on host %s (the node of MPI rank %d):\n", host, rank);
 #else
-    s += gmx::formatString("Hardware detected:\n");
+    s += gmx::formatString("Hardware detected on host %s:\n", host);
 #endif
     s += gmx::formatString("  CPU info:\n");
 
