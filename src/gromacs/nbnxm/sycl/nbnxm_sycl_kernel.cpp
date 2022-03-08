@@ -281,7 +281,7 @@ static inline float pmeCorrF(const float z2)
 template<typename T>
 static inline T lerp(T d0, T d1, T t)
 {
-    return fma(t, d1, fma(-t, d0, d0));
+    return sycl::fma(t, d1, sycl::fma(-t, d0, d0));
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
