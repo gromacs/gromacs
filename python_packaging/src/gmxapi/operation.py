@@ -125,6 +125,17 @@ class ResultDescription(typing.Generic[ResultTypeVar]):
             raise ApiError(f'dtype {repr(dtype)} is not a valid result type.')
         self._dtype = typing.cast(typing.Type[ResultTypeVar], dtype)
 
+        typename = getattr(
+            self._dtype,
+            '__qualname__',
+            getattr(
+                self._dtype,
+                '__name__',
+                repr(self._dtype)
+            )
+        )
+        self.__representation = f'{self.__class__.__name__}(dtype={typename}, width={width})'
+
     @property
     def dtype(self) -> typing.Type[ResultTypeVar]:
         """node output type"""
@@ -136,7 +147,7 @@ class ResultDescription(typing.Generic[ResultTypeVar]):
         return self._width
 
     def __repr__(self):
-        return '{}(dtype={}, width={})'.format(self.__class__.__name__, self.dtype, self.width)
+        return self.__representation
 
     def __eq__(self, other):
         return self._dtype == typing.cast(ResultDescription, other).dtype \
@@ -475,6 +486,12 @@ class InputCollectionDescription(collections.OrderedDict):
         super().__init__([(input.name, input.annotation) for input in inputs])
         self.signature = inspect.Signature(inputs)
 
+    def __repr__(self):
+        representation = f'<{self.__class__.__name__}: '
+        representation += ', '.join(f'{key}={repr(val)}' for key, val in self.items())
+        representation += '>'
+        return representation
+
     @staticmethod
     def from_function(function):
         """Inspect a function to be wrapped.
@@ -595,6 +612,10 @@ class ProxyDataDescriptor(object):
             raise ApiError(
                 f'Attribute name {self._owner_name}.{name} does not match '
                 f'{self.__class__.__name__}._name: {self._name}')
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} ' \
+               f'"{self._owner_name}.{self._name}", {self._dtype}>'
 
 
 class DataProxyMeta(abc.ABCMeta):
@@ -742,6 +763,11 @@ class DataProxyBase(collections.abc.Mapping, metaclass=DataProxyMeta):
         # Collection is fixed by the time of instance creation, so cache it.
         self.__keys = tuple([key for key, _ in self.items()])
         self.__length = len(self.__keys)
+
+    def __repr__(self):
+        representation = f'<{self.__class__.__name__} for {self._resource_instance} ' \
+                         f'client {self._client_identifier})>'
+        return representation
 
     @property
     def ensemble_width(self) -> int:
@@ -980,6 +1006,13 @@ class StaticSourceManager(SourceResource[_OutputDataProxyType, _PublishingDataPr
 
         output_collection_description = OutputCollectionDescription(**{name: dtype})
         self.output_data_proxy = define_output_data_proxy(output_description=output_collection_description)
+
+        self.__representation = f'<{self.__class__.__name__}: "{name}", ' \
+                                f'{repr(proxied_data)}, width={width}, function=' \
+                                f'{repr(function)}>'
+
+    def __repr__(self):
+        return self.__representation
 
     def is_done(self, name: str) -> bool:
         return True
@@ -2447,10 +2480,12 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
         return f'{self._base_operation_id}_i{self.__reset_counter}'
 
-    @property
-    def operation_id(self):
-        # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
-        return f'{self._base_operation_id}_i{self.__reset_counter}'
+    def __repr__(self):
+        representation = f'<{self.__class__.__qualname__} {self.operation_id}: width={self.width()}, '
+        representation += ', '.join(f'{name}: {data}' for name, data in self._data.items())
+        representation += '>'
+        return representation
+
 
     def _receive_completion_signal(self, obj: 'DataStore'):
         # Finalize. Confirm that the runner calls succeeded in finalizing the work graph node.
@@ -3161,6 +3196,10 @@ class OperationHandle(AbstractOperation[_OutputDataProxyType]):
         uid = getattr(self.__resource_manager, 'operation_id', None)
         return uid
 
+    def __repr__(self):
+        representation = f'<{self.__class__.__name__} ({self.__resource_manager})>'
+        return representation
+
     @property
     def output(self) -> _OutputDataProxyType:
         # TODO: We can configure `output` as a data descriptor
@@ -3354,6 +3393,13 @@ class InputPack(object):
 
     def __init__(self, kwargs: typing.Mapping[str, SourceTypeVar]):
         self.kwargs = kwargs
+
+    def __repr__(self):
+        representation = f'{self.__class__.__name__}('
+        representation += ', '.join(f'{key}={repr(value)}' for key, value in
+                                    self.kwargs.items())
+        representation += ')'
+        return representation
 
 
 class Context(gmx.abc.Context):
@@ -3730,6 +3776,9 @@ def function_wrapper(output: dict = None, allow_duplicate=False):
             _SourceResource = SourceResource[_output_data_proxy_type, _publishing_data_proxy_type]
 
             _allow_duplicate = allow_duplicate
+
+            def __repr__(self):
+                return f'<{self.__basename}(OperationDetailsBase)>'
 
             @classmethod
             def name(cls) -> str:
@@ -4563,6 +4612,33 @@ class SubgraphBuilder(object):
                 self.internal_references = {_name: _future for _name, _future in state_variables.items() if
                                             _name in self.output_variable_updates}
 
+                # Cache for representation. (initially "expired")
+                self.__representation = None
+
+            def _update_representation(self):
+                # Developer note: expire the representation cache when updating *values* or
+                # *futures* members.
+                # Cached representation depends on self.values and self.update_sources. This feature is for
+                # debugging, and these details are pretty fluid. We could, of course, use a fancier data
+                # model with callbacks to expire the cache as needed, but that would be needless
+                # obfuscation and would probably destroy the performance benefit of the cached
+                # representation, anyway.
+                representation = '<Subgraph: values={'
+                representation += ', '.join(f'{key}={repr(value)}' for key, value in
+                                            self.values.items())
+                representation += '}, futures={'
+                representation += ', '.join(f'{key}={repr(value)}' for key, value in
+                                            self.futures.items())
+                representation += '}>'
+                self.__representation = representation
+                return representation
+
+            def __repr__(self):
+                representation = self.__representation
+                if not representation:
+                    representation = self._update_representation()
+                return representation
+
             def run(self):
                 # Bring the stored Futures up to date for the current iteration.
                 # For Futures that depend on subgraph-internal data flow, re-stage updates for the next
@@ -4583,6 +4659,8 @@ class SubgraphBuilder(object):
                     logger.debug('Update: {} = {}'.format(name, result))
                     self.value_width[name] = source_description.width
                     self.values[name] = result
+                    # Expire the cached representation.
+                    self.__representation = None
 
                     # Get a new ResourceManager for the Future serving the subgraph variable (for the next
                     # iteration).
@@ -4607,6 +4685,8 @@ class SubgraphBuilder(object):
                     _output.name = attrs['key']
                     _output.resource_manager = attrs['resource_manager']
                     _output.description = attrs['description']
+                    # Expire the cached representation.
+                    self.__representation = None
                     if name in self.internal_references:
                         _internal: Future = self.internal_references[name]
                         # The following assertions test the author's assumptions, not specified behavior.
@@ -4621,6 +4701,7 @@ class SubgraphBuilder(object):
                         _internal.name = self.futures[name].name
                 for _future in self.output_variable_updates.values():
                     _future._reset()
+                    self.__representation = None
 
         self._subgraph_instance = Subgraph(
             input_variables=inputs,
