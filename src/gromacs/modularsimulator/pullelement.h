@@ -43,6 +43,8 @@
 #ifndef GMX_MODULARSIMULATOR_PULLELEMENT_H
 #define GMX_MODULARSIMULATOR_PULLELEMENT_H
 
+#include "gromacs/mdtypes/md_enums.h"
+
 #include "modularsimulatorinterfaces.h"
 
 struct gmx_mtop_t;

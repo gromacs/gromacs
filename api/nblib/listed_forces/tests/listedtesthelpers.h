@@ -46,6 +46,8 @@
 #ifndef NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 #define NBLIB_LISTEDFORCES_LISTEDTESTHELPERS_H
 
+#include "gromacs/math/vectypes.h"
+
 #include "nblib/listed_forces/definitions.h"
 
 namespace nblib

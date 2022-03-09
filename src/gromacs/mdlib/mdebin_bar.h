@@ -35,6 +35,11 @@
 #ifndef GMX_MDLIB_MDEBIN_BAR_H
 #define GMX_MDLIB_MDEBIN_BAR_H
 
+#include <cstdint>
+
+#include <array>
+#include <vector>
+
 #include "gromacs/utility/real.h"
 
 /* The functions & data structures here describe writing
