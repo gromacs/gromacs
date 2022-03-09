@@ -48,6 +48,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arrayref.h"
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"

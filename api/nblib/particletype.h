@@ -49,8 +49,8 @@
 
 #include <string>
 
-#include "nblib/util/util.hpp"
 #include "nblib/basicdefinitions.h"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

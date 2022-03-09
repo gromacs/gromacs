@@ -35,12 +35,12 @@
 
 #include "vsite_parm.h"
 
-#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"

@@ -32,9 +32,10 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+#include "gmxapi/version.h"
+
 #include <climits>
 
-#include "gmxapi/version.h"
 #include "testingconfiguration.h"
 
 namespace gmxapi

@@ -2,19 +2,19 @@
 // Created by Eric Irrgang on 3/24/18.
 //
 
-#include "testingconfiguration.h"
-
 #include <iostream>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "ensemblepotential.h"
 #include "sessionresources.h"
-
-#include <gtest/gtest.h>
+#include "testingconfiguration.h"
 
 using ::gmx::Vector;
 
-namespace {
+namespace
+{
 
 std::ostream& operator<<(std::ostream& stream, const Vector& vec)
 {
@@ -24,14 +24,14 @@ std::ostream& operator<<(std::ostream& stream, const Vector& vec)
 
 TEST(EnsembleHistogramPotentialPlugin, ForceCalc)
 {
-    const Vector zerovec = {0, 0, 0};
+    const Vector zerovec = { 0, 0, 0 };
     // define some unit vectors
-    const Vector e1{real(1), real(0), real(0)};
-    const Vector e2{real(0), real(1), real(0)};
-    const Vector e3{real(0), real(0), real(1)};
+    const Vector e1{ real(1), real(0), real(0) };
+    const Vector e2{ real(0), real(1), real(0) };
+    const Vector e3{ real(0), real(0), real(1) };
 
-    const real R0{1.0};
-    const real k{1.0};
+    const real R0{ 1.0 };
+    const real k{ 1.0 };
 
     // store temporary values long enough for inspection
     Vector force{};
@@ -44,32 +44,30 @@ TEST(EnsembleHistogramPotentialPlugin, ForceCalc)
     */
 
     // Define a reference distribution with a triangular peak at the 1.0 bin.
-    const std::vector<double>
-    experimental{{0, 1, 0, 0, 0, 0, 0, 0, 0, 0}};
+    const std::vector<double> experimental{ { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 
-    plugin::EnsemblePotential restraint{10, // nbins
-                                    1.0, // binWidth
-                                    0.0, // minDist
-                                    10.0, // maxDist
-                                    experimental, // experimental reference histogram
-                                    1, // nSamples
-                                    0.001, // samplePeriod
-                                    1, // nWindows
-                                    100., // k
-                                    1.0 // sigma
-                                    };
+    plugin::EnsemblePotential restraint{
+        10,           // nbins
+        1.0,          // binWidth
+        0.0,          // minDist
+        10.0,         // maxDist
+        experimental, // experimental reference histogram
+        1,            // nSamples
+        0.001,        // samplePeriod
+        1,            // nWindows
+        100.,         // k
+        1.0           // sigma
+    };
 
-    auto calculateForce =
-        [&restraint](const Vector& a, const Vector& b, double t)
-        {
-            return restraint.calculate(a,b,t).force;
-        };
+    auto calculateForce = [&restraint](const Vector& a, const Vector& b, double t) {
+        return restraint.calculate(a, b, t).force;
+    };
 
     // With the initial histogram (all zeros) the force should be zero no matter where the particles are.
     ASSERT_EQ(static_cast<real>(0.0), norm(calculateForce(e1, e1, 0.)));
     ASSERT_EQ(static_cast<real>(0.0), norm(calculateForce(e1, e2, 0.)));
-    ASSERT_EQ(static_cast<real>(0.0), norm(calculateForce(e1, static_cast<real>(-1)*e1, 0.)));
+    ASSERT_EQ(static_cast<real>(0.0), norm(calculateForce(e1, static_cast<real>(-1) * e1, 0.)));
 
     /* In 0.0.7, we cannot have a SessionResource without a Session. We can't
      * really do this mock-up test in the 0.0.7 infrastructure without some

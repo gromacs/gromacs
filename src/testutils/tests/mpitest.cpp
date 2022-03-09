@@ -46,8 +46,8 @@
 
 #include <vector>
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"

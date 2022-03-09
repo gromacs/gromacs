@@ -36,11 +36,11 @@
 
 #include "config.h"
 
+#include <emmintrin.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <emmintrin.h>
 
 #include "impl_x86_sse2_simd_double.h"
 

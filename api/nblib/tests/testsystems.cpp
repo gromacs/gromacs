@@ -42,6 +42,7 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "nblib/tests/testsystems.h"
+
 #include "nblib/exception.h"
 
 namespace nblib

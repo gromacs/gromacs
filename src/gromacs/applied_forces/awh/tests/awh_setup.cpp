@@ -41,8 +41,8 @@
 #include <tuple>
 #include <vector>
 
-#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/awh/bias.h"

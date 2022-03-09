@@ -48,13 +48,14 @@
 #include <string>
 #include <vector>
 
-#include "buildinfo.h"
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "buildinfo.h"
 
 namespace gmx
 {

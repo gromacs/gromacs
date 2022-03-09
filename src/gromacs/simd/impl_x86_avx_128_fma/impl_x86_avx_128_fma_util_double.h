@@ -37,11 +37,11 @@
 
 #include "config.h"
 
-#include <cassert>
-#include <cstddef>
-
 #include <immintrin.h>
 #include <x86intrin.h>
+
+#include <cassert>
+#include <cstddef>
 
 #include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_util_double.h"
 

@@ -35,8 +35,6 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/fileio/tpxio.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -49,6 +47,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/awh_history.h"

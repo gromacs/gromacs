@@ -34,9 +34,9 @@
 #ifndef GMX_MDLIB_SIGHANDLER_H
 #define GMX_MDLIB_SIGHANDLER_H
 
-#include "gromacs/utility/basedefinitions.h"
-
 #include <csignal>
+
+#include "gromacs/utility/basedefinitions.h"
 
 /* NOTE: the terminology is:
    incoming signals (provided by the operating system, or transmitted from

@@ -48,6 +48,7 @@
 #define GMX_PULLING_PULL_H
 
 #include <cstdio>
+
 #include <optional>
 
 #include "gromacs/math/vectypes.h"

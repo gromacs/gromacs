@@ -36,10 +36,10 @@
 
 #include "config.h"
 
+#include <arm_neon.h>
+
 #include <cassert>
 #include <cstddef>
-
-#include <arm_neon.h>
 
 namespace gmx
 {

@@ -45,8 +45,8 @@
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/any.h"
 #include "gromacs/utility/keyvaluetree.h"

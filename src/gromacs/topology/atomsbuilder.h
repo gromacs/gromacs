@@ -45,7 +45,6 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 

@@ -43,6 +43,7 @@
  */
 
 #include "nblib/util/setup.h"
+
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/arrayref.h"

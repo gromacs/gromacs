@@ -41,12 +41,13 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 #include "gromacs/utility/arrayref.h"
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/listed_forces/tests/listedtesthelpers.h"
-#include "nblib/tests/testhelpers.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "nblib/listed_forces/dataflow.hpp"
+#include "nblib/listed_forces/tests/listedtesthelpers.h"
+#include "nblib/tests/testhelpers.h"
 
 namespace nblib
 {

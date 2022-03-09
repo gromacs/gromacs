@@ -39,11 +39,11 @@
  *
  * \ingroup module_python
  */
-#include "module.h"
-
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/version.h"
+
+#include "module.h"
 #include "pycontext.h"
 
 

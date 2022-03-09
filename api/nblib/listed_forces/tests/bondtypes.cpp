@@ -41,9 +41,10 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 #include "nblib/listed_forces/bondtypes.h"
-#include "nblib/util/util.hpp"
 
 #include "testutils/testasserts.h"
+
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

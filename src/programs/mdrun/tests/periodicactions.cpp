@@ -41,9 +41,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "periodicactions.h"
+
+#include "config.h"
 
 namespace gmx
 {

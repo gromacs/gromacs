@@ -35,9 +35,10 @@
 #ifndef GMX_GMXLIB_NRNB_H
 #define GMX_GMXLIB_NRNB_H
 
-#include <array>
 #include <cstdint>
 #include <cstdio>
+
+#include <array>
 
 enum
 {

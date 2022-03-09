@@ -38,12 +38,12 @@
 #include "config.h"
 
 #include <cmath>
-#include <set>
 
 #include <algorithm>
+#include <set>
 
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -56,8 +56,8 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "nb_softcore.h"
 

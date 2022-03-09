@@ -55,7 +55,6 @@
 #include <type_traits>
 
 #include "gromacs/math/functions.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"

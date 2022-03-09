@@ -53,8 +53,8 @@
 #include "gromacs/pbcutil/boxutilities.h"
 
 #include "energydata.h"
-#include "statepropagatordata.h"
 #include "simulatoralgorithm.h"
+#include "statepropagatordata.h"
 
 namespace gmx
 {

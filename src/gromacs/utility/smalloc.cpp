@@ -40,10 +40,9 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <mutex>
-
-#include <cstring>
 
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/fatalerror.h"

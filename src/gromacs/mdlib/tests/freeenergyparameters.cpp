@@ -45,9 +45,9 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/inputrec.h"
-
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 

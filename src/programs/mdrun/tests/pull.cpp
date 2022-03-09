@@ -43,10 +43,10 @@
 
 #include <map>
 #include <memory>
+#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <regex>
 
 #include <gtest/gtest.h>
 

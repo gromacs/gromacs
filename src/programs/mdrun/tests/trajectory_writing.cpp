@@ -43,9 +43,9 @@
 
 #include "config.h"
 
-#include <gtest/gtest.h>
-
 #include <string>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"

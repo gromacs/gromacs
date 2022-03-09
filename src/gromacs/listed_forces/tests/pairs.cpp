@@ -49,7 +49,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/listed_forces/bonded.h"
+#include "gromacs/listed_forces/pairs.h"
 
 #include <cmath>
 
@@ -58,28 +58,28 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/listed_forces/bonded.h"
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/listed_forces/pairs.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
-#include "gromacs/tables/forcetable.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
-#include "gromacs/utility/fatalerror.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

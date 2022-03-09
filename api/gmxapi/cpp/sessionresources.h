@@ -48,8 +48,8 @@
 
 #include <string>
 
-#include "gmxapi/session.h"
 #include "gmxapi/md/mdsignals.h"
+#include "gmxapi/session.h"
 #include "gmxapi/session/resources.h"
 
 namespace gmxapi

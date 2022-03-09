@@ -40,11 +40,10 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/topology/mtop_util.h"
-
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_util.h"
 
 namespace gmx
 {

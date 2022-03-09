@@ -35,11 +35,11 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_UTIL_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_AVX_512_KNL_UTIL_DOUBLE_H
 
+#include <immintrin.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <immintrin.h>
 
 #include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_util_double.h"
 

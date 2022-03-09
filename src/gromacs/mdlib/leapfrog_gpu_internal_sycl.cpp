@@ -44,8 +44,6 @@
  */
 #include "gmxpre.h"
 
-#include "leapfrog_gpu_internal.h"
-
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/math/vec.h"
@@ -54,6 +52,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/template_mp.h"
+
+#include "leapfrog_gpu_internal.h"
 
 //! \brief Class name for leap-frog kernel
 template<gmx::NumTempScaleValues numTempScaleValues, gmx::VelocityScalingType velocityScaling>

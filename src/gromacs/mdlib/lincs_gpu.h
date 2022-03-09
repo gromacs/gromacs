@@ -45,9 +45,9 @@
 
 #include <memory>
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"

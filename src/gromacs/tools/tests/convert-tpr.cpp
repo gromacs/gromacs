@@ -39,12 +39,12 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/fileio/tpxio.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"

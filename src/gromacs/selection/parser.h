@@ -31,10 +31,10 @@
    version 2.2 of Bison.  */
 
 #ifndef YY__GMX_SEL_YY_PARSER_H_INCLUDED
-# define YY__GMX_SEL_YY_PARSER_H_INCLUDED
+#define YY__GMX_SEL_YY_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+#    define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int _gmx_sel_yydebug;
@@ -88,97 +88,103 @@ extern int _gmx_sel_yydebug;
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
-# define YYTOKENTYPE
-  enum yytokentype
-  {
-    INVALID = 258,
-    TOK_INT = 259,
-    TOK_REAL = 260,
-    STR = 261,
-    IDENTIFIER = 262,
-    CMD_SEP = 263,
-    GROUP = 264,
-    TO = 265,
+#    define YYTOKENTYPE
+enum yytokentype
+{
+    INVALID          = 258,
+    TOK_INT          = 259,
+    TOK_REAL         = 260,
+    STR              = 261,
+    IDENTIFIER       = 262,
+    CMD_SEP          = 263,
+    GROUP            = 264,
+    TO               = 265,
     VARIABLE_NUMERIC = 266,
-    VARIABLE_GROUP = 267,
-    VARIABLE_POS = 268,
-    KEYWORD_NUMERIC = 269,
-    KEYWORD_STR = 270,
-    KEYWORD_POS = 271,
-    KEYWORD_GROUP = 272,
-    METHOD_NUMERIC = 273,
-    METHOD_GROUP = 274,
-    METHOD_POS = 275,
-    MODIFIER = 276,
-    EMPTY_POSMOD = 277,
-    PARAM = 278,
-    END_OF_METHOD = 279,
-    OF = 280,
-    CMP_OP = 281,
-    PARAM_REDUCT = 282,
-    OR = 283,
-    XOR = 284,
-    AND = 285,
-    NOT = 286,
-    UNARY_NEG = 287,
-    NUM_REDUCT = 288
-  };
+    VARIABLE_GROUP   = 267,
+    VARIABLE_POS     = 268,
+    KEYWORD_NUMERIC  = 269,
+    KEYWORD_STR      = 270,
+    KEYWORD_POS      = 271,
+    KEYWORD_GROUP    = 272,
+    METHOD_NUMERIC   = 273,
+    METHOD_GROUP     = 274,
+    METHOD_POS       = 275,
+    MODIFIER         = 276,
+    EMPTY_POSMOD     = 277,
+    PARAM            = 278,
+    END_OF_METHOD    = 279,
+    OF               = 280,
+    CMP_OP           = 281,
+    PARAM_REDUCT     = 282,
+    OR               = 283,
+    XOR              = 284,
+    AND              = 285,
+    NOT              = 286,
+    UNARY_NEG        = 287,
+    NUM_REDUCT       = 288
+};
 #endif
 
 /* Value type.  */
-#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+#if !defined YYSTYPE && !defined YYSTYPE_IS_DECLARED
 
 union YYSTYPE
 {
-#line 83 "parser.y" /* yacc.c:1909  */
+#    line 83 "parser.y" /* yacc.c:1909  */
 
     int                         i;
     real                        r;
-    char                       *str;
-    struct gmx_ana_selmethod_t *meth;
+    char*                       str;
+    struct gmx_ana_selmethod_t* meth;
 
-    gmx::SelectionStringMatchType                smt;
+    gmx::SelectionStringMatchType smt;
 
-    gmx::SelectionTreeElementPointer            *sel;
-    gmx::SelectionParserValue                   *val;
-    gmx::SelectionParserValueListPointer        *vlist;
-    gmx::SelectionParserParameter               *param;
-    gmx::SelectionParserParameterListPointer    *plist;
+    gmx::SelectionTreeElementPointer*         sel;
+    gmx::SelectionParserValue*                val;
+    gmx::SelectionParserValueListPointer*     vlist;
+    gmx::SelectionParserParameter*            param;
+    gmx::SelectionParserParameterListPointer* plist;
 
-#line 148 "parser.h" /* yacc.c:1909  */
+#    line 148 "parser.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
-# define YYSTYPE_IS_DECLARED 1
+#    define YYSTYPE_IS_TRIVIAL 1
+#    define YYSTYPE_IS_DECLARED 1
 #endif
 
 /* Location type.  */
-#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
-typedef struct YYLTYPE YYLTYPE;
+#if !defined YYLTYPE && !defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE           YYLTYPE;
 struct YYLTYPE
 {
-  int first_line;
-  int first_column;
-  int last_line;
-  int last_column;
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
 };
-# define YYLTYPE_IS_DECLARED 1
-# define YYLTYPE_IS_TRIVIAL 1
+#    define YYLTYPE_IS_DECLARED 1
+#    define YYLTYPE_IS_TRIVIAL 1
 #endif
 
 
-
 #ifndef YYPUSH_MORE_DEFINED
-# define YYPUSH_MORE_DEFINED
-enum { YYPUSH_MORE = 4 };
+#    define YYPUSH_MORE_DEFINED
+enum
+{
+    YYPUSH_MORE = 4
+};
 #endif
 
 typedef struct _gmx_sel_yypstate _gmx_sel_yypstate;
 
-int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, void *scanner);
+int _gmx_sel_yypush_parse(_gmx_sel_yypstate* ps,
+                          int                pushed_char,
+                          YYSTYPE const*     pushed_val,
+                          YYLTYPE*           pushed_loc,
+                          void*              scanner);
 
-_gmx_sel_yypstate * _gmx_sel_yypstate_new ();
-void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *ps);
+_gmx_sel_yypstate* _gmx_sel_yypstate_new();
+void               _gmx_sel_yypstate_delete(_gmx_sel_yypstate* ps);
 
 #endif /* !YY__GMX_SEL_YY_PARSER_H_INCLUDED  */

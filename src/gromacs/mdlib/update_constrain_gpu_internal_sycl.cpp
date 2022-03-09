@@ -41,12 +41,12 @@
  */
 #include "gmxpre.h"
 
-#include "update_constrain_gpu_internal.h"
-
 #include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/gputraits_sycl.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "update_constrain_gpu_internal.h"
 
 //! \brief Class name for scaling kernel
 class ScaleKernel;

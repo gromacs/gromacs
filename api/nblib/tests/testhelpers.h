@@ -46,11 +46,11 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-#include "nblib/box.h"
-#include "nblib/vector.h"
-
 #include "testutils/conftest.h"
 #include "testutils/refdata.h"
+
+#include "nblib/box.h"
+#include "nblib/vector.h"
 
 namespace nblib
 {

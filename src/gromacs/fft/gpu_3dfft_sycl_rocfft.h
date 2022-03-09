@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
+
 #include "gpu_3dfft_impl.h"
 
 class DeviceContext;

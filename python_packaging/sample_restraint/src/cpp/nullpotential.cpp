@@ -29,11 +29,7 @@ std::vector<int> sites(const null_input_param_type& input)
     return input.sites_;
 }
 
-gmx::PotentialPointData evaluate(
-        gmx::Vector /*r1*/,
-        gmx::Vector /*r2*/,
-        double /*t*/,
-        null_input_param_type* input)
+gmx::PotentialPointData evaluate(gmx::Vector /*r1*/, gmx::Vector /*r2*/, double /*t*/, null_input_param_type* input)
 {
     ++input->count_;
     return gmx::PotentialPointData();
@@ -54,8 +50,8 @@ std::vector<int> NullRestraint::sites() const
     return ::plugin::sites(data_);
 }
 
-NullRestraint::NullRestraint(std::vector<int>                            sites,
-                             const NullRestraint::input_param_type&      params,
+NullRestraint::NullRestraint(std::vector<int>                       sites,
+                             const NullRestraint::input_param_type& params,
                              std::shared_ptr<Resources> /*resources*/) :
     data_{ std::move(sites), params.count_ }
 {

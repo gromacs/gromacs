@@ -38,12 +38,12 @@
  * Routines for Filters and convolutions
  */
 
-#include "dens_filter.h"
-
 #include <cmath>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "dens_filter.h"
 
 bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
 {

@@ -32,11 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+#include "workflow.h"
+
 #include <memory>
 
-#include "workflow.h"
-#include "workflow_impl.h"
 #include "testingconfiguration.h"
+#include "workflow_impl.h"
 
 namespace gmxapi
 {

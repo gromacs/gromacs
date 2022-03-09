@@ -44,8 +44,8 @@
 
 #include <vector>
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/textstream.h"
 

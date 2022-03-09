@@ -43,11 +43,11 @@
 
 #include "config.h"
 
+#include <arm_neon.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <arm_neon.h>
 
 #include "gromacs/math/utilities.h"
 

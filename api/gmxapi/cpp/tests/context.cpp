@@ -38,10 +38,12 @@
  * Provides additional test coverage of template headers only used by client code.
  */
 
+#include "gmxapi/context.h"
+
 #include "gromacs/utility/gmxmpi.h"
 
-#include "gmxapi/context.h"
 #include "gmxapi/mpi/gmxapi_mpi.h"
+
 #include "testingconfiguration.h"
 
 

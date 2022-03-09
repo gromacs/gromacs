@@ -34,10 +34,9 @@
 #include "gmxpre.h"
 
 #include <errno.h>
-#include <stdlib.h>
-
 #include <mkl_dfti.h>
 #include <mkl_service.h>
+#include <stdlib.h>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/fatalerror.h"

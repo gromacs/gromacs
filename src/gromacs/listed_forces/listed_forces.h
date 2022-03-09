@@ -67,10 +67,9 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
+#include <bitset>
 #include <memory>
 #include <vector>
-
-#include <bitset>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"

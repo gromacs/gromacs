@@ -36,11 +36,11 @@
 
 #include "config.h"
 
+#include <emmintrin.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <emmintrin.h>
 
 #include "gromacs/math/utilities.h"
 

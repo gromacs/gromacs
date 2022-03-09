@@ -40,13 +40,13 @@
  * \ingroup module_mdlib
  */
 
-#include "settle_gpu_internal.h"
-
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #include "gromacs/pbcutil/pbc_aiuc_sycl.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/template_mp.h"
+
+#include "settle_gpu_internal.h"
 
 namespace gmx
 {

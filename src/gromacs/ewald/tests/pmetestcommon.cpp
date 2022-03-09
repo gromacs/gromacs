@@ -48,6 +48,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/ewald/pme_gather.h"
 #include "gromacs/ewald/pme_gpu_calculate_splines.h"
 #include "gromacs/ewald/pme_gpu_constants.h"
@@ -69,7 +70,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"

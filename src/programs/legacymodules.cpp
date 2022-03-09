@@ -42,6 +42,10 @@
 
 #include <cstdio>
 
+#include "mdrun/mdrun_main.h"
+#include "mdrun/nonbonded_bench.h"
+#include "view/view.h"
+
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -66,10 +70,6 @@
 #include "gromacs/tools/trjcat.h"
 #include "gromacs/tools/trjconv.h"
 #include "gromacs/tools/tune_pme.h"
-
-#include "mdrun/mdrun_main.h"
-#include "mdrun/nonbonded_bench.h"
-#include "view/view.h"
 
 namespace
 {

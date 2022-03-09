@@ -33,17 +33,18 @@
  */
 #include <memory>
 
-#include "testingconfiguration.h"
-#include "gmxapi/context.h"
-#include "gmxapi/md.h"
-#include "gmxapi/session.h"
-#include "gmxapi/status.h"
-#include "gmxapi/system.h"
-#include "gmxapi/md/mdmodule.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/session.h"
+#include "gmxapi/status.h"
+#include "gmxapi/system.h"
+
+#include "testingconfiguration.h"
 
 namespace gmxapi
 {

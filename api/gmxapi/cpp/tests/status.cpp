@@ -33,6 +33,7 @@
  */
 
 #include "gmxapi/status.h"
+
 #include "testingconfiguration.h"
 
 namespace gmxapi

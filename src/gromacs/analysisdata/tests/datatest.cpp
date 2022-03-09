@@ -47,10 +47,10 @@
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/analysisdata/tests/mock_datamodule.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/analysisdata/tests/mock_datamodule.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 

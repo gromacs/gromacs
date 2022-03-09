@@ -44,10 +44,10 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
-#include "gromacs/topology/topology.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/conftest.h"

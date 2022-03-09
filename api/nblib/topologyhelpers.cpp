@@ -42,10 +42,11 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
+#include "nblib/topologyhelpers.h"
+
 #include <algorithm>
 
 #include "gromacs/topology/exclusionblocks.h"
-#include "nblib/topologyhelpers.h"
 
 namespace nblib
 {

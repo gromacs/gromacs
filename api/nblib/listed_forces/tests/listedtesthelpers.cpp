@@ -43,12 +43,14 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#include "gromacs/utility/arrayref.h"
-#include "nblib/listed_forces/tests/gmxcalculator.h"
 #include "nblib/listed_forces/tests/listedtesthelpers.h"
+
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+#include "nblib/listed_forces/tests/gmxcalculator.h"
 
 namespace nblib
 {

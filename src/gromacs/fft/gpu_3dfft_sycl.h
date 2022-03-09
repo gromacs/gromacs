@@ -44,12 +44,12 @@
 #ifndef GMX_FFT_GPU_3DFFT_SYCL_H
 #define GMX_FFT_GPU_3DFFT_SYCL_H
 
-#include "gpu_3dfft_impl.h"
-
 #include "gromacs/fft/fft.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "gpu_3dfft_impl.h"
 
 class DeviceContext;
 class DeviceStream;

@@ -51,17 +51,16 @@
 #include <utility>
 #include <vector>
 
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/stophandler.h"
-#include "gromacs/mdrunutility/logging.h"
-#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/logging.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
@@ -69,8 +68,8 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
-#include "gmxapi/mpi/resourceassignment.h"
 #include "gmxapi/exceptions.h"
+#include "gmxapi/mpi/resourceassignment.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/version.h"

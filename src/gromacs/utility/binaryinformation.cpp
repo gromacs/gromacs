@@ -71,19 +71,19 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "buildinfo.h"
-#include "contributors.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
-#include "gromacs/utility/mpiinfo.h"
 
+#include "buildinfo.h"
+#include "contributors.h"
 #include "cuda_version_information.h"
 #include "sycl_version_information.h"
 

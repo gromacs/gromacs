@@ -54,11 +54,12 @@
 #include <string>
 #include <vector>
 
-#include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "buildinfo.h"
 
 namespace gmx
 {

@@ -43,9 +43,9 @@
 
 #include "gmxpre.h"
 
-#include "qmmmforceprovider.h"
-
 #include "gromacs/utility/exceptions.h"
+
+#include "qmmmforceprovider.h"
 
 namespace gmx
 {

@@ -41,18 +41,20 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include "nblib/topology.h"
+
 #include <algorithm>
 #include <numeric>
 
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
+
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
 #include "nblib/sequencing.hpp"
-#include "nblib/topology.h"
-#include "nblib/util/util.hpp"
 #include "nblib/topologyhelpers.h"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {

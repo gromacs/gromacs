@@ -49,13 +49,13 @@
 
 #include <gtest/gtest.h>
 
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+
 #include "nblib/listed_forces/calculator.h"
 #include "nblib/listed_forces/dataflow.hpp"
 #include "nblib/listed_forces/tests/linear_chain_input.hpp"
 #include "nblib/tests/testhelpers.h"
-
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
 
 
 namespace nblib

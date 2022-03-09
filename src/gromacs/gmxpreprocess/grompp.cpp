@@ -35,13 +35,13 @@
 
 #include "grompp.h"
 
-#include <array>
 #include <cerrno>
 #include <climits>
 #include <cmath>
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <vector>
 

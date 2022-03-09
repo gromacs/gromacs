@@ -42,7 +42,6 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/arrayref.h"
 #include "partition.h"
 
 #include "config.h"
@@ -84,6 +83,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"

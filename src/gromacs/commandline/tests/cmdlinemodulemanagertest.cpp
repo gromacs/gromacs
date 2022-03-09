@@ -51,10 +51,10 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfileredirector.h"
 

@@ -44,8 +44,8 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 
 class GpuEventSynchronizer;

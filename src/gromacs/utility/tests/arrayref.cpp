@@ -45,10 +45,10 @@
 
 #include <gtest/gtest.h>
 
-#include "testutils/testasserts.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {

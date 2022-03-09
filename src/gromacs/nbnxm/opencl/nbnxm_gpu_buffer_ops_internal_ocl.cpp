@@ -41,8 +41,8 @@
 
 #include "config.h"
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 

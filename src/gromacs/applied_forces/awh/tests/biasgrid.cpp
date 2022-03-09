@@ -43,11 +43,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/inmemoryserializer.h"
 
-#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/testasserts.h"
 
 namespace gmx

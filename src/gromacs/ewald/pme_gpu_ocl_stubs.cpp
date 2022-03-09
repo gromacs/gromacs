@@ -41,11 +41,12 @@
  */
 #include "gmxpre.h"
 
-#include "pme_gpu_types_host.h"
-#include "pme_gpu_types.h"
-#include "pme_gpu_types_host_impl.h"
 #include "gromacs/fft/parallel_3dfft.h"
+
 #include "pme_gpu_grid.h"
+#include "pme_gpu_types.h"
+#include "pme_gpu_types_host.h"
+#include "pme_gpu_types_host_impl.h"
 
 // [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
 #if defined(__clang__)

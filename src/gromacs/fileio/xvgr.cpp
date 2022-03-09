@@ -35,11 +35,11 @@
 
 #include "xvgr.h"
 
-#include <array>
 #include <cassert>
 #include <cctype>
 #include <cstring>
 
+#include <array>
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"

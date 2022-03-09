@@ -38,6 +38,8 @@
  * \ingroup gmxapi_md
  */
 
+#include "gmxapi/md/mdsignals.h"
+
 #include <algorithm>
 #include <atomic>
 #include <memory>
@@ -48,7 +50,6 @@
 
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
-#include "gmxapi/md/mdsignals.h"
 
 #include "mdsignals.h"
 #include "sessionresources.h"

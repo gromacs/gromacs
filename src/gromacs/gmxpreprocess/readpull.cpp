@@ -36,6 +36,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+
 #include <regex>
 
 #include "gromacs/domdec/localatomsetmanager.h"

@@ -35,11 +35,11 @@
 
 #include "ter_db.h"
 
-#include <array>
 #include <cctype>
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>

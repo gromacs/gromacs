@@ -68,14 +68,13 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/testmatchers.h"
 #include "testutils/trajectoryreader.h"
-
-#include "gromacs/utility/strconvert.h"
 
 #include "moduletest.h"
 #include "simulatorcomparison.h"

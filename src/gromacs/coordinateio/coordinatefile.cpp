@@ -46,11 +46,11 @@
 
 #include <algorithm>
 
-#include "gromacs/options.h"
 #include "gromacs/coordinateio/outputadapters.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/options.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"

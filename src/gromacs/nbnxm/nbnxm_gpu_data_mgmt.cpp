@@ -58,8 +58,6 @@
 #    include "sycl/nbnxm_sycl_types.h"
 #endif
 
-#include "nbnxm_gpu_data_mgmt.h"
-
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/pmalloc.h"
@@ -71,12 +69,12 @@
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "nbnxm_gpu.h"
+#include "nbnxm_gpu_data_mgmt.h"
 #include "pairlistsets.h"
 
 namespace Nbnxm

@@ -40,9 +40,9 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
+
+#include "config.h"
 
 #include <gtest/gtest.h>
 

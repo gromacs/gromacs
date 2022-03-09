@@ -50,11 +50,12 @@
 
 #include <gtest/gtest.h>
 
-#include "buildinfo.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/path.h"
 
 #include "testutils/cmdlinetest.h"
+
+#include "buildinfo.h"
 
 using gmx::Path;
 

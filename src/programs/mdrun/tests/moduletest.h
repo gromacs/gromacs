@@ -46,9 +46,9 @@
 #ifndef GMX_MDRUN_TESTS_MODULETEST_H
 #define GMX_MDRUN_TESTS_MODULETEST_H
 
-#include <gtest/gtest.h>
-
 #include <memory>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"

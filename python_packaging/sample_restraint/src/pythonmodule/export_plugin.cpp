@@ -15,9 +15,9 @@
 #include <memory>
 
 #include "gmxapi/exceptions.h"
+#include "gmxapi/gmxapi.h"
 #include "gmxapi/md.h"
 #include "gmxapi/md/mdmodule.h"
-#include "gmxapi/gmxapi.h"
 
 #include "ensemblepotential.h"
 #include "nullpotential.h"
@@ -232,8 +232,9 @@ public:
         auto update = context_.attr("ensemble_update");
         // Make a callable with standardizeable signature.
         const std::string name{ name_ };
-        auto functor = [update, name](const plugin::Matrix<double>& send, plugin::Matrix<double>* receive)
-        { update(send, receive, py::str(name)); };
+        auto functor = [update, name](const plugin::Matrix<double>& send, plugin::Matrix<double>* receive) {
+            update(send, receive, py::str(name));
+        };
 
         // To use a reduce function on the Python side, we need to provide it with a Python buffer-like object,
         // so we will create one here. Note: it looks like the SharedData element will be useful after all.
@@ -424,18 +425,16 @@ PYBIND11_MODULE(myplugin, m)
     // Matrix utility class (temporary). Borrowed from http://pybind11.readthedocs.io/en/master/advanced/pycpp/numpy.html#arrays
     py::class_<plugin::Matrix<double>, std::shared_ptr<plugin::Matrix<double>>>(
             m, "Matrix", py::buffer_protocol())
-            .def_buffer(
-                    [](plugin::Matrix<double>& matrix) -> py::buffer_info
-                    {
-                        return py::buffer_info(
-                                matrix.data(),                           /* Pointer to buffer */
-                                sizeof(double),                          /* Size of one scalar */
-                                py::format_descriptor<double>::format(), /* Python struct-style format descriptor */
-                                2,                                       /* Number of dimensions */
-                                { matrix.rows(), matrix.cols() }, /* Buffer dimensions */
-                                { sizeof(double) * matrix.cols(), /* Strides (in bytes) for each index */
-                                  sizeof(double) });
-                    });
+            .def_buffer([](plugin::Matrix<double>& matrix) -> py::buffer_info {
+                return py::buffer_info(
+                        matrix.data(),                           /* Pointer to buffer */
+                        sizeof(double),                          /* Size of one scalar */
+                        py::format_descriptor<double>::format(), /* Python struct-style format descriptor */
+                        2,                                       /* Number of dimensions */
+                        { matrix.rows(), matrix.cols() }, /* Buffer dimensions */
+                        { sizeof(double) * matrix.cols(), /* Strides (in bytes) for each index */
+                          sizeof(double) });
+            });
 
     //////////////////////////////////////////////////////////////////////////
     // Begin EnsembleRestraint
@@ -493,13 +492,9 @@ PYBIND11_MODULE(myplugin, m)
     nullRestraint.def("bind", &PyNullR::bind, "Implement binding protocol.");
     // We need a protocol for interacting with pluggable extension code and its data.
     // See #3038, #3133, #3145, #4079.
-    nullRestraint.def(
-            "count",
-            [](PyNullR* restraint)
-            {
-                return plugin::count(
-                        dynamic_cast<plugin::NullRestraint*>(restraint->getRestraint().get())->data_);
-            });
+    nullRestraint.def("count", [](PyNullR* restraint) {
+        return plugin::count(dynamic_cast<plugin::NullRestraint*>(restraint->getRestraint().get())->data_);
+    });
 
     // Export the factory method that will resolve for
     // {namespace: "myplugin", operation: "null_restraint"} in a gmxapi WorkElement.

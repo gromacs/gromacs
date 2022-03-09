@@ -43,18 +43,17 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/syclutils.h"
+#include "gromacs/hardware/device_information.h"
 
-#include "pme_gpu_program_impl.h"
 #include "pme_gather_sycl.h"
-#include "pme_solve_sycl.h"
-#include "pme_spread_sycl.h"
-
 #include "pme_gpu_constants.h"
 #include "pme_gpu_internal.h" // for GridOrdering enum
+#include "pme_gpu_program_impl.h"
 #include "pme_gpu_types_host.h"
+#include "pme_solve_sycl.h"
+#include "pme_spread_sycl.h"
 
 // PME interpolation order
 constexpr int c_pmeOrder = 4;

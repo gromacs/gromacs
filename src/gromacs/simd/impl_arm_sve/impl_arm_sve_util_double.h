@@ -43,11 +43,11 @@
 
 #include "config.h"
 
+#include <arm_sve.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <arm_sve.h>
 
 #include "gromacs/utility/basedefinitions.h"
 

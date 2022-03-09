@@ -57,6 +57,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textwriter.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

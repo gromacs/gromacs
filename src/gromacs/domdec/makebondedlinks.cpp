@@ -43,17 +43,17 @@
 
 #include "gmxpre.h"
 
-#include <algorithm>
-
 #include "gromacs/domdec/makebondedlinks.h"
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/mdtypes/atominfo.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"
-#include "gromacs/topology/mtop_util.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;

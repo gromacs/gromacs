@@ -40,13 +40,14 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <cmath>
-
 #include "nblib/box.h"
-#include "nblib/exception.h"
+
+#include <cmath>
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "nblib/exception.h"
 
 using gmx::test::defaultRealTolerance;
 

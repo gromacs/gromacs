@@ -39,9 +39,11 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "nbnxmsetuphelpers.h"
+
 #include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/rf_util.h"
@@ -50,8 +52,8 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
@@ -59,11 +61,10 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/particletype.h"
-
-#include "nbnxmsetuphelpers.h"
 
 namespace nblib
 {

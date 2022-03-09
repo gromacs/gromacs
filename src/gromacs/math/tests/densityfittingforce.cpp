@@ -46,8 +46,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdspan/extensions.h"
 

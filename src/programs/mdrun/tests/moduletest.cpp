@@ -60,12 +60,13 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/textwriter.h"
-#include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
+
+#include "programs/mdrun/mdrun_main.h"
 
 namespace gmx
 {

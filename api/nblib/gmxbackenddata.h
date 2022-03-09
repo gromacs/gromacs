@@ -52,6 +52,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
+
 #include "nblib/kerneloptions.h"
 #include "nblib/nbnxmsetuphelpers.h"
 

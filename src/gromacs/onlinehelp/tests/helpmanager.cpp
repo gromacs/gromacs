@@ -49,11 +49,11 @@
 
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/stringtest.h"
 #include "testutils/testasserts.h"
 

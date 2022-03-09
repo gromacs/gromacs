@@ -40,6 +40,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 #include "nblib/gmxsetup.h"
+
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -56,9 +57,10 @@
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/logger.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
+
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/nbnxmsetuphelpers.h"

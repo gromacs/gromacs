@@ -33,7 +33,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "inputrec.h"
 
 #include <cstdio>
@@ -55,6 +54,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"

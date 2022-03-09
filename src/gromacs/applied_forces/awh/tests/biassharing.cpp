@@ -35,14 +35,15 @@
 
 #include "gromacs/applied_forces/awh/biassharing.h"
 
-#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/mdtypes/commrec.h"
 #include "thread_mpi/tmpi.h"
 
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
+#include "gromacs/mdtypes/commrec.h"
+
 #include "testutils/testasserts.h"
 
 namespace gmx

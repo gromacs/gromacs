@@ -41,11 +41,12 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include "nblib/molecules.h"
+
 #include <algorithm>
 #include <tuple>
 
 #include "nblib/exception.h"
-#include "nblib/molecules.h"
 #include "nblib/particletype.h"
 
 namespace nblib

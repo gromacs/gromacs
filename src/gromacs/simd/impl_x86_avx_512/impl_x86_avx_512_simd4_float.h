@@ -37,9 +37,9 @@
 
 #include "config.h"
 
-#include <cassert>
-
 #include <immintrin.h>
+
+#include <cassert>
 
 #include "gromacs/utility/basedefinitions.h"
 

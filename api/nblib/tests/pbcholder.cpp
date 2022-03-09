@@ -42,10 +42,10 @@
  */
 #include <cmath>
 
-#include "nblib/pbc.hpp"
-
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+
+#include "nblib/pbc.hpp"
 
 using gmx::test::defaultRealTolerance;
 

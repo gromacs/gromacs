@@ -33,11 +33,11 @@
  */
 #include "gmxpre.h"
 
-#include "communicator.h"
-
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "communicator.h"
 
 namespace gmx
 {

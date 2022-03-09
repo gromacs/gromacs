@@ -61,8 +61,8 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testmatchers.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {

@@ -22,13 +22,13 @@
 #include <mutex>
 #include <vector>
 
-#include "gmxapi/gromacsfwd.h"
-#include "gmxapi/session.h"
-#include "gmxapi/md/mdmodule.h"
-
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "gmxapi/gromacsfwd.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/session.h"
 
 #include "sessionresources.h"
 

@@ -48,7 +48,6 @@
 #include <utility>
 
 #include "gromacs/coordinateio/coordinatefile.h"
-
 #include "gromacs/coordinateio/tests/coordinate_test.h"
 
 namespace gmx

@@ -46,11 +46,11 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/analysisdata/tests/datatest.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
-#include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

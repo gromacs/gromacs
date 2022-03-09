@@ -38,10 +38,10 @@
 #if GMX_INTERNAL_XDR
 
 
-#    include "gmx_internal_xdr.h"
-
 #    include <cstdlib>
 #    include <cstring>
+
+#    include "gmx_internal_xdr.h"
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that

@@ -48,18 +48,18 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/options/timeunitmanager.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/programcontext.h"
 
+#include "gmxapi/compat/mdparams.h"
 #include "gmxapi/gmxapi.h"
 #include "gmxapi/gmxapicompat.h"
-#include "gmxapi/compat/mdparams.h"
 
 using gmxapi::GmxapiType;
 

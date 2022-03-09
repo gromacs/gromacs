@@ -40,12 +40,14 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "nblib/virials.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/mdtypes/forcerec.h"
+
 #include "nblib/box.h"
 #include "nblib/nbnxmsetuphelpers.h"
-#include "nblib/virials.h"
 
 namespace nblib
 {

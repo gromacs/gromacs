@@ -48,8 +48,8 @@
 #include "gromacs/gpu_utils/syclutils.h"
 
 #include "pme_gpu_calculate_splines_sycl.h"
-#include "pme_grid.h"
 #include "pme_gpu_types_host.h"
+#include "pme_grid.h"
 
 /*! \brief
  * Charge spreading onto the grid.

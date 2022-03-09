@@ -49,7 +49,6 @@
 
 #include <gmock/gmock.h>
 
-#include "buildinfo.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineinit.h"
@@ -72,6 +71,7 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
+#include "buildinfo.h"
 #include "mpi_printer.h"
 
 namespace gmx

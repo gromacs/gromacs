@@ -45,8 +45,8 @@
 #include <memory>
 #include <vector>
 
-#include "gmxapi/gmxapicompat.h"
 #include "gmxapi/compat/mdparams.h"
+#include "gmxapi/gmxapicompat.h"
 
 namespace gmxapicompat
 {

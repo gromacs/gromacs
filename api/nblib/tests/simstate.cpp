@@ -42,6 +42,8 @@
  */
 #include <vector>
 
+#include "testutils/testasserts.h"
+
 #include "nblib/box.h"
 #include "nblib/exception.h"
 #include "nblib/simulationstate.h"
@@ -49,8 +51,6 @@
 #include "nblib/tests/testhelpers.h"
 #include "nblib/tests/testsystems.h"
 #include "nblib/topology.h"
-
-#include "testutils/testasserts.h"
 
 namespace nblib
 {

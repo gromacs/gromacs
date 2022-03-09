@@ -47,6 +47,7 @@
 #include <variant>
 
 #include "nblib/util/traits.hpp"
+
 #include "bondtypes.h"
 
 namespace nblib

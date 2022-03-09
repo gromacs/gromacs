@@ -35,12 +35,12 @@
 
 #include "gromacs/fileio/pdbio.h"
 
-#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 
+#include <algorithm>
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"

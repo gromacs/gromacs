@@ -38,13 +38,12 @@
  * \author M. Eric Irrgang <ericirrgang@gmail.com>
  */
 
-#include "module.h"
-
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
 #include "gmxapi/system.h"
 #include "gmxapi/version.h"
 
+#include "module.h"
 #include "pycontext.h"
 #include "pysystem.h"
 

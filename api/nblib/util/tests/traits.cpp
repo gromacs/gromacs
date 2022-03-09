@@ -41,8 +41,9 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#include "nblib/tests/testhelpers.h"
 #include "nblib/util/traits.hpp"
+
+#include "nblib/tests/testhelpers.h"
 
 namespace nblib
 {

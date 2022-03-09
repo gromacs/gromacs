@@ -46,10 +46,10 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -58,6 +58,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
+
 #include "nblib/box.h"
 #include "nblib/listed_forces/conversionscommon.h"
 

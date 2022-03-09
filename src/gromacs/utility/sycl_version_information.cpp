@@ -34,9 +34,9 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include "sycl_version_information.h"
+
+#include "config.h"
 
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gmxsycl.h"

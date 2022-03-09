@@ -50,9 +50,9 @@
 // Following are public headers for the current module.
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
-#include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 #include "gmxapi/session/resources.h"
+#include "gmxapi/status.h"
 
 
 namespace gmxapi

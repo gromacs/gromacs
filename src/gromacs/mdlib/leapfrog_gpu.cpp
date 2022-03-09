@@ -49,8 +49,9 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include <algorithm>
 #include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/math/vec.h"

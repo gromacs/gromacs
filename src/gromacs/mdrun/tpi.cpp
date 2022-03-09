@@ -40,13 +40,13 @@
  */
 #include "gmxpre.h"
 
+#include <cfenv>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 
 #include <algorithm>
-#include <cfenv>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/dlbtiming.h"

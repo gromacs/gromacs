@@ -43,7 +43,6 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/arrayref.h"
 #include "position_restraints.h"
 
 #include <cassert>
@@ -60,6 +59,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 

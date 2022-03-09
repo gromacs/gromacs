@@ -42,12 +42,14 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include "nblib/simulationstate.h"
+
 #include <vector>
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+
 #include "nblib/exception.h"
-#include "nblib/simulationstate.h"
 #include "nblib/simulationstateimpl.h"
 #include "nblib/util/setup.h"
 #include "nblib/vector.h"

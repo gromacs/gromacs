@@ -41,11 +41,13 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include "nblib/interactions.h"
+
 #include <cmath>
+
 #include <set>
 
 #include "nblib/exception.h"
-#include "nblib/interactions.h"
 
 namespace nblib
 {

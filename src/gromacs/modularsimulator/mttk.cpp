@@ -42,23 +42,23 @@
 
 #include "mttk.h"
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/stat.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/ifunc.h"
 
 #include "energydata.h"
-#include "velocityscalingtemperaturecoupling.h"
 #include "nosehooverchains.h"
 #include "simulatoralgorithm.h"
 #include "trotterhelperfunctions.h"
+#include "velocityscalingtemperaturecoupling.h"
 
 namespace gmx
 {

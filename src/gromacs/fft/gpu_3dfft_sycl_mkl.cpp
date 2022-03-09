@@ -52,8 +52,8 @@
 
 #include "config.h"
 
-#include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -71,9 +71,10 @@ class DeviceContext;
 #include <cstddef>
 #pragma clang diagnostic ignored "-Wsuggest-override" // can be removed when support for 2022.0 is dropped
 #pragma clang diagnostic ignored "-Wundefined-func-template"
+#include <mkl_version.h>
+
 #include <oneapi/mkl/dfti.hpp>
 #include <oneapi/mkl/exceptions.hpp>
-#include <mkl_version.h>
 
 // oneAPI 2021.2.0 to 2021.4.0 have issues with backward out-of-place transform.
 // The issue is fixed in 2022.0.1 (20220000).

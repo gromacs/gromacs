@@ -49,9 +49,9 @@
 #include "gromacs/math/functions.h"
 
 #include "pme_gpu_calculate_splines_sycl.h"
-#include "pme_grid.h"
 #include "pme_gpu_constants.h"
 #include "pme_gpu_types_host.h"
+#include "pme_grid.h"
 
 /*! \brief
  * Use loads from constant address space indexed by constant offsets rather

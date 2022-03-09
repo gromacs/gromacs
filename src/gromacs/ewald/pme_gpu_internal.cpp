@@ -63,6 +63,8 @@
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/syclutils.h"
 #endif
+#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -72,8 +74,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #if GMX_GPU_CUDA
 #    include "pme.cuh"
@@ -81,6 +81,7 @@
 
 #include "pme_gpu_calculate_splines.h"
 #include "pme_gpu_constants.h"
+#include "pme_gpu_grid.h"
 #include "pme_gpu_program_impl.h"
 #include "pme_gpu_timings.h"
 #include "pme_gpu_types.h"
@@ -89,7 +90,6 @@
 #include "pme_grid.h"
 #include "pme_internal.h"
 #include "pme_solve.h"
-#include "pme_gpu_grid.h"
 
 /*! \brief
  * CUDA only

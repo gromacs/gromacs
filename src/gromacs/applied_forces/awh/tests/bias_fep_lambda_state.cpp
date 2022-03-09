@@ -45,10 +45,10 @@
 #include "gromacs/applied_forces/awh/bias.h"
 #include "gromacs/applied_forces/awh/correlationgrid.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 

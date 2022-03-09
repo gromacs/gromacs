@@ -44,8 +44,6 @@
 #ifndef GMX_FFT_GPU_3DFFT_SYCL_MKL_H
 #define GMX_FFT_GPU_3DFFT_SYCL_MKL_H
 
-#include "gpu_3dfft_impl.h"
-
 #include <oneapi/mkl/dfti.hpp>
 
 #include "gromacs/fft/fft.h"
@@ -53,6 +51,8 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/gmxmpi.h"
+
+#include "gpu_3dfft_impl.h"
 
 class DeviceContext;
 class DeviceStream;

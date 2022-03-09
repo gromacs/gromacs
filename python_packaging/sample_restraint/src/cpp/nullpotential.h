@@ -13,13 +13,13 @@
 #include <mutex>
 #include <vector>
 
-#include "gmxapi/gromacsfwd.h"
-#include "gmxapi/session.h"
-#include "gmxapi/md/mdmodule.h"
-
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "gmxapi/gromacsfwd.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/session.h"
 
 #include "sessionresources.h"
 
@@ -52,9 +52,7 @@ class NullRestraint : public ::gmx::IRestraintPotential
 public:
     using input_param_type = null_input_param_type;
 
-    NullRestraint(std::vector<int>                            sites,
-                  const input_param_type&                     params,
-                  std::shared_ptr<Resources> resources);
+    NullRestraint(std::vector<int> sites, const input_param_type& params, std::shared_ptr<Resources> resources);
 
     ~NullRestraint() override = default;
     [[nodiscard]] std::vector<int> sites() const override;

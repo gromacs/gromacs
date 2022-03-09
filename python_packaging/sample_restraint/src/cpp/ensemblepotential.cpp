@@ -19,8 +19,8 @@
 #include <vector>
 
 #include "gmxapi/context.h"
-#include "gmxapi/session.h"
 #include "gmxapi/md/mdsignals.h"
+#include "gmxapi/session.h"
 
 #include "sessionresources.h"
 

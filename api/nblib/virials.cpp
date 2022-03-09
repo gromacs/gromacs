@@ -41,11 +41,13 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
+#include "nblib/virials.h"
+
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/utility/arrayref.h"
+
 #include "nblib/box.h"
 #include "nblib/exception.h"
-#include "nblib/virials.h"
 
 namespace nblib
 {

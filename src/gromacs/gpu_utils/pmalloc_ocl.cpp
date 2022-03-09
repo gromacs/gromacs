@@ -39,9 +39,9 @@
 
 #include "gmxpre.h"
 
-#include "pmalloc.h"
-
 #include "gromacs/utility/smalloc.h"
+
+#include "pmalloc.h"
 
 /*! \brief \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
  *

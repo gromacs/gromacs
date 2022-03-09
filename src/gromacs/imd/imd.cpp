@@ -46,7 +46,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "imd.h"
 
 #include "config.h"

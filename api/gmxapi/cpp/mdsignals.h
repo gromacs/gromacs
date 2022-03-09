@@ -50,8 +50,8 @@
 #include "gromacs/mdrun/runner.h"
 
 // Public gmxapi headers.
-#include "gmxapi/session.h"
 #include "gmxapi/md/mdsignals.h"
+#include "gmxapi/session.h"
 
 // Internal gmxapi headers.
 #include "session_impl.h"

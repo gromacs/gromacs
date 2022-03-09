@@ -40,18 +40,20 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "nblib/topology.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/listoflists.h"
+
 #include "nblib/exception.h"
+#include "nblib/particlesequencer.h"
 #include "nblib/particletype.h"
 #include "nblib/sequencing.hpp"
 #include "nblib/tests/testsystems.h"
-#include "nblib/topology.h"
 #include "nblib/topologyhelpers.h"
-#include "nblib/particlesequencer.h"
 
 namespace nblib
 {

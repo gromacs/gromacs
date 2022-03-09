@@ -37,9 +37,9 @@
 
 #include "config.h"
 
-#include <cassert>
-
 #include <arm_neon.h>
+
+#include <cassert>
 
 #include "gromacs/math/utilities.h"
 

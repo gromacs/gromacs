@@ -60,13 +60,11 @@
 
 #include "gpu_3dfft_sycl_rocfft.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/exceptions.h"
-
 #include <vector>
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 

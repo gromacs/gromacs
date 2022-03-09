@@ -40,6 +40,8 @@
 
 #include "gmxpre.h"
 
+#include "pullelement.h"
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -49,7 +51,6 @@
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
 
-#include "pullelement.h"
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 

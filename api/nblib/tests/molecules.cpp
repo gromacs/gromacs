@@ -42,11 +42,12 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "nblib/molecules.h"
+
+#include "testutils/testasserts.h"
+
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
 #include "nblib/tests/testsystems.h"
-
-#include "testutils/testasserts.h"
 
 namespace nblib
 {

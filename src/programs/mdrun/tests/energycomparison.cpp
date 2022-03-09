@@ -43,8 +43,8 @@
 
 #include "energycomparison.h"
 
-#include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+#include <gtest/gtest.h>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"

@@ -47,9 +47,9 @@
 #include <vector>
 
 #include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {

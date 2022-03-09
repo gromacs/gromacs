@@ -43,47 +43,41 @@ using namespace gmx;
  */
 class AnalysisTemplate : public TrajectoryAnalysisModule
 {
-    public:
-        AnalysisTemplate();
+public:
+    AnalysisTemplate();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+    virtual void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings);
+    virtual void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+    virtual void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata);
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+    virtual void finishAnalysis(int nframes);
+    virtual void writeOutput();
 
-    private:
-        class ModuleData;
+private:
+    class ModuleData;
 
-        std::string                      fnDist_;
-        double                           cutoff_;
-        Selection                        refsel_;
-        SelectionList                    sel_;
+    std::string   fnDist_;
+    double        cutoff_;
+    Selection     refsel_;
+    SelectionList sel_;
 
-        AnalysisNeighborhood             nb_;
+    AnalysisNeighborhood nb_;
 
-        AnalysisData                     data_;
-        AnalysisDataAverageModulePointer avem_;
+    AnalysisData                     data_;
+    AnalysisDataAverageModulePointer avem_;
 };
 
 
-AnalysisTemplate::AnalysisTemplate()
-    : cutoff_(0.0)
+AnalysisTemplate::AnalysisTemplate() : cutoff_(0.0)
 {
     registerAnalysisDataset(&data_, "avedist");
 }
 
 
-void
-AnalysisTemplate::initOptions(IOptionsContainer          *options,
-                              TrajectoryAnalysisSettings *settings)
+void AnalysisTemplate::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "This is a template for writing your own analysis tools for",
         "GROMACS. The advantage of using GROMACS for this is that you",
         "have access to all information in the topology, and your",
@@ -102,27 +96,26 @@ AnalysisTemplate::initOptions(IOptionsContainer          *options,
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
-                           .filetype(OptionFileType::Plot).outputFile()
-                           .store(&fnDist_).defaultBasename("avedist")
-                           .description("Average distances from reference group"));
+                               .filetype(OptionFileType::Plot)
+                               .outputFile()
+                               .store(&fnDist_)
+                               .defaultBasename("avedist")
+                               .description("Average distances from reference group"));
 
-    options->addOption(SelectionOption("reference")
-                           .store(&refsel_).required()
-                           .description("Reference group to calculate distances from"));
-    options->addOption(SelectionOption("select")
-                           .storeVector(&sel_).required().multiValue()
-                           .description("Groups to calculate distances to"));
+    options->addOption(
+            SelectionOption("reference").store(&refsel_).required().description("Reference group to calculate distances from"));
+    options->addOption(SelectionOption("select").storeVector(&sel_).required().multiValue().description(
+            "Groups to calculate distances to"));
 
-    options->addOption(DoubleOption("cutoff").store(&cutoff_)
-                           .description("Cutoff for distance calculation (0 = no cutoff)"));
+    options->addOption(DoubleOption("cutoff").store(&cutoff_).description(
+            "Cutoff for distance calculation (0 = no cutoff)"));
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 }
 
 
-void
-AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                               const TopologyInformation         & /*top*/)
+void AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings& settings,
+                                    const TopologyInformation& /*top*/)
 {
     nb_.setCutoff(static_cast<real>(cutoff_));
 
@@ -133,8 +126,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (!fnDist_.empty())
     {
-        AnalysisDataPlotModulePointer plotm(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plotm(new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnDist_);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
@@ -144,18 +136,16 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-void
-AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                               TrajectoryAnalysisModuleData *pdata)
+void AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
-    AnalysisDataHandle         dh     = pdata->dataHandle(data_);
-    const Selection           &refsel = pdata->parallelSelection(refsel_);
+    AnalysisDataHandle dh     = pdata->dataHandle(data_);
+    const Selection&   refsel = pdata->parallelSelection(refsel_);
 
     AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refsel);
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
-        const Selection &sel   = pdata->parallelSelection(sel_[g]);
+        const Selection& sel   = pdata->parallelSelection(sel_[g]);
         int              nr    = sel.posCount();
         real             frave = 0.0;
         for (int i = 0; i < nr; ++i)
@@ -170,28 +160,22 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 }
 
 
-void
-AnalysisTemplate::finishAnalysis(int /*nframes*/)
-{
-}
+void AnalysisTemplate::finishAnalysis(int /*nframes*/) {}
 
 
-void
-AnalysisTemplate::writeOutput()
+void AnalysisTemplate::writeOutput()
 {
     // We print out the average of the mean distances for each group.
     for (size_t g = 0; g < sel_.size(); ++g)
     {
-        fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                sel_[g].name(), avem_->average(0, g));
+        fprintf(stderr, "Average mean distance for '%s': %.3f nm\n", sel_[g].name(), avem_->average(0, g));
     }
 }
 
 /*! \brief
  * The main function for the analysis template.
  */
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<AnalysisTemplate>(argc, argv);
 }

@@ -50,11 +50,11 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/domdec/domdec_constraints.h"
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/domdec_vsite.h"
 #include "gromacs/domdec/options.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/inputrec.h"

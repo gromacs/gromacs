@@ -44,6 +44,8 @@
 
 #include "qmmmforceprovider.h"
 
+#include <libcp2k.h>
+
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
@@ -52,8 +54,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/stringutil.h"
-
-#include <libcp2k.h>
 
 namespace gmx
 {

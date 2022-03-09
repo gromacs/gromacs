@@ -47,6 +47,7 @@
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -58,7 +59,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 
 #include "pme_gpu_internal.h"
 #include "pme_gpu_settings.h"

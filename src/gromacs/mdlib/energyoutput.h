@@ -50,8 +50,8 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"

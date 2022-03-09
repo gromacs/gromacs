@@ -40,9 +40,9 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/mdlib/stat.h"
-
 #include "compositesimulatorelement.h"
+
+#include "gromacs/mdlib/stat.h"
 
 namespace gmx
 {

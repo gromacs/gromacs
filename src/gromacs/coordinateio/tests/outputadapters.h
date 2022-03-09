@@ -58,7 +58,6 @@
 #include "gromacs/coordinateio/outputadapters/setstarttime.h"
 #include "gromacs/coordinateio/outputadapters/settimestep.h"
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
-
 #include "gromacs/coordinateio/tests/coordinate_test.h"
 
 namespace gmx

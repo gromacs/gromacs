@@ -34,14 +34,14 @@
 #include "gmxpre.h"
 
 #include "gromacs/math/utilities.h"
-#include "gromacs/utility/real.h"
 
 #include "config.h"
 
-#include <cstdint>
-#include <cmath>
-
 #include <cfenv>
+#include <cmath>
+#include <cstdint>
+
+#include "gromacs/utility/real.h"
 
 #if HAVE_FEDISABLEEXCEPT || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
 //! Floating point exception set that we use and care about

@@ -44,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/exclusionblocks.h"
+
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/integrator.h"
 #include "nblib/tests/testhelpers.h"

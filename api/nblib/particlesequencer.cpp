@@ -42,10 +42,11 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
+#include "nblib/particlesequencer.h"
+
 #include <algorithm>
 
 #include "nblib/exception.h"
-#include "nblib/particlesequencer.h"
 
 namespace nblib
 {

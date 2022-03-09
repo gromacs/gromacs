@@ -41,13 +41,14 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include "nblib/exception.h"
-#include "nblib/listed_forces/conversionscommon.h"
-
 #include "gmxcalculator.h"
+
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/wallcycle.h"
+
+#include "nblib/exception.h"
+#include "nblib/listed_forces/conversionscommon.h"
 
 namespace nblib
 {

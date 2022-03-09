@@ -42,12 +42,13 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  */
+#include "nblib/particletype.h"
+
 #include <cmath>
 
-#include "nblib/particletype.h"
-#include "nblib/tests/testsystems.h"
-
 #include "testutils/testasserts.h"
+
+#include "nblib/tests/testsystems.h"
 
 namespace nblib
 {

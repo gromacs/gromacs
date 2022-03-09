@@ -50,8 +50,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/textblockmatchers.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
 namespace gmx::test

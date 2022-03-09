@@ -35,12 +35,12 @@
 
 #include "config.h"
 
+#include <fftw3.h>
+
 #include <cerrno>
 #include <cstdlib>
 
 #include <mutex>
-
-#include <fftw3.h>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"

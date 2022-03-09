@@ -40,8 +40,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/hardware/hardwaretopology.h"
-
 #include "config.h"
 
 #include <algorithm>
@@ -53,6 +51,8 @@
 
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
+
+#include "gromacs/hardware/hardwaretopology.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

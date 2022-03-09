@@ -50,6 +50,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/tests/datatest.h"
+
 #include "testutils/testasserts.h"
 
 using gmx::test::AnalysisDataTestInput;

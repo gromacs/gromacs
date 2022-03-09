@@ -49,8 +49,8 @@
 
 #include "nblib/basicdefinitions.h"
 #include "nblib/box.h"
-#include "nblib/vector.h"
 #include "nblib/topology.h"
+#include "nblib/vector.h"
 
 namespace nblib
 {

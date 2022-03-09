@@ -41,6 +41,7 @@
 
 #include <cstdint>
 #include <cstring>
+
 #include <type_traits>
 
 #if GMX_INTEGER_BIG_ENDIAN

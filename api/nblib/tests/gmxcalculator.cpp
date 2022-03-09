@@ -42,12 +42,13 @@
  */
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/arrayref.h"
+
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/simulationstate.h"
 #include "nblib/tests/testhelpers.h"
 #include "nblib/tests/testsystems.h"
-#include "gromacs/utility/arrayref.h"
 
 namespace nblib
 {

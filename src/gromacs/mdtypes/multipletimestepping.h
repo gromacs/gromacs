@@ -34,10 +34,9 @@
 #ifndef GMX_MULTIPLETIMESTEPPING_H
 #define GMX_MULTIPLETIMESTEPPING_H
 
+#include <bitset>
 #include <string>
 #include <vector>
-
-#include <bitset>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"

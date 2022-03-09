@@ -10,34 +10,30 @@
  * library we still call the driver routine, but in our own
  * case this is just a wrapper to dstegr.
  */
-void
-F77_FUNC(dstevr,DSTEVR)(const char *jobz, 
-	const char *range,
-	int *n,
-	double *d,
-	double *e,
-	double *vl, 
-	double *vu,
-	int *il, 
-	int *iu, 
-	double *abstol,
-	int *m,
-	double *w, 
-	double *z,
-	int *ldz,
-	int *isuppz, 
-	double *work, 
-	int *lwork, 
-	int *iwork,
-	int *liwork, 
-	int *info)
+void F77_FUNC(dstevr, DSTEVR)(const char* jobz,
+                              const char* range,
+                              int*        n,
+                              double*     d,
+                              double*     e,
+                              double*     vl,
+                              double*     vu,
+                              int*        il,
+                              int*        iu,
+                              double*     abstol,
+                              int*        m,
+                              double*     w,
+                              double*     z,
+                              int*        ldz,
+                              int*        isuppz,
+                              double*     work,
+                              int*        lwork,
+                              int*        iwork,
+                              int*        liwork,
+                              int*        info)
 {
-  F77_FUNC(dstegr,DSTEGR)(jobz, range, n, d, e, vl, vu, il, iu, abstol, m, w,
-	  z, ldz, isuppz, work, lwork, iwork, liwork, info);
-  
+    F77_FUNC(dstegr, DSTEGR)
+    (jobz, range, n, d, e, vl, vu, il, iu, abstol, m, w, z, ldz, isuppz, work, lwork, iwork, liwork, info);
+
 
     return;
-
 }
-
-

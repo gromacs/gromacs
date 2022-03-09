@@ -48,11 +48,12 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
+
+#include "testutils/test_hardware_environment.h"
+#include "testutils/testasserts.h"
+
 #include "nblib/box.h"
 #include "nblib/nbnxmsetuphelpers.h"
-
-#include "testutils/testasserts.h"
-#include "testutils/test_hardware_environment.h"
 
 namespace nblib
 {

@@ -52,12 +52,13 @@
 
 #include "config.h"
 
+#include <fcntl.h>
+
 #include <cerrno>
 #include <cstring>
-
-#include <fcntl.h>
 #if GMX_NATIVE_WINDOWS
 #    include <io.h>
+
 #    include <sys/locking.h>
 #endif
 

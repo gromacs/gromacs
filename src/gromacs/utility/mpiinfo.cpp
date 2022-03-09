@@ -33,6 +33,7 @@
  */
 
 #include "gromacs/utility/mpiinfo.h"
+
 #include <cstdlib>
 
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h

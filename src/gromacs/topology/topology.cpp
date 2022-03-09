@@ -33,7 +33,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "topology.h"
 
 #include <cstdio>
@@ -47,6 +46,7 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"

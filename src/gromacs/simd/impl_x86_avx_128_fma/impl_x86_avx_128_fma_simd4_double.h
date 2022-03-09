@@ -37,11 +37,11 @@
 
 #include "config.h"
 
-#include <cassert>
-#include <cstddef>
-
 #include <immintrin.h>
 #include <x86intrin.h>
+
+#include <cassert>
+#include <cstddef>
 
 namespace gmx
 {

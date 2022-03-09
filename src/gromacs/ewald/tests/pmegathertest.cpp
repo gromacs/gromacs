@@ -51,8 +51,8 @@
 
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
-#include "testutils/testinit.h"
 #include "testutils/testasserts.h"
+#include "testutils/testinit.h"
 
 #include "pmetestcommon.h"
 

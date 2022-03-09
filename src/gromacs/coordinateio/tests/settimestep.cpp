@@ -43,13 +43,13 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/coordinateio/outputadapters/settimestep.h"
+
 #include <memory>
 
-#include "gromacs/coordinateio/outputadapters/settimestep.h"
+#include "gromacs/coordinateio/tests/coordinate_test.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-
-#include "gromacs/coordinateio/tests/coordinate_test.h"
 
 namespace gmx
 {

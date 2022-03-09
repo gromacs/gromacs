@@ -41,17 +41,17 @@
 #include <tuple>
 #include <vector>
 
-#include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/applied_forces/awh/correlationgrid.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 

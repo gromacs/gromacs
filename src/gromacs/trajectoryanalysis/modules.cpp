@@ -42,9 +42,6 @@
 
 #include "modules.h"
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
-
 #include "modules/angle.h"
 #include "modules/convert_trj.h"
 #include "modules/distance.h"
@@ -56,6 +53,9 @@
 #include "modules/sasa.h"
 #include "modules/select.h"
 #include "modules/trajectory.h"
+
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 namespace gmx
 {

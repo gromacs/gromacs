@@ -64,10 +64,10 @@
 #    include <hwloc.h>
 #endif
 
+#include <sys/types.h>
+
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include <sys/types.h>
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h> // sysconf()

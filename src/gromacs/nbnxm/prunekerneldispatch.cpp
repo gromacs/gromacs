@@ -34,6 +34,10 @@
 
 #include "gmxpre.h"
 
+#include "kernels_reference/kernel_ref_prune.h"
+#include "kernels_simd_2xmm/kernel_prune.h"
+#include "kernels_simd_4xm/kernel_prune.h"
+
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/wallcycle.h"
@@ -44,9 +48,6 @@
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
-#include "kernels_reference/kernel_ref_prune.h"
-#include "kernels_simd_2xmm/kernel_prune.h"
-#include "kernels_simd_4xm/kernel_prune.h"
 
 void PairlistSets::dispatchPruneKernel(const gmx::InteractionLocality iLocality,
                                        const nbnxn_atomdata_t*        nbat,

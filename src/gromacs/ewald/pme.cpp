@@ -108,9 +108,9 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "calculate_spline_moduli.h"

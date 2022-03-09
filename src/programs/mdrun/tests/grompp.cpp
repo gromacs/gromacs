@@ -45,14 +45,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/gmxpreprocess/readir.h"
-
 #include <gtest/gtest.h>
 
-#include "moduletest.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testexceptions.h"
+
+#include "moduletest.h"
 
 namespace
 {

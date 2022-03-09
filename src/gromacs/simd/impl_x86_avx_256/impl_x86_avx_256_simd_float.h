@@ -37,11 +37,11 @@
 
 #include "config.h"
 
+#include <immintrin.h>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-
-#include <immintrin.h>
 
 #include "gromacs/math/utilities.h"
 

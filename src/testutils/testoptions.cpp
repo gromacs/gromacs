@@ -43,9 +43,9 @@
 #include "testutils/testoptions.h"
 
 #include <list>
+#include <memory>
 #include <mutex>
 
-#include <memory>
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx

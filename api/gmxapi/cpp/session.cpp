@@ -39,14 +39,14 @@
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/restraint/restraintpotential.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
-#include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
+#include "gmxapi/status.h"
 
 #include "createsession.h"
 #include "mdsignals.h"

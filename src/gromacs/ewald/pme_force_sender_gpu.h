@@ -43,8 +43,8 @@
 
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 
 class GpuEventSynchronizer;

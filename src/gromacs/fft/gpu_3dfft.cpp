@@ -43,6 +43,7 @@
 #include "gmxpre.h"
 
 #include "gpu_3dfft.h"
+
 #include "gpu_3dfft_impl.h"
 
 #if GMX_GPU_CUDA

@@ -36,6 +36,7 @@
 #include "fitahx.h"
 
 #include <cmath>
+
 #include <vector>
 
 #include "gromacs/math/do_fit.h"

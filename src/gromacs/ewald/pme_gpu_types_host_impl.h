@@ -44,11 +44,12 @@
 #define PMEGPUTYPESHOSTIMPL_H
 
 #include "config.h"
-#include "gromacs/utility/enumerationhelpers.h"
 
 #include <array>
 #include <set>
 #include <vector>
+
+#include "gromacs/utility/enumerationhelpers.h"
 
 #if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/gpuregiontimer.cuh"
@@ -58,9 +59,8 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
-#include "gromacs/gpu_utils/gpueventsynchronizer.h"
-
 #include "gromacs/fft/gpu_3dfft.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/timing/gpu_timing.h" // for gtPME_EVENT_COUNT
 
 #ifndef NUMFEPSTATES

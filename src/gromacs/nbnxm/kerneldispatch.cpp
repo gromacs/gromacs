@@ -34,6 +34,8 @@
 
 #include "gmxpre.h"
 
+#include "kernels_reference/kernel_gpu_ref.h"
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/enerdata_utils.h"
@@ -62,7 +64,6 @@
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
-#include "kernels_reference/kernel_gpu_ref.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
 #include "kernels_reference/kernel_ref.h"
 #ifdef GMX_NBNXN_SIMD_2XNN

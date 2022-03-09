@@ -40,12 +40,13 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <vector>
-
-#include "nblib/tests/testhelpers.h"
 #include "nblib/util/setup.h"
 
+#include <vector>
+
 #include "testutils/testasserts.h"
+
+#include "nblib/tests/testhelpers.h"
 
 
 namespace nblib

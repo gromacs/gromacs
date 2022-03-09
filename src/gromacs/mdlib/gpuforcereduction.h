@@ -42,9 +42,9 @@
 #ifndef GMX_MDLIB_GPUFORCEREDUCTION_H
 #define GMX_MDLIB_GPUFORCEREDUCTION_H
 
-#include <memory>
-
 #include "config.h"
+
+#include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"

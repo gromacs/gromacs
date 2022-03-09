@@ -40,9 +40,10 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "nblib/box.h"
+
 #include <cmath>
 
-#include "nblib/box.h"
 #include "nblib/exception.h"
 
 namespace nblib

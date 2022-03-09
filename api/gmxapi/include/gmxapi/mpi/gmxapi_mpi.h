@@ -35,15 +35,14 @@
 #ifndef GMXAPI_MPI_H
 #define GMXAPI_MPI_H
 
+#include <mpi.h>
+
 #include <cassert>
 
 #include <memory>
 
-#include <mpi.h>
-
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
-
 #include "gmxapi/mpi/resourceassignment.h"
 
 /*! \file

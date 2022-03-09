@@ -44,10 +44,10 @@
 
 #include "gpu_3dfft_ocl.h"
 
+#include <clFFT.h>
+
 #include <array>
 #include <vector>
-
-#include <clFFT.h>
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"

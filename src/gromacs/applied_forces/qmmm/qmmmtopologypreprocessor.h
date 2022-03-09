@@ -45,8 +45,8 @@
 #include <set>
 #include <string>
 
-#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "qmmmtypes.h"
 

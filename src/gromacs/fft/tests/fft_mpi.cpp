@@ -40,17 +40,16 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fft/fft.h"
-
 #include "config.h"
 
 #include <algorithm>
-#include <vector>
 #include <random>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/fft/fft.h"
 #include "gromacs/fft/gpu_3dfft.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
 #if GMX_GPU
@@ -59,8 +58,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "testutils/refdata.h"
 #include "testutils/mpitest.h"
+#include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"

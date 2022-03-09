@@ -35,12 +35,12 @@
 
 /* This file is completely threadsafe - please keep it that way! */
 
-#include "txtdump.h"
-
 #include <cstdio>
 #include <cstdlib>
 
 #include "gromacs/utility/cstringutil.h"
+
+#include "txtdump.h"
 
 int pr_indent(FILE* fp, int n)
 {

@@ -46,11 +46,10 @@
  * \ingroup module_python
  */
 
-#include "gmxapi/exceptions.h"
-
-#include "gmxapi/gmxapicompat.h"
 #include "gmxapi/compat/mdparams.h"
 #include "gmxapi/compat/tpr.h"
+#include "gmxapi/exceptions.h"
+#include "gmxapi/gmxapicompat.h"
 
 #include "module.h"
 

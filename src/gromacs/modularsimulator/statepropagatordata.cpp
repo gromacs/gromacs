@@ -40,7 +40,6 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/enumerationhelpers.h"
 #include "statepropagatordata.h"
 
 #include "gromacs/commandline/filenm.h"
@@ -65,6 +64,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"

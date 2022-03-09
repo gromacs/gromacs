@@ -45,12 +45,12 @@
 
 #include "gromacs/applied_forces/awh/biasgrid.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
+#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 

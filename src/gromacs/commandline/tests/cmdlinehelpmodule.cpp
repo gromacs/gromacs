@@ -45,11 +45,11 @@
 #include <gmock/gmock.h>
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 

@@ -38,10 +38,11 @@
  * \author Christian Blau <blau@kth.se>
  */
 
-#include <vector>
 #include "gmxpre.h"
 
 #include "freeenergyparameters.h"
+
+#include <vector>
 
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/arrayref.h"

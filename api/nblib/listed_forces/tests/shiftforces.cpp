@@ -41,10 +41,10 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#include "nblib/pbc.hpp"
-#include "nblib/listed_forces/tests/listedtesthelpers.h"
-
 #include "testutils/testasserts.h"
+
+#include "nblib/listed_forces/tests/listedtesthelpers.h"
+#include "nblib/pbc.hpp"
 
 namespace nblib
 {
