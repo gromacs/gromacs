@@ -95,6 +95,8 @@ __version__ = '{major}.{minor}.{micro}{suffix}'.format(major=_major,
 _named_features_0 = [[]] * (_minor + 1)
 
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
+# Functional requirements were described in issues #2045 and #2893. See also
+# https://gitlab.com/gromacs/gromacs/-/blob/release-2020/python_packaging/roadmap.rst
 _named_features_0[0] = ['fr1', 'fr3', 'fr7', 'fr15']
 # Features named since the finalization of the 0.1 specification with GROMACS 2020.
 _named_features_0[1] = []
