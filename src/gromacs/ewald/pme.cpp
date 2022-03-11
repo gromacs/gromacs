@@ -242,8 +242,8 @@ static void setup_coordinate_communication(PmeAtomComm* atc)
     n = 0;
     for (i = 1; i <= nslab / 2; i++)
     {
-        fw = (atc->nodeid + i) % nslab;
-        bw = (atc->nodeid - i + nslab) % nslab;
+        fw = (atc->slabIndex + i) % nslab;
+        bw = (atc->slabIndex - i + nslab) % nslab;
         if (n < nslab - 1)
         {
             atc->slabCommSetup[n].node_dest = fw;
@@ -296,19 +296,22 @@ PmeAtomComm::PmeAtomComm(MPI_Comm   PmeMpiCommunicator,
     {
         mpi_comm = PmeMpiCommunicator;
 #    if GMX_MPI
+        // The MPI ranks are indentical to the slab indices
         MPI_Comm_size(mpi_comm, &nslab);
-        MPI_Comm_rank(mpi_comm, &nodeid);
+        MPI_Comm_rank(mpi_comm, &slabIndex);
 #    endif
     }
     if (debug)
     {
-        fprintf(debug, "For PME atom communication in dimind %d: nslab %d rank %d\n", dimind, nslab, nodeid);
+        fprintf(debug, "For PME atom communication in dimind %d: nslab %d rank %d\n", dimind, nslab, slabIndex);
     }
 
     if (nslab > 1)
     {
         slabCommSetup.resize(nslab);
         setup_coordinate_communication(this);
+
+        bufferIndices.resize(nslab);
 
         count_thread.resize(nthread);
         for (auto& countThread : count_thread)

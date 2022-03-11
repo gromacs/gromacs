@@ -187,8 +187,6 @@ struct SlabCommSetup
     int node_dest;
     //! The nodes to receive x and q from with DD
     int node_src;
-    //! Index for commnode into the buffers
-    int buf_index;
     //! The number of atoms to receive
     int rcount;
 };
@@ -221,15 +219,17 @@ public:
     int dimind = 0;
     //! The number of slabs and ranks this dimension is decomposed over
     int nslab = 1;
-    //! Our MPI rank index
-    int nodeid = 0;
+    //! Our slab index, our MPI rank is equal to this number
+    int slabIndex = 0;
     //! Communicator for this dimension
     MPI_Comm mpi_comm;
 
-    //! Communication setup for each slab, only present with nslab > 1
+    //! Communication setup for each slab, ordered as alternating forward/backward and increasing slab shift
     std::vector<SlabCommSetup> slabCommSetup;
     //! The maximum communication distance counted in MPI ranks
     int maxshift = 0;
+    //! Working buffer indices, indexed with the slab index
+    std::vector<int> bufferIndices;
 
     //! The target slab index for each particle
     FastVector<int> pd;
