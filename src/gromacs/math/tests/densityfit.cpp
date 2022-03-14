@@ -285,6 +285,40 @@ TEST(DensitySimilarityTest, CrossCorrelationGradientIsCorrect)
     checker.checkSequence(gradientView.begin(), gradientView.end(), "cross-correlation-gradient");
 }
 
+TEST(DensitySimilarityTest, NormalizationCorrect)
+{
+    // normalize -22,-21,..,0,1,2,3,4 so that all positive elements sum to unity
+    // expect -22/10., -21/10. ,...,1/10.,2/10.,3/10.,4/10. (1+2+3+4 = 10)
+    std::array<float, 27> arrayToNormalize = {};
+    std::iota(begin(arrayToNormalize), end(arrayToNormalize), -22);
+    normalizeSumPositiveValuesToUnity(
+            ArrayRef<float>(std::begin(arrayToNormalize), std::end(arrayToNormalize)));
+
+    std::array<float, 27> expectedNormalizsationResult = {};
+    std::iota(std::begin(expectedNormalizsationResult), std::end(expectedNormalizsationResult), -22);
+
+    std::transform(std::begin(expectedNormalizsationResult),
+                   std::end(expectedNormalizsationResult),
+                   std::begin(expectedNormalizsationResult),
+                   [](float& c) { return c / 10.; });
+
+    EXPECT_THAT(expectedNormalizsationResult,
+                Pointwise(FloatEq(defaultFloatTolerance()), arrayToNormalize));
+}
+
+TEST(DensitySimilarityTest, NormalizationAllNonPositive)
+{
+    // normalize -50,...,-23 so that all positive elements sum to one,
+    // should not do anything to the array
+    std::array<float, 27> array = {};
+    std::iota(begin(array), end(array), -50);
+
+    const std::array<float, 27> expected = array;
+    normalizeSumPositiveValuesToUnity(ArrayRef<float>(std::begin(array), std::end(array)));
+
+    EXPECT_THAT(expected, Pointwise(FloatEq(defaultFloatTolerance()), array));
+}
+
 } // namespace test
 
 } // namespace gmx

@@ -49,6 +49,10 @@
 
 namespace gmx
 {
+
+template<typename>
+class ArrayRef;
+
 /*! \brief
  * The methods that determine how two densities are compared to one another.
  */
@@ -130,6 +134,16 @@ public:
 private:
     std::unique_ptr<DensitySimilarityMeasureImpl> impl_;
 };
+
+/*! \brief Divide all values of a view by a constant so that the sum of
+ *         all its positive values is one.
+ *
+ * \note Does nothing if there are no positive values
+ *
+ * \param[in,out] data the input data to be normalized
+ *
+ */
+void normalizeSumPositiveValuesToUnity(ArrayRef<float> data);
 
 } // namespace gmx
 

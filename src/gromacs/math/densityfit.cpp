@@ -47,6 +47,7 @@
 
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
@@ -429,5 +430,23 @@ DensitySimilarityMeasure& DensitySimilarityMeasure::operator=(const DensitySimil
 DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasure&&) noexcept = default;
 
 DensitySimilarityMeasure& DensitySimilarityMeasure::operator=(DensitySimilarityMeasure&&) noexcept = default;
+
+void normalizeSumPositiveValuesToUnity(ArrayRef<float> data)
+{
+    const double sumDataLargerZero =
+            std::accumulate(std::begin(data), std::end(data), 0., [](double sum, float value) {
+                return value > 0 ? sum + value : sum;
+            });
+
+    // leave the data untouched if there are no values larger than zero
+    if (sumDataLargerZero == 0.)
+    {
+        return;
+    }
+
+    std::transform(std::begin(data), std::end(data), std::begin(data), [sumDataLargerZero](float& datum) {
+        return datum / sumDataLargerZero;
+    });
+}
 
 } // namespace gmx
