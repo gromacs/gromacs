@@ -50,6 +50,7 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/mrcdensitymap.h"
 #include "gromacs/math/coordinatetransformation.h"
+#include "gromacs/math/densityfit.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/selection/indexutil.h"
@@ -163,12 +164,7 @@ public:
             GMX_THROW(InternalError("Need to set reference density before normalizing it."));
         }
 
-        const real sumOfDensityData = std::accumulate(
-                begin(referenceDensity_->asView()), end(referenceDensity_->asView()), 0.);
-        for (float& referenceDensityVoxel : referenceDensity_->asView())
-        {
-            referenceDensityVoxel /= sumOfDensityData;
-        }
+        normalizeSumPositiveValuesToUnity(referenceDensity_->toArrayRef());
     }
     /*! \brief Set the periodic boundary condition via MDModuleNotifier.
      *
