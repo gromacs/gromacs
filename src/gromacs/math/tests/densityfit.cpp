@@ -291,8 +291,7 @@ TEST(DensitySimilarityTest, NormalizationCorrect)
     // expect -22/10., -21/10. ,...,1/10.,2/10.,3/10.,4/10. (1+2+3+4 = 10)
     std::array<float, 27> arrayToNormalize = {};
     std::iota(begin(arrayToNormalize), end(arrayToNormalize), -22);
-    normalizeSumPositiveValuesToUnity(
-            ArrayRef<float>(std::begin(arrayToNormalize), std::end(arrayToNormalize)));
+    normalizeSumPositiveValuesToUnity(makeArrayRef(arrayToNormalize));
 
     std::array<float, 27> expectedNormalizsationResult = {};
     std::iota(std::begin(expectedNormalizsationResult), std::end(expectedNormalizsationResult), -22);
@@ -314,7 +313,7 @@ TEST(DensitySimilarityTest, NormalizationAllNonPositive)
     std::iota(begin(array), end(array), -50);
 
     const std::array<float, 27> expected = array;
-    normalizeSumPositiveValuesToUnity(ArrayRef<float>(std::begin(array), std::end(array)));
+    normalizeSumPositiveValuesToUnity(makeArrayRef(array));
 
     EXPECT_THAT(expected, Pointwise(FloatEq(defaultFloatTolerance()), array));
 }
