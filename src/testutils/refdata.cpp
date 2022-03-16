@@ -663,7 +663,7 @@ ReferenceDataEntry* TestReferenceChecker::Impl::findOrCreateEntry(const char* ty
         {
             ReferenceDataEntry::EntryPointer outputEntry(createEntry(type, id, checker));
             entry->setCorrespondingOutputEntry(outputEntry.get());
-            outputRootEntry_->addChild(move(outputEntry));
+            outputRootEntry_->addChild(std::move(outputEntry));
             return ::testing::AssertionSuccess();
         }
     }
