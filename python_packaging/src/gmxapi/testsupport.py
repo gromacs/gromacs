@@ -46,15 +46,8 @@ variable in a conftest.py
 .. todo:: Consider moving this to a separate optional package.
 """
 
-import json
-import logging
 import os
-import shutil
-import tempfile
-import warnings
 from contextlib import contextmanager
-from enum import Enum
-from typing import Union
 
 import pytest
 
@@ -100,32 +93,19 @@ def pytest_runtest_setup(item):
 
 def pytest_addoption(parser):
     """Add command-line user options for the pytest invocation."""
+    # TODO(#4345): Remove `--rm` option after 2023 release.
     parser.addoption(
         '--rm',
         action='store',
         default='always',
         choices=['always', 'never', 'success'],
-        help='Remove temporary directories "always", "never", or on "success".'
+        help='No longer used. See https://docs.pytest.org/en/latest/how-to/tmp_path.html'
     )
     parser.addoption(
         '--threads',
         type=int,
         help='Maximum number of threads per process per gmxapi session.'
     )
-
-
-class RmOption(Enum):
-    """Enumerate allowable values of the --rm option."""
-    always = 'always'
-    never = 'never'
-    success = 'success'
-
-
-@pytest.fixture(scope='session')
-def remove_tempdir(request) -> RmOption:
-    """pytest fixture to get access to the --rm CLI option."""
-    arg = request.config.getoption('--rm')
-    return RmOption(arg)
 
 
 @pytest.fixture(scope='session')
@@ -167,91 +147,15 @@ def scoped_chdir(dir):
         os.chdir(oldpath)
 
 
-@contextmanager
-def _cleandir(remove_tempdir: Union[str, RmOption]):
-    """Context manager for a clean temporary working directory.
-
-    Arguments:
-        remove_tempdir (RmOption): whether to remove temporary directory "always",
-                                   "never", or on "success"
-
-    Raises:
-        ValueError: if remove_tempdir value is not valid.
-
-    The context manager will issue a warning for each temporary directory that
-    is not removed.
-    """
-    if not isinstance(remove_tempdir, RmOption):
-        remove_tempdir = RmOption(remove_tempdir)
-
-    newpath = tempfile.mkdtemp()
-
-    def remove():
-        shutil.rmtree(newpath)
-
-    def warn():
-        warnings.warn('Temporary directory not removed: {}'.format(newpath))
-
-    # Initialize callback function reference
-    if remove_tempdir == RmOption.always:
-        callback = remove
-    else:
-        callback = warn
-
-    try:
-        with scoped_chdir(newpath):
-            yield newpath
-        # If we get to this line, the `with` block using _cleandir did not throw.
-        # Clean up the temporary directory unless the user specified `--rm never`.
-        # I.e. If the user specified `--rm success`, then we need to toggle from `warn` to `remove`.
-        if remove_tempdir != RmOption.never:
-            callback = remove
-
-        # Make sure that the temporary directory is not removed before all ranks have done
-        # the file checks.
-        if comm_size > 1:
-            comm.barrier()
-    finally:
-        callback()
-
-
 @pytest.fixture
-def cleandir(remove_tempdir: RmOption):
+def cleandir(tmp_path):
     """Provide a clean temporary working directory for a test.
 
-    Example usage:
-
-        import os
-        import pytest
-
-        @pytest.mark.usefixtures("cleandir")
-        def test_cwd_starts_empty():
-            assert os.listdir(os.getcwd()) == []
-            with open("myfile", "w") as f:
-                f.write("hello")
-
-        def test_cwd_also_starts_empty(cleandir):
-            assert os.listdir(os.getcwd()) == []
-            assert os.path.abspath(os.getcwd()) == os.path.abspath(cleandir)
-            with open("myfile", "w") as f:
-                f.write("hello")
-
-        @pytest.mark.usefixtures("cleandir")
-        class TestDirectoryInit(object):
-            def test_cwd_starts_empty(self):
-                assert os.listdir(os.getcwd()) == []
-                with open("myfile", "w") as f:
-                    f.write("hello")
-
-            def test_cwd_also_starts_empty(self):
-                assert os.listdir(os.getcwd()) == []
-                with open("myfile", "w") as f:
-                    f.write("hello")
-
-    Ref: https://docs.pytest.org/en/latest/fixture.html#using-fixtures-from-classes-modules-or-projects
+    Temporary directory is created and managed as described at
+    https://docs.pytest.org/en/latest/how-to/tmp_path.html
     """
-    with _cleandir(remove_tempdir) as newdir:
-        yield newdir
+    with scoped_chdir(tmp_path):
+        yield tmp_path
 
 
 @pytest.fixture(scope='session')

@@ -43,14 +43,13 @@ pytest_plugins = ('gmxapi.testsupport',)
 
 
 @pytest.fixture(scope='class')
-def spc_water_box(gmxcli, remove_tempdir):
+def spc_water_box(gmxcli, tmp_path_factory):
     """Provide a TPR input file for a simple simulation.
 
     Prepare the MD input in a freshly created working directory.
     """
     import gmxapi as gmx
-    # TODO: Remove this import when the the spc_water_box fixture is migrated to gmxapi.testsupport
-    from gmxapi.testsupport import _cleandir
+    from gmxapi.testsupport import scoped_chdir
 
     # TODO: (#2896) Fetch MD input from package / library data.
     # Example:
@@ -60,7 +59,7 @@ def spc_water_box(gmxcli, remove_tempdir):
     #     # Ref https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
     #     from gmx.data import tprfilename
 
-    with _cleandir(remove_tempdir) as tempdir:
+    with scoped_chdir(tmp_path_factory.mktemp('spc_water_box')) as tempdir:
 
         testdir = os.path.dirname(__file__)
         with open(os.path.join(testdir, 'testdata.json'), 'r') as fh:
