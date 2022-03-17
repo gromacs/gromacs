@@ -729,7 +729,9 @@ void check_ir(const char*                    mdparin,
             if (fep->n_lambda > 1)
             {
                 /* warn about capping if lambda vector is provided as user input */
-                int64_t stepNumber = static_cast<int64_t>((1.0 - fep->init_lambda) / fep->delta_lambda);
+                double  stepNumberWhenLambdaIsOne = (1.0 - fep->init_lambda) / fep->delta_lambda;
+                int64_t intStepNumberWhenLambdaIsOne =
+                        static_cast<int64_t>(std::round(stepNumberWhenLambdaIsOne));
 
                 auto warningText = gmx::formatString(
                         "With init-lambda = %g and delta_lambda = %g, the lambda "
@@ -738,7 +740,7 @@ void check_ir(const char*                    mdparin,
                         "Consider setting init-lambda to a value less or equal to 1.\n",
                         fep->init_lambda,
                         fep->delta_lambda,
-                        stepNumber,
+                        intStepNumberWhenLambdaIsOne,
                         ir->nsteps);
                 warning(wi, warningText);
             }
@@ -761,21 +763,27 @@ void check_ir(const char*                    mdparin,
         if (fep->delta_lambda != 0)
         {
             /* warn about capping */
-            int64_t stepNumber = ir->nsteps;
+            int64_t intStepNumberWhenLambdaIsCapped = ir->nsteps;
 
             if (fep->init_fep_state >= 0 && fep->init_fep_state < fep->n_lambda)
             {
+                double deltaLambdaWithMultiplier = ((fep->n_lambda - 1) * fep->delta_lambda);
                 if (fep->delta_lambda > 0)
                 {
-                    stepNumber = static_cast<int64_t>((fep->n_lambda - 1 - fep->init_fep_state)
-                                                      / ((fep->n_lambda - 1) * fep->delta_lambda));
+                    double stepNumberWhenLambdaIsCapped =
+                            (fep->n_lambda - 1 - fep->init_fep_state) / deltaLambdaWithMultiplier;
+                    intStepNumberWhenLambdaIsCapped =
+                            static_cast<int64_t>(std::round(stepNumberWhenLambdaIsCapped));
                 }
                 else if (fep->delta_lambda < 0)
                 {
-                    stepNumber = static_cast<int64_t>((0 - fep->init_fep_state)
-                                                      / ((fep->n_lambda - 1) * fep->delta_lambda));
+                    double stepNumberWhenLambdaIsCapped =
+                            (0 - fep->init_fep_state) / deltaLambdaWithMultiplier;
+                    intStepNumberWhenLambdaIsCapped =
+                            static_cast<int64_t>(std::round(stepNumberWhenLambdaIsCapped));
                 }
-                if (stepNumber < ir->nsteps)
+
+                if (intStepNumberWhenLambdaIsCapped < ir->nsteps || ir->nsteps < 0)
                 {
                     auto warningText = gmx::formatString(
                             "With init-lambda-state = %d and delta_lambda = %g, the lambda "
@@ -784,7 +792,7 @@ void check_ir(const char*                    mdparin,
                             " until the end of the simulation after %" PRId64 " steps.\n",
                             fep->init_fep_state,
                             fep->delta_lambda,
-                            stepNumber,
+                            intStepNumberWhenLambdaIsCapped,
                             ir->nsteps);
                     warning(wi, warningText);
                 }
@@ -794,14 +802,17 @@ void check_ir(const char*                    mdparin,
             {
                 if (fep->delta_lambda > 0)
                 {
-                    stepNumber = static_cast<int64_t>((1.0 - fep->init_lambda) / fep->delta_lambda);
-                    stepNumber = (stepNumber < 0 ? 0 : stepNumber);
+                    double stepNumberWhenLambdaIsCapped = (1.0 - fep->init_lambda) / fep->delta_lambda;
+                    stepNumberWhenLambdaIsCapped = std::max(stepNumberWhenLambdaIsCapped, 0.0);
+                    intStepNumberWhenLambdaIsCapped =
+                            static_cast<int64_t>(std::round(stepNumberWhenLambdaIsCapped));
 
                     /* There's no upper limit (capping) if no lambda value array is specified by the
                      * user. However, soft-core potentials may not be used with coul-lambdas or
                      * vdw-lambdas greater than 1. Make sure to error out.
                      */
-                    if (stepNumber < ir->nsteps && fep->n_lambda <= 0)
+                    if ((intStepNumberWhenLambdaIsCapped < ir->nsteps || ir->nsteps < 0)
+                        && fep->n_lambda <= 0)
                     {
                         if (fep->sc_alpha > 0 || fep->softcoreFunction == SoftcoreType::Gapsys)
                         {
@@ -810,23 +821,26 @@ void check_ir(const char*                    mdparin,
                                     "input, "
                                     "coul-lambdas and vdw-lambdas will be greater than 1 after "
                                     "step %" PRId64 " of in total %" PRId64
-                                    " steps. This is not compatible with using soft-core "
-                                    "potentials. \n",
+                                    " steps. "
+                                    "This is not compatible with using soft-core potentials.\n",
                                     fep->init_lambda,
                                     fep->delta_lambda,
-                                    stepNumber,
+                                    intStepNumberWhenLambdaIsCapped,
                                     ir->nsteps);
                             warning_error(wi, message);
                         }
                         /* No capping warning needed. */
-                        stepNumber = ir->nsteps;
+                        intStepNumberWhenLambdaIsCapped = ir->nsteps;
                     }
                 }
                 else if (fep->delta_lambda < 0)
                 {
-                    stepNumber = static_cast<int64_t>((0.0 - fep->init_lambda) / fep->delta_lambda);
+                    double stepNumberWhenLambdaIsCapped = (0.0 - fep->init_lambda) / fep->delta_lambda;
+                    intStepNumberWhenLambdaIsCapped =
+                            static_cast<int64_t>(std::round(stepNumberWhenLambdaIsCapped));
                 }
-                if (stepNumber < ir->nsteps)
+                if (intStepNumberWhenLambdaIsCapped < ir->nsteps
+                    || (ir->nsteps < 0 && !(fep->delta_lambda > 0 && fep->n_lambda <= 0)))
                 {
                     auto warningText = gmx::formatString(
                             "With init-lambda = %g and delta_lambda = %g, the lambda components "
@@ -834,7 +848,7 @@ void check_ir(const char*                    mdparin,
                             " until the end of the simulation after %" PRId64 " steps.\n",
                             fep->init_lambda,
                             fep->delta_lambda,
-                            stepNumber,
+                            intStepNumberWhenLambdaIsCapped,
                             ir->nsteps);
                     warning(wi, warningText);
                 }
@@ -953,7 +967,7 @@ void check_ir(const char*                    mdparin,
                     if (fep->all_lambda[j][i] < 0)
                     {
                         auto message = gmx::formatString(
-                                "Entry %d for %s must be greater than 0, instead is %g",
+                                "Entry %d for %s must be greater than or equal to 0, instead is %g",
                                 i,
                                 enumValueToString(enumValue),
                                 fep->all_lambda[j][i]);
@@ -4642,8 +4656,10 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
     {
         double stepNumberWhenLambdaIsOne = (1.0 - ir.fepvals->init_lambda) / ir.fepvals->delta_lambda;
         stepNumberWhenLambdaIsOne        = std::max(stepNumberWhenLambdaIsOne, 0.0);
+        int64_t intStepNumberWhenLambdaIsOne =
+                static_cast<int64_t>(std::round(stepNumberWhenLambdaIsOne));
 
-        if ((ir.nsteps < 0 || stepNumberWhenLambdaIsOne < ir.nsteps) && ir.fepvals->n_lambda <= 0
+        if ((ir.nsteps < 0 || intStepNumberWhenLambdaIsOne < ir.nsteps) && ir.fepvals->n_lambda <= 0
             && ir.fepvals->sc_alpha <= 0 && ir.fepvals->softcoreFunction != SoftcoreType::Gapsys)
         {
             auto warningText = gmx::formatString(
@@ -4655,7 +4671,7 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
                     "doing.\n",
                     ir.fepvals->init_lambda,
                     ir.fepvals->delta_lambda,
-                    static_cast<int64_t>(stepNumberWhenLambdaIsOne),
+                    intStepNumberWhenLambdaIsOne,
                     ir.nsteps);
             warning(wi, warningText);
         }

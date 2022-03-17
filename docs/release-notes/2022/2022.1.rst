@@ -64,3 +64,12 @@ when Fedora ran our unit tests with additional checking flags. This will
 not have influenced any actual clients merely using nblib.
 
 :issue:`4414`
+
+Accurately checks when FEP lambda might go over 1 or under 0
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The checks that verify that the FEP lambda does not go out of
+range used to trigger incorrectly when the delta-lambda and number
+of step was exactly right.
+
+:issue:`4442`
