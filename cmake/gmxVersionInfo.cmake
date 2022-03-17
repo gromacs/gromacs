@@ -230,9 +230,9 @@ if (GMX_VERSION_PATCH)
 else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}")
 endif()
-set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+set(REGRESSIONTEST_VERSION "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 
-set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+set(GMX_VERSION_STRING "${REGRESSIONTEST_VERSION}")
 set(REGRESSIONTEST_BRANCH "release-2022")
 # Follow the relevant part of the release checklist at
 # https://gitlab.com/gromacs/gromacs/-/wikis/Release-checklist#how-to-build-a-regressiontests-tarball

@@ -40,3 +40,8 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed regression test download URL for forks of |Gromacs|
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Users of forks of |Gromacs| (eg PLUMED) can now also use the feature
+to download the regression tests automatically.
