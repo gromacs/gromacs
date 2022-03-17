@@ -26,6 +26,16 @@ There would be a segfault when deciding whether early PME results are needed.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix C-terminal residue patch for charmm
+"""""""""""""""""""""""""""""""""""""""
+
+One of the atom types names in the Charmm27 force field C-terminal
+COOH patch was incorrect, and would have triggered a crash or error
+in pdb2gmx, which was identified when Fedora ran our unit tests with
+additional checking flags.
+
+:issue:`4414`
+
 Add polyproline helix coloring to DSSP maps
 """""""""""""""""""""""""""""""""""""""""""
 
@@ -45,3 +55,12 @@ Fixed regression test download URL for forks of |Gromacs|
 
 Users of forks of |Gromacs| (eg PLUMED) can now also use the feature
 to download the regression tests automatically.
+
+Fix internal nblib test failure
+"""""""""""""""""""""""""""""""
+
+The nblib internal tests used incorrect indices, which triggered a crash
+when Fedora ran our unit tests with additional checking flags. This will
+not have influenced any actual clients merely using nblib.
+
+:issue:`4414`
