@@ -49,15 +49,15 @@
 
 #include <cstdlib>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
+#include "gromacs/math/vec.h"
 
 #include "pme.cuh"
-#include "pme_gpu_types_host.h"
 #include "pme_gpu_types.h"
+#include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
-#include "gromacs/fft/parallel_3dfft.h"
 
 /*! \brief
  * A CUDA kernel which packs non-contiguous overlap data in Y-dimension

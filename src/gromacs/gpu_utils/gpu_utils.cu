@@ -42,10 +42,9 @@
 #include "gpu_utils.h"
 
 #include <assert.h>
+#include <cuda_profiler_api.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <cuda_profiler_api.h>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"

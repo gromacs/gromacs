@@ -89,6 +89,7 @@ IncludeCategories:
   - Regex:           '.*'
     Priority:        100
 IncludeIsMainRegex: '([-_](test|tests|unittest))?$'
+IncludeIsMainSourceRegex: '(\.cu)$'
 IndentPPDirectives: AfterHash
 IndentCaseLabels: true
 IndentWidth:     4

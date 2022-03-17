@@ -42,11 +42,11 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/ewald/pme_pp_communication.h"
 #include "pme_pp_comm_gpu_impl.h"
 
 #include "config.h"
 
+#include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"

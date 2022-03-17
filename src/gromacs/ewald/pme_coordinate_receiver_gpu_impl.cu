@@ -42,12 +42,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/ewald/pme_pp_communication.h"
 #include "pme_coordinate_receiver_gpu_impl.h"
 
 #include "config.h"
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
+#include "gromacs/ewald/pme_pp_communication.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"

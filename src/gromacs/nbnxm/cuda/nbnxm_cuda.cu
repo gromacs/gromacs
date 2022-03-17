@@ -50,8 +50,6 @@
 #endif
 
 
-#include "nbnxm_cuda.h"
-
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/typecasts.cuh"
@@ -69,6 +67,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "nbnxm_cuda.h"
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/

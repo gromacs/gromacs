@@ -40,9 +40,9 @@
 
 #include "gmxpre.h"
 
-#include <cassert>
-
 #include <math_constants.h>
+
+#include <cassert>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 

@@ -44,6 +44,7 @@
  * \ingroup module_gpu_utils
  */
 #include <cuda_runtime.h>
+
 #include "gromacs/math/vectypes.h"
 
 //! Device texture for fast read-only data fetching

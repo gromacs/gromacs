@@ -47,9 +47,9 @@
 
 #include "gmxpre.h"
 
-#include <cassert>
-
 #include <math_constants.h>
+
+#include <cassert>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/typecasts.cuh"

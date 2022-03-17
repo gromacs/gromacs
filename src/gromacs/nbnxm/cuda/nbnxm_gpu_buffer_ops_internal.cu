@@ -41,11 +41,12 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
+
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/nbnxm/grid.h"
-#include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
+#include "gromacs/nbnxm/grid.h"
 
 /*! \brief CUDA kernel for transforming position coordinates from rvec to nbnxm layout.
  *
