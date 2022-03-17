@@ -51,6 +51,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/stringutil.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
 #include "testutils/testasserts.h"
@@ -268,7 +269,7 @@ gmx::test::CommandLine buildMdrunCommandLine(RuntimeFlavor runtimeFlavor)
 }
 
 // Needed for std::unordered_map<MdpFlavor, ...>
-struct MdpFlavorHash : public std::unary_function<MdpFlavor, std::size_t>
+struct MdpFlavorHash
 {
     std::size_t operator()(const MdpFlavor& mdpFlavor) const
     {
