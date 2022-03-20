@@ -44,6 +44,13 @@ have a dark blue-green color entry for this in the generated maps.
 
 :issue:`4410`
 
+Remove option -unsat from gmx order and document deficiencies
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This hasn't properly worked since it was added.
+
+:issue:`1166`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
