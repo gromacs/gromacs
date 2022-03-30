@@ -65,6 +65,13 @@ import warnings
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
+from setuptools.config import read_configuration
+
+# Currently we have only partially migrated to PEP 517/518.
+# It is unclear how we will access configuration details
+# like options.package_data in the long run, but for now we
+# can load the contents of setup.cfg into setup.py.
+conf_dict = read_configuration(os.path.join(os.path.dirname(__file__), 'setup.cfg'))
 
 usage = __doc__[2:]
 
@@ -194,6 +201,40 @@ class CMakeBuild(typing.cast('setuptools.Command', build_ext)):
         subprocess.check_call(
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )
+
+    def run(self):
+        """Build extensions in build directory, then copy if --inplace
+
+        Extends setuptools.command.build_ext.run()
+        """
+        # Note that for installations in "develop" mode (or with `--in-place`),
+        # setuptools sets `inplace=1` to cause build_ext.run() to copy built
+        # extensions back to the source directory. The setuptools `develop`
+        # command does not call `build_py` and does not provide a good
+        # alternative insertion point for special handling of package data files
+        # (such as the invocation of `build_ext` with `inplace=1`).
+        # Since our data file is generated with the extension, this seems
+        # like a reasonable place to extend the handling in develop mode.
+        from distutils.file_util import copy_file
+        super(CMakeBuild, self).run()
+        if self.inplace:
+            # We follow the model of build_ext.copy_extensions_to_source().
+            build_py = self.get_finalized_command('build_py')
+            for ext in self.extensions:
+                fullname = self.get_ext_fullname(ext.name)
+                modpath = fullname.split('.')
+                package = '.'.join(modpath[:-1])
+                package_dir = build_py.get_package_dir(package)
+
+                for filename in conf_dict['options']['package_data'][package]:
+                    src_filename = os.path.join(self.build_lib, *modpath[:-1], filename)
+                    dest_filename = os.path.join(package_dir,
+                                                 os.path.basename(filename))
+
+                    copy_file(
+                        src_filename, dest_filename, verbose=self.verbose,
+                        dry_run=self.dry_run
+                )
 
 
 def _find_first_gromacs_suffix(directory):
