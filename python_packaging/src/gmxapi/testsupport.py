@@ -106,6 +106,61 @@ def pytest_addoption(parser):
         type=int,
         help='Maximum number of threads per process per gmxapi session.'
     )
+    parser.addoption(
+        '--pydevd',
+        type=str,
+        action='store',
+        nargs='?',
+        const='pydevd_pycharm',
+        help='Attempt to connect to PyDev.Debugger using the indicated module.'
+    )
+    parser.addoption(
+        '--pydevd-host',
+        type=str,
+        default='localhost',
+        help='Set the pydevd host.'
+    )
+    parser.addoption(
+        '--pydevd-port',
+        type=int,
+        default=12345,
+        help='Set the pydevd port.'
+    )
+    parser.addoption(
+        '--pydevd-rank',
+        type=int,
+        default=0,
+        help='In MPI, specify the rank to attach to the debug server.'
+    )
+
+
+@pytest.fixture(scope='session', autouse=True)
+def pydev_debug(request):
+    """If requested, try to connect to a PyDev.Debugger backend at
+    host.docker.internal:12345.
+
+    Note: the IDE run configuration must be started before launching pytest.
+    """
+    pydevd_module = request.config.getoption('--pydevd')
+    if pydevd_module:
+        host = request.config.getoption('--pydevd-host')
+        port = request.config.getoption('--pydevd-port')
+        participating_rank = request.config.getoption('--pydevd-rank')
+        if rank_number == participating_rank:
+            try:
+                import importlib
+                pydevd = importlib.import_module(pydevd_module)
+                settrace = getattr(pydevd, 'settrace', None)
+                if settrace is None:
+                    raise RuntimeError(
+                        f'PyDevD interface not supported. {pydevd} does not have `settrace`.'
+                    )
+                return settrace(host,
+                                port=port,
+                                stdoutToServer=True,
+                                stderrToServer=True)
+            except ImportError:
+                warnings.warn(f'{pydevd_module} not found. Ignoring `--pydevd` option.')
 
 
 @pytest.fixture(scope='session')
