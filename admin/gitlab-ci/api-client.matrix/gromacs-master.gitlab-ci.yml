@@ -4,15 +4,54 @@
 #   GPU: unspecified
 #   GROMACS: master
 #   gmxapi: as per GROMACS master
-#   client code: sample_restraint as bundled with GROMACS master
+#   client code:
+#    * sample_restraint as bundled with GROMACS master
+#    * TAF extension example as bundled with GROMACS master
 #   Scope: build, install, test
 # Test implementation choices (free to change as needed):
 #   GROMACS branch: master
 #   gmxapi Python package: 0.3 alpha from GROMACS master
 #   compiler: clang-8
 
+.sample_taf:
+  extends:
+    - .variables:default
+  stage: test
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 1Gi
+    KUBERNETES_MEMORY_REQUEST: 1Gi
+  script:
+    - export GROMACS_DIR=$PWD/$INSTALL_DIR
+    - export GMX_SUFFIX
+    - export CMAKE
+    - export GMX_DOUBLE
+    - bash -x admin/ci-scripts/build-taf-template.sh
 
-.sample_restraint:clang-8:
+sample_taf:openmpi-double:
+  extends:
+    - .sample_taf
+    - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-13
+  variables:
+    CMAKE: "/usr/local/cmake-3.16.3/bin/cmake"
+    GMX_SUFFIX: "_mpi_d"
+    GMX_DOUBLE: "ON"
+  needs:
+    - job: gromacs:clang-13-mpi:build
+
+sample_taf:tmpi:
+  extends:
+    - .sample_taf
+    - .rules:merge-requests
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+  needs:
+    - job: gromacs:clang-8:build
+
+.sample_restraint:
   extends:
     - .variables:default
   stage: test
@@ -34,13 +73,10 @@
         - $PLUGIN_MPI_TEST_XML
     when: always
     expire_in: 1 week
-  tags:
-    - k8s-scilifelab
-  # The dependency means we need to use the same tag restriction as upstream.
 
 sample_restraint:clang-8:py-3.7.7:
   extends:
-    - .sample_restraint:clang-8
+    - .sample_restraint
     - .use-clang:base
     - .rules:merge-requests
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
@@ -50,10 +86,13 @@ sample_restraint:clang-8:py-3.7.7:
   needs:
     - job: gromacs:clang-8:build
       artifacts: true
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
 
 sample_restraint:clang-8:py-3.8.2:
   extends:
-    - .sample_restraint:clang-8
+    - .sample_restraint
     - .use-clang:base
     - .rules:merge-requests
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
@@ -63,10 +102,13 @@ sample_restraint:clang-8:py-3.8.2:
   needs:
     - job: gromacs:clang-8:build
       artifacts: true
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
 
 sample_restraint:clang-8:py-3.9.1:
   extends:
-    - .sample_restraint:clang-8
+    - .sample_restraint
     - .use-clang:base
     - .rules:merge-requests
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-8-cuda-11.0
@@ -76,3 +118,6 @@ sample_restraint:clang-8:py-3.9.1:
   needs:
     - job: gromacs:clang-8:build
       artifacts: true
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
