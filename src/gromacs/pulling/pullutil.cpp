@@ -349,22 +349,6 @@ static void make_cyl_refgrps(const t_commrec*     cr,
             {
                 spatialData.ffrad[m] = (buffer[6 + m] + buffer[3 + m] * spatialData.cyl_dev) / wmass;
             }
-
-            if (debug)
-            {
-                fprintf(debug,
-                        "Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
-                        pcrd.params.coordIndex,
-                        dynamicGroup0.x[0],
-                        dynamicGroup0.x[1],
-                        dynamicGroup0.x[2],
-                        1.0 / dynamicGroup0.invtm);
-                fprintf(debug,
-                        "ffrad %8.3f %8.3f %8.3f\n",
-                        spatialData.ffrad[XX],
-                        spatialData.ffrad[YY],
-                        spatialData.ffrad[ZZ]);
-            }
         }
     }
 }
@@ -800,10 +784,6 @@ void pull_calc_coms(const t_commrec*     cr,
                     pgrp->xp[pull->cosdim] = atan2_0_2pi(snw, csw) / twopi_box;
                 }
             }
-            if (debug)
-            {
-                fprintf(debug, "Pull group %zu wmass %f invtm %f\n", g, 1.0 / pgrp->mwscale, pgrp->invtm);
-            }
         }
     }
 
@@ -1120,16 +1100,6 @@ void initPullComFromPrevStep(const t_commrec*     cr,
             RVec x_pbc = { 0, 0, 0 };
             copy_rvec(comm->pbcAtomBuffer[g], x_pbc);
 
-            if (debug)
-            {
-                fprintf(debug, "Initialising prev step COM of pull group %zu. x_pbc =", g);
-                for (int m = 0; m < DIM; m++)
-                {
-                    fprintf(debug, " %f", x_pbc[m]);
-                }
-                fprintf(debug, "\n");
-            }
-
             /* The following is to a large extent similar to pull_calc_coms() */
 
             /* The final sums should end up in sum_com[0] */
@@ -1207,16 +1177,6 @@ void initPullComFromPrevStep(const t_commrec*     cr,
                 {
                     pgrp->x[m] = localSums[0][m] * pgrp->mwscale;
                     pgrp->x[m] += comm->pbcAtomBuffer[g][m];
-                }
-                if (debug)
-                {
-                    fprintf(debug, "Pull group %zu wmass %f invtm %f\n", g, 1.0 / pgrp->mwscale, pgrp->invtm);
-                    fprintf(debug, "Initialising prev step COM of pull group %zu to", g);
-                    for (int m = 0; m < DIM; m++)
-                    {
-                        fprintf(debug, " %f", pgrp->x[m]);
-                    }
-                    fprintf(debug, "\n");
                 }
                 copy_dvec(pgrp->x, pgrp->x_prev_step);
             }
