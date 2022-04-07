@@ -146,16 +146,6 @@ int gmx_physicalnode_id_hash()
     return hash;
 }
 
-void gmx_broadcast_world(int size, void* buffer)
-{
-#if GMX_MPI
-    MPI_Bcast(buffer, size, MPI_BYTE, 0, MPI_COMM_WORLD);
-#else
-    GMX_UNUSED_VALUE(size);
-    GMX_UNUSED_VALUE(buffer);
-#endif
-}
-
 #if GMX_LIB_MPI
 void gmx_abort(int errorno)
 {

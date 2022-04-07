@@ -84,11 +84,6 @@ int gmx_node_rank();
  */
 int gmx_physicalnode_id_hash();
 
-/*! \brief
- * Broadcasts given data from rank zero to all other ranks.
- */
-void gmx_broadcast_world(int size, void* buffer);
-
 /** Abort the parallel run */
 [[noreturn]] void gmx_abort(int errorno);
 
