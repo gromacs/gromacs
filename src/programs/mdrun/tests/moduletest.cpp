@@ -360,8 +360,8 @@ std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::s_hwinfo;
 void MdrunTestFixtureBase::SetUpTestSuite()
 {
     s_communicator = MPI_COMM_WORLD;
-    auto newHwinfo =
-            gmx_detect_hardware(PhysicalNodeCommunicator{ s_communicator, gmx_physicalnode_id_hash() });
+    auto newHwinfo = gmx_detect_hardware(
+            PhysicalNodeCommunicator{ s_communicator, gmx_physicalnode_id_hash() }, s_communicator);
     std::swap(s_hwinfo, newHwinfo);
 }
 

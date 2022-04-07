@@ -198,7 +198,8 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
 //! Reduce the locally collected \p hardwareInfo over MPI ranks
 static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
                                      const PhysicalNodeCommunicator& physicalNodeComm,
-                                     gmx_hw_info_t*                  hardwareInfo)
+                                     gmx_hw_info_t*                  hardwareInfo,
+                                     [[maybe_unused]] MPI_Comm       world)
 {
     int nCores           = 0;
     int nProcessingUnits = 0;
@@ -254,7 +255,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
             countsLocal[4] = numCompatibleDevices;
         }
 
-        MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT, MPI_SUM, world);
     }
 
     constexpr int                   numElementsMax = 13;
@@ -278,7 +279,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         maxMinLocal[11] = -maxMinLocal[5];
         maxMinLocal[12] = (cpuIsAmdZen1 ? 1 : 0);
 
-        MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT, MPI_MAX, world);
     }
 
     hardwareInfo->nphysicalnode        = countsReduced[0];
@@ -321,7 +322,8 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
 #endif
 }
 
-std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm)
+std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm,
+                                                   MPI_Comm                        libraryCommWorld)
 {
     // TODO: We should also do CPU hardware detection only once on each
     // physical node and broadcast it, instead of doing it on every MPI rank.
@@ -338,7 +340,7 @@ std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicato
         std::swap(hardwareInfo->hardwareDetectionWarnings_, deviceDetectionResult.deviceDetectionWarnings_);
     }
 
-    gmx_collect_hardware_mpi(*hardwareInfo->cpuInfo, physicalNodeComm, hardwareInfo.get());
+    gmx_collect_hardware_mpi(*hardwareInfo->cpuInfo, physicalNodeComm, hardwareInfo.get(), libraryCommWorld);
 
     return hardwareInfo;
 }

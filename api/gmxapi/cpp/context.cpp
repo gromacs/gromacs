@@ -232,7 +232,8 @@ Context createContext()
 ContextImpl::ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>) :
     mpi_(std::move(mpi)),
     hardwareInformation_(gmx_detect_hardware(
-            gmx::PhysicalNodeCommunicator(mpi_.communicator(), gmx_physicalnode_id_hash())))
+            gmx::PhysicalNodeCommunicator(mpi_.communicator(), gmx_physicalnode_id_hash()),
+            mpi_.communicator()))
 {
     // Confirm our understanding of the MpiContextManager invariant.
     GMX_ASSERT(mpi_.communicator() == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,

@@ -78,7 +78,7 @@ int gmx_mdrun(int argc, char* argv[])
     // SimulationContext).
     MPI_Comm                 communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
     PhysicalNodeCommunicator physicalNodeCommunicator(communicator, gmx_physicalnode_id_hash());
-    std::unique_ptr<gmx_hw_info_t> hwinfo = gmx_detect_hardware(physicalNodeCommunicator);
+    std::unique_ptr<gmx_hw_info_t> hwinfo = gmx_detect_hardware(physicalNodeCommunicator, communicator);
     return gmx_mdrun(communicator, *hwinfo, argc, argv);
 }
 
