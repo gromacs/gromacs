@@ -44,6 +44,7 @@
 #include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 struct gmx_hw_opt_t;
 struct gmx_multisim_t;
@@ -116,6 +117,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
 void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
                                    gmx_hw_opt_t*        hw_opt,
                                    int                  ncpus,
-                                   gmx_bool             bAfterOpenmpInit);
+                                   gmx_bool             bAfterOpenmpInit,
+                                   MPI_Comm             world);
 
 #endif

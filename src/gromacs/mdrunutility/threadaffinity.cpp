@@ -55,6 +55,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
@@ -513,7 +514,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
  *
  * Should be called simultaneously by all MPI ranks.
  */
-static bool detectDefaultAffinityMask(const int maxThreads)
+static bool detectDefaultAffinityMask(const int maxThreads, MPI_Comm world)
 {
     bool detectedDefaultAffinityMask = true;
 
@@ -564,7 +565,7 @@ static bool detectDefaultAffinityMask(const int maxThreads)
     if (mpiIsInitialized)
     {
         bool maskToReduce = detectedDefaultAffinityMask;
-        MPI_Allreduce(&maskToReduce, &detectedDefaultAffinityMask, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+        MPI_Allreduce(&maskToReduce, &detectedDefaultAffinityMask, 1, MPI_C_BOOL, MPI_LAND, world);
     }
 #endif
 
@@ -577,8 +578,9 @@ static bool detectDefaultAffinityMask(const int maxThreads)
  */
 void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
                                    gmx_hw_opt_t*        hw_opt,
-                                   int gmx_unused       maxThreads,
-                                   gmx_bool             bAfterOpenmpInit)
+                                   int                  ncpus,
+                                   gmx_bool             bAfterOpenmpInit,
+                                   MPI_Comm             world)
 {
     GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
 
@@ -605,7 +607,7 @@ void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
         }
     }
 
-    if (!detectDefaultAffinityMask(maxThreads))
+    if (!detectDefaultAffinityMask(ncpus, world))
     {
         if (hw_opt->threadAffinity == ThreadAffinity::Auto)
         {
