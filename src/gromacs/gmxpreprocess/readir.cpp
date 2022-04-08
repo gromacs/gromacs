@@ -2863,7 +2863,7 @@ void get_ir(const char*     mdparin,
             {
                 warning(wi, "The lambda=0 and lambda=1 states for coupling are identical");
             }
-            if (ir->eI == IntegrationAlgorithm::MD
+            if (!EI_SD(ir->eI) && ir->eI != IntegrationAlgorithm::BD
                 && (opts->couple_lam0 == ecouplamNONE || opts->couple_lam1 == ecouplamNONE))
             {
                 warning_note(

@@ -92,3 +92,10 @@ range used to trigger incorrectly when the delta-lambda and number
 of step was exactly right.
 
 :issue:`4442`
+
+Correct free-energy (de)coupling integrator check
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy (de)coupling calculations, grompp would only warn
+with the md integrator that sd should be used. Now this warning
+is extended to the md-vv integrators.
