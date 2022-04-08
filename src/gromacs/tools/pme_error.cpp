@@ -80,7 +80,7 @@ enum
 };
 
 
-typedef struct
+struct PmeErrorInputs
 {
     int64_t orig_sim_steps;  /* Number of steps to be done in the real simulation  */
     int     n_entries;       /* Number of entries in arrays                        */
@@ -103,7 +103,7 @@ typedef struct
     real*    e_dir;          /* Direct space part of PME error with these settings */
     real*    e_rec;          /* Reciprocal space part of PME error                 */
     gmx_bool bTUNE;          /* flag for tuning */
-} t_inputinfo;
+};
 
 
 /* Returns TRUE when atom is charged */
@@ -166,7 +166,7 @@ static void calc_q2all(const gmx_mtop_t* mtop, /* molecular topology */
 
 
 /* Estimate the direct space part error of the SPME Ewald sum */
-static real estimate_direct(t_inputinfo* info)
+static real estimate_direct(PmeErrorInputs* info)
 {
     real e_dir     = 0; /* Error estimate */
     real beta      = 0; /* Splitting parameter (1/nm) */
@@ -407,10 +407,10 @@ static void calc_recipbox(matrix box, matrix recipbox)
 
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
-static real estimate_reciprocal(t_inputinfo* info,
-                                rvec         x[], /* array of particles */
-                                const real   q[], /* array of charges */
-                                int          nr,  /* number of charges = size of the charge array */
+static real estimate_reciprocal(PmeErrorInputs* info,
+                                rvec            x[], /* array of particles */
+                                const real      q[], /* array of charges */
+                                int  nr, /* number of charges = size of the charge array */
                                 FILE gmx_unused* fp_out,
                                 gmx_bool         bVerbose,
                                 int  seed,     /* The seed for the random number generator */
@@ -777,8 +777,8 @@ static real estimate_reciprocal(t_inputinfo* info,
 }
 
 
-/* Allocate memory for the inputinfo struct: */
-static void create_info(t_inputinfo* info)
+/* Allocate memory for the PmeErrorInputs struct: */
+static void create_info(PmeErrorInputs* info)
 {
     snew(info->fac, info->n_entries);
     snew(info->rcoulomb, info->n_entries);
@@ -843,13 +843,13 @@ static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec 
 
 
 /* Read in the tpr file and save information we need later in info */
-static void read_tpr_file(const char*  fn_sim_tpr,
-                          t_inputinfo* info,
-                          t_state*     state,
-                          gmx_mtop_t*  mtop,
-                          t_inputrec*  ir,
-                          real         user_beta,
-                          real         fracself)
+static void read_tpr_file(const char*     fn_sim_tpr,
+                          PmeErrorInputs* info,
+                          t_state*        state,
+                          gmx_mtop_t*     mtop,
+                          t_inputrec*     ir,
+                          real            user_beta,
+                          real            fracself)
 {
     read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
@@ -888,7 +888,7 @@ static void read_tpr_file(const char*  fn_sim_tpr,
 
 
 /* Transfer what we need for parallelizing the reciprocal error estimate */
-static void bcast_info(t_inputinfo* info, const t_commrec* cr)
+static void bcast_info(PmeErrorInputs* info, const t_commrec* cr)
 {
     nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nkx);
     nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nky);
@@ -911,7 +911,7 @@ static void bcast_info(t_inputinfo* info, const t_commrec* cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(t_inputinfo*      info,
+static void estimate_PME_error(PmeErrorInputs*   info,
                                const t_state*    state,
                                const gmx_mtop_t* mtop,
                                FILE*             fp_out,
@@ -1079,17 +1079,17 @@ int gmx_pme_error(int argc, char* argv[])
         "indicated by the flag [TT]-self[tt].[PAR]",
     };
 
-    real          fs        = 0.0; /* 0 indicates: not set by the user */
-    real          user_beta = -1.0;
-    real          fracself  = 1.0;
-    t_inputinfo   info;
-    t_state       state; /* The state from the tpr input file */
-    gmx_mtop_t    mtop;  /* The topology from the tpr input file */
-    FILE*         fp = nullptr;
-    unsigned long PCA_Flags;
-    gmx_bool      bTUNE    = FALSE;
-    gmx_bool      bVerbose = FALSE;
-    int           seed     = 0;
+    real           fs        = 0.0; /* 0 indicates: not set by the user */
+    real           user_beta = -1.0;
+    real           fracself  = 1.0;
+    PmeErrorInputs info;
+    t_state        state; /* The state from the tpr input file */
+    gmx_mtop_t     mtop;  /* The topology from the tpr input file */
+    FILE*          fp = nullptr;
+    unsigned long  PCA_Flags;
+    gmx_bool       bTUNE    = FALSE;
+    gmx_bool       bVerbose = FALSE;
+    int            seed     = 0;
 
 
     static t_filenm fnm[] = { { efTPR, "-s", nullptr, ffREAD },

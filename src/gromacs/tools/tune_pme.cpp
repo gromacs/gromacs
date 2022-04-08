@@ -113,7 +113,7 @@ typedef struct
 } t_perf;
 
 
-typedef struct
+struct PmeTuneInputs
 {
     int     nr_inputfiles;  /* The number of tpr and mdp input files */
     int64_t orig_sim_steps; /* Number of steps to be done in the real simulation */
@@ -123,7 +123,7 @@ typedef struct
     real*   rlist;          /* Neighbourlist cutoff radius */
     int *   nkx, *nky, *nkz;
     real *  fsx, *fsy, *fsz; /* Fourierspacing in x,y,z dimension */
-} t_inputinfo;
+};
 
 
 static void sep_line(FILE* fp)
@@ -408,16 +408,16 @@ static int parse_logfile(const char* logfile,
 }
 
 
-static gmx_bool analyze_data(FILE*        fp,
-                             const char*  fn,
-                             t_perf**     perfdata,
-                             int          nnodes,
-                             int          ntprs,
-                             int          ntests,
-                             int          nrepeats,
-                             t_inputinfo* info,
-                             int*         index_tpr, /* OUT: Nr of mdp file with best settings */
-                             int*         npme_optimal)      /* OUT: Optimal number of PME nodes */
+static gmx_bool analyze_data(FILE*          fp,
+                             const char*    fn,
+                             t_perf**       perfdata,
+                             int            nnodes,
+                             int            ntprs,
+                             int            ntests,
+                             int            nrepeats,
+                             PmeTuneInputs* info,
+                             int*           index_tpr, /* OUT: Nr of mdp file with best settings */
+                             int*           npme_optimal)        /* OUT: Optimal number of PME nodes */
 {
     int      i, j, k;
     int      line = 0, line_win = -1;
@@ -905,10 +905,10 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
                                 real    rmin,    /* Minimal Coulomb radius                        */
                                 real    rmax,    /* Maximal Coulomb radius                        */
                                 bool bScaleRvdw, /* Scale rvdw along with rcoulomb                */
-                                const int* ntprs,  /* No. of TPRs to write, each with a different
-                                                      rcoulomb and fourierspacing  */
-                                t_inputinfo* info, /* Contains information about mdp file options */
-                                FILE*        fp) /* Write the output here                         */
+                                const int* ntprs,    /* No. of TPRs to write, each with a different
+                                                        rcoulomb and fourierspacing  */
+                                PmeTuneInputs* info, /* Contains information about mdp file options */
+                                FILE* fp) /* Write the output here                         */
 {
     int        i, j, d;
     t_state    state;
@@ -2248,10 +2248,10 @@ int gmx_tune_pme(int argc, char* argv[])
     /* IDs of GPUs that are eligible for computation */
     char* eligible_gpu_ids = nullptr;
 
-    t_perf**     perfdata = nullptr;
-    t_inputinfo* info;
-    int          i;
-    FILE*        fp;
+    t_perf**       perfdata = nullptr;
+    PmeTuneInputs* info;
+    int            i;
+    FILE*          fp;
 
     /* Print out how long the tuning took */
     double seconds;
