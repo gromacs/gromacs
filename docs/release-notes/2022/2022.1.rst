@@ -51,6 +51,13 @@ This hasn't properly worked since it was added.
 
 :issue:`1166`
 
+Fix missing B State pinning for PME GPU
+"""""""""""""""""""""""""""""""""""""""
+
+The PME memory is now correctly pinned when using GPU PME.
+
+:issue:`4409`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
