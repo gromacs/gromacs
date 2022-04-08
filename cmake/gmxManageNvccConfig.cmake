@@ -127,7 +127,7 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
     if (NOT ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if nvcc accepts flags ${ARGN}")
         execute_process(
-            COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+            COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
             RESULT_VARIABLE _cuda_success
             OUTPUT_QUIET
             ERROR_QUIET

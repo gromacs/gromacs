@@ -54,6 +54,11 @@ This hasn't properly worked since it was added.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix nvcc flag detection
+"""""""""""""""""""""""
+
+:issue:`4415`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
