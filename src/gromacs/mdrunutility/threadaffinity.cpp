@@ -567,6 +567,8 @@ static bool detectDefaultAffinityMask(const int maxThreads, MPI_Comm world)
         bool maskToReduce = detectedDefaultAffinityMask;
         MPI_Allreduce(&maskToReduce, &detectedDefaultAffinityMask, 1, MPI_C_BOOL, MPI_LAND, world);
     }
+#else
+    GMX_UNUSED_VALUE(world);
 #endif
 
     return detectedDefaultAffinityMask;
