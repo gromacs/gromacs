@@ -31,6 +31,16 @@ There would be a segfault when deciding whether early PME results are needed.
 
 :issue:`4413`
 
+Fix bug with reporting energies for groups
+""""""""""""""""""""""""""""""""""""""""""
+
+When different molecules in a molecule block in the topology use different
+energy group assignments for atoms, the energy group assignment of the
+first molecule would be repeated for all other molecules in the block.
+Note that the reported energies for the whole system were correct.
+
+:issue:`4462`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
