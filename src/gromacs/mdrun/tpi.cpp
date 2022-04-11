@@ -430,13 +430,8 @@ void LegacySimulator::do_tpi()
      * inserted atoms located in the center of the sphere, so we need
      * a buffer of size of the sphere and molecule radius.
      */
-    {
-        // TODO: Avoid changing inputrec (#3854)
-        auto* nonConstInputrec  = const_cast<t_inputrec*>(inputrec);
-        nonConstInputrec->rlist = maxCutoff + 2 * inputrec->rtpi + 2 * molRadius;
-    }
-    fr->rlist = inputrec->rlist;
-    fr->nbv->changePairlistRadii(inputrec->rlist, inputrec->rlist);
+    fr->rlist = maxCutoff + inputrec->rtpi + molRadius;
+    fr->nbv->changePairlistRadii(fr->rlist, fr->rlist);
 
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     gid_tp = fr->atomInfo[a_tp0] & gmx::sc_atomInfo_EnergyGroupIdMask;

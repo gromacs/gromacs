@@ -16,6 +16,14 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed incorrect pairlist buffer with test particle insertion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With TPI the pairlist cut-off did not take into account rtpi and the radius
+of the molecule to insert.
+
+:issue:`4458`
+
 Fix crash when steering FEP with AWH without PME or with separate PME rank
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
