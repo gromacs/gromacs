@@ -60,14 +60,45 @@ if(NOT GMXAPI_PYTEST_FOUND)
     set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
 endif()
 
-# TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
 get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
 add_custom_target(gmxapi_pytest
-                  COMMAND ${CMAKE_COMMAND} -E env GMXBIN=${GMXBIN}
-                    ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                  COMMAND ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR ${CMAKE_CURRENT_SOURCE_DIR}
                   DEPENDS _gmxapi
                   WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
 # The current test fixtures require the `gmx` tool-wrapper executable.
 add_dependencies(gmxapi_pytest gmx)
 
 add_dependencies(check gmxapi_pytest)
+
+if(MPIEXEC_EXECUTABLE)
+    if(NOT GMXAPI_MPI4PY_FOUND)
+        if (MPI_C_COMPILER)
+            set(_mpicc "MPICC=${MPI_C_COMPILER} ")
+        endif ()
+
+        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import mpi4py; print(mpi4py.__version__)"
+                        RESULT_VARIABLE mpi4py_not_found OUTPUT_VARIABLE mpi4py_version ERROR_QUIET)
+        if(mpi4py_not_found)
+            message(STATUS "Running the MPI-enable tests requires mpi4py. Please install it manually. "
+                    "(Try: `${_mpicc}${PYTHON_EXECUTABLE} -m pip install mpi4py`, "
+                    "then clear the GMXAPI_MPI4PY_FOUND cache variable "
+                    "or remove the CMakeCache.txt, and configure again.)")
+        elseif(mpi4py_version VERSION_LESS 3.0.3)
+            message(STATUS "Running the MPI-enabled tests requires mpi4py >= 3.0.3. Found: ${mpi4py_version}"
+                    "Please update it (try: ${_mpicc}${PYTHON_EXECUTABLE} -m pip install -U mpi4py)")
+        endif()
+
+        unset(_mpicc)
+        set(GMXAPI_MPI4PY_FOUND TRUE CACHE INTERNAL "Suppress checking for Python mpi4py module.")
+    endif()
+
+    add_custom_target(gmxapi_pytest_mpi
+                      COMMAND ${MPIEXEC_EXECUTABLE} -n 1 ${PYTHON_EXECUTABLE} -m mpi4py -m pytest --log-cli-level
+                          ERROR ${CMAKE_CURRENT_SOURCE_DIR}
+                      DEPENDS _gmxapi
+                      WORKING_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR})
+    # The current test fixtures require the `gmx` tool-wrapper executable.
+    add_dependencies(gmxapi_pytest_mpi gmx)
+
+    add_dependencies(check gmxapi_pytest_mpi)
+endif()

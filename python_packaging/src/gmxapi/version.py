@@ -70,7 +70,7 @@ from .exceptions import FeatureNotAvailableError
 # TODO(#3851): Version management policy and procedures.
 _major = 0
 _minor = 3
-_micro = 0
+_micro = 1
 _suffix = ''
 
 # Reference https://www.python.org/dev/peps/pep-0440/
@@ -125,6 +125,10 @@ _named_features_0_2 = [
     'container_futures',
     'mdrun_checkpoint_output',
     'mdrun_runtime_args',
+]
+
+_named_features_0_3 = [
+    'cli_env_kwarg',
 ]
 
 
@@ -204,7 +208,7 @@ def has_feature(name='', enable_exception=False) -> bool:
             )
 
     # Check whether the feature is listed in the API specification amendments.
-    if name in _named_features_0_0 + _named_features_0_1 + _named_features_0_2:
+    if name in _named_features_0_0 + _named_features_0_1 + _named_features_0_2 + _named_features_0_3:
         return True
     else:
         if enable_exception:

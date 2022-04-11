@@ -35,9 +35,13 @@ from Python, build and install *gmxapi* in separate
 Notes on parallelism and MPI
 ============================
 
-When launching a *gmxapi* script in an MPI environment,
-such as with :command:`mpiexec` or :command:`srun`,
-you must help *gmxapi* detect the MPI environment by ensuring that :py:mod:`mpi4py`
+.. note::
+    This section uses "mpiexec" generically to refer to the MPI program launcher.
+    Depending on your MPI implementation and system details,
+    your environment may use "mpirun", or some other command instead.
+
+When launching a *gmxapi* script with MPI,
+you must help *gmxapi* detect the MPI context by ensuring that :py:mod:`mpi4py`
 is loaded.
 Refer to :ref:`mpi_requirements` for more on installing :py:mod:`mpi4py`.
 
@@ -62,6 +66,38 @@ I.e. configure GROMACS with the CMake flag ``-DGMX_THREAD_MPI=ON``.
 Then, launch your *gmxapi* script with one MPI rank per node, and *gmxapi* will
 assign each (non-MPI) simulation to its own node, while keeping the full MPI
 environment available for use via :py:mod:`mpi4py`.
+
+Caveats for MPI jobs
+--------------------
+
+.. versionchanged:: 0.3.0
+
+    By default, most commands outside `gmxapi.simulation`
+    launch only on the root rank. (Results are synchronized to all ranks.)
+    `gmxapi.function_wrapper` allows you to set *allow_duplicate=True*,
+    if your script logic or data transfer overhead require tasks to be
+    executed on all ranks (computation is duplicated).
+
+If `gmxapi.commandline_operation` is used to wrap an MPI-enabled executable,
+the executable could behave unpredictably when the script is run in an MPI context.
+By default, *commandline_operation* subprocesses get a copy of the environment
+from the Python interpreter from which they are launched, and an executable
+may think it was launched directly by :command:`mpiexec`, causing MPI errors when
+it tries to assert ownership of the MPI resources.
+
+.. versionchanged:: 0.3.1
+
+    You can use the *env* key word argument to `gmxapi.commandline_operation`
+    to replace the default map of environment variables. By pruning out
+    the environment variables set by the MPI launcher, you can prevent the
+    executable from automatically detecting an MPI context that it shouldn't use.
+    See also :issue:`4421`
+
+gmxapi does not currently have an abstraction for subprocess launch methods.
+While such a feature is under investigation, *allow_duplicate* (:py:func:`~gmxapi.function_wrapper`)
+and *env* (:py:func:`~gmxapi.commandline_operation`)
+should allow users to wrap tools in custom launchers. Discussion welcome
+on `the forum <https://gromacs.bioexcel.eu/tag/gmxapi>`_!
 
 Running simple simulations
 ==========================
