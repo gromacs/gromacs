@@ -91,7 +91,6 @@ The PME memory is now correctly pinned when using GPU PME.
 
 :issue:`4409`
 
-
 Only allow 1D PME GPU decomposition
 """""""""""""""""""""""""""""""""""
 
@@ -99,6 +98,11 @@ Due to correctness issues in PME grid reduction with 2D decomposition, this feat
 incorrect results. This would however in most real-world cases be masked by an overly large halo size.
 1D decomposition cases are unaffected and only such setups will be allowed in the current release
 (1D PME decomposition can be forced using the GMX_PMEONEDD env var).
+
+Rerun will no longer abort when encountering too high forces
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4352`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
