@@ -40,6 +40,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
@@ -167,7 +168,7 @@ gmx_sans_t* gmx_sans_init(const t_topology* top, gmx_neutron_atomic_structurefac
                 /* we need special case for H and D */
                 if (top->atoms.atom[i].atomnumber == 1)
                 {
-                    if (top->atoms.atom[i].m == 1.008000)
+                    if (gmx_within_tol(top->atoms.atom[i].m, 1.008000, 1e-3))
                     {
                         gsans->slength[i] = gnsf->slength[0];
                     }

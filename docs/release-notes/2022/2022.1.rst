@@ -44,6 +44,13 @@ Note that the reported energies for the whole system were correct.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Use correct scattering length for hydrogens in ``gmx sans``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The floating-point comparison was always false, leading to all atoms with
+atomic number 1 having scattering length of deuterium (6.6710 fm) instead
+of -3.7406 fm for plain hydrogens.
+
 Fix C-terminal residue patch for charmm
 """""""""""""""""""""""""""""""""""""""
 
@@ -88,7 +95,7 @@ Miscellaneous
 ^^^^^^^^^^^^^
 
 Fixed regression test download URL for forks of |Gromacs|
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Users of forks of |Gromacs| (eg PLUMED) can now also use the feature
 to download the regression tests automatically.
