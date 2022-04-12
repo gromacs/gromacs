@@ -567,21 +567,11 @@ inline sycl::event fillSyclBufferWithNull(sycl::buffer<Float3, 1>& buffer,
     }
 }
 
+//! \brief Helper function to clear device memory
 template<typename ValueType>
 sycl::event fillSyclUsmWithNull(ValueType* buffer, size_t startingOffset, size_t numValues, sycl::queue queue)
 {
-    const ValueType pattern = ValueType(0); // SYCL vectors support initialization by scalar
-
-    return queue.submit(
-            [&](sycl::handler& cgh) { cgh.fill(buffer + startingOffset, pattern, numValues); });
-}
-
-//! \brief Helper function to clear device memory of type Float3.
-template<>
-inline sycl::event fillSyclUsmWithNull(Float3* buffer, size_t startingOffset, size_t numValues, sycl::queue queue)
-{
-    return fillSyclUsmWithNull<float>(
-            reinterpret_cast<float*>(buffer), startingOffset * DIM, numValues * DIM, std::move(queue));
+    return queue.memset(buffer + startingOffset, 0, numValues * sizeof(ValueType));
 }
 
 } // namespace gmx::internal
