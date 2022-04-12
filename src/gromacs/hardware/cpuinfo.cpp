@@ -782,11 +782,15 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
         { "Oracle", CpuInfo::Vendor::Oracle },
         { "HygonGenuine", CpuInfo::Vendor::Hygon },
         { "Hygon", CpuInfo::Vendor::Hygon },
+        { "riscv64", CpuInfo::Vendor::RiscV64 },
+        { "riscv32", CpuInfo::Vendor::RiscV32 },
+        { "riscv", CpuInfo::Vendor::RiscV32 }, // Must come after riscv64 to avoid misidentification
     };
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
     // testNames map above, and if it's a match return the vendor.
-    for (const auto& l : { "vendor_id", "vendor", "manufacture", "model", "processor", "cpu" })
+    for (const auto& l :
+         { "vendor_id", "vendor", "manufacture", "model", "processor", "cpu", "Architecture" })
     {
         if (cpuInfo.count(l) != 0U)
         {
@@ -1020,6 +1024,14 @@ CpuInfo CpuInfo::detect()
         {
             result.vendor_ = CpuInfo::Vendor::Ibm;
         }
+        else if (c_architecture == Architecture::RiscV32)
+        {
+            result.vendor_ = CpuInfo::Vendor::RiscV32;
+        }
+        else if (c_architecture == Architecture::RiscV64)
+        {
+            result.vendor_ = CpuInfo::Vendor::RiscV64;
+        }
 
 #if defined __aarch64__ || (defined _M_ARM && _M_ARM >= 8)
         result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
@@ -1072,9 +1084,16 @@ CpuInfo::CpuInfo() :
 const std::string& CpuInfo::vendorString() const
 {
     static const std::map<Vendor, std::string> vendorStrings = {
-        { Vendor::Unknown, "Unknown vendor" }, { Vendor::Intel, "Intel" }, { Vendor::Amd, "AMD" },
-        { Vendor::Fujitsu, "Fujitsu" },        { Vendor::Ibm, "IBM" },     { Vendor::Arm, "ARM" },
-        { Vendor::Oracle, "Oracle" },          { Vendor::Hygon, "Hygon" },
+        { Vendor::Unknown, "Unknown vendor" },
+        { Vendor::Intel, "Intel" },
+        { Vendor::Amd, "AMD" },
+        { Vendor::Fujitsu, "Fujitsu" },
+        { Vendor::Ibm, "IBM" },
+        { Vendor::Arm, "ARM" },
+        { Vendor::Oracle, "Oracle" },
+        { Vendor::Hygon, "Hygon" },
+        { Vendor::RiscV32, "RISC-V 32" },
+        { Vendor::RiscV64, "RISC-V 64" },
     };
 
     return vendorStrings.at(vendor_);

@@ -372,7 +372,31 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
 {
     return _rtc();
 }
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 32)
+static __inline gmx_cycles_t gmx_cycles_read(void)
+{
+    unsigned int long low, high1, high2;
+    do
+    {
+        asm volatile("csrrs %0, 0xc80, x0" : "=r"(high1));
+        asm volatile("csrrs %0, 0xc00, x0" : "=r"(low));
+        asm volatile("csrrs %0, 0xc80, x0" : "=r"(high2));
+    } while (high1 != high2);
+
+    return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
+}
+
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 64)
+static __inline gmx_cycles_t gmx_cycles_read(void)
+{
+    gmx_cycles_t ret;
+    asm volatile("csrrs %0, 0xc00, x0" : "=r"(ret));
+    return ret;
+}
+
+
 #else
+
 static gmx_cycles_t gmx_cycles_read(void)
 {
     return 0;
@@ -526,6 +550,20 @@ static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* Solaris on SPARC*/
     return 1;
+}
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 32)
+
+static __inline__ bool gmx_cycles_have_counter(void)
+{
+    /* 32-bit RISC-V */
+    return true;
+}
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 64)
+
+static __inline__ bool gmx_cycles_have_counter(void)
+{
+    /* 64-bit RISC-V */
+    return true;
 }
 #else
 static bool gmx_cycles_have_counter(void)

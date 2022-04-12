@@ -580,6 +580,13 @@ public:
                || ch == '-';
     }
 
+#if defined __riscv && defined __GNUC__
+// GCC on RISC-V has a bug that leads to "relocation errors" during linking in this function,
+// where optimization causes the large default value of nChar to be added to a base address
+// and violating the <2GB data requirement.
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+#endif
     inline static bool StringEqual( const char* p, const char* q, int nChar=INT_MAX )  {
         if ( p == q ) {
             return true;
@@ -595,7 +602,10 @@ public:
         }
         return false;
     }
-    
+#if defined __riscv && defined __GNUC__
+#pragma GCC pop_options
+#endif
+
     inline static bool IsUTF8Continuation( const char p ) {
         return ( p & 0x80 ) != 0;
     }

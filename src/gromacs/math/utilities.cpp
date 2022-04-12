@@ -89,7 +89,8 @@ bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 
 int gmx_feenableexcept()
 {
-#if HAVE_FEENABLEEXCEPT
+    // While the function is present on RISC-V, actually calling it fails for now
+#if HAVE_FEENABLEEXCEPT && !defined(__riscv)
     return feenableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     /* Author:  David N. Williams
@@ -118,7 +119,8 @@ int gmx_feenableexcept()
 
 int gmx_fedisableexcept()
 {
-#if HAVE_FEDISABLEEXCEPT
+    // While the function is present on RISC-V, actually calling it fails for now
+#if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
     return fedisableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     static fenv_t fenv;

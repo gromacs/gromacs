@@ -86,6 +86,8 @@ public:
         Arm,     //!< Only works on Linux (parsed from /proc/cpuinfo)
         Oracle,  //!< Cannot detect anything else yet (no /proc/cpuinfo available)
         Hygon,   //!< HygonGenuine
+        RiscV32, //!< RISC-V 32 bit
+        RiscV64, //!< RISC-V 64 bit
     };
 
     /*! \brief List of CPU features

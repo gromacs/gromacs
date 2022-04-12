@@ -46,10 +46,12 @@ namespace gmx
 //! Enum for GROMACS CPU hardware detection support
 enum class Architecture
 {
-    Unknown, //! Not one of the cases below
-    X86,     //! X86
-    Arm,     //! ARM
-    PowerPC  //! IBM PowerPC
+    Unknown, //!< Not one of the cases below
+    X86,     //!< X86
+    Arm,     //!< ARM
+    PowerPC, //!< IBM PowerPC
+    RiscV32, //!< 32-bit RISC-V
+    RiscV64  //!< 64-bit RISC-V
 };
 
 //! Whether the compilation is targeting 32-bit x86.
@@ -75,6 +77,10 @@ static constexpr Architecture c_architecture =
         Architecture::Arm;
 #elif defined __powerpc__ || defined __ppc__ || defined __PPC__
         Architecture::PowerPC;
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 32)
+        Architecture::RiscV32;
+#elif defined __riscv && defined __riscv_xlen && (__riscv_xlen == 64)
+        Architecture::RiscV64;
 #else
         Architecture::Unknown;
 #endif

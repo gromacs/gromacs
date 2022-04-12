@@ -281,7 +281,7 @@ static KernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
                 .asParagraph()
                 .appendTextFormatted(
                         "WARNING: Using the slow %s kernels. This should\n"
-                        "not happen during routine usage on supported platforms.",
+                        "not happen during routine usage on common platforms.",
                         lookup_kernel_name(kernelSetup.kernelType));
     }
 
