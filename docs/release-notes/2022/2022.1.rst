@@ -24,6 +24,14 @@ of the molecule to insert.
 
 :issue:`4458`
 
+Remove false positives for missing exclusions in free energy kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free energy calculations good stop with a fatal error stating that excluded
+atoms pairs were beyond the pairlist cut-off while this actually was not the case.
+
+:issue:`4321`
+
 Fix crash when steering FEP with AWH without PME or with separate PME rank
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
