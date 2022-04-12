@@ -76,6 +76,14 @@ This hasn't properly worked since it was added.
 
 :issue:`1166`
 
+Fix g96 file writing
+""""""""""""""""""""
+
+The g96 file writing could violate the file format when residue or atom names
+got longer than 5 characters.
+
+:issue:`4456`
+
 Fix missing B State pinning for PME GPU
 """""""""""""""""""""""""""""""""""""""
 

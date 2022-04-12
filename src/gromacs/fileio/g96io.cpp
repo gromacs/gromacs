@@ -378,11 +378,17 @@ void write_g96_conf(FILE* out, const char* title, const t_trxframe* fr, int nind
                 {
                     a = i;
                 }
+                std::string residueName = *atoms->resinfo[atoms->atom[a].resind].name;
+                std::string atomName    = *atoms->atomname[a];
+                // g96 is fixed format, so we need to limit strings to max 5
+                // characters.
+                residueName.resize(5);
+                atomName.resize(5);
                 fprintf(out,
                         "%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
                         (atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
-                        *atoms->resinfo[atoms->atom[a].resind].name,
-                        *atoms->atomname[a],
+                        residueName.c_str(),
+                        atomName.c_str(),
                         (i + 1) % 10000000,
                         fr->x[a][XX],
                         fr->x[a][YY],
