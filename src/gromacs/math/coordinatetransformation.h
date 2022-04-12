@@ -163,6 +163,16 @@ public:
      */
     void operator()(RVec* vector) const;
 
+    /*! \brief Return the gradient of this affine transformation.
+     *
+     * The gradient of an affine transformation is the transpose of the
+     * linear transformation matrix. See, eg, here
+     * https://inst.eecs.berkeley.edu/~ee127/sp21/livebook/def_gradient.html
+     *
+     * \returns matrix that acts as gradient
+     */
+    Matrix3x3 gradient() const;
+
 private:
     //! The matrix describing the affine transformation A(x) = matrix_ * x + translation_
     Matrix3x3 matrix_;

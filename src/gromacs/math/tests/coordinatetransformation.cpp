@@ -238,5 +238,24 @@ TEST_F(AffineTransformationTest, applyTransformationToVectors)
     }
 }
 
+TEST_F(AffineTransformationTest, retrieveGradient)
+{
+    const Matrix3x3            transformMatrix({ 0.1, 1, 0.1, 0.4, 1, 0.6, 0.7, 0.8, 0.9 });
+    const RVec                 transformVector = { 1, -1e5, 1e4 };
+    const AffineTransformation affineTransformation(transformMatrix, transformVector);
+
+    const Matrix3x3 gradient = affineTransformation.gradient();
+
+    const Matrix3x3 expectedResult({ 0.1, 0.4, 0.7, 1, 1, 0.8, 0.1, 0.6, 0.9 });
+
+    for (int row = 0; row < 3; row++)
+    {
+        for (int column = 0; column < 3; column++)
+        {
+            EXPECT_REAL_EQ(gradient(row, column), expectedResult(row, column));
+        }
+    }
+}
+
 } // namespace test
 } // namespace gmx
