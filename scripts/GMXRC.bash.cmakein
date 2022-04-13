@@ -61,6 +61,10 @@ GROMACS_DIR=${GMXPREFIX}
 @LD_LIBRARY_PATH@=$(replace_in_path "${@LD_LIBRARY_PATH@}" "${GMXLDLIB}" "${OLD_GMXLDLIB}")
 PKG_CONFIG_PATH=$(replace_in_path "${PKG_CONFIG_PATH}" "${GMXLDLIB}/pkgconfig" "${OLD_GMXLDLIB}/pkgconfig")
 PATH=$(replace_in_path "${PATH}" "${GMXBIN}" "${OLD_GMXBIN}")
+# Ensure MANPATH always has a final :
+if test -z "$MANPATH" ; then
+   MANPATH=":"
+fi
 MANPATH=$(replace_in_path "${MANPATH}" "${GMXMAN}" "${OLD_GMXMAN}")
 
 # export should be separate, so /bin/sh understands it

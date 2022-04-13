@@ -125,6 +125,11 @@ Fix nvcc flag detection
 
 :issue:`4415`
 
+Fix issue in GMXRC.bash
+"""""""""""""""""""""""
+
+:issue:`4450`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
