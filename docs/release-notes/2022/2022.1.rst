@@ -176,3 +176,22 @@ Correct free-energy (de)coupling integrator check
 With free-energy (de)coupling calculations, grompp would only warn
 with the md integrator that sd should be used. Now this warning
 is extended to the md-vv integrators.
+
+Density-guided simulation affine transformation force correction 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Forces were not calculated correctly when using affine transformations with
+density-guided-simulation-transformation-matrix, e.g., rotations and projections
+of structures, before calculating forces for density guided simulations.
+
+The reason for this error was the missing multiplication with the transpose of
+the affine transformation matrix. This is needed to account for the coordinate
+transformation when calculating the force as the derivative of the energy,
+according to the chain rule of calculus.
+
+Affects simulations where density-guided-simulation-transformation-matrix is
+set and not trivial. If the matrices were diagonal, forces were wrongly scaled.
+If a rotation matrix was set, the effect was a mis-rotation of forces, leading
+to an overall undesired torque on the structure.
+
+:issue:`4455`
