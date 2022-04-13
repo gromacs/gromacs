@@ -195,3 +195,9 @@ If a rotation matrix was set, the effect was a mis-rotation of forces, leading
 to an overall undesired torque on the structure.
 
 :issue:`4455`
+
+Clarified Coulomb self terms in the reference manual
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4451`
+
