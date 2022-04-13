@@ -49,6 +49,21 @@ Note that the reported energies for the whole system were correct.
 
 :issue:`4462`
 
+Fix missing B State pinning for PME GPU
+"""""""""""""""""""""""""""""""""""""""
+
+The PME memory is now correctly pinned when using GPU PME.
+
+:issue:`4408`
+
+Only allow 1D PME GPU decomposition
+"""""""""""""""""""""""""""""""""""
+
+Due to correctness issues in PME grid reduction with 1D decomposition, this feature could produce
+incorrect results. This would however in most real-world cases be masked by an overly large halo size.
+0D decomposition cases are unaffected and only such setups will be allowed in the current release
+(0D PME decomposition can be forced using the GMX_PMEONEDD env var).
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -92,25 +107,15 @@ got longer than 5 characters.
 
 :issue:`4456`
 
-Fix missing B State pinning for PME GPU
-"""""""""""""""""""""""""""""""""""""""
-
-The PME memory is now correctly pinned when using GPU PME.
-
-:issue:`4409`
-
-Only allow 1D PME GPU decomposition
-"""""""""""""""""""""""""""""""""""
-
-Due to correctness issues in PME grid reduction with 2D decomposition, this feature could produce
-incorrect results. This would however in most real-world cases be masked by an overly large halo size.
-1D decomposition cases are unaffected and only such setups will be allowed in the current release
-(1D PME decomposition can be forced using the GMX_PMEONEDD env var).
-
 Rerun will no longer abort when encountering too high forces
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`4352`
+
+Allow incomplete index files for extract-cluster
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4420`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
