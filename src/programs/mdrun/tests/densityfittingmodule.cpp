@@ -207,6 +207,7 @@ TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProductTranslatio
     runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSet_
                                + mdpTransformationMatrix1degAroundY_);
 
+    runner_.nsteps_ = 4;
     ASSERT_EQ(0, runner_.callGrompp());
     ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
 
