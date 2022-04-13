@@ -24,8 +24,6 @@
     KUBERNETES_MEMORY_REQUEST: 2Gi
     PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
-    PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml
-    PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
   script:
     - source $INSTALL_DIR/bin/GMXRC
     - source $VENVPATH/bin/activate
@@ -35,10 +33,6 @@
       junit:
         - $PY_UNIT_TEST_XML
         - $PY_MPI_UNIT_TEST_XML
-        - $PY_ACCEPTANCE_TEST_XML
-        - $PY_MPI_ACCEPTANCE_TEST_XML
-    paths:
-      - dist/
     when: always
     expire_in: 1 week
   tags:
