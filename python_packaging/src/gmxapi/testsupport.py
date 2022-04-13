@@ -47,6 +47,7 @@ variable in a conftest.py
 """
 
 import os
+import warnings
 from contextlib import contextmanager
 
 import pytest
