@@ -17,13 +17,12 @@ if(NOT GMXAPI_PYTEST_FOUND)
     set(GMXAPI_PYTEST_FOUND TRUE CACHE INTERNAL "Suppress checking for Python pytest module.")
 endif()
 
-# TODO: (#2961) Let the Python package discover required resources instead of passing GMXBIN
 get_target_property(GMXBIN gmx RUNTIME_OUTPUT_DIRECTORY)
 get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
 get_target_property(PLUGINPATH gmxapi_extension LIBRARY_OUTPUT_DIRECTORY)
 add_custom_target(gmxapi_extension_pytest
                   COMMAND ${CMAKE_COMMAND}
-                               -E env GMXBIN=${GMXBIN} PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
+                               -E env PYTHONPATH=${GMXAPI_PYTHON_STAGING_DIR}:${PLUGINPATH}
                                ${PYTHON_EXECUTABLE} -m pytest --log-cli-level ERROR
                                ${CMAKE_CURRENT_SOURCE_DIR}
                   DEPENDS gmxapi_extension _gmxapi)
