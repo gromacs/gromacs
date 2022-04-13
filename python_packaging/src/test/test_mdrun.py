@@ -49,6 +49,7 @@ import gmxapi as gmx
 
 # Configure the `logging` module before proceeding any further.
 from gmxapi.utility import join_path
+from gmxapi.version import api_is_at_least
 
 gmx.logger.setLevel(logging.WARNING)
 
@@ -92,7 +93,7 @@ def test_mdrun_runtime_args(spc_water_box, caplog, mdrun_kwargs):
     When an ensemble is possible, confirm that an array of inputs
     causes each rank to produce a unique simulation with unique output.
     """
-    assert gmx.version.has_feature('mdrun_runtime_args')
+    assert api_is_at_least(0, 3)
     with caplog.at_level(logging.DEBUG):
         with caplog.at_level(logging.WARNING, 'gmxapi'), \
                 caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
@@ -133,7 +134,7 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
     * Array of input and array of runtime_args are automatically mapped to parallel data flow.
     """
     assert comm_size > 1
-    assert gmx.version.has_feature('mdrun_runtime_args')
+    assert api_is_at_least(0, 3)
 
     tpr = gmx.read_tpr(spc_water_box)
     output_files = [f'traj{i}.trr' for i in range(comm_size)]
@@ -167,9 +168,7 @@ def test_mdrun_parallel_runtime_args(spc_water_box, mdrun_kwargs):
 @pytest.mark.usefixtures('cleandir')
 def test_extend_simulation_via_checkpoint(spc_water_box, mdrun_kwargs, caplog):
     assert os.path.exists(spc_water_box)
-    assert gmx.version.has_feature('mdrun_runtime_args')
-    assert gmx.version.has_feature('container_futures')
-    assert gmx.version.has_feature('mdrun_checkpoint_output')
+    assert api_is_at_least(0, 3)
 
     with caplog.at_level(logging.DEBUG):
         with caplog.at_level(logging.WARNING, 'gmxapi'), \
