@@ -22,7 +22,6 @@ pushd python_packaging/src
   # Build and install the gmxapi Python package.
   # Use the documented mechanism for getting GROMACS installation and build system hints.
   # See docs/gmxapi/userguide/install.rst and docs/release-notes/2022/major/portability.rst
-  # TODO(#3273): Reduce requirements for `setup.py` `sdist` command and provide build artifact.
   CMAKE_ARGS="-Dgmxapi_ROOT=$GROMACS_ROOT -C $GROMACS_ROOT/share/cmake/gromacs/gromacs-hints.cmake" \
       python -m pip install \
           --no-build-isolation \
