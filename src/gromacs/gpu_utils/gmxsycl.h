@@ -75,7 +75,13 @@
 #    pragma clang diagnostic ignored "-Wgcc-compat"
 #    include <SYCL/sycl.hpp>
 #    pragma clang diagnostic pop
-#else // DPC++ has issues with DIM macro and has no SYCL/sycl.hpp in oneAPI 2021.4
+#else // DPC++
+// Needed for CUDA targets https://github.com/intel/llvm/issues/5936, enabled for SPIR automatically
+#    if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
+#        define SYCL_USE_NATIVE_FP_ATOMICS 1
+#    endif
+// DPC++ has issues with DIM macro (https://github.com/intel/llvm/issues/2981)
+// and has no SYCL/sycl.hpp up to oneAPI 2022.0
 #    ifdef DIM
 #        if DIM != 3
 #            error "The workaround here assumes we use DIM=3."
