@@ -201,3 +201,8 @@ Clarified Coulomb self terms in the reference manual
 
 :issue:`4451`
 
+Correct formula for SD integrator
+"""""""""""""""""""""""""""""""""
+
+The formula in the reference manual was different from the implementation, even
+though both have been mathematically equivalent.
