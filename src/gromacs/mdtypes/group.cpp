@@ -43,6 +43,7 @@
 #include "group.h"
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/smalloc.h"
 
 gmx_ekindata_t::gmx_ekindata_t(int numTempCoupleGroups, real cos_accel, int numThreads) :
     ngtc(numTempCoupleGroups), nthreads_(numThreads)

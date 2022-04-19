@@ -38,7 +38,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 struct t_grp_tcstat
 {

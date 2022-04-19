@@ -88,7 +88,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"

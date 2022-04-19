@@ -57,7 +57,7 @@
 
 void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix box, gmx_ddbox_t* ddbox)
 {
-    rvec   grid_s[2], *grid_r = nullptr, cx, r;
+    rvec   grid_s[2], cx, r;
     char   fname[STRLEN], buf[22];
     FILE*  out;
     int    a, i, d, z, x;
@@ -67,12 +67,13 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
     copy_rvec(dd->comm->cell_x0, grid_s[0]);
     copy_rvec(dd->comm->cell_x1, grid_s[1]);
 
+    std::vector<gmx::RVec> grid_r;
     if (DDMASTER(dd))
     {
-        snew(grid_r, 2 * dd->nnodes);
+        grid_r.resize(2 * dd->nnodes);
     }
 
-    dd_gather(dd, 2 * sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r : nullptr);
+    dd_gather(dd, 2 * sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r.data() : nullptr);
 
     if (DDMASTER(dd))
     {
@@ -152,7 +153,6 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
             }
         }
         gmx_fio_fclose(out);
-        sfree(grid_r);
     }
 }
 
