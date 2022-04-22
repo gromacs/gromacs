@@ -38,8 +38,6 @@
  *
  *  \ingroup module_nbnxm
  */
-#include "gmxpre.h"
-
 #include "nbnxm_sycl_kernel.h"
 
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -664,6 +662,14 @@ static auto nbnxmKernel(sycl::handler&                                          
 
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
+        // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
+        // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
+#if GMX_SYCL_HIPSYCL
+        __hipsycl_if_target_host(return;);
+#endif
+#if GMX_SYCL_DPCPP && !(defined(__NVPTX__) || !defined(__AMDGCN__) || !defined(__SPIR__))
+        return;
+#endif
         /* thread/block/warp id-s */
         const unsigned tidxi = itemIdx.get_local_id(2);
         const unsigned tidxj = itemIdx.get_local_id(1);
@@ -1075,7 +1081,7 @@ static auto nbnxmKernel(sycl::handler&                                          
 
 //! \brief NBNXM kernel launch code.
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
-sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
+static sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
     using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType>;
 
@@ -1101,69 +1107,64 @@ sycl::event launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
 }
 
 //! \brief Select templated kernel and launch it.
-template<class... Args>
-sycl::event chooseAndLaunchNbnxmKernel(bool          doPruneNBL,
-                                       bool          doCalcEnergies,
-                                       enum ElecType elecType,
-                                       enum VdwType  vdwType,
-                                       Args&&... args)
+template<bool doPruneNBL, bool doCalcEnergies, class... Args>
+void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Args&&... args)
 {
-    return gmx::dispatchTemplatedFunction(
-            [&](auto doPruneNBL_, auto doCalcEnergies_, auto elecType_, auto vdwType_) {
-                return launchNbnxmKernel<doPruneNBL_, doCalcEnergies_, elecType_, vdwType_>(
+    gmx::dispatchTemplatedFunction(
+            [&](auto elecType_, auto vdwType_) {
+                return launchNbnxmKernel<doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         std::forward<Args>(args)...);
             },
-            doPruneNBL,
-            doCalcEnergies,
             elecType,
             vdwType);
 }
 
-void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
+template<bool doPruneNBL, bool doCalcEnergies>
+void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     gpu_plist*          plist        = nb->plist[iloc];
-    const bool          doPruneNBL   = (plist->haveFreshList && !nb->didPrune[iloc]);
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
-    sycl::event e = chooseAndLaunchNbnxmKernel(doPruneNBL,
-                                               stepWork.computeEnergy,
-                                               nbp->elecType,
-                                               nbp->vdwType,
-                                               deviceStream,
-                                               plist->nsci,
-                                               adat->xq,
-                                               adat->f,
-                                               adat->shiftVec,
-                                               adat->fShift,
-                                               adat->eElec,
-                                               adat->eLJ,
-                                               plist->cj4,
-                                               plist->sci,
-                                               plist->excl,
-                                               adat->ljComb,
-                                               adat->atomTypes,
-                                               nbp->nbfp,
-                                               nbp->nbfp_comb,
-                                               nbp->coulomb_tab,
-                                               adat->numTypes,
-                                               nbp->rcoulomb_sq,
-                                               nbp->rvdw_sq,
-                                               nbp->two_k_rf,
-                                               nbp->ewald_beta,
-                                               nbp->rlistOuter_sq,
-                                               nbp->sh_ewald,
-                                               nbp->epsfac,
-                                               nbp->ewaldcoeff_lj,
-                                               nbp->c_rf,
-                                               nbp->dispersion_shift,
-                                               nbp->repulsion_shift,
-                                               nbp->vdw_switch,
-                                               nbp->rvdw_switch,
-                                               nbp->sh_lj_ewald,
-                                               nbp->coulomb_tab_scale,
-                                               stepWork.computeVirial);
+    GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
+    GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
+
+    chooseAndLaunchNbnxmKernel<doPruneNBL, doCalcEnergies>(nbp->elecType,
+                                                           nbp->vdwType,
+                                                           deviceStream,
+                                                           plist->nsci,
+                                                           adat->xq,
+                                                           adat->f,
+                                                           adat->shiftVec,
+                                                           adat->fShift,
+                                                           adat->eElec,
+                                                           adat->eLJ,
+                                                           plist->cj4,
+                                                           plist->sci,
+                                                           plist->excl,
+                                                           adat->ljComb,
+                                                           adat->atomTypes,
+                                                           nbp->nbfp,
+                                                           nbp->nbfp_comb,
+                                                           nbp->coulomb_tab,
+                                                           adat->numTypes,
+                                                           nbp->rcoulomb_sq,
+                                                           nbp->rvdw_sq,
+                                                           nbp->two_k_rf,
+                                                           nbp->ewald_beta,
+                                                           nbp->rlistOuter_sq,
+                                                           nbp->sh_ewald,
+                                                           nbp->epsfac,
+                                                           nbp->ewaldcoeff_lj,
+                                                           nbp->c_rf,
+                                                           nbp->dispersion_shift,
+                                                           nbp->repulsion_shift,
+                                                           nbp->vdw_switch,
+                                                           nbp->rvdw_switch,
+                                                           nbp->sh_lj_ewald,
+                                                           nbp->coulomb_tab_scale,
+                                                           stepWork.computeVirial);
 }
 
 } // namespace Nbnxm
