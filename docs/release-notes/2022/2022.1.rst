@@ -232,13 +232,13 @@ Correct formula for SD integrator
 The formula in the reference manual was different from the implementation, even
 though both have been mathematically equivalent.
 
+Adjust test tolerances for double precision testing
+"""""""""""""""""""""""""""""""""""""""""""""""""""
 
+Some tests could fail on different hardware when using double
+precision builds due to too strict tolerances. This mainly affected
+test simulations that could diverge due to the limited precision of
+some SIMD instructions (44 bits when using invsqrt).
 
-
-
-
-
-
-
-
+:issue:`4414`
 
