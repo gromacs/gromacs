@@ -713,7 +713,6 @@ void gmx::LegacySimulator::do_rerun()
         {
             const bool isCheckpointingStep = false;
             const bool doRerun             = true;
-            const bool bSumEkinhOld        = false;
             do_md_trajectory_writing(fplog,
                                      cr,
                                      nfile,
@@ -735,7 +734,7 @@ void gmx::LegacySimulator::do_rerun()
                                      doRerun,
                                      isLastStep,
                                      mdrunOptions.writeConfout,
-                                     bSumEkinhOld);
+                                     EkindataState::NotUsed);
         }
 
         stopHandler->setSignal();

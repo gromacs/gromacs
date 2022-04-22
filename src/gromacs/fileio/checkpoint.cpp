@@ -2323,10 +2323,11 @@ void write_checkpoint_data(t_fileio*                         fp,
     headerContents.flags_eks = 0;
     if (state->ekinstate.bUpToDate)
     {
+        // Likely only EkinNumber, EkinHalfStep, EkinFullStep and DEkinDLambda
+        // are necessary and the rest can go
         headerContents.flags_eks = (enumValueToBitMask(StateKineticEntry::EkinNumber)
                                     | enumValueToBitMask(StateKineticEntry::EkinHalfStep)
                                     | enumValueToBitMask(StateKineticEntry::EkinFullStep)
-                                    | enumValueToBitMask(StateKineticEntry::EkinHalfStepOld)
                                     | enumValueToBitMask(StateKineticEntry::EkinNoseHooverScaleFullStep)
                                     | enumValueToBitMask(StateKineticEntry::EkinNoseHooverScaleHalfStep)
                                     | enumValueToBitMask(StateKineticEntry::VelocityScale)

@@ -77,6 +77,17 @@ incorrect results. This would however in most real-world cases be masked by an o
 0D decomposition cases are unaffected and only such setups will be allowed in the current release
 (0D PME decomposition can be forced using the GMX_PMEONEDD env var).
 
+Fixed exact continuation with the -reprod option
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+With the leap-frog integrator, kinetic energy terms were often not stored in
+the checkpoint file. This caused minor difference in the computed kinetic
+energy (due to different operation order), which could cause a run continued
+from checkpoint to diverge from a run without interuption, even when using
+the -reprod option.
+
+:issue:`4240`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -214,8 +225,20 @@ Clarified Coulomb self terms in the reference manual
 
 :issue:`4451`
 
+
 Correct formula for SD integrator
 """""""""""""""""""""""""""""""""
 
 The formula in the reference manual was different from the implementation, even
 though both have been mathematically equivalent.
+
+
+
+
+
+
+
+
+
+
+
