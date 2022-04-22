@@ -365,6 +365,7 @@ if (SPHINX_FOUND)
         install-guide/index.rst
         release-notes/index.rst
         release-notes/2022/2022.1.rst
+        release-notes/2022/2022.2.rst
         release-notes/2022/major/highlights.rst
         release-notes/2022/major/features.rst
         release-notes/2022/major/performance.rst
