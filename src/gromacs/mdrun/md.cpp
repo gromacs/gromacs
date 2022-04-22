@@ -616,7 +616,7 @@ void gmx::LegacySimulator::do_md()
     }
     if (hasReadEkinState)
     {
-        restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
+        restore_ekinstate_from_state(cr, ekind, MASTER(cr) ? &state_global->ekinstate : nullptr);
     }
 
     unsigned int cglo_flags =
