@@ -12,7 +12,7 @@ F77_FUNC(slaebz,SLAEBZ)(int *ijob,
 	float *reltol, 
 	float *pivmin, 
 	float *d__,
-	float *e,
+	float * /*e*/,
 	float *e2, 
 	int *nval,
 	float *ab, 
@@ -38,7 +38,6 @@ F77_FUNC(slaebz,SLAEBZ)(int *ijob,
     ab_offset = 1 + ab_dim1;
     ab -= ab_offset;
     --d__;
-    --e;
     --e2;
     --nval;
     --c__;

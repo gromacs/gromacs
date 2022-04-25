@@ -99,10 +99,7 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
     real     qtot;
     real     qall;
     int      i, j, k, l;
-    int      ai, ci;
     gmx_bool bNEU;
-    ai   = 0;
-    ci   = 0;
     qall = 0.0;
 
 
@@ -128,15 +125,6 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
 
 
         qall += qtot;
-
-        if (qtot < 0.0)
-        {
-            ai++;
-        }
-        if (qtot > 0.0)
-        {
-            ci++;
-        }
     }
 
     if (std::abs(qall) > 0.01)
@@ -374,7 +362,6 @@ static void dielectric(FILE*                   fmj,
 {
     int   i, j;
     int   valloc, nalloc, nfr, nvfr;
-    int   vshfr;
     real* xshfr       = nullptr;
     int*  vfr         = nullptr;
     real  refr        = 0.0;
@@ -445,7 +432,6 @@ static void dielectric(FILE*                   fmj,
 
 
     nvfr   = 0;
-    vshfr  = 0;
     nalloc = 0;
     valloc = 0;
 
@@ -596,7 +582,6 @@ static void dielectric(FILE*                   fmj,
                             djc[nvfr - j] += iprod(mu[vfr[j]], v0[nvfr]);
                         }
                     }
-                    vshfr++;
                 }
             }
             nvfr++;

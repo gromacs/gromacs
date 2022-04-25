@@ -441,7 +441,7 @@ static void dump_clust_stats(FILE*                          fp,
                              int                            isize,
                              int                            index[])
 {
-    int         k, nra, mmm = 0;
+    int         k, nra;
     double      sumV, maxV, sumVT3, sumVT6, maxVT3, maxVT6;
     t_dr_stats* drs;
 
@@ -507,10 +507,6 @@ static void dump_clust_stats(FILE*                          fp,
 
             // We have processed restraint i, mark it as such
             restraintHasBeenProcessed[i] = true;
-        }
-        if (std::strcmp(clust_name[k], "1000") == 0)
-        {
-            mmm++;
         }
         fprintf(fp,
                 "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",

@@ -12,7 +12,7 @@ F77_FUNC(dlarrfx,DLARRFX)(int *n,
 	double *d__, 
 	double *l, 
 	double *ld, 
-	double *lld, 
+	double * /*lld*/,
 	int *ifirst, 
 	int *ilast, 
 	double *w, 
@@ -32,7 +32,6 @@ F77_FUNC(dlarrfx,DLARRFX)(int *n,
     --lplus;
     --dplus;
     --w;
-    --lld;
     --ld;
     --l;
     --d__;

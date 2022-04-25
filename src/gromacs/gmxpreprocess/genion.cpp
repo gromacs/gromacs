@@ -284,7 +284,7 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
 {
     FILE *   fpin, *fpout;
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
-    int      line, i, nmol_line, sol_line, nsol_last;
+    int      i, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
     char     temporary_filename[STRLEN];
 
@@ -293,14 +293,12 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
     std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     fpout = gmx_fopen_temporary(temporary_filename);
 
-    line       = 0;
     bMolecules = FALSE;
     nmol_line  = 0;
     sol_line   = -1;
     nsol_last  = -1;
     while (fgets(buf, STRLEN, fpin))
     {
-        line++;
         std::strcpy(buf2, buf);
         if ((temp = std::strchr(buf2, '\n')) != nullptr)
         {

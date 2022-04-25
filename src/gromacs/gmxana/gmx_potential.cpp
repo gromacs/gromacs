@@ -164,7 +164,6 @@ static void calc_potential(const char*             fn,
     int          natoms; /* nr. atoms in trj */
     t_trxstatus* status;
     int          i, n;
-    int          teller    = 0;
     int          nr_frames = 0;
     int          slice;
     double       qsum, nn;
@@ -206,7 +205,6 @@ static void calc_potential(const char*             fn,
     /*********** Start processing trajectory ***********/
     do
     {
-        teller++;
         gmx_rmpbc(gpbc, natoms, box, x0);
 
         // Translate atoms so the com of the center-group is in the

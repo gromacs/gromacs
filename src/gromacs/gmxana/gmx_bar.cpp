@@ -3466,7 +3466,6 @@ int gmx_bar(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     int        f;
-    int        nf = 0;    /* file counter */
     int        nfile_tot; /* total number of input files */
     sim_data_t sim_data;  /* the simulation data */
     barres_t*  results;   /* the results */
@@ -3522,20 +3521,16 @@ int gmx_bar(int argc, char* argv[])
     prec = std::pow(10.0, static_cast<double>(-nd));
 
     snew(partsum, (nbmax + 1) * (nbmax + 1));
-    nf = 0;
 
     /* read in all files. First xvg files */
     for (const std::string& filenm : xvgFiles)
     {
         read_bar_xvg(filenm.c_str(), &temp, &sim_data);
-        nf++;
     }
     /* then .edr files */
     for (const std::string& filenm : edrFiles)
     {
         read_barsim_edr(filenm.c_str(), &temp, &sim_data);
-
-        nf++;
     }
 
     /* fix the times to allow for equilibration */

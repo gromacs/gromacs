@@ -240,7 +240,6 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
     auto   x    = makeConstArrayRef(globalState->x);
     rvec   com  = { 0, 0, 0 };
     double mtot = 0.0;
-    int    j    = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
     {
         const t_atom& local = atomP.atom();
@@ -260,7 +259,6 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
             }
             fitMasses_.push_back(mass);
             mtot += mass;
-            j++;
         }
     }
 

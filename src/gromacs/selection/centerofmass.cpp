@@ -196,7 +196,7 @@ void gmx_calc_cog_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
 {
     const real tol = 1e-4;
     bool       bChanged;
-    int        m, j, ai, iter;
+    int        m, j, ai;
     rvec       dx, xtest;
 
     /* First simple calculation */
@@ -204,7 +204,6 @@ void gmx_calc_cog_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
     /* Now check if any atom is more than half the box from the COM */
     if (pbc)
     {
-        iter = 0;
         do
         {
             bChanged = false;
@@ -224,7 +223,6 @@ void gmx_calc_cog_pbc(const gmx_mtop_t* top, rvec x[], const t_pbc* pbc, int nre
                     }
                 }
             }
-            iter++;
         } while (bChanged);
     }
 }

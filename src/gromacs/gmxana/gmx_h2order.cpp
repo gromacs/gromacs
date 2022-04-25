@@ -81,12 +81,12 @@ static void calc_h2order(const char*             fn,
     rvec*        dip;    /* sum of dipoles, unnormalized */
     matrix       box;    /* box (3x3) */
     t_trxstatus* status;
-    real         t,                      /* time from trajectory */
-            *sum,                        /* sum of all cosines of dipoles, per slice */
-            *frame;                      /* order over one frame */
-    int natoms,                          /* nr. atoms in trj */
-            i, j, teller = 0, slice = 0, /* current slice number */
-            *count;                      /* nr. of atoms in one slice */
+    real         t,          /* time from trajectory */
+            *sum,            /* sum of all cosines of dipoles, per slice */
+            *frame;          /* order over one frame */
+    int natoms,              /* nr. atoms in trj */
+            i, j, slice = 0, /* current slice number */
+            *count;          /* nr. of atoms in one slice */
     gmx_rmpbc_t gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
@@ -127,14 +127,11 @@ static void calc_h2order(const char*             fn,
     *slWidth = box[axis][axis] / (*nslices);
     fprintf(stderr, "Box divided in %d slices. Initial width of slice: %f\n", *nslices, *slWidth);
 
-    teller = 0;
-
     gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
         *slWidth = box[axis][axis] / (*nslices);
-        teller++;
 
         gmx_rmpbc(gpbc, natoms, box, x0);
 

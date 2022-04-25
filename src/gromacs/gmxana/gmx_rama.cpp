@@ -72,7 +72,6 @@ int gmx_rama(int argc, char* argv[])
 
     FILE*             out;
     t_xrama*          xr;
-    int               j;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
                        { efTPR, nullptr, nullptr, ffREAD },
@@ -99,11 +98,9 @@ int gmx_rama(int argc, char* argv[])
         fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
         fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
     }
-    j = 0;
     do
     {
         plot_rama(out, xr);
-        j++;
     } while (new_data(xr));
     fprintf(stderr, "\n");
     xvgrclose(out);

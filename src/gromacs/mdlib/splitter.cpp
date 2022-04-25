@@ -241,7 +241,7 @@ static int ms_comp(const void* a, const void* b)
 
 static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[], t_blocka* sblock)
 {
-    int          i, j, k, n, isid, ndel;
+    int          i, j, k, n, isid;
     t_merge_sid* ms;
 
     /* We try to remdy the following problem:
@@ -271,7 +271,6 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[], t_blocka* 
     qsort(ms, nsid, sizeof(ms[0]), ms_comp);
 
     /* Now merge the overlapping ones */
-    ndel = 0;
     for (k = 0; (k < nsid);)
     {
         for (j = k + 1; (j < nsid);)
@@ -281,7 +280,6 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[], t_blocka* 
                 ms[k].last  = std::max(ms[k].last, ms[j].last);
                 ms[k].first = std::min(ms[k].first, ms[j].first);
                 ms[j].sid   = -1;
-                ndel++;
                 j++;
             }
             else

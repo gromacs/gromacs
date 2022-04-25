@@ -233,7 +233,7 @@ int gmx_rmsf(int argc, char* argv[])
           "make sure that the reference structure and the trajectory match." }
     };
     int  natom;
-    int  i, m, teller = 0;
+    int  i, m;
     real t, *w_rls;
 
     t_topology top;
@@ -350,7 +350,6 @@ int gmx_rmsf(int argc, char* argv[])
     }
 
     /* Now read the trj again to compute fluctuations */
-    teller = 0;
     do
     {
         if (bFit)
@@ -392,7 +391,6 @@ int gmx_rmsf(int argc, char* argv[])
             }
         }
         count += 1.0;
-        teller++;
     } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 

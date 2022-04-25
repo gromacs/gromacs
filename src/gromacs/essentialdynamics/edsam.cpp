@@ -3147,7 +3147,7 @@ void do_edsam(const t_inputrec*        ir,
               const matrix             box,
               gmx_edsam*               ed)
 {
-    int    i, edinr, iupdate = 500;
+    int    i, iupdate = 500;
     matrix rotmat;         /* rotation matrix */
     rvec   transvec;       /* translation vector */
     rvec   dv, dx, x_unsh; /* tmp vectors for velocity, distance, unshifted x coordinate */
@@ -3166,10 +3166,8 @@ void do_edsam(const t_inputrec*        ir,
     dt_1 = 1.0 / ir->delta_t;
 
     /* Loop over all ED groups (usually one) */
-    edinr = 0;
     for (auto& edi : ed->edpar)
     {
-        edinr++;
         if (bNeedDoEdsam(edi))
         {
 

@@ -73,7 +73,7 @@ static void find_tetra_order_grid(t_topology top,
                                   real***    sggrid,
                                   real***    skgrid)
 {
-    int         ix, jx, i, j, k, l, n, *nn[4];
+    int         ix, jx, i, j, k, *nn[4];
     rvec        dx, rj, rk, urk, urj;
     real        cost, cost2, *sgmol, *skmol, rmean, rmean2, r2, box2, *r_nn[4];
     t_pbc       pbc;
@@ -119,7 +119,6 @@ static void find_tetra_order_grid(t_topology top,
 
     *sgmean = 0.0;
     *skmean = 0.0;
-    l       = 0;
     for (i = 0; (i < maxidx); i++)
     { /* loop over index file */
         ix = index[i];
@@ -183,7 +182,6 @@ static void find_tetra_order_grid(t_topology top,
         }
         rmean /= 4;
 
-        n        = 0;
         sgmol[i] = 0.0;
         skmol[i] = 0.0;
 
@@ -203,8 +201,6 @@ static void find_tetra_order_grid(t_topology top,
                 cost2 = cost * cost;
 
                 sgmol[i] += cost2;
-                l++;
-                n++;
             }
         }
         /* normalize sgmol between 0.0 and 1.0 */

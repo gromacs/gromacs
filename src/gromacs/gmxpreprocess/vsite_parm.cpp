@@ -779,7 +779,7 @@ int set_vsites(bool                              bVerbose,
                const gmx::MDLogger&              logger)
 {
     int  ftype;
-    int  nvsite, nrset;
+    int  nvsite;
     bool bFirst, bERROR;
 
     bFirst = TRUE;
@@ -800,7 +800,6 @@ int set_vsites(bool                              bVerbose,
                 continue;
             }
 
-            nrset = 0;
             int i = 0;
             for (auto& param : plist[ftype].interactionTypes)
             {
@@ -827,7 +826,6 @@ int set_vsites(bool                              bVerbose,
                         bFirst = FALSE;
                     }
 
-                    nrset++;
                     /* now set the vsite parameters: */
                     AllVsiteBondedInteractions allVsiteBondeds =
                             createVsiteBondedInformation(NRAL(ftype), param.atoms(), at2vb);

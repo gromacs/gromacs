@@ -8,8 +8,8 @@
 void
 F77_FUNC(slarrbx,SLARRBX)(int *n, 
 	 float *d__, 
-	 float *l, 
-	 float *ld, 
+	 float * /*l*/,
+	 float * /*ld*/,
 	 float *lld, 
 	 int *ifirst, 
 	 int *ilast, 
@@ -44,8 +44,6 @@ F77_FUNC(slarrbx,SLARRBX)(int *n,
     --wgap;
     --w;
     --lld;
-    --ld;
-    --l;
     --d__;
 
     *info = 0;

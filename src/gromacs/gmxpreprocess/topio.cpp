@@ -1373,10 +1373,9 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logge
      */
 
     unsigned char*  grpnr;
-    int             mol, nat_mol, nr_mol_with_qm_atoms = 0;
+    int             mol, nat_mol;
     gmx_molblock_t* molb;
     bool            bQMMM;
-    int             qm_nr = 0;
 
     grpnr = sys->groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data();
 
@@ -1392,13 +1391,11 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logge
                 if ((grpnr ? grpnr[i] : 0) < (ir->opts.ngQM))
                 {
                     bQMMM = TRUE;
-                    qm_nr++;
                 }
             }
 
             if (bQMMM)
             {
-                nr_mol_with_qm_atoms++;
                 if (molb->nmol > 1)
                 {
                     /* We need to split this molblock */
