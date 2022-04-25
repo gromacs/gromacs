@@ -197,17 +197,26 @@ void ExtractCluster::analyzeFrame(int               frameNumber,
                                   t_pbc* /* pbc */,
                                   TrajectoryAnalysisModuleData* /*pdata*/)
 {
-    // modify frame to write out correct number of coords
-    // and actually write out
-    int clusterToWriteTo = clusterIndex_->inv_clust[frameNumber];
-    // Check for valid entry in cluster list, otherwise skip frame.
-    if (clusterToWriteTo != -1 && clusterToWriteTo < clusterIndex_->clust->nr)
+    // We have to also accept manual files that might contain fewer frames
+    // than a provided trajectory. In this case, we only try to match frames
+    // to clusters if the actual frame number is lower or equal to the highest
+    // number in the cluster file.
+
+    const int maxframe = clusterIndex_->maxframe;
+    if (frameNumber <= maxframe)
     {
-        writers_[clusterToWriteTo]->prepareAndWriteFrame(frameNumber, frame);
-    }
-    else
-    {
-        printf("Frame %d was not found in any cluster!", frameNumber);
+        // modify frame to write out correct number of coords
+        // and actually write out
+        int clusterToWriteTo = clusterIndex_->inv_clust[frameNumber];
+        // Check for valid entry in cluster list, otherwise skip frame.
+        if (clusterToWriteTo != -1 && clusterToWriteTo < clusterIndex_->clust->nr)
+        {
+            writers_[clusterToWriteTo]->prepareAndWriteFrame(frameNumber, frame);
+        }
+        else
+        {
+            printf("Frame %d was not found in any cluster!\n", frameNumber);
+        }
     }
 }
 

@@ -208,6 +208,16 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
         }
     }
 
+    std::vector<SimulationAtomGroupType> groupTypesToCheck;
+    if (mtop.groups.numberOfGroupNumbers(SimulationAtomGroupType::EnergyOutput) > 0)
+    {
+        groupTypesToCheck.push_back(SimulationAtomGroupType::EnergyOutput);
+    }
+    if (mtop.groups.numberOfGroupNumbers(SimulationAtomGroupType::QuantumMechanics) > 0)
+    {
+        groupTypesToCheck.push_back(SimulationAtomGroupType::QuantumMechanics);
+    }
+
     std::vector<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock;
     int                                           indexOfFirstAtomInMoleculeBlock = 0;
     for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
@@ -225,26 +235,15 @@ makeAtomInfoForEachMoleculeBlock(const gmx_mtop_t& mtop, const t_forcerec* fr)
          * molecule.
          */
         bool allMoleculesWithinBlockAreIdentical = true;
-        for (int m = 0; m < molb.nmol; m++)
+        for (const auto groupType : groupTypesToCheck)
         {
-            const int numAtomsInAllMolecules = m * molt.atoms.nr;
-            for (int a = 0; a < molt.atoms.nr; a++)
+            for (int m = 0; m < molb.nmol; m++)
             {
-                if (getGroupType(mtop.groups,
-                                 SimulationAtomGroupType::QuantumMechanics,
-                                 indexOfFirstAtomInMoleculeBlock + numAtomsInAllMolecules + a)
-                    != getGroupType(mtop.groups,
-                                    SimulationAtomGroupType::QuantumMechanics,
-                                    indexOfFirstAtomInMoleculeBlock + a))
+                const int numAtomsInAllMolecules = m * molt.atoms.nr;
+                for (int a = 0; a < molt.atoms.nr; a++)
                 {
-                    allMoleculesWithinBlockAreIdentical = false;
-                }
-                if (!mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty())
-                {
-                    if (mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics]
-                                                [indexOfFirstAtomInMoleculeBlock + numAtomsInAllMolecules + a]
-                        != mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics]
-                                                   [indexOfFirstAtomInMoleculeBlock + a])
+                    if (mtop.groups.groupNumbers[groupType][indexOfFirstAtomInMoleculeBlock + numAtomsInAllMolecules + a]
+                        != mtop.groups.groupNumbers[groupType][indexOfFirstAtomInMoleculeBlock + a])
                     {
                         allMoleculesWithinBlockAreIdentical = false;
                     }

@@ -226,4 +226,9 @@ void AffineTransformation::operator()(RVec* vector) const
     (*this)({ vector, vector + 1 });
 }
 
+Matrix3x3 AffineTransformation::gradient() const
+{
+    return transpose(matrix_);
+}
+
 } // namespace gmx

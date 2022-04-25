@@ -50,9 +50,23 @@ namespace gmx
 class EnergyOutput;
 }
 
+//! The current state of ekindata as passed to do_md_trajectory_writing()
+enum class EkindataState
+{
+    NotUsed,               //!< ekindata is not used this step and should thus not be checkpointed
+    UsedNeedToReduce,      //!< ekindata is used this step and terms need to be reduced
+    UsedDoNotNeedToReduce, //!< ekindata is used this step and no reduction is needed
+};
+
 /*! \brief Wrapper routine for writing trajectories during mdrun
  *
- * This routine does communication (e.g. collecting distributed coordinates)
+ * This routine does communication (e.g. collecting distributed coordinates).
+ *
+ * The kinetic energy data \p ekind is only used at steps where energies are
+ * calculated or temperature or pressure coupling is done. Thus this data only
+ * needs to be written to checkpoint at such steps. It might also contain
+ * local contributions that are not yet reduced over ranks. The state of
+ * \p ekind is described by \p ekindataState.
  */
 void do_md_trajectory_writing(FILE*                          fplog,
                               struct t_commrec*              cr,
@@ -75,7 +89,6 @@ void do_md_trajectory_writing(FILE*                          fplog,
                               gmx_bool                       bRerunMD,
                               gmx_bool                       bLastStep,
                               gmx_bool                       bDoConfOut,
-                              gmx_bool                       bSumEkinhOld);
-
+                              EkindataState                  ekindataState);
 
 #endif

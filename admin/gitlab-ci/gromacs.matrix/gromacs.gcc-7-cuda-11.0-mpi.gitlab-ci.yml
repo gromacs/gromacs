@@ -52,7 +52,7 @@ gromacs:gcc-7-cuda-11.0:testMPI:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
-    # FIXME: Test description states that we use GPU communications, but we don't enable it here
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
   tags:
     - k8s-scilifelab
   needs:

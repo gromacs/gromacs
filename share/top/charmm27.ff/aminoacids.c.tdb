@@ -16,7 +16,7 @@
 [ replace ]
  C	C	CD		12.011	0.72
  O	OT1	OB		15.9994	-0.55
- OXT	OT2	OH		15.9994	-0.61
+ OXT	OT2	OH1		15.9994	-0.61
 [ add ]
  2	8	OT	C	CA	N
  	OB	15.9994	-0.55	-1

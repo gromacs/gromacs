@@ -2447,11 +2447,6 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
         return f'{self._base_operation_id}_i{self.__reset_counter}'
 
-    @property
-    def operation_id(self):
-        # Note that duplicate work on multiple ranks, if allowed, will have the same ID.
-        return f'{self._base_operation_id}_i{self.__reset_counter}'
-
     def _receive_completion_signal(self, obj: 'DataStore'):
         # Finalize. Confirm that the runner calls succeeded in finalizing the work graph node.
         #

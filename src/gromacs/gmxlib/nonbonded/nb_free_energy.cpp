@@ -259,18 +259,19 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
                                   const real                                       rlist,
-                                  const interaction_const_t&                       ic,
-                                  gmx::ArrayRef<const gmx::RVec>                   shiftvec,
-                                  gmx::ArrayRef<const real>                        nbfp,
-                                  gmx::ArrayRef<const real> gmx_unused             nbfp_grid,
-                                  gmx::ArrayRef<const real>                        chargeA,
-                                  gmx::ArrayRef<const real>                        chargeB,
-                                  gmx::ArrayRef<const int>                         typeA,
-                                  gmx::ArrayRef<const int>                         typeB,
-                                  int                                              flags,
-                                  gmx::ArrayRef<const real>                        lambda,
-                                  t_nrnb* gmx_restrict                             nrnb,
-                                  gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
+                                  const real                           maxAllowedCutoffSquared,
+                                  const interaction_const_t&           ic,
+                                  gmx::ArrayRef<const gmx::RVec>       shiftvec,
+                                  gmx::ArrayRef<const real>            nbfp,
+                                  gmx::ArrayRef<const real> gmx_unused nbfp_grid,
+                                  gmx::ArrayRef<const real>            chargeA,
+                                  gmx::ArrayRef<const real>            chargeB,
+                                  gmx::ArrayRef<const int>             typeA,
+                                  gmx::ArrayRef<const int>             typeB,
+                                  int                                  flags,
+                                  gmx::ArrayRef<const real>            lambda,
+                                  t_nrnb* gmx_restrict                 nrnb,
+                                  gmx::ArrayRefWithPadding<gmx::RVec>  threadForceBuffer,
                                   rvec gmx_unused*    threadForceShiftBuffer,
                                   gmx::ArrayRef<real> threadVc,
                                   gmx::ArrayRef<real> threadVv,
@@ -661,7 +662,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 havePairsWithinCutoff = true;
             }
 
-            if (gmx::anyTrue(rlistSquared < rSq && bPairExcluded))
+            /* Check if there are excluded pairs beyond rlist, which would give incorrect results.
+             * To avoid false positives due to distant periodic images, we need to check if
+             * the distance less than the maximum allowed cut-off.
+             */
+            if (gmx::anyTrue(rSq < maxAllowedCutoffSquared && rlistSquared < rSq && bPairExcluded))
             {
                 haveExcludedPairsBeyondRlist = true;
             }
@@ -1157,22 +1162,23 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const int                                        ntype,
                                const real                                       rlist,
-                               const interaction_const_t&                       ic,
-                               gmx::ArrayRef<const gmx::RVec>                   shiftvec,
-                               gmx::ArrayRef<const real>                        nbfp,
-                               gmx::ArrayRef<const real>                        nbfp_grid,
-                               gmx::ArrayRef<const real>                        chargeA,
-                               gmx::ArrayRef<const real>                        chargeB,
-                               gmx::ArrayRef<const int>                         typeA,
-                               gmx::ArrayRef<const int>                         typeB,
-                               int                                              flags,
-                               gmx::ArrayRef<const real>                        lambda,
-                               t_nrnb* gmx_restrict                             nrnb,
-                               gmx::ArrayRefWithPadding<gmx::RVec>              threadForceBuffer,
-                               rvec*               threadForceShiftBuffer,
-                               gmx::ArrayRef<real> threadVc,
-                               gmx::ArrayRef<real> threadVv,
-                               gmx::ArrayRef<real> threadDvdl);
+                               const real                          maxAllowedCutoffSquared,
+                               const interaction_const_t&          ic,
+                               gmx::ArrayRef<const gmx::RVec>      shiftvec,
+                               gmx::ArrayRef<const real>           nbfp,
+                               gmx::ArrayRef<const real>           nbfp_grid,
+                               gmx::ArrayRef<const real>           chargeA,
+                               gmx::ArrayRef<const real>           chargeB,
+                               gmx::ArrayRef<const int>            typeA,
+                               gmx::ArrayRef<const int>            typeB,
+                               int                                 flags,
+                               gmx::ArrayRef<const real>           lambda,
+                               t_nrnb* gmx_restrict                nrnb,
+                               gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
+                               rvec*                               threadForceShiftBuffer,
+                               gmx::ArrayRef<real>                 threadVc,
+                               gmx::ArrayRef<real>                 threadVv,
+                               gmx::ArrayRef<real>                 threadDvdl);
 
 template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
@@ -1337,22 +1343,23 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                const bool                                       useSimd,
                                const int                                        ntype,
                                const real                                       rlist,
-                               const interaction_const_t&                       ic,
-                               gmx::ArrayRef<const gmx::RVec>                   shiftvec,
-                               gmx::ArrayRef<const real>                        nbfp,
-                               gmx::ArrayRef<const real>                        nbfp_grid,
-                               gmx::ArrayRef<const real>                        chargeA,
-                               gmx::ArrayRef<const real>                        chargeB,
-                               gmx::ArrayRef<const int>                         typeA,
-                               gmx::ArrayRef<const int>                         typeB,
-                               int                                              flags,
-                               gmx::ArrayRef<const real>                        lambda,
-                               t_nrnb*                                          nrnb,
-                               gmx::ArrayRefWithPadding<gmx::RVec>              threadForceBuffer,
-                               rvec*               threadForceShiftBuffer,
-                               gmx::ArrayRef<real> threadVc,
-                               gmx::ArrayRef<real> threadVv,
-                               gmx::ArrayRef<real> threadDvdl)
+                               const real                          maxAllowedCutoffSquared,
+                               const interaction_const_t&          ic,
+                               gmx::ArrayRef<const gmx::RVec>      shiftvec,
+                               gmx::ArrayRef<const real>           nbfp,
+                               gmx::ArrayRef<const real>           nbfp_grid,
+                               gmx::ArrayRef<const real>           chargeA,
+                               gmx::ArrayRef<const real>           chargeB,
+                               gmx::ArrayRef<const int>            typeA,
+                               gmx::ArrayRef<const int>            typeB,
+                               int                                 flags,
+                               gmx::ArrayRef<const real>           lambda,
+                               t_nrnb*                             nrnb,
+                               gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
+                               rvec*                               threadForceShiftBuffer,
+                               gmx::ArrayRef<real>                 threadVc,
+                               gmx::ArrayRef<real>                 threadVv,
+                               gmx::ArrayRef<real>                 threadDvdl)
 {
     GMX_ASSERT(EEL_PME_EWALD(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut || EEL_RF(ic.eeltype),
                "Unsupported eeltype with free energy");
@@ -1396,6 +1403,7 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                coords,
                ntype,
                rlist,
+               maxAllowedCutoffSquared,
                ic,
                shiftvec,
                nbfp,
