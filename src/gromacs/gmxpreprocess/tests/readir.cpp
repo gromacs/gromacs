@@ -357,6 +357,166 @@ TEST_F(GetIrTest, MissingTransformationCoordExpression)
     };
     runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
 }
+
+TEST_F(GetIrTest, lambdaOverOneCheck_SC_And_ExactlyAsManyStep)
+{
+    // 1e5 steps and delta lambda 1e-5, should not warn (exactly right)
+    const char* inputMdpFile[] = {
+        "nsteps        = 100000",
+        "nstdhdl       = 1",
+        "nstcalcenergy       = 1",
+        "free-energy   = yes",
+        "init-lambda   = 0",
+        "delta-lambda  = 1e-05",
+        "sc-alpha      = 0.3",
+        "sc-sigma      = 0.25",
+        "; decoupled VdW to avoid warning about",
+        "; - not the point of this test",
+        "couple-lambda0 = q",
+        "sc-power      = 1",
+        "sc-coul       = yes",
+
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_SC_And_ExactlyAsManyStep_negativeDelta)
+{
+    // 1e5 steps and delta lambda -1e-5, should not warn (exactly right)
+    const char* inputMdpFile[] = {
+        "nsteps        = 100000",
+        "nstdhdl       = 1",
+        "nstcalcenergy       = 1",
+        "free-energy   = yes",
+        "init-lambda   = 1.0",
+        "delta-lambda  = -1e-05",
+        "sc-alpha      = 0.3",
+        "sc-sigma      = 0.25",
+        "; decoupled VdW to avoid warning about",
+        "; - not the point of this test",
+        "couple-lambda0 = q",
+        "sc-power      = 1",
+        "sc-coul       = yes",
+
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_NoSC_And_ExactlyAsManyStep)
+{
+    // 1e5 steps and delta lambda 1e-5, should not warn (exactly right)
+    // Should not warn without softcore too
+    const char* inputMdpFile[] = { "nsteps        = 100000",  "nstdhdl       = 1",
+                                   "nstcalcenergy       = 1", "free-energy   = yes",
+                                   "init-lambda   = 0",       "delta-lambda  = 1e-05" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_NoSC_And_ExactlyAsManyStep_negativeDelta)
+{
+    // 1e5 steps and delta lambda -1e-5, should not warn (exactly right)
+    // Should not warn without softcore too
+    const char* inputMdpFile[] = { "nsteps        = 100000",  "nstdhdl       = 1",
+                                   "nstcalcenergy       = 1", "free-energy   = yes",
+                                   "init-lambda   = 1",       "delta-lambda  = -1e-05" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_SC_And_OneStepTooMuch)
+{
+    // 1e5+1 steps and delta lambda 1e-5, should error (will be over 1 in the very last step
+    // and this is unsupported by softcore)
+    const char* inputMdpFile[] = {
+        "nsteps        = 100001",
+        "nstdhdl       = 1",
+        "nstcalcenergy       = 1",
+        "free-energy   = yes",
+        "init-lambda   = 0",
+        "delta-lambda  = 1e-05",
+        "sc-alpha      = 0.3",
+        "sc-sigma      = 0.25",
+        "; decoupled VdW to avoid warning about",
+        "; - not the point of this test",
+        "couple-lambda0 = q",
+        "sc-power      = 1",
+        "sc-coul       = yes",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_SC_And_OneStepTooMuch_negativeDelta)
+{
+    // 1e5+1 steps and delta lambda -1e-5, should error (will be under 0 in the very last step
+    // and this is unsupported by softcore)
+    const char* inputMdpFile[] = {
+        "nsteps        = 100001",
+        "nstdhdl       = 1",
+        "nstcalcenergy       = 1",
+        "free-energy   = yes",
+        "init-lambda   = 1",
+        "delta-lambda  = -1e-05",
+        "sc-alpha      = 0.3",
+        "sc-sigma      = 0.25",
+        "; decoupled VdW to avoid warning about",
+        "; - not the point of this test",
+        "couple-lambda0 = q",
+        "sc-power      = 1",
+        "sc-coul       = yes",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_NoSC_And_OneStepTooMuch_negativeDelta)
+{
+    // 1e5+1 steps and delta lambda -1e-5, should warn (will be under 0 in the very last step)
+    // Without softcore, this is still a warning
+    const char* inputMdpFile[] = {
+        "nsteps        = 100001", "nstdhdl       = 1", "nstcalcenergy       = 1",
+        "free-energy   = yes",    "init-lambda   = 1", "delta-lambda  = -1e-05",
+    };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_OneStepTooMuch)
+{
+    // 1e5+1 steps and delta lambda 1e-5, with lambda vector, should warn (will be capped in the very last step)
+    const char* inputMdpFile[] = { "nsteps        = 100001",  "nstcalcenergy       = 1",
+                                   "nstdhdl       = 1",       "free-energy   = yes",
+                                   "delta-lambda  = 1e-05",   "init-lambda-state = 0",
+                                   "fep_lambdas =  0 0.5 1.0" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_OneStepTooMuch_negativeDelta)
+{
+    // 1e5+1 steps and delta lambda -1e-5, with lambda vector, should warn (will be capped in the very last step)
+    const char* inputMdpFile[] = { "nsteps        = 100001",  "nstdhdl       = 1",
+                                   "nstcalcenergy       = 1", "free-energy   = yes",
+                                   "delta-lambda  = -1e-05",  "init-lambda-state = 2",
+                                   "fep_lambdas =  0 0.5 1.0" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::ErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_ExactlyAsManyStep)
+{
+    // 1e5 steps and delta lambda 1e-5, with lambda vector, should not warn of lambda capping
+    const char* inputMdpFile[] = { "nsteps        = 100000",  "nstdhdl       = 1",
+                                   "nstcalcenergy       = 1", "free-energy   = yes",
+                                   "delta-lambda  = 1e-05",   "init-lambda-state = 0",
+                                   "fep_lambdas =  0 0.5 1.0" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
+TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_ExactlyAsManyStep_negativeDelta)
+{
+    // 1e5 steps and delta lambda -1e-5, with lambda vector, should not warn of lambda capping
+    const char* inputMdpFile[] = { "nsteps        = 100000",  "nstdhdl       = 1",
+                                   "nstcalcenergy       = 1", "free-energy   = yes",
+                                   "delta-lambda  = -1e-05",  "init-lambda-state = 2",
+                                   "fep_lambdas =  0 0.5 1.0" };
+    runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
+}
+
 #endif // HAVE_MUPARSER
 
 } // namespace test

@@ -402,7 +402,6 @@ static void calc_order(const char*             fn,
                        real*                   slWidth,
                        int                     nslices,
                        gmx_bool                bSliced,
-                       gmx_bool                bUnsat,
                        const t_topology*       top,
                        PbcType                 pbcType,
                        int                     ngrps,
@@ -433,8 +432,7 @@ static void calc_order(const char*             fn,
             size = 0,                      /* nr. of atoms in group. same as nr_tails        */
             i, j, m, k, teller = 0, slice; /* current slice number                           */
     real nr_frames = 0;
-    int* slCount;                /* nr. of atoms in one slice                      */
-    real sdbangle           = 0; /* sum of these angles                            */
+    int* slCount;                    /* nr. of atoms in one slice                      */
     gmx_bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
     rvec        direction, com;
     int         comsize, distsize;
@@ -597,39 +595,14 @@ static void calc_order(const char*             fn,
                             direction[0],direction[1],direction[2]);*/
                 }
 
-                if (bUnsat)
-                {
-                    rvec dist;
-                    /* Using convention for unsaturated carbons */
-                    /* first get Sz, the vector from Cn to Cn+1 */
-                    rvec_sub(x1[a[index[i + 1] + j]], x1[a[index[i] + j]], dist);
-                    length = norm(dist);
-                    check_length(length, a[index[i] + j], a[index[i + 1] + j]);
-                    svmul(1.0 / length, dist, Sz);
+                rvec dist;
+                /* get vector dist(Cn-1,Cn+1) for tail atoms */
+                rvec_sub(x1[a[index[i + 1] + j]], x1[a[index[i - 1] + j]], dist);
+                length = norm(dist); /* determine distance between two atoms */
+                check_length(length, a[index[i - 1] + j], a[index[i + 1] + j]);
 
-                    /* this is actually the cosine of the angle between the double bond
-                       and axis, because Sz is normalized and the two other components of
-                       the axis on the bilayer are zero */
-                    if (use_unitvector)
-                    {
-                        sdbangle += gmx_angle(direction, Sz); /*this can probably be optimized*/
-                    }
-                    else
-                    {
-                        sdbangle += std::acos(Sz[axis]);
-                    }
-                }
-                else
-                {
-                    rvec dist;
-                    /* get vector dist(Cn-1,Cn+1) for tail atoms */
-                    rvec_sub(x1[a[index[i + 1] + j]], x1[a[index[i - 1] + j]], dist);
-                    length = norm(dist); /* determine distance between two atoms */
-                    check_length(length, a[index[i - 1] + j], a[index[i + 1] + j]);
-
-                    svmul(1.0 / length, dist, Sz);
-                    /* Sz is now the molecular axis Sz, normalized and all that */
-                }
+                svmul(1.0 / length, dist, Sz);
+                /* Sz is now the molecular axis Sz, normalized and all that */
 
                 /* now get Sx. Sx is normal to the plane of Cn-1, Cn and Cn+1 so
                    we can use the outer product of Cn-1->Cn and Cn+1->Cn, I hope */
@@ -772,13 +745,6 @@ static void calc_order(const char*             fn,
                 (*distvals)[k][i] /= nr_frames;
             }
         }
-    }
-
-    if (bUnsat)
-    {
-        fprintf(stderr,
-                "Average angle between double bond and normal: %f\n",
-                180 * sdbangle / (nr_frames * static_cast<real>(size) * M_PI));
     }
 
     sfree(x0); /* free memory used by coordinate arrays */
@@ -980,9 +946,16 @@ int gmx_order(int argc, char* argv[])
         "for more details."
     };
 
+    const char* bugs[] = {
+        "This tool only works for saturated carbons and united atom force fields.",
+        "For anything else, it is highly recommended to use a different analysis method!",
+        "The option [TT]-unsat[tt] claimed to do analysis for unsaturated carbons",
+        "this but hasn't worked ever since it was added and has thus been removed."
+    };
+
     static int         nslices       = 1;     /* nr of slices defined       */
     static gmx_bool    bSzonly       = FALSE; /* True if only Sz is wanted  */
-    static gmx_bool    bUnsat        = FALSE; /* True if carbons are unsat. */
+    static bool        bUnsatRemoved = false; /* Removed because it doesn't work. */
     static const char* normal_axis[] = { nullptr, "z", "x", "y", nullptr };
     static gmx_bool    permolecule   = FALSE; /*compute on a per-molecule basis */
     static gmx_bool    radial        = FALSE; /*compute a radial membrane normal */
@@ -1003,9 +976,8 @@ int gmx_order(int argc, char* argv[])
         { "-unsat",
           FALSE,
           etBOOL,
-          { &bUnsat },
-          "Calculate order parameters for unsaturated carbons. Note that this can"
-          "not be mixed with normal order parameters." },
+          { &bUnsatRemoved },
+          "HIDDENThis option has been removed as it didn't ever properly work." },
         { "-permolecule",
           FALSE,
           etBOOL,
@@ -1048,7 +1020,7 @@ int gmx_order(int argc, char* argv[])
     gmx_output_env_t* oenv;
 
     if (!parse_common_args(
-                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -1127,9 +1099,11 @@ int gmx_order(int argc, char* argv[])
         {
             fprintf(stderr, "Only calculating Sz\n");
         }
-        if (bUnsat)
+        if (bUnsatRemoved)
         {
-            fprintf(stderr, "Taking carbons as unsaturated!\n");
+            gmx_fatal(FARGS,
+                      "The option to process unsaturated carbons has been removed because it never "
+                      "properly worked. Please use a different tool to analyse your data!\n");
         }
 
         top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
@@ -1165,7 +1139,6 @@ int gmx_order(int argc, char* argv[])
                    &slWidth,
                    nslices,
                    bSliced,
-                   bUnsat,
                    top,
                    pbcType,
                    ngrps,

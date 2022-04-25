@@ -32,7 +32,7 @@ impulse fashion \ :ref:`51 <refGoga2012>`. It can be described as:
 
 .. math::  \begin{aligned}
    \mathbf{v}'  &~=~&   \mathbf{v}(t-{{\frac{1}{2}}{{\Delta t}}}) + \frac{1}{m}\mathbf{F}(t){{\Delta t}}\\
-   \Delta\mathbf{v}     &~=~&   -\alpha \, \mathbf{v}'(t+{{\frac{1}{2}}{{\Delta t}}}) + \sqrt{\frac{k_B T}{m}(1 - \alpha^2)} \, {\mathbf{r}^G}_i \\
+   \Delta\mathbf{v}     &~=~&   -\alpha \, \mathbf{v}'(t+{{\frac{1}{2}}{{\Delta t}}}) + \sqrt{\frac{k_B T}{m} \alpha (2 - \alpha)} \, {\mathbf{r}^G}_i \\
    \mathbf{r}(t+{{\Delta t}})   &~=~&   \mathbf{r}(t)+\left(\mathbf{v}' +\frac{1}{2}\Delta \mathbf{v}\right){{\Delta t}}
   \end{aligned}
   :label: eqnsd1int

@@ -564,7 +564,7 @@ real ta_disres(int              nfa,
             /* Correct the force for the number of restraints */
             if (bConservative)
             {
-                if (-f_scal / k0 > up2 - up1)
+                if ((k0 != 0) && (-f_scal / k0 > up2 - up1))
                 {
                     f_scal = fmax_scal;
                 }
@@ -582,7 +582,7 @@ real ta_disres(int              nfa,
             else
             {
                 f_scal /= npair;
-                if (-f_scal / k0 > up2 - up1)
+                if ((k0 != 0) && (-f_scal / k0 > up2 - up1))
                 {
                     f_scal = fmax_scal;
                 }

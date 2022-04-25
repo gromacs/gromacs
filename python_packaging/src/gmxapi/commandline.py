@@ -122,7 +122,7 @@ _seen = set()
         'stderr': str,
         'stdout': str,
     })
-def cli(command: NDArray, shell: bool, output, stdin: str = '', _exist_ok=True):
+def cli(command: NDArray, shell: bool, env: dict, output, stdin: str = '', _exist_ok=True):
     """Execute a command line program in a subprocess.
 
     Configure an executable in a subprocess. Executes when run in an execution
@@ -148,6 +148,7 @@ def cli(command: NDArray, shell: bool, output, stdin: str = '', _exist_ok=True):
     think this disallows important use cases, please let us know.
 
     Arguments:
+         env: The environment variables map for the subprocess.
          _exist_ok: If ``True`` (default), it is not an error for the
              working directory to exist already.
          command: a tuple (or list) to be the subprocess arguments, including *executable*
@@ -253,6 +254,7 @@ def cli(command: NDArray, shell: bool, output, stdin: str = '', _exist_ok=True):
     try:
         completed_process = subprocess.run(command,
                                            cwd=_cwd,
+                                           env=env,
                                            shell=shell,
                                            input=stdin,
                                            check=True,
@@ -340,6 +342,7 @@ def commandline_operation(executable=None,
                           input_files: Union[dict, Iterable[dict]] = None,
                           output_files: Union[dict, Iterable[dict]] = None,
                           stdin: Union[str, Iterable[str]] = None,
+                          env: Union[dict, Iterable[dict]] = None,
                           **kwargs):
     """Helper function to define a new operation that executes a subprocess in gmxapi data flow.
 
@@ -348,6 +351,7 @@ def commandline_operation(executable=None,
     input/output data dependencies.
 
     Arguments:
+        env: Optional replacement for the environment variables seen by the subprocess.
         executable: name of an executable on the path
         arguments: list of positional arguments to insert at ``argv[1]``
         input_files: mapping of command-line flags to input file names
@@ -372,6 +376,24 @@ def commandline_operation(executable=None,
     If non-absolute paths are provided to *output_files*, paths are resolved relative to the
     working directory of the command instance (not relative to the working directory of the
     workflow script).
+
+    By default, *executable* runs in a subprocess that inherits its environment
+    and resources from the Python interpreter.
+    (See https://docs.python.org/3/library/subprocess.html#subprocess.run)
+
+    .. versionadded:: 0.3.1
+        If specified, *env* replaces the default environment variables map seen by *executable* in the
+        subprocess.
+
+    In addition to controlling environment variables used for user-input, it may be
+    necessary to adjust the environment to prevent the subprocess from inheriting variables that it
+    should not. This is particularly relevant if the Python script is launched with ``mpiexec`` and
+    then ``commandline_wrapper`` is used to launch an MPI-aware executable that may try to manage
+    the MPI context. (Reference :issue:`4421`)
+
+    When overriding the environment variables, don't forget to include basic variables
+    like PATH that are necessary for the executable to run. `os.getenv` can help.
+    E.g. ``commandline_operation(..., env={'PATH': os.getenv('PATH'), ...})``
 
     Output:
         The output node of the resulting operation handle contains
@@ -480,9 +502,20 @@ def commandline_operation(executable=None,
                                      input_options,
                                      output_options])
     shell = gmx.make_constant(False)
+
+    if env is None:
+        @gmx.function_wrapper(
+            # allow_duplicate=True
+        )
+        def _env() -> dict:
+            import os
+            return dict(os.environ)
+
+        env = _env().output.data
     cli_args = {
         'command': command,
         'shell': shell,
+        'env': env
     }
     cli_args.update(**kwargs)
     if stdin is not None:

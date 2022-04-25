@@ -3100,6 +3100,9 @@ static gmx::IVec getNumCommunicationPulses(const ivec&                    numDom
     return numPulses;
 }
 
+/* Returns whether a cutoff distance of \p cutoffRequested satisfies
+ * all limitations of the domain decomposition and thus could be used
+ */
 static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested)
 {
     gmx_ddbox_t ddbox;
@@ -3135,6 +3138,14 @@ static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::Array
             {
                 LocallyLimited = 1;
             }
+        }
+
+        /* The GPU halo communication code currently does not allow multiple
+         * pulses along dimensions other than the first.
+         */
+        if (cr->dd->gpuHaloExchange && d > 0 && np > 1)
+        {
+            return FALSE;
         }
     }
 

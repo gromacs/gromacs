@@ -71,7 +71,6 @@ void SettleGpu::apply(const DeviceBuffer<Float3>& d_x,
                       tensor                      virialScaled,
                       const PbcAiuc&              pbcAiuc)
 {
-
     // Early exit if no settles
     if (numSettles_ == 0)
     {

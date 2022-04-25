@@ -474,6 +474,7 @@ protected:
                                   fr.use_simd_kernels,
                                   fr.ntype,
                                   fr.rlist,
+                                  fr.rlist,
                                   *fr.ic,
                                   fr.shift_vec,
                                   fr.nbfp,

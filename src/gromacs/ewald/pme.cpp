@@ -200,7 +200,8 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     gmx::MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("PME GPU does not support:");
-    errorReasons.appendIf((!GMX_GPU_CUDA && pme->nnodes != 1), "PME decomposition.");
+    errorReasons.appendIf((!GMX_GPU_CUDA && pme->nnodes != 1 && pme->ndecompdim >= 2),
+                          "2D PME decomposition (use GMX_PMEONEDD to force 1D).");
     errorReasons.appendIf((pme->pme_order != 4), "interpolation orders other than 4.");
     errorReasons.appendIf(pme->doLJ, "Lennard-Jones PME.");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS.");

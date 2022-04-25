@@ -10,8 +10,7 @@ Unable to compile with CUDA 11.3
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Due to a bug in the nvcc compiler, it is currently not possible
 to compile NVIDIA GPU-enabled |Gromacs| with version 11.3 of the CUDA compiler.
-We recommend using CUDA 11.2 or earlier until the compiler fix is released.
+We recommend using CUDA 11.4 or newer.
 
 :issue:`4037`
-
 

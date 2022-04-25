@@ -46,7 +46,7 @@ on magnitude of lambda and periodic shifts of walls are handled
 correctly. When the position restraint coordinates are shifted by 1 nm,
 the force on the walls is given directly by :math:`dV/d\lambda`.
 
-A Couette flow is a popular setup in experiments. Unfortunately this is
+A Poiseuille flow is a popular setup in experiments. Unfortunately this is
 difficult to achieve in simulations. The best would be to, as in experiment,
 apply a pressure difference over (part of) the simulation box. But that
 is not easy to set up. One can accelerate all liquid atoms, but this does

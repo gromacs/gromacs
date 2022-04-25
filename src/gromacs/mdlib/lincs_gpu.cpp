@@ -341,6 +341,9 @@ bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 
 void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const real* invmass)
 {
+    GMX_ASSERT(!(numAtoms == 0 && !idef.il[F_CONSTR].empty()),
+               "The number of atoms needs to be > 0 if there are constraints in the domain.");
+
     GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
                        "LINCS GPU is only implemented in CUDA and SYCL.");
     // List of constrained atoms (CPU memory)

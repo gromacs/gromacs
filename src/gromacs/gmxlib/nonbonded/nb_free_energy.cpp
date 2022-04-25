@@ -259,6 +259,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
                                   const real                                       rlist,
+                                  const real                           maxAllowedCutoffSquared,
                                   const interaction_const_t&           interactionParameters,
                                   gmx::ArrayRef<const gmx::RVec>       shiftvec,
                                   gmx::ArrayRef<const real>            nbfp,
@@ -668,7 +669,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 havePairsWithinCutoff = true;
             }
 
-            if (gmx::anyTrue(rlistSquared < rSq && bPairExcluded))
+            /* Check if there are excluded pairs beyond rlist, which would give incorrect results.
+             * To avoid false positives due to distant periodic images, we need to check if
+             * the distance less than the maximum allowed cut-off.
+             */
+            if (gmx::anyTrue(rSq < maxAllowedCutoffSquared && rlistSquared < rSq && bPairExcluded))
             {
                 haveExcludedPairsBeyondRlist = true;
             }
@@ -1195,6 +1200,7 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const int                                        ntype,
                                const real                                       rlist,
+                               const real                          maxAllowedCutoffSquared,
                                const interaction_const_t&          interactionParameters,
                                gmx::ArrayRef<const gmx::RVec>      shiftvec,
                                gmx::ArrayRef<const real>           nbfp,
@@ -1375,6 +1381,7 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                const bool                                       useSimd,
                                const int                                        ntype,
                                const real                                       rlist,
+                               const real                          maxAllowedCutoffSquared,
                                const interaction_const_t&          interactionParameters,
                                gmx::ArrayRef<const gmx::RVec>      shiftvec,
                                gmx::ArrayRef<const real>           nbfp,
@@ -1437,6 +1444,7 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                coords,
                ntype,
                rlist,
+               maxAllowedCutoffSquared,
                interactionParameters,
                shiftvec,
                nbfp,

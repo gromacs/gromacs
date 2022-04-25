@@ -1104,7 +1104,7 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
         {
             message +=
                     "      Dynamic load balancing was automatically disabled, but it might be "
-                    "beneficial to manually tuning it on (option -dlb on.)\n";
+                    "beneficial to manually turn it on (option -dlb yes.)\n";
             hadSuggestion = true;
         }
         else if (dlbWasLimited)

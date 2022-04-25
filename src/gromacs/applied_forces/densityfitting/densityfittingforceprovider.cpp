@@ -344,8 +344,24 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
                 return densityFittingForce_.evaluateForce({ r, amplitude }, densityDerivative);
             });
 
-    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(forces_);
+    // correct forces for coordinate transformations with chain rule
+    // F = -k d U(transform(x)) / d x =
+    //    k * -d U(transform(x)) / d transform(x) * d(transform(x)) / d x
+    //        --------- calculated above --------   ---correction below---
 
+    // correction for coordinate transformation into density lattice
+    transformationToDensityLattice_.scaleOperationOnly()(forces_);
+    // correction for affine coordinate transformation
+    if (affineTransformation_)
+    {
+        const Matrix3x3 gradient = affineTransformation_->gradient();
+        for (RVec currentForce : forces_)
+        {
+            matrixVectorMultiply(gradient, &currentForce);
+        }
+    }
+
+    // multiply with the current force constant
     auto       densityForceIterator = forces_.cbegin();
     const real effectiveForceConstant = state_.adaptiveForceConstantScale_ * parameters_.calculationIntervalInSteps_
                                         * parameters_.forceConstant_;

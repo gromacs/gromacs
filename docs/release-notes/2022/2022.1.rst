@@ -1,7 +1,7 @@
 GROMACS 2022.1 release notes
 ----------------------------
 
-This version was released on TODO, 2022. These release notes
+This version was released on April 22th, 2022. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2022 version, to fix known issues. It also incorporates all
 fixes made in version 2021.5 and earlier, which you can find described
@@ -13,8 +13,37 @@ in the :ref:`release-notes`.
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Note to developers and package maintainers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next release (GROMACS 2022.2) will rename master branch to main 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+At the date of the next release we will rename the master branch to main to
+moving away from master / slave terminology.
+
+After the GROMACS 2022.2 patch release, developers are advised to delete their
+local master branch and fetch the remote main branch as in
+``git branch -d master; git fetch; git checkout main``
+
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed incorrect pairlist buffer with test particle insertion
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With TPI the pairlist cut-off did not take into account rtpi and the radius
+of the molecule to insert.
+
+:issue:`4458`
+
+Remove false positives for missing exclusions in free energy kernels
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free energy calculations good stop with a fatal error stating that excluded
+atoms pairs were beyond the pairlist cut-off while this actually was not the case.
+
+:issue:`4321`
 
 Fix crash when steering FEP with AWH without PME or with separate PME rank
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -23,12 +52,193 @@ There would be a segfault when deciding whether early PME results are needed.
 
 :issue:`4413`
 
+Fix bug with reporting energies for groups
+""""""""""""""""""""""""""""""""""""""""""
+
+When different molecules in a molecule block in the topology use different
+energy group assignments for atoms, the energy group assignment of the
+first molecule would be repeated for all other molecules in the block.
+Note that the reported energies for the whole system were correct.
+
+:issue:`4462`
+
+Fix missing B State pinning for PME GPU
+"""""""""""""""""""""""""""""""""""""""
+
+The PME memory is now correctly pinned when using GPU PME.
+
+:issue:`4408`
+
+Only allow 1D PME GPU decomposition
+"""""""""""""""""""""""""""""""""""
+
+Due to correctness issues in PME grid reduction with 1D decomposition, this feature could produce
+incorrect results. This would however in most real-world cases be masked by an overly large halo size.
+0D decomposition cases are unaffected and only such setups will be allowed in the current release
+(0D PME decomposition can be forced using the GMX_PMEONEDD env var).
+
+Fixed exact continuation with the -reprod option
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+With the leap-frog integrator, kinetic energy terms were often not stored in
+the checkpoint file. This caused minor difference in the computed kinetic
+energy (due to different operation order), which could cause a run continued
+from checkpoint to diverge from a run without interuption, even when using
+the -reprod option.
+
+:issue:`4240`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Use correct scattering length for hydrogens in ``gmx sans``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The floating-point comparison was always false, leading to all atoms with
+atomic number 1 having scattering length of deuterium (6.6710 fm) instead
+of -3.7406 fm for plain hydrogens.
+
+Fix C-terminal residue patch for charmm
+"""""""""""""""""""""""""""""""""""""""
+
+One of the atom types names in the Charmm27 force field C-terminal
+COOH patch was incorrect, and would have triggered a crash or error
+in pdb2gmx, which was identified when Fedora ran our unit tests with
+additional checking flags.
+
+:issue:`4414`
+
+Add polyproline helix coloring to DSSP maps
+"""""""""""""""""""""""""""""""""""""""""""
+
+DSSP-4.0 can detect polyproline type-2 helices, so we now also
+have a dark blue-green color entry for this in the generated maps.
+
+:issue:`4410`
+
+Remove option -unsat from gmx order and document deficiencies
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This hasn't properly worked since it was added.
+
+:issue:`1166`
+
+Fix g96 file writing
+""""""""""""""""""""
+
+The g96 file writing could violate the file format when residue or atom names
+got longer than 5 characters.
+
+:issue:`4456`
+
+Rerun will no longer abort when encountering too high forces
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4352`
+
+Allow incomplete index files for extract-cluster
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4420`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix nvcc flag detection
+"""""""""""""""""""""""
+
+:issue:`4415`
+
+Fix issue in GMXRC.bash
+"""""""""""""""""""""""
+
+:issue:`4450`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fixed regression test download URL for forks of |Gromacs|
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Users of forks of |Gromacs| (eg PLUMED) can now also use the feature
+to download the regression tests automatically.
+
+Fix internal nblib test failure
+"""""""""""""""""""""""""""""""
+
+The nblib internal tests used incorrect indices, which triggered a crash
+when Fedora ran our unit tests with additional checking flags. This will
+not have influenced any actual clients merely using nblib.
+
+:issue:`4414`
+
+Workaround for nested MPI-aware code
+""""""""""""""""""""""""""""""""""""
+
+:py:mod:`gmxapi` scripts containing `gmxapi.commandline_operation` tasks could be unusable if a task
+executable automatically detects MPI resources and the script is invoked with an MPI launcher.
+
+The workaround is to increase the isolation of the task environment from the parent process by explicitly
+setting the task environment variables.
+This is now possible with a new *env* key word argument to :py:func:`~gmxapi.commandline_operation`,
+which is simply passed along to `subprocess.run`.
+
+:issue:`4421`
+
+Accurately checks when FEP lambda might go over 1 or under 0
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The checks that verify that the FEP lambda does not go out of
+range used to trigger incorrectly when the delta-lambda and number
+of step was exactly right.
+
+:issue:`4442`
+
+Correct free-energy (de)coupling integrator check
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy (de)coupling calculations, grompp would only warn
+with the md integrator that sd should be used. Now this warning
+is extended to the md-vv integrators.
+
+Density-guided simulation affine transformation force correction 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Forces were not calculated correctly when using affine transformations with
+density-guided-simulation-transformation-matrix, e.g., rotations and projections
+of structures, before calculating forces for density guided simulations.
+
+The reason for this error was the missing multiplication with the transpose of
+the affine transformation matrix. This is needed to account for the coordinate
+transformation when calculating the force as the derivative of the energy,
+according to the chain rule of calculus.
+
+Affects simulations where density-guided-simulation-transformation-matrix is
+set and not trivial. If the matrices were diagonal, forces were wrongly scaled.
+If a rotation matrix was set, the effect was a mis-rotation of forces, leading
+to an overall undesired torque on the structure.
+
+:issue:`4455`
+
+Clarified Coulomb self terms in the reference manual
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4451`
+
+
+Correct formula for SD integrator
+"""""""""""""""""""""""""""""""""
+
+The formula in the reference manual was different from the implementation, even
+though both have been mathematically equivalent.
+
+Adjust test tolerances for double precision testing
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Some tests could fail on different hardware when using double
+precision builds due to too strict tolerances. This mainly affected
+test simulations that could diverge due to the limited precision of
+some SIMD instructions (44 bits when using invsqrt).
+
+:issue:`4414`
 

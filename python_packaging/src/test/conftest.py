@@ -114,7 +114,8 @@ def spc_water_box_collection(gmxcli, tmp_path_factory):
                                             # input_files={'-cs': structurefile},
                                             output_files={'-p': topfile,
                                                           '-o': structurefile,
-                                                          }
+                                                          },
+                                            env={'PATH': os.getenv('PATH')},
                                             )
         assert os.path.exists(topfile)
 
@@ -154,7 +155,9 @@ def spc_water_box_collection(gmxcli, tmp_path_factory):
                                                '-c': solvate.output.file['-o'],
                                                '-po': mdout_mdp,
                                            },
-                                           output_files={'-o': tprfile})
+                                           output_files={'-o': tprfile},
+                                           env={'PATH': os.getenv('PATH')},
+                                           )
         tprfilename = grompp.output.file['-o'].result()
         if grompp.output.returncode.result() != 0:
             logging.debug(grompp.output.stderr.result())

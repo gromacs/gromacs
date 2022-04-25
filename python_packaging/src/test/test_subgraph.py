@@ -116,14 +116,14 @@ def test_subgraph_simulation_extension(spc_water_box, mdrun_kwargs):
 
         subgraph.checkpoint = md.output.checkpoint
 
-    folding_loop = gmx.while_loop(
+    trajectory_continuation_loop = gmx.while_loop(
         operation=subgraph,
         condition=subgraph.new)()
 
-    folding_loop.run()
-    _cpt_output = folding_loop.output.checkpoint
+    trajectory_continuation_loop.run()
+    _cpt_output = trajectory_continuation_loop.output.checkpoint
     final_checkpoint = _cpt_output.result()
-    loop_condition = folding_loop.output.new.result()
+    loop_condition = trajectory_continuation_loop.output.new.result()
     if comm_size > 1:
         final_checkpoint = final_checkpoint[rank_number]
         loop_condition = loop_condition[rank_number]

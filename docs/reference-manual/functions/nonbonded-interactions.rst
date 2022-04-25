@@ -201,31 +201,79 @@ distance. The force derived from this potential reads:
           :label: eqnfcrf
 
 The reaction-field correction should also be applied to all excluded
-atoms pairs, including self pairs, in which case the normal Coulomb term
-in :eq:`eqns. %s <eqnvcrf>` and :eq:`%s <eqnfcrf>` is absent.
+atoms pairs, including self interactions, in which case the normal Coulomb term
+in :eq:`eqns. %s <eqnvcrf>` and :eq:`%s <eqnfcrf>` is absent. For the self
+interactions the constant is halved, leading to this constant potential term:
+
+.. math:: V_{self} ~=~  - f\frac{q_i^2}{{2 \varepsilon_r}r_c}\,\frac{3{\varepsilon_{rf}}}{2{\varepsilon_{rf}}+{\varepsilon_r}}
 
 .. _modnbint:
 
 Modified non-bonded interactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In |Gromacs|, the non-bonded potentials can be modified by a shift
-function, also called a force-switch function, since it switches the
-force to zero at the cut-off. The purpose of this is to replace the
+All physical forces are conservative, meaning that it is possible
+to assign a numerical value for the potential at any point (which
+thus does not depend on the path taken), and the force is the negative
+gradient of this potential. Based on the definitions of the potentials above,
+this derivative (i.e., the force) is always zero at infinite separation,
+and in the context of pair potentials this means the potential for each pair
+contribution must be the integral of the force out from infinity back to the 
+current interaction distance. 
+While it is perfectly valid to have an arbitrary constant factor in
+the potential, a natural choice is to define the pair interaction to
+be zero at infinite separation when particles are not really interacting.
+However, when these definitions using infinite-range potentials are
+combined with a cutoff for pair interactions we violate their consistency,
+and the force would no longer be conservative - which in particular means
+the total energy will no longer be conserved. 
+One way to circumvent this is to instead modify the non-bonded
+interaction potentials such that they only have finite range, after which
+the cutoff can be applied. This can either be done as a switching function
+that changes the shape of the potential and force over a small range,
+or by shifting the entire potential by a constant factor such that it
+becomes zero at the cutoff. The advantage of the shifted interaction
+modification is that it does not influence the force at all, and since only
+forces enter the equations of motion it will not influence the dynamics of
+the system. The drawback is that the total change in the potential is larger.
+Presently |Gromacs| only supports this shifted modification, and it is even
+applied by default (but possible to turn off). Note that we also shift the
+direct-space component of the PME interaction; the potential difference will
+be negligible since it has already decayed to the specified PME tolerance
+at the cutoff, but this improves energy conservation.
+
+When used with reaction-field electrostatics (:eq:`eqns. %s <eqnvcrf>`),
+the self-energy term will effectively make the electrostatic potential
+constant (but non-zero) outside the cutoff.
+
+For implementation reasons,
+|Gromacs| presently uses the reaction-field kernel for normal 
+Coulomb interactions too (with :math:`{\varepsilon_{rf}}={\varepsilon_{r}}`).
+Note that this will give the appearance of a similar constant potential
+outside the cutoff for plain Coulomb electrostatics too. We will try to
+fix this in a future kernel, but since there are very few (if any) cases
+where plain Coulomb is a good choice for electrostatics it has not been 
+a high priority.
+
+Although the present kernels only support shifting the potential, we do
+plan to bring back complete functionality for switch functions, 
+so for completeness in the interface we have retained that documentation below.
+
+While the shift modifier will yield conservative forces, the forces will
+still have an abrupt change at the cutoff, which among other things can
+make it difficult to efficiently minimize the energy of a system prior to
+normal mode calculation. The force-switch function replaces the
 truncated forces by forces that are continuous and have continuous
 derivatives at the cut-off radius. With such forces the time integration
-produces smaller errors. But note that for Lennard-Jones interactions
-these errors are usually smaller than other errors, such as integration
+produces smaller errors, although for Lennard-Jones interactions other
+errors tend to dominate, such as integration
 errors at the repulsive part of the potential. For Coulomb interactions
-we advise against using a shifted potential and for use of a reaction
-field or a proper long-range method such as PME.
+we advise against using switch modifiers since it can lead to large
+peaks in the force close to the cutoff; we strongly recommend considering
+reaction-field or a proper long-range method such as PME instead.
 
-There is *no* fundamental difference between a switch function (which
-multiplies the potential with a function) and a shift function (which
-adds a function to the force or potential) \ :ref:`72 <refSpoel2006a>`. The
-switch function is a special case of the shift function, which we apply
-to the *force function* :math:`F(r)`, related to the electrostatic or
-van der Waals force acting on particle :math:`i` by particle :math:`j`
+We apply the switch function to the force :math:`F(r)` describing
+either the electrostatic or van der Waals force acting on particle :math:`i` by particle :math:`j`
 as:
 
 .. math:: \mathbf{F}_i = c \, F(r_{ij}) \frac{\mathbf{r}_{ij}}{r_{ij}}

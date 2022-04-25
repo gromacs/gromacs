@@ -53,11 +53,13 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringtoenumvalueconverter.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "hackblock.h"
 #include "resall.h"
@@ -130,7 +132,16 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
             *nname = "";
         }
     }
-    a->type = *atype->atomTypeFromName(buf[i++]);
+    auto atomType = atype->atomTypeFromName(buf[i++]);
+    if (atomType == std::nullopt)
+    {
+        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
+                "Atomtype for atom name %s not found in terminal data base", buf[i - 1])));
+    }
+    else
+    {
+        a->type = atomType.value();
+    }
     sscanf(buf[i++], "%lf", &m);
     a->m = m;
     sscanf(buf[i++], "%lf", &q);

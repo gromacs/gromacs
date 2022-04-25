@@ -136,10 +136,10 @@ static inline void ljForceSwitch(const shift_consts_t     dispersionShift,
 
     if constexpr (doCalcEnergies)
     {
-        const float dispShiftF2 = dispShiftV2 / 3;
-        const float dispShiftF3 = dispShiftV3 / 4;
-        const float repuShiftF2 = repuShiftV2 / 3;
-        const float repuShiftF3 = repuShiftV3 / 4;
+        const float dispShiftF2 = dispShiftV2 / 3.0F;
+        const float dispShiftF3 = dispShiftV3 / 4.0F;
+        const float repuShiftF2 = repuShiftV2 / 3.0F;
+        const float repuShiftF3 = repuShiftV3 / 4.0F;
         *eLJ += c6 * (dispShiftF2 + dispShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch
                 - c12 * (repuShiftF2 + repuShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch;
     }
@@ -216,9 +216,9 @@ static inline void ljPotentialSwitch(const switch_consts_t    vdwSwitch,
     const float switchV3 = vdwSwitch.c3;
     const float switchV4 = vdwSwitch.c4;
     const float switchV5 = vdwSwitch.c5;
-    const float switchF2 = 3 * vdwSwitch.c3;
-    const float switchF3 = 4 * vdwSwitch.c4;
-    const float switchF4 = 5 * vdwSwitch.c5;
+    const float switchF2 = 3.0F * vdwSwitch.c3;
+    const float switchF3 = 4.0F * vdwSwitch.c4;
+    const float switchF4 = 5.0F * vdwSwitch.c5;
 
     const float r       = r2 * rInv;
     const float rSwitch = r - rVdwSwitch;
@@ -281,7 +281,7 @@ static inline float pmeCorrF(const float z2)
 template<typename T>
 static inline T lerp(T d0, T d1, T t)
 {
-    return fma(t, d1, fma(-t, d0, d0));
+    return sycl::fma(t, d1, sycl::fma(-t, d0, d0));
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */

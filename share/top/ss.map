@@ -1,4 +1,4 @@
-9
+10
 ~                  Coil           1           1           1
 E               B-Sheet           1           0           0
 B              B-Bridge           0           0           0
@@ -8,3 +8,4 @@ H               A-Helix           0           0           1
 I               5-Helix         0.5           0         0.5
 G               3-Helix         0.5         0.5         0.5
 =       Chain_Separator         0.9         0.9         0.9
+P            PPII-Helix           0         0.5         0.5

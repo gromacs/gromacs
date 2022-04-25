@@ -70,7 +70,7 @@ from .exceptions import FeatureNotAvailableError
 # TODO(#3851): Version management policy and procedures.
 _major = 0
 _minor = 3
-_micro = 0
+_micro = 1
 _suffix = ''
 
 # Reference https://www.python.org/dev/peps/pep-0440/
@@ -107,6 +107,9 @@ _named_features_0[2] = [
     'mdrun_runtime_args',
 ]
 
+_named_features_0[3] = [
+    'cli_env_kwarg',
+]
 
 def api_is_at_least(major_version, minor_version=0, patch_version=0):
     """Allow client to check whether installed module supports the requested API level.

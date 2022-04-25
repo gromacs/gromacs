@@ -251,7 +251,18 @@ private:
 
 void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir);
 
-void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind);
+/*! \brief Updates \p ekinstate.
+ *
+ * Should be called on all ranks as a global reduction might be required.
+ * This copies ekind->ekinh and ekind->dekindl, which are assumed to be computed
+ * from the velocities at step at time t-dt/2.
+ *
+ * \param[out] ekinstate  The kinetic energy state to update
+ * \param[in]  ekind      The kinetic energy data to store
+ * \param[in]  sumEkin    Whether kinetic energy terms still need to be summed over all ranks
+ * \param[in]  cr         Communication record, needed when sumEkin==true
+ */
+void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, bool sumEkin, const t_commrec* cr);
 
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */

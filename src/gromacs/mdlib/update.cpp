@@ -1349,23 +1349,95 @@ extern void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir)
     ekinstate->hasReadEkinState = false;
 }
 
-void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind)
+void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const bool sumEkin, const t_commrec* cr)
 {
-    int i;
+    /* Note that it might seem like we are storing the current kinetic energy at time t+dt/2 here
+     * as we are operating on ekinh and dekindl. But this function is called before the kinetic
+     * energy is computed. Thus we are actually operating on the kinetic energy at time t-dt/2.
+     * The kinetic energy computation called right after this will copy the values stored here
+     * to ekind->ekinh_old and ekind->dekindl_old.
+     */
 
-    for (i = 0; i < ekinstate->ekin_n; i++)
+    const bool reduceEkin = (sumEkin && havePPDomainDecomposition(cr));
+
+    if (reduceEkin)
     {
-        copy_mat(ekind->tcstat[i].ekinh, ekinstate->ekinh[i]);
-        copy_mat(ekind->tcstat[i].ekinf, ekinstate->ekinf[i]);
-        copy_mat(ekind->tcstat[i].ekinh_old, ekinstate->ekinh_old[i]);
-        ekinstate->ekinscalef_nhc[i] = ekind->tcstat[i].ekinscalef_nhc;
-        ekinstate->ekinscaleh_nhc[i] = ekind->tcstat[i].ekinscaleh_nhc;
-        ekinstate->vscale_nhc[i]     = ekind->tcstat[i].vscale_nhc;
+        /* The kinetic energy terms from t-dt/2 have not been reduced yet.
+         * We need to checkpoint reduced values. We reduce here using double
+         * precision so we get binary identical reduced results compared with
+         * the reduction in compte_globals() which also uses double precision.
+         */
+        std::vector<double> buffer(ekind->ngtc * 2 * DIM * DIM + 1);
+        int                 bufIndex = 0;
+        for (int g = 0; g < ekind->ngtc; g++)
+        {
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    buffer[bufIndex++] = ekind->tcstat[g].ekinh[i][j];
+                }
+            }
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    buffer[bufIndex++] = ekind->tcstat[g].ekinf[i][j];
+                }
+            }
+        }
+        buffer[bufIndex++] = ekind->dekindl;
+
+        gmx_sumd(bufIndex, buffer.data(), cr);
+
+        // Extract to ekinstate on the master rank only
+        if (MASTER(cr))
+        {
+            bufIndex = 0;
+            for (int g = 0; g < ekinstate->ekin_n; g++)
+            {
+                for (int i = 0; i < DIM; i++)
+                {
+                    for (int j = 0; j < DIM; j++)
+                    {
+                        ekinstate->ekinh[g][i][j] = buffer[bufIndex++];
+                    }
+                }
+                for (int i = 0; i < DIM; i++)
+                {
+                    for (int j = 0; j < DIM; j++)
+                    {
+                        ekinstate->ekinf[g][i][j] = buffer[bufIndex++];
+                    }
+                }
+            }
+            ekinstate->dekindl = buffer[bufIndex++];
+        }
     }
 
-    copy_mat(ekind->ekin, ekinstate->ekin_total);
-    ekinstate->dekindl = ekind->dekindl;
-    ekinstate->mvcos   = ekind->cosacc.mvcos;
+    if (MASTER(cr))
+    {
+        if (!reduceEkin)
+        {
+            for (int g = 0; g < ekinstate->ekin_n; g++)
+            {
+                copy_mat(ekind->tcstat[g].ekinh, ekinstate->ekinh[g]);
+                copy_mat(ekind->tcstat[g].ekinf, ekinstate->ekinf[g]);
+            }
+            ekinstate->dekindl = ekind->dekindl;
+        }
+
+        /* These terms are likely not part of the state at all and can be removed
+         * as they are (re)computed when restarting from a checkpoint.
+         */
+        for (int g = 0; g < ekinstate->ekin_n; g++)
+        {
+            ekinstate->ekinscalef_nhc[g] = ekind->tcstat[g].ekinscalef_nhc;
+            ekinstate->ekinscaleh_nhc[g] = ekind->tcstat[g].ekinscaleh_nhc;
+            ekinstate->vscale_nhc[g]     = ekind->tcstat[g].vscale_nhc;
+        }
+        ekinstate->mvcos = ekind->cosacc.mvcos;
+    }
 }
 
 void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, const ekinstate_t* ekinstate)
@@ -1378,13 +1450,10 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
         {
             copy_mat(ekinstate->ekinh[i], ekind->tcstat[i].ekinh);
             copy_mat(ekinstate->ekinf[i], ekind->tcstat[i].ekinf);
-            copy_mat(ekinstate->ekinh_old[i], ekind->tcstat[i].ekinh_old);
             ekind->tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
             ekind->tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
             ekind->tcstat[i].vscale_nhc     = ekinstate->vscale_nhc[i];
         }
-
-        copy_mat(ekinstate->ekin_total, ekind->ekin);
 
         ekind->dekindl      = ekinstate->dekindl;
         ekind->cosacc.mvcos = ekinstate->mvcos;
@@ -1402,9 +1471,6 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinf[0][0]),
                       ekind->tcstat[i].ekinf[0],
                       cr->mpi_comm_mygroup);
-            gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh_old[0][0]),
-                      ekind->tcstat[i].ekinh_old[0],
-                      cr->mpi_comm_mygroup);
 
             gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
                       &(ekind->tcstat[i].ekinscalef_nhc),
@@ -1414,7 +1480,6 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
                       cr->mpi_comm_mygroup);
             gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc), &(ekind->tcstat[i].vscale_nhc), cr->mpi_comm_mygroup);
         }
-        gmx_bcast(DIM * DIM * sizeof(ekind->ekin[0][0]), ekind->ekin[0], cr->mpi_comm_mygroup);
 
         gmx_bcast(sizeof(ekind->dekindl), &ekind->dekindl, cr->mpi_comm_mygroup);
         gmx_bcast(sizeof(ekind->cosacc.mvcos), &ekind->cosacc.mvcos, cr->mpi_comm_mygroup);
