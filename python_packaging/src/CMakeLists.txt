@@ -185,7 +185,7 @@ set_target_properties(_gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 if(GMXAPI_MASTER_PROJECT)
     # TODO: This requirement is probably overly restrictive.
     find_package(GROMACS 2021 REQUIRED
-                 NAMES gromacs gromacs_mpi gromacs_d
+                 NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
                  HINTS "$ENV{GROMACS_DIR}"
                  )
     if (NOT DEFINED GROMACS_IS_DOUBLE)

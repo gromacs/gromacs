@@ -65,7 +65,7 @@ if(GMXAPI_EXTENSION_MASTER_PROJECT)
     ######################################################
 
     find_package(GROMACS REQUIRED
-                 NAMES gromacs gromacs_mpi gromacs_d
+                 NAMES gromacs gromacs_mpi gromacs_d gromacs_mpi_d
                  HINTS "$ENV{GROMACS_DIR}"
                  )
 
