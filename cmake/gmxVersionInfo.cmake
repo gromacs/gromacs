@@ -231,9 +231,13 @@ if (GMX_VERSION_PATCH)
 else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}")
 endif()
-set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+# Set REGRESSIONTEST_VERSION before further modification to version info.
+set(REGRESSIONTEST_VERSION "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 
-set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+# Initialize version string.
+# Note: Forks that use the suffixing feature later change GMX_VERSION_STRING
+# Ref: https://gitlab.com/gromacs/gromacs/-/merge_requests/2587
+set(GMX_VERSION_STRING "${REGRESSIONTEST_VERSION}")
 set(REGRESSIONTEST_BRANCH "master")
 # Follow the relevant part of the release checklist at
 # https://gitlab.com/gromacs/gromacs/-/wikis/Release-checklist#how-to-build-a-regressiontests-tarball
