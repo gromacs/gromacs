@@ -1513,7 +1513,7 @@ void trotter_update(const t_inputrec*                   ir,
 
 extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* MassQ, bool bInit)
 {
-    int              n, i, j, d, ngtc, nh;
+    int              i, j, ngtc, nh;
     const t_grpopts* opts;
     real             reft, kT, ndj, nd;
 
@@ -1558,18 +1558,7 @@ extern void init_npt_masses(const t_inputrec* ir, t_state* state, t_extmass* Mas
         /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
         MassQ->Winv = (gmx::c_presfac * trace(ir->compress) * gmx::c_boltz * opts->ref_t[0])
                       / (DIM * state->vol0 * gmx::square(ir->tau_p / M_2PI));
-        /* An alternate mass definition, from Tuckerman et al. */
-        /* MassQ->Winv = 1.0/(gmx::square(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*c_boltz*opts->ref_t[0]); */
-        for (d = 0; d < DIM; d++)
-        {
-            for (n = 0; n < DIM; n++)
-            {
-                MassQ->Winvm[d][n] = gmx::c_presfac * ir->compress[d][n]
-                                     / (state->vol0 * gmx::square(ir->tau_p / M_2PI));
-                /* not clear this is correct yet for the anisotropic case. Will need to reevaluate
-                   before using MTTK for anisotropic states.*/
-            }
-        }
+
         /* Allocate space for thermostat variables */
         if (bInit)
         {

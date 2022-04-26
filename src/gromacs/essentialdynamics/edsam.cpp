@@ -267,10 +267,8 @@ gmx_edsam::~gmx_edsam()
 
 struct t_do_edsam
 {
-    matrix old_rotmat;
-    real   oldrad;
-    rvec   old_transvec, older_transvec, transvec_compact;
-    rvec*  xcoll;                 /* Positions from all nodes, this is the
+    real  oldrad;
+    rvec* xcoll;                  /* Positions from all nodes, this is the
                                      collective set we work on.
                                      These are the positions of atoms with
                                      average structure indices */

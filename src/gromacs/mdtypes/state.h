@@ -294,7 +294,6 @@ struct t_extmass
     std::vector<double> Qinv; /* inverse mass of thermostat -- computed from inputs, but a good place to store */
     std::vector<double> QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
     double              Winv; /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
-    tensor              Winvm; /* inverse pressure mass tensor, computed       */
 };
 
 #endif // DOXYGEN
