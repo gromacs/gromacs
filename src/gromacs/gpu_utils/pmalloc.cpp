@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2017- The GROMACS Authors
+ * Copyright 2012- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,37 +31,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief Declares functions for pinning memory to be suitable for
- * efficient GPU transfers on CUDA.
+/*! \internal \file
+ *  \brief Define functions for host-side memory handling when using OpenCL devices or no GPU device.
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ *  \author Anca Hamuraru <anca@streamcomputing.eu>
  */
 
-#include <cstddef>
+#include "gmxpre.h"
 
-#include "gromacs/gpu_utils/gpu_macros.h"
+#include "pmalloc.h"
 
-namespace gmx
+#include "gromacs/utility/smalloc.h"
+
+/*! \brief \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
+ *
+ *  \todo
+ *  This function should allocate page-locked memory to help reduce D2H and H2D
+ *  transfer times, similar with pmalloc from pmalloc.cu.
+ *
+ * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
+ * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
+ */
+void pmalloc(void** h_ptr, size_t nbytes)
+{
+    /* Need a temporary type whose size is 1 byte, so that the
+     * implementation of snew_aligned can cope without issuing
+     * warnings. */
+    char** temporary = reinterpret_cast<char**>(h_ptr);
+
+    /* 16-byte alignment is required by the neighbour-searching code,
+     * because it uses four-wide SIMD for bounding-box calculation.
+     * However, when we organize using page-locked memory for
+     * device-host transfers, it will probably need to be aligned to a
+     * 4kb page, like CUDA does. */
+    snew_aligned(*temporary, nbytes, 16);
+}
+
+/*! \brief Frees memory allocated with pmalloc.
+ *
+ * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
+ */
+void pfree(void* h_ptr)
 {
 
-/*! \brief Pin the allocation to physical memory.
- *
- * Requires that \c pointer is not nullptr.
- *
- * Does not throw.
- */
-CUDA_FUNC_QUALIFIER void pinBuffer(void*       CUDA_FUNC_ARGUMENT(pointer),
-                                   std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM;
-
-/*! \brief Unpin the allocation.
- *
- * Requries that \c pointer is not nullptr and was previously pinned
- * with pinBuffer().
- *
- * Does not throw.
- */
-CUDA_FUNC_QUALIFIER void unpinBuffer(void* CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM;
-
-} // namespace gmx
+    if (h_ptr)
+    {
+        sfree_aligned(h_ptr);
+    }
+}

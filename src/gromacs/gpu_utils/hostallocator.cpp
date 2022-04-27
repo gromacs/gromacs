@@ -46,7 +46,7 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/gpu_utils/pinning.h"
+#include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -69,23 +69,8 @@ void* HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
 {
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
-        void* p = PageAlignedAllocationPolicy::malloc(bytes);
-        if (p)
-        {
-            /* For every pin, unpin has to be called or resources will
-             * leak.  Doing this correctly is guaranteed because for
-             * every p!=null && pinningPolicy_ == PinnedIfSupported,
-             * the malloc and free calls handle pinning. For very
-             * standard-compliant containers, the allocator object
-             * can't be changed independently of the buffer (for move,
-             * it is propagated) and thus the allocator (and thus
-             * pinningPolicy_) can't change between malloc and
-             * free.
-             *
-             * Note that we always pin (even for size 0) so that we
-             * can always unpin without any checks. */
-            pinBuffer(p, bytes);
-        }
+        void* p;
+        pmalloc(&p, bytes);
         return p;
     }
     else
@@ -103,8 +88,7 @@ void HostAllocationPolicy::free(void* buffer) const noexcept
     }
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
-        unpinBuffer(buffer);
-        PageAlignedAllocationPolicy::free(buffer);
+        pfree(buffer);
     }
     else
     {
