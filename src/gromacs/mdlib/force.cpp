@@ -159,7 +159,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                                          const gmx::StepWorkload&       stepWork,
                                          const DDBalanceRegionHandler&  ddBalanceRegionHandler)
 {
-    const bool computePmeOnCpu = (EEL_PME(coulombInteractionType_) || EVDW_PME(vanDerWaalsType_))
+    const bool computePmeOnCpu = (usingPme(coulombInteractionType_) || usingLJPme(vanDerWaalsType_))
                                  && thisRankHasDuty(commrec, DUTY_PME)
                                  && (pme_run_mode(pmedata) == PmeRunMode::CPU);
 
@@ -176,7 +176,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
         ewald_corr_thread_t& ewaldOutput = outputPerThread_[0];
         clearEwaldThreadOutput(&ewaldOutput);
 
-        if (EEL_PME_EWALD(coulombInteractionType_) || EVDW_PME(vanDerWaalsType_))
+        if (usingPmeOrEwald(coulombInteractionType_) || usingLJPme(vanDerWaalsType_))
         {
             /* Calculate the Ewald surface force and energy contributions, when necessary */
             if (haveEwaldSurfaceTerm_)
@@ -231,7 +231,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                 wallcycle_sub_stop(wcycle_, WallCycleSubCounter::EwaldCorrection);
             }
 
-            if (EEL_PME_EWALD(coulombInteractionType_) && numTpiAtoms_ == 0)
+            if (usingPmeOrEwald(coulombInteractionType_) && numTpiAtoms_ == 0)
             {
                 /* This is not in a subcounter because it takes a
                    negligible and constant-sized amount of time */

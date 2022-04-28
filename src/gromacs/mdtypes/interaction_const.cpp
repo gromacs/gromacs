@@ -68,7 +68,7 @@ static void initCoulombEwaldParameters(FILE*                fp,
                                        bool                 systemHasNetCharge,
                                        interaction_const_t* ic)
 {
-    if (!EEL_PME_EWALD(ir.coulombtype))
+    if (!usingPmeOrEwald(ir.coulombtype))
     {
         return;
     }
@@ -123,7 +123,7 @@ static void initCoulombEwaldParameters(FILE*                fp,
 /*! \brief Print Van der Waals Ewald citations and set ewald coefficients */
 static void initVdwEwaldParameters(FILE* fp, const t_inputrec& ir, interaction_const_t* ic)
 {
-    if (!EVDW_PME(ir.vdwtype))
+    if (!usingLJPme(ir.vdwtype))
     {
         return;
     }
@@ -315,7 +315,7 @@ interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const
     }
 
     /* Reaction-field */
-    if (EEL_RF(interactionConst.eeltype))
+    if (usingRF(interactionConst.eeltype))
     {
         GMX_RELEASE_ASSERT(interactionConst.eeltype != CoulombInteractionType::GRFNotused,
                            "GRF is no longer supported");
@@ -349,7 +349,7 @@ interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const
         real dispersion_shift;
 
         dispersion_shift = interactionConst.dispersion_shift.cpot;
-        if (EVDW_PME(interactionConst.vdwtype))
+        if (usingLJPme(interactionConst.vdwtype))
         {
             dispersion_shift -= interactionConst.sh_lj_ewald;
         }
@@ -362,7 +362,7 @@ interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const
         {
             fprintf(fp, ", Coulomb %.e", -interactionConst.reactionFieldShift);
         }
-        else if (EEL_PME(interactionConst.eeltype))
+        else if (usingPme(interactionConst.eeltype))
         {
             fprintf(fp, ", Ewald %.3e", -interactionConst.sh_ewald);
         }

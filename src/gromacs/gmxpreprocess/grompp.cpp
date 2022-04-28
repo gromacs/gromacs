@@ -2311,7 +2311,7 @@ int gmx_grompp(int argc, char* argv[])
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
 
-    if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    if (usingFullElectrostatics(ir->coulombtype) || usingLJPme(ir->vdwtype))
     {
         // We may have exclusion forces beyond the cut-off distance.
         checkExclusionDistances(sys, *ir, state.x, state.box, logger, wi);
@@ -2446,7 +2446,7 @@ int gmx_grompp(int argc, char* argv[])
         clear_rvec(state.box[ZZ]);
     }
 
-    if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    if (usingFullElectrostatics(ir->coulombtype) || usingLJPme(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
         matrix          scaledBox;
@@ -2553,7 +2553,7 @@ int gmx_grompp(int argc, char* argv[])
 
     /*  reset_multinr(sys); */
 
-    if (EEL_PME(ir->coulombtype))
+    if (usingPme(ir->coulombtype))
     {
         float ratio = pme_load_estimate(sys, *ir, state.box);
         GMX_LOG(logger.info)

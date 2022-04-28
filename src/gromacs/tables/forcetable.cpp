@@ -328,9 +328,10 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
                                const bool                 generateCoulombTables,
                                const bool                 generateVdwTables)
 {
-    GMX_RELEASE_ASSERT(!generateCoulombTables || EEL_PME_EWALD(ic.eeltype),
+    GMX_RELEASE_ASSERT(!generateCoulombTables || usingPmeOrEwald(ic.eeltype),
                        "Can only use tables with Ewald");
-    GMX_RELEASE_ASSERT(!generateVdwTables || EVDW_PME(ic.vdwtype), "Can only use tables with Ewald");
+    GMX_RELEASE_ASSERT(!generateVdwTables || usingLJPme(ic.vdwtype),
+                       "Can only use tables with Ewald");
 
     real sc = 0;
 

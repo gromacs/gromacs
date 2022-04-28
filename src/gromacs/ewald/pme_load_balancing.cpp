@@ -220,11 +220,11 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_load_balancing_t* pme_lb;
 
     // Note that we don't (yet) support PME load balancing with LJ-PME only.
-    GMX_RELEASE_ASSERT(EEL_PME(ir.coulombtype),
+    GMX_RELEASE_ASSERT(usingPme(ir.coulombtype),
                        "pme_loadbal_init called without PME electrostatics");
     // To avoid complexity, we require a single cut-off with PME for q+LJ.
     // This is checked by grompp, but it doesn't hurt to check again.
-    GMX_RELEASE_ASSERT(!(EEL_PME(ir.coulombtype) && EVDW_PME(ir.vdwtype) && ir.rcoulomb != ir.rvdw),
+    GMX_RELEASE_ASSERT(!(usingPme(ir.coulombtype) && usingLJPme(ir.vdwtype) && ir.rcoulomb != ir.rvdw),
                        "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
 
     pme_lb = new pme_load_balancing_t;
@@ -830,7 +830,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
         ic->sh_ewald = std::erfc(ic->ewaldcoeff_q * ic->rcoulomb) / ic->rcoulomb;
     }
-    if (EVDW_PME(ic->vdwtype))
+    if (usingLJPme(ic->vdwtype))
     {
         /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
         ic->rvdw          = set->rcut_coulomb;

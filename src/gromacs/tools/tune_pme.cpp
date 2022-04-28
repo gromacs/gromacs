@@ -941,7 +941,7 @@ static void make_benchmark_tprs(const char* fn_sim_tpr,  /* READ : User-provided
     read_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
     /* Check if some kind of PME was chosen */
-    if (EEL_PME(ir->coulombtype) == FALSE)
+    if (!usingPme(ir->coulombtype))
     {
         gmx_fatal(FARGS,
                   "Can only do optimizations for simulations with %s electrostatics.",

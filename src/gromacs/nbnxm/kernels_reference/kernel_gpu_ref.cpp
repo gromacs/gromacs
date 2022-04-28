@@ -86,7 +86,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
         }
     }
 
-    const bool bEwald = EEL_FULL(iconst->eeltype);
+    const bool bEwald = usingFullElectrostatics(iconst->eeltype);
 
     const real rcut2 = iconst->rcoulomb * iconst->rcoulomb;
     const real rvdw2 = iconst->rvdw * iconst->rvdw;

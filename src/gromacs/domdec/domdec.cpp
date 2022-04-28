@@ -2197,7 +2197,7 @@ static DDRankSetup getDDRankSetup(const gmx::MDLogger& mdlog,
                 ddGridSetup.numDomains[XX] * ddGridSetup.numDomains[YY] * ddGridSetup.numDomains[ZZ];
     }
 
-    if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
+    if (usingPme(ir.coulombtype) || usingLJPme(ir.vdwtype))
     {
         /* The following choices should match those
          * in comm_cost_est in domdec_setup.c.
@@ -2645,7 +2645,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     gmx_domdec_comm_t* comm        = dd->comm.get();
     DDRankSetup&       ddRankSetup = comm->ddRankSetup;
 
-    if (EEL_PME(inputrec.coulombtype) || EVDW_PME(inputrec.vdwtype))
+    if (usingPme(inputrec.coulombtype) || usingLJPme(inputrec.vdwtype))
     {
         init_ddpme(dd, &ddRankSetup.ddpme[0], 0);
         if (ddRankSetup.npmedecompdim >= 2)
@@ -2863,7 +2863,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
 
     /* Checks for validity of requested Ranks setup */
     checkForValidRankCountRequests(numRanksRequested,
-                                   EEL_PME(ir_.coulombtype) | EVDW_PME(ir_.vdwtype),
+                                   usingPme(ir_.coulombtype) || usingLJPme(ir_.vdwtype),
                                    options_.numPmeRanks,
                                    separatePmeRanksPermitted,
                                    checkForLargePrimeFactors);

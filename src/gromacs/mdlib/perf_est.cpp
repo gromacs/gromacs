@@ -164,7 +164,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
 #endif
 
     bExcl = (ir.cutoff_scheme == CutoffScheme::Group && inputrecExclForces(&ir)
-             && !EEL_FULL(ir.coulombtype));
+             && !usingFullElectrostatics(ir.coulombtype));
 
     if (bSimdBondeds)
     {
@@ -275,7 +275,7 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     const real nbnxn_refkernel_fac = 8.0;
 #endif
 
-    bQRF = (EEL_RF(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Cut);
+    bQRF = (usingRF(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Cut);
 
     gmx::ArrayRef<const t_iparams> iparams = mtop.ffparams.iparams;
     atnr                                   = mtop.ffparams.atnr;
@@ -348,12 +348,12 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     c_qlj = (bQRF ? c_nbnxn_qrf_lj : c_nbnxn_qexp_lj);
     c_q   = (bQRF ? c_nbnxn_qrf : c_nbnxn_qexp);
     c_lj  = c_nbnxn_lj;
-    if (ir.vdw_modifier == InteractionModifiers::PotSwitch || EVDW_PME(ir.vdwtype))
+    if (ir.vdw_modifier == InteractionModifiers::PotSwitch || usingLJPme(ir.vdwtype))
     {
         c_qlj += c_nbnxn_ljexp_add;
         c_lj += c_nbnxn_ljexp_add;
     }
-    if (EVDW_PME(ir.vdwtype) && ir.ljpme_combination_rule == LongRangeVdW::LB)
+    if (usingLJPme(ir.vdwtype) && ir.ljpme_combination_rule == LongRangeVdW::LB)
     {
         /* We don't have LJ-PME LB comb. rule kernels, we use slow kernels */
         c_qlj *= nbnxn_refkernel_fac;
@@ -400,7 +400,7 @@ float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matr
     cost_solve  = 0;
 
     int gridNkzFactor = int{ (ir.nkz + 1) / 2 };
-    if (EEL_PME(ir.coulombtype))
+    if (usingPme(ir.coulombtype))
     {
         double grid = ir.nkx * ir.nky * gridNkzFactor;
 
@@ -411,7 +411,7 @@ float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matr
         cost_solve += f * c_pme_solve * grid * simd_cycle_factor(bHaveSIMD);
     }
 
-    if (EVDW_PME(ir.vdwtype))
+    if (usingLJPme(ir.vdwtype))
     {
         double grid = ir.nkx * ir.nky * gridNkzFactor;
 

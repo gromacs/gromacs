@@ -61,7 +61,7 @@ bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions&       mdrunOpt
                                               const t_forcerec*         fr,
                                               const SimulationWorkload& simWorkload)
 {
-    return (mdrunOptions.tunePme && EEL_PME(fr->ic->eeltype) && !mdrunOptions.reproducible
+    return (mdrunOptions.tunePme && usingPme(fr->ic->eeltype) && !mdrunOptions.reproducible
             && inputrec->cutoff_scheme != CutoffScheme::Group && !simWorkload.useGpuPmeDecomposition);
 }
 

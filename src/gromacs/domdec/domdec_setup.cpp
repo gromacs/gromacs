@@ -298,7 +298,7 @@ real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox
 /*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec& ir)
 {
-    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
+    return ((usingPme(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
             && ir.pbcType == PbcType::Xyz && ir.ewald_geometry == EwaldGeometry::ThreeDC);
 }
 
@@ -411,7 +411,7 @@ static float comm_cost_est(real               limit,
         }
     }
 
-    if (EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype))
+    if (usingPme(ir.coulombtype) || usingLJPme(ir.vdwtype))
     {
         /* Check the PME grid restrictions.
          * Currently these can only be invalid here with too few grid lines
@@ -646,7 +646,7 @@ static gmx::IVec optimizeDDCells(const gmx::MDLogger& mdlog,
     // which is the number of PP ranks when not using separate
     // PME-only ranks.
     const int numRanksDoingPmeWork =
-            (EEL_PME(ir.coulombtype) ? ((numPmeOnlyRanks > 0) ? numPmeOnlyRanks : numPPRanks) : 0);
+            (usingPme(ir.coulombtype) ? ((numPmeOnlyRanks > 0) ? numPmeOnlyRanks : numPPRanks) : 0);
 
     if (systemInfo.haveInterDomainBondeds)
     {
@@ -873,7 +873,7 @@ static int getNumPmeOnlyRanksToUse(const gmx::MDLogger&                  mdlog,
 {
     int numPmeOnlyRanks = 0;
 
-    if (!(EEL_PME(ir.coulombtype) || EVDW_PME(ir.vdwtype)))
+    if (!(usingPme(ir.coulombtype) || usingLJPme(ir.vdwtype)))
     {
         // System does not use PME for Electrostatics or LJ
         numPmeOnlyRanks = 0;
@@ -989,7 +989,7 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
 
     /* Communicate the information set by the master to all ranks */
     gmx_bcast(sizeof(numDomains), numDomains, communicator);
-    if (EEL_PME(ir.coulombtype))
+    if (usingPme(ir.coulombtype))
     {
         gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, communicator);
     }

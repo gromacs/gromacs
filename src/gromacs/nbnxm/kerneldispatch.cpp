@@ -137,7 +137,7 @@ CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExcl
                                        const bool                      haveEqualCoulombVwdRadii)
 {
 
-    if (EEL_RF(coulombInteractionType) || coulombInteractionType == CoulombInteractionType::Cut)
+    if (usingRF(coulombInteractionType) || coulombInteractionType == CoulombInteractionType::Cut)
     {
         return CoulombKernelType::ReactionField;
     }
@@ -395,7 +395,7 @@ static void accountFlops(t_nrnb*                    nrnb,
     const bool usingGpuKernels = nbv.useGpu();
 
     int enr_nbnxn_kernel_ljc = eNRNB;
-    if (EEL_RF(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut)
+    if (usingRF(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }

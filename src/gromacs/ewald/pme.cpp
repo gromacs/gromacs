@@ -159,10 +159,10 @@ bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error)
     gmx::MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("PME GPU does not support:");
-    errorReasons.appendIf(!EEL_PME(ir.coulombtype),
+    errorReasons.appendIf(!usingPme(ir.coulombtype),
                           "Systems that do not use PME for electrostatics.");
     errorReasons.appendIf((ir.pme_order != 4), "Interpolation orders other than 4.");
-    errorReasons.appendIf(EVDW_PME(ir.vdwtype), "Lennard-Jones PME.");
+    errorReasons.appendIf(usingLJPme(ir.vdwtype), "Lennard-Jones PME.");
     errorReasons.appendIf(!EI_DYNAMICS(ir.eI), "Non-dynamical integrator (use md, sd, etc).");
     errorReasons.finishContext();
     if (error != nullptr)
@@ -722,8 +722,8 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
      * not calculating free-energy for Coulomb and/or LJ while gmx_pme_init()
      * configures with free-energy, but that has never been tested.
      */
-    pme->doCoulomb = EEL_PME(ir->coulombtype);
-    pme->doLJ      = EVDW_PME(ir->vdwtype);
+    pme->doCoulomb = usingPme(ir->coulombtype);
+    pme->doLJ      = usingLJPme(ir->vdwtype);
     pme->bFEP_q    = ((ir->efep != FreeEnergyPerturbationType::No) && bFreeEnergy_q);
     pme->bFEP_lj   = ((ir->efep != FreeEnergyPerturbationType::No) && bFreeEnergy_lj);
     pme->bFEP      = (pme->bFEP_q || pme->bFEP_lj);

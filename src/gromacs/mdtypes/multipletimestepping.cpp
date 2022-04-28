@@ -160,7 +160,7 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
                 enumValueToString(IntegrationAlgorithm::SD1)));
     }
 
-    if ((EEL_FULL(ir.coulombtype) || EVDW_PME(ir.vdwtype))
+    if ((usingFullElectrostatics(ir.coulombtype) || usingLJPme(ir.vdwtype))
         && forceGroupMtsLevel(ir.mtsLevels, MtsForceGroups::LongrangeNonbonded) == 0)
     {
         errorMessages.emplace_back(

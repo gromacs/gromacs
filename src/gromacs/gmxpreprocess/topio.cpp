@@ -1094,7 +1094,7 @@ char** do_top(bool                                  bVerbose,
                        ffParametrizedWithHBondConstraints,
                        ir->efep != FreeEnergyPerturbationType::No,
                        bZero,
-                       EEL_FULL(ir->coulombtype),
+                       usingFullElectrostatics(ir->coulombtype),
                        wi,
                        logger);
 

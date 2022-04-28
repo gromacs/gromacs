@@ -360,7 +360,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
     }
 
     NbkernelElecType coulombInteractionType;
-    if (interactionParameters.eeltype == CoulombInteractionType::Cut || EEL_RF(interactionParameters.eeltype))
+    if (interactionParameters.eeltype == CoulombInteractionType::Cut
+        || usingRF(interactionParameters.eeltype))
     {
         coulombInteractionType = NbkernelElecType::ReactionField;
     }
@@ -1399,9 +1400,9 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                gmx::ArrayRef<real>                 threadVVdw,
                                gmx::ArrayRef<real>                 threadDvdl)
 {
-    GMX_ASSERT(EEL_PME_EWALD(interactionParameters.eeltype)
+    GMX_ASSERT(usingPmeOrEwald(interactionParameters.eeltype)
                        || interactionParameters.eeltype == CoulombInteractionType::Cut
-                       || EEL_RF(interactionParameters.eeltype),
+                       || usingRF(interactionParameters.eeltype),
                "Unsupported eeltype with free energy");
     GMX_ASSERT(interactionParameters.softCoreParameters, "We need soft-core parameters");
 
@@ -1411,8 +1412,8 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                "We need actual padding with at least one element for SIMD scatter operations");
 
     const auto& scParams                   = *interactionParameters.softCoreParameters;
-    const bool  vdwInteractionTypeIsEwald  = (EVDW_PME(interactionParameters.vdwtype));
-    const bool  elecInteractionTypeIsEwald = (EEL_PME_EWALD(interactionParameters.eeltype));
+    const bool  vdwInteractionTypeIsEwald  = (usingLJPme(interactionParameters.vdwtype));
+    const bool  elecInteractionTypeIsEwald = (usingPmeOrEwald(interactionParameters.eeltype));
     const bool  vdwModifierIsPotSwitch =
             (interactionParameters.vdw_modifier == InteractionModifiers::PotSwitch);
     const bool computeForces           = ((flags & GMX_NONBONDED_DO_FORCE) != 0);

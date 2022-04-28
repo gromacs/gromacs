@@ -308,7 +308,7 @@ void check_ir(const char*                    mdparin,
             // Since we have PME coulomb + LJ cut-off kernels with rcoulomb>rvdw
             // for PME load balancing, we can support this exception.
             bool bUsesPmeTwinRangeKernel =
-                    (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == VanDerWaalsType::Cut
+                    (usingPmeOrEwald(ir->coulombtype) && ir->vdwtype == VanDerWaalsType::Cut
                      && ir->rcoulomb > ir->rvdw);
             if (!bUsesPmeTwinRangeKernel)
             {
@@ -352,8 +352,8 @@ void check_ir(const char*                    mdparin,
             warning_error(wi,
                           "With Verlet lists only cut-off and PME LJ interactions are supported");
         }
-        if (!(ir->coulombtype == CoulombInteractionType::Cut || EEL_RF(ir->coulombtype)
-              || EEL_PME(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald))
+        if (!(ir->coulombtype == CoulombInteractionType::Cut || usingRF(ir->coulombtype)
+              || usingPme(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald))
         {
             warning_error(wi,
                           "With Verlet lists only cut-off, reaction-field, PME and Ewald "
@@ -366,7 +366,7 @@ void check_ir(const char*                    mdparin,
             warning_error(wi, warn_buf);
         }
 
-        if (EEL_USER(ir->coulombtype))
+        if (usingUserTableElectrostatics(ir->coulombtype))
         {
             sprintf(warn_buf,
                     "Coulomb type %s is not supported with the verlet scheme",
@@ -617,7 +617,7 @@ void check_ir(const char*                    mdparin,
         sprintf(err_buf, "with TPI nstlist should be larger than zero");
         CHECK(ir->nstlist <= 0);
         sprintf(err_buf, "TPI does not work with full electrostatics other than PME");
-        CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
+        CHECK(usingFullElectrostatics(ir->coulombtype) && !usingPme(ir->coulombtype));
     }
 
     /* SHAKE / LINCS */
@@ -1006,7 +1006,8 @@ void check_ir(const char*                    mdparin,
             }
         }
 
-        if ((fep->softcoreFunction == SoftcoreType::Beutler) && (fep->bScCoul) && (EEL_PME(ir->coulombtype)))
+        if ((fep->softcoreFunction == SoftcoreType::Beutler) && (fep->bScCoul)
+            && (usingPme(ir->coulombtype)))
         {
             // PME is formulated for computing 1/r potential, whereas the Coulombic potential softened by means of Beutler softcore no longer has this functional form.
             // This Warning is issued when PME is used for electrostatics and Beutler softcore is applied to the Coulombic interactions.
@@ -1211,7 +1212,7 @@ void check_ir(const char*                    mdparin,
             CHECK(ir->epc != PressureCoupling::No);
         }
         sprintf(err_buf, "Can not have Ewald with pbc=%s", c_pbcTypeNames[ir->pbcType].c_str());
-        CHECK(EEL_FULL(ir->coulombtype));
+        CHECK(usingFullElectrostatics(ir->coulombtype));
 
         sprintf(err_buf,
                 "Can not have dispersion correction with pbc=%s",
@@ -1473,7 +1474,7 @@ void check_ir(const char*                    mdparin,
         warning(wi, warn_buf);
     }
 
-    if (EEL_RF(ir->coulombtype) && ir->epsilon_rf == 1 && ir->epsilon_r != 1)
+    if (usingRF(ir->coulombtype) && ir->epsilon_rf == 1 && ir->epsilon_r != 1)
     {
         sprintf(warn_buf,
                 "epsilon-r = %g and epsilon-rf = 1 with reaction field, proceeding assuming old "
@@ -1491,7 +1492,7 @@ void check_ir(const char*                    mdparin,
                 "permittivity."
                 "Since you are effectively turning of electrostatics, a plain cutoff will be much "
                 "faster.");
-        CHECK(EEL_FULL(ir->coulombtype));
+        CHECK(usingFullElectrostatics(ir->coulombtype));
     }
 
     if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
@@ -1500,7 +1501,7 @@ void check_ir(const char*                    mdparin,
         CHECK(ir->epsilon_r < 0);
     }
 
-    if (EEL_RF(ir->coulombtype))
+    if (usingRF(ir->coulombtype))
     {
         /* reaction field (at the cut-off) */
 
@@ -1595,7 +1596,7 @@ void check_ir(const char*                    mdparin,
         }
     }
 
-    if (EEL_FULL(ir->coulombtype))
+    if (usingFullElectrostatics(ir->coulombtype))
     {
         if (ir->coulombtype == CoulombInteractionType::PmeSwitch
             || ir->coulombtype == CoulombInteractionType::PmeUser
@@ -1608,7 +1609,7 @@ void check_ir(const char*                    mdparin,
         }
     }
 
-    if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
+    if (usingPme(ir->coulombtype) || usingLJPme(ir->vdwtype))
     {
         // TODO: Move these checks into the ewald module with the options class
         int orderMin = 3;
@@ -1625,7 +1626,7 @@ void check_ir(const char*                    mdparin,
         }
     }
 
-    if (ir->nwall == 2 && EEL_FULL(ir->coulombtype))
+    if (ir->nwall == 2 && usingFullElectrostatics(ir->coulombtype))
     {
         if (ir->ewald_geometry == EwaldGeometry::ThreeD)
         {
@@ -1640,7 +1641,7 @@ void check_ir(const char*                    mdparin,
         CHECK(ir->wall_ewald_zfac < 2);
     }
     if ((ir->ewald_geometry == EwaldGeometry::ThreeDC) && (ir->pbcType != PbcType::XY)
-        && EEL_FULL(ir->coulombtype))
+        && usingFullElectrostatics(ir->coulombtype))
     {
         sprintf(warn_buf,
                 "With %s and ewald_geometry = %s you should use pbc = %s",
@@ -1649,7 +1650,7 @@ void check_ir(const char*                    mdparin,
                 c_pbcTypeNames[PbcType::XY].c_str());
         warning(wi, warn_buf);
     }
-    if ((ir->epsilon_surface != 0) && EEL_FULL(ir->coulombtype))
+    if ((ir->epsilon_surface != 0) && usingFullElectrostatics(ir->coulombtype))
     {
         sprintf(err_buf, "Cannot have periodic molecules with epsilon_surface > 0");
         CHECK(ir->bPeriodicMols);
@@ -4343,7 +4344,7 @@ void do_index(const char*                    mdparin,
     {
         warning_error(wi, "Energy group exclusions are currently not supported");
     }
-    if (bExcl && EEL_FULL(ir->coulombtype))
+    if (bExcl && usingFullElectrostatics(ir->coulombtype))
     {
         warning(wi, "Can not exclude the lattice Coulomb energy between energy groups");
     }
@@ -4892,7 +4893,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
 
     if (!bCharge)
     {
-        if (EEL_FULL(ir->coulombtype))
+        if (usingFullElectrostatics(ir->coulombtype))
         {
             sprintf(err_buf,
                     "You are using full electrostatics treatment %s for a system without charges.\n"
@@ -4916,7 +4917,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     /* Check if combination rules used in LJ-PME are the same as in the force field */
-    if (EVDW_PME(ir->vdwtype))
+    if (usingLJPme(ir->vdwtype))
     {
         check_combination_rules(ir, *sys, wi);
     }

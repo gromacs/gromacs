@@ -874,7 +874,7 @@ static void read_tpr_file(const char*     fn_sim_tpr,
     }
 
     /* Check if PME was chosen */
-    if (EEL_PME(ir->coulombtype) == FALSE)
+    if (!usingPme(ir->coulombtype))
     {
         gmx_fatal(FARGS, "Can only do optimizations for simulations with PME");
     }

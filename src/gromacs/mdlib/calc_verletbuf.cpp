@@ -974,7 +974,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
             default: gmx_incons("Unimplemented VdW modifier");
         }
     }
-    else if (EVDW_PME(ir.vdwtype))
+    else if (usingLJPme(ir.vdwtype))
     {
         real b   = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
         real r   = ir.rvdw;
@@ -1000,7 +1000,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };
 
-    if (ir.coulombtype == CoulombInteractionType::Cut || EEL_RF(ir.coulombtype))
+    if (ir.coulombtype == CoulombInteractionType::Cut || usingRF(ir.coulombtype))
     {
         real eps_rf, k_rf;
 
@@ -1029,7 +1029,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
         }
         elec.d2 = elfac * (2.0 / gmx::power3(ir.rcoulomb) + 2 * k_rf);
     }
-    else if (EEL_PME(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
+    else if (usingPme(ir.coulombtype) || ir.coulombtype == CoulombInteractionType::Ewald)
     {
         real b, rc, br;
 

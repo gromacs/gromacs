@@ -262,7 +262,7 @@ interaction_const_t createInteractionConst(const NBKernelOptions& options)
                &interactionConst.reactionFieldShift);
 
 
-    if (EEL_PME_EWALD(interactionConst.eeltype))
+    if (usingPmeOrEwald(interactionConst.eeltype))
     {
         // Ewald coefficients, we ignore the potential shift
         interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options.pairlistCutoff);

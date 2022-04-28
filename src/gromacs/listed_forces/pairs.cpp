@@ -958,8 +958,9 @@ void do_pairs(int                           ftype,
               gmx_grppairener_t*            grppener,
               int*                          global_atom_index)
 {
-    if (ftype == F_LJ14 && fr->ic->vdwtype != VanDerWaalsType::User && !EEL_USER(fr->ic->eeltype)
-        && !havePerturbedInteractions && (!stepWork.computeVirial && !stepWork.computeEnergy))
+    if (ftype == F_LJ14 && fr->ic->vdwtype != VanDerWaalsType::User
+        && !usingUserTableElectrostatics(fr->ic->eeltype) && !havePerturbedInteractions
+        && (!stepWork.computeVirial && !stepWork.computeEnergy))
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
          *

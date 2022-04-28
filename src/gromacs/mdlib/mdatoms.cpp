@@ -216,7 +216,7 @@ void atoms2md(const gmx_mtop_t&  mtop,
     const t_grpopts* opts;
     int nthreads     gmx_unused;
 
-    bLJPME = EVDW_PME(inputrec.vdwtype);
+    bLJPME = usingLJPme(inputrec.vdwtype);
 
     opts = &inputrec.opts;
 

@@ -118,7 +118,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
      * combination rules. */
-    if (EVDW_PME(inputrec.vdwtype))
+    if (usingLJPme(inputrec.vdwtype))
     {
         nbfp_comb = mk_nbfp_combination_rule(mtop.ffparams,
                                              (inputrec.ljpme_combination_rule == LongRangeVdW::LB)
@@ -375,7 +375,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
     /* We only need to set the tables at first call, i.e. tableFileName!=nullptr
      * or when we changed the cut-off with LJ-PME tuning.
      */
-    if (tableFileName || EVDW_PME(ic.vdwtype))
+    if (tableFileName || usingLJPme(ic.vdwtype))
     {
         iParams->dispersionCorrectionTable_ =
                 makeDispersionCorrectionTable(nullptr, &ic, ic.rvdw, tableFileName);
@@ -484,7 +484,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
          */
         addCorrectionBeyondCutoff(&energy, &virial, r0);
     }
-    else if (ic.vdwtype == VanDerWaalsType::Cut || EVDW_PME(ic.vdwtype)
+    else if (ic.vdwtype == VanDerWaalsType::Cut || usingLJPme(ic.vdwtype)
              || ic.vdwtype == VanDerWaalsType::User)
     {
         /* Note that with LJ-PME, the dispersion correction is multiplied

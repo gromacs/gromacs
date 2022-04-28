@@ -191,7 +191,7 @@ void LegacySimulator::do_tpi()
 
     GMX_UNUSED_VALUE(outputProvider);
 
-    if (EVDW_PME(inputrec->vdwtype))
+    if (usingLJPme(inputrec->vdwtype))
     {
         gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
     }
@@ -315,7 +315,7 @@ void LegacySimulator::do_tpi()
 
     auto x = makeArrayRef(state_global->x);
 
-    if (EEL_PME(fr->ic->eeltype))
+    if (usingPme(fr->ic->eeltype))
     {
         gmx_pme_reinit_atoms(fr->pmedata, a_tp0, {}, {});
     }
@@ -325,7 +325,7 @@ void LegacySimulator::do_tpi()
      * for the inserted molecule.
      */
     real rfExclusionEnergy = 0;
-    if (EEL_RF(fr->ic->eeltype))
+    if (usingRF(fr->ic->eeltype))
     {
         rfExclusionEnergy = reactionFieldExclusionCorrection(x, *mdatoms, *fr->ic, a_tp0);
         if (debug)
@@ -346,7 +346,7 @@ void LegacySimulator::do_tpi()
         bCharge |= (mdatoms->chargeA[i] != 0
                     || ((mdatoms->chargeB != nullptr) && mdatoms->chargeB[i] != 0));
     }
-    bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
+    bRFExcl = (bCharge && usingRF(fr->ic->eeltype));
 
     // Calculate the center of geometry of the molecule to insert
     rvec cog = { 0, 0, 0 };
@@ -457,7 +457,7 @@ void LegacySimulator::do_tpi()
         {
             nener += 1;
         }
-        if (EEL_FULL(fr->ic->eeltype))
+        if (usingFullElectrostatics(fr->ic->eeltype))
         {
             nener += 1;
         }
@@ -517,7 +517,7 @@ void LegacySimulator::do_tpi()
                 sprintf(str, "f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
                 leg[e++] = gmx_strdup(str);
             }
-            if (EEL_FULL(fr->ic->eeltype))
+            if (usingFullElectrostatics(fr->ic->eeltype))
             {
                 sprintf(str, "f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
                 leg[e++] = gmx_strdup(str);
@@ -811,7 +811,7 @@ void LegacySimulator::do_tpi()
             {
                 enerd->term[F_DISPCORR] = 0;
             }
-            if (EEL_RF(fr->ic->eeltype))
+            if (usingRF(fr->ic->eeltype))
             {
                 enerd->term[F_EPOT] += rfExclusionEnergy;
             }
@@ -891,7 +891,7 @@ void LegacySimulator::do_tpi()
                     {
                         sum_UgembU[e++] += rfExclusionEnergy * embU;
                     }
-                    if (EEL_FULL(fr->ic->eeltype))
+                    if (usingFullElectrostatics(fr->ic->eeltype))
                     {
                         sum_UgembU[e++] += enerd->term[F_COUL_RECIP] * embU;
                     }

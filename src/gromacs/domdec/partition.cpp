@@ -2708,7 +2708,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for vsites: %d x %.1f\n",
-                            (EEL_PME(inputrec.coulombtype)
+                            (usingPme(inputrec.coulombtype)
                              || inputrec.coulombtype == CoulombInteractionType::Ewald)
                                     ? 3
                                     : 2,
@@ -3261,7 +3261,7 @@ void dd_partition_system(FILE*                     fplog,
     }
     else
     {
-        if (EEL_FULL(inputrec.coulombtype) && dd->haveExclusions)
+        if (usingFullElectrostatics(inputrec.coulombtype) && dd->haveExclusions)
         {
             nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
         }

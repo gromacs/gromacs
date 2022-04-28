@@ -471,7 +471,7 @@ static void prepare_verlet_scheme(FILE*               fplog,
 {
     // We checked the cut-offs in grompp, but double-check here.
     // We have PME+LJcutoff kernels for rcoulomb>rvdw.
-    if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == VanDerWaalsType::Cut)
+    if (usingPmeOrEwald(ir->coulombtype) && ir->vdwtype == VanDerWaalsType::Cut)
     {
         GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw,
                            "With Verlet lists and PME we should have rcoulomb>=rvdw");
@@ -1050,7 +1050,8 @@ int Mdrunner::mdrunner()
     const bool useDomainDecomposition =
             canUseDomainDecomposition
             && (PAR(cr)
-                || (!useGpuForNonbonded && EEL_FULL(inputrec->coulombtype) && useDDWithSingleRank != 0)
+                || (!useGpuForNonbonded && usingFullElectrostatics(inputrec->coulombtype)
+                    && useDDWithSingleRank != 0)
                 || useDDWithSingleRank == 1);
 
     ObservablesReducerBuilder observablesReducerBuilder;
@@ -1424,7 +1425,7 @@ int Mdrunner::mdrunner()
             thisRankHasDuty(cr, DUTY_PP),
             // TODO cr->duty & DUTY_PME should imply that a PME
             // algorithm is active, but currently does not.
-            EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
+            usingPme(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
     // Get the device handles for the modules, nullptr when no task is assigned.
     int                deviceId   = -1;
@@ -1500,7 +1501,7 @@ int Mdrunner::mdrunner()
     // Also populates the simulation constant workload description.
     // Note: currently the default duty is DUTY_PP | DUTY_PME for all simulations, including those without PME,
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
-    // but this will no longer be the case if cr->duty is changed for !EEL_PME(fr->ic->eeltype).
+    // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
     const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
     runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
                                                               disableNonbondedCalculation,
@@ -1827,7 +1828,7 @@ int Mdrunner::mdrunner()
             dd_make_reverse_top(fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking);
         }
 
-        if (EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
+        if (usingPme(fr->ic->eeltype) || usingLJPme(fr->ic->vdwtype))
         {
             ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
             ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
@@ -1868,12 +1869,12 @@ int Mdrunner::mdrunner()
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
-    if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
+    if (usingPme(inputrec->coulombtype) || usingLJPme(inputrec->vdwtype))
     {
         if (mdAtoms && mdAtoms->mdatoms())
         {
             nChargePerturbed = mdAtoms->mdatoms()->nChargePerturbed;
-            if (EVDW_PME(inputrec->vdwtype))
+            if (usingLJPme(inputrec->vdwtype))
             {
                 nTypePerturbed = mdAtoms->mdatoms()->nTypePerturbed;
             }

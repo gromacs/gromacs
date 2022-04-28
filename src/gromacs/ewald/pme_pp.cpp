@@ -326,11 +326,11 @@ void gmx_pme_send_parameters(const t_commrec*           cr,
 {
     unsigned int flags = 0;
 
-    if (EEL_PME(interactionConst.eeltype))
+    if (usingPme(interactionConst.eeltype))
     {
         flags |= PP_PME_CHARGE;
     }
-    if (EVDW_PME(interactionConst.vdwtype))
+    if (usingLJPme(interactionConst.vdwtype))
     {
         flags |= (PP_PME_SQRTC6 | PP_PME_SIGMA);
     }

@@ -587,8 +587,8 @@ static void init_ewald_f_table(const interaction_const_t& ic,
                                EwaldCorrectionTables*     coulombTables,
                                EwaldCorrectionTables*     vdwTables)
 {
-    const bool useCoulombTable = (EEL_PME_EWALD(ic.eeltype) && coulombTables != nullptr);
-    const bool useVdwTable     = (EVDW_PME(ic.vdwtype) && vdwTables != nullptr);
+    const bool useCoulombTable = (usingPmeOrEwald(ic.eeltype) && coulombTables != nullptr);
+    const bool useVdwTable     = (usingLJPme(ic.vdwtype) && vdwTables != nullptr);
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
@@ -624,13 +624,13 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
 void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real rlist, const real tableExtensionLength)
 {
-    if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
+    if (usingPmeOrEwald(ic->eeltype) || usingLJPme(ic->vdwtype))
     {
         init_ewald_f_table(
                 *ic, rlist, tableExtensionLength, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            if (EEL_PME_EWALD(ic->eeltype))
+            if (usingPmeOrEwald(ic->eeltype))
             {
                 fprintf(fp,
                         "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
@@ -743,7 +743,7 @@ void init_forcerec(FILE*                            fplog,
 
         // Check and set up PBC for Ewald surface corrections or orientation restraints
         const bool useEwaldSurfaceCorrection =
-                (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
+                (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
         const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
         const bool moleculesAreAlwaysWhole =
                 (haveDDAtomOrdering(*commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
@@ -859,7 +859,7 @@ void init_forcerec(FILE*                            fplog,
     /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
      * while mdrun does not (and never did) support this.
      */
-    if (EEL_USER(forcerec->ic->eeltype))
+    if (usingUserTableElectrostatics(forcerec->ic->eeltype))
     {
         gmx_fatal(FARGS,
                   "Electrostatics type %s is currently not supported",
@@ -879,8 +879,8 @@ void init_forcerec(FILE*                            fplog,
             forcerec->forceProviders->hasForceProvider() || gmx_mtop_ftype_count(mtop, F_POSRES) > 0
             || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 || inputrec.nwall > 0 || inputrec.bPull
             || inputrec.bRot || inputrec.bIMD;
-    const bool haveDirectVirialContributionsSlow =
-            EEL_FULL(interactionConst->eeltype) || EVDW_PME(interactionConst->vdwtype);
+    const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->eeltype)
+                                                   || usingLJPme(interactionConst->vdwtype);
     for (int i = 0; i < (simulationWork.useMts ? 2 : 1); i++)
     {
         bool haveDirectVirialContributions =
@@ -898,7 +898,7 @@ void init_forcerec(FILE*                            fplog,
     forcerec->ntype = mtop.ffparams.atnr;
     forcerec->nbfp  = makeNonBondedParameterLists(
             mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->haveBuckingham);
-    if (EVDW_PME(interactionConst->vdwtype))
+    if (usingLJPme(interactionConst->vdwtype))
     {
         forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(
                 mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
@@ -928,7 +928,7 @@ void init_forcerec(FILE*                            fplog,
         }
     }
 
-    if (forcerec->haveBuckingham && EVDW_PME(interactionConst->vdwtype))
+    if (forcerec->haveBuckingham && usingLJPme(interactionConst->vdwtype))
     {
         gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }

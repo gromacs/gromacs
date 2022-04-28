@@ -272,24 +272,39 @@ enum class EwaldGeometry : int
 //! String corresponding to Ewald geometry
 const char* enumValueToString(EwaldGeometry enumValue);
 
-//! Macro telling us whether we use reaction field
-#define EEL_RF(e)                                                                   \
-    ((e) == CoulombInteractionType::RF || (e) == CoulombInteractionType::GRFNotused \
-     || (e) == CoulombInteractionType::RFNecUnsupported || (e) == CoulombInteractionType::RFZero)
+//! Returns whether we use reaction field
+static inline bool usingRF(const CoulombInteractionType& cit)
+{
+    return (cit == CoulombInteractionType::RF || cit == CoulombInteractionType::GRFNotused
+            || cit == CoulombInteractionType::RFNecUnsupported || cit == CoulombInteractionType::RFZero);
+};
 
-//! Macro telling us whether we use PME
-#define EEL_PME(e)                                                                             \
-    ((e) == CoulombInteractionType::Pme || (e) == CoulombInteractionType::PmeSwitch            \
-     || (e) == CoulombInteractionType::PmeUser || (e) == CoulombInteractionType::PmeUserSwitch \
-     || (e) == CoulombInteractionType::P3mAD)
-//! Macro telling us whether we use PME or full Ewald
-#define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == CoulombInteractionType::Ewald)
-//! Macro telling us whether we use full electrostatics of any sort
-#define EEL_FULL(e) (EEL_PME_EWALD(e) || (e) == CoulombInteractionType::Poisson)
-//! Macro telling us whether we use user defined electrostatics
-#define EEL_USER(e)                                                                \
-    ((e) == CoulombInteractionType::User || (e) == CoulombInteractionType::PmeUser \
-     || (e) == (CoulombInteractionType::PmeUserSwitch))
+//! Returns whether we use PME
+static inline bool usingPme(const CoulombInteractionType& cit)
+{
+    return (cit == CoulombInteractionType::Pme || cit == CoulombInteractionType::PmeSwitch
+            || cit == CoulombInteractionType::PmeUser
+            || cit == CoulombInteractionType::PmeUserSwitch || cit == CoulombInteractionType::P3mAD);
+}
+
+//! Returns whether we use PME or full Ewald
+static inline bool usingPmeOrEwald(const CoulombInteractionType& cit)
+{
+    return (usingPme(cit) || cit == CoulombInteractionType::Ewald);
+};
+
+//! Returns whether we use full electrostatics of any sort
+static inline bool usingFullElectrostatics(const CoulombInteractionType& cit)
+{
+    return (usingPmeOrEwald(cit) || cit == CoulombInteractionType::Poisson);
+}
+
+//! Returns whether we use user defined electrostatics
+static inline bool usingUserTableElectrostatics(const CoulombInteractionType& cit)
+{
+    return (cit == CoulombInteractionType::User || cit == CoulombInteractionType::PmeUser
+            || cit == CoulombInteractionType::PmeUserSwitch);
+}
 
 //! Van der Waals interaction treatment
 enum class VanDerWaalsType : int
@@ -317,8 +332,11 @@ enum class LongRangeVdW : int
 //! String for LJPME combination rule treatment
 const char* enumValueToString(LongRangeVdW enumValue);
 
-//! Macro to tell us whether we use LJPME
-#define EVDW_PME(e) ((e) == VanDerWaalsType::Pme)
+//! Returns whether we use LJPME
+static inline bool usingLJPme(const VanDerWaalsType& vanDerWaalsType)
+{
+    return vanDerWaalsType == VanDerWaalsType::Pme;
+};
 
 /*! \brief Integrator algorithm
  *

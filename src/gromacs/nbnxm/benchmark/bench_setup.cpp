@@ -161,7 +161,7 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions& optio
     ic.reactionFieldCoefficient = 0.5 * std::pow(ic.rcoulomb, -3);
     ic.reactionFieldShift = 1 / ic.rcoulomb + ic.reactionFieldCoefficient * ic.rcoulomb * ic.rcoulomb;
 
-    if (EEL_PME_EWALD(ic.eeltype))
+    if (usingPmeOrEwald(ic.eeltype))
     {
         // Ewald coefficients, we ignore the potential shift
         GMX_RELEASE_ASSERT(options.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");

@@ -327,11 +327,11 @@ static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_co
     {
         return ElecType::Cut;
     }
-    else if (EEL_RF(ic.eeltype))
+    else if (usingRF(ic.eeltype))
     {
         return ElecType::RF;
     }
-    else if ((EEL_PME(ic.eeltype) || ic.eeltype == CoulombInteractionType::Ewald))
+    else if ((usingPme(ic.eeltype) || ic.eeltype == CoulombInteractionType::Ewald))
     {
         return nbnxn_gpu_pick_ewald_kernel_type(ic, deviceInfo);
     }

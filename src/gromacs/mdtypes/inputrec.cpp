@@ -1589,13 +1589,13 @@ gmx_bool inputrecPreserveShape(const t_inputrec* ir)
 
 gmx_bool inputrecNeedMutot(const t_inputrec* ir)
 {
-    return ((ir->coulombtype == CoulombInteractionType::Ewald || EEL_PME(ir->coulombtype))
+    return ((ir->coulombtype == CoulombInteractionType::Ewald || usingPme(ir->coulombtype))
             && (ir->ewald_geometry == EwaldGeometry::ThreeDC || ir->epsilon_surface != 0));
 }
 
 gmx_bool inputrecExclForces(const t_inputrec* ir)
 {
-    return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)));
+    return (usingFullElectrostatics(ir->coulombtype) || (usingRF(ir->coulombtype)));
 }
 
 gmx_bool inputrecNptTrotter(const t_inputrec* ir)
@@ -1715,7 +1715,7 @@ real maxReferenceTemperature(const t_inputrec& ir)
 
 bool haveEwaldSurfaceContribution(const t_inputrec& ir)
 {
-    return EEL_PME_EWALD(ir.coulombtype)
+    return usingPmeOrEwald(ir.coulombtype)
            && (ir.ewald_geometry == EwaldGeometry::ThreeDC || ir.epsilon_surface != 0);
 }
 

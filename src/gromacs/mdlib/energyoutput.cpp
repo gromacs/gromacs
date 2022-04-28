@@ -221,9 +221,9 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 
     bEner_[F_LJ]   = !bBHAM;
     bEner_[F_BHAM] = bBHAM;
-    bEner_[F_RF_EXCL] = (EEL_RF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
-    bEner_[F_COUL_RECIP]   = EEL_FULL(inputrec.coulombtype);
-    bEner_[F_LJ_RECIP]     = EVDW_PME(inputrec.vdwtype);
+    bEner_[F_RF_EXCL] = (usingRF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
+    bEner_[F_COUL_RECIP]   = usingFullElectrostatics(inputrec.coulombtype);
+    bEner_[F_LJ_RECIP]     = usingLJPme(inputrec.vdwtype);
     bEner_[F_LJ14]         = b14;
     bEner_[F_COUL14]       = b14;
     bEner_[F_LJC14_Q]      = false;

@@ -376,7 +376,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
     if (pmeOnGpu)
     {
-        GMX_RELEASE_ASSERT((EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
+        GMX_RELEASE_ASSERT((usingPme(inputrec->coulombtype) || usingLJPme(inputrec->vdwtype))
                                    && pme_gpu_supports_build(nullptr)
                                    && pme_gpu_supports_hardware(*hwinfo, nullptr)
                                    && pme_gpu_supports_input(*inputrec, nullptr),
