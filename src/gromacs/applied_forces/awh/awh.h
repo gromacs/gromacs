@@ -73,7 +73,6 @@
 
 struct gmx_multisim_t;
 struct gmx_wallcycle;
-struct pull_work_t;
 struct pull_t;
 class t_state;
 struct t_commrec;

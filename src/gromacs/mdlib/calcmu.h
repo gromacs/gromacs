@@ -54,7 +54,4 @@ void calc_mu(int                            start,
              dvec                           mu,
              dvec                           mu_B);
 
-gmx_bool read_mu(FILE* fp, rvec mu, real* vol);
-/* Return true on succes */
-
 #endif

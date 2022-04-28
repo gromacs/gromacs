@@ -59,12 +59,12 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct gmx_global_stat
+struct gmx_global_stat
 {
     t_bin* rb;
     int*   itc0;
     int*   itc1;
-} t_gmx_global_stat;
+};
 
 gmx_global_stat_t global_stat_init(const t_inputrec* ir)
 {

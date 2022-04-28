@@ -56,7 +56,6 @@ struct SpecialBond
     std::string firstResidue, secondResidue;
     std::string firstAtomName, secondAtomName;
     std::string newFirstResidue, newSecondResidue;
-    int         firstBondNumber, secondBondNumber;
     real        length;
 };
 
@@ -100,8 +99,6 @@ std::vector<SpecialBond> generateSpecialBonds()
             newBond.newSecondResidue = nr2buf;
             newBond.firstAtomName    = a1buf;
             newBond.secondAtomName   = a2buf;
-            newBond.firstBondNumber  = nb1;
-            newBond.secondBondNumber = nb2;
             newBond.length           = length;
             specialBonds.push_back(newBond);
         }

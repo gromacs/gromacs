@@ -294,12 +294,6 @@ inline const int* constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
     }
 };
 
-/*! \brief Returns whether there are inter charge group constraints */
-bool inter_charge_group_constraints(const gmx_mtop_t& mtop);
-
-/*! \brief Returns whether there are inter charge group settles */
-bool inter_charge_group_settles(const gmx_mtop_t& mtop);
-
 /*! \brief Constrain the initial coordinates and velocities */
 void do_constrain_first(FILE*                     log,
                         gmx::Constraints*         constr,

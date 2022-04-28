@@ -67,7 +67,6 @@ struct pme_solve_work_t
     real* mhz;
     real* m2;
     real* denom;
-    real* tmp1_alloc;
     real* tmp1;
     real* tmp2;
     real* eterm;

@@ -169,10 +169,6 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t* dd,
 /*! \brief Broadcasts \p nbytes from \p data on \p DDMASTERRANK to all PP ranks */
 void dd_bcast(const gmx_domdec_t* dd, int nbytes, void* data);
 
-/*! \brief Copies \p nbytes from \p src to \p dest on \p DDMASTERRANK
- * and then broadcasts to \p dest on all PP ranks */
-void dd_bcastc(const gmx_domdec_t* dd, int nbytes, void* src, void* dest);
-
 /*! \brief Scatters \p nbytes from \p src on \p DDMASTERRANK to all PP ranks, received in \p dest */
 void dd_scatter(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest);
 

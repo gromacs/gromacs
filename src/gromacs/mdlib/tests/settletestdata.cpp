@@ -72,10 +72,7 @@ namespace test
 {
 
 SettleTestData::SettleTestData(int numSettles) :
-    numSettles_(numSettles),
-    x_(c_waterPositions.size()),
-    xPrime_(c_waterPositions.size()),
-    v_(c_waterPositions.size())
+    x_(c_waterPositions.size()), xPrime_(c_waterPositions.size()), v_(c_waterPositions.size())
 {
     // Initialize coordinates and velocities from the constant set of coordinates
     std::copy(c_waterPositions.begin(), c_waterPositions.end(), x_.begin());

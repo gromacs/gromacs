@@ -53,7 +53,6 @@
 
 struct gmx_mtop_t;
 struct t_atom;
-struct t_atomtypes;
 class InteractionOfType;
 struct InteractionsOfType;
 enum class ParticleType : int;

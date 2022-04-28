@@ -70,9 +70,6 @@ template<typename>
 class ListOfLists;
 class ObservablesReducerBuilder;
 
-/*! \brief Return the data for determining constraint RMS relative deviations. */
-ArrayRef<real> lincs_rmsdData(Lincs* lincsd);
-
 /*! \brief Return the RMSD of the constraint. */
 real lincs_rmsd(const Lincs* lincsd);
 

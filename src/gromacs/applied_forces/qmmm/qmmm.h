@@ -49,7 +49,6 @@ namespace gmx
 {
 
 class IMDModule;
-struct MdModulesNotifier;
 
 /*! \internal
  *  \brief Information about the QM/MM module.

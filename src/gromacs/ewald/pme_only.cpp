@@ -756,7 +756,7 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         stepWork.computeVirial = computeEnergyAndVirial;
         stepWork.computeEnergy = computeEnergyAndVirial;
         stepWork.computeForces = true;
-        PmeOutput output       = { {}, false, 0, { { 0 } }, 0, 0, { { 0 } }, 0 };
+        PmeOutput output       = { {}, false, 0, { { 0 } }, 0, 0, { { 0 } } };
         if (useGpuForPme)
         {
             stepWork.haveDynamicBox      = false;

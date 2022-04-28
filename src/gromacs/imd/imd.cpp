@@ -254,8 +254,6 @@ public:
 
     //! Shall we block and wait for connection?
     bool bWConnect = false;
-    //! Set if MD is terminated.
-    bool bTerminated = false;
     //! Set if MD can be terminated.
     bool bTerminatable = false;
     //! Set if connection is present.
@@ -281,8 +279,6 @@ public:
     //! The IMD pulling forces.
     rvec* f = nullptr;
 
-    //! Buffer for force sending.
-    char* forcesendbuf = nullptr;
     //! Buffer for coordinate sending.
     char* coordsendbuf = nullptr;
     //! Send buffer for energies.
@@ -949,8 +945,7 @@ void ImdSession::Impl::readCommand()
                                     " %s Terminating connection and running simulation (if "
                                     "supported by integrator).",
                                     IMDstr);
-                    bTerminated = true;
-                    bWConnect   = false;
+                    bWConnect = false;
                     gmx_set_stop_condition(StopCondition::Next);
                 }
                 else

@@ -240,20 +240,6 @@ void dd_bcast(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, void gmx
 #endif
 }
 
-void dd_bcastc(const gmx_domdec_t* dd, int nbytes, void* src, void* dest)
-{
-    if (DDMASTER(dd) || dd->nnodes == 1)
-    {
-        memcpy(dest, src, nbytes);
-    }
-#if GMX_MPI
-    if (dd->nnodes > 1)
-    {
-        MPI_Bcast(dest, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
-    }
-#endif
-}
-
 void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const void gmx_unused* src, void* dest)
 {
 #if GMX_MPI

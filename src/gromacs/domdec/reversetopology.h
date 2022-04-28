@@ -100,7 +100,6 @@ struct thread_work_t
     std::unique_ptr<gmx::VsitePbc> vsitePbc = nullptr; /**< vsite PBC structure */
     int numBondedInteractions               = 0; /**< The number of bonded interactions observed */
     gmx::ListOfLists<int> excl;                  /**< List of exclusions */
-    int                   excl_count = 0;        /**< The total exclusion count for \p excl */
 };
 
 /*! \internal \brief Options for setting up gmx_reverse_top_t */

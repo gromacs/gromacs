@@ -637,7 +637,6 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.constraintsR0,
                                  true,
                                  false,
-                                 0,
                                  real(0.0),
                                  real(0.001),
                                  constraintsTestSystem.x,

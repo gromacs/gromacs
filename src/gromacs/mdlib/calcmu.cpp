@@ -99,19 +99,3 @@ void calc_mu(int                            start,
         copy_dvec(mu, mu_B);
     }
 }
-
-gmx_bool read_mu(FILE* fp, rvec mu, real* vol)
-{
-    /* For backward compatibility */
-    real mmm[4];
-
-    if (fread(mmm, static_cast<size_t>(4 * sizeof(real)), 1, fp) != 1)
-    {
-        return FALSE;
-    }
-
-    copy_rvec(mmm, mu);
-    *vol = mmm[3];
-
-    return TRUE;
-}

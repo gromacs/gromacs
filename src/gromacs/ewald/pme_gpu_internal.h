@@ -57,7 +57,6 @@ struct DeviceInformation;
 class DeviceStream;
 class GpuEventSynchronizer;
 struct gmx_hw_info_t;
-struct gmx_gpu_opt_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
 struct gmx_wallcycle;
 class PmeAtomComm;

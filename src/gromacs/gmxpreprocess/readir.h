@@ -89,7 +89,6 @@ struct t_gromppopts
     char*              include   = nullptr;
     char*              define    = nullptr;
     bool               bGenVel   = false;
-    bool               bGenPairs = false;
     real               tempi     = 0;
     bool               bMadeSeed = false;
     int                seed      = 0;

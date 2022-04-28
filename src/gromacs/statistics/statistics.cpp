@@ -47,11 +47,11 @@
 
 typedef struct gmx_stats
 {
-    double  aa, a, b, sigma_aa, sigma_a, sigma_b, aver, sigma_aver, error;
-    double  rmsd, Rdata, Rfit, Rfitaa, chi2, chi2aa;
+    double  aa, a, b, sigma_a, sigma_b, aver, sigma_aver, error;
+    double  rmsd, Rfit, chi2;
     double *x, *y, *dx, *dy;
     int     computed;
-    int     np, np_c, nalloc;
+    int     np, nalloc;
 } gmx_stats;
 
 gmx_stats_t gmx_stats_init()
@@ -110,9 +110,9 @@ void gmx_stats_add_point(gmx_stats_t gstats, double x, double y, double dx, doub
 
 static void gmx_stats_compute(gmx_stats* stats, int weight)
 {
-    double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
+    double yx, xx, sx, sy, dy, chi2, d2;
     double ssxx, ssyy, ssxy;
-    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
+    double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2;
 
     int N = stats->np;
 
@@ -121,7 +121,7 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         GMX_RELEASE_ASSERT(N >= 1, "Must have points to work on");
 
         xx = xx_nw = 0;
-        yy = yy_nw = 0;
+        yy_nw      = 0;
         yx = yx_nw = 0;
         sx = sx_nw = 0;
         sy = sy_nw = 0;
@@ -144,7 +144,6 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
             xx += w * gmx::square(stats->x[i]);
             xx_nw += gmx::square(stats->x[i]);
 
-            yy += w * gmx::square(stats->y[i]);
             yy_nw += gmx::square(stats->y[i]);
 
             yx += w * stats->y[i] * stats->x[i];
@@ -171,10 +170,9 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         yy_nw /= N;
         sx_nw /= N;
         sy_nw /= N;
-        ssxx         = N * (xx_nw - gmx::square(sx_nw));
-        ssyy         = N * (yy_nw - gmx::square(sy_nw));
-        ssxy         = N * (yx_nw - (sx_nw * sy_nw));
-        stats->Rdata = std::sqrt(gmx::square(ssxy) / (ssxx * ssyy));
+        ssxx = N * (xx_nw - gmx::square(sx_nw));
+        ssyy = N * (yy_nw - gmx::square(sy_nw));
+        ssxy = N * (yx_nw - (sx_nw * sy_nw));
 
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
@@ -188,10 +186,8 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
         stats->a  = (yx - sx * sy) / (xx - sx * sx);
         stats->b  = (sy) - (stats->a) * (sx);
 
-        /* Compute chi2, deviation from a line y = ax+b. Also compute
-           chi2aa which returns the deviation from a line y = ax. */
-        chi2   = 0;
-        chi2aa = 0;
+        /* Compute chi2, deviation from a line y = ax+b. */
+        chi2 = 0;
         for (int i = 0; (i < N); i++)
         {
             if (stats->dy[i] > 0)
@@ -202,30 +198,24 @@ static void gmx_stats_compute(gmx_stats* stats, int weight)
             {
                 dy = 1;
             }
-            chi2aa += gmx::square((stats->y[i] - (stats->aa * stats->x[i])) / dy);
             chi2 += gmx::square((stats->y[i] - (stats->a * stats->x[i] + stats->b)) / dy);
         }
         if (N > 2)
         {
-            stats->chi2   = std::sqrt(chi2 / (N - 2));
-            stats->chi2aa = std::sqrt(chi2aa / (N - 2));
+            stats->chi2 = std::sqrt(chi2 / (N - 2));
 
             /* Look up equations! */
             dx2            = (xx - sx * sx);
-            dy2            = (yy - sy * sy);
             stats->sigma_a = std::sqrt(stats->chi2 / ((N - 2) * dx2));
             stats->sigma_b = stats->sigma_a * std::sqrt(xx);
             stats->Rfit    = std::abs(ssxy) / std::sqrt(ssxx * ssyy);
-            stats->Rfitaa  = stats->aa * std::sqrt(dx2 / dy2);
         }
         else
         {
             stats->chi2    = 0;
-            stats->chi2aa  = 0;
             stats->sigma_a = 0;
             stats->sigma_b = 0;
             stats->Rfit    = 0;
-            stats->Rfitaa  = 0;
         }
 
         stats->computed = 1;

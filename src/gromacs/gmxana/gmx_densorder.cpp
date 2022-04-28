@@ -289,22 +289,6 @@ static void density_in_time(const char*             fn,
     /*Free memory we no longer need and exit.*/
     gmx_rmpbc_done(gpbc);
     close_trx(status);
-
-    if (/* DISABLES CODE */ (false))
-    {
-        FILE* fp;
-        fp = fopen("koko.xvg", "w");
-        for (j = 0; (j < *zslices); j++)
-        {
-            fprintf(fp, "%5d", j);
-            for (i = 0; (i < *tblock); i++)
-            {
-                fprintf(fp, "  %10g", (*Densdevel)[i][9][1][j]);
-            }
-            fprintf(fp, "\n");
-        }
-        fclose(fp);
-    }
 }
 
 static void outputfield(const char* fldfn, real**** Densmap, int xslices, int yslices, int zslices, int tdim)

@@ -109,8 +109,6 @@ public:
     real lambda_ = 0.0;
     //! For free energy computation
     real dHdLambda_;
-    //! For free energy computation (reference value)
-    real dHdLambdaRef_;
 
     //! Coordinates before the timestep
     PaddedVector<RVec> x_;
@@ -152,7 +150,6 @@ public:
      *                                  unique types in constraints vector.
      * \param[in]  computeVirial        Whether the virial should be computed.
      * \param[in]  compute_dHdLambda    Whether free energy should be computed.
-     * \param[in]  dHdLambdaRef         Reference value for dHdLambda.
      * \param[in]  initialTime          Initial time.
      * \param[in]  timestep             Timestep.
      * \param[in]  x                    Coordinates before integration step.
@@ -177,7 +174,6 @@ public:
                         std::vector<real>        constraintsR0,
                         bool                     computeVirial,
                         bool                     compute_dHdLambda,
-                        float                    dHdLambdaRef,
                         real                     initialTime,
                         real                     timestep,
                         const std::vector<RVec>& x,

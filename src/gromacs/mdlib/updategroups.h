@@ -91,14 +91,6 @@ real computeMaxUpdateGroupRadius(const gmx_mtop_t&                 mtop,
                                  ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
                                  real                              temperature);
 
-/*! \brief Return the margin required for successful domain decomposition
- *
- * \param[in] pbcType    The PBC type in use
- * \param[in] box        The box in use
- * \param[in] rlist      The list size in use
- */
-real computeCutoffMargin(PbcType pbcType, matrix box, real rlist);
-
 /*! \brief Returns whether mtop contains any constraints and/or vsites
  *
  * When we have constraints and/or vsites, it is beneficial to use

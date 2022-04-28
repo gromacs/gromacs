@@ -98,21 +98,6 @@ void pr_ivec_block(FILE* fp, int indent, const char* title, const int vec[], int
     }
 }
 
-void pr_bvec(FILE* fp, int indent, const char* title, const gmx_bool vec[], int n, gmx_bool bShowNumbers)
-{
-    int i;
-
-    if (available(fp, vec, indent, title))
-    {
-        indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
-        {
-            pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]=%s\n", title, bShowNumbers ? i : -1, gmx::boolToString(vec[i]));
-        }
-    }
-}
-
 void pr_ivecs(FILE* fp, int indent, const char* title, const ivec vec[], int n, gmx_bool bShowNumbers)
 {
     int i, j;
@@ -167,30 +152,6 @@ void pr_dvec(FILE* fp, int indent, const char* title, const double vec[], int n,
 }
 
 
-void pr_rvecs_len(FILE* fp, int indent, const char* title, const rvec vec[], int n)
-{
-    int i, j;
-
-    if (available(fp, vec, indent, title))
-    {
-        indent = pr_title_nxn(fp, indent, title, n, DIM);
-        for (i = 0; i < n; i++)
-        {
-            pr_indent(fp, indent);
-            fprintf(fp, "%s[%5d]={", title, i);
-            for (j = 0; j < DIM; j++)
-            {
-                if (j != 0)
-                {
-                    fprintf(fp, ", ");
-                }
-                fprintf(fp, "%12.5e", vec[i][j]);
-            }
-            fprintf(fp, "} len=%12.5e\n", norm(vec[i]));
-        }
-    }
-}
-
 void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
 {
     const char* fshort = "%12.5e";
@@ -215,43 +176,6 @@ void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
             pr_indent(fp, indent);
             fprintf(fp, "%s[%5d]={", title, i);
             for (j = 0; j < DIM; j++)
-            {
-                if (j != 0)
-                {
-                    fprintf(fp, ", ");
-                }
-                fprintf(fp, format, vec[i][j]);
-            }
-            fprintf(fp, "}\n");
-        }
-    }
-}
-
-
-void pr_rvecs_of_dim(FILE* fp, int indent, const char* title, const rvec vec[], int n, int dim)
-{
-    const char* fshort = "%12.5e";
-    const char* flong  = "%15.8e";
-    const char* format;
-    int         i, j;
-
-    if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
-    {
-        format = flong;
-    }
-    else
-    {
-        format = fshort;
-    }
-
-    if (available(fp, vec, indent, title))
-    {
-        indent = pr_title_nxn(fp, indent, title, n, dim);
-        for (i = 0; i < n; i++)
-        {
-            pr_indent(fp, indent);
-            fprintf(fp, "%s[%5d]={", title, i);
-            for (j = 0; j < dim; j++)
             {
                 if (j != 0)
                 {

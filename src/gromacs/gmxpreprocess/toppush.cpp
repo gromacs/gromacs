@@ -1522,9 +1522,8 @@ void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* li
     mol->back().initMolInfo();
 
     /* Fill in the values */
-    mol->back().name     = put_symtab(symtab, type);
-    mol->back().nrexcl   = nrexcl;
-    mol->back().excl_set = false;
+    mol->back().name   = put_symtab(symtab, type);
+    mol->back().nrexcl = nrexcl;
 }
 
 static bool findIfAllNBAtomsMatch(gmx::ArrayRef<const int> atomsFromParameterArray,

@@ -41,7 +41,6 @@
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
-struct t_fepvals;
 struct t_lambda;
 
 void reset_dvdl_enerdata(gmx_enerdata_t* enerd);

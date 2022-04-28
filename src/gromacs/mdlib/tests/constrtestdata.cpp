@@ -63,7 +63,6 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
                                          std::vector<real>        constraintsR0,
                                          bool                     computeVirial,
                                          bool                     compute_dHdLambda,
-                                         float                    dHdLambdaRef,
                                          real                     initialTime,
                                          real                     timestep,
                                          const std::vector<RVec>& x,
@@ -119,13 +118,11 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
     dHdLambda_         = 0;
     if (compute_dHdLambda_)
     {
-        ir_.efep      = FreeEnergyPerturbationType::Yes;
-        dHdLambdaRef_ = dHdLambdaRef;
+        ir_.efep = FreeEnergyPerturbationType::Yes;
     }
     else
     {
-        ir_.efep      = FreeEnergyPerturbationType::No;
-        dHdLambdaRef_ = 0;
+        ir_.efep = FreeEnergyPerturbationType::No;
     }
 
     int maxType = 0;

@@ -465,21 +465,6 @@ static void spline_forces(int nx, double h, const double v[], gmx_bool bS3, gmx_
         }
         b_s   = 2 * (v[1] - v[0]) + v3 / 6;
         start = 0;
-
-        if (FALSE)
-        {
-            /* Fit V'' at the start */
-            real v2;
-
-            v2 = -v[3] + 4 * v[2] - 5 * v[1] + 2 * v[0];
-            /* v2  = v[2] - 2*v[1] + v[0]; */
-            if (debug)
-            {
-                fprintf(debug, "The left second derivative is %g\n", v2 / (h * h));
-            }
-            b_s   = 3 * (v[1] - v[0]) - v2 / 2;
-            start = 0;
-        }
     }
     else
     {

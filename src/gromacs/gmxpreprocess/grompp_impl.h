@@ -170,8 +170,6 @@ struct MoleculeInformation
     char** name = nullptr;
     //! Number of exclusions per atom.
     int nrexcl = 0;
-    //! Have exclusions been generated?.
-    bool excl_set = false;
     //! Has the mol been processed.
     bool bProcessed = false;
     //! Atoms in the moelcule.

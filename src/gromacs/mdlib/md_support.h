@@ -43,7 +43,6 @@
 class gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
-struct gmx_signalling_t;
 struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;

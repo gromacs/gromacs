@@ -753,11 +753,6 @@ real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
     return maxRadius;
 }
 
-real computeCutoffMargin(PbcType pbcType, matrix box, const real rlist)
-{
-    return std::sqrt(max_cutoff2(pbcType, box)) - rlist;
-}
-
 UpdateGroups::UpdateGroups(std::vector<RangePartitioning>&& updateGroupingPerMoleculeType,
                            const real                       maxUpdateGroupRadius) :
     useUpdateGroups_(true),

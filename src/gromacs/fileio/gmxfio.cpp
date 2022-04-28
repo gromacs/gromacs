@@ -435,15 +435,6 @@ int gmx_fio_fclose(FILE* fp)
     return rc;
 }
 
-//! Helper struct for returning the MD5 checksum and the amount of the file that contributed to it.
-struct MD5Checksum
-{
-    //! Checksum md5 digest.
-    std::array<unsigned char, 16> checksum;
-    //! The length of the file that contributed to the digest.
-    gmx_off_t readLength;
-};
-
 /*! \brief Internal variant of get_file_md5 that operates on a locked
  * file.
  *

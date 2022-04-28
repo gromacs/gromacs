@@ -96,7 +96,6 @@ struct fft5d_plan_t
     t_complex *lout, *lout2, *lout3;
     gmx_fft_t* p1d[3]; /*1D plans*/
 #if GMX_FFT_FFTW3
-    FFTW(plan) p2d; /*2D plan: used for 1D decomposition if FFT supports transposed output*/
     FFTW(plan) p3d; /*3D plan: used for 0D decomposition if FFT supports transposed output*/
     FFTW(plan) mpip[2];
 #endif

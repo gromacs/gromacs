@@ -126,14 +126,4 @@ void relax_shell_flexcon(FILE*                               log,
 /* Print some final output and delete shellfc */
 void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
 
-/*! \brief Count the different particle types in a system
- *
- * Routine prints a warning to stderr in case an unknown particle type
- * is encountered.
- * \param[in]  fplog Print what we have found if not NULL
- * \param[in]  mtop  Molecular topology.
- * \returns Array holding the number of particles of a type
- */
-gmx::EnumerationArray<ParticleType, int> countPtypes(FILE* fplog, const gmx_mtop_t& mtop);
-
 #endif

@@ -2549,7 +2549,7 @@ static void dd_sort_order_nbnxn(const t_forcerec* fr, std::vector<gmx_cgsort_t>*
     {
         if (i >= 0)
         {
-            /* The values of nsc and ind_gl are not used in this case */
+            /* The value of ind_gl is not used in this case */
             buffer[numSorted++].ind = i;
         }
     }

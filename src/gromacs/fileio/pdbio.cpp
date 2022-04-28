@@ -69,7 +69,6 @@ typedef struct
 typedef struct gmx_conect_t
 {
     int              nconect;
-    gmx_bool         bSorted;
     gmx_conection_t* conect;
 } gmx_conect_t;
 
@@ -838,9 +837,6 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
     gmx_conect_t* gc = conect;
     int           i;
 
-    /* if (!gc->bSorted)
-       sort_conect(gc);*/
-
     for (i = 0; (i < gc->nconect); i++)
     {
         if (((gc->conect[i].ai == ai) && (gc->conect[i].aj == aj))
@@ -855,9 +851,6 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
 void gmx_conect_add(gmx_conect conect, int ai, int aj)
 {
     gmx_conect_t* gc = static_cast<gmx_conect_t*>(conect);
-
-    /* if (!gc->bSorted)
-       sort_conect(gc);*/
 
     if (!gmx_conect_exist(conect, ai, aj))
     {

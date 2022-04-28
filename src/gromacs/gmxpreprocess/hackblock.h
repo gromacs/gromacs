@@ -186,8 +186,6 @@ struct MoleculePatch
     bool bXSet = false;
     //! New position for hacked atom.
     rvec newx = { NOTSET };
-    //! New atom index number after additions.
-    int newi = -1;
 
     /*! \brief
      * Get type of hack.
