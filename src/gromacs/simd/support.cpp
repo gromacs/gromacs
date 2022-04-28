@@ -275,11 +275,13 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
         // in both single and double precision. AVX2_256 is slightly
         // faster with nonbondeds and PME on a GPU. Don't warn the user.
     }
-    else if (compiled > wanted && !(compiled == SimdType::X86_Avx && wanted == SimdType::X86_Avx128Fma))
+    else if (compiled > wanted && !(compiled == SimdType::X86_Avx && wanted == SimdType::X86_Avx128Fma)
+             && !(compiled == SimdType::X86_Avx2_128 && wanted == SimdType::X86_Avx2))
     {
         // Normally it is close to catastrophic if the compiled SIMD type is larger than
         // the supported one, but AVX128Fma is an exception: AMD CPUs will (strongly) prefer
         // AVX128Fma, but they will work fine with AVX too. Thus, make an exception for this.
+        // Similarly, AVX2_256 and AVX2_128 are the same instruction set.
         logMsg = wrapper.wrapToString(
                 formatString("Highest SIMD level supported by all nodes in run: %s\n"
                              "SIMD instructions selected at compile time:       %s\n"
