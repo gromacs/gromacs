@@ -299,7 +299,7 @@ static std::optional<sycl::backend> chooseBestBackend(const std::vector<std::uni
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
-    std::vector<sycl::device>                       devices = sycl::device::get_devices();
+    std::vector<sycl::device> devices = sycl::device::get_devices(sycl::info::device_type::gpu);
     if (getenv("GMX_GPU_SYCL_USE_SUBDEVICES") != nullptr)
     {
         std::vector<sycl::device> allSubDevices;
