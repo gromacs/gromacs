@@ -28,7 +28,7 @@ Steps:
 2. Authenticate from the command line with ``docker login registry.gitlab.com -u <user name> -p <hash>``
 3. ``docker push registry.gitlab.com/gromacs/gromacs/<imagename>``
 
-Refer to :file:`buildall.sh` in the ``master`` branch for the set of images
+Refer to :file:`buildall.sh` in the ``main`` branch for the set of images
 currently built.
 
 Within :doc:`pipeline jobs <gitlab-ci>`, jobs specify a Docker image with the *image* property.

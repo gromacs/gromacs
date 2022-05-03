@@ -48,7 +48,7 @@ macro(manage_linear_algebra_library name function_in_library)
     # end, which would require caching whether the previous provider
     # was user/MKL/external/internal. It's possible (we do it for
     # FFT), but the number of times the user changes these is pretty
-    # low, so let's solve that one in master branch when we have
+    # low, so let's solve that one in main branch when we have
     # better CMake gear to support it.
     if(GMX_EXTERNAL_${name} OR NOT DEFINED GMX_EXTERNAL_${name})
         set(_find_quietly FALSE)

@@ -77,7 +77,7 @@
 #       code, *if* this code is recent enough (i.e., contains all changes from
 #       the corresponding code branch that affects the regression test
 #       results). Even after a release branch is forked for the source
-#       repository, the correct regressiontests branch can still be master,
+#       repository, the correct regressiontests branch can still be main,
 #       because we do not fork it until behaviour needs to change.
 #   REGRESSIONTEST_MD5SUM
 #       The MD5 checksum of the regressiontest tarball. Only used when building
@@ -238,7 +238,7 @@ set(REGRESSIONTEST_VERSION "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 # Note: Forks that use the suffixing feature later change GMX_VERSION_STRING
 # Ref: https://gitlab.com/gromacs/gromacs/-/merge_requests/2587
 set(GMX_VERSION_STRING "${REGRESSIONTEST_VERSION}")
-set(REGRESSIONTEST_BRANCH "master")
+set(REGRESSIONTEST_BRANCH "main")
 # Follow the relevant part of the release checklist at
 # https://gitlab.com/gromacs/gromacs/-/wikis/Release-checklist#how-to-build-a-regressiontests-tarball
 # in order to have it build the regressiontests tarball with all the

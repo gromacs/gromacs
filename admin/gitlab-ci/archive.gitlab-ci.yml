@@ -34,9 +34,9 @@ regressiontests:prepare:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
-  # Always clone the default version for this branch, master in this case
+  # Always clone the default version for this branch, main in this case
   script:
-    - export REGTESTBRANCH=master
+    - export REGTESTBRANCH=main
     - if [[ ! -z $REGRESSIONTESTBRANCH ]] ; then
       export REGTESTBRANCH=$REGRESSIONTESTBRANCH ;
       echo "Using $REGTESTBRANCH instead of default" ;
@@ -86,8 +86,8 @@ regressiontests:package:
     - if [[ $GROMACS_RELEASE != "true" ]] ; then
       REGTESTNAME=$REGTESTNAME-dev ;
       fi
-    - export REGTESTBRANCH=master
-    - if [[ $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-20"[1-2][0-9] ]] ; then
+    - export REGTESTBRANCH=main
+    - if [[ $CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "release-20"[1-2][0-9] ]] ; then
       export REGTESTBRANCH=$CI_COMMIT_REF_NAME ;
       fi
     - if [[ ! -d regressiontests ]] ; then

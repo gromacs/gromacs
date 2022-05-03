@@ -37,7 +37,7 @@
  *
  * Also handle the transitioning installed headers from GROMACS 2019 moving forward.
  *
- * \todo Configure for gmxapi 0.0.7, 0.0.8, GROMACS 2019, GROMACS master...
+ * \todo Configure for gmxapi 0.0.7, 0.0.8, GROMACS 2019, GROMACS main...
  *
  * \defgroup gmxapi_compat
  * \author M. Eric Irrgang <ericirrgang@gmail.com>

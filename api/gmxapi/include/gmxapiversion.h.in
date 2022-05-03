@@ -57,7 +57,7 @@
  * header in order to embed the constants `gmxapi::c_majorVersion`, `gmxapi::c_minorVersion`, and
  * `gmxapi::c_patchVersion` so that compatibility checks can be performed at runtime. Additional
  * CMake `check` utilities will probably be necessary to allow GROMACS installations to be forward
- * compatible with client code developed against the GROMACS master branch.
+ * compatible with client code developed against the GROMACS main branch.
  *
  * When a new software release is tagged, the next commit on the development branch should increment
  * the patch level to distinguish development builds from the tagged release. As incompatibilities

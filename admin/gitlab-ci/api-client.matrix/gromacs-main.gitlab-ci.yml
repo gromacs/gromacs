@@ -2,15 +2,15 @@
 # Test intents:
 #   OS: Ubuntu oldest supported
 #   GPU: unspecified
-#   GROMACS: master
-#   gmxapi: as per GROMACS master
+#   GROMACS: main
+#   gmxapi: as per GROMACS main
 #   client code:
-#    * sample_restraint as bundled with GROMACS master
-#    * TAF extension example as bundled with GROMACS master
+#    * sample_restraint as bundled with GROMACS main
+#    * TAF extension example as bundled with GROMACS main
 #   Scope: build, install, test
 # Test implementation choices (free to change as needed):
-#   GROMACS branch: master
-#   gmxapi Python package: 0.3 alpha from GROMACS master
+#   GROMACS branch: main
+#   gmxapi Python package: 0.3 alpha from GROMACS main
 #   compiler: clang-8
 
 .sample_taf:

@@ -5,7 +5,7 @@ source-code release.
 However, if you have a special need and wish to build and/or install a
 version from a git repository, please see
 docs/install-guide/index.rst in this repository, or (if applicable)
-the latest master branch documentation found via
+the latest main branch documentation found via
 http://manual.gromacs.org/documentation/.
 
 Note for GROMACS developers

@@ -97,7 +97,7 @@ please make sure that you have checked all the points on this list:
   than six months in advance. We still need a month or more to do
   quality testing on that branch, after the fork and before the
   release, so there's a period when we cannot accept certain kinds of
-  potentially risky changes. (The master branch will remain open for
+  potentially risky changes. (The main branch will remain open for
   all kinds of changes, but it is likely that the focus of many of the
   core developers will be on the release process.) If you have a large
   change to propose, you need to
@@ -127,7 +127,7 @@ Preparing code for submission
 
 |Gromacs| uses ``git`` for :doc:`change-management`.
 Instead of accepting "pull requests", |Gromacs| changes are submitted as individual
-commits on the tip of the ``master`` branch hosted at `gitlab`_.
+commits on the tip of the ``main`` branch hosted at `gitlab`_.
 Preparing, submitting, and managing patches for a change requires a little bit
 of set-up. Refer to :doc:`change-management` for information about
 

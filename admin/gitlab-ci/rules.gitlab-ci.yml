@@ -69,14 +69,14 @@
   if: '$CI_PIPELINE_SOURCE == "merge_request_event" ||
        ($CI_PIPELINE_SOURCE == "push" &&
         ($CI_COMMIT_REF_NAME =~ /^release-.*/ ||
-         $CI_COMMIT_REF_NAME == "master"))'
+         $CI_COMMIT_REF_NAME == "main"))'
   when: on_success
 
 # Include job only for post submit push
 .rules-element:if-post-merge-acceptance-then-on-success: &if-post-merge-acceptance-then-on-success
   if: '$CI_PIPELINE_SOURCE == "push" &&
        ($CI_COMMIT_REF_NAME =~ /^release-.*/ ||
-        $CI_COMMIT_REF_NAME == "master")'
+        $CI_COMMIT_REF_NAME == "main")'
   when: on_success
 
 # When composing a rule set, note that the first matching rule is applied.
@@ -87,7 +87,7 @@
 
 # Jobs to run after successful merge of a new commit.
 # Only run on GROMACS infrastructure and only when merging into
-# the master or release branches.
+# the main or release branches.
 .rules:post-merge-acceptance:
   rules:
     - *if-not-gromacs-then-never

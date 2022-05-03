@@ -109,14 +109,14 @@ Scheduled pipelines may provide different variable definitions through the
 environment to jobs that run under the ``schedules``
 `condition <https://gitlab.com/help/ci/pipelines/schedules#using-only-and-except>`__.
 
-Nightly scheduled pipelines run against ``master`` and *release* branches in
+Nightly scheduled pipelines run against ``main`` and *release* branches in
 the GROMACS repository.
 
 Running post-merge-acceptance pipelines
 """""""""""""""""""""""""""""""""""""""
 
 The Gitlab CI for |Gromacs| runs a set of jobs by default only after a MR has been
-accepted and the resulting commit is included in the target branch if it is ``master``
+accepted and the resulting commit is included in the target branch if it is ``main``
 or one of the *release* branches. Those jobs can be triggered manually using the
 ``POST_MERGE_ACCEPTANCE`` input variable documented below when executing a new pipeline
 through the Gitlab web interface.
@@ -166,7 +166,7 @@ Updating regression tests
 Changes in |Gromacs| that require changes in regression-tests are notoriously hard,
 because a merge request that tests against the non-updated version of the
 regression tests will necessarily fail, while updating regression tests while
-the current change is not integrated into master, might cause other
+the current change is not integrated into main, might cause other
 merge request pipelines to fail.
 
 The solution is a new regression-test branch or commit, uploaded to gitlab.
@@ -228,7 +228,7 @@ Other important variable keys are as follows.
         Read-only environment variable for CI scripts to check the
         library API version to expect from the ``build`` job artifacts.
         Initially, this variable is only defined in
-        :file:`admin/gitlab-ci/api-client.matrix/gromacs-master.gitlab-ci.yml`
+        :file:`admin/gitlab-ci/api-client.matrix/gromacs-main.gitlab-ci.yml`
         but could be moved to :file:`admin/gitlab-ci/global.gitlab-ci.yml` if found
         to be of general utility.
 
@@ -239,11 +239,11 @@ Other important variable keys are as follows.
         For example, see *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
 
     REGRESSIONTESTBRANCH
-        Use this branch of the regressiontests rather than master to allow for
+        Use this branch of the regressiontests rather than main to allow for
         merge requests that require updated regression tests with valid CI tests.
 
     REGRESSIONTESTCOMMIT
-        Use this commit to the regressiontests rather than the head on master to
+        Use this commit to the regressiontests rather than the head on main to
         allow for merge requests that require updated regression tests with
         valid CI tests.
 

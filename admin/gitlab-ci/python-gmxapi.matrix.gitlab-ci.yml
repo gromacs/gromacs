@@ -5,4 +5,4 @@
 include:
   - local: '/admin/gitlab-ci/python-gmxapi.matrix/python-gmxapi-0.3.gitlab-ci.yml'
 # TODO: (https://gitlab.com/gromacs/gromacs/-/issues/3563) Test against MPI builds.
-#  - local: '/admin/gitlab-ci/python-gmxapi.matrix/gmxapi-0.3-gromacs-master-mpi.gitlab-ci.yml'
+#  - local: '/admin/gitlab-ci/python-gmxapi.matrix/gmxapi-0.3-gromacs-main-mpi.gitlab-ci.yml'

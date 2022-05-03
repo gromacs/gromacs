@@ -67,7 +67,7 @@ If you want to see up-to-date documentation, you can download artifacts from
 the ``webpage`` job of the latest scheduled pipeline for a corresponding branch
 (https://gitlab.com/gromacs/gromacs/-/pipelines?page=1&scope=all&source=schedule).
 CI also runs Doxygen for all changes pushed to GitLab for
-release and master branches, and the resulting documentation can be
+release and main branches, and the resulting documentation can be
 found in the artifacts of the corresponding ``webpage`` job.
 The Doxygen job will fail if it introduces any Doxygen warnings.
 
