@@ -43,6 +43,7 @@
 #include "qmmmtopologypreprocessor.h"
 
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"

@@ -44,29 +44,10 @@
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
-
-enum class SimulationAtomGroupType : int
-{
-    TemperatureCoupling,
-    EnergyOutput,
-    Acceleration,
-    Freeze,
-    User1,
-    User2,
-    MassCenterVelocityRemoval,
-    CompressedPositionOutput,
-    OrientationRestraintsFit,
-    QuantumMechanics,
-    Count
-};
-
-//! Short strings used for describing atom groups in log and energy files
-const char* shortName(SimulationAtomGroupType type);
-
-// const char *shortName(int type); // if necessary
 
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t

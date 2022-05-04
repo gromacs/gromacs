@@ -89,6 +89,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"

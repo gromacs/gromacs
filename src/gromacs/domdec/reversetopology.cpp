@@ -60,6 +60,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"

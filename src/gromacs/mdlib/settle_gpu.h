@@ -51,27 +51,16 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/topology/mtop_util.h"
 
 class InteractionDefinitions;
 
 namespace gmx
 {
-
-//! \internal \brief Indices of atoms in a water molecule
-struct WaterMolecule
-{
-    //! Oxygen atom
-    int ow1;
-    //! First hydrogen atom
-    int hw2;
-    //! Second hydrogen atom
-    int hw3;
-};
-
 
 /*! \internal \brief Class with interfaces and data for GPU version of SETTLE. */
 class SettleGpu

@@ -58,10 +58,11 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/lincs_gpu_internal.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/topology/mtop_util.h"
 
 namespace gmx
 {
@@ -164,89 +165,6 @@ LincsGpu::~LincsGpu()
     }
 }
 
-//! Helper type for discovering coupled constraints
-struct AtomsAdjacencyListElement
-{
-    AtomsAdjacencyListElement(const int indexOfSecondConstrainedAtom,
-                              const int indexOfConstraint,
-                              const int signFactor) :
-        indexOfSecondConstrainedAtom_(indexOfSecondConstrainedAtom),
-        indexOfConstraint_(indexOfConstraint),
-        signFactor_(signFactor)
-    {
-    }
-    //! The index of the other atom constrained to this atom.
-    int indexOfSecondConstrainedAtom_;
-    //! The index of this constraint in the container of constraints.
-    int indexOfConstraint_;
-    /*! \brief A multiplicative factor that indicates the relative
-     * order of the atoms in the atom list.
-     *
-     * Used for computing the mass factor of this constraint
-     * relative to any coupled constraints. */
-    int signFactor_;
-};
-//! Constructs and returns an atom constraint adjacency list
-static std::vector<std::vector<AtomsAdjacencyListElement>>
-constructAtomsAdjacencyList(const int numAtoms, ArrayRef<const int> iatoms)
-{
-    const int                                           stride         = 1 + NRAL(F_CONSTR);
-    const int                                           numConstraints = iatoms.ssize() / stride;
-    std::vector<std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList(numAtoms);
-    for (int c = 0; c < numConstraints; c++)
-    {
-        int a1 = iatoms[stride * c + 1];
-        int a2 = iatoms[stride * c + 2];
-
-        // Each constraint will be represented as a tuple, containing index of the second
-        // constrained atom, index of the constraint and a sign that indicates the order of atoms in
-        // which they are listed. Sign is needed to compute the mass factors.
-        atomsAdjacencyList[a1].emplace_back(a2, c, +1);
-        atomsAdjacencyList[a2].emplace_back(a1, c, -1);
-    }
-
-    return atomsAdjacencyList;
-}
-
-/*! \brief Helper function to go through constraints recursively.
- *
- *  For each constraint, counts the number of coupled constraints and stores the value in \p numCoupledConstraints array.
- *  This information is used to split the array of constraints between thread blocks on a GPU so there is no
- *  coupling between constraints from different thread blocks. After the \p numCoupledConstraints array is filled, the
- *  value \p numCoupledConstraints[c] should be equal to the number of constraints that are coupled to \p c and located
- *  after it in the constraints array.
- *
- * \param[in]     a                   Atom index.
- * \param[in,out] numCoupledConstraints  Indicates if the constraint was already counted and stores
- *                                    the number of constraints (i) connected to it and (ii) located
- *                                    after it in memory. This array is filled by this recursive function.
- *                                    For a set of coupled constraints, only for the first one in this list
- *                                    the number of consecutive coupled constraints is needed: if there is
- *                                    not enough space for this set of constraints in the thread block,
- *                                    the group has to be moved to the next one.
- * \param[in]     atomsAdjacencyList  Stores information about connections between atoms.
- */
-inline int countCoupled(int           a,
-                        ArrayRef<int> numCoupledConstraints,
-                        ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
-
-{
-    int counted = 0;
-    for (const auto& adjacentAtom : atomsAdjacencyList[a])
-    {
-        const int c2 = adjacentAtom.indexOfConstraint_;
-        if (numCoupledConstraints[c2] == -1)
-        {
-            numCoupledConstraints[c2] = 0; // To indicate we've been here
-            counted += 1
-                       + countCoupled(adjacentAtom.indexOfSecondConstrainedAtom_,
-                                      numCoupledConstraints,
-                                      atomsAdjacencyList);
-        }
-    }
-    return counted;
-}
-
 /*! \brief Add constraint to \p splitMap with all constraints coupled to it.
  *
  *  Adds the constraint \p c from the constrain list \p iatoms to the map \p splitMap
@@ -291,52 +209,9 @@ inline void addWithCoupled(ArrayRef<const int>                                  
     }
 }
 
-/*! \brief Computes and returns how many constraints are coupled to each constraint
- *
- * Needed to introduce splits in data so that all coupled constraints will be computed in a
- * single GPU block. The position \p c of the vector \p numCoupledConstraints should have the number
- * of constraints that are coupled to a constraint \p c and are after \p c in the vector. Only
- * first index of the connected group of the constraints is needed later in the code, hence the
- * numCoupledConstraints vector is also used to keep track if the constrain was already counted.
- */
-static std::vector<int> countNumCoupledConstraints(ArrayRef<const int> iatoms,
-                                                   ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
-{
-    const int        stride         = 1 + NRAL(F_CONSTR);
-    const int        numConstraints = iatoms.ssize() / stride;
-    std::vector<int> numCoupledConstraints(numConstraints, -1);
-    for (int c = 0; c < numConstraints; c++)
-    {
-        const int a1 = iatoms[stride * c + 1];
-        const int a2 = iatoms[stride * c + 2];
-        if (numCoupledConstraints[c] == -1)
-        {
-            numCoupledConstraints[c] = countCoupled(a1, numCoupledConstraints, atomsAdjacencyList)
-                                       + countCoupled(a2, numCoupledConstraints, atomsAdjacencyList);
-        }
-    }
-
-    return numCoupledConstraints;
-}
-
 bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 {
-    for (const gmx_moltype_t& molType : mtop.moltype)
-    {
-        ArrayRef<const int> iatoms    = molType.ilist[F_CONSTR].iatoms;
-        const auto atomsAdjacencyList = constructAtomsAdjacencyList(molType.atoms.nr, iatoms);
-        // Compute, how many constraints are coupled to each constraint
-        const auto numCoupledConstraints = countNumCoupledConstraints(iatoms, atomsAdjacencyList);
-        for (const int numCoupled : numCoupledConstraints)
-        {
-            if (numCoupled > c_threadsPerBlock)
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return ::isNumCoupledConstraintsSupported(mtop, c_threadsPerBlock);
 }
 
 void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const real* invmass)

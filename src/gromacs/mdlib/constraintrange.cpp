@@ -43,6 +43,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"

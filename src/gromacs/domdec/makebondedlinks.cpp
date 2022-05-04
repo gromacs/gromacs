@@ -52,6 +52,7 @@
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"
 

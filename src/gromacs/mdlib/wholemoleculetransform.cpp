@@ -38,6 +38,7 @@
 
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 
 namespace gmx
 {

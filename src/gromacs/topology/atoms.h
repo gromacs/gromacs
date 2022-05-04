@@ -38,46 +38,12 @@
 
 #include <vector>
 
+#include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
 struct t_symtab;
-
-/* The particle type */
-enum class ParticleType : int
-{
-    Atom,
-    Nucleus,
-    Shell,
-    Bond,
-    VSite,
-    Count
-};
-
-/* The particle type names */
-const char* enumValueToString(ParticleType enumValue);
-
-/* Enumerated type for pdb records. The other entries are ignored
- * when reading a pdb file
- */
-enum class PdbRecordType : int
-{
-    Atom,
-    Hetatm,
-    Anisou,
-    Cryst1,
-    Compound,
-    Model,
-    EndModel,
-    Ter,
-    Header,
-    Title,
-    Remark,
-    Conect,
-    Count
-};
-
-const char* enumValueToString(PdbRecordType enumValue);
 
 typedef struct t_atom
 {

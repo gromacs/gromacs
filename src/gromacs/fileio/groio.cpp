@@ -43,6 +43,7 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"

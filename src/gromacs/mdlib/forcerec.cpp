@@ -83,6 +83,7 @@
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"

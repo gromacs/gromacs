@@ -48,6 +48,7 @@ if(GMX_INSTALL_LEGACY_API)
 	  index.h
 	  symtab.h
 	  topology.h
+          topology_enums.h
 	  DESTINATION include/gromacs/topology)
 endif()
 

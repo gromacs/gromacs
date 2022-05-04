@@ -52,6 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
 
