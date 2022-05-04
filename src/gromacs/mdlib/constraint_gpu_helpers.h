@@ -42,9 +42,6 @@
 struct gmx_mtop_t;
 class InteractionDefinitions;
 
-//! Checks whether constraints are perturbed for free-energy calculations
-bool havePerturbedConstraints(const gmx_mtop_t& mtop);
-
 //! Check if the coupled contraints work for LINCS for specific number of threads.
 bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop, int threadsPerBlock);
 
