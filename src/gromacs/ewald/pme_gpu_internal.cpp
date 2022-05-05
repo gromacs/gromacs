@@ -281,7 +281,7 @@ void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu* pmeGpu,
         GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
         GMX_ASSERT(newCoefficientsSize > 0, "Bad number of atoms in PME GPU");
         copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients[gridIndex],
-                           const_cast<float*>(h_coefficients),
+                           h_coefficients,
                            0,
                            pmeGpu->kernelParams->atoms.nAtoms,
                            pmeGpu->archSpecific->pmeStream_,
@@ -1892,7 +1892,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, gmx_parallel_3dfft_t* fftSet
             // non-contiguous data - need to run kernel
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                float* h_grid = const_cast<float*>(h_grids[gridIndex]);
+                float* h_grid = h_grids[gridIndex];
                 convertPmeGridToFftGrid<false>(pmeGpu, h_grid, fftSetup, gridIndex);
             }
         }
@@ -1900,7 +1900,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, gmx_parallel_3dfft_t* fftSet
         {
             for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
             {
-                float* h_grid = const_cast<float*>(h_grids[gridIndex]);
+                const float* h_grid = h_grids[gridIndex];
                 pme_gpu_copy_input_gather_grid(pmeGpu, h_grid, gridIndex);
             }
         }

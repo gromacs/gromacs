@@ -82,6 +82,6 @@ void pr_double(FILE* fp, int indent, const char* title, double d);
 //! Prints a string value.
 void pr_str(FILE* fp, int indent, const char* title, const char* s);
 //! Prints strings as a section; intended to be used for an array of names.
-void pr_strings(FILE* fp, int indent, const char* title, char*** nm, int n, gmx_bool bShowNumbers);
+void pr_strings(FILE* fp, int indent, const char* title, const char* const* const* nm, int n, gmx_bool bShowNumbers);
 
 #endif

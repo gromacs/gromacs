@@ -584,7 +584,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
             }
             else
             {
-                void* sendbuf = const_cast<void*>(static_cast<const void*>(output.forces_[ind_start]));
+                void* sendbuf = &output.forces_[ind_start];
                 // Send using MPI
                 MPI_Isend(sendbuf,
                           receiver.numAtoms * sizeof(rvec),

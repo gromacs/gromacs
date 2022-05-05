@@ -243,7 +243,10 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t* mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
-static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIndices> grps, char*** grpname)
+static void pr_grps(FILE*                                 fp,
+                    const char*                           title,
+                    gmx::ArrayRef<const AtomGroupIndices> grps,
+                    const char* const* const*             grpname)
 {
     int index = 0;
     for (const auto& group : grps)
@@ -264,13 +267,8 @@ static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIn
 
 static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_bool bShowNumbers)
 {
-    pr_grps(fp, "grp", groups.groups, const_cast<char***>(groups.groupNames.data()));
-    pr_strings(fp,
-               indent,
-               "grpname",
-               const_cast<char***>(groups.groupNames.data()),
-               groups.groupNames.size(),
-               bShowNumbers);
+    pr_grps(fp, "grp", groups.groups, groups.groupNames.data());
+    pr_strings(fp, indent, "grpname", groups.groupNames.data(), groups.groupNames.size(), bShowNumbers);
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
