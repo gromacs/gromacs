@@ -87,4 +87,6 @@ gromacs:coverage:analyse:
     paths:
       - public/
     reports:
-      cobertura: public/cobertura-coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: public/cobertura-coverage.xml
