@@ -83,6 +83,7 @@ gromacs:coverage:analyse:
     - gcovr ${GCOVR_GENERAL_OPTIONS} ${GCOVR_EXCLUDE_OPTIONS} --xml $outputdir/cobertura-coverage.xml --xml-pretty --keep
     # final gcovr run, using the generated files to produce nice looking html output
     - gcovr ${GCOVR_GENERAL_OPTIONS} ${GCOVR_EXCLUDE_OPTIONS} --html $outputdir/coverage.html --use-gcov-files
+  coverage: '/^TOTAL.*\s+(\d+\%)$/'
   artifacts:
     paths:
       - public/
