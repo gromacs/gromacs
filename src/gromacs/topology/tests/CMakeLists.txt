@@ -33,6 +33,7 @@
 
 gmx_add_unit_test(TopologyTest topology-test
     CPP_SOURCE_FILES
+        atoms.cpp
         exclusionblocks.cpp
         idef.cpp
         mtop.cpp

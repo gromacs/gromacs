@@ -38,10 +38,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include <algorithm>
-
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
@@ -56,6 +55,7 @@ const char* enumValueToString(ParticleType enumValue)
     return particleTypeNames[enumValue];
 }
 
+// Legacy functions begin here.
 void init_atom(t_atoms* at)
 {
     at->nr          = 0;

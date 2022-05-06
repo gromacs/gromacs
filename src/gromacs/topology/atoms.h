@@ -36,15 +36,105 @@
 
 #include <stdio.h>
 
+#include <optional>
 #include <vector>
 
 #include "gromacs/topology/topology_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
-struct t_symtab;
+namespace gmx
+{
+class ISerializer;
+} // namespace gmx
 
+/*! \brief
+ * Contains information for a single particle in a PDB file.
+ *
+ * Currently only supports ATOM/HETATM lines, as well as anisotropy information.
+ */
+class PdbAtomEntry
+{
+public:
+    //! Construct full structure without anisotropy information, bfactor or occupancy.
+    PdbAtomEntry(PdbRecordType type, int pdbAtomNumber, char alternativeLocation, const std::string& atomName) :
+        PdbAtomEntry(type, pdbAtomNumber, alternativeLocation, atomName, std::nullopt, std::nullopt)
+    {
+    }
+
+    //! Construct full structure without anisotropy information, but with bfactor and occupancy.
+    PdbAtomEntry(PdbRecordType       type,
+                 int                 pdbAtomNumber,
+                 char                alternativeLocation,
+                 const std::string&  atomName,
+                 std::optional<real> occupancy,
+                 std::optional<real> bFactor) :
+        PdbAtomEntry(type, pdbAtomNumber, alternativeLocation, atomName, occupancy, bFactor, std::nullopt)
+    {
+    }
+    //! Construct full structure.
+    PdbAtomEntry(PdbRecordType                      type,
+                 int                                atomSerialNumber,
+                 char                               alternativeLocation,
+                 const std::string&                 atomName,
+                 std::optional<real>                occupancy,
+                 std::optional<real>                bFactor,
+                 std::optional<std::array<real, 6>> anisotropy) :
+        type_(type),
+        atomSerialNumber_(atomSerialNumber),
+        alternativeLocation_(alternativeLocation),
+        atomName_(atomName),
+        occupancy_(occupancy),
+        bFactor_(bFactor),
+        anisotropyTensor_(anisotropy)
+    {
+        if (atomName.size() > 6)
+        {
+            GMX_THROW(gmx::InconsistentInputError(
+                    "Cannot have atom name with more than 6 characters"));
+        }
+    }
+    //! Get PDB record type
+    PdbRecordType type() const { return type_; }
+    //! Get atom number.
+    int atomSerialNumber() const { return atomSerialNumber_; }
+    //! Get access to alternative location identifier.
+    char altloc() const { return alternativeLocation_; }
+    //! Get access to real atom name.
+    const std::string& atomName() const { return atomName_; }
+    //! Get access to occupancy.
+    std::optional<real> occupancy() const { return occupancy_; }
+    //! Get access to b factor.
+    std::optional<real> bFactor() const { return bFactor_; }
+    //! Get access to anisotropy values.
+    std::optional<gmx::ArrayRef<const real>> anisotropy() const
+    {
+        return anisotropyTensor_.has_value()
+                       ? std::make_optional(gmx::makeConstArrayRef(anisotropyTensor_.value()))
+                       : std::nullopt;
+    }
+
+private:
+    //! PDB record type
+    PdbRecordType type_;
+    //! PDB atom number.
+    int atomSerialNumber_;
+    //! Defines alternative location in PDB.
+    char alternativeLocation_;
+    //! The actual atom name from the pdb file.
+    std::string atomName_;
+    //! Occupancy field, abused for other things.
+    std::optional<real> occupancy_;
+    //! B-Factor field, abused for other things.
+    std::optional<real> bFactor_;
+    //! Tensor of anisotropy values.
+    std::optional<std::array<real, 6>> anisotropyTensor_;
+};
+
+// Legacy types begin here
 typedef struct t_atom
 {
     real           m, q;       /* Mass and charge                      */
