@@ -73,6 +73,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/template_mp.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
@@ -290,15 +291,17 @@ void Update::update_temperature_constants(const t_inputrec& inputRecord)
 /*! \brief Sets whether we store the updated velocities */
 enum class StoreUpdatedVelocities
 {
-    yes, //!< Store the updated velocities
-    no   //!< Do not store the updated velocities
+    Yes, //!< Store the updated velocities
+    No,  //!< Do not store the updated velocities
+    Count
 };
 
 /*! \brief Sets the number of different temperature coupling values */
 enum class NumTempScaleValues
 {
-    single,  //!< Single T-scaling value (either one group or all values =1)
-    multiple //!< Multiple T-scaling values, need to use T-group indices
+    Single,   //!< Single T-scaling value (either one group or all values =1)
+    Multiple, //!< Multiple T-scaling values, need to use T-group indices
+    Count
 };
 
 /*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
@@ -309,8 +312,9 @@ enum class NumTempScaleValues
  */
 enum class ApplyParrinelloRahmanVScaling
 {
-    no,      //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    diagonal //!< Apply velocity scaling using a diagonal matrix
+    No,       //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal, //!< Apply velocity scaling using a diagonal matrix
+    Count
 };
 
 /*! \brief Integrate using leap-frog with T-scaling and optionally diagonal Parrinello-Rahman p-coupling
@@ -353,14 +357,14 @@ updateMDLeapfrogSimple(int                                 start,
 {
     real lambdaGroup;
 
-    if (numTempScaleValues == NumTempScaleValues::single)
+    if (numTempScaleValues == NumTempScaleValues::Single)
     {
         lambdaGroup = tcstat[0].lambda;
     }
 
     for (int a = start; a < nrend; a++)
     {
-        if (numTempScaleValues == NumTempScaleValues::multiple)
+        if (numTempScaleValues == NumTempScaleValues::Multiple)
         {
             lambdaGroup = tcstat[cTC[a]].lambda;
         }
@@ -375,11 +379,11 @@ updateMDLeapfrogSimple(int                                 start,
              */
             real vNew = lambdaGroup * v[a][d] + f[a][d] * invMassPerDim[a][d] * dt;
 
-            if (applyPRVScaling == ApplyParrinelloRahmanVScaling::diagonal)
+            if (applyPRVScaling == ApplyParrinelloRahmanVScaling::Diagonal)
             {
                 vNew -= dtPressureCouple * pRVScaleMatrixDiagonal[d] * v[a][d];
             }
-            if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::yes)
+            if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::Yes)
             {
                 v[a][d] = vNew;
             }
@@ -492,7 +496,7 @@ updateMDLeapfrogSimpleSimd(int                               start,
         v1 = fma(f1 * invMass1, timestep, lambdaSystem * v1);
         v2 = fma(f2 * invMass2, timestep, lambdaSystem * v2);
 
-        if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::yes)
+        if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::Yes)
         {
             simdStoreRvecs(v, a, v0, v1, v2);
         }
@@ -514,9 +518,10 @@ updateMDLeapfrogSimpleSimd(int                               start,
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
 {
-    none,
-    group,
-    cosine
+    None,
+    Group,
+    Cosine,
+    Count
 };
 
 /*! \brief Integrate using leap-frog with support for everything.
@@ -588,8 +593,8 @@ static void updateMDLeapfrogGeneral(int                                 start,
         real cosineZ, vCosine;
         switch (accelerationType)
         {
-            case AccelerationType::none: copy_rvec(v[n], vRel); break;
-            case AccelerationType::group:
+            case AccelerationType::None: copy_rvec(v[n], vRel); break;
+            case AccelerationType::Group:
                 if (!cAcceleration.empty())
                 {
                     ga = cAcceleration[n];
@@ -597,7 +602,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
                 /* With constant acceleration we do scale the velocity of the accelerated groups */
                 copy_rvec(v[n], vRel);
                 break;
-            case AccelerationType::cosine:
+            case AccelerationType::Cosine:
                 cosineZ = std::cos(x[n][ZZ] * omega_Z);
                 vCosine = cosineZ * ekind->cosacc.vcos;
                 /* Avoid scaling the cosine profile velocity */
@@ -624,12 +629,12 @@ static void updateMDLeapfrogGeneral(int                                 start,
                         / (1 + factorNH);
             switch (accelerationType)
             {
-                case AccelerationType::none: break;
-                case AccelerationType::group:
+                case AccelerationType::None: break;
+                case AccelerationType::Group:
                     /* Apply the constant acceleration */
                     vNew += acceleration[ga][d] * dt;
                     break;
-                case AccelerationType::cosine:
+                case AccelerationType::Cosine:
                     if (d == XX)
                     {
                         /* Add back the mean velocity and apply acceleration */
@@ -682,9 +687,12 @@ static void do_update_md(int                                  start,
     real dtPressureCouple = (doParrinelloRahman ? nstpcouple * dt : 0);
 
     /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
-    const bool doAcceleration = (useConstantAcceleration || ekind->cosacc.cos_accel != 0);
+    AccelerationType accelerationType =
+            (useConstantAcceleration ? AccelerationType::Group
+                                     : ((ekind->cosacc.cos_accel != 0) ? AccelerationType::Cosine
+                                                                       : AccelerationType::None));
 
-    if (doNoseHoover || doPROffDiagonal || doAcceleration)
+    if (doNoseHoover || doPROffDiagonal || accelerationType != AccelerationType::None)
     {
         matrix stepM;
         if (!doParrinelloRahman)
@@ -697,69 +705,28 @@ static void do_update_md(int                                  start,
             copy_mat(M, stepM);
         }
 
-        if (!doAcceleration)
-        {
-            updateMDLeapfrogGeneral<AccelerationType::none>(start,
-                                                            nrend,
-                                                            doNoseHoover,
-                                                            dt,
-                                                            dtPressureCouple,
-                                                            cTC,
-                                                            cAcceleration,
-                                                            acceleration,
-                                                            invMassPerDim,
-                                                            ekind,
-                                                            box,
-                                                            x,
-                                                            xprime,
-                                                            v,
-                                                            f,
-                                                            nh_vxi,
-                                                            nsttcouple,
-                                                            stepM);
-        }
-        else if (useConstantAcceleration)
-        {
-            updateMDLeapfrogGeneral<AccelerationType::group>(start,
-                                                             nrend,
-                                                             doNoseHoover,
-                                                             dt,
-                                                             dtPressureCouple,
-                                                             cTC,
-                                                             cAcceleration,
-                                                             acceleration,
-                                                             invMassPerDim,
-                                                             ekind,
-                                                             box,
-                                                             x,
-                                                             xprime,
-                                                             v,
-                                                             f,
-                                                             nh_vxi,
-                                                             nsttcouple,
-                                                             stepM);
-        }
-        else
-        {
-            updateMDLeapfrogGeneral<AccelerationType::cosine>(start,
-                                                              nrend,
-                                                              doNoseHoover,
-                                                              dt,
-                                                              dtPressureCouple,
-                                                              cTC,
-                                                              cAcceleration,
-                                                              acceleration,
-                                                              invMassPerDim,
-                                                              ekind,
-                                                              box,
-                                                              x,
-                                                              xprime,
-                                                              v,
-                                                              f,
-                                                              nh_vxi,
-                                                              nsttcouple,
-                                                              stepM);
-        }
+        dispatchTemplatedFunction(
+                [=](auto accelerationType) {
+                    return updateMDLeapfrogGeneral<accelerationType>(start,
+                                                                     nrend,
+                                                                     doNoseHoover,
+                                                                     dt,
+                                                                     dtPressureCouple,
+                                                                     cTC,
+                                                                     cAcceleration,
+                                                                     acceleration,
+                                                                     invMassPerDim,
+                                                                     ekind,
+                                                                     box,
+                                                                     x,
+                                                                     xprime,
+                                                                     v,
+                                                                     f,
+                                                                     nh_vxi,
+                                                                     nsttcouple,
+                                                                     stepM);
+                },
+                accelerationType);
     }
     else
     {
@@ -768,7 +735,9 @@ static void do_update_md(int                                  start,
          * If we do not do temperature coupling (in the run or this step),
          * all scaling values are 1, so we effectively have a single value.
          */
-        bool haveSingleTempScaleValue = (!doTempCouple || ekind->ngtc == 1);
+        NumTempScaleValues numTempScaleValues = (!doTempCouple || ekind->ngtc == 1)
+                                                        ? NumTempScaleValues::Single
+                                                        : NumTempScaleValues::Multiple;
 
         /* Extract some pointers needed by all cases */
         gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
@@ -776,7 +745,7 @@ static void do_update_md(int                                  start,
         if (doParrinelloRahman)
         {
             GMX_ASSERT(!doPROffDiagonal,
-                       "updateMDLeapfrogSimple only support diagonal Parrinello-Rahman scaling "
+                       "updateMDLeapfrogSimple only supports diagonal Parrinello-Rahman scaling "
                        "matrices");
 
             rvec diagM;
@@ -785,44 +754,49 @@ static void do_update_md(int                                  start,
                 diagM[d] = M[d][d];
             }
 
-            if (haveSingleTempScaleValue)
-            {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single, ApplyParrinelloRahmanVScaling::diagonal>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
-            }
-            else
-            {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple, ApplyParrinelloRahmanVScaling::diagonal>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
-            }
+            dispatchTemplatedFunction(
+                    [=](auto numTempScaleValues) {
+                        return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ApplyParrinelloRahmanVScaling::Diagonal>(
+                                start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
+                    },
+                    numTempScaleValues);
         }
         else
         {
-            if (haveSingleTempScaleValue)
-            {
-                /* Note that modern compilers are pretty good at vectorizing
-                 * updateMDLeapfrogSimple(). But the SIMD version will still
-                 * be faster because invMass lowers the cache pressure
-                 * compared to invMassPerDim.
-                 */
 #if GMX_HAVE_SIMD_UPDATE
-                /* Check if we can use invmass instead of invMassPerDim */
-                if (!havePartiallyFrozenAtoms)
-                {
-                    updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::yes>(
-                            start, nrend, dt, invmass, tcstat, x, xprime, v, f);
-                }
-                else
-#endif
-                {
-                    updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single, ApplyParrinelloRahmanVScaling::no>(
-                            start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
-                }
+            /* Check if we can use invmass instead of invMassPerDim */
+            if (numTempScaleValues == NumTempScaleValues::Single && !havePartiallyFrozenAtoms)
+            {
+                updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::Yes>(
+                        start, nrend, dt, invmass, tcstat, x, xprime, v, f);
             }
             else
+#endif
             {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple, ApplyParrinelloRahmanVScaling::no>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
+                dispatchTemplatedFunction(
+                        [=](auto numTempScaleValues) {
+                            /* Note that modern compilers are pretty good at vectorizing
+                             * updateMDLeapfrogSimple(). But the SIMD version will still
+                             * be faster because invMass lowers the cache pressure
+                             * compared to invMassPerDim.
+                             */
+                            {
+                                updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ApplyParrinelloRahmanVScaling::No>(
+                                        start,
+                                        nrend,
+                                        dt,
+                                        dtPressureCouple,
+                                        invMassPerDim,
+                                        tcstat,
+                                        cTC,
+                                        nullptr,
+                                        x,
+                                        xprime,
+                                        v,
+                                        f);
+                            }
+                        },
+                        numTempScaleValues);
             }
         }
     }
@@ -849,13 +823,13 @@ static void doUpdateMDDoNotUpdateVelocities(int                      start,
 #if GMX_HAVE_SIMD_UPDATE
     if (!havePartiallyFrozenAtoms)
     {
-        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::no>(
+        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::No>(
                 start, nrend, dt, invmass, tcstat, x, xprime, v, f);
     }
     else
 #endif
     {
-        updateMDLeapfrogSimple<StoreUpdatedVelocities::no, NumTempScaleValues::single, ApplyParrinelloRahmanVScaling::no>(
+        updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ApplyParrinelloRahmanVScaling::No>(
                 start, nrend, dt, dt, invMassPerDim, tcstat, gmx::ArrayRef<const unsigned short>(), nullptr, x, xprime, v, f);
     }
 }
@@ -1075,7 +1049,8 @@ enum class SDUpdate : int
 {
     ForcesOnly,
     FrictionAndNoiseOnly,
-    Combined
+    Combined,
+    Count
 };
 
 /*! \brief SD integrator update
