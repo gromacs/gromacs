@@ -196,6 +196,10 @@ or passed along to the environment of executed commands.
 Other important variable keys are as follows.
 
 .. glossary::
+    BUILD_DIR
+        GROMACS specific directory to perform configuration, building and testing in.
+        Usually job dependent, needs to be the same for all tasks of dependent jobs.
+
     CI_PROJECT_NAMESPACE
         Distinguishes pipelines created for repositories in the ``gromacs``
         GitLab project space. May be used to pre-screen jobs to determine
@@ -223,6 +227,12 @@ Other important variable keys are as follows.
 
     CMAKE_MPI_OPTIONS
         Provide CMake command line arguments to define GROMACS MPI build options.
+
+    DRY_RUN
+        Read-only environment variable used to control behaviour of script uploading
+        artifact files to the ftp and web servers. Set to false to actually upload
+        files. This is usually done through the pipeline submission script, but can
+        be done manual as well through the web interface.                                   
 
     GROMACS_MAJOR_VERSION
         Read-only environment variable for CI scripts to check the
