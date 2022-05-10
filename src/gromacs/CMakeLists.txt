@@ -31,6 +31,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    message(FATAL_ERROR "CMake called with the wrong directory; please use the top GROMACS directory (${CMAKE_CURRENT_SOURCE_DIR}/../../)")
+endif()
+
 set(LIBGROMACS_SOURCES)
 
 if (GMX_CLANG_CUDA)
