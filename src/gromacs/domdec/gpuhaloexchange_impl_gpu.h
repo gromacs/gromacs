@@ -33,17 +33,18 @@
  */
 /*! \internal \file
  *
- * \brief Declares CUDA implementation of GPU Halo Exchange.
+ * \brief Declares the implementation of GPU Halo Exchange.
  *
  * This header file is needed to include from both the device-side
  * kernels file, and the host-side management code.
  *
  * \author Alan Gray <alang@nvidia.com>
+ * \author Andrey Alekseenko <al42and@gmail.com>
  *
  * \ingroup module_domdec
  */
-#ifndef GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_H
-#define GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_H
+#ifndef GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_GPU_H
+#define GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_GPU_H
 
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/device_context.h"
@@ -55,13 +56,6 @@ struct gmx_wallcycle;
 
 namespace gmx
 {
-
-/*! \brief switch for whether coordinates or force halo is being applied */
-enum class HaloQuantity
-{
-    HaloCoordinates,
-    HaloForces
-};
 
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
 class GpuHaloExchange::Impl
@@ -90,8 +84,7 @@ public:
      * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
      * \param [in] d_forcesBuffer   pointer to forces buffer in GPU memory
      */
-    void reinitHalo(float3* d_coordinatesBuffer, float3* d_forcesBuffer);
-
+    void reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer, DeviceBuffer<Float3> d_forcesBuffer);
 
     /*! \brief
      * GPU halo exchange of coordinates buffer
@@ -122,18 +115,18 @@ private:
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      */
-    void communicateHaloData(float3* sendPtr, int sendSize, int sendRank, float3* recvPtr, int recvSize, int recvRank);
+    void communicateHaloData(Float3* sendPtr, int sendSize, int sendRank, Float3* recvPtr, int recvSize, int recvRank);
 
-    /*! \brief Data transfer for GPU halo exchange using CUDA memcopies
+    /*! \brief Data transfer for GPU halo exchange using peer-to-peer copies
      * \param [inout] sendPtr    address to send data from
      * \param [in] sendSize      number of atoms to be sent
      * \param [in] sendRank      rank to send data to
      * \param [in] remotePtr     remote address to recv data
      * \param [in] recvRank      rank to recv data from
      */
-    void communicateHaloDataWithCudaDirect(float3* sendPtr, int sendSize, int sendRank, float3* remotePtr, int recvRank);
+    void communicateHaloDataPeerToPeer(Float3* sendPtr, int sendSize, int sendRank, Float3* remotePtr, int recvRank);
 
-    /*! \brief Data transfer wrapper for GPU halo exchange using MPI_send and MPI_Recv
+    /*! \brief Data transfer for GPU halo exchange using GPU-aware MPI
      * \param [in] sendPtr      send buffer address
      * \param [in] sendSize     number of elements to send
      * \param [in] sendRank     rank of destination
@@ -141,15 +134,21 @@ private:
      * \param [in] recvSize     number of elements to receive
      * \param [in] recvRank     rank of source
      */
-    void communicateHaloDataWithCudaMPI(float3* sendPtr,
+    void communicateHaloDataGpuAwareMpi(Float3* sendPtr,
                                         int     sendSize,
                                         int     sendRank,
-                                        float3* recvPtr,
+                                        Float3* recvPtr,
                                         int     recvSize,
                                         int     recvRank);
 
+    //! Backend-specific function for launching coordinate packing kernel
+    void launchPackXKernel(const matrix box);
+
+    //! Backend-specific function for launching force unpacking kernel
+    void launchUnpackFKernel(bool accumulateForces);
+
     /*! \brief Exchange coordinate-ready event with neighbor ranks and enqueue wait in halo stream
-     * \param [in] eventSync    event recorded when coordinates/forces are ready to device
+     * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates/forces are ready to device.
      */
     void enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
@@ -158,24 +157,24 @@ private:
     //! map of indices to be sent from this rank
     gmx::HostVector<int> h_indexMap_;
     //! device copy of index map
-    int* d_indexMap_ = nullptr;
+    DeviceBuffer<int> d_indexMap_ = nullptr;
     //! number of elements in index map array
     int indexMapSize_ = -1;
     //! number of elements allocated in index map array
     int indexMapSizeAlloc_ = -1;
     //! device buffer for sending packed data
-    float3* d_sendBuf_ = nullptr;
-    //! number of atoms in sendbuf array
+    DeviceBuffer<Float3> d_sendBuf_;
+    //! number of atoms in \c sendbuf array
     int sendBufSize_ = -1;
-    //! number of atoms allocated in sendbuf array
+    //! number of atoms allocated in \c sendbuf array
     int sendBufSizeAlloc_ = -1;
     //! device buffer for receiving packed data
-    float3* d_recvBuf_ = nullptr;
+    DeviceBuffer<Float3> d_recvBuf_;
     //! maximum size of packed buffer
     int maxPackedBufferSize_ = 0;
-    //! number of atoms in recvbuf array
+    //! number of atoms in \c recvbuf array
     int recvBufSize_ = -1;
-    //! number of atoms allocated in recvbuf array
+    //! number of atoms allocated in \c recvbuf array
     int recvBufSizeAlloc_ = -1;
     //! rank to send data to for X
     int sendRankX_ = 0;
@@ -196,25 +195,25 @@ private:
     //! number of home atoms - offset of local halo region
     int numHomeAtoms_ = 0;
     //! remote GPU coordinates buffer pointer for pushing data
-    float3* remoteXPtr_ = nullptr;
+    DeviceBuffer<Float3> remoteXPtr_;
     //! remote GPU force buffer pointer for pushing data
-    float3* remoteFPtr_ = nullptr;
+    DeviceBuffer<Float3> remoteFPtr_;
     //! Periodic Boundary Conditions for this rank
     bool usePBC_ = false;
     //! force shift buffer on device
-    float3* d_fShift_ = nullptr;
-    //! Event triggered when halo transfer has been launched with direct CUD memory copy
-    GpuEventSynchronizer* haloDataTransferLaunched_ = nullptr;
+    DeviceBuffer<Float3> d_fShift_;
+    //! Event triggered when halo transfer has been launched with peer-to-peer memory copy
+    std::unique_ptr<GpuEventSynchronizer> haloDataTransferLaunched_;
     //! MPI communicator used for simulation
     MPI_Comm mpi_comm_mysim_;
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! CUDA stream for this halo exchange
-    DeviceStream* haloStream_;
+    std::unique_ptr<DeviceStream> haloStream_;
     //! full coordinates buffer in GPU memory
-    float3* d_x_ = nullptr;
+    DeviceBuffer<Float3> d_x_;
     //! full forces buffer in GPU memory
-    float3* d_f_ = nullptr;
+    DeviceBuffer<Float3> d_f_;
     //! An event recorded once the exchanged forces are ready on the GPU
     GpuEventSynchronizer fReadyOnDevice_;
     //! The dimension index corresponding to this halo exchange instance
@@ -231,4 +230,4 @@ private:
 
 } // namespace gmx
 
-#endif
+#endif // GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_GPU_H
