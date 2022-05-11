@@ -56,7 +56,10 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/arrayref.h"
 
 #include "dimparams.h" /* This is needed for awh_dvec */
@@ -348,12 +351,12 @@ bool advancePointInSubgrid(const BiasGrid& grid,
  * \param[in]  grid                  The grid.
  * \param[in]  correctFormatMessage  String to include in error message if extracting the data fails.
  */
-void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
-                       const double* const* data,
-                       int                  numDataPoints,
-                       const std::string&   dataFilename,
-                       const BiasGrid&      grid,
-                       const std::string&   correctFormatMessage);
+void mapGridToDataGrid(std::vector<int>* gridpointToDatapoint,
+                       const MultiDimArray<std::vector<double>, dynamicExtents2D>& data,
+                       int                                                         numDataPoints,
+                       const std::string&                                          dataFilename,
+                       const BiasGrid&                                             grid,
+                       const std::string& correctFormatMessage);
 
 /*! \brief
  * Get the deviation along one dimension from the given value to a point in the grid.

@@ -44,7 +44,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "bias.h"
 #include "biasgrid.h"

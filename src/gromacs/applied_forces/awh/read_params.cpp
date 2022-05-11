@@ -57,7 +57,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/iserializer.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "biasparams.h"

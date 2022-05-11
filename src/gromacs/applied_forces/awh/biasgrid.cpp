@@ -58,7 +58,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -854,15 +853,17 @@ BiasGrid::BiasGrid(ArrayRef<const DimParams> dimParams, ArrayRef<const AwhDimPar
     }
 }
 
-void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
-                       const double* const* data,
-                       int                  numDataPoints,
-                       const std::string&   dataFilename,
-                       const BiasGrid&      grid,
-                       const std::string&   correctFormatMessage)
+void mapGridToDataGrid(std::vector<int>* gridpointToDatapoint,
+                       const MultiDimArray<std::vector<double>, dynamicExtents2D>& data,
+                       int                                                         numDataPoints,
+                       const std::string&                                          dataFilename,
+                       const BiasGrid&                                             grid,
+                       const std::string& correctFormatMessage)
 {
     /* Transform the data into a grid in order to map each grid point to a data point
        using the grid functions. */
+
+    const auto& dataView = data.asConstView();
 
     /* Count the number of points for each dimension. Each dimension
        has its own stride. */
@@ -874,13 +875,13 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
     {
         int    numPointsInDim = 0;
         int    pointIndex     = 0;
-        double firstValue     = data[d][pointIndex];
+        double firstValue     = dataView[d][pointIndex];
         do
         {
             numPointsInDim++;
             pointIndex += stride;
         } while (pointIndex < numDataPoints
-                 && !gmx_within_tol(firstValue, data[d][pointIndex], GMX_REAL_EPS));
+                 && !gmx_within_tol(firstValue, dataView[d][pointIndex], GMX_REAL_EPS));
 
         /* The stride in dimension dimension d - 1 equals the number of points
            dimension d. */
@@ -909,12 +910,12 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
     {
         if (isFepLambdaAxis[d])
         {
-            axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], 0, numPoints[d], true);
+            axis_.emplace_back(dataView[d][0], dataView[d][numDataPoints - 1], 0, numPoints[d], true);
         }
         else
         {
             axis_.emplace_back(
-                    data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(), numPoints[d], false);
+                    dataView[d][0], dataView[d][numDataPoints - 1], grid.axis(d).period(), numPoints[d], false);
         }
     }
 

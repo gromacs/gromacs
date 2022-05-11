@@ -68,7 +68,6 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "biasgrid.h"
@@ -1540,15 +1539,19 @@ void BiasState::setFreeEnergyToConvolvedPmf(ArrayRef<const DimParams> dimParams,
  * \param[in] numColumns  Number of cols in array.
  * \returns the number of trailing zero rows.
  */
-static int countTrailingZeroRows(const double* const* data, int numRows, int numColumns)
+static int countTrailingZeroRows(const MultiDimArray<std::vector<double>, dynamicExtents2D>& data,
+                                 int numRows,
+                                 int numColumns)
 {
+    const auto& dataView = data.asConstView();
+
     int numZeroRows = 0;
     for (int m = numRows - 1; m >= 0; m--)
     {
         bool rowIsZero = true;
         for (int d = 0; d < numColumns; d++)
         {
-            if (data[d][m] != 0)
+            if (dataView[d][m] != 0)
             {
                 rowIsZero = false;
                 break;
@@ -1616,9 +1619,9 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
     wrapper.settings().setLineLength(c_linewidth);
     correctFormatMessage = wrapper.wrapToString(correctFormatMessage);
 
-    double** data;
-    int      numColumns;
-    int      numRows = read_xvg(filenameModified.c_str(), &data, &numColumns);
+    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> data = readXvgData(filenameModified);
+    const int                                                      numColumns = data.extent(0);
+    const int                                                      numRows    = data.extent(1);
 
     /* Check basic data properties here. BiasGrid takes care of more complicated things. */
 
@@ -1670,6 +1673,8 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
         GMX_THROW(InvalidInputError(mesg));
     }
 
+    const auto& dataView = data.asView();
+
     /* read_xvg can give trailing zero data rows for trailing new lines in the input. We allow 1 zero row,
        since this could be real data. But multiple trailing zero rows cannot correspond to valid data. */
     int numZeroRows = countTrailingZeroRows(data, numRows, numColumns);
@@ -1693,7 +1698,7 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
         }
         for (size_t m = 0; m < pointState->size(); m++)
         {
-            data[d][m] *= scalingFactor;
+            dataView[d][m] *= scalingFactor;
         }
     }
 
@@ -1710,14 +1715,14 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
     bool targetDistributionIsZero = true;
     for (size_t m = 0; m < pointState->size(); m++)
     {
-        const double pmf = data[columnIndexPmf][gridIndexToDataIndex[m]];
+        const double pmf = dataView[columnIndexPmf][gridIndexToDataIndex[m]];
         if (pmf < -c_pmfMax || pmf > c_pmfMax)
         {
             GMX_THROW(InvalidInputError(
                     "A value in the user input PMF is beyond the bounds of +-700 kT"));
         }
         (*pointState)[m].setLogPmfSum(-pmf);
-        double target = data[columnIndexTarget][gridIndexToDataIndex[m]];
+        double target = dataView[columnIndexTarget][gridIndexToDataIndex[m]];
 
         /* Check if the values are allowed. */
         if (target < 0)
@@ -1744,13 +1749,6 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
                                   filename.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
-
-    /* Free the arrays. */
-    for (int m = 0; m < numColumns; m++)
-    {
-        sfree(data[m]);
-    }
-    sfree(data);
 }
 
 void BiasState::normalizePmf(int numSharingSims)
