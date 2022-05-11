@@ -933,10 +933,9 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
             domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork
             || domainWork.haveFreeEnergyWork || simulationWork.useCpuNonbonded || simulationWork.useCpuPme
             || simulationWork.haveEwaldSurfaceContribution || inputrec.nwall > 0;
+    domainWork.haveCpuNonLocalForceWork = domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
     domainWork.haveLocalForceContribInCpuBuffer =
             domainWork.haveCpuLocalForceWork || simulationWork.havePpDomainDecomposition;
-    domainWork.haveNonLocalForceContribInCpuBuffer =
-            domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork;
 
     return domainWork;
 }
@@ -1266,9 +1265,8 @@ static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* run
                                            const gmx_domdec_t*               dd)
 {
     // (re-)initialize non-local GPU force reduction
-    const bool accumulate = runScheduleWork->domainWork.haveCpuBondedWork
-                            || runScheduleWork->domainWork.haveFreeEnergyWork;
-    const int atomStart = dd_numHomeAtoms(*dd);
+    const bool accumulate = runScheduleWork->domainWork.haveCpuNonLocalForceWork;
+    const int  atomStart  = dd_numHomeAtoms(*dd);
     gpuForceReduction->reinit(stateGpu->getForces(),
                               nbv->getNumAtoms(AtomLocality::NonLocal),
                               nbv->getGridIndices(),
@@ -1279,7 +1277,7 @@ static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload* run
     // register forces and add dependencies
     gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpu_nbv));
 
-    if (runScheduleWork->domainWork.haveNonLocalForceContribInCpuBuffer)
+    if (runScheduleWork->domainWork.haveCpuNonLocalForceWork)
     {
         gpuForceReduction->addDependency(stateGpu->fReadyOnDevice(AtomLocality::NonLocal));
     }
@@ -1699,7 +1697,7 @@ void do_force(FILE*                               fplog,
                 // when the coordinate data has been copied to the device).
                 gpuCoordinateHaloLaunched = communicateGpuHaloCoordinates(*cr, box, localXReadyOnDevice);
 
-                if (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork)
+                if (domainWork.haveCpuNonLocalForceWork)
                 {
                     // non-local part of coordinate buffer must be copied back to host for CPU work
                     stateGpu->copyCoordinatesFromGpu(
@@ -1728,11 +1726,16 @@ void do_force(FILE*                               fplog,
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
                 }
+                GpuEventSynchronizer* xReadyOnDeviceEvent = stateGpu->getCoordinatesReadyOnDeviceEvent(
+                        AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched);
+                if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
+                {
+                    /* We already enqueued an event for Gpu Halo exchange completion into the
+                     * NonLocal stream when D2H copying the coordinates. */
+                    xReadyOnDeviceEvent = nullptr;
+                }
                 nbv->convertCoordinatesGpu(
-                        AtomLocality::NonLocal,
-                        stateGpu->getCoordinates(),
-                        stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched));
+                        AtomLocality::NonLocal, stateGpu->getCoordinates(), xReadyOnDeviceEvent);
             }
             else
             {
@@ -1974,8 +1977,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // TODO Force flags should include haveFreeEnergyWork for this domain
-    if (stepWork.useGpuXHalo && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
+    if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
     {
         wallcycle_stop(wcycle, WallCycleCounter::Force);
         /* Wait for non-local coordinate data to be copied from device */
@@ -2189,7 +2191,7 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.useGpuFBufferOps)
             {
-                if (domainWork.haveNonLocalForceContribInCpuBuffer)
+                if (domainWork.haveCpuNonLocalForceWork)
                 {
                     stateGpu->copyForcesToGpu(forceOutMtsLevel0.forceWithShiftForces().force(),
                                               AtomLocality::NonLocal);

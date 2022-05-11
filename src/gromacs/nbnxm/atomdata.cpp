@@ -1029,8 +1029,6 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
                                     DeviceBuffer<RVec>      d_x,
                                     GpuEventSynchronizer*   xReadyOnDevice)
 {
-    GMX_ASSERT(xReadyOnDevice != nullptr, "Need a valid GpuEventSynchronizer object");
-
     int gridBegin = 0;
     int gridEnd   = 0;
     getAtomRanges(gridSet, locality, &gridBegin, &gridEnd);
