@@ -29,3 +29,13 @@ or as :math:`\gamma_i = m_i\,\gamma_i`, where the friction constants
 the system is assumed to be over-damped, large timesteps can be used.
 LINCS should be used for the constraints since SHAKE will not converge
 for large atomic displacements. BD is an option of the :ref:`mdrun <gmx mdrun>` program.
+
+In BD there are no velocities, so there is also no kinetic energy. Still
+:ref:`gmx mdrun` will report a kinetic energy and temperature based on
+atom displacements per step :math:`\Delta x`. This can be used to judge
+the quality of the integration. A too high temperature is an indication
+that the time step chosen is too large. The formula for the kinetic
+energy term reported is:
+
+.. math:: \frac{1}{2} \sum_i \frac{\gamma_i \Delta x_i^2}{2 \, \Delta t}
+	  :label: eqnbrowniandynekin
