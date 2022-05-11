@@ -395,11 +395,17 @@ updateMDLeapfrogSimple(int                                 start,
 
 #if GMX_SIMD && GMX_SIMD_HAVE_REAL
 #    define GMX_HAVE_SIMD_UPDATE 1
+using UpdateSimdReal   = SimdReal;
+using UpdateSimdTraits = gmx::internal::SimdTraits<UpdateSimdReal>;
 #else
 #    define GMX_HAVE_SIMD_UPDATE 0
+using UpdateSimdReal = real;
+struct UpdateSimdTraits
+{
+    using type                 = UpdateSimdReal;
+    static constexpr int width = 1;
+};
 #endif
-
-#if GMX_HAVE_SIMD_UPDATE
 
 /*! \brief Load (aligned) the contents of GMX_SIMD_REAL_WIDTH rvec elements sequentially into 3 SIMD registers
  *
@@ -414,15 +420,13 @@ updateMDLeapfrogSimple(int                                 start,
  * \param[out] r1     Pointer to second SIMD register
  * \param[out] r2     Pointer to third SIMD register
  */
-static inline void simdLoadRvecs(const rvec* r, int index, SimdReal* r0, SimdReal* r1, SimdReal* r2)
+static inline void simdLoadRvecs(const rvec* r, int index, UpdateSimdReal* r0, UpdateSimdReal* r1, UpdateSimdReal* r2)
 {
     const real* realPtr = r[index];
 
-    GMX_ASSERT(isSimdAligned(realPtr), "Pointer should be SIMD aligned");
-
-    *r0 = simdLoad(realPtr + 0 * GMX_SIMD_REAL_WIDTH);
-    *r1 = simdLoad(realPtr + 1 * GMX_SIMD_REAL_WIDTH);
-    *r2 = simdLoad(realPtr + 2 * GMX_SIMD_REAL_WIDTH);
+    *r0 = load<UpdateSimdReal>(realPtr + 0 * UpdateSimdTraits::width);
+    *r1 = load<UpdateSimdReal>(realPtr + 1 * UpdateSimdTraits::width);
+    *r2 = load<UpdateSimdReal>(realPtr + 2 * UpdateSimdTraits::width);
 }
 
 /*! \brief Store (aligned) 3 SIMD registers sequentially to GMX_SIMD_REAL_WIDTH rvec elements
@@ -438,20 +442,19 @@ static inline void simdLoadRvecs(const rvec* r, int index, SimdReal* r0, SimdRea
  * \param[in]  r1     Second SIMD register
  * \param[in]  r2     Third SIMD register
  */
-static inline void simdStoreRvecs(rvec* r, int index, SimdReal r0, SimdReal r1, SimdReal r2)
+static inline void simdStoreRvecs(rvec* r, int index, UpdateSimdReal r0, UpdateSimdReal r1, UpdateSimdReal r2)
 {
     real* realPtr = r[index];
 
-    GMX_ASSERT(isSimdAligned(realPtr), "Pointer should be SIMD aligned");
-
-    store(realPtr + 0 * GMX_SIMD_REAL_WIDTH, r0);
-    store(realPtr + 1 * GMX_SIMD_REAL_WIDTH, r1);
-    store(realPtr + 2 * GMX_SIMD_REAL_WIDTH, r2);
+    store(realPtr + 0 * UpdateSimdTraits::width, r0);
+    store(realPtr + 1 * UpdateSimdTraits::width, r1);
+    store(realPtr + 2 * UpdateSimdTraits::width, r2);
 }
 
 /*! \brief Integrate using leap-frog with single group T-scaling and SIMD
  *
  * \tparam       storeUpdatedVelocities Tells whether we should store the updated velocities
+ * \tparam       VelocityType           Either rvec or const rvec according to whether we store velocities
  * \param[in]    start                  Index of first atom to update
  * \param[in]    nrend                  Last atom to update: \p nrend - 1
  * \param[in]    dt                     The time step
@@ -474,21 +477,16 @@ updateMDLeapfrogSimpleSimd(int                               start,
                            VelocityType* gmx_restrict        v,
                            const rvec* gmx_restrict          f)
 {
-    SimdReal timestep(dt);
-    SimdReal lambdaSystem(tcstat[0].lambda);
+    UpdateSimdReal timestep(dt);
+    UpdateSimdReal lambdaSystem(tcstat[0].lambda);
 
-    /* We declare variables here, since code is often slower when declaring them inside the loop */
-
-    /* Note: We should implement a proper PaddedVector, so we don't need this check */
-    GMX_ASSERT(isSimdAligned(invMass.data()), "invMass should be aligned");
-
-    for (int a = start; a < nrend; a += GMX_SIMD_REAL_WIDTH)
+    for (int a = start; a < nrend; a += UpdateSimdTraits::width)
     {
-        SimdReal invMass0, invMass1, invMass2;
-        expandScalarsToTriplets(simdLoad(invMass.data() + a), &invMass0, &invMass1, &invMass2);
+        UpdateSimdReal invMass0, invMass1, invMass2;
+        expandScalarsToTriplets(load<UpdateSimdReal>(invMass.data() + a), &invMass0, &invMass1, &invMass2);
 
-        SimdReal v0, v1, v2;
-        SimdReal f0, f1, f2;
+        UpdateSimdReal v0, v1, v2;
+        UpdateSimdReal f0, f1, f2;
         simdLoadRvecs(v, a, &v0, &v1, &v2);
         simdLoadRvecs(f, a, &f0, &f1, &f2);
 
@@ -502,18 +500,16 @@ updateMDLeapfrogSimpleSimd(int                               start,
         }
 
         // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-        SimdReal x0, x1, x2;
+        UpdateSimdReal x0, x1, x2;
         simdLoadRvecs(x, a, &x0, &x1, &x2);
 
-        SimdReal xprime0 = fma(v0, timestep, x0);
-        SimdReal xprime1 = fma(v1, timestep, x1);
-        SimdReal xprime2 = fma(v2, timestep, x2);
+        UpdateSimdReal xprime0 = fma(v0, timestep, x0);
+        UpdateSimdReal xprime1 = fma(v1, timestep, x1);
+        UpdateSimdReal xprime2 = fma(v2, timestep, x2);
 
         simdStoreRvecs(xprime, a, xprime0, xprime1, xprime2);
     }
 }
-
-#endif // GMX_HAVE_SIMD_UPDATE
 
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
@@ -763,15 +759,14 @@ static void do_update_md(int                                  start,
         }
         else
         {
-#if GMX_HAVE_SIMD_UPDATE
             /* Check if we can use invmass instead of invMassPerDim */
-            if (numTempScaleValues == NumTempScaleValues::Single && !havePartiallyFrozenAtoms)
+            if (GMX_HAVE_SIMD_UPDATE && numTempScaleValues == NumTempScaleValues::Single
+                && !havePartiallyFrozenAtoms)
             {
                 updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::Yes>(
                         start, nrend, dt, invmass, tcstat, x, xprime, v, f);
             }
             else
-#endif
             {
                 dispatchTemplatedFunction(
                         [=](auto numTempScaleValues) {
@@ -820,14 +815,12 @@ static void doUpdateMDDoNotUpdateVelocities(int                      start,
     gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind.tcstat;
 
     /* Check if we can use invmass instead of invMassPerDim */
-#if GMX_HAVE_SIMD_UPDATE
-    if (!havePartiallyFrozenAtoms)
+    if (GMX_HAVE_SIMD_UPDATE && !havePartiallyFrozenAtoms)
     {
         updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::No>(
                 start, nrend, dt, invmass, tcstat, x, xprime, v, f);
     }
     else
-#endif
     {
         updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ApplyParrinelloRahmanVScaling::No>(
                 start, nrend, dt, dt, invMassPerDim, tcstat, gmx::ArrayRef<const unsigned short>(), nullptr, x, xprime, v, f);
@@ -1463,12 +1456,8 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
 
 void getThreadAtomRange(int numThreads, int threadIndex, int numAtoms, int* startAtom, int* endAtom)
 {
-#if GMX_HAVE_SIMD_UPDATE
-    constexpr int blockSize = GMX_SIMD_REAL_WIDTH;
-#else
-    constexpr int blockSize = 1;
-#endif
-    int numBlocks = (numAtoms + blockSize - 1) / blockSize;
+    constexpr int blockSize = UpdateSimdTraits::width;
+    const int     numBlocks = (numAtoms + blockSize - 1) / blockSize;
 
     *startAtom = ((numBlocks * threadIndex) / numThreads) * blockSize;
     *endAtom   = ((numBlocks * (threadIndex + 1)) / numThreads) * blockSize;
