@@ -16,6 +16,21 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect constraining in highly parallel runs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With domain decomposition, OpenMP and connected constraints (so not only
+bonds with hydrogens constrained), constraint correction could be applied
+when a domain would not have any constraints while it had constraints before.
+This is unlikely to have gone unnoticed in longer runs, as the chance is
+high that atoms would clash and the system would become unstable. But short
+runs might not crash and could therefore produce incorrect results. The correctness can
+be judged from the drift in the conserved energy quantity, which is reported
+at the end of the log file, and which will be one to two orders of magnitude
+larger than for a correct run.
+
+:issue:`4476`
+
 Removed the (incorrect) output file size note/warning with mdrun -rerun
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
