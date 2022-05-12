@@ -171,7 +171,7 @@ public:
     {
         GMX_RELEASE_ASSERT(isCompound() || value_.empty(),
                            "Cannot make an entry with a value to a compound");
-        return children_.insert(children_.end(), move(child));
+        return children_.insert(children_.end(), std::move(child));
     }
 
 private:

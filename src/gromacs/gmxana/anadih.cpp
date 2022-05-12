@@ -822,7 +822,7 @@ void read_ang_dih(const char*             trj_fn,
 {
     struct t_pbc* pbc;
     t_trxstatus*  status;
-    int           i, angind, total, teller;
+    int           i, angind, teller;
     int           nangles, n_alloc;
     real          t, fraction, pifac, angle;
     real*         angles[2];
@@ -849,7 +849,6 @@ void read_ang_dih(const char*             trj_fn,
     snew(angles[prev], nangles);
 
     /* Start the loop over frames */
-    total       = 0;
     teller      = 0;
     n_alloc     = 0;
     *time       = nullptr;
@@ -980,8 +979,6 @@ void read_ang_dih(const char*             trj_fn,
             {
                 fprintf(stderr, "angle %d fr %d = %g\n", i, cur, angle);
             }
-
-            total++;
         }
 
         /* average over all angles */

@@ -12,7 +12,7 @@ void F77_FUNC(slarrfx, SLARRFX)(int*   n,
                                 float* d__,
                                 float* l,
                                 float* ld,
-                                float* lld,
+                                float* /*lld*/,
                                 int*   ifirst,
                                 int*   ilast,
                                 float* w,
@@ -32,7 +32,6 @@ void F77_FUNC(slarrfx, SLARRFX)(int*   n,
     --lplus;
     --dplus;
     --w;
-    --lld;
     --ld;
     --l;
     --d__;

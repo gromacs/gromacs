@@ -463,7 +463,7 @@ static int init_mem_at(mem_t* mem_p, const gmx_mtop_t& mtop, rvec* r, matrix box
 
 static void init_resize(t_block* ins_at, rvec* r_ins, pos_ins_t* pos_ins, mem_t* mem_p, rvec* r, gmx_bool bALLOW_ASYMMETRY)
 {
-    int i, j, at, c, outsidesum, gctr = 0;
+    int i, j, at, c, gctr = 0;
     int idxsum = 0;
 
     /*sanity check*/
@@ -481,8 +481,7 @@ static void init_resize(t_block* ins_at, rvec* r_ins, pos_ins_t* pos_ins, mem_t*
     snew(pos_ins->geom_cent, pos_ins->pieces);
     for (i = 0; i < pos_ins->pieces; i++)
     {
-        c          = 0;
-        outsidesum = 0;
+        c = 0;
         for (j = 0; j < DIM; j++)
         {
             pos_ins->geom_cent[i][j] = 0;
@@ -496,10 +495,6 @@ static void init_resize(t_block* ins_at, rvec* r_ins, pos_ins_t* pos_ins, mem_t*
             {
                 rvec_inc(pos_ins->geom_cent[i], r_ins[gctr]);
                 c++;
-            }
-            else
-            {
-                outsidesum++;
             }
             gctr++;
         }
@@ -917,7 +912,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     int   bMolecules = 0;
     FILE *fpin, *fpout;
     char  buf[STRLEN], buf2[STRLEN], *temp;
-    int   i, *nmol_rm, nmol, line;
+    int   i, *nmol_rm, nmol;
     char  temporary_filename[STRLEN];
 
     fpin = gmx_ffopen(topfile, "r");
@@ -931,10 +926,8 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
         nmol_rm[rm_p->block[i]]++;
     }
 
-    line = 0;
     while (fgets(buf, STRLEN, fpin))
     {
-        line++;
         if (buf[0] != ';')
         {
             strcpy(buf2, buf);

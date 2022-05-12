@@ -241,7 +241,7 @@ static int ms_comp(const void* a, const void* b)
 
 static gmx::ListOfLists<int> merge_sid(int at_start, int at_end, int nsid, gmx::ArrayRef<t_sid> sid)
 {
-    int i, j, isid, ndel;
+    int i, j, isid;
 
     /* We try to remdy the following problem:
      * Atom: 1  2  3  4  5 6 7 8 9 10
@@ -269,7 +269,6 @@ static gmx::ListOfLists<int> merge_sid(int at_start, int at_end, int nsid, gmx::
     qsort(ms.data(), gmx::ssize(ms), sizeof(ms[0]), ms_comp);
 
     /* Now merge the overlapping ones */
-    ndel = 0;
     for (int k = 0; k < nsid;)
     {
         for (j = k + 1; (j < nsid);)
@@ -279,7 +278,6 @@ static gmx::ListOfLists<int> merge_sid(int at_start, int at_end, int nsid, gmx::
                 ms[k].last  = std::max(ms[k].last, ms[j].last);
                 ms[k].first = std::min(ms[k].first, ms[j].first);
                 ms[j].sid   = -1;
-                ndel++;
                 j++;
             }
             else

@@ -330,7 +330,6 @@ private:
 // static
 void ExclusionsHelper::markExcludedPairs(RefPairList* refPairs, int testIndex, const gmx::ListOfLists<int>* excls)
 {
-    int count = 0;
     for (const int excludedIndex : (*excls)[testIndex])
     {
         NeighborhoodSearchTestData::RefPair searchPair(excludedIndex, 0.0);
@@ -340,7 +339,6 @@ void ExclusionsHelper::markExcludedPairs(RefPairList* refPairs, int testIndex, c
         {
             excludedRefPair->bFound    = true;
             excludedRefPair->bExcluded = true;
-            ++count;
         }
     }
 }

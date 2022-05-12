@@ -76,7 +76,7 @@ if(GMX_SYCL_HIPSYCL)
     set(HIPSYCL_CLANG "${CMAKE_CXX_COMPILER}")
     # -Wno-unknown-cuda-version because Clang-11 complains about CUDA 11.0-11.2, despite working fine with them.
     # -Wno-unknown-attributes because hipSYCL does not support reqd_sub_group_size (because it can only do some sub group sizes).
-    set(HIPSYCL_SYCLCC_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes")
+    set(HIPSYCL_SYCLCC_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes ${SYCL_CXX_FLAGS_EXTRA}")
 
     # Must be called before find_package to capture all user-set CMake variables, but not those set automatically
     _getHipSyclCmakeFlags(_ALL_HIPSYCL_CMAKE_FLAGS)

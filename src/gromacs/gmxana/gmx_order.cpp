@@ -88,7 +88,7 @@ static void find_nearest_neighbours(PbcType     pbcType,
                                     gmx_rmpbc_t gpbc)
 {
     int   ix, jx, nsgbin, *sgbin;
-    int   i, ibin, j, k, l, n, *nn[4];
+    int   i, ibin, j, k, *nn[4];
     rvec  dx, rj, rk, urk, urj;
     real  cost, cost2, *sgmol, *skmol, rmean, rmean2, r2, box2, *r_nn[4];
     t_pbc pbc;
@@ -122,7 +122,6 @@ static void find_nearest_neighbours(PbcType     pbcType,
 
     *sgmean = 0.0;
     *skmean = 0.0;
-    l       = 0;
     for (i = 0; (i < maxidx); i++) /* loop over index file */
     {
         ix = index[i];
@@ -185,7 +184,6 @@ static void find_nearest_neighbours(PbcType     pbcType,
         }
         rmean /= 4;
 
-        n        = 0;
         sgmol[i] = 0.0;
         skmol[i] = 0.0;
 
@@ -214,8 +212,6 @@ static void find_nearest_neighbours(PbcType     pbcType,
                     sgbin[ibin]++;
                 }
                 /* printf("%d %d %f %d %d\n", j, k, cost * cost, ibin, sgbin[ibin]);*/
-                l++;
-                n++;
             }
         }
 
@@ -419,18 +415,18 @@ static void calc_order(const char*             fn,
             *x1;      /* coordinates without pbc                        */
     matrix       box; /* box (3x3)                                      */
     t_trxstatus* status;
-    rvec         cossum,                   /* sum of vector angles for three axes            */
-            Sx, Sy, Sz,                    /* the three molecular axes                       */
-            tmp1, tmp2,                    /* temp. rvecs for calculating dot products       */
-            frameorder;                    /* order parameters for one frame                 */
-    real* slFrameorder;                    /* order parameter for one frame, per slice      */
-    real  length,                          /* total distance between two atoms               */
-            t,                             /* time from trajectory                           */
-            z_ave, z1, z2;                 /* average z, used to det. which slice atom is in */
-    int natoms,                            /* nr. atoms in trj                               */
-            nr_tails,                      /* nr tails, to check if index file is correct    */
-            size = 0,                      /* nr. of atoms in group. same as nr_tails        */
-            i, j, m, k, teller = 0, slice; /* current slice number                           */
+    rvec         cossum,       /* sum of vector angles for three axes            */
+            Sx, Sy, Sz,        /* the three molecular axes                       */
+            tmp1, tmp2,        /* temp. rvecs for calculating dot products       */
+            frameorder;        /* order parameters for one frame                 */
+    real* slFrameorder;        /* order parameter for one frame, per slice      */
+    real  length,              /* total distance between two atoms               */
+            t,                 /* time from trajectory                           */
+            z_ave, z1, z2;     /* average z, used to det. which slice atom is in */
+    int natoms,                /* nr. atoms in trj                               */
+            nr_tails,          /* nr tails, to check if index file is correct    */
+            size = 0,          /* nr. of atoms in group. same as nr_tails        */
+            i, j, m, k, slice; /* current slice number                           */
     real nr_frames = 0;
     int* slCount;                    /* nr. of atoms in one slice                      */
     gmx_bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
@@ -517,8 +513,6 @@ static void calc_order(const char*             fn,
        in index*/
 #endif
 
-    teller = 0;
-
     gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
     /*********** Start processing trajectory ***********/
     do
@@ -527,7 +521,6 @@ static void calc_order(const char*             fn,
         {
             *slWidth = box[axis][axis] / static_cast<real>(nslices);
         }
-        teller++;
 
         set_pbc(&pbc, pbcType, box);
         gmx_rmpbc_copy(gpbc, natoms, box, x0, x1);

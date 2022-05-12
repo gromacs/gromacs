@@ -356,7 +356,7 @@ CommandLineProgramContext::CommandLineProgramContext(int argc, const char* const
 CommandLineProgramContext::CommandLineProgramContext(int                          argc,
                                                      const char* const            argv[],
                                                      ExecutableEnvironmentPointer env) :
-    impl_(new Impl(argc, argv, move(env)))
+    impl_(new Impl(argc, argv, std::move(env)))
 {
 }
 

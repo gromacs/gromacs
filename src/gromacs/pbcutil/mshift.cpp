@@ -45,6 +45,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -686,12 +687,13 @@ static real maxEdgeLength(const t_graph& g, PbcType pbcType, const matrix box, c
 
 void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const rvec x[])
 {
-    static int nerror_tot = 0;
-    int        npbcdim;
-    int        ng, i;
-    int        nW, nG, nB; /* Number of Grey, Black, White	*/
-    int        fW, fG;     /* First of each category	*/
-    int        nerror = 0;
+    static int            nerror_tot = 0;
+    int                   npbcdim;
+    int                   ng, i;
+    int                   nW, nG; /* Number of White and Grey nodes */
+    int gmx_used_in_debug nB;     /* Number of Black nodes */
+    int                   fW, fG; /* First of each category */
+    int                   nerror = 0;
 
     g->useScrewPbc = (pbcType == PbcType::Screw);
 
@@ -727,15 +729,10 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
 
     fW = 0;
 
-    /* We even have a loop invariant:
-     * nW+nG+nB == g->nbound
-     */
-#ifdef DEBUG2
-    fprintf(log, "Starting W loop\n");
-#endif
     while (nW > 0)
     {
-        /* Find the first white, this will allways be a larger
+        GMX_ASSERT(nW + nG + nB == g->numConnectedAtoms, "Graph coloring inconsistency");
+        /* Find the first white, this will always be a larger
          * number than before, because no nodes are made white
          * in the loop
          */
@@ -751,9 +748,6 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
 
         /* Initial value for the first grey */
         fG = fW;
-#ifdef DEBUG2
-        fprintf(log, "Starting G loop (nW=%d, nG=%d, nB=%d, total %d)\n", nW, nG, nB, nW + nG + nB);
-#endif
         while (nG > 0)
         {
             if ((fG = first_colour(fG, egcolGrey, g, g->edgeColor)) == -1)
@@ -811,7 +805,7 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
                      * actually between the parts, but that would require
                      * a lot of extra code.
                      */
-                    mesg += " This molecule type consists of muliple parts, e.g. monomers, that "
+                    mesg += " This molecule type consists of multiple parts, e.g. monomers, that "
                             "are connected by interactions that are not chemical bonds, e.g. "
                             "restraints. Such systems can not be treated. The only solution is "
                             "increasing the box size.";

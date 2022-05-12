@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2017- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,37 +31,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief Declares functions for pinning memory to be suitable for
- * efficient GPU transfers on CUDA.
+
+/*! \internal \file
+ *  \brief
+ *  Explicitly instantiate NBNXM SYCL kernels, F+V, no pruning
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
+ *  \ingroup module_nbnxm
  */
+#include "gmxpre.h"
 
-#include <cstddef>
+#include "nbnxm_sycl_kernel_body.h"
 
-#include "gromacs/gpu_utils/gpu_macros.h"
-
-namespace gmx
+namespace Nbnxm
 {
-
-/*! \brief Pin the allocation to physical memory.
- *
- * Requires that \c pointer is not nullptr.
- *
- * Does not throw.
- */
-CUDA_FUNC_QUALIFIER void pinBuffer(void*       CUDA_FUNC_ARGUMENT(pointer),
-                                   std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM;
-
-/*! \brief Unpin the allocation.
- *
- * Requries that \c pointer is not nullptr and was previously pinned
- * with pinBuffer().
- *
- * Does not throw.
- */
-CUDA_FUNC_QUALIFIER void unpinBuffer(void* CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM;
-
-} // namespace gmx
+template void launchNbnxmKernelHelper<false, true>(NbnxmGpu*                 nb,
+                                                   const gmx::StepWorkload&  stepWork,
+                                                   const InteractionLocality iloc);
+}

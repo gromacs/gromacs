@@ -1207,7 +1207,6 @@ tmpi_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
     tmpi_bool         all_done = TRUE;
     struct tmpi_req_ *creq     = rqs;
 
-    int               i = 0;
     if (any_done)
     {
         *any_done = FALSE;
@@ -1216,7 +1215,6 @@ tmpi_bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
     while (creq)
     {
         tmpi_bool finished = tMPI_Test_single(cur, creq);
-        i++;
 
         /* now do the check */
         if (!finished)

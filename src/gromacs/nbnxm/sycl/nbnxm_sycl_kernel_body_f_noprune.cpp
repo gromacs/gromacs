@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2012- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,51 +31,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \internal \file
- *  \brief Define functions for host-side memory handling when using OpenCL devices.
- *
- *  \author Anca Hamuraru <anca@streamcomputing.eu>
- */
 
+/*! \internal \file
+ *  \brief
+ *  Explicitly instantiate NBNXM SYCL kernels, F-only, no pruning
+ *
+ *  \ingroup module_nbnxm
+ */
 #include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
+#include "nbnxm_sycl_kernel_body.h"
 
-#include "pmalloc.h"
-
-/*! \brief \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
- *
- *  \todo
- *  This function should allocate page-locked memory to help reduce D2H and H2D
- *  transfer times, similar with pmalloc from pmalloc.cu.
- *
- * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
- * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
- */
-void pmalloc(void** h_ptr, size_t nbytes)
+namespace Nbnxm
 {
-    /* Need a temporary type whose size is 1 byte, so that the
-     * implementation of snew_aligned can cope without issuing
-     * warnings. */
-    char** temporary = reinterpret_cast<char**>(h_ptr);
-
-    /* 16-byte alignment is required by the neighbour-searching code,
-     * because it uses four-wide SIMD for bounding-box calculation.
-     * However, when we organize using page-locked memory for
-     * device-host transfers, it will probably need to be aligned to a
-     * 4kb page, like CUDA does. */
-    snew_aligned(*temporary, nbytes, 16);
-}
-
-/*! \brief Frees memory allocated with pmalloc.
- *
- * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
- */
-void pfree(void* h_ptr)
-{
-
-    if (h_ptr)
-    {
-        sfree_aligned(h_ptr);
-    }
+template void launchNbnxmKernelHelper<false, false>(NbnxmGpu*                 nb,
+                                                    const gmx::StepWorkload&  stepWork,
+                                                    const InteractionLocality iloc);
 }

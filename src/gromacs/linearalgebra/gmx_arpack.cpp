@@ -2374,7 +2374,6 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
     double bnorm2;
     double thres1 = 0, thres2 = 0;
     int    bounds;
-    int    ktrord;
     double tempbnd;
     int    leftptr, rghtptr;
 
@@ -2527,9 +2526,8 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
             thres2 = workl[ilg];
         }
 
-        reord  = 0;
-        ktrord = 0;
-        i__1   = *ncv - 1;
+        reord = 0;
+        i__1  = *ncv - 1;
         for (j = 0; j <= i__1; ++j)
         {
             select[j + 1] = 0;
@@ -2601,10 +2599,6 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
             if (j + 1 > nconv)
             {
                 reord = select[j + 1] || reord;
-            }
-            if (select[j + 1])
-            {
-                ++ktrord;
             }
         }
 
@@ -5169,7 +5163,6 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
     float bnorm2;
     float thres1 = 0, thres2 = 0;
     int   bounds;
-    int   ktrord;
     float tempbnd;
     int   leftptr, rghtptr;
 
@@ -5322,9 +5315,8 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
             thres2 = workl[ilg];
         }
 
-        reord  = 0;
-        ktrord = 0;
-        i__1   = *ncv - 1;
+        reord = 0;
+        i__1  = *ncv - 1;
         for (j = 0; j <= i__1; ++j)
         {
             select[j + 1] = 0;
@@ -5396,10 +5388,6 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
             if (j + 1 > nconv)
             {
                 reord = select[j + 1] || reord;
-            }
-            if (select[j + 1])
-            {
-                ++ktrord;
             }
         }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2017- The GROMACS Authors
+ * Copyright 2012- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,68 +32,50 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Implements gmx::HostAllocationPolicy for allocating memory
- * suitable for e.g. GPU transfers on CUDA.
+ *  \brief Define functions for host-side memory handling when using OpenCL devices or no GPU device.
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Anca Hamuraru <anca@streamcomputing.eu>
  */
+
 #include "gmxpre.h"
 
-#include "hostallocator.h"
+#include "pmalloc.h"
 
-#include <cstddef>
+#include "gromacs/utility/smalloc.h"
 
-#include <memory>
-
-#include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/gpu_utils/pmalloc.h"
-#include "gromacs/utility/alignedallocator.h"
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/stringutil.h"
-
-namespace gmx
+/*! \brief \brief Allocates nbytes of host memory. Use pfree to free memory allocated with this function.
+ *
+ *  \todo
+ *  This function should allocate page-locked memory to help reduce D2H and H2D
+ *  transfer times, similar with pmalloc from pmalloc.cu.
+ *
+ * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
+ * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
+ */
+void pmalloc(void** h_ptr, size_t nbytes)
 {
+    /* Need a temporary type whose size is 1 byte, so that the
+     * implementation of snew_aligned can cope without issuing
+     * warnings. */
+    char** temporary = reinterpret_cast<char**>(h_ptr);
 
-HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy) :
-    pinningPolicy_(pinningPolicy)
-{
+    /* 16-byte alignment is required by the neighbour-searching code,
+     * because it uses four-wide SIMD for bounding-box calculation.
+     * However, when we organize using page-locked memory for
+     * device-host transfers, it will probably need to be aligned to a
+     * 4kb page, like CUDA does. */
+    snew_aligned(*temporary, nbytes, 16);
 }
 
-std::size_t HostAllocationPolicy::alignment() const noexcept
+/*! \brief Frees memory allocated with pmalloc.
+ *
+ * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
+ */
+void pfree(void* h_ptr)
 {
-    return (pinningPolicy_ == PinningPolicy::PinnedIfSupported ? PageAlignedAllocationPolicy::alignment()
-                                                               : AlignedAllocationPolicy::alignment());
-}
 
-void* HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
-{
-    if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
+    if (h_ptr)
     {
-        void* p;
-        pmalloc(&p, bytes);
-        return p;
-    }
-    else
-    {
-        return AlignedAllocationPolicy::malloc(bytes);
+        sfree_aligned(h_ptr);
     }
 }
-
-void HostAllocationPolicy::free(void* buffer) const noexcept
-{
-    if (buffer == nullptr)
-    {
-        // Nothing to do
-        return;
-    }
-    if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
-    {
-        pfree(buffer);
-    }
-    else
-    {
-        AlignedAllocationPolicy::free(buffer);
-    }
-}
-
-} // namespace gmx

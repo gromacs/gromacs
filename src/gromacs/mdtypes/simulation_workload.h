@@ -131,9 +131,10 @@ public:
     bool haveCpuListedForceWork = false;
     //! Whether the current nstlist step-range has special forces on the CPU.
     bool haveSpecialForces = false;
-    //! Whether there are currently any local forces to be computed on the CPU
+    //! Whether there are currently any local forces to be computed on the CPU.
     bool haveCpuLocalForceWork = false;
-
+    //! Whether there are currently any non-local forces to be computed on the CPU and, with GPU update and DD, later reduced on the GPU.
+    bool haveCpuNonLocalForceWork = false;
     //! Whether the current nstlist step-range Free energy work on the CPU.
     bool haveFreeEnergyWork = false;
     //! Whether the CPU force buffer has contributions to local atoms that need to be reduced on the GPU (with DD).
@@ -141,8 +142,6 @@ public:
     // or when DD is active the halo exchange has resulted in contributions
     // from the non-local part.
     bool haveLocalForceContribInCpuBuffer = false;
-    //! Whether the CPU force buffer has contributions to nonlocal atoms that need to be reduced on the GPU (with DD).
-    bool haveNonLocalForceContribInCpuBuffer = false;
 };
 
 /*! \libinternal

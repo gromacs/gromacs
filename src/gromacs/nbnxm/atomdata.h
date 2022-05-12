@@ -359,6 +359,8 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
  * \param[in,out] gpu_nbv    The NBNXM GPU data structure.
  * \param[in]     d_x        Coordinates to be copied (in plain rvec format).
  * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in the device memory.
+ *                                 If there is no need to wait for any event (e.g., the wait has already been
+ *                                 enqueued into the appropriate stream), it can be \c nullptr.
  */
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
                                     gmx::AtomLocality       locality,

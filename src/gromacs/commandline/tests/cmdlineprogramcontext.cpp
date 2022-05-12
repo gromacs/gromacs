@@ -104,7 +104,7 @@ public:
     void testBinaryPathSearch(const char* argv0)
     {
         ASSERT_TRUE(env_.get() != nullptr);
-        gmx::CommandLineProgramContext info(1, &argv0, move(env_));
+        gmx::CommandLineProgramContext info(1, &argv0, std::move(env_));
         EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
     }
     void testBinaryPathSearch(const std::string& argv0) { testBinaryPathSearch(argv0.c_str()); }
