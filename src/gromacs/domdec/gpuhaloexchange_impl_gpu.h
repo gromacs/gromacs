@@ -163,13 +163,13 @@ private:
     //! number of elements allocated in index map array
     int indexMapSizeAlloc_ = -1;
     //! device buffer for sending packed data
-    DeviceBuffer<Float3> d_sendBuf_;
+    DeviceBuffer<Float3> d_sendBuf_ = nullptr;
     //! number of atoms in \c sendbuf array
     int sendBufSize_ = -1;
     //! number of atoms allocated in \c sendbuf array
     int sendBufSizeAlloc_ = -1;
     //! device buffer for receiving packed data
-    DeviceBuffer<Float3> d_recvBuf_;
+    DeviceBuffer<Float3> d_recvBuf_ = nullptr;
     //! maximum size of packed buffer
     int maxPackedBufferSize_ = 0;
     //! number of atoms in \c recvbuf array
@@ -195,13 +195,13 @@ private:
     //! number of home atoms - offset of local halo region
     int numHomeAtoms_ = 0;
     //! remote GPU coordinates buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteXPtr_;
+    DeviceBuffer<Float3> remoteXPtr_ = nullptr;
     //! remote GPU force buffer pointer for pushing data
-    DeviceBuffer<Float3> remoteFPtr_;
+    DeviceBuffer<Float3> remoteFPtr_ = nullptr;
     //! Periodic Boundary Conditions for this rank
     bool usePBC_ = false;
     //! force shift buffer on device
-    DeviceBuffer<Float3> d_fShift_;
+    DeviceBuffer<Float3> d_fShift_ = nullptr;
     //! Event triggered when halo transfer has been launched with peer-to-peer memory copy
     std::unique_ptr<GpuEventSynchronizer> haloDataTransferLaunched_;
     //! MPI communicator used for simulation
@@ -211,9 +211,9 @@ private:
     //! CUDA stream for this halo exchange
     std::unique_ptr<DeviceStream> haloStream_;
     //! full coordinates buffer in GPU memory
-    DeviceBuffer<Float3> d_x_;
+    DeviceBuffer<Float3> d_x_ = nullptr;
     //! full forces buffer in GPU memory
-    DeviceBuffer<Float3> d_f_;
+    DeviceBuffer<Float3> d_f_ = nullptr;
     //! An event recorded once the exchanged forces are ready on the GPU
     GpuEventSynchronizer fReadyOnDevice_;
     //! The dimension index corresponding to this halo exchange instance
