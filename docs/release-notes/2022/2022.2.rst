@@ -31,6 +31,15 @@ larger than for a correct run.
 
 :issue:`4476`
 
+Fix missing PME mesh dV/dlambda with PME on GPU on a seperate PME rank
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When doing free-energy calculations with PME running on GPU on a separate
+PME rank, the dV/dlambda contribution for the PME mesh part was missing.
+The same contribution was missing from the foreign lambda energy differences.
+Note that the energies and forces were correct.
+
+:issues;`4474`
 Removed the (incorrect) output file size note/warning with mdrun -rerun
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
