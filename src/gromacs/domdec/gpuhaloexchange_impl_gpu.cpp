@@ -59,8 +59,8 @@
 
 #include "domdec_internal.h"
 
-constexpr bool supportedLibMpiBuild    = (GMX_LIB_MPI && GMX_GPU_CUDA);
-constexpr bool supportedThreadMpiBuild = (GMX_THREAD_MPI && GMX_GPU_CUDA);
+constexpr bool supportedLibMpiBuild    = ((GMX_LIB_MPI != 0) && (GMX_GPU_CUDA != 0));
+constexpr bool supportedThreadMpiBuild = ((GMX_THREAD_MPI != 0) && (GMX_GPU_CUDA != 0));
 
 namespace gmx
 {
