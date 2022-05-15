@@ -299,6 +299,7 @@ enum class StoreUpdatedVelocities
 /*! \brief Sets the number of different temperature coupling values */
 enum class NumTempScaleValues
 {
+    None,     //!< No temperature scaling
     Single,   //!< Single T-scaling value (either one group or all values =1)
     Multiple, //!< Multiple T-scaling values, need to use T-group indices
     Count
@@ -322,6 +323,8 @@ enum class ApplyParrinelloRahmanVScaling
  * \tparam       storeUpdatedVelocities Tells whether we should store the updated velocities
  * \tparam       numTempScaleValues     The number of different T-couple values
  * \tparam       applyPRVScaling        Apply Parrinello-Rahman velocity scaling
+ * \tparam       VelocityType           The type of the velocity vector
+ *                                        (which depends onwhether velocities are stored)
  * \param[in]    start                  Index of first atom to update
  * \param[in]    nrend                  Last atom to update: \p nrend - 1
  * \param[in]    dt                     The time step
@@ -357,7 +360,11 @@ updateMDLeapfrogSimple(int                                 start,
 {
     real lambdaGroup;
 
-    if (numTempScaleValues == NumTempScaleValues::Single)
+    if (numTempScaleValues == NumTempScaleValues::None)
+    {
+        lambdaGroup = 1.0_real;
+    }
+    else if (numTempScaleValues == NumTempScaleValues::Single)
     {
         lambdaGroup = tcstat[0].lambda;
     }
@@ -454,6 +461,7 @@ static inline void simdStoreRvecs(rvec* r, int index, UpdateSimdReal r0, UpdateS
 /*! \brief Integrate using leap-frog with single group T-scaling and SIMD
  *
  * \tparam       storeUpdatedVelocities Tells whether we should store the updated velocities
+ * \tparam       numTempScaleValues     The number of different T-couple values
  * \tparam       VelocityType           Either rvec or const rvec according to whether we store velocities
  * \param[in]    start                  Index of first atom to update
  * \param[in]    nrend                  Last atom to update: \p nrend - 1
@@ -465,7 +473,7 @@ static inline void simdStoreRvecs(rvec* r, int index, UpdateSimdReal r0, UpdateS
  * \param[inout] v                      Velocities, type either rvec* or const rvec*
  * \param[in]    f                      Forces
  */
-template<StoreUpdatedVelocities storeUpdatedVelocities, typename VelocityType>
+template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, typename VelocityType>
 static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
 updateMDLeapfrogSimpleSimd(int                               start,
                            int                               nrend,
@@ -490,10 +498,22 @@ updateMDLeapfrogSimpleSimd(int                               start,
         simdLoadRvecs(v, a, &v0, &v1, &v2);
         simdLoadRvecs(f, a, &f0, &f1, &f2);
 
-        v0 = fma(f0 * invMass0, timestep, lambdaSystem * v0);
-        v1 = fma(f1 * invMass1, timestep, lambdaSystem * v1);
-        v2 = fma(f2 * invMass2, timestep, lambdaSystem * v2);
-
+        if constexpr (numTempScaleValues == NumTempScaleValues::None)
+        {
+            v0 = fma(f0 * invMass0, timestep, v0);
+            v1 = fma(f1 * invMass1, timestep, v1);
+            v2 = fma(f2 * invMass2, timestep, v2);
+        }
+        else
+        {
+            static_assert(
+                    numTempScaleValues == NumTempScaleValues::Single,
+                    "Invalid multiple temperature-scaling values (ie. groups) for SIMD leapfrog");
+            v0 = fma(f0 * invMass0, timestep, lambdaSystem * v0);
+            v1 = fma(f1 * invMass1, timestep, lambdaSystem * v1);
+            v2 = fma(f2 * invMass2, timestep, lambdaSystem * v2);
+        }
+        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::Yes)
         {
             simdStoreRvecs(v, a, v0, v1, v2);
@@ -731,9 +751,10 @@ static void do_update_md(int                                  start,
          * If we do not do temperature coupling (in the run or this step),
          * all scaling values are 1, so we effectively have a single value.
          */
-        NumTempScaleValues numTempScaleValues = (!doTempCouple || ekind->ngtc == 1)
-                                                        ? NumTempScaleValues::Single
-                                                        : NumTempScaleValues::Multiple;
+        NumTempScaleValues numTempScaleValues =
+                (!doTempCouple || ekind->ngtc == 0)
+                        ? NumTempScaleValues::None
+                        : (ekind->ngtc == 1 ? NumTempScaleValues::Single : NumTempScaleValues::Multiple);
 
         /* Extract some pointers needed by all cases */
         gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
@@ -759,12 +780,23 @@ static void do_update_md(int                                  start,
         }
         else
         {
-            /* Check if we can use invmass instead of invMassPerDim */
-            if (GMX_HAVE_SIMD_UPDATE && numTempScaleValues == NumTempScaleValues::Single
+            if (GMX_HAVE_SIMD_UPDATE && numTempScaleValues != NumTempScaleValues::Multiple
                 && !havePartiallyFrozenAtoms)
             {
-                updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::Yes>(
-                        start, nrend, dt, invmass, tcstat, x, xprime, v, f);
+                // Because no atoms are partially frozen, we can use
+                // invmass instead of invMassPerDim.
+                if (numTempScaleValues == NumTempScaleValues::Single)
+                {
+                    updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::Yes, NumTempScaleValues::Single>(
+                            start, nrend, dt, invmass, tcstat, x, xprime, v, f);
+                }
+                else
+                {
+                    GMX_ASSERT(numTempScaleValues == NumTempScaleValues::None,
+                               "Must not have temperature scaling values here");
+                    updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::Yes, NumTempScaleValues::None>(
+                            start, nrend, dt, invmass, tcstat, x, xprime, v, f);
+                }
             }
             else
             {
@@ -817,7 +849,7 @@ static void doUpdateMDDoNotUpdateVelocities(int                      start,
     /* Check if we can use invmass instead of invMassPerDim */
     if (GMX_HAVE_SIMD_UPDATE && !havePartiallyFrozenAtoms)
     {
-        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::No>(
+        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::No, NumTempScaleValues::Single>(
                 start, nrend, dt, invmass, tcstat, x, xprime, v, f);
     }
     else
