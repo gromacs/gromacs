@@ -53,6 +53,13 @@ Clarified pdb2gmx error message for undefined atom type in terminal database
 
 :issue:`4481`
 
+Lower severity of grompp exclusion distance issues with energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With energy minimization, the error/warning about pair distances
+beyond/close to the cut-off has been changed to a warning/note,
+as energy minimization might fix such issues.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
