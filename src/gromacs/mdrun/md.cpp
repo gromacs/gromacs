@@ -435,8 +435,10 @@ void gmx::LegacySimulator::do_md()
                 ir->etc != TemperatureCoupling::NoseHoover,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
-                ir->epc == PressureCoupling::No || ir->epc == PressureCoupling::ParrinelloRahman
-                        || ir->epc == PressureCoupling::Berendsen || ir->epc == PressureCoupling::CRescale,
+                ir->pressureCouplingOptions.epc == PressureCoupling::No
+                        || ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                        || ir->pressureCouplingOptions.epc == PressureCoupling::Berendsen
+                        || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale,
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
                 "with the GPU update.\n");
         GMX_RELEASE_ASSERT(!md->haveVsites,
@@ -1072,14 +1074,16 @@ void gmx::LegacySimulator::do_md()
         {
             bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep
-                       || (ir->epc != PressureCoupling::No
-                           && (do_per_step(step, ir->nstpcouple) || do_per_step(step - 1, ir->nstpcouple)));
+                       || (ir->pressureCouplingOptions.epc != PressureCoupling::No
+                           && (do_per_step(step, ir->pressureCouplingOptions.nstpcouple)
+                               || do_per_step(step - 1, ir->pressureCouplingOptions.nstpcouple)));
         }
         else
         {
             bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep
-                       || (ir->epc != PressureCoupling::No && do_per_step(step, ir->nstpcouple));
+                       || (ir->pressureCouplingOptions.epc != PressureCoupling::No
+                           && do_per_step(step, ir->pressureCouplingOptions.nstpcouple));
         }
         bCalcEner = bCalcEnerStep;
 
@@ -1437,7 +1441,8 @@ void gmx::LegacySimulator::do_md()
                            md->homenr,
                            md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
                                    : gmx::ArrayRef<const unsigned short>());
-            update_pcouple_before_coordinates(fplog, step, ir, state, pressureCouplingMu, M, bInitStep);
+            update_pcouple_before_coordinates(
+                    fplog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M, bInitStep);
         }
 
         /* With leap-frog type integrators we compute the kinetic energy
@@ -1450,8 +1455,10 @@ void gmx::LegacySimulator::do_md()
 
         // Parrinello-Rahman requires the pressure to be availible before the update to compute
         // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
-        const bool doParrinelloRahman = (ir->epc == PressureCoupling::ParrinelloRahman
-                                         && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
+        const bool doParrinelloRahman =
+                (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                 && do_per_step(step + ir->pressureCouplingOptions.nstpcouple - 1,
+                                ir->pressureCouplingOptions.nstpcouple));
 
         if (EI_VV(ir->eI))
         {
@@ -1545,7 +1552,7 @@ void gmx::LegacySimulator::do_md()
                                       doTemperatureScaling,
                                       ekind->tcstat,
                                       doParrinelloRahman,
-                                      ir->nstpcouple * ir->delta_t,
+                                      ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
                                       M);
             }
             else
@@ -1751,7 +1758,12 @@ void gmx::LegacySimulator::do_md()
         bool scaleCoordinates = !useGpuForUpdate || bDoReplEx;
         update_pcouple_after_coordinates(fplog,
                                          step,
-                                         ir,
+                                         ir->pressureCouplingOptions,
+                                         ir->ld_seed,
+                                         ir->opts.ref_t[0],
+                                         ir->opts.nFreeze,
+                                         ir->deform,
+                                         ir->delta_t,
                                          md->homenr,
                                          md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
                                                      : gmx::ArrayRef<const unsigned short>(),
@@ -1764,10 +1776,12 @@ void gmx::LegacySimulator::do_md()
                                          upd.deform(),
                                          scaleCoordinates);
 
-        const bool doBerendsenPressureCoupling = (inputrec->epc == PressureCoupling::Berendsen
-                                                  && do_per_step(step, inputrec->nstpcouple));
-        const bool doCRescalePressureCoupling  = (inputrec->epc == PressureCoupling::CRescale
-                                                 && do_per_step(step, inputrec->nstpcouple));
+        const bool doBerendsenPressureCoupling =
+                (inputrec->pressureCouplingOptions.epc == PressureCoupling::Berendsen
+                 && do_per_step(step, inputrec->pressureCouplingOptions.nstpcouple));
+        const bool doCRescalePressureCoupling =
+                (inputrec->pressureCouplingOptions.epc == PressureCoupling::CRescale
+                 && do_per_step(step, inputrec->pressureCouplingOptions.nstpcouple));
         if (useGpuForUpdate
             && (doBerendsenPressureCoupling || doCRescalePressureCoupling || doParrinelloRahman))
         {
@@ -1812,7 +1826,15 @@ void gmx::LegacySimulator::do_md()
                 }
                 else
                 {
-                    enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + NPT_energy(ir, state, &MassQ);
+                    enerd->term[F_ECONSERVED] =
+                            enerd->term[F_ETOT]
+                            + NPT_energy(ir->pressureCouplingOptions,
+                                         ir->etc,
+                                         gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
+                                         gmx::constArrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
+                                         inputrecNvtTrotter(ir) || inputrecNptTrotter(ir),
+                                         state,
+                                         &MassQ);
                 }
             }
             /* #########  END PREPARING EDR OUTPUT  ###########  */
@@ -1992,7 +2014,9 @@ void gmx::LegacySimulator::do_md()
          * at the current step for coupling at the next step.
          */
         if ((state->flags & enumValueToBitMask(StateEntry::PressurePrevious))
-            && (bGStatEveryStep || (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
+            && (bGStatEveryStep
+                || (ir->pressureCouplingOptions.nstpcouple > 0
+                    && step % ir->pressureCouplingOptions.nstpcouple == 0)))
         {
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.

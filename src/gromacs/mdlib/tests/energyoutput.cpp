@@ -223,9 +223,9 @@ public:
         inputrec_.bRot      = true;
 
         // F_ECONSERVED
-        inputrec_.ref_p[YY][XX] = 0.0;
-        inputrec_.ref_p[ZZ][XX] = 0.0;
-        inputrec_.ref_p[ZZ][YY] = 0.0;
+        inputrec_.pressureCouplingOptions.ref_p[YY][XX] = 0.0;
+        inputrec_.pressureCouplingOptions.ref_p[ZZ][XX] = 0.0;
+        inputrec_.pressureCouplingOptions.ref_p[ZZ][YY] = 0.0;
 
         // Dipole (mu)
         inputrec_.ewald_geometry = EwaldGeometry::ThreeDC;
@@ -583,12 +583,12 @@ TEST_P(EnergyOutputTest, CheckOutput)
 
     EnergyOutputTestParameters parameters = GetParam();
     inputrec_.etc                         = parameters.temperatureCouplingScheme;
-    inputrec_.epc                         = parameters.pressureCouplingScheme;
+    inputrec_.pressureCouplingOptions.epc = parameters.pressureCouplingScheme;
     inputrec_.eI                          = parameters.integrator;
 
     if (parameters.isBoxTriclinic)
     {
-        inputrec_.ref_p[YY][XX] = 1.0;
+        inputrec_.pressureCouplingOptions.ref_p[YY][XX] = 1.0;
     }
 
     MDModulesNotifiers            mdModulesNotifiers;

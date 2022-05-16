@@ -71,7 +71,7 @@ struct t_grpopts
     int ngfrz = 0;
     //! Number of Energy groups
     int ngener = 0;
-    //! Number of degrees of freedom in a group
+    //! Number of degrees of freedom in a temperature-coupling group
     real* nrdf = nullptr;
     //! Coupling temperature	per group
     real* ref_t = nullptr;
@@ -309,6 +309,24 @@ struct t_swapcoords
     t_swapGroup* grp;
 };
 
+struct PressureCouplingOptions
+{
+    //! Pressure coupling algorithm
+    PressureCoupling epc = PressureCoupling::Default;
+    //! Pressure coupling isotropy
+    PressureCouplingType epct = PressureCouplingType::Default;
+    //! Interval in steps for pressure coupling
+    int nstpcouple = 0;
+    //! Pressure coupling time (ps)
+    real tau_p = 0;
+    //! Reference pressure (kJ/(mol nm^3))
+    tensor ref_p = { { 0 } };
+    //! Compressibility ((mol nm^3)/kJ)
+    tensor compress = { { 0 } };
+    //! How to scale absolute reference coordinates
+    RefCoordScaling refcoord_scaling = RefCoordScaling::Default;
+};
+
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
@@ -392,19 +410,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Whether to print nose-hoover chains
     bool bPrintNHChains = false;
     //! Pressure coupling
-    PressureCoupling epc = PressureCoupling::Default;
-    //! Pressure coupling type
-    PressureCouplingType epct = PressureCouplingType::Default;
-    //! Interval in steps for pressure coupling
-    int nstpcouple = 0;
-    //! Pressure coupling time (ps)
-    real tau_p = 0;
-    //! Reference pressure (kJ/(mol nm^3))
-    tensor ref_p = { { 0 } };
-    //! Compressibility ((mol nm^3)/kJ)
-    tensor compress = { { 0 } };
-    //! How to scale absolute reference coordinates
-    RefCoordScaling refcoord_scaling = RefCoordScaling::Default;
+    PressureCouplingOptions pressureCouplingOptions;
     //! The COM of the posres atoms
     rvec posres_com = { 0, 0, 0 };
     //! The B-state COM of the posres atoms
@@ -632,7 +638,7 @@ bool inputrecDeform(const t_inputrec* ir);
 
 bool inputrecDynamicBox(const t_inputrec* ir);
 
-bool inputrecPreserveShape(const t_inputrec* ir);
+bool shouldPreserveBoxShape(const PressureCouplingOptions& pressureCoupling, const tensor deform);
 
 bool inputrecNeedMutot(const t_inputrec* ir);
 

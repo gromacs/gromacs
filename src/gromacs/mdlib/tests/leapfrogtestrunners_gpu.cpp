@@ -95,9 +95,10 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
     for (int step = 0; step < numSteps; step++)
     {
         // This follows the logic of the CPU-based implementation
-        bool doPressureCouple = testData->doPressureCouple_
-                                && do_per_step(step + testData->inputRecord_.nstpcouple - 1,
-                                               testData->inputRecord_.nstpcouple);
+        bool doPressureCouple =
+                testData->doPressureCouple_
+                && do_per_step(step + testData->inputRecord_.pressureCouplingOptions.nstpcouple - 1,
+                               testData->inputRecord_.pressureCouplingOptions.nstpcouple);
         integrator->integrate(d_x,
                               d_xp,
                               d_v,

@@ -362,7 +362,8 @@ static float comm_cost_est(real               limit,
         for (int j = i + 1; j < ddbox.npbcdim; j++)
         {
             if (box[j][i] != 0 || ir.deform[j][i] != 0
-                || (ir.epc != PressureCoupling::No && ir.compress[j][i] != 0))
+                || (ir.pressureCouplingOptions.epc != PressureCoupling::No
+                    && ir.pressureCouplingOptions.compress[j][i] != 0))
             {
                 if (nc[j] > 1 && nc[i] == 1)
                 {
@@ -738,7 +739,7 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
                         "Scaling the initial minimum size with 1/%g (option -dds) = %g", dlb_scale, 1 / dlb_scale);
         cellSizeLimit /= dlb_scale;
     }
-    else if (ir.epc != PressureCoupling::No)
+    else if (ir.pressureCouplingOptions.epc != PressureCoupling::No)
     {
         GMX_LOG(mdlog.info)
                 .appendTextFormatted(

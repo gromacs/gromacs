@@ -2770,7 +2770,7 @@ void dd_partition_system(FILE*                     fplog,
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
     bool bBoxChanged = (bMasterState || inputrecDeform(&inputrec));
-    if (inputrec.epc != PressureCoupling::No)
+    if (inputrec.pressureCouplingOptions.epc != PressureCoupling::No)
     {
         /* With nstpcouple > 1 pressure coupling happens.
          * one step after calculating the pressure.
@@ -2781,7 +2781,7 @@ void dd_partition_system(FILE*                     fplog,
          * We need to determine the last step in which p-coupling occurred.
          * MRS -- need to validate this for vv?
          */
-        int     n = inputrec.nstpcouple;
+        int     n = inputrec.pressureCouplingOptions.nstpcouple;
         int64_t step_pcoupl;
         if (n == 1)
         {
@@ -2809,7 +2809,7 @@ void dd_partition_system(FILE*                     fplog,
          * Since it requires (possibly expensive) global communication,
          * we might want to do DLB less frequently.
          */
-        if (bBoxChanged || inputrec.epc != PressureCoupling::No)
+        if (bBoxChanged || inputrec.pressureCouplingOptions.epc != PressureCoupling::No)
         {
             bDoDLB = bBoxChanged;
         }

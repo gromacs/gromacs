@@ -469,7 +469,7 @@ t_mde_delta_h_coll::t_mde_delta_h_coll(const t_inputrec& inputrec)
                 ndh += 1;
                 bEnergy = TRUE;
             }
-            if (inputrec.epc > PressureCoupling::No)
+            if (inputrec.pressureCouplingOptions.epc > PressureCoupling::No)
             {
                 ndh += 1; /* include pressure-volume work */
                 bPV = TRUE;

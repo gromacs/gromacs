@@ -70,7 +70,9 @@ void FirstOrderPressureCoupling::calculateScalingMatrix(Step step)
     previousStepConservedEnergyContribution_ = conservedEnergyContribution_;
     pressureCouplingCalculateScalingMatrix<pressureCouplingType>(fplog_,
                                                                  step,
-                                                                 inputrec_,
+                                                                 inputrec_->pressureCouplingOptions,
+                                                                 inputrec_->ld_seed,
+                                                                 inputrec_->opts.ref_t[0],
                                                                  couplingTimeStep_,
                                                                  pressure,
                                                                  box,
@@ -99,8 +101,19 @@ void FirstOrderPressureCoupling::scaleBoxAndCoordinates()
     const int startAtom = 0;
     const int numAtoms  = mdAtoms_->mdatoms()->homenr;
 
-    pressureCouplingScaleBoxAndCoordinates<pressureCouplingType>(
-            inputrec_, boxScalingMatrix_, box, boxRel_, startAtom, numAtoms, positions, velocities, cFreeze, nrnb_, scaleCoordinates);
+    pressureCouplingScaleBoxAndCoordinates<pressureCouplingType>(inputrec_->pressureCouplingOptions,
+                                                                 inputrec_->deform,
+                                                                 inputrec_->opts.nFreeze,
+                                                                 boxScalingMatrix_,
+                                                                 box,
+                                                                 boxRel_,
+                                                                 startAtom,
+                                                                 numAtoms,
+                                                                 positions,
+                                                                 velocities,
+                                                                 cFreeze,
+                                                                 nrnb_,
+                                                                 scaleCoordinates);
 }
 
 void FirstOrderPressureCoupling::scheduleTask(Step step, Time /*unused*/, const RegisterRunFunction& registerRunFunction)
@@ -126,10 +139,11 @@ void FirstOrderPressureCoupling::scheduleTask(Step step, Time /*unused*/, const 
 
 void FirstOrderPressureCoupling::elementSetup()
 {
-    if (inputrecPreserveShape(inputrec_))
+    if (shouldPreserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform))
     {
-        auto*     box  = statePropagatorData_->box();
-        const int ndim = inputrec_->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
+        auto*     box = statePropagatorData_->box();
+        const int ndim =
+                inputrec_->pressureCouplingOptions.epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, inputrec_->deform, boxRel_, box, true);
     }
 }
@@ -209,7 +223,7 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
                                                        const MDAtoms*       mdAtoms,
                                                        t_nrnb*              nrnb,
                                                        ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy) :
-    pressureCouplingType_(inputrec->epc),
+    pressureCouplingType_(inputrec->pressureCouplingOptions.epc),
     couplingTimeStep_(couplingTimeStep),
     couplingFrequency_(couplingFrequency),
     couplingOffset_(couplingOffset),
@@ -243,9 +257,10 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)
 {
     return builderHelper->storeElement(std::make_unique<FirstOrderPressureCoupling>(
-            legacySimulatorData->inputrec->nstpcouple,
+            legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
             offset,
-            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nstpcouple,
+            legacySimulatorData->inputrec->delta_t
+                    * legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
             statePropagatorData,
             energyData,
             legacySimulatorData->fplog,

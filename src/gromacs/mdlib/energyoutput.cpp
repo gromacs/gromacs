@@ -279,12 +279,15 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         }
     }
 
-    epc_       = isRerun ? PressureCoupling::No : inputrec.epc;
-    bDiagPres_ = !TRICLINIC(inputrec.ref_p) && !isRerun;
-    ref_p_     = (inputrec.ref_p[XX][XX] + inputrec.ref_p[YY][YY] + inputrec.ref_p[ZZ][ZZ]) / DIM;
-    bTricl_    = TRICLINIC(inputrec.compress) || TRICLINIC(inputrec.deform);
-    bDynBox_   = inputrecDynamicBox(&inputrec);
-    etc_       = isRerun ? TemperatureCoupling::No : inputrec.etc;
+    epc_       = isRerun ? PressureCoupling::No : inputrec.pressureCouplingOptions.epc;
+    bDiagPres_ = !TRICLINIC(inputrec.pressureCouplingOptions.ref_p) && !isRerun;
+    ref_p_     = (inputrec.pressureCouplingOptions.ref_p[XX][XX]
+              + inputrec.pressureCouplingOptions.ref_p[YY][YY]
+              + inputrec.pressureCouplingOptions.ref_p[ZZ][ZZ])
+             / DIM;
+    bTricl_  = TRICLINIC(inputrec.pressureCouplingOptions.compress) || TRICLINIC(inputrec.deform);
+    bDynBox_ = inputrecDynamicBox(&inputrec);
+    etc_     = isRerun ? TemperatureCoupling::No : inputrec.etc;
     bNHC_trotter_   = inputrecNvtTrotter(&inputrec) && !isRerun;
     bPrintNHChains_ = inputrec.bPrintNHChains && !isRerun;
     bMTTK_          = (inputrecNptTrotter(&inputrec) || inputrecNphTrotter(&inputrec)) && !isRerun;
@@ -721,7 +724,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     }
 
     nsetsextend = nsets;
-    if ((ir->epc != PressureCoupling::No) && (fep->n_lambda > 0) && (fep->init_lambda < 0))
+    if ((ir->pressureCouplingOptions.epc != PressureCoupling::No) && (fep->n_lambda > 0)
+        && (fep->init_lambda < 0))
     {
         nsetsextend += 1; /* for PV term, other terms possible if required for
                              the reduced potential (only needed with foreign

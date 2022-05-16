@@ -1705,9 +1705,9 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  v_rvec,
                                  f_rvec,
                                  inputRecord.etc,
-                                 inputRecord.epc,
+                                 inputRecord.pressureCouplingOptions.epc,
                                  inputRecord.nsttcouple,
-                                 inputRecord.nstpcouple,
+                                 inputRecord.pressureCouplingOptions.nstpcouple,
                                  cTC_,
                                  inputRecord.useConstantAcceleration,
                                  cAcceleration_,
@@ -1763,9 +1763,10 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                 case (IntegrationAlgorithm::VV):
                 case (IntegrationAlgorithm::VVAK):
                 {
-                    gmx_bool bExtended = (inputRecord.etc == TemperatureCoupling::NoseHoover
-                                          || inputRecord.epc == PressureCoupling::ParrinelloRahman
-                                          || inputRecord.epc == PressureCoupling::Mttk);
+                    gmx_bool bExtended =
+                            (inputRecord.etc == TemperatureCoupling::NoseHoover
+                             || inputRecord.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+                             || inputRecord.pressureCouplingOptions.epc == PressureCoupling::Mttk);
 
                     /* assuming barostat coupled to group 0 */
                     real alpha = 1.0 + DIM / static_cast<real>(inputRecord.opts.nrdf[0]);

@@ -449,7 +449,7 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
     {
         // Set up the default behaviour
         if (!(ir->nstcalcenergy > 0 || ir->nstlist > 0 || ir->etc != TemperatureCoupling::No
-              || ir->epc != PressureCoupling::No))
+              || ir->pressureCouplingOptions.epc != PressureCoupling::No))
         {
             /* The user didn't choose the period for anything
                important, so we just make sure we can send signals and
@@ -473,7 +473,9 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
             nstglobalcomm = lcd4(ir->nstcalcenergy,
                                  ir->nstlist,
                                  ir->etc != TemperatureCoupling::No ? ir->nsttcouple : 0,
-                                 ir->epc != PressureCoupling::No ? ir->nstpcouple : 0);
+                                 ir->pressureCouplingOptions.epc != PressureCoupling::No
+                                         ? ir->pressureCouplingOptions.nstpcouple
+                                         : 0);
         }
     }
     return nstglobalcomm;
@@ -533,11 +535,12 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
     if (ir->pbcType != PbcType::No)
     {
         state->flags |= enumValueToBitMask(StateEntry::Box);
-        if (inputrecPreserveShape(ir))
+        if (shouldPreserveBoxShape(ir->pressureCouplingOptions, ir->deform))
         {
             state->flags |= enumValueToBitMask(StateEntry::BoxRel);
         }
-        if ((ir->epc == PressureCoupling::ParrinelloRahman) || (ir->epc == PressureCoupling::Mttk))
+        if ((ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman)
+            || (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk))
         {
             state->flags |= enumValueToBitMask(StateEntry::BoxV);
             if (!useModularSimulator)
@@ -555,7 +558,8 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
             state->flags |= enumValueToBitMask(StateEntry::Veta);
             state->flags |= enumValueToBitMask(StateEntry::Vol0);
         }
-        if (ir->epc == PressureCoupling::Berendsen || ir->epc == PressureCoupling::CRescale)
+        if (ir->pressureCouplingOptions.epc == PressureCoupling::Berendsen
+            || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale)
         {
             state->flags |= enumValueToBitMask(StateEntry::BarosInt);
         }

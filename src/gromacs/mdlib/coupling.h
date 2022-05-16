@@ -54,6 +54,7 @@ struct t_nrnb;
 class t_state;
 
 enum class PbcType;
+struct PressureCouplingOptions;
 
 namespace gmx
 {
@@ -76,13 +77,15 @@ void update_tcouple(int64_t                             step,
                     gmx::ArrayRef<const unsigned short> cTC);
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
-void update_pcouple_before_coordinates(FILE*             fplog,
-                                       int64_t           step,
-                                       const t_inputrec* inputrec,
-                                       t_state*          state,
-                                       matrix            parrinellorahmanMu,
-                                       matrix            M,
-                                       bool              bInitStep);
+void update_pcouple_before_coordinates(FILE*                          fplog,
+                                       int64_t                        step,
+                                       const PressureCouplingOptions& pressureCoupling,
+                                       const tensor                   deform,
+                                       real                           delta_t,
+                                       t_state*                       state,
+                                       matrix                         parrinellorahmanMu,
+                                       matrix                         M,
+                                       bool                           bInitStep);
 
 /* Update the box, to be called after the coordinate update.
  * For Berendsen P-coupling, also calculates the scaling factor
@@ -91,7 +94,12 @@ void update_pcouple_before_coordinates(FILE*             fplog,
  */
 void update_pcouple_after_coordinates(FILE*                               fplog,
                                       int64_t                             step,
-                                      const t_inputrec*                   inputrec,
+                                      const PressureCouplingOptions&      pressureCoupling,
+                                      int64_t                             ld_seed,
+                                      real                                referenceTemperature,
+                                      const ivec*                         nFreeze,
+                                      const tensor                        deform,
+                                      real                                delta_t,
                                       int                                 homenr,
                                       gmx::ArrayRef<const unsigned short> cFREEZE,
                                       const matrix                        pressure,
@@ -154,13 +162,19 @@ void trotter_update(const t_inputrec*                   ir,
 gmx::EnumerationArray<TrotterSequence, std::vector<int>>
 init_npt_vars(const t_inputrec* ir, t_state* state, t_extmass* Mass, bool bTrotter);
 
-real NPT_energy(const t_inputrec* ir, const t_state* state, const t_extmass* MassQ);
+real NPT_energy(const PressureCouplingOptions& pressureCoupling,
+                TemperatureCoupling            etc,
+                gmx::ArrayRef<const real>      degreesOfFreedom,
+                gmx::ArrayRef<const real>      referenceTemperatures,
+                bool                           isTrotterWithConstantTemperature,
+                const t_state*                 state,
+                const t_extmass*               MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 void vrescale_tcoupl(const t_inputrec*     ir,
                      int64_t               step,
                      gmx_ekindata_t*       ekind,
-                     real                  dt,
+                     real                  delta_t,
                      gmx::ArrayRef<double> therm_integral);
 /* Compute temperature scaling. For V-rescale it is done in update. */
 
@@ -199,17 +213,18 @@ real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, 
  * The unit of pressure is bar.
  */
 
-void parrinellorahman_pcoupl(FILE*             fplog,
-                             int64_t           step,
-                             const t_inputrec* ir,
-                             real              dt,
-                             const tensor      pres,
-                             const tensor      box,
-                             tensor            box_rel,
-                             tensor            boxv,
-                             tensor            M,
-                             matrix            mu,
-                             bool              bFirstStep);
+void parrinellorahman_pcoupl(FILE*                          fplog,
+                             int64_t                        step,
+                             const PressureCouplingOptions& pressureCoupling,
+                             const tensor                   deform,
+                             real                           delta_t,
+                             const tensor                   pres,
+                             const tensor                   box,
+                             tensor                         box_rel,
+                             tensor                         boxv,
+                             tensor                         M,
+                             matrix                         mu,
+                             bool                           bFirstStep);
 
 /*! \brief Calculate the pressure coupling scaling matrix
  *
@@ -218,16 +233,18 @@ void parrinellorahman_pcoupl(FILE*             fplog,
  * parameter determines the pressure coupling algorithm.
  */
 template<PressureCoupling pressureCouplingType>
-void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
-                                            int64_t           step,
-                                            const t_inputrec* ir,
-                                            real              dt,
-                                            const tensor      pres,
-                                            const matrix      box,
-                                            const matrix      force_vir,
-                                            const matrix      constraint_vir,
-                                            matrix            mu,
-                                            double*           baros_integral);
+void pressureCouplingCalculateScalingMatrix(FILE*                          fplog,
+                                            int64_t                        step,
+                                            const PressureCouplingOptions& pressureCoupling,
+                                            int64_t                        ld_seed,
+                                            real                           referenceTemperature,
+                                            real                           delta_t,
+                                            const tensor                   pres,
+                                            const matrix                   box,
+                                            const matrix                   force_vir,
+                                            const matrix                   constraint_vir,
+                                            matrix                         mu,
+                                            double*                        baros_integral);
 
 /*! \brief Scale the box and coordinates
  *
@@ -237,7 +254,9 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
  * coupling algorithm.
  */
 template<PressureCoupling pressureCouplingType>
-void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*                   ir,
+void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions&      pressureCoupling,
+                                            const tensor                        deform,
+                                            const ivec*                         nFreeze,
                                             const matrix                        mu,
                                             matrix                              box,
                                             matrix                              box_rel,

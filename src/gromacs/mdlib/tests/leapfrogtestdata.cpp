@@ -181,9 +181,9 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
 
     if (doPressureCouple_)
     {
-        inputRecord_.epc        = PressureCoupling::ParrinelloRahman;
-        inputRecord_.nstpcouple = nstpcouple;
-        dtPressureCouple_       = inputRecord_.nstpcouple * inputRecord_.delta_t;
+        inputRecord_.pressureCouplingOptions.epc        = PressureCoupling::ParrinelloRahman;
+        inputRecord_.pressureCouplingOptions.nstpcouple = nstpcouple;
+        dtPressureCouple_ = inputRecord_.pressureCouplingOptions.nstpcouple * inputRecord_.delta_t;
 
         velocityScalingMatrix_[XX][XX] = 1.2;
         velocityScalingMatrix_[XX][YY] = 0.0;
@@ -199,10 +199,10 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     }
     else
     {
-        inputRecord_.epc               = PressureCoupling::No;
-        velocityScalingMatrix_[XX][XX] = 1.0;
-        velocityScalingMatrix_[XX][YY] = 0.0;
-        velocityScalingMatrix_[XX][ZZ] = 0.0;
+        inputRecord_.pressureCouplingOptions.epc = PressureCoupling::No;
+        velocityScalingMatrix_[XX][XX]           = 1.0;
+        velocityScalingMatrix_[XX][YY]           = 0.0;
+        velocityScalingMatrix_[XX][ZZ]           = 0.0;
 
         velocityScalingMatrix_[YY][XX] = 0.0;
         velocityScalingMatrix_[YY][YY] = 1.0;

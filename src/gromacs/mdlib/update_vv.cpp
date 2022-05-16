@@ -302,7 +302,13 @@ void integrateVVFirstStep(int64_t                   step,
     }
 
     /* compute the conserved quantity */
-    *saved_conserved_quantity = NPT_energy(ir, state, MassQ);
+    *saved_conserved_quantity = NPT_energy(ir->pressureCouplingOptions,
+                                           ir->etc,
+                                           gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),
+                                           gmx::constArrayRefFromArray(ir->opts.ref_t, ir->opts.ngtc),
+                                           inputrecNvtTrotter(ir) || inputrecNptTrotter(ir),
+                                           state,
+                                           MassQ);
     if (ir->eI == IntegrationAlgorithm::VV)
     {
         *last_ekin = enerd->term[F_EKIN];

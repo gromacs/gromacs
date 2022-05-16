@@ -64,6 +64,7 @@
 
 struct t_inputrec;
 struct t_lambda;
+struct PressureCouplingOptions;
 enum class FreeEnergyPerturbationType;
 
 namespace gmx
@@ -327,11 +328,15 @@ void set_box_rel(const t_inputrec* ir, t_state* state);
  * preserved, which otherwise might diffuse away due to rounding
  * errors in pressure coupling or the deform option.
  *
- * \param[in]    ir      Input record
+ * \param[in]    pressureCoupling  The pressure-coupling options
+ * \param[in]    deform  The box-deformation tensor
  * \param[in]    box_rel Relative box dimensions
  * \param[inout] box     The corrected actual box dimensions
  */
-void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box);
+void preserveBoxShape(const PressureCouplingOptions& pressureCoupling,
+                      const tensor                   deform,
+                      matrix                         box_rel,
+                      matrix                         box);
 
 /*! \brief Returns an arrayRef to the positions in \p state when \p state!=null
  *

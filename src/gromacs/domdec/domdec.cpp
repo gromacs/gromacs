@@ -2915,11 +2915,11 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
         // pressure coupling no margin is needed, for isotropic coupliing it can
         // be small (10%), and for all other cases we want a factor 2.
         float marginFactor;
-        if (ir_.epc == PressureCoupling::No)
+        if (ir_.pressureCouplingOptions.epc == PressureCoupling::No)
         {
             marginFactor = 1.0;
         }
-        else if (ir_.epct == PressureCouplingType::Isotropic)
+        else if (ir_.pressureCouplingOptions.epct == PressureCouplingType::Isotropic)
         {
             marginFactor = 1.1;
         }

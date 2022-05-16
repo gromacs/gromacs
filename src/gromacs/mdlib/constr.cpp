@@ -1103,7 +1103,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     nrnb(nrnb_p),
     wcycle(wcycle_p)
 {
-    if (numConstraints + numSettles > 0 && ir.epc == PressureCoupling::Mttk)
+    if (numConstraints + numSettles > 0 && ir.pressureCouplingOptions.epc == PressureCoupling::Mttk)
     {
         gmx_fatal(FARGS, "Constraints are not implemented with MTTK pressure control.");
     }

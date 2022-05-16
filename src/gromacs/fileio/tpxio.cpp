@@ -1309,24 +1309,24 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         ir->nsttcouple = ir->nstcalcenergy;
     }
-    serializer->doEnumAsInt(&ir->epc);
-    serializer->doEnumAsInt(&ir->epct);
+    serializer->doEnumAsInt(&ir->pressureCouplingOptions.epc);
+    serializer->doEnumAsInt(&ir->pressureCouplingOptions.epct);
     if (file_version >= 71)
     {
-        serializer->doInt(&ir->nstpcouple);
+        serializer->doInt(&ir->pressureCouplingOptions.nstpcouple);
     }
     else
     {
-        ir->nstpcouple = ir->nstcalcenergy;
+        ir->pressureCouplingOptions.nstpcouple = ir->nstcalcenergy;
     }
-    serializer->doReal(&ir->tau_p);
-    serializer->doRvec(&ir->ref_p[XX]);
-    serializer->doRvec(&ir->ref_p[YY]);
-    serializer->doRvec(&ir->ref_p[ZZ]);
-    serializer->doRvec(&ir->compress[XX]);
-    serializer->doRvec(&ir->compress[YY]);
-    serializer->doRvec(&ir->compress[ZZ]);
-    serializer->doEnumAsInt(&ir->refcoord_scaling);
+    serializer->doReal(&ir->pressureCouplingOptions.tau_p);
+    serializer->doRvec(&ir->pressureCouplingOptions.ref_p[XX]);
+    serializer->doRvec(&ir->pressureCouplingOptions.ref_p[YY]);
+    serializer->doRvec(&ir->pressureCouplingOptions.ref_p[ZZ]);
+    serializer->doRvec(&ir->pressureCouplingOptions.compress[XX]);
+    serializer->doRvec(&ir->pressureCouplingOptions.compress[YY]);
+    serializer->doRvec(&ir->pressureCouplingOptions.compress[ZZ]);
+    serializer->doEnumAsInt(&ir->pressureCouplingOptions.refcoord_scaling);
     serializer->doRvec(&ir->posres_com);
     serializer->doRvec(&ir->posres_comB);
 

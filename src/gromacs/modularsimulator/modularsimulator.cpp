@@ -140,12 +140,12 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
 
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>();
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(Offset(-1), PropagatorTag("LeapFrogPropagator"));
         }
-        else if (legacySimulatorData_->inputrec->epc == PressureCoupling::Berendsen
-                 || legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
+        else if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Berendsen
+                 || legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::CRescale)
         {
             builder->add<FirstOrderPressureCoupling>(0, ReportPreviousStepConservedEnergy::No);
         }
@@ -194,12 +194,12 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
 
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(Offset(-1), PropagatorTag("VelocityHalfStep"));
         }
-        else if (legacySimulatorData_->inputrec->epc == PressureCoupling::Berendsen
-                 || legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
+        else if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Berendsen
+                 || legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::CRescale)
         {
             builder->add<FirstOrderPressureCoupling>(0, ReportPreviousStepConservedEnergy::Yes);
         }
@@ -220,7 +220,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
 
         builder->add<ForceElement>();
         // Propagate velocities from t-dt/2 to t
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(
                     PropagatorTag("ScaleMTTKVPre1"));
@@ -228,7 +228,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<Propagator<IntegrationStage::VelocitiesOnly>>(
                 PropagatorTag("VelocityHalfStep1"),
                 TimeStep(0.5 * legacySimulatorData_->inputrec->delta_t));
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(
                     PropagatorTag("ScaleMTTKVPost1"));
@@ -240,7 +240,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
 
         // Propagate extended system variables from t-dt/2 to t
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<MttkElement>(
                     Offset(-1), scheduleTrotterFirstHalfOnInitStep, mttkPropagatorConnectionDetails);
@@ -254,7 +254,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                                                   PropagatorTag("ScaleNHC"));
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(PropagatorTag("ScaleNHC"));
         }
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<NoseHooverChainsElement>(NhcUsage::Barostat,
                                                   Offset(-1),
@@ -270,7 +270,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
 
         // Propagate extended system variables from t to t+dt/2
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<NoseHooverChainsElement>(NhcUsage::Barostat,
                                                   Offset(0),
@@ -286,7 +286,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                                                   ScheduleOnInitStep::Yes,
                                                   PropagatorTag("VelocityHalfStep2"));
         }
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<MttkElement>(Offset(0), ScheduleOnInitStep::Yes, mttkPropagatorConnectionDetails);
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(
@@ -297,7 +297,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<Propagator<IntegrationStage::VelocitiesOnly>>(
                 PropagatorTag("VelocityHalfStep2"),
                 TimeStep(0.5 * legacySimulatorData_->inputrec->delta_t));
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<Propagator<IntegrationStage::ScaleVelocities>>(
                     PropagatorTag("ScaleMTTKVPost2"));
@@ -307,7 +307,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // Propagate positions from t to t+dt
         builder->add<Propagator<IntegrationStage::PositionsOnly>>(
                 PropagatorTag("PositionFullStep"), TimeStep(legacySimulatorData_->inputrec->delta_t));
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<Propagator<IntegrationStage::ScalePositions>>(
                     PropagatorTag("ScaleMTTKXPost"));
@@ -325,11 +325,11 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
 
         // Propagate box from t to t+dt
-        if (legacySimulatorData_->inputrec->epc == PressureCoupling::Mttk)
+        if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             builder->add<MttkBoxScaling>(mttkPropagatorConnectionDetails);
         }
-        else if (legacySimulatorData_->inputrec->epc == PressureCoupling::CRescale)
+        else if (legacySimulatorData_->inputrec->pressureCouplingOptions.epc == PressureCoupling::CRescale)
         {
             // Legacy implementation allows combination of C-Rescale with Trotter Nose-Hoover
             builder->add<FirstOrderPressureCoupling>(0, ReportPreviousStepConservedEnergy::Yes);
@@ -376,7 +376,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
     GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == IntegrationAlgorithm::VV
-              && inputrec->epc == PressureCoupling::ParrinelloRahman),
+              && inputrec->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman),
             "Cannot use a Parrinello-Rahman barostat with md-vv and "
             "GMX_DISABLE_MODULAR_SIMULATOR=ON, "
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
@@ -497,7 +497,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                         && conditionalAssert(!GMX_FAHCORE,
                                              "GMX_FAHCORE not supported by the modular simulator.");
     if (!isInputCompatible
-        && (inputrec->eI == IntegrationAlgorithm::VV && inputrec->epc == PressureCoupling::ParrinelloRahman))
+        && (inputrec->eI == IntegrationAlgorithm::VV
+            && inputrec->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman))
     {
         gmx_fatal(FARGS,
                   "Requested Parrinello-Rahman barostat with md-vv. This combination is only "

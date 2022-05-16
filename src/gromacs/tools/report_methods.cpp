@@ -124,10 +124,10 @@ void writeParameterInformation(TextWriter* writer, const t_inputrec& ir, bool wr
         writer->writeLine(formatString("Temperature coupling was done with the %s algorithm.",
                                        enumValueToString(ir.etc)));
     }
-    if (ir.epc != PressureCoupling::No)
+    if (ir.pressureCouplingOptions.epc != PressureCoupling::No)
     {
         writer->writeLine(formatString("Pressure coupling was done with the %s algorithm.",
-                                       enumValueToString(ir.epc)));
+                                       enumValueToString(ir.pressureCouplingOptions.epc)));
     }
     writer->ensureEmptyLine();
 }

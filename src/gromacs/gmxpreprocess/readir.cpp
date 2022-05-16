@@ -497,15 +497,15 @@ void check_ir(const char*                    mdparin,
     }
     if (!EI_DYNAMICS(ir->eI))
     {
-        if (ir->epc != PressureCoupling::No)
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
         {
             sprintf(warn_buf,
                     "Setting pcoupl from '%s' to 'no'. Pressure coupling does not apply to %s.",
-                    enumValueToString(ir->epc),
+                    enumValueToString(ir->pressureCouplingOptions.epc),
                     enumValueToString(ir->eI));
             warning_note(wi, warn_buf);
         }
-        ir->epc = PressureCoupling::No;
+        ir->pressureCouplingOptions.epc = PressureCoupling::No;
     }
     if (EI_DYNAMICS(ir->eI))
     {
@@ -550,13 +550,13 @@ void check_ir(const char*                    mdparin,
             ir->nstcalcenergy = min_nst;
         }
 
-        if (ir->epc != PressureCoupling::No)
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
         {
-            if (ir->nstpcouple < 0)
+            if (ir->pressureCouplingOptions.nstpcouple < 0)
             {
-                ir->nstpcouple = ir_optimal_nstpcouple(ir);
+                ir->pressureCouplingOptions.nstpcouple = ir_optimal_nstpcouple(ir);
             }
-            if (ir->useMts && ir->nstpcouple % ir->mtsLevels.back().stepFactor != 0)
+            if (ir->useMts && ir->pressureCouplingOptions.nstpcouple % ir->mtsLevels.back().stepFactor != 0)
             {
                 warning_error(wi,
                               "With multiple time stepping, nstpcouple should be a mutiple of "
@@ -1199,10 +1199,10 @@ void check_ir(const char*                    mdparin,
     {
         if (ir->pbcType == PbcType::No)
         {
-            if (ir->epc != PressureCoupling::No)
+            if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
             {
                 warning(wi, "Turning off pressure coupling for vacuum system");
-                ir->epc = PressureCoupling::No;
+                ir->pressureCouplingOptions.epc = PressureCoupling::No;
             }
         }
         else
@@ -1210,7 +1210,7 @@ void check_ir(const char*                    mdparin,
             sprintf(err_buf,
                     "Can not have pressure coupling with pbc=%s",
                     c_pbcTypeNames[ir->pbcType].c_str());
-            CHECK(ir->epc != PressureCoupling::No);
+            CHECK(ir->pressureCouplingOptions.epc != PressureCoupling::No);
         }
         sprintf(err_buf, "Can not have Ewald with pbc=%s", c_pbcTypeNames[ir->pbcType].c_str());
         CHECK(usingFullElectrostatics(ir->coulombtype));
@@ -1309,7 +1309,8 @@ void check_ir(const char*                    mdparin,
                      "changing \"yes\" to \"Berendsen\"\n");
     }
 
-    if ((ir->etc == TemperatureCoupling::NoseHoover) || (ir->epc == PressureCoupling::Mttk))
+    if ((ir->etc == TemperatureCoupling::NoseHoover)
+        || (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk))
     {
         if (ir->opts.nhchainlength < 1)
         {
@@ -1340,7 +1341,7 @@ void check_ir(const char*                    mdparin,
                 "%s implemented primarily for validation, and requires nsttcouple = 1 and "
                 "nstpcouple = 1.",
                 enumValueToString(IntegrationAlgorithm::VVAK));
-        CHECK((ir->nsttcouple != 1) || (ir->nstpcouple != 1));
+        CHECK((ir->nsttcouple != 1) || (ir->pressureCouplingOptions.nstpcouple != 1));
     }
 
     if (ETC_ANDERSEN(ir->etc))
@@ -1390,7 +1391,7 @@ void check_ir(const char*                    mdparin,
     }
 
     /* PRESSURE COUPLING */
-    if (ir->epc == PressureCoupling::Berendsen)
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::Berendsen)
     {
         sprintf(warn_buf,
                 "The %s barostat does not generate any strictly correct ensemble, "
@@ -1398,35 +1399,36 @@ void check_ir(const char*                    mdparin,
                 "For isotropic scaling we would recommend the %s barostat that also "
                 "ensures fast relaxation without oscillations, and for anisotropic "
                 "scaling you likely want to use the %s barostat.",
-                enumValueToString(ir->epc),
+                enumValueToString(ir->pressureCouplingOptions.epc),
                 enumValueToString(PressureCoupling::CRescale),
                 enumValueToString(PressureCoupling::ParrinelloRahman));
         warning(wi, warn_buf);
     }
 
-    if (ir->epc == PressureCoupling::Isotropic)
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::Isotropic)
     {
-        ir->epc = PressureCoupling::Berendsen;
+        ir->pressureCouplingOptions.epc = PressureCoupling::Berendsen;
         warning_note(wi,
                      "Old option for pressure coupling given: "
                      "changing \"Isotropic\" to \"Berendsen\"\n");
     }
 
-    if (ir->epc != PressureCoupling::No)
+    if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
     {
-        dt_pcoupl = ir->nstpcouple * ir->delta_t;
+        dt_pcoupl = ir->pressureCouplingOptions.nstpcouple * ir->delta_t;
 
-        sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->tau_p);
-        CHECK(ir->tau_p <= 0);
+        sprintf(err_buf, "tau-p must be > 0 instead of %g\n", ir->pressureCouplingOptions.tau_p);
+        CHECK(ir->pressureCouplingOptions.tau_p <= 0);
 
-        if (ir->tau_p / dt_pcoupl < pcouple_min_integration_steps(ir->epc) - 10 * GMX_REAL_EPS)
+        if (ir->pressureCouplingOptions.tau_p / dt_pcoupl
+            < pcouple_min_integration_steps(ir->pressureCouplingOptions.epc) - 10 * GMX_REAL_EPS)
         {
             sprintf(warn_buf,
                     "For proper integration of the %s barostat, tau-p (%g) should be at least %d "
                     "times larger than nstpcouple*dt (%g)",
-                    enumValueToString(ir->epc),
-                    ir->tau_p,
-                    pcouple_min_integration_steps(ir->epc),
+                    enumValueToString(ir->pressureCouplingOptions.epc),
+                    ir->pressureCouplingOptions.tau_p,
+                    pcouple_min_integration_steps(ir->pressureCouplingOptions.epc),
                     dt_pcoupl);
             warning(wi, warn_buf);
         }
@@ -1434,12 +1436,16 @@ void check_ir(const char*                    mdparin,
         sprintf(err_buf,
                 "compressibility must be > 0 when using pressure"
                 " coupling %s\n",
-                enumValueToString(ir->epc));
-        CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || ir->compress[ZZ][ZZ] < 0
-              || (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 && ir->compress[ZZ][XX] <= 0
-                  && ir->compress[ZZ][YY] <= 0));
+                enumValueToString(ir->pressureCouplingOptions.epc));
+        CHECK(ir->pressureCouplingOptions.compress[XX][XX] < 0
+              || ir->pressureCouplingOptions.compress[YY][YY] < 0
+              || ir->pressureCouplingOptions.compress[ZZ][ZZ] < 0
+              || (trace(ir->pressureCouplingOptions.compress) == 0
+                  && ir->pressureCouplingOptions.compress[YY][XX] <= 0
+                  && ir->pressureCouplingOptions.compress[ZZ][XX] <= 0
+                  && ir->pressureCouplingOptions.compress[ZZ][YY] <= 0));
 
-        if (PressureCoupling::ParrinelloRahman == ir->epc && opts->bGenVel)
+        if (PressureCoupling::ParrinelloRahman == ir->pressureCouplingOptions.epc && opts->bGenVel)
         {
             sprintf(warn_buf,
                     "You are generating velocities so I am assuming you "
@@ -1449,14 +1455,14 @@ void check_ir(const char*                    mdparin,
                     "equilibrating first with Berendsen pressure coupling. If "
                     "you are not equilibrating the system, you can probably "
                     "ignore this warning.",
-                    enumValueToString(ir->epc));
+                    enumValueToString(ir->pressureCouplingOptions.epc));
             warning(wi, warn_buf);
         }
     }
 
     if (!EI_VV(ir->eI))
     {
-        if (ir->epc == PressureCoupling::Mttk)
+        if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             warning_error(wi, "MTTK pressure coupling requires a Velocity-verlet integrator");
         }
@@ -2371,15 +2377,15 @@ void get_ir(const char*     mdparin,
     setStringEntry(&inp, "tau-t", inputrecStrings->tau_t, nullptr);
     setStringEntry(&inp, "ref-t", inputrecStrings->ref_t, nullptr);
     printStringNoNewline(&inp, "pressure coupling");
-    ir->epc        = getEnum<PressureCoupling>(&inp, "pcoupl", wi);
-    ir->epct       = getEnum<PressureCouplingType>(&inp, "pcoupltype", wi);
-    ir->nstpcouple = get_eint(&inp, "nstpcouple", -1, wi);
+    ir->pressureCouplingOptions.epc        = getEnum<PressureCoupling>(&inp, "pcoupl", wi);
+    ir->pressureCouplingOptions.epct       = getEnum<PressureCouplingType>(&inp, "pcoupltype", wi);
+    ir->pressureCouplingOptions.nstpcouple = get_eint(&inp, "nstpcouple", -1, wi);
     printStringNoNewline(&inp, "Time constant (ps), compressibility (1/bar) and reference P (bar)");
-    ir->tau_p = get_ereal(&inp, "tau-p", 1.0, wi);
+    ir->pressureCouplingOptions.tau_p = get_ereal(&inp, "tau-p", 1.0, wi);
     setStringEntry(&inp, "compressibility", dumstr[0], nullptr);
     setStringEntry(&inp, "ref-p", dumstr[1], nullptr);
     printStringNoNewline(&inp, "Scaling of reference coordinates, No, All or COM");
-    ir->refcoord_scaling = getEnum<RefCoordScaling>(&inp, "refcoord-scaling", wi);
+    ir->pressureCouplingOptions.refcoord_scaling = getEnum<RefCoordScaling>(&inp, "refcoord-scaling", wi);
 
     /* QMMM */
     printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
@@ -2773,9 +2779,9 @@ void get_ir(const char*     mdparin,
         {
             dumdub[m][i] = 0.0;
         }
-        if (ir->epc != PressureCoupling::No)
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
         {
-            switch (ir->epct)
+            switch (ir->pressureCouplingOptions.epct)
             {
                 case PressureCouplingType::Isotropic:
                     if (sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
@@ -2815,37 +2821,38 @@ void get_ir(const char*     mdparin,
                 default:
                     gmx_fatal(FARGS,
                               "Pressure coupling type %s not implemented yet",
-                              enumValueToString(ir->epct));
+                              enumValueToString(ir->pressureCouplingOptions.epct));
             }
         }
     }
-    clear_mat(ir->ref_p);
-    clear_mat(ir->compress);
+    clear_mat(ir->pressureCouplingOptions.ref_p);
+    clear_mat(ir->pressureCouplingOptions.compress);
     for (i = 0; i < DIM; i++)
     {
-        ir->ref_p[i][i]    = dumdub[1][i];
-        ir->compress[i][i] = dumdub[0][i];
+        ir->pressureCouplingOptions.ref_p[i][i]    = dumdub[1][i];
+        ir->pressureCouplingOptions.compress[i][i] = dumdub[0][i];
     }
-    if (ir->epct == PressureCouplingType::Anisotropic)
+    if (ir->pressureCouplingOptions.epct == PressureCouplingType::Anisotropic)
     {
-        ir->ref_p[XX][YY] = dumdub[1][3];
-        ir->ref_p[XX][ZZ] = dumdub[1][4];
-        ir->ref_p[YY][ZZ] = dumdub[1][5];
-        if (ir->ref_p[XX][YY] != 0 && ir->ref_p[XX][ZZ] != 0 && ir->ref_p[YY][ZZ] != 0)
+        ir->pressureCouplingOptions.ref_p[XX][YY] = dumdub[1][3];
+        ir->pressureCouplingOptions.ref_p[XX][ZZ] = dumdub[1][4];
+        ir->pressureCouplingOptions.ref_p[YY][ZZ] = dumdub[1][5];
+        if (ir->pressureCouplingOptions.ref_p[XX][YY] != 0 && ir->pressureCouplingOptions.ref_p[XX][ZZ] != 0
+            && ir->pressureCouplingOptions.ref_p[YY][ZZ] != 0)
         {
             warning(wi,
                     "All off-diagonal reference pressures are non-zero. Are you sure you want to "
                     "apply a threefold shear stress?\n");
         }
-        ir->compress[XX][YY] = dumdub[0][3];
-        ir->compress[XX][ZZ] = dumdub[0][4];
-        ir->compress[YY][ZZ] = dumdub[0][5];
+        ir->pressureCouplingOptions.compress[XX][YY] = dumdub[0][3];
+        ir->pressureCouplingOptions.compress[XX][ZZ] = dumdub[0][4];
+        ir->pressureCouplingOptions.compress[YY][ZZ] = dumdub[0][5];
         for (i = 0; i < DIM; i++)
         {
             for (m = 0; m < i; m++)
             {
-                ir->ref_p[i][m]    = ir->ref_p[m][i];
-                ir->compress[i][m] = ir->compress[m][i];
+                ir->pressureCouplingOptions.ref_p[i][m] = ir->pressureCouplingOptions.ref_p[m][i];
+                ir->pressureCouplingOptions.compress[i][m] = ir->pressureCouplingOptions.compress[m][i];
             }
         }
     }
@@ -2992,13 +2999,13 @@ void get_ir(const char*     mdparin,
     ir->deform[YY][XX] = dumdub[0][3];
     ir->deform[ZZ][XX] = dumdub[0][4];
     ir->deform[ZZ][YY] = dumdub[0][5];
-    if (ir->epc != PressureCoupling::No)
+    if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
     {
         for (i = 0; i < 3; i++)
         {
             for (j = 0; j <= i; j++)
             {
-                if (ir->deform[i][j] != 0 && ir->compress[i][j] != 0)
+                if (ir->deform[i][j] != 0 && ir->pressureCouplingOptions.compress[i][j] != 0)
                 {
                     warning_error(wi, "A box element has deform set and compressibility > 0");
                 }
@@ -3012,7 +3019,7 @@ void get_ir(const char*     mdparin,
                 {
                     for (m = j; m < DIM; m++)
                     {
-                        if (ir->compress[m][j] != 0)
+                        if (ir->pressureCouplingOptions.compress[m][j] != 0)
                         {
                             sprintf(warn_buf,
                                     "An off-diagonal box element has deform set while "
@@ -3859,14 +3866,15 @@ void do_index(const char*                    mdparin,
 
         if (EI_VV(ir->eI))
         {
-            if ((ir->etc == TemperatureCoupling::NoseHoover) && (ir->epc == PressureCoupling::Berendsen))
+            if ((ir->etc == TemperatureCoupling::NoseHoover)
+                && (ir->pressureCouplingOptions.epc == PressureCoupling::Berendsen))
             {
                 gmx_fatal(FARGS,
                           "Cannot do Nose-Hoover temperature with Berendsen pressure control with "
                           "md-vv; use either vrescale temperature with berendsen pressure or "
                           "Nose-Hoover temperature with MTTK pressure");
             }
-            if (ir->epc == PressureCoupling::Mttk)
+            if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
             {
                 if (ir->etc != TemperatureCoupling::NoseHoover)
                 {
@@ -3876,10 +3884,10 @@ void do_index(const char*                    mdparin,
                 }
                 else
                 {
-                    if (ir->nstpcouple != ir->nsttcouple)
+                    if (ir->pressureCouplingOptions.nstpcouple != ir->nsttcouple)
                     {
-                        int mincouple  = std::min(ir->nstpcouple, ir->nsttcouple);
-                        ir->nstpcouple = ir->nsttcouple = mincouple;
+                        int mincouple = std::min(ir->pressureCouplingOptions.nstpcouple, ir->nsttcouple);
+                        ir->pressureCouplingOptions.nstpcouple = ir->nsttcouple = mincouple;
                         sprintf(warn_buf,
                                 "for current Trotter decomposition methods with vv, nsttcouple and "
                                 "nstpcouple must be equal.  Both have been reset to "
@@ -4841,22 +4849,23 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
                 "rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
-    if (ir->epc == PressureCoupling::ParrinelloRahman && ir->etc == TemperatureCoupling::NoseHoover)
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+        && ir->etc == TemperatureCoupling::NoseHoover)
     {
         real tau_t_max = 0;
         for (int g = 0; g < ir->opts.ngtc; g++)
         {
             tau_t_max = std::max(tau_t_max, ir->opts.tau_t[g]);
         }
-        if (ir->tau_p < 1.9 * tau_t_max)
+        if (ir->pressureCouplingOptions.tau_p < 1.9 * tau_t_max)
         {
             std::string message = gmx::formatString(
                     "With %s T-coupling and %s p-coupling, "
                     "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
                     enumValueToString(ir->etc),
-                    enumValueToString(ir->epc),
+                    enumValueToString(ir->pressureCouplingOptions.epc),
                     "tau-p",
-                    ir->tau_p,
+                    ir->pressureCouplingOptions.tau_p,
                     "tau-t",
                     tau_t_max);
             warning(wi, message.c_str());
@@ -4864,13 +4873,14 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     /* Check for pressure coupling with absolute position restraints */
-    if (ir->epc != PressureCoupling::No && ir->refcoord_scaling == RefCoordScaling::No)
+    if (ir->pressureCouplingOptions.epc != PressureCoupling::No
+        && ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::No)
     {
         const BasicVector<bool> havePosres = havePositionRestraints(*sys);
         {
             for (m = 0; m < DIM; m++)
             {
-                if (havePosres[m] && norm2(ir->compress[m]) > 0)
+                if (havePosres[m] && norm2(ir->pressureCouplingOptions.compress[m]) > 0)
                 {
                     warning(wi,
                             "You are using pressure coupling with absolute position restraints, "
@@ -5026,7 +5036,9 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         {
             for (m = 0; m <= i; m++)
             {
-                if ((ir->epc != PressureCoupling::No && ir->compress[i][m] != 0) || ir->deform[i][m] != 0)
+                if ((ir->pressureCouplingOptions.epc != PressureCoupling::No
+                     && ir->pressureCouplingOptions.compress[i][m] != 0)
+                    || ir->deform[i][m] != 0)
                 {
                     for (c = 0; c < ir->pull->ncoord; c++)
                     {
@@ -5087,13 +5099,13 @@ void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool b
                     enumValueToString(ir->eI));
             warning_note(wi, warn_buf);
         }
-        if (ir->epc == PressureCoupling::Mttk)
+        if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             warning_error(wi, "MTTK not compatible with lincs -- use shake instead.");
         }
     }
 
-    if (bHasAnyConstraints && ir->epc == PressureCoupling::Mttk)
+    if (bHasAnyConstraints && ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
     {
         warning_error(wi, "Constraints are not implemented with MTTK pressure control.");
     }

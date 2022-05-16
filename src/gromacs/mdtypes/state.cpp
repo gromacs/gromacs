@@ -392,19 +392,22 @@ void set_box_rel(const t_inputrec* ir, t_state* state)
 
     clear_mat(state->box_rel);
 
-    if (inputrecPreserveShape(ir))
+    if (shouldPreserveBoxShape(ir->pressureCouplingOptions, ir->deform))
     {
-        const int ndim = ir->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
+        const int ndim = ir->pressureCouplingOptions.epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, ir->deform, state->box_rel, state->box, true);
     }
 }
 
-void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box)
+void preserveBoxShape(const PressureCouplingOptions& pressureCouplingOptions,
+                      const tensor                   deform,
+                      matrix                         box_rel,
+                      matrix                         box)
 {
-    if (inputrecPreserveShape(ir))
+    if (shouldPreserveBoxShape(pressureCouplingOptions, deform))
     {
-        const int ndim = ir->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
-        do_box_rel(ndim, ir->deform, box_rel, box, false);
+        const int ndim = pressureCouplingOptions.epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
+        do_box_rel(ndim, deform, box_rel, box, false);
     }
 }
 

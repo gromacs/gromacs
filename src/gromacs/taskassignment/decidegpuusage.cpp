@@ -679,8 +679,10 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     {
         errorMessage += "Nose-Hoover temperature coupling is not supported.\n";
     }
-    if (!(inputrec.epc == PressureCoupling::No || inputrec.epc == PressureCoupling::ParrinelloRahman
-          || inputrec.epc == PressureCoupling::Berendsen || inputrec.epc == PressureCoupling::CRescale))
+    if (!(inputrec.pressureCouplingOptions.epc == PressureCoupling::No
+          || inputrec.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+          || inputrec.pressureCouplingOptions.epc == PressureCoupling::Berendsen
+          || inputrec.pressureCouplingOptions.epc == PressureCoupling::CRescale))
     {
         errorMessage +=
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are "

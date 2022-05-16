@@ -255,7 +255,8 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             fplog, ms, (ir->init_step + nst - 1) / nst, "first exchange step: init_step/-replex", FALSE);
     check_multi_int(fplog, ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
-    check_multi_int(fplog, ms, static_cast<int>(ir->epc), "the pressure coupling", FALSE);
+    check_multi_int(
+            fplog, ms, static_cast<int>(ir->pressureCouplingOptions.epc), "the pressure coupling", FALSE);
     check_multi_int(fplog, ms, static_cast<int>(ir->efep), "free energy", FALSE);
     check_multi_int(fplog, ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
 
@@ -294,7 +295,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     if (bTemp)
     {
         please_cite(fplog, "Sugita1999a");
-        if (ir->epc != PressureCoupling::No)
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
         {
             re->bNPT = TRUE;
             fprintf(fplog, "Repl  Using Constant Pressure REMD.\n");
@@ -319,9 +320,9 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     if (re->bNPT)
     {
         snew(re->pres, re->nrepl);
-        if (ir->epct == PressureCouplingType::SurfaceTension)
+        if (ir->pressureCouplingOptions.epct == PressureCouplingType::SurfaceTension)
         {
-            pres = ir->ref_p[ZZ][ZZ];
+            pres = ir->pressureCouplingOptions.ref_p[ZZ][ZZ];
         }
         else
         {
@@ -329,9 +330,9 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             j    = 0;
             for (i = 0; i < DIM; i++)
             {
-                if (ir->compress[i][i] != 0)
+                if (ir->pressureCouplingOptions.compress[i][i] != 0)
                 {
-                    pres += ir->ref_p[i][i];
+                    pres += ir->pressureCouplingOptions.ref_p[i][i];
                     j++;
                 }
             }

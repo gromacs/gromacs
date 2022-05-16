@@ -904,10 +904,11 @@ static void cont_status(const char*             slog,
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Using frame at t = %g ps", use_time);
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Starting time for run is %g ps", ir->init_t);
 
-    if ((ir->epc != PressureCoupling::No || ir->etc == TemperatureCoupling::NoseHoover) && ener)
+    if ((ir->pressureCouplingOptions.epc != PressureCoupling::No || ir->etc == TemperatureCoupling::NoseHoover)
+        && ener)
     {
         get_enx_state(ener, use_time, sys->groups, ir, state);
-        preserve_box_shape(ir, state->box_rel, state->boxv);
+        preserveBoxShape(ir->pressureCouplingOptions, ir->deform, state->box_rel, state->boxv);
     }
 }
 
@@ -2158,13 +2159,14 @@ int gmx_grompp(int argc, char* argv[])
 
     if (nint_ftype(&sys, mi, F_POSRES) > 0 || nint_ftype(&sys, mi, F_FBPOSRES) > 0)
     {
-        if (ir->epc == PressureCoupling::ParrinelloRahman || ir->epc == PressureCoupling::Mttk)
+        if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+            || ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
         {
             std::string warningMessage = gmx::formatString(
                     "You are combining position restraints with %s pressure coupling, which can "
                     "lead to instabilities. If you really want to combine position restraints with "
                     "pressure coupling, we suggest to use %s pressure coupling instead.",
-                    enumValueToString(ir->epc),
+                    enumValueToString(ir->pressureCouplingOptions.epc),
                     enumValueToString(PressureCoupling::Berendsen));
             warning_note(wi, warningMessage);
         }
@@ -2209,7 +2211,16 @@ int gmx_grompp(int argc, char* argv[])
             }
             GMX_LOG(logger.info).asParagraph().appendText(message);
         }
-        gen_posres(&sys, mi, fn, fnB, ir->refcoord_scaling, ir->pbcType, ir->posres_com, ir->posres_comB, wi, logger);
+        gen_posres(&sys,
+                   mi,
+                   fn,
+                   fnB,
+                   ir->pressureCouplingOptions.refcoord_scaling,
+                   ir->pbcType,
+                   ir->posres_com,
+                   ir->posres_comB,
+                   wi,
+                   logger);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
@@ -2518,9 +2529,9 @@ int gmx_grompp(int argc, char* argv[])
     if (ir->bDoAwh)
     {
         tensor compressibility = { { 0 } };
-        if (ir->epc != PressureCoupling::No)
+        if (ir->pressureCouplingOptions.epc != PressureCoupling::No)
         {
-            copy_mat(ir->compress, compressibility);
+            copy_mat(ir->pressureCouplingOptions.compress, compressibility);
         }
         setStateDependentAwhParams(
                 ir->awhParams.get(),

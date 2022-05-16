@@ -1194,8 +1194,8 @@ void get_enx_state(const char* fn, real t, const SimulationGroups& groups, t_inp
         gmx_fatal(FARGS, "Could not find frame with time %f in '%s'", t, fn);
     }
 
-    npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
-    if (ir->epc == PressureCoupling::ParrinelloRahman)
+    npcoupl = TRICLINIC(ir->pressureCouplingOptions.compress) ? 6 : 3;
+    if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman)
     {
         clear_mat(state->boxv);
         for (i = 0; i < npcoupl; i++)

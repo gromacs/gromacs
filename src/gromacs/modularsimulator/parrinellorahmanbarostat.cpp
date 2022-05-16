@@ -138,7 +138,8 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
     const auto* box = statePropagatorData_->constBox();
     parrinellorahman_pcoupl(fplog_,
                             step,
-                            inputrec_,
+                            inputrec_->pressureCouplingOptions,
+                            inputrec_->deform,
                             couplingTimeStep_,
                             energyData_->pressure(step),
                             box,
@@ -162,7 +163,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
             box[i][m] += couplingTimeStep_ * boxVelocity_[i][m];
         }
     }
-    preserve_box_shape(inputrec_, boxRel_, box);
+    preserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform, boxRel_, box);
 
     // Scale the coordinates
     const int start  = 0;
@@ -206,10 +207,11 @@ void ParrinelloRahmanBarostat::elementSetup()
                 "object.");
     }
 
-    if (inputrecPreserveShape(inputrec_))
+    if (shouldPreserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform))
     {
-        auto*     box  = statePropagatorData_->box();
-        const int ndim = inputrec_->epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
+        auto*     box = statePropagatorData_->box();
+        const int ndim =
+                inputrec_->pressureCouplingOptions.epct == PressureCouplingType::SemiIsotropic ? 2 : 3;
         do_box_rel(ndim, inputrec_->deform, boxRel_, box, true);
     }
 
@@ -227,7 +229,8 @@ void ParrinelloRahmanBarostat::elementSetup()
         const auto* box = statePropagatorData_->constBox();
         parrinellorahman_pcoupl(nullptr,
                                 initStep_,
-                                inputrec_,
+                                inputrec_->pressureCouplingOptions,
+                                inputrec_->deform,
                                 couplingTimeStep_,
                                 nullptr,
                                 box,
@@ -260,8 +263,10 @@ real ParrinelloRahmanBarostat::conservedEnergyContribution() const
     {
         for (int j = 0; j <= i; j++)
         {
-            real invMass = c_presfac * (4 * M_PI * M_PI * inputrec_->compress[i][j])
-                           / (3 * inputrec_->tau_p * inputrec_->tau_p * maxBoxLength);
+            real invMass = c_presfac
+                           * (4 * M_PI * M_PI * inputrec_->pressureCouplingOptions.compress[i][j])
+                           / (3 * inputrec_->pressureCouplingOptions.tau_p
+                              * inputrec_->pressureCouplingOptions.tau_p * maxBoxLength);
             if (invMass > 0)
             {
                 energy += 0.5 * boxVelocity_[i][j] * boxVelocity_[i][j] / invMass;
@@ -276,7 +281,7 @@ real ParrinelloRahmanBarostat::conservedEnergyContribution() const
      * track of unwrapped box diagonal elements. This case is
      * excluded in integratorHasConservedEnergyQuantity().
      */
-    energy += volume * trace(inputrec_->ref_p) / (DIM * c_presfac);
+    energy += volume * trace(inputrec_->pressureCouplingOptions.ref_p) / (DIM * c_presfac);
 
     return energy;
 }
@@ -355,9 +360,10 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         const PropagatorTag& propagatorTag)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
-            legacySimulatorData->inputrec->nstpcouple,
+            legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
             offset,
-            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nstpcouple,
+            legacySimulatorData->inputrec->delta_t
+                    * legacySimulatorData->inputrec->pressureCouplingOptions.nstpcouple,
             legacySimulatorData->inputrec->init_step,
             statePropagatorData,
             energyData,

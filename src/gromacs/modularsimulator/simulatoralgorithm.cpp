@@ -656,7 +656,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         };
         const auto* inputrec   = legacySimulatorData_->inputrec;
         auto        virialMode = EnergySignallerVirialMode::Off;
-        if (inputrec->epc != PressureCoupling::No)
+        if (inputrec->pressureCouplingOptions.epc != PressureCoupling::No)
         {
             if (EI_VV(inputrec->eI))
             {
@@ -670,7 +670,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         addSignaller(energySignallerBuilder_.build(
                 inputrec->nstcalcenergy,
                 computeFepPeriod(*inputrec, legacySimulatorData_->replExParams),
-                inputrec->nstpcouple,
+                inputrec->pressureCouplingOptions.nstpcouple,
                 virialMode));
         addSignaller(trajectorySignallerBuilder_.build(inputrec->nstxout,
                                                        inputrec->nstvout,

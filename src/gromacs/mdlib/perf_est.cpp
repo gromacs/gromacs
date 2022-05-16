@@ -179,9 +179,10 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
         {
             nonsimd_step_frac = 0;
         }
-        if (ir.epc != PressureCoupling::No && 1.0 / ir.nstpcouple > nonsimd_step_frac)
+        if (ir.pressureCouplingOptions.epc != PressureCoupling::No
+            && 1.0 / ir.pressureCouplingOptions.nstpcouple > nonsimd_step_frac)
         {
-            nonsimd_step_frac = 1.0 / ir.nstpcouple;
+            nonsimd_step_frac = 1.0 / ir.pressureCouplingOptions.nstpcouple;
         }
     }
     else
