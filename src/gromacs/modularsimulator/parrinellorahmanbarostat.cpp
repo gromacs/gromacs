@@ -172,7 +172,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     ivec*     nFreeze = inputrec_->opts.nFreeze;
     for (int n = start; n < start + homenr; n++)
     {
-        if (mdAtoms_->mdatoms()->cFREEZE == nullptr)
+        if (mdAtoms_->mdatoms()->cFREEZE.empty())
         {
             tmvmul_ur0(mu_, x[n], x[n]);
         }

@@ -40,6 +40,9 @@
 #ifndef GMX_MDTYPES_MDATOM_H
 #define GMX_MDTYPES_MDATOM_H
 
+#include <vector>
+
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
@@ -55,8 +58,6 @@ typedef struct t_mdatoms
     real tmass;
     //! Number of atoms in arrays
     int nr;
-    //! Number of elements in arrays
-    int nalloc;
     //! Number of energy groups
     int nenergrp;
     //! Do we have multiple center of mass motion removal groups
@@ -76,55 +77,55 @@ typedef struct t_mdatoms
     //! Do we have orientation restraints
     bool bOrires;
     //! Atomic mass in A state
-    real* massA;
+    std::vector<real> massA;
     //! Atomic mass in B state
-    real* massB;
+    std::vector<real> massB;
     //! Atomic mass in present state
-    real* massT;
+    std::vector<real> massT;
     //! Inverse atomic mass per atom, 0 for vsites and shells
-    real* invmass;
+    gmx::PaddedVector<real> invmass;
     //! Inverse atomic mass per atom and dimension, 0 for vsites, shells and frozen dimensions
-    rvec* invMassPerDim;
+    std::vector<gmx::RVec> invMassPerDim;
     //! Atomic charge in A state
-    real* chargeA;
+    gmx::ArrayRef<real> chargeA;
     //! Atomic charge in B state
-    real* chargeB;
+    gmx::ArrayRef<real> chargeB;
     //! Dispersion constant C6 in A state
-    real* sqrt_c6A;
+    std::vector<real> sqrt_c6A;
     //! Dispersion constant C6 in A state
-    real* sqrt_c6B;
+    std::vector<real> sqrt_c6B;
     //! Van der Waals radius sigma in the A state
-    real* sigmaA;
+    std::vector<real> sigmaA;
     //! Van der Waals radius sigma in the B state
-    real* sigmaB;
+    std::vector<real> sigmaB;
     //! Van der Waals radius sigma^3 in the A state
-    real* sigma3A;
+    std::vector<real> sigma3A;
     //! Van der Waals radius sigma^3 in the B state
-    real* sigma3B;
+    std::vector<real> sigma3B;
     //! Is this atom perturbed
-    bool* bPerturbed;
+    std::vector<bool> bPerturbed;
     //! Type of atom in the A state
-    int* typeA;
+    std::vector<int> typeA;
     //! Type of atom in the B state
-    int* typeB;
+    std::vector<int> typeB;
     //! Particle type
-    ParticleType* ptype;
+    std::vector<ParticleType> ptype;
     //! Group index for temperature coupling
-    unsigned short* cTC;
+    std::vector<unsigned short> cTC;
     //! Group index for energy matrix
-    unsigned short* cENER;
+    std::vector<unsigned short> cENER;
     //! Group index for acceleration
-    unsigned short* cACC;
+    std::vector<unsigned short> cACC;
     //! Group index for freezing
-    unsigned short* cFREEZE;
+    std::vector<unsigned short> cFREEZE;
     //! Group index for center of mass motion removal
-    unsigned short* cVCM;
+    std::vector<unsigned short> cVCM;
     //! Group index for user 1
-    unsigned short* cU1;
+    std::vector<unsigned short> cU1;
     //! Group index for user 2
-    unsigned short* cU2;
+    std::vector<unsigned short> cU2;
     //! Group index for orientation restraints
-    unsigned short* cORF;
+    std::vector<unsigned short> cORF;
     //! Number of atoms on this processor. TODO is this still used?
     int homenr;
     //! The lambda value used to create the contents of the struct

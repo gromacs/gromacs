@@ -105,7 +105,7 @@ void AndersenTemperatureCoupling::apply(Step step)
 
     for (int atomIdx = 0; atomIdx < mdAtoms_->homenr; ++atomIdx)
     {
-        const int temperatureGroup = mdAtoms_->cTC ? mdAtoms_->cTC[atomIdx] : 0;
+        const int temperatureGroup = !mdAtoms_->cTC.empty() ? mdAtoms_->cTC[atomIdx] : 0;
         if (referenceTemperature_[temperatureGroup] <= 0 || couplingTime_[temperatureGroup] <= 0)
         {
             continue;

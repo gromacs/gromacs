@@ -119,10 +119,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
 
     if (vsite)
     {
-        vsite->setVirtualSites(top->idef.il,
-                               mdatoms->nr,
-                               mdatoms->homenr,
-                               gmx::arrayRefFromArray(mdatoms->ptype, mdatoms->nr));
+        vsite->setVirtualSites(top->idef.il, mdatoms->nr, mdatoms->homenr, mdatoms->ptype);
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported
@@ -147,12 +144,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
          * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
          */
         const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
-        gmx_pme_reinit_atoms(fr->pmedata,
-                             numPmeAtoms,
-                             mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
-                                              : gmx::ArrayRef<real>{},
-                             mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
-                                              : gmx::ArrayRef<real>{});
+        gmx_pme_reinit_atoms(fr->pmedata, numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
     }
 
     if (constr)
@@ -160,12 +152,11 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         constr->setConstraints(top,
                                mdatoms->nr,
                                mdatoms->homenr,
-                               gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
-                               gmx::arrayRefFromArray(mdatoms->invmass, mdatoms->nr),
+                               mdatoms->massT,
+                               mdatoms->invmass,
                                mdatoms->nMassPerturbed != 0,
                                mdatoms->lambda,
-                               mdatoms->cFREEZE ? gmx::arrayRefFromArray(mdatoms->cFREEZE, mdatoms->nr)
-                                                : gmx::ArrayRef<const unsigned short>());
+                               mdatoms->cFREEZE);
     }
 }
 

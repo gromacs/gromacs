@@ -138,14 +138,12 @@ void CpuPpLongRangeNonbondeds::updateAfterPartition(const t_mdatoms& md)
 {
     homenr_        = md.homenr;
     havePerturbed_ = md.nChargePerturbed != 0;
-    chargeA_ = md.chargeA ? gmx::constArrayRefFromArray(md.chargeA, md.nr) : gmx::ArrayRef<const real>{};
-    chargeB_ = md.chargeB ? gmx::constArrayRefFromArray(md.chargeB, md.nr) : gmx::ArrayRef<const real>{};
-    sqrt_c6A_ = md.sqrt_c6A ? gmx::constArrayRefFromArray(md.sqrt_c6A, md.nr)
-                            : gmx::ArrayRef<const real>{};
-    sqrt_c6B_ = md.sqrt_c6B ? gmx::constArrayRefFromArray(md.sqrt_c6B, md.nr)
-                            : gmx::ArrayRef<const real>{};
-    sigmaA_ = md.sigmaA ? gmx::constArrayRefFromArray(md.sigmaA, md.nr) : gmx::ArrayRef<const real>{};
-    sigmaB_ = md.sigmaB ? gmx::constArrayRefFromArray(md.sigmaB, md.nr) : gmx::ArrayRef<const real>{};
+    chargeA_       = md.chargeA;
+    chargeB_       = md.chargeB;
+    sqrt_c6A_      = md.sqrt_c6A;
+    sqrt_c6B_      = md.sqrt_c6B;
+    sigmaA_        = md.sigmaA;
+    sigmaB_        = md.sigmaB;
 }
 
 void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,

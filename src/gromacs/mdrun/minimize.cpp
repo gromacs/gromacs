@@ -276,7 +276,7 @@ static void get_f_norm_max(const t_commrec*               cr,
     la_max = -1;
     start  = 0;
     end    = mdatoms->homenr;
-    if (mdatoms->cFREEZE)
+    if (!mdatoms->cFREEZE.empty())
     {
         for (i = start; i < end; i++)
         {
@@ -689,7 +689,7 @@ static bool do_em_step(const t_commrec*                          cr,
         {
             try
             {
-                if (md->cFREEZE)
+                if (!md->cFREEZE.empty())
                 {
                     gf = md->cFREEZE[i];
                 }
@@ -1211,7 +1211,7 @@ static real pr_beta(const t_commrec*  cr,
          */
         for (int i = 0; i < mdatoms->homenr; i++)
         {
-            if (mdatoms->cFREEZE)
+            if (!mdatoms->cFREEZE.empty())
             {
                 gf = mdatoms->cFREEZE[i];
             }
@@ -1437,7 +1437,7 @@ void LegacySimulator::do_cg()
         int                            gf  = 0;
         for (int i = 0; i < mdatoms->homenr; i++)
         {
-            if (mdatoms->cFREEZE)
+            if (!mdatoms->cFREEZE.empty())
             {
                 gf = mdatoms->cFREEZE[i];
             }
@@ -2083,7 +2083,7 @@ void LegacySimulator::do_lbfgs()
     int               gf = 0;
     for (int i = start; i < end; i++)
     {
-        if (mdatoms->cFREEZE)
+        if (!mdatoms->cFREEZE.empty())
         {
             gf = mdatoms->cFREEZE[i];
         }

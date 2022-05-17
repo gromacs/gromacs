@@ -331,9 +331,9 @@ protected:
         std::vector<unsigned short> egrp       = { 0, 0, 0 };
         t_mdatoms                   mdatoms    = { 0 };
 
-        mdatoms.chargeA = chargeA.data();
-        mdatoms.chargeB = chargeB.data();
-        mdatoms.cENER   = egrp.data();
+        mdatoms.chargeA = chargeA;
+        mdatoms.chargeB = chargeB;
+        mdatoms.cENER   = egrp;
         // nPerturbed is not decisive for fep to be used; it is overruled by
         // other conditions in do_pairs_general; just here to not segfault
         // upon query
@@ -384,10 +384,10 @@ protected:
                      &pbc_,
                      lambdas.data(),
                      output.dvdLambda.data(),
-                     gmx::arrayRefFromArray(mdatoms.chargeA, mdatoms.nr),
-                     gmx::arrayRefFromArray(mdatoms.chargeB, mdatoms.nr),
-                     gmx::arrayRefFromArray(mdatoms.bPerturbed, mdatoms.nr),
-                     gmx::arrayRefFromArray(mdatoms.cENER, mdatoms.nr),
+                     mdatoms.chargeA,
+                     mdatoms.chargeB,
+                     mdatoms.bPerturbed,
+                     mdatoms.cENER,
                      mdatoms.nPerturbed,
                      fr,
                      havePerturbedInteractions,

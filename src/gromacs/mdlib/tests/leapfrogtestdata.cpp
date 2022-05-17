@@ -112,11 +112,11 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
             inverseMassesPerDim_[i][d] = inverseMasses_[i];
         }
     }
-    mdAtoms_.invmass       = inverseMasses_.data();
-    mdAtoms_.invMassPerDim = as_rvec_array(inverseMassesPerDim_.data());
+    mdAtoms_.invmass       = inverseMasses_;
+    mdAtoms_.invMassPerDim = inverseMassesPerDim_;
 
     // Temperature coupling
-    snew(mdAtoms_.cTC, numAtoms_);
+    mdAtoms_.cTC.resize(numAtoms_);
 
     // To do temperature coupling at each step
     inputRecord_.nsttcouple = 1;
@@ -168,13 +168,11 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     mdAtoms_.homenr                   = numAtoms_;
     mdAtoms_.haveVsites               = false;
     mdAtoms_.havePartiallyFrozenAtoms = false;
-    mdAtoms_.cFREEZE                  = nullptr;
-    mdAtoms_.ptype                    = nullptr;
 
     update_ = std::make_unique<Update>(inputRecord_, nullptr);
     update_->updateAfterPartition(numAtoms,
                                   gmx::ArrayRef<const unsigned short>(),
-                                  gmx::arrayRefFromArray(mdAtoms_.cTC, mdAtoms_.nr),
+                                  mdAtoms_.cTC,
                                   gmx::ArrayRef<const unsigned short>());
 
     doPressureCouple_ = (nstpcouple != 0);
@@ -212,11 +210,6 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
         velocityScalingMatrix_[ZZ][YY] = 0.0;
         velocityScalingMatrix_[ZZ][ZZ] = 1.0;
     }
-}
-
-LeapFrogTestData::~LeapFrogTestData()
-{
-    sfree(mdAtoms_.cTC);
 }
 
 } // namespace test

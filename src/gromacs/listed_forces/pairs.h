@@ -43,6 +43,8 @@
 #ifndef GMX_LISTED_FORCES_PAIRS_H
 #define GMX_LISTED_FORCES_PAIRS_H
 
+#include <vector>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
@@ -63,25 +65,25 @@ class ArrayRef;
  *
  * global_atom_index is only passed for printing error messages.
  */
-void do_pairs(int                           ftype,
-              int                           nbonds,
-              const t_iatom                 iatoms[],
-              const t_iparams               iparams[],
-              const rvec                    x[],
-              rvec4                         f[],
-              rvec                          fshift[],
-              const struct t_pbc*           pbc,
-              const real*                   lambda,
-              real*                         dvdl,
-              gmx::ArrayRef<real>           chargeA,
-              gmx::ArrayRef<real>           chargeB,
-              gmx::ArrayRef<bool>           atomIsPerturbed,
-              gmx::ArrayRef<unsigned short> cENER,
-              int                           numEnergyGroups,
-              const t_forcerec*             fr,
-              bool                          havePerturbedPairs,
-              const gmx::StepWorkload&      stepWork,
-              gmx_grppairener_t*            grppener,
-              int*                          global_atom_index);
+void do_pairs(int                                 ftype,
+              int                                 nbonds,
+              const t_iatom                       iatoms[],
+              const t_iparams                     iparams[],
+              const rvec                          x[],
+              rvec4                               f[],
+              rvec                                fshift[],
+              const struct t_pbc*                 pbc,
+              const real*                         lambda,
+              real*                               dvdl,
+              gmx::ArrayRef<real>                 chargeA,
+              gmx::ArrayRef<real>                 chargeB,
+              const std::vector<bool>&            atomIsPerturbed,
+              gmx::ArrayRef<const unsigned short> cENER,
+              int                                 numEnergyGroups,
+              const t_forcerec*                   fr,
+              bool                                havePerturbedPairs,
+              const gmx::StepWorkload&            stepWork,
+              gmx_grppairener_t*                  grppener,
+              int*                                global_atom_index);
 
 #endif

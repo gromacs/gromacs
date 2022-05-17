@@ -344,8 +344,7 @@ void LegacySimulator::do_tpi()
         /* Copy the coordinates of the molecule to be insterted */
         copy_rvec(x[i], x_mol[i - a_tp0]);
         /* Check if we need to print electrostatic energies */
-        bCharge |= (mdatoms->chargeA[i] != 0
-                    || ((mdatoms->chargeB != nullptr) && mdatoms->chargeB[i] != 0));
+        bCharge |= (mdatoms->chargeA[i] != 0 || (!mdatoms->chargeB.empty() && mdatoms->chargeB[i] != 0));
     }
     bRFExcl = (bCharge && usingRF(fr->ic->eeltype));
 
@@ -685,9 +684,7 @@ void LegacySimulator::do_tpi()
                         fr->nbv.get(), box, 1, x_init, x_init, nullptr, { a_tp0, a_tp1 }, -1, fr->atomInfo, x, 0, nullptr);
 
                 /* TODO: Avoid updating all atoms at every bNS step */
-                fr->nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
-                                           gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                                           fr->atomInfo);
+                fr->nbv->setAtomProperties(mdatoms->typeA, mdatoms->chargeA, fr->atomInfo);
 
                 fr->nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 

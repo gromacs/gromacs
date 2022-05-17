@@ -555,10 +555,9 @@ void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellf
 
     std::vector<t_shell>& shells = shfc->shells;
     shells.clear();
-    auto* ptype = md.ptype;
     for (int i = a0; i < a1; i++)
     {
-        if (ptype[i] == ParticleType::Shell)
+        if (md.ptype[i] == ParticleType::Shell)
         {
             if (dd)
             {
@@ -845,18 +844,16 @@ static void init_adir(gmx_shellfc_t*            shfc,
     rvec* x_old = as_rvec_array(xOld.paddedArrayRef().data());
     rvec* x     = as_rvec_array(xCurrent.paddedArrayRef().data());
 
-    auto* ptype   = md.ptype;
-    auto  invmass = gmx::arrayRefFromArray(md.invmass, md.nr);
-    dt            = ir->delta_t;
+    dt = ir->delta_t;
 
     /* Does NOT work with freeze or acceleration groups (yet) */
     for (n = 0; n < end; n++)
     {
-        w_dt = invmass[n] * dt;
+        w_dt = md.invmass[n] * dt;
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != ParticleType::VSite) && (ptype[n] != ParticleType::Shell))
+            if ((md.ptype[n] != ParticleType::VSite) && (md.ptype[n] != ParticleType::Shell))
             {
                 xnold[n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
                 xnew[n][d]  = 2 * x[n][d] - x_old[n][d] + f[n][d] * w_dt * dt;
@@ -907,7 +904,7 @@ static void init_adir(gmx_shellfc_t*            shfc,
         for (d = 0; d < DIM; d++)
         {
             xnew[n][d] = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / gmx::square(dt)
-                         - f[n][d] * invmass[n];
+                         - f[n][d] * md.invmass[n];
         }
         clear_rvec(acc_dir[n]);
     }
@@ -1040,7 +1037,7 @@ void relax_shell_flexcon(FILE*                         fplog,
         }
     }
 
-    auto massT = gmx::arrayRefFromArray(md.massT, md.nr);
+    auto massT = md.massT;
     /* Do a prediction of the shell positions, when appropriate.
      * Without velocities (EM, NM, BD) we only do initial prediction.
      */

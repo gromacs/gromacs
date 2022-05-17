@@ -89,7 +89,7 @@ public:
     //! Inverse masses of the particles
     PaddedVector<real> inverseMasses_;
     //! Inverse masses of the particles per dimension
-    PaddedVector<RVec> inverseMassesPerDim_;
+    std::vector<RVec> inverseMassesPerDim_;
 
     //! MD atoms structure in which inverse masses will be passed to the integrator
     t_mdatoms mdAtoms_;
@@ -124,8 +124,6 @@ public:
      * \param[in]  nstpcouple        Number of steps between pressure coupling steps (zero for no pressure coupling)
      */
     LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups, int nstpcouple);
-
-    ~LeapFrogTestData();
 };
 
 } // namespace test

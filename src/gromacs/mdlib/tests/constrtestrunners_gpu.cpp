@@ -79,7 +79,7 @@ void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testDat
 
     DeviceBuffer<Float3> d_x, d_xp, d_v;
 
-    lincsGpu->set(*testData->idef_, testData->numAtoms_, testData->invmass_.data());
+    lincsGpu->set(*testData->idef_, testData->numAtoms_, testData->invmass_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 

@@ -687,9 +687,9 @@ pull_t* set_pull_init(t_inputrec*                    ir,
 
     if (pull->bSetPbcRefToPrevStepCOM)
     {
-        initPullComFromPrevStep(nullptr, pull_work, gmx::arrayRefFromArray(md->massT, md->nr), pbc, x);
+        initPullComFromPrevStep(nullptr, pull_work, md->massT, pbc, x);
     }
-    pull_calc_coms(nullptr, pull_work, gmx::arrayRefFromArray(md->massT, md->nr), pbc, t_start, x, {});
+    pull_calc_coms(nullptr, pull_work, md->massT, pbc, t_start, x, {});
 
     for (int g = 0; g < pull->ngroup; g++)
     {

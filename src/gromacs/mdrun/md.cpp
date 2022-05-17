@@ -386,13 +386,7 @@ void gmx::LegacySimulator::do_md()
                             nrnb,
                             nullptr,
                             FALSE);
-        upd.updateAfterPartition(state->natoms,
-                                 md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                             : gmx::ArrayRef<const unsigned short>(),
-                                 md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                         : gmx::ArrayRef<const unsigned short>(),
-                                 md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
-                                          : gmx::ArrayRef<const unsigned short>());
+        upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
     else
@@ -402,13 +396,7 @@ void gmx::LegacySimulator::do_md()
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(cr, *ir, top_global, top, fr, &f, mdAtoms, constr, vsite, shellfc);
 
-        upd.updateAfterPartition(state->natoms,
-                                 md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                             : gmx::ArrayRef<const unsigned short>(),
-                                 md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                         : gmx::ArrayRef<const unsigned short>(),
-                                 md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
-                                          : gmx::ArrayRef<const unsigned short>());
+        upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
 
@@ -517,13 +505,8 @@ void gmx::LegacySimulator::do_md()
         EnergyData::initializeEnergyHistory(startingBehavior, observablesHistory, &energyOutput);
     }
 
-    preparePrevStepPullCom(ir,
-                           pull_work,
-                           gmx::arrayRefFromArray(md->massT, md->nr),
-                           state,
-                           state_global,
-                           cr,
-                           startingBehavior != StartingBehavior::NewSimulation);
+    preparePrevStepPullCom(
+            ir, pull_work, md->massT, state, state_global, cr, startingBehavior != StartingBehavior::NewSimulation);
 
     // TODO: Remove this by converting AWH into a ForceProvider
     auto awh = prepareAwhModule(fplog,
@@ -565,7 +548,7 @@ void gmx::LegacySimulator::do_md()
                 {
                     clear_rvec(v[i]);
                 }
-                else if (md->cFREEZE)
+                else if (!md->cFREEZE.empty())
                 {
                     for (m = 0; m < DIM; m++)
                     {
@@ -1002,13 +985,7 @@ void gmx::LegacySimulator::do_md()
                                     nrnb,
                                     wcycle,
                                     do_verbose && !bPMETunePrinting);
-                upd.updateAfterPartition(state->natoms,
-                                         md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                                     : gmx::ArrayRef<const unsigned short>(),
-                                         md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                 : gmx::ArrayRef<const unsigned short>(),
-                                         md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
-                                                  : gmx::ArrayRef<const unsigned short>());
+                upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
                 fr->longRangeNonbondeds->updateAfterPartition(*md);
             }
         }
@@ -1278,8 +1255,7 @@ void gmx::LegacySimulator::do_md()
                                               step,
                                               state->v.rvec_array(),
                                               md->homenr,
-                                              md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                                      : gmx::ArrayRef<const unsigned short>());
+                                              md->cTC);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {
@@ -1380,16 +1356,8 @@ void gmx::LegacySimulator::do_md()
         if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
         {
             gmx_bool bIfRandomize;
-            bIfRandomize = update_randomize_velocities(ir,
-                                                       step,
-                                                       cr,
-                                                       md->homenr,
-                                                       md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                                               : gmx::ArrayRef<const unsigned short>(),
-                                                       gmx::arrayRefFromArray(md->invmass, md->nr),
-                                                       state->v,
-                                                       &upd,
-                                                       constr);
+            bIfRandomize = update_randomize_velocities(
+                    ir, step, cr, md->homenr, md->cTC, md->invmass, state->v, &upd, constr);
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
@@ -1419,9 +1387,8 @@ void gmx::LegacySimulator::do_md()
                            state,
                            total_vir,
                            md->homenr,
-                           md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                   : gmx::ArrayRef<const unsigned short>(),
-                           gmx::arrayRefFromArray(md->invmass, md->nr),
+                           md->cTC,
+                           md->invmass,
                            &MassQ,
                            trotter_seq,
                            TrotterSequence::Three);
@@ -1433,14 +1400,7 @@ void gmx::LegacySimulator::do_md()
         }
         else
         {
-            update_tcouple(step,
-                           ir,
-                           state,
-                           ekind,
-                           &MassQ,
-                           md->homenr,
-                           md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                   : gmx::ArrayRef<const unsigned short>());
+            update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
             update_pcouple_before_coordinates(
                     fplog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M, bInitStep);
         }
@@ -1568,8 +1528,8 @@ void gmx::LegacySimulator::do_md()
                     upd.update_for_constraint_virial(*ir,
                                                      md->homenr,
                                                      md->havePartiallyFrozenAtoms,
-                                                     gmx::arrayRefFromArray(md->invmass, md->nr),
-                                                     gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
+                                                     md->invmass,
+                                                     md->invMassPerDim,
                                                      *state,
                                                      f.view().forceWithPadding(),
                                                      *ekind);
@@ -1593,9 +1553,9 @@ void gmx::LegacySimulator::do_md()
                                   step,
                                   md->homenr,
                                   md->havePartiallyFrozenAtoms,
-                                  gmx::arrayRefFromArray(md->ptype, md->nr),
-                                  gmx::arrayRefFromArray(md->invmass, md->nr),
-                                  gmx::arrayRefFromArray(md->invMassPerDim, md->nr),
+                                  md->ptype,
+                                  md->invmass,
+                                  md->invMassPerDim,
                                   state,
                                   forceCombined,
                                   &fcdata,
@@ -1617,19 +1577,8 @@ void gmx::LegacySimulator::do_md()
                                       bCalcVir && !simulationWork.useMts,
                                       shake_vir);
 
-                upd.update_sd_second_half(*ir,
-                                          step,
-                                          &dvdl_constr,
-                                          md->homenr,
-                                          gmx::arrayRefFromArray(md->ptype, md->nr),
-                                          gmx::arrayRefFromArray(md->invmass, md->nr),
-                                          state,
-                                          cr,
-                                          nrnb,
-                                          wcycle,
-                                          constr,
-                                          do_log,
-                                          do_ene);
+                upd.update_sd_second_half(
+                        *ir, step, &dvdl_constr, md->homenr, md->ptype, md->invmass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
                 upd.finish_update(
                         *ir, md->havePartiallyFrozenAtoms, md->homenr, state, wcycle, constr != nullptr);
             }
@@ -1765,8 +1714,7 @@ void gmx::LegacySimulator::do_md()
                                          ir->deform,
                                          ir->delta_t,
                                          md->homenr,
-                                         md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                                     : gmx::ArrayRef<const unsigned short>(),
+                                         md->cFREEZE,
                                          pres,
                                          force_vir,
                                          shake_vir,
@@ -1996,13 +1944,7 @@ void gmx::LegacySimulator::do_md()
                                 nrnb,
                                 wcycle,
                                 FALSE);
-            upd.updateAfterPartition(state->natoms,
-                                     md->cFREEZE ? gmx::arrayRefFromArray(md->cFREEZE, md->nr)
-                                                 : gmx::ArrayRef<const unsigned short>(),
-                                     md->cTC ? gmx::arrayRefFromArray(md->cTC, md->nr)
-                                             : gmx::ArrayRef<const unsigned short>(),
-                                     md->cACC ? gmx::arrayRefFromArray(md->cACC, md->nr)
-                                              : gmx::ArrayRef<const unsigned short>());
+            upd.updateAfterPartition(state->natoms, md->cFREEZE, md->cTC, md->cACC);
             fr->longRangeNonbondeds->updateAfterPartition(*md);
         }
 

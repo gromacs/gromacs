@@ -72,15 +72,15 @@ constexpr EnumerationArray<IntegrationStage, const char*> integrationStepNames =
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
          NumVelocityScalingValues        numEndVelocityScalingValues>
-static void inline updateVelocities(int                      a,
-                                    real                     dt,
-                                    real                     lambdaStart,
-                                    real                     lambdaEnd,
-                                    const rvec* gmx_restrict invMassPerDim,
-                                    rvec* gmx_restrict       v,
-                                    const rvec* gmx_restrict f,
-                                    const rvec               diagPR,
-                                    const matrix             matrixPR)
+static void inline updateVelocities(int                        a,
+                                    real                       dt,
+                                    real                       lambdaStart,
+                                    real                       lambdaEnd,
+                                    const ArrayRef<const RVec> invMassPerDim,
+                                    rvec* gmx_restrict         v,
+                                    const rvec* gmx_restrict   f,
+                                    const rvec                 diagPR,
+                                    const matrix               matrixPR)
 {
     for (int d = 0; d < DIM; d++)
     {
@@ -270,7 +270,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 
     auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -288,7 +288,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 // const variables are best shared and MSVC requires it, but gcc-8 & gcc-9 don't agree how to write
 // that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim)
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f)
 #else
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
             shared(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
@@ -357,7 +357,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -374,9 +374,16 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
 // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(x, xp, v, f, invMassPerDim)                               \
-                firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+// const variables are best shared and MSVC requires it, but gcc-8 & gcc-9 don't agree how to write
+// that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
+            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#else
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+            shared(x, xp, v, f, invMassPerDim)                               \
+                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#endif
     for (int th = 0; th < nth; th++)
     {
         try
@@ -442,7 +449,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
-    const auto* invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -459,9 +466,14 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 
 // const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
 // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-        shared(x, xp, v, f, invMassPerDim)                               \
-                firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
+            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#else
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+            shared(x, xp, v, f, invMassPerDim)                               \
+                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+#endif
     for (int th = 0; th < nth; th++)
     {
         try

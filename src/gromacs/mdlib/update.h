@@ -126,7 +126,7 @@ public:
                        bool                                             havePartiallyFrozenAtoms,
                        gmx::ArrayRef<const ParticleType>                ptype,
                        gmx::ArrayRef<const real>                        invMass,
-                       gmx::ArrayRef<const rvec>                        invMassPerDim,
+                       gmx::ArrayRef<const gmx::RVec>                   invMassPerDim,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                        t_fcdata*                                        fcdata,
@@ -191,12 +191,12 @@ public:
     /*! \brief Performs a leap-frog update without updating \p state so the constrain virial
      * can be computed.
      */
-    void update_for_constraint_virial(const t_inputrec&         inputRecord,
-                                      int                       homenr,
-                                      bool                      havePartiallyFrozenAtoms,
-                                      gmx::ArrayRef<const real> invmass,
-                                      gmx::ArrayRef<const rvec> invMassPerDim,
-                                      const t_state&            state,
+    void update_for_constraint_virial(const t_inputrec&              inputRecord,
+                                      int                            homenr,
+                                      bool                           havePartiallyFrozenAtoms,
+                                      gmx::ArrayRef<const real>      invmass,
+                                      gmx::ArrayRef<const gmx::RVec> invMassPerDim,
+                                      const t_state&                 state,
                                       const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
                                       const gmx_ekindata_t&                            ekind);
 

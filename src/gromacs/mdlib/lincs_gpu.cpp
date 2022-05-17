@@ -214,7 +214,7 @@ bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
     return ::isNumCoupledConstraintsSupported(mtop, c_threadsPerBlock);
 }
 
-void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const real* invmass)
+void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const ArrayRef<const real> invmass)
 {
     GMX_ASSERT(!(numAtoms == 0 && !idef.il[F_CONSTR].empty()),
                "The number of atoms needs to be > 0 if there are constraints in the domain.");
@@ -482,9 +482,14 @@ void LincsGpu::set(const InteractionDefinitions& idef, const int numAtoms, const
                        GpuApiCallBehavior::Sync,
                        nullptr);
 
-    GMX_RELEASE_ASSERT(invmass != nullptr, "Masses of atoms should be specified.\n");
-    copyToDeviceBuffer(
-            &kernelParams_.d_inverseMasses, invmass, 0, numAtoms, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
+    GMX_RELEASE_ASSERT(!invmass.empty(), "Masses of atoms should be specified.\n");
+    copyToDeviceBuffer(&kernelParams_.d_inverseMasses,
+                       invmass.data(),
+                       0,
+                       numAtoms,
+                       deviceStream_,
+                       GpuApiCallBehavior::Sync,
+                       nullptr);
 }
 
 } // namespace gmx

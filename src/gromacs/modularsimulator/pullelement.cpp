@@ -77,14 +77,13 @@ void PullElement::elementSetup()
 {
     if (setPbcRefToPrevStepCOM_ && !restoredFromCheckpoint_)
     {
-        preparePrevStepPullComNewSimulation(
-                commrec_,
-                pullWork_,
-                arrayRefFromArray(mdAtoms_->mdatoms()->massT, mdAtoms_->mdatoms()->nr),
-                statePropagatorData_->constPositionsView().unpaddedArrayRef(),
-                statePropagatorData_->constBox(),
-                pbcType_,
-                std::nullopt);
+        preparePrevStepPullComNewSimulation(commrec_,
+                                            pullWork_,
+                                            mdAtoms_->mdatoms()->massT,
+                                            statePropagatorData_->constPositionsView().unpaddedArrayRef(),
+                                            statePropagatorData_->constBox(),
+                                            pbcType_,
+                                            std::nullopt);
     }
 }
 

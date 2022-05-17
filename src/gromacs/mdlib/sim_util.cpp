@@ -204,7 +204,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
     dvdl = 0;
     enerd->term[F_COM_PULL] +=
             pull_potential(pull_work,
-                           gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr),
+                           mdatoms->massT,
                            pbc,
                            cr,
                            t,
@@ -651,8 +651,8 @@ static void computeSpecialForces(FILE*                          fplog,
         gmx::ForceProviderInput forceProviderInput(
                 x,
                 mdatoms->homenr,
-                gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->homenr),
-                gmx::arrayRefFromArray(mdatoms->massT, mdatoms->homenr),
+                gmx::makeArrayRef(mdatoms->chargeA).subArray(0, mdatoms->homenr),
+                gmx::makeArrayRef(mdatoms->massT).subArray(0, mdatoms->homenr),
                 t,
                 step,
                 box,
@@ -692,8 +692,7 @@ static void computeSpecialForces(FILE*                          fplog,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
         auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-        pull_apply_forces(
-                pull_work, gmx::arrayRefFromArray(mdatoms->massT, mdatoms->nr), cr, forceWithVirial);
+        pull_apply_forces(pull_work, mdatoms->massT, cr, forceWithVirial);
         wallcycle_stop(wcycle, WallCycleCounter::PullPot);
     }
 
@@ -1528,9 +1527,7 @@ void do_force(FILE*                               fplog,
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
         }
 
-        nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
-                               gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
-                               fr->atomInfo);
+        nbv->setAtomProperties(mdatoms->typeA, mdatoms->chargeA, fr->atomInfo);
 
         wallcycle_stop(wcycle, WallCycleCounter::NS);
 
@@ -1835,10 +1832,8 @@ void do_force(FILE*                               fplog,
         calc_mu(start,
                 mdatoms->homenr,
                 xRef,
-                mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
-                                 : gmx::ArrayRef<real>{},
-                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
-                                 : gmx::ArrayRef<real>{},
+                mdatoms->chargeA,
+                mdatoms->chargeB,
                 mdatoms->nChargePerturbed != 0,
                 dipoleData.muStaging[0],
                 dipoleData.muStaging[1]);
@@ -1922,30 +1917,25 @@ void do_force(FILE*                               fplog,
         /* Calculate the local and non-local free energy interactions here.
          * Happens here on the CPU both with and without GPU.
          */
-        nbv->dispatchFreeEnergyKernels(
-                x,
-                &forceOutNonbonded->forceWithShiftForces(),
-                fr->use_simd_kernels,
-                fr->ntype,
-                fr->rlist,
-                max_cutoff2(inputrec.pbcType, box),
-                *fr->ic,
-                fr->shift_vec,
-                fr->nbfp,
-                fr->ljpme_c6grid,
-                mdatoms->chargeA ? gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->nr)
-                                 : gmx::ArrayRef<real>{},
-                mdatoms->chargeB ? gmx::arrayRefFromArray(mdatoms->chargeB, mdatoms->nr)
-                                 : gmx::ArrayRef<real>{},
-                mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
-                               : gmx::ArrayRef<int>{},
-                mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
-                               : gmx::ArrayRef<int>{},
-                inputrec.fepvals.get(),
-                lambda,
-                enerd,
-                stepWork,
-                nrnb);
+        nbv->dispatchFreeEnergyKernels(x,
+                                       &forceOutNonbonded->forceWithShiftForces(),
+                                       fr->use_simd_kernels,
+                                       fr->ntype,
+                                       fr->rlist,
+                                       max_cutoff2(inputrec.pbcType, box),
+                                       *fr->ic,
+                                       fr->shift_vec,
+                                       fr->nbfp,
+                                       fr->ljpme_c6grid,
+                                       mdatoms->chargeA,
+                                       mdatoms->chargeB,
+                                       mdatoms->typeA,
+                                       mdatoms->typeB,
+                                       inputrec.fepvals.get(),
+                                       lambda,
+                                       enerd,
+                                       stepWork,
+                                       nrnb);
     }
 
     if (stepWork.computeNonbondedForces && !useOrEmulateGpuNb)
@@ -1993,12 +1983,9 @@ void do_force(FILE*                               fplog,
         real dvdl_walls = do_walls(inputrec,
                                    *fr,
                                    box,
-                                   mdatoms->typeA ? gmx::arrayRefFromArray(mdatoms->typeA, mdatoms->nr)
-                                                  : gmx::ArrayRef<int>{},
-                                   mdatoms->typeB ? gmx::arrayRefFromArray(mdatoms->typeB, mdatoms->nr)
-                                                  : gmx::ArrayRef<int>{},
-                                   mdatoms->cENER ? gmx::arrayRefFromArray(mdatoms->cENER, mdatoms->nr)
-                                                  : gmx::ArrayRef<unsigned short>{},
+                                   mdatoms->typeA,
+                                   mdatoms->typeB,
+                                   mdatoms->cENER,
                                    mdatoms->homenr,
                                    mdatoms->nPerturbed,
                                    x.unpaddedConstArrayRef(),

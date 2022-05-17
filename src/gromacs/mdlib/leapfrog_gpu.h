@@ -141,7 +141,7 @@ public:
      * \param[in] inverseMasses   Inverse masses of atoms.
      * \param[in] tempScaleGroups Maps the atom index to temperature scale value.
      */
-    void set(int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups);
+    void set(int numAtoms, ArrayRef<const real> inverseMasses, ArrayRef<const unsigned short> tempScaleGroups);
 
     /*! \brief Class with hardware-specific interfaces and implementations.*/
     class Impl;

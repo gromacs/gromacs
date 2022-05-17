@@ -61,7 +61,7 @@ namespace gmx
 class MDAtoms
 {
     //! C-style mdatoms struct.
-    unique_cptr<t_mdatoms> mdatoms_;
+    std::unique_ptr<t_mdatoms> mdatoms_;
     //! Memory for chargeA that can be set up for efficient GPU transfer.
     gmx::PaddedHostVector<real> chargeA_;
     //! Memory for chargeB that can be set up for efficient GPU transfer.
@@ -70,7 +70,6 @@ class MDAtoms
 public:
     // TODO make this private
     MDAtoms();
-    ~MDAtoms();
     //! Getter.
     t_mdatoms* mdatoms() { return mdatoms_.get(); }
     //! Const getter.

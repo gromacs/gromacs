@@ -138,7 +138,7 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
         gt = 0;
         for (n = start_t; n < end_t; n++)
         {
-            if (md->cTC)
+            if (!md->cTC.empty())
             {
                 gt = md->cTC[n];
             }
@@ -211,7 +211,7 @@ static void calc_ke_part_visc(const matrix                   box,
     dekindl = 0;
     for (n = start; n < start + homenr; n++)
     {
-        if (md->cTC)
+        if (!md->cTC.empty())
         {
             gt = md->cTC[n];
         }

@@ -177,7 +177,7 @@ public:
      * \param[in] numAtoms  Number of atoms.
      * \param[in] invmass   Inverse masses of atoms.
      */
-    void set(const InteractionDefinitions& idef, int numAtoms, const real* invmass);
+    void set(const InteractionDefinitions& idef, int numAtoms, ArrayRef<const real> invmass);
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported
