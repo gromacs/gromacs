@@ -35,6 +35,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
     CPP_SOURCE_FILES
         alignedallocator.cpp
         arrayref.cpp
+        booltype.cpp
         bitmask32.cpp bitmask64.cpp bitmask128.cpp
         cstringutil.cpp
         defaultinitializationallocator.cpp
