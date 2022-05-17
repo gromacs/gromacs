@@ -83,6 +83,7 @@ target_sources(testutils PRIVATE
                testmatchers.cpp
                testoptions.cpp
                textblockmatchers.cpp
+               topologyhelpers.cpp
                tprfilegenerator.cpp
                trajectoryreader.cpp
                xvgtest.cpp

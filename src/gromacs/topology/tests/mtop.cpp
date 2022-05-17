@@ -47,31 +47,14 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 
+#include "testutils/topologyhelpers.h"
+
 namespace gmx
+{
+namespace test
 {
 namespace
 {
-
-/*! \brief Adds 2 water molecules with settles */
-void addTwoWaterMolecules(gmx_mtop_t* mtop)
-{
-    gmx_moltype_t moltype;
-    moltype.atoms.nr             = NRAL(F_SETTLE);
-    std::vector<int>& iatoms     = moltype.ilist[F_SETTLE].iatoms;
-    const int         settleType = 0;
-    iatoms.push_back(settleType);
-    iatoms.push_back(0);
-    iatoms.push_back(1);
-    iatoms.push_back(2);
-    int moleculeTypeIndex = mtop->moltype.size();
-    mtop->moltype.push_back(moltype);
-
-    const int numWaterMolecules = 2;
-    mtop->molblock.emplace_back(gmx_molblock_t{});
-    mtop->molblock.back().type = moleculeTypeIndex;
-    mtop->molblock.back().nmol = numWaterMolecules;
-    mtop->natoms               = moltype.atoms.nr * mtop->molblock.back().nmol;
-}
 
 /*! \brief
  * Creates dummy topology with two differently sized residues.
@@ -128,7 +111,7 @@ void addIntermolecularInteractionBonds(gmx_mtop_t* mtop)
 TEST(MtopTest, RangeBasedLoop)
 {
     gmx_mtop_t mtop;
-    addTwoWaterMolecules(&mtop);
+    addNWaterMolecules(&mtop, 2);
     mtop.finalize();
     int count = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
@@ -137,12 +120,13 @@ TEST(MtopTest, RangeBasedLoop)
         ++count;
     }
     EXPECT_EQ(count, 6);
+    done_atom(&mtop.moltype[0].atoms);
 }
 
 TEST(MtopTest, Operators)
 {
     gmx_mtop_t mtop;
-    addTwoWaterMolecules(&mtop);
+    addNWaterMolecules(&mtop, 2);
     mtop.finalize();
     AtomIterator it(mtop);
     AtomIterator otherIt(mtop);
@@ -156,6 +140,7 @@ TEST(MtopTest, Operators)
     EXPECT_EQ(it->globalAtomNumber(), 2);
     EXPECT_TRUE(it != otherIt);
     EXPECT_FALSE(it == otherIt);
+    done_atom(&mtop.moltype[0].atoms);
 }
 
 TEST(MtopTest, CanFindResidueStartAndEndAtoms)
@@ -253,7 +238,7 @@ TEST(MtopTest, AtomHasPerturbedChargeIn14Interaction)
 TEST(IListRangeTest, RangeBasedLoopWorks)
 {
     gmx_mtop_t mtop;
-    addTwoWaterMolecules(&mtop);
+    addNWaterMolecules(&mtop, 2);
     mtop.finalize();
 
     int count = 0;
@@ -270,12 +255,13 @@ TEST(IListRangeTest, RangeBasedLoopWorks)
     EXPECT_EQ(gmx_mtop_ftype_count(mtop, F_SETTLE), 2);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 0);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
+    done_atom(&mtop.moltype[0].atoms);
 }
 
 TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
 {
     gmx_mtop_t mtop;
-    addTwoWaterMolecules(&mtop);
+    addNWaterMolecules(&mtop, 2);
     addIntermolecularInteractionBonds(&mtop);
     mtop.finalize();
 
@@ -303,8 +289,11 @@ TEST(IListRangeTest, RangeBasedLoopWithIntermolecularInteraction)
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND), 3);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_CONSTRAINT), 2);
     EXPECT_EQ(gmx_mtop_interaction_count(mtop, IF_BOND | IF_CONSTRAINT), 0);
+    done_atom(&mtop.moltype[0].atoms);
 }
 
 } // namespace
+
+} // namespace test
 
 } // namespace gmx

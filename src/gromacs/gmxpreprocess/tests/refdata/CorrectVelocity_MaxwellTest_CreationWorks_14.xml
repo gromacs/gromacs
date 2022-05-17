@@ -1,0 +1,354 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Velocities>
+    <Sequence Name="Velocity values">
+      <Int Name="Length">69</Int>
+      <Vector>
+        <Real Name="X">0.61181684900727518</Real>
+        <Real Name="Y">-0.22354864983108222</Real>
+        <Real Name="Z">0.025354442832713934</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.6705093625760377</Real>
+        <Real Name="Y">0.28122629224575979</Real>
+        <Real Name="Z">1.8972869991469978</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.8781827886288247</Real>
+        <Real Name="Y">2.1414168966528369</Real>
+        <Real Name="Z">3.1972716961306498</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.14383988139371284</Real>
+        <Real Name="Y">1.0340319719160576</Real>
+        <Real Name="Z">-0.7095340271570294</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.37675590457560659</Real>
+        <Real Name="Y">1.9762425145545057</Real>
+        <Real Name="Z">0.61359222669334279</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.1464294249717071</Real>
+        <Real Name="Y">-0.41988221946220944</Real>
+        <Real Name="Z">0.49037036265957168</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.5826902194407465</Real>
+        <Real Name="Y">-0.53065629825991212</Real>
+        <Real Name="Z">-0.16027723395148266</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.1587155257141155</Real>
+        <Real Name="Y">-0.26036157195313797</Real>
+        <Real Name="Z">2.2449366367362305</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.0527833653067191</Real>
+        <Real Name="Y">1.7456674144973336</Real>
+        <Real Name="Z">2.0878517123403628</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.73473602422898487</Real>
+        <Real Name="Y">-0.11250210760644246</Real>
+        <Real Name="Z">0.0077735883817650619</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.68311064005489963</Real>
+        <Real Name="Y">-0.11007698802882711</Real>
+        <Real Name="Z">-1.9267765676162312</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.0531128627586412</Real>
+        <Real Name="Y">-2.7867837908214157</Real>
+        <Real Name="Z">-1.9219077232938659</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.046335563520849145</Real>
+        <Real Name="Y">-0.32441390992466762</Real>
+        <Real Name="Z">-0.082184109361380278</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.4080019807073962</Real>
+        <Real Name="Y">0.77495164159001095</Real>
+        <Real Name="Z">-1.1851180555150955</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.50140695585642</Real>
+        <Real Name="Y">-0.47333251203922627</Real>
+        <Real Name="Z">2.0480448752688378</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.24398648745885568</Real>
+        <Real Name="Y">-0.28567968305234454</Real>
+        <Real Name="Z">0.10475579820813338</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.52835625113972473</Real>
+        <Real Name="Y">0.14530016707552526</Real>
+        <Real Name="Z">0.97498056527352672</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.61270694856599883</Real>
+        <Real Name="Y">1.4873577193885721</Real>
+        <Real Name="Z">0.026632039366623676</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.46343184051597491</Real>
+        <Real Name="Y">0.58080035914424277</Real>
+        <Real Name="Z">0.010004891935484279</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.66847428078892224</Real>
+        <Real Name="Y">1.4507000173058833</Real>
+        <Real Name="Z">3.5334715290593386</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.9056726829132447</Real>
+        <Real Name="Y">-1.296937154481314</Real>
+        <Real Name="Z">0.25219430403778115</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.27657207776357984</Real>
+        <Real Name="Y">-0.33364272216066199</Real>
+        <Real Name="Z">-0.36834907476699663</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.63162464102176441</Real>
+        <Real Name="Y">-0.58239834512779942</Real>
+        <Real Name="Z">0.35541519161538188</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.54641360962885288</Real>
+        <Real Name="Y">2.1127673637116691</Real>
+        <Real Name="Z">-1.8134873372201217</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.17392280241571245</Real>
+        <Real Name="Y">0.61216043398483089</Real>
+        <Real Name="Z">-0.054121165700749138</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.1039424161565881</Real>
+        <Real Name="Y">-0.29082498935949308</Real>
+        <Real Name="Z">-1.3661259937900201</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">5.5968034334709484</Real>
+        <Real Name="Y">-0.65358351495695821</Real>
+        <Real Name="Z">2.2896681363449423</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.20032093059066175</Real>
+        <Real Name="Y">-0.10268100881346337</Real>
+        <Real Name="Z">-0.15775811067568232</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.77464641448872706</Real>
+        <Real Name="Y">-2.6359183666135988</Real>
+        <Real Name="Z">2.5163186191953217</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.5104297304960164</Real>
+        <Real Name="Y">0.10532809017486713</Real>
+        <Real Name="Z">1.4928107700288209</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.27089405809350564</Real>
+        <Real Name="Y">-0.56497414171536453</Real>
+        <Real Name="Z">-0.87974431529021746</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.3059327730232133</Real>
+        <Real Name="Y">-0.66698321132505667</Real>
+        <Real Name="Z">-0.19599707184830215</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.2365799447394803</Real>
+        <Real Name="Y">-0.23165734149286613</Real>
+        <Real Name="Z">2.4583013381122276</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.50127524254864986</Real>
+        <Real Name="Y">0.35036662199797886</Real>
+        <Real Name="Z">-0.19794323150382528</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.2075005867004836</Real>
+        <Real Name="Y">-2.0857035249756217</Real>
+        <Real Name="Z">-1.7154689664090845</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.2425570456499293</Real>
+        <Real Name="Y">-2.2641127292749572</Real>
+        <Real Name="Z">0.25669974621172964</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.062837426495076301</Real>
+        <Real Name="Y">-0.072282630762588451</Real>
+        <Real Name="Z">-0.17790355318150744</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.8374311720078007</Real>
+        <Real Name="Y">2.3320246880333757</Real>
+        <Real Name="Z">-1.9458978534772071</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.10253495687003025</Real>
+        <Real Name="Y">-1.1187186689349145</Real>
+        <Real Name="Z">-2.3947181022667663</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.01956103554482384</Real>
+        <Real Name="Y">0.40793231048553635</Real>
+        <Real Name="Z">-0.013143080753421478</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.44311189065071843</Real>
+        <Real Name="Y">-1.8476572501073061</Real>
+        <Real Name="Z">1.7607253905922444</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.4173773459121519</Real>
+        <Real Name="Y">3.4597350205774577</Real>
+        <Real Name="Z">-2.4383679070930806</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.20293501885451179</Real>
+        <Real Name="Y">0.054331796567264043</Real>
+        <Real Name="Z">0.75078972848234282</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.1871283424270547</Real>
+        <Real Name="Y">1.4858021491001481</Real>
+        <Real Name="Z">-1.6388188068662715</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.39443651186858869</Real>
+        <Real Name="Y">0.010457292362328546</Real>
+        <Real Name="Z">0.86942950480512327</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.25990787137198607</Real>
+        <Real Name="Y">0.77781948358260311</Real>
+        <Real Name="Z">-0.21876447954654199</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.2166298835623639</Real>
+        <Real Name="Y">0.61241188798376578</Real>
+        <Real Name="Z">-0.2823551408668008</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.2644557336582305</Real>
+        <Real Name="Y">1.6003316827539618</Real>
+        <Real Name="Z">1.7620598079255578</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.082821912360487526</Real>
+        <Real Name="Y">0.25093461166593961</Real>
+        <Real Name="Z">0.36651563206746834</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.021891004853083061</Real>
+        <Real Name="Y">-1.3400457018881473</Real>
+        <Real Name="Z">-3.3317000096130718</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.52777462769988503</Real>
+        <Real Name="Y">-1.9903562509059152</Real>
+        <Real Name="Z">1.1217501309787865</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.50822801269024598</Real>
+        <Real Name="Y">0.30573119762352835</Real>
+        <Real Name="Z">0.089848751719637701</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.2958194865984347</Real>
+        <Real Name="Y">1.6509703484335005</Real>
+        <Real Name="Z">-1.0852404767836024</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.68700112155213244</Real>
+        <Real Name="Y">-2.7366917254061742</Real>
+        <Real Name="Z">-2.8513324152336268</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.53189436765244336</Real>
+        <Real Name="Y">-0.29147297630533625</Real>
+        <Real Name="Z">0.30774236881590344</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.76915602975554576</Real>
+        <Real Name="Y">2.2271820004197824</Real>
+        <Real Name="Z">3.3617955150548275</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-2.7341120179454159</Real>
+        <Real Name="Y">-2.3057163916306553</Real>
+        <Real Name="Z">0.36081678383376292</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.72716437548827961</Real>
+        <Real Name="Y">-0.52655741540070433</Real>
+        <Real Name="Z">0.045915125643532985</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">1.7447853605568555</Real>
+        <Real Name="Y">1.4737829475039383</Real>
+        <Real Name="Z">0.97015773538358907</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.87787525363719343</Real>
+        <Real Name="Y">0.24994216238251368</Real>
+        <Real Name="Z">1.9903562509059152</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-1.0593720517205722</Real>
+        <Real Name="Y">-0.12454539219140245</Real>
+        <Real Name="Z">-0.060867341986491755</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">3.3587445226208978</Real>
+        <Real Name="Y">0.15733254324927418</Real>
+        <Real Name="Z">-0.015476893770079957</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">2.0905410315971769</Real>
+        <Real Name="Y">-1.540511349640131</Real>
+        <Real Name="Z">1.8862960644783509</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.68741831102639706</Real>
+        <Real Name="Y">-0.14157009570813378</Real>
+        <Real Name="Z">-0.14861079549297709</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.095553162507527392</Real>
+        <Real Name="Y">0.44598467232550737</Real>
+        <Real Name="Z">-1.6806086661988142</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.3219363388428762</Real>
+        <Real Name="Y">0.75910837879401305</Real>
+        <Real Name="Z">-0.13830754289987104</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.5853848035956809</Real>
+        <Real Name="Y">0.26319584132667978</Real>
+        <Real Name="Z">0.50809818156753761</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">0.37761058878345583</Real>
+        <Real Name="Y">0.31627301496538635</Real>
+        <Real Name="Z">2.1204292026335967</Real>
+      </Vector>
+      <Vector>
+        <Real Name="X">-0.40014777958772529</Real>
+        <Real Name="Y">0.4428246731327487</Real>
+        <Real Name="Z">-2.6240722903183125</Real>
+      </Vector>
+    </Sequence>
+  </Velocities>
+</ReferenceData>
