@@ -79,17 +79,21 @@ enum class NumTempScaleValues
     Count    = 3  //!< Number of valid values
 };
 
-/*! \brief Different variants of the Parrinello-Rahman velocity scaling
+// Avoid check-source warnings about the duplicate class enum
+#ifndef DOXYGEN
+/*! \brief Describes the properties of the Parrinello-Rahman pressure
+ * scaling matrix
  *
- *  This is needed to template the kernel
- *  \todo Unify with similar enum in CPU update module
+ * This is needed to template the kernel
  */
-enum class VelocityScalingType
+enum class ParrinelloRahmanVelocityScaling
 {
-    None     = 0, //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    Diagonal = 1, //!< Apply velocity scaling using a diagonal matrix
-    Count    = 2  //!< Number of valid values
+    No,          //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal,    //!< Apply velocity scaling using a diagonal matrix
+    Anisotropic, //!< Apply velocity scaling using a matrix with off-diagonal elements
+    Count        //!< Number of valid values
 };
+#endif
 
 class LeapFrogGpu
 {

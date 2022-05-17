@@ -62,24 +62,24 @@ namespace gmx
  * \param numTempScaleValues Number of different T-couple values.
  * \param d_tempScaleGroups Mapping of atoms into temperature scaling groups.
  * \param d_lambdas Temperature scaling factors (one per group).
- * \param prVelocityScalingType Type of Parrinello-Rahman velocity rescaling.
+ * \param parrinelloRahmanVelocityScaling The properties of the Parrinello-Rahman velocity scaling matrix.
  * \param prVelocityScalingMatrixDiagonal Diagonal elements of Parrinello-Rahman velocity scaling matrix.
  * \param deviceStream Device stream for kernel launch.
  */
-void launchLeapFrogKernel(int                          numAtoms,
-                          DeviceBuffer<Float3>         d_x,
-                          DeviceBuffer<Float3>         d_xp,
-                          DeviceBuffer<Float3>         d_v,
-                          DeviceBuffer<Float3>         d_f,
-                          DeviceBuffer<float>          d_inverseMasses,
-                          float                        dt,
-                          bool                         doTemperatureScaling,
-                          int                          numTempScaleValues,
-                          DeviceBuffer<unsigned short> d_tempScaleGroups,
-                          DeviceBuffer<float>          d_lambdas,
-                          VelocityScalingType          prVelocityScalingType,
-                          Float3                       prVelocityScalingMatrixDiagonal,
-                          const DeviceStream&          deviceStream);
+void launchLeapFrogKernel(int                             numAtoms,
+                          DeviceBuffer<Float3>            d_x,
+                          DeviceBuffer<Float3>            d_xp,
+                          DeviceBuffer<Float3>            d_v,
+                          DeviceBuffer<Float3>            d_f,
+                          DeviceBuffer<float>             d_inverseMasses,
+                          float                           dt,
+                          bool                            doTemperatureScaling,
+                          int                             numTempScaleValues,
+                          DeviceBuffer<unsigned short>    d_tempScaleGroups,
+                          DeviceBuffer<float>             d_lambdas,
+                          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+                          Float3                          prVelocityScalingMatrixDiagonal,
+                          const DeviceStream&             deviceStream);
 
 
 } // namespace gmx

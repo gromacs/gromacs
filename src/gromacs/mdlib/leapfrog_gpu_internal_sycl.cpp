@@ -56,7 +56,7 @@
 #include "leapfrog_gpu_internal.h"
 
 //! \brief Class name for leap-frog kernel
-template<gmx::NumTempScaleValues numTempScaleValues, gmx::VelocityScalingType velocityScaling>
+template<gmx::NumTempScaleValues numTempScaleValues, gmx::ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 class LeapFrogKernel;
 
 namespace gmx
@@ -72,7 +72,7 @@ using mode = sycl::access_mode;
  *  Each GPU thread works with a single particle.
  *
  * \tparam        numTempScaleValues               The number of different T-couple values.
- * \tparam        velocityScaling                  Type of the Parrinello-Rahman velocity rescaling.
+ * \tparam        parrinelloRahmanVelocityScaling  The properties of the Parrinello-Rahman velocity scaling matrix.
  * \param         cgh                              SYCL's command group handler.
  * \param[in,out] a_x                              Coordinates to update upon integration.
  * \param[out]    a_xp                             A copy of the coordinates before the integration (for constraints).
@@ -84,7 +84,7 @@ using mode = sycl::access_mode;
  * \param[in]     a_tempScaleGroups                Mapping of atoms into groups.
  * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix.
  */
-template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
+template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 auto leapFrogKernel(
         sycl::handler&                              cgh,
         DeviceAccessor<Float3, mode::read_write>    a_x,
@@ -141,15 +141,22 @@ auto leapFrogKernel(
         }();
 
         const Float3 prVelocityDelta = [=]() {
-            if constexpr (velocityScaling == VelocityScalingType::Diagonal)
+            if constexpr (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
             {
                 return Float3{ prVelocityScalingMatrixDiagonal[0] * v[0],
                                prVelocityScalingMatrixDiagonal[1] * v[1],
                                prVelocityScalingMatrixDiagonal[2] * v[2] };
             }
-            else if constexpr (velocityScaling == VelocityScalingType::None)
+            else if constexpr (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
             {
                 return Float3{ 0, 0, 0 };
+            }
+            else
+            {
+                // Other kinds of scaling not yet
+                // implemented. Assertions higher in the call stack
+                // prevent reaching this code.
+                return Float3{ 1e9, 1e9, 1e9 };
             }
         }();
 
@@ -160,18 +167,18 @@ auto leapFrogKernel(
 }
 
 //! \brief Leap Frog SYCL kernel launch code.
-template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling, class... Args>
+template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling, class... Args>
 static sycl::event launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms, Args&&... args)
 {
     // Should not be needed for SYCL2020.
-    using kernelNameType = LeapFrogKernel<numTempScaleValues, velocityScaling>;
+    using kernelNameType = LeapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>;
 
     const sycl::range<1> rangeAllAtoms(numAtoms);
     sycl::queue          q = deviceStream.stream();
 
     sycl::event e = q.submit([&](sycl::handler& cgh) {
-        auto kernel =
-                leapFrogKernel<numTempScaleValues, velocityScaling>(cgh, std::forward<Args>(args)...);
+        auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
+                cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
     });
 
@@ -201,12 +208,12 @@ static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numT
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScalingType,
-                                               VelocityScalingType prVelocityScalingType,
+static inline sycl::event launchLeapFrogKernel(NumTempScaleValues              tempScalingType,
+                                               ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
                                                Args&&... args)
 {
-    GMX_ASSERT(prVelocityScalingType == VelocityScalingType::None
-                       || prVelocityScalingType == VelocityScalingType::Diagonal,
+    GMX_ASSERT(parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No
+                       || parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal,
                "Only isotropic Parrinello-Rahman pressure coupling is supported.");
 
     return dispatchTemplatedFunction(
@@ -214,30 +221,30 @@ static inline sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScalingTy
                 return launchLeapFrogKernel<tempScalingType_, prScalingType_>(std::forward<Args>(args)...);
             },
             tempScalingType,
-            prVelocityScalingType);
+            parrinelloRahmanVelocityScaling);
 }
 
-void launchLeapFrogKernel(int                                numAtoms,
-                          DeviceBuffer<Float3>               d_x,
-                          DeviceBuffer<Float3>               d_xp,
-                          DeviceBuffer<Float3>               d_v,
-                          const DeviceBuffer<Float3>         d_f,
-                          const DeviceBuffer<float>          d_inverseMasses,
-                          const float                        dt,
-                          const bool                         doTemperatureScaling,
-                          const int                          numTempScaleValues,
-                          const DeviceBuffer<unsigned short> d_tempScaleGroups,
-                          const DeviceBuffer<float>          d_lambdas,
-                          const VelocityScalingType          prVelocityScalingType,
-                          const Float3                       prVelocityScalingMatrixDiagonal,
-                          const DeviceStream&                deviceStream)
+void launchLeapFrogKernel(int                                   numAtoms,
+                          DeviceBuffer<Float3>                  d_x,
+                          DeviceBuffer<Float3>                  d_xp,
+                          DeviceBuffer<Float3>                  d_v,
+                          const DeviceBuffer<Float3>            d_f,
+                          const DeviceBuffer<float>             d_inverseMasses,
+                          const float                           dt,
+                          const bool                            doTemperatureScaling,
+                          const int                             numTempScaleValues,
+                          const DeviceBuffer<unsigned short>    d_tempScaleGroups,
+                          const DeviceBuffer<float>             d_lambdas,
+                          const ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
+                          const Float3                          prVelocityScalingMatrixDiagonal,
+                          const DeviceStream&                   deviceStream)
 {
-    NumTempScaleValues tempVelocityScalingType =
+    NumTempScaleValues tempParrinelloRahmanVelocityScaling =
             getTempScalingType(doTemperatureScaling, numTempScaleValues);
 
 
-    launchLeapFrogKernel(tempVelocityScalingType,
-                         prVelocityScalingType,
+    launchLeapFrogKernel(tempParrinelloRahmanVelocityScaling,
+                         parrinelloRahmanVelocityScaling,
                          deviceStream,
                          numAtoms,
                          d_x,

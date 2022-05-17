@@ -101,10 +101,10 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
                            GpuApiCallBehavior::Async,
                            nullptr);
     }
-    VelocityScalingType prVelocityScalingType = VelocityScalingType::None;
+    auto parrinelloRahmanVelocityScaling = ParrinelloRahmanVelocityScaling::No;
     if (doParrinelloRahman)
     {
-        prVelocityScalingType = VelocityScalingType::Diagonal;
+        parrinelloRahmanVelocityScaling = ParrinelloRahmanVelocityScaling::Diagonal;
         GMX_ASSERT(prVelocityScalingMatrix[YY][XX] == 0 && prVelocityScalingMatrix[ZZ][XX] == 0
                            && prVelocityScalingMatrix[ZZ][YY] == 0 && prVelocityScalingMatrix[XX][YY] == 0
                            && prVelocityScalingMatrix[XX][ZZ] == 0 && prVelocityScalingMatrix[YY][ZZ] == 0,
@@ -126,7 +126,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
                          numTempScaleValues_,
                          d_tempScaleGroups_,
                          d_lambdas_,
-                         prVelocityScalingType,
+                         parrinelloRahmanVelocityScaling,
                          prVelocityScalingMatrixDiagonal_,
                          deviceStream_);
 }

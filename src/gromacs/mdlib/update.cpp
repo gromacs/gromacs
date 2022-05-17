@@ -305,16 +305,12 @@ enum class NumTempScaleValues
     Count
 };
 
-/*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
- *
- * Note that this enum is only used in updateMDLeapfrogSimple(), which does
- * not handle fully anistropic Parrinello-Rahman scaling, so we only have
- * options \p no and \p diagonal here and no anistropic option.
- */
-enum class ApplyParrinelloRahmanVScaling
+//! Describes the properties of the Parrinello-Rahman pressure scaling matrix
+enum class ParrinelloRahmanVelocityScaling
 {
-    No,       //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    Diagonal, //!< Apply velocity scaling using a diagonal matrix
+    No,          //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal,    //!< Apply velocity scaling using a diagonal matrix
+    Anisotropic, //!< Apply velocity scaling using a matrix with off-diagonal elements
     Count
 };
 
@@ -323,8 +319,7 @@ enum class ApplyParrinelloRahmanVScaling
  * \tparam       storeUpdatedVelocities Tells whether we should store the updated velocities
  * \tparam       numTempScaleValues     The number of different T-couple values
  * \tparam       applyPRVScaling        Apply Parrinello-Rahman velocity scaling
- * \tparam       VelocityType           The type of the velocity vector
- *                                        (which depends onwhether velocities are stored)
+ * \tparam       parrinelloRahmanVelocityScaling  The properties of the Parrinello-Rahman velocity scaling matrix
  * \param[in]    start                  Index of first atom to update
  * \param[in]    nrend                  Last atom to update: \p nrend - 1
  * \param[in]    dt                     The time step
@@ -343,7 +338,7 @@ enum class ApplyParrinelloRahmanVScaling
  * Note that we might get even better SIMD acceleration when we introduce
  * aligned (and padded) memory, possibly with some hints for the compilers.
  */
-template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, ApplyParrinelloRahmanVScaling applyPRVScaling, typename VelocityType>
+template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling, typename VelocityType>
 static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
 updateMDLeapfrogSimple(int                                 start,
                        int                                 nrend,
@@ -386,7 +381,7 @@ updateMDLeapfrogSimple(int                                 start,
              */
             real vNew = lambdaGroup * v[a][d] + f[a][d] * invMassPerDim[a][d] * dt;
 
-            if (applyPRVScaling == ApplyParrinelloRahmanVScaling::Diagonal)
+            if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
             {
                 vNew -= dtPressureCouple * pRVScaleMatrixDiagonal[d] * v[a][d];
             }
@@ -693,14 +688,19 @@ static void do_update_md(int                                  start,
                "For SIMD optimization certain compilers need to have xprime != x");
 
     /* Note: Berendsen pressure scaling is handled after do_update_md() */
-    bool doTempCouple =
+    const bool doTempCouple =
             (etc != TemperatureCoupling::No && do_per_step(step + nsttcouple - 1, nsttcouple));
-    bool doNoseHoover       = (etc == TemperatureCoupling::NoseHoover && doTempCouple);
-    bool doParrinelloRahman = (epc == PressureCoupling::ParrinelloRahman
-                               && do_per_step(step + nstpcouple - 1, nstpcouple));
-    bool doPROffDiagonal = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
+    const bool doNoseHoover = (etc == TemperatureCoupling::NoseHoover && doTempCouple);
+    const bool doParrinelloRahmanThisStep = (epc == PressureCoupling::ParrinelloRahman
+                                             && do_per_step(step + nstpcouple - 1, nstpcouple));
+    ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling =
+            (doParrinelloRahmanThisStep ? ((M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0)
+                                                   ? ParrinelloRahmanVelocityScaling::Anisotropic
+                                                   : ParrinelloRahmanVelocityScaling::Diagonal)
+                                        : ParrinelloRahmanVelocityScaling::No);
 
-    real dtPressureCouple = (doParrinelloRahman ? nstpcouple * dt : 0);
+    real dtPressureCouple =
+            ((parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No) ? nstpcouple * dt : 0);
 
     /* NEMD (also cosine) acceleration is applied in updateMDLeapFrogGeneral */
     AccelerationType accelerationType =
@@ -708,12 +708,13 @@ static void do_update_md(int                                  start,
                                      : ((ekind->cosacc.cos_accel != 0) ? AccelerationType::Cosine
                                                                        : AccelerationType::None));
 
-    if (doNoseHoover || doPROffDiagonal || accelerationType != AccelerationType::None)
+    if (doNoseHoover || (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
+        || accelerationType != AccelerationType::None)
     {
         matrix stepM;
-        if (!doParrinelloRahman)
+        if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
         {
-            /* We should not apply PR scaling at this step */
+            // We should not apply PR scaling at this step
             clear_mat(stepM);
         }
         else
@@ -759,24 +760,26 @@ static void do_update_md(int                                  start,
         /* Extract some pointers needed by all cases */
         gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
-        if (doParrinelloRahman)
+        if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
         {
-            GMX_ASSERT(!doPROffDiagonal,
+            GMX_ASSERT((parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::Anisotropic),
                        "updateMDLeapfrogSimple only supports diagonal Parrinello-Rahman scaling "
                        "matrices");
-
             rvec diagM;
-            for (int d = 0; d < DIM; d++)
+            if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
             {
-                diagM[d] = M[d][d];
+                diagM[XX] = M[XX][XX];
+                diagM[YY] = M[YY][YY];
+                diagM[ZZ] = M[ZZ][ZZ];
             }
 
             dispatchTemplatedFunction(
-                    [=](auto numTempScaleValues) {
-                        return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ApplyParrinelloRahmanVScaling::Diagonal>(
+                    [=](auto numTempScaleValues, auto parrinelloRahmanVelocityScaling) {
+                        return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, parrinelloRahmanVelocityScaling>(
                                 start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
                     },
-                    numTempScaleValues);
+                    numTempScaleValues,
+                    parrinelloRahmanVelocityScaling);
         }
         else
         {
@@ -808,7 +811,7 @@ static void do_update_md(int                                  start,
                              * compared to invMassPerDim.
                              */
                             {
-                                updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ApplyParrinelloRahmanVScaling::No>(
+                                updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ParrinelloRahmanVelocityScaling::No>(
                                         start,
                                         nrend,
                                         dt,
@@ -854,7 +857,7 @@ static void doUpdateMDDoNotUpdateVelocities(int                      start,
     }
     else
     {
-        updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ApplyParrinelloRahmanVScaling::No>(
+        updateMDLeapfrogSimple<StoreUpdatedVelocities::No, NumTempScaleValues::Single, ParrinelloRahmanVelocityScaling::No>(
                 start, nrend, dt, dt, invMassPerDim, tcstat, gmx::ArrayRef<const unsigned short>(), nullptr, x, xprime, v, f);
     }
 }

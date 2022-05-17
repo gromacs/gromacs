@@ -96,7 +96,7 @@ static void inline updateVelocities(int                        a,
             v[a][d] *= (lambdaStart - diagPR[d]);
         }
         if (numStartVelocityScalingValues != NumVelocityScalingValues::None
-            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
         {
             v[a][d] = lambdaStart * v[a][d] - iprod(matrixPR[d], v[a]);
         }
@@ -106,7 +106,7 @@ static void inline updateVelocities(int                        a,
             v[a][d] *= (1 - diagPR[d]);
         }
         if (numStartVelocityScalingValues == NumVelocityScalingValues::None
-            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
         {
             v[a][d] -= iprod(matrixPR[d], v[a]);
         }
@@ -161,7 +161,7 @@ static void inline scalePositions(int a, real lambda, rvec* gmx_restrict x)
 template<ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 static inline bool diagonalizePRMatrix(matrix matrixPR, rvec diagPR)
 {
-    if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::Full)
+    if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::Anisotropic)
     {
         return false;
     }
@@ -279,7 +279,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                                      ? endVelocityScaling_[0]
                                      : 1.0;
 
-    const bool isFullScalingMatrixDiagonal =
+    const bool isScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
@@ -291,7 +291,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f)
 #else
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
-            shared(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+            shared(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
 #endif
     for (int th = 0; th < nth; th++)
     {
@@ -302,7 +302,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 
             for (int a = start_th; a < end_th; a++)
             {
-                if (isFullScalingMatrixDiagonal)
+                if (isScalingMatrixDiagonal)
                 {
                     updateVelocities<numStartVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal, numEndVelocityScalingValues>(
                             a,
@@ -366,7 +366,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                                      ? endVelocityScaling_[0]
                                      : 1.0;
 
-    const bool isFullScalingMatrixDiagonal =
+    const bool isScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
@@ -378,11 +378,11 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 // that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
-            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
 #else
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
             shared(x, xp, v, f, invMassPerDim)                               \
-                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
 #endif
     for (int th = 0; th < nth; th++)
     {
@@ -393,7 +393,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 
             for (int a = start_th; a < end_th; a++)
             {
-                if (isFullScalingMatrixDiagonal)
+                if (isScalingMatrixDiagonal)
                 {
                     updateVelocities<numStartVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal, numEndVelocityScalingValues>(
                             a,
@@ -458,7 +458,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                                      ? endVelocityScaling_[0]
                                      : 1.0;
 
-    const bool isFullScalingMatrixDiagonal =
+    const bool isScalingMatrixDiagonal =
             diagonalizePRMatrix<parrinelloRahmanVelocityScaling>(matrixPR_, diagPR_);
 
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
@@ -468,11 +468,11 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
-            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
 #else
 #    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
             shared(x, xp, v, f, invMassPerDim)                               \
-                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isFullScalingMatrixDiagonal)
+                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
 #endif
     for (int th = 0; th < nth; th++)
     {
@@ -483,7 +483,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 
             for (int a = start_th; a < end_th; a++)
             {
-                if (isFullScalingMatrixDiagonal)
+                if (isScalingMatrixDiagonal)
                 {
                     updateVelocities<numStartVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal, numEndVelocityScalingValues>(
                             a,
@@ -654,7 +654,7 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
             {
                 registerRunFunction([this]() {
                     run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Full,
+                        ParrinelloRahmanVelocityScaling::Anisotropic,
                         NumVelocityScalingValues::Single,
                         NumPositionScalingValues::None>();
                 });
@@ -663,7 +663,7 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
             {
                 registerRunFunction([this]() {
                     run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Full,
+                        ParrinelloRahmanVelocityScaling::Anisotropic,
                         NumVelocityScalingValues::None,
                         NumPositionScalingValues::None>();
                 });
@@ -699,7 +699,7 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
             {
                 registerRunFunction([this]() {
                     run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Full,
+                        ParrinelloRahmanVelocityScaling::Anisotropic,
                         NumVelocityScalingValues::Multiple,
                         NumPositionScalingValues::None>();
                 });
@@ -708,7 +708,7 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
             {
                 registerRunFunction([this]() {
                     run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Full,
+                        ParrinelloRahmanVelocityScaling::Anisotropic,
                         NumVelocityScalingValues::None,
                         NumPositionScalingValues::None>();
                 });
@@ -742,7 +742,7 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         {
             registerRunFunction([this]() {
                 run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::Full,
+                    ParrinelloRahmanVelocityScaling::Anisotropic,
                     NumVelocityScalingValues::None,
                     NumPositionScalingValues::None>();
             });
