@@ -386,7 +386,7 @@ protected:
                      output.dvdLambda.data(),
                      mdatoms.chargeA,
                      mdatoms.chargeB,
-                     mdatoms.bPerturbed,
+                     makeArrayRef(mdatoms.bPerturbed),
                      mdatoms.cENER,
                      mdatoms.nPerturbed,
                      fr,

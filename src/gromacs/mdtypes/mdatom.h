@@ -44,6 +44,7 @@
 
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/booltype.h"
 #include "gromacs/utility/real.h"
 
 enum class ParticleType : int;
@@ -102,8 +103,8 @@ typedef struct t_mdatoms
     std::vector<real> sigma3A;
     //! Van der Waals radius sigma^3 in the B state
     std::vector<real> sigma3B;
-    //! Is this atom perturbed
-    std::vector<bool> bPerturbed;
+    //! Is this atom perturbed?
+    std::vector<gmx::BoolType> bPerturbed;
     //! Type of atom in the A state
     std::vector<int> typeA;
     //! Type of atom in the B state
