@@ -146,7 +146,11 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
                                 &enerd,
                                 &nrnb,
                                 lambdaBuffer,
-                                &mdatoms_,
+                                mdatoms_.chargeA,
+                                mdatoms_.chargeB,
+                                makeConstArrayRef(mdatoms_.bPerturbed),
+                                mdatoms_.cENER,
+                                mdatoms_.nPerturbed,
                                 nullptr,
                                 stepWork);
 

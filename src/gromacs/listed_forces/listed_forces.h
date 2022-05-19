@@ -87,7 +87,6 @@ struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_lambda;
-struct t_mdatoms;
 struct t_nrnb;
 class t_state;
 struct t_disresdata;
@@ -102,25 +101,6 @@ class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 } // namespace gmx
-
-//! Type of CPU function to compute a bonded interaction.
-using BondedFunction = real (*)(int                 nbonds,
-                                const t_iatom       iatoms[],
-                                const t_iparams     iparams[],
-                                const rvec          x[],
-                                rvec4               f[],
-                                rvec                fshift[],
-                                const t_pbc*        pbc,
-                                real                lambda,
-                                gmx::ArrayRef<real> dvdlambda,
-                                const t_mdatoms*    md,
-                                t_fcdata*           fcd,
-                                t_disresdata*       disresdata,
-                                t_oriresdata*       oriresdata,
-                                int*                ddgatindex);
-
-//! Getter for finding a callable CPU function to compute an \c ftype interaction.
-BondedFunction bondedFunction(int ftype);
 
 /*! \libinternal
  * \brief Class for calculating listed interactions, uses OpenMP parallelization
@@ -200,7 +180,11 @@ public:
                    gmx_enerdata_t*                           enerd,
                    t_nrnb*                                   nrnb,
                    gmx::ArrayRef<const real>                 lambda,
-                   const t_mdatoms*                          md,
+                   gmx::ArrayRef<const real>                 chargeA,
+                   gmx::ArrayRef<const real>                 chargeB,
+                   gmx::ArrayRef<const bool>                 atomIsPerturbed,
+                   gmx::ArrayRef<const unsigned short>       cENER,
+                   int                                       nPerturbed,
                    int*                                      global_atom_index,
                    const gmx::StepWorkload&                  stepWork);
 

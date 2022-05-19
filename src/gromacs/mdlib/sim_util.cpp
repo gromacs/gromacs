@@ -2038,7 +2038,11 @@ void do_force(FILE*                               fplog,
                                    enerd,
                                    nrnb,
                                    lambda,
-                                   mdatoms,
+                                   mdatoms->chargeA,
+                                   mdatoms->chargeB,
+                                   makeConstArrayRef(mdatoms->bPerturbed),
+                                   mdatoms->cENER,
+                                   mdatoms->nPerturbed,
                                    haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr,
                                    stepWork);
         }
