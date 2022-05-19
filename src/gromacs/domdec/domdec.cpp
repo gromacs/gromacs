@@ -2864,6 +2864,11 @@ gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
 
 gmx_domdec_t::~gmx_domdec_t() = default;
 
+void done_domdec(gmx_domdec_t* dd)
+{
+    delete dd;
+}
+
 namespace gmx
 {
 

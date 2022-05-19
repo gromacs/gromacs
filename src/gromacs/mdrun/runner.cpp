@@ -2172,6 +2172,8 @@ int Mdrunner::mdrunner()
     fr.reset(nullptr);         // destruct forcerec before gpu
     // TODO convert to C++ so we can get rid of these frees
     sfree(disresdata);
+    done_domdec(cr->dd);
+    cr->dd = nullptr;
 
     if (!hwinfo_->deviceInfoList.empty())
     {

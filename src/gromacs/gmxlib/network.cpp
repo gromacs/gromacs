@@ -53,6 +53,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+void done_domdec(gmx_domdec_t* dd);
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
@@ -100,11 +102,7 @@ void done_commrec(t_commrec* cr)
 {
     if (MASTER(cr))
     {
-        if (nullptr != cr->dd)
-        {
-            // TODO: implement
-            // done_domdec(cr->dd);
-        }
+        done_domdec(cr->dd);
     }
 #if GMX_MPI
     // TODO We need to be able to free communicators, but the
