@@ -73,18 +73,19 @@ struct BoolType
 };
 
 /*! \brief
- * Create ArrayRef to bool from std::vector<BoolType>.
+ * Create ArrayRef to bool from reference to std::vector<BoolType>.
  *
- * Allow views with ArrayRef on vectors with boolean data via BooleanType.
+ * Allow to easily make views of bool from vectors of BoolType.
  *
  * \see ArrayRef
  */
+// NOLINTNEXTLINE(google-runtime-references)
 ArrayRef<bool> makeArrayRef(std::vector<BoolType>& boolVector);
 
 /*! \brief
- * Create ArrayRef to const bool from std::vector<BoolType>.
+ * Create ArrayRef to const bool from reference to std::vector<BoolType>.
  *
- * Allow views with ArrayRef on vectors with boolean data via BooleanType.
+ * Allow to easily make views of const bool from vectors of BoolType.
  *
  * \see ArrayRef
  */
