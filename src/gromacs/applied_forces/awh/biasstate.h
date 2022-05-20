@@ -329,20 +329,6 @@ private:
     void resetLocalUpdateRange(const BiasGrid& grid);
 
     /*! \brief
-     * Returns the new size of the reference weight histogram in the initial stage.
-     *
-     * This function also takes care resetting the histogram used for covering checks
-     * and for exiting the initial stage.
-     *
-     * \param[in]     params            The bias parameters.
-     * \param[in]     t                 Time.
-     * \param[in]     detectedCovering  True if we detected that the sampling interval has been sufficiently covered.
-     * \param[in,out] fplog             Log file.
-     * \returns the new histogram size.
-     */
-    double newHistogramSizeInitialStage(const BiasParams& params, double t, bool detectedCovering, FILE* fplog);
-
-    /*! \brief
      * Check if the sampling region has been covered "enough" or not.
      *
      * A one-dimensional interval is defined as covered if each point has
@@ -362,19 +348,6 @@ private:
     bool isSamplingRegionCovered(const BiasParams&         params,
                                  ArrayRef<const DimParams> dimParams,
                                  const BiasGrid&           grid) const;
-
-    /*! \brief
-     * Return the new reference weight histogram size for the current update.
-     *
-     * This function also takes care of checking for covering in the initial stage.
-     *
-     * \param[in]     params   The bias parameters.
-     * \param[in]     t        Time.
-     * \param[in]     covered  True if the sampling interval has been covered enough.
-     * \param[in,out] fplog    Log file.
-     * \returns the new histogram size.
-     */
-    double newHistogramSize(const BiasParams& params, double t, bool covered, FILE* fplog);
 
 public:
     /*! \brief
