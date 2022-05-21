@@ -72,18 +72,6 @@ void MDAtoms::resizeChargeB(const int newSize)
     mdatoms_->chargeB = chargeB_;
 }
 
-void MDAtoms::reserveChargeA(const int newCapacity)
-{
-    chargeA_.reserveWithPadding(newCapacity);
-    mdatoms_->chargeA = chargeA_;
-}
-
-void MDAtoms::reserveChargeB(const int newCapacity)
-{
-    chargeB_.reserveWithPadding(newCapacity);
-    mdatoms_->chargeB = chargeB_;
-}
-
 std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, const bool rankHasPmeGpuTask)
 {
     auto mdAtoms = std::make_unique<MDAtoms>();

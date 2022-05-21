@@ -84,16 +84,6 @@ public:
      * \throws std::bad_alloc  If out of memory.
      */
     void resizeChargeB(int newSize);
-    /*! \brief Reserves memory for charges of FEP state A.
-     *
-     * \throws std::bad_alloc  If out of memory.
-     */
-    void reserveChargeA(int newCapacity);
-    /*! \brief Reserves memory for charges of FEP state B.
-     *
-     * \throws std::bad_alloc  If out of memory.
-     */
-    void reserveChargeB(int newCapacity);
     //! Builder function.
     friend std::unique_ptr<MDAtoms>
     makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool rankHasPmeGpuTask);
