@@ -136,10 +136,6 @@ struct PmeGpuSpecific
      * The only exceptions are realGridSize and complexGridSize which are also used for grid clearing/copying.
      * TODO: these should live in a clean buffered container type, and be refactored in the NB/cudautils as well.
      */
-    /*! \brief The kernelParams.atoms.coordinates float element count (actual)*/
-    int coordinatesSize = 0;
-    /*! \brief The kernelParams.atoms.coordinates float element count (reserved) */
-    int coordinatesSizeAlloc = 0;
     /*! \brief The kernelParams.atoms.forces float element count (actual) */
     int forcesSize = 0;
     /*! \brief The kernelParams.atoms.forces float element count (reserved) */
@@ -148,6 +144,8 @@ struct PmeGpuSpecific
     int gridlineIndicesSize = 0;
     /*! \brief The kernelParams.atoms.gridlineIndices int element count (reserved) */
     int gridlineIndicesSizeAlloc = 0;
+    /*! \brief Number of used splines (padded to a full warp). */
+    int splineCountActive = 0;
     /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (actual) */
     int splineDataSize = 0;
     /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (reserved) */

@@ -587,15 +587,6 @@ static int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int
     return result;
 }
 
-/*!\brief Return the number of atoms per warp */
-static int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
-{
-    const int order = pmeGpu->common->pme_order;
-    const int threadsPerAtom =
-            (pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::Order ? order : order * order);
-    return pmeGpu->programHandle_->warpSize() / threadsPerAtom;
-}
-
 /*! \brief Rearranges the atom spline data between the GPU and host layouts.
  * Only used for test purposes so far, likely to be horribly slow.
  *
@@ -620,7 +611,8 @@ static void pme_gpu_transform_spline_atom_data(const PmeGpu*      pmeGpu,
     const uintmax_t threadIndex  = 0;
     const auto      atomCount    = atc->numAtoms();
     const auto      atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const auto      pmeOrder     = pmeGpu->common->pme_order;
+    GMX_RELEASE_ASSERT(atomsPerWarp > 0, "Can not get GPU warp size");
+    const auto pmeOrder = pmeGpu->common->pme_order;
     GMX_ASSERT(pmeOrder == c_pmeGpuOrder, "Only PME order 4 is implemented");
 
     real*  cpuSplineBuffer;

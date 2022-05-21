@@ -106,9 +106,13 @@ enum class GridOrdering
  * size divisible by the returned number.
  *
  * \returns Number of atoms in a single GPU atom data chunk, which
- * determines a minimum divisior of the size of the memory allocated.
+ * determines a minimum divisor of the size of the memory allocated.
  */
 int pme_gpu_get_atom_data_block_size();
+
+/*!\brief Return the number of atoms per warp */
+GPU_FUNC_QUALIFIER int pme_gpu_get_atoms_per_warp(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
+        GPU_FUNC_TERM_WITH_RETURN(0);
 
 /*! \libinternal \brief
  * Synchronizes the current computation, waiting for the GPU kernels/transfers to finish.
