@@ -50,6 +50,8 @@ typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
  * ToDo: Current implementation transfers halo region from/to only immediate neighbours
  * And, expects that overlapSize <= local grid width.
  * Implement exchange with multiple neighbors to remove this limitation
+ * ToDo: Current implementation synchronizes pmeStream to make sure data is ready on GPU after
+ * spread. Consider using events for this synchnozation.
  *
  * \param[in]  pmeGpu                 The PME GPU structure.
  */
@@ -60,6 +62,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu);
  * ToDo: Current implementation transfers halo region from/to only immediate neighbours
  * And, expects that overlapSize <= local grid width.
  * Implement exchange with multiple neighbors to remove this limitation
+ * ToDo: Current implementation synchronizes pmeStream to make sure data is ready on GPU after FFT
+ * to PME grid conversion. Consider using events for this synchnozation.
  *
  * \param[in]  pmeGpu                 The PME GPU structure.
  */

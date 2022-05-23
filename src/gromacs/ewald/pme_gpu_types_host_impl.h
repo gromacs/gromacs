@@ -71,6 +71,31 @@
 namespace gmx
 {
 class Gpu3dFft;
+
+/*! \brief
+ * Direction of neighbouring rank in X-dimension relative to current rank.
+ * Used in GPU implementation of PME halo exchange
+ */
+enum class DirectionX : int
+{
+    Up = 0,
+    Down,
+    Center,
+    Count
+};
+
+/*! \brief
+ * Direction of neighbouring rank in Y-dimension relative to current rank.
+ * Used in GPU implementation of PME halo exchange
+ */
+enum class DirectionY : int
+{
+    Left = 0,
+    Right,
+    Center,
+    Count
+};
+
 } // namespace gmx
 
 /*! \internal \brief
@@ -104,10 +129,6 @@ struct PmeGpuSpecific
     GpuEventSynchronizer pmeForcesReady;
     /*! \brief Triggered after the grid has been copied to the host (after the spreading stage). */
     GpuEventSynchronizer syncSpreadGridD2H;
-    /*! \brief Triggered after the grid has been converted from FFT grid to PME grid (before the gather stage). */
-    GpuEventSynchronizer syncFftToPmeGrid;
-    /*! \brief Triggered after spline/spread computations have been completed. */
-    GpuEventSynchronizer spreadCompleted;
 
     /* Settings which are set at the start of the run */
     /*! \brief A boolean which tells whether the complex and real grids for cu/clFFT are different or same. Currently true. */
@@ -166,43 +187,37 @@ struct PmeGpuSpecific
     int complexGridSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
     int complexGridCapacity[NUMFEPSTATES] = { 0, 0 };
+};
 
-    /*! \brief Buffer size used to transfer PME grid overlap region in X-dimension*/
-    int overlapXSizeLeft = 0;
-    /*! \brief Buffer capacity used to transfer PME grid overlap region in X-dimension*/
-    int overlapXCapacityLeft = 0;
-    /*! \brief Buffer size used to transfer PME grid overlap region in X-dimension*/
-    int overlapXSizeRight = 0;
-    /*! \brief Buffer capacity used to transfer PME grid overlap region in X-dimension*/
-    int overlapXCapacityRight = 0;
-    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
-    int overlapYSendSizeLeft = 0;
-    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
-    int overlapYSendCapacityLeft = 0;
-    /*! \brief Buffer size used to recv PME grid overlap region in Y-dimension*/
-    int overlapYRecvSizeLeft = 0;
-    /*! \brief Buffer capacity used to recv PME grid overlap region in Y-dimension*/
-    int overlapYRecvCapacityLeft = 0;
-    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
-    int overlapYSendSizeRight = 0;
-    /*! \brief Buffer capacity used to send PME grid overlap region in Y-dimension*/
-    int overlapYSendCapacityRight = 0;
-    /*! \brief Buffer size used to recv PME grid overlap region in Y-dimension*/
-    int overlapYRecvSizeRight = 0;
-    /*! \brief Buffer capacity used to recv PME grid overlap region in Y-dimension*/
-    int overlapYRecvCapacityRight = 0;
-    /*! \brief Buffer used to transfer PME grid overlap region in X-dimension*/
-    DeviceBuffer<float> d_recvGridLeftX = nullptr;
-    /*! \brief Buffer used to transfer PME grid overlap region in X-dimension*/
-    DeviceBuffer<float> d_recvGridRightX = nullptr;
-    /*! \brief Buffer used to send PME grid overlap region in Y-dimension*/
-    DeviceBuffer<float> d_sendGridLeftY = nullptr;
-    /*! \brief Buffer used to recv PME grid overlap region in Y-dimension*/
-    DeviceBuffer<float> d_recvGridLeftY = nullptr;
-    /*! \brief Buffer used to send PME grid overlap region in Y-dimension*/
-    DeviceBuffer<float> d_sendGridRightY = nullptr;
-    /*! \brief Buffer used to recv PME grid overlap region in Y-dimension*/
-    DeviceBuffer<float> d_recvGridRightY = nullptr;
+/*! \internal \brief
+ * Host data structure used to store data related to PME halo exchange, staging buffers for MPI communication
+ */
+struct PmeGpuHaloExchange
+{
+    /*! \brief local grid dimension along X-dimension*/
+    int gridSizeX;
+    /*! \brief local grid dimension along Y-dimension*/
+    int gridSizeY;
+    /*! \brief halo sizes to be used in X-dimension*/
+    gmx::EnumerationArray<gmx::DirectionX, int> haloSizeX;
+    /*! \brief halo sizes to be used in Y-dimension*/
+    gmx::EnumerationArray<gmx::DirectionY, int> haloSizeY;
+    /*! \brief rank of neighbours in X-dimension*/
+    gmx::EnumerationArray<gmx::DirectionX, int> ranksX;
+    /*! \brief rank of neighbours in Y-dimension*/
+    gmx::EnumerationArray<gmx::DirectionY, int> ranksY;
+    /*! \brief Buffer used to send PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, DeviceBuffer<float>>> d_sendGrids;
+    /*! \brief Buffer used to recv PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, DeviceBuffer<float>>> d_recvGrids;
+    /*! \brief Buffer size used to send PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, int>> overlapSendSize;
+    /*! \brief Buffer capacity used to send PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, int>> overlapSendCapacity;
+    /*! \brief Buffer size used to recv PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, int>> overlapRecvSize;
+    /*! \brief Buffer capacity used to recv PME grid overlap region*/
+    gmx::EnumerationArray<gmx::DirectionX, gmx::EnumerationArray<gmx::DirectionY, int>> overlapRecvCapacity;
 };
 
 #endif

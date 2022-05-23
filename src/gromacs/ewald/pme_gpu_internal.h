@@ -263,6 +263,20 @@ void pme_gpu_realloc_grids(PmeGpu* pmeGpu);
 void pme_gpu_free_grids(const PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
+ * Reinitialize PME halo exchange parameters and staging device buffers for MPI communication.
+ *
+ * \param[in] pmeGpu            The PME GPU structure.
+ */
+void pme_gpu_reinit_haloexchange(PmeGpu* pmeGpu);
+
+/*! \libinternal \brief
+ * Frees device staging buffers used for PME halo exchange.
+ *
+ * \param[in] pmeGpu            The PME GPU structure.
+ */
+void pme_gpu_free_haloexchange(const PmeGpu* pmeGpu);
+
+/*! \libinternal \brief
  * Clears the real space grid on the GPU.
  * Should be called at the end of each computation.
  *

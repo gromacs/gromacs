@@ -64,9 +64,11 @@
 
 #if GMX_GPU
 struct PmeGpuSpecific;
+struct PmeGpuHaloExchange;
 #else
 /*! \brief A dummy typedef for the GPU host data placeholder on non-GPU builds */
 typedef int PmeGpuSpecific;
+typedef int PmeGpuHaloExchange;
 #endif
 
 #if GMX_GPU_CUDA
@@ -133,6 +135,8 @@ struct PmeShared
     int nnodesX;
     /*! \brief Number of MPI ranks in Y-decomposition */
     int nnodesY;
+    /*! \brief MPI communicator for PME ranks */
+    MPI_Comm mpiComm;
     /*! \brief MPI communicator for ranks in X-decomposition */
     MPI_Comm mpiCommX;
     /*! \brief MPI communicator for ranks in Y-decomposition */
@@ -200,6 +204,9 @@ struct PmeGpu
 
     /*! \brief The pointer to GPU-framework specific host-side data, such as CUDA streams and events. */
     std::shared_ptr<PmeGpuSpecific> archSpecific; /* FIXME: make it an unique_ptr */
+
+    /*! \brief The pointer to PME halo-exchange specific host-side data */
+    std::unique_ptr<PmeGpuHaloExchange> haloExchange;
 };
 
 #endif
