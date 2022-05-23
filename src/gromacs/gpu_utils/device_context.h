@@ -77,7 +77,7 @@ public:
     //! Get the associated device information
     const DeviceInformation& deviceInfo() const { return deviceInfo_; }
 
-    void activate() { setActiveDevice(deviceInfo_); }
+    void activate() const { setActiveDevice(deviceInfo_); }
 
 private:
     //! A reference to the device information used upon context creation

@@ -201,7 +201,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        setActiveDevice(testDevice->deviceInfo());
+        testDevice->activate();
         typename TestFixture::VectorType input;
         resizeAndFillInput(&input, 3, 1);
         typename TestFixture::VectorType output;
@@ -299,7 +299,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithCuda)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        setActiveDevice(testDevice->deviceInfo());
+        testDevice->activate();
         typename TestFixture::VectorType input;
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         resizeAndFillInput(&input, 3, 1);
@@ -323,7 +323,7 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        setActiveDevice(testDevice->deviceInfo());
+        testDevice->activate();
         typename TestFixture::VectorType input;
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);

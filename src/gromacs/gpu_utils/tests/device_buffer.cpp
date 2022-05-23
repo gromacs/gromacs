@@ -104,8 +104,8 @@ TYPED_TEST(DeviceBufferTest, CanAllocateAndFreeDeviceBuffer)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
+        testDevice->activate();
         const DeviceContext& deviceContext = testDevice->deviceContext();
-        setActiveDevice(testDevice->deviceInfo());
 
         DeviceBuffer<TypeParam> buffer;
         int                     numValues = 123;
@@ -118,8 +118,8 @@ TYPED_TEST(DeviceBufferTest, CanReallocateAndFreeDeviceBuffer)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
+        testDevice->activate();
         const DeviceContext& deviceContext = testDevice->deviceContext();
-        setActiveDevice(testDevice->deviceInfo());
 
         DeviceBuffer<TypeParam> buffer;
         int                     currentNumValues    = 456;
@@ -149,9 +149,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDevice)
                                               : PinningPolicy::CannotBePinned;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
+            testDevice->activate();
             const DeviceContext& deviceContext = testDevice->deviceContext();
             const DeviceStream&  deviceStream  = testDevice->deviceStream();
-            setActiveDevice(testDevice->deviceInfo());
 
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
@@ -184,9 +184,9 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
                                               : PinningPolicy::CannotBePinned;
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
+            testDevice->activate();
             const DeviceContext& deviceContext = testDevice->deviceContext();
             const DeviceStream&  deviceStream  = testDevice->deviceStream();
-            setActiveDevice(testDevice->deviceInfo());
 
             DeviceBuffer<TypeParam> buffer;
             int                     numValues = 123;
@@ -257,13 +257,13 @@ TYPED_TEST(DeviceBufferTest, CanCopyBetweenDeviceBuffers)
 
                 const DeviceContext& deviceContextIn = testDeviceIn->deviceContext();
                 const DeviceStream&  deviceStreamIn  = testDeviceIn->deviceStream();
-                setActiveDevice(testDeviceIn->deviceInfo());
+                testDeviceIn->activate();
                 DeviceBuffer<TypeParam> bufferIn;
                 allocateDeviceBuffer(&bufferIn, numValues, deviceContextIn);
 
                 const DeviceContext& deviceContextOut = testDeviceOut->deviceContext();
                 const DeviceStream&  deviceStreamOut  = testDeviceOut->deviceStream();
-                setActiveDevice(testDeviceOut->deviceInfo());
+                testDeviceOut->activate();
                 DeviceBuffer<TypeParam> bufferOut;
                 allocateDeviceBuffer(&bufferOut, numValues, deviceContextOut);
 

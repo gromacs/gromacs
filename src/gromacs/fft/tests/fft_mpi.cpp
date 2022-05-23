@@ -118,10 +118,10 @@ public:
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
         const auto& testDevice = deviceList[rank % deviceList.size()];
+        testDevice->activate();
 
         const DeviceContext& deviceContext = testDevice->deviceContext();
-        setActiveDevice(testDevice->deviceInfo());
-        const DeviceStream& deviceStream = testDevice->deviceStream();
+        const DeviceStream&  deviceStream  = testDevice->deviceStream();
 
         FftBackend backend;
 

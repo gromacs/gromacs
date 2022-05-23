@@ -74,7 +74,7 @@ TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3Device)
 {
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
-        setActiveDevice(testDevice->deviceInfo());
+        testDevice->activate();
         std::vector<RVec> rVecOutput(rVecInput.size());
         convertRVecToFloat3OnDevice(rVecOutput, rVecInput, testDevice.get());
         EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));

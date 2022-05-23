@@ -109,10 +109,9 @@ void convertRVecToFloat3OnDevice(ArrayRef<gmx::RVec>       h_rVecOutput,
                                  ArrayRef<const gmx::RVec> h_rVecInput,
                                  const TestDevice*         testDevice)
 {
+    testDevice->activate();
     const DeviceContext& deviceContext = testDevice->deviceContext();
     const DeviceStream&  deviceStream  = testDevice->deviceStream();
-
-    setActiveDevice(testDevice->deviceInfo());
 
     const int numElements = h_rVecInput.size();
 
