@@ -77,3 +77,11 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed detection of external TinyXML-2
+"""""""""""""""""""""""""""""""""""""
+
+Updated the code to properly detect the presence and the version of external
+TinyXML-2 (only relevant if ``-DGMX_EXTERNAL_TINYXML2=ON`` is used).
+
+:issue:`4477`
+
