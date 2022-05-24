@@ -69,7 +69,7 @@
  * \param[in] pmeSize              Local PME grid size
  *
  */
-static __global__ void pmeGpuPackHaloExternal(float* __restrict__ gm_realGrid,
+static __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realGrid,
                                               float* __restrict__ gm_transferGridUp,
                                               float* __restrict__ gm_transferGridDown,
                                               float* __restrict__ gm_transferGridLeft,
@@ -180,14 +180,14 @@ static __global__ void pmeGpuPackHaloExternal(float* __restrict__ gm_realGrid,
  * \param[in] pmeSize              Local PME grid size
  */
 static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
-                                                float* __restrict__ gm_transferGridUp,
-                                                float* __restrict__ gm_transferGridDown,
-                                                float* __restrict__ gm_transferGridLeft,
-                                                float* __restrict__ gm_transferGridRight,
-                                                float* __restrict__ gm_transferGridUpLeft,
-                                                float* __restrict__ gm_transferGridDownLeft,
-                                                float* __restrict__ gm_transferGridUpRight,
-                                                float* __restrict__ gm_transferGridDownRight,
+                                                const float* __restrict__ gm_transferGridUp,
+                                                const float* __restrict__ gm_transferGridDown,
+                                                const float* __restrict__ gm_transferGridLeft,
+                                                const float* __restrict__ gm_transferGridRight,
+                                                const float* __restrict__ gm_transferGridUpLeft,
+                                                const float* __restrict__ gm_transferGridDownLeft,
+                                                const float* __restrict__ gm_transferGridUpRight,
+                                                const float* __restrict__ gm_transferGridDownRight,
                                                 int  overlapSizeUp,
                                                 int  overlapSizeDown,
                                                 int  overlapSizeLeft,
@@ -291,14 +291,14 @@ static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
  */
 
 static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
-                                                      float* __restrict__ gm_transferGridUp,
-                                                      float* __restrict__ gm_transferGridDown,
-                                                      float* __restrict__ gm_transferGridLeft,
-                                                      float* __restrict__ gm_transferGridRight,
-                                                      float* __restrict__ gm_transferGridUpLeft,
-                                                      float* __restrict__ gm_transferGridDownLeft,
-                                                      float* __restrict__ gm_transferGridUpRight,
-                                                      float* __restrict__ gm_transferGridDownRight,
+                                                      const float* __restrict__ gm_transferGridUp,
+                                                      const float* __restrict__ gm_transferGridDown,
+                                                      const float* __restrict__ gm_transferGridLeft,
+                                                      const float* __restrict__ gm_transferGridRight,
+                                                      const float* __restrict__ gm_transferGridUpLeft,
+                                                      const float* __restrict__ gm_transferGridDownLeft,
+                                                      const float* __restrict__ gm_transferGridUpRight,
+                                                      const float* __restrict__ gm_transferGridDownRight,
                                                       int  overlapSizeX,
                                                       int  overlapSizeY,
                                                       int  overlapUp,
@@ -391,7 +391,7 @@ static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_rea
  * \param[in] myGrid*              local domain size in X and Y dimension
  * \param[in] pmeSize              Local PME grid size
  */
-static __global__ void pmeGpuPackHaloInternal(float* __restrict__ gm_realGrid,
+static __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realGrid,
                                               float* __restrict__ gm_transferGridUp,
                                               float* __restrict__ gm_transferGridDown,
                                               float* __restrict__ gm_transferGridLeft,
