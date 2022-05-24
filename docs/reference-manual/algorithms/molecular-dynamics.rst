@@ -1207,7 +1207,7 @@ velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein (MTTK)
 implementation of pressure control \ :ref:`35 <refMartyna1996>`.
 Parrinello-Rahman and Berendsen can be combined with any of the
 temperature coupling methods above. MTTK can only be used with
-Nosé-Hoover temperature control. From 5.1 afterwards, it can only used
+Nosé-Hoover temperature control. From version 5.1 onwards, it can only used
 when the system does not have constraints.
 
 Berendsen pressure coupling
@@ -1281,7 +1281,7 @@ the constraint algorithms.
 It is important to note that although the
 Berendsen pressure control algorithm yields a simulation with the
 correct average pressure, it does not yield the exact NPT ensemble, and
-it is not yet clear exactly what errors this approximation may yield.
+does not compute the correct fluctuations in pressure or volume.
 We strongly advise against using it for new simulations. The only
 useful role it has had recently is to ensure fast relaxation without
 oscillations, e.g. at the start of a simulation for from equilibrium,
@@ -1348,26 +1348,22 @@ More detailed explanations can be found in the original reference \ :ref:`184 <r
 Parrinello-Rahman pressure coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In cases where the fluctuations in pressure or volume are important *per
-se* (*e.g.* to calculate thermodynamic properties), especially for small
-systems, it may be a problem that the exact ensemble is not well defined
-for the weak-coupling scheme, and that it does not simulate the true NPT
-ensemble.
-
 |Gromacs| also supports constant-pressure simulations using the
 Parrinello-Rahman approach \ :ref:`38 <refParrinello81>`,
 :ref:`39 <refNose83>`, which is similar to the Nosé-Hoover temperature
 coupling, and in theory gives the true NPT ensemble. With the
 Parrinello-Rahman barostat, the box vectors as represented by the matrix
-obey the matrix equation of motion [2]_
+:math:`\mathbf{b}` obey the matrix equation of motion [2]_
 
 .. math:: \frac{{\mbox{d}}\mathbf{b}^2}{{\mbox{d}}t^2}= V \mathbf{W}^{-1} \mathbf{b}'^{-1} \left( \mathbf{P} - \mathbf{P}_{ref}\right).
           :label: eqnPRpressure
 
 The volume of the box is denoted :math:`V`, and
 :math:`\mathbf{W}` is a matrix parameter that determines
-the strength of the coupling. The matrices and :math:`_{ref}` are the
+the strength of the coupling (see below).
+The matrices :math:`\mathbf{P}` and :math:`\mathbf{P}_{ref}` are the
 current and reference pressures, respectively.
+The prime notation denotes transposition of the matrix.
 
 The equations of motion for the particles are also changed, just as for
 the Nosé-Hoover coupling. In most cases you would combine the
@@ -1379,19 +1375,20 @@ modified Hamiltonian, which will be conserved, is:
           \sum_{i,j} \frac{1}{2} W_{ij}  \left( \frac{{\mbox{d}}b_{ij}}{{\mbox{d}}t} \right)^2
           :label: eqnPRpressureconserved
 
-The equations of motion for the atoms, obtained from the Hamiltonian
+The equations of motion for the atoms obtained from the Hamiltonian
 are:
 
 .. math:: \begin{aligned}
-          \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} & = & \frac{\mathbf{F}_i}{m_i} -
-          \mathbf{M} \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} , \\ \mathbf{M} & = & \mathbf{b}^{-1} \left[
+          \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} & = \frac{\mathbf{F}_i}{m_i} -
+          \mathbf{M} \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} , \\
+          \mathbf{M} & = \mathbf{b}^{-1} \left[
           \mathbf{b} \frac{{\mbox{d}}\mathbf{b}'}{{\mbox{d}}t} + \frac{{\mbox{d}}\mathbf{b}}{{\mbox{d}}t} \mathbf{b}'
           \right] \mathbf{b}'^{-1}.
           \end{aligned}
           :label: eqnPRpressuremotion
 
 This extra term has the appearance of a friction, but it should be
-noted that it is ficticious, and rather an effect of the
+noted that it is fictitious, and rather an effect of the
 Parrinello-Rahman equations of motion being defined with all particle
 coordinates represented relative to the box vectors, while |Gromacs| uses
 normal Cartesian coordinates for positions, velocities and forces. It is
@@ -1401,13 +1398,12 @@ e.g. for external constant stress, but for now we only support coupling
 to constant external pressures, and for any normal simulation the
 velocities of box vectors should be extremely small compared to particle
 velocities. Gang Liu has done some work on deriving this for Cartesian
-coordinates\ :ref:`40 <refLiu2015>` that we will try to implement at some
-point in the future together with support for external stress.
+coordinates :ref:`40 <refLiu2015>` but it is not implemented in |Gromacs|.
 
 The (inverse) mass parameter matrix
 :math:`\mathbf{W}^{-1}` determines the strength of the
 coupling, and how the box can be deformed. The box restriction
-(:eq:`%s <eqnboxrot>`) will be fulfilled automatically if the corresponding
+:eq:`%s <eqnboxrot>` will be fulfilled automatically if the corresponding
 elements of :math:`\mathbf{W}^{-1}` are zero. Since the
 coupling strength also depends on the size of your box, we prefer to
 calculate it automatically in |Gromacs|. You only have to provide the
@@ -1426,13 +1422,14 @@ you will need to use a 4–5 times larger time constant with
 Parrinello-Rahman coupling. If your pressure is very far from
 equilibrium, the Parrinello-Rahman coupling may result in very large box
 oscillations that could even crash your run. In that case you would have
-to increase the time constant, or (better) use the weak-coupling scheme
+to increase the time constant, or (better) use the weak-coupling or
+stochastic cell rescaling schemes
 to reach the target pressure, and then switch to Parrinello-Rahman
 coupling once the system is in equilibrium. Additionally, using the
 leap-frog algorithm, the pressure at time :math:`t` is not available
 until after the time step has completed, and so the pressure from the
 previous step must be used, which makes the algorithm not directly
-reversible, and may not be appropriate for high precision thermodynamic
+reversible, and may not be appropriate for high-precision thermodynamic
 calculations.
 
 Surface-tension coupling
