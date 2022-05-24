@@ -230,6 +230,16 @@ if(GMX_SYCL_HIPSYCL)
         set(FIND_ROCFFT_QUIETLY "QUIET")
     endif()
 else()
+    if(WIN32)
+        if(CMAKE_VERSION VERSION_LESS "3.23.0")
+            message(FATAL_ERROR "SYCL with DPC++ on Windows requires cmake 3.23 or later.")
+        endif()
+        if(NOT BUILD_SHARED_LIBS)
+            message(FATAL_ERROR "SYCL with DPC++ on Windows doesn't work with static libraries. Set BUILD_SHARED_LIBS=on.")
+            # Tested up to 3.23.1 and icx 2022.1. Problem is order of exe link argument order. Works if gromacs.lib
+            # and -fsycl both appear before -link. Not possible to change order from cmake script. cmake fix is WIP.
+        endif()
+    endif()
     if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
         # At least Intel dpcpp defaults to having SYCL enabled for all code. This leads to two problems:
         #
@@ -277,7 +287,7 @@ else()
              sycl::queue q(sycl::default_selector{});
              return 0;
          }
-         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-ffast-math -fsycl -fsycl-device-code-split=per_kernel ${SYCL_CXX_FLAGS_EXTRA}")
+         " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS " -fsycl -fsycl-device-code-split=per_kernel ${SYCL_CXX_FLAGS_EXTRA}")
     
     string(STRIP "${SYCL_CXX_FLAGS}" SYCL_CXX_FLAGS)
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
@@ -291,9 +301,16 @@ else()
         message(FATAL_ERROR "Cannot compile with SYCL Intel compiler. Try a different compiler or disable SYCL.")
     endif()
 
+    if(NOT WIN32)
+         set(SYCL_CXX_FLAGS "${SYCL_CXX_FLAGS} -ffast-math")
+    endif()
+
     include(gmxManageFFTLibraries)
     if(NOT GMX_FFT_MKL)
         message(WARNING "Building SYCL version with ${GMX_FFT_LIBRARY} instead of MKL. GPU FFT is disabled!")
+    endif()
+    if(WIN32 AND GMX_FFT_MKL)
+        list(APPEND GMX_EXTRA_LIBRARIES "opencl")
     endif()
 
     # Add function wrapper similar to the one used by ComputeCPP and hipSYCL
