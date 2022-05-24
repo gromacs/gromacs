@@ -60,6 +60,17 @@ With energy minimization, the error/warning about pair distances
 beyond/close to the cut-off has been changed to a warning/note,
 as energy minimization might fix such issues.
 
+:issue:`4480`
+
+Fixed missing cmap torsion correction for periodic pepdites
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using pdb2gmx with periodic peptides and the CHARMM27
+force field, the CMAP correction across the periodic boundary
+was missing (but not the torsion itself). Reprocess your
+PDB file with pdb2gmx from version 2022.2 or later to get a
+correct topology, or add it manually to the topology.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
