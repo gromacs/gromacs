@@ -102,7 +102,7 @@ public:
 
 protected:
     //! Allocate and assign complexGrid
-    void allocateComplexGrid(ivec                 complexGridSizePadded,
+    void allocateComplexGrid(const ivec           complexGridSizePadded,
                              DeviceBuffer<float>* realGrid,
                              DeviceBuffer<float>* complexGrid,
                              const DeviceContext& context);

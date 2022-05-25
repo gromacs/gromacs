@@ -823,7 +823,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
             gridSizesInYForEachRank[i] = pmeGpu->common->s2g0Y[i + 1] - pmeGpu->common->s2g0Y[i];
         }
 
-        const bool allocateGrid = pmeGpu->settings.useDecomposition ? true : false;
+        const bool allocateRealGrid = pmeGpu->settings.useDecomposition;
 
 #if GMX_GPU_CUDA
         const gmx::FftBackend backend = pmeGpu->settings.useDecomposition ? gmx::FftBackend::HeFFTe_CUDA
@@ -849,8 +849,9 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
             const bool useDecomposition = pmeGpu->settings.useDecomposition;
 
             // grid needs to be alloacted only with decomposition
-            GMX_RELEASE_ASSERT(allocateGrid == useDecomposition,
-                               "Separate FFT grid needs to be allocated only with decomposition");
+            GMX_RELEASE_ASSERT(
+                    allocateRealGrid == useDecomposition,
+                    "Separate FFT real grid needs to be allocated only with decomposition");
 
             if (!useDecomposition)
             {
@@ -866,7 +867,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 
             pmeGpu->archSpecific->fftSetup.push_back(std::make_unique<gmx::Gpu3dFft>(
                     backend,
-                    allocateGrid,
+                    allocateRealGrid,
                     comm,
                     gridSizesInXForEachRank,
                     gridSizesInYForEachRank,
