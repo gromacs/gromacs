@@ -101,6 +101,8 @@ if (GMX_MPI)
 
     gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
-    set_tests_properties(GmxapiMpiTests PROPERTIES
-                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    if (TEST GmxapiMpiTests)
+        set_tests_properties(GmxapiMpiTests PROPERTIES
+                             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    endif ()
 endif ()
