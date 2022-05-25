@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "decidesimulationworkload.h"
+#include "gromacs/taskassignment/decidesimulationworkload.h"
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/mdtypes/multipletimestepping.h"

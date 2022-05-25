@@ -48,7 +48,7 @@
  */
 #include "gmxpre.h"
 
-#include "taskassignment.h"
+#include "gromacs/taskassignment/taskassignment.h"
 
 #include "config.h"
 

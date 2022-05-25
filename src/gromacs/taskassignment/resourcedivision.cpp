@@ -41,7 +41,7 @@
 
 #include "gmxpre.h"
 
-#include "resourcedivision.h"
+#include "gromacs/taskassignment/resourcedivision.h"
 
 #include "config.h"
 

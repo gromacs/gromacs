@@ -40,7 +40,7 @@
 
 #include "gmxpre.h"
 
-#include "decidegpuusage.h"
+#include "gromacs/taskassignment/decidegpuusage.h"
 
 #include "config.h"
 
