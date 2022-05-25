@@ -64,21 +64,35 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* /*pmeGpu*/)
 
 template<bool forward>
 void convertPmeGridToFftGrid(const PmeGpu* /*pmeGpu*/,
-                             float* /*h_grid*/,
+                             float* /*h_fftRealGrid*/,
                              gmx_parallel_3dfft_t* /*fftSetup*/,
                              const int /*gridIndex*/)
 {
     GMX_THROW(gmx::NotImplementedError("PME decomposition is not implemented in Sycl"));
 }
 
+template<bool forward>
+void convertPmeGridToFftGrid(const PmeGpu* /*pmeGpu*/, DeviceBuffer<float>* /*d_fftRealGrid*/, const int /*gridIndex*/)
+{
+    GMX_THROW(gmx::NotImplementedError("PME decomposition is not implemented in Sycl"));
+}
+
 template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,
-                                            float* /*h_grid*/,
+                                            float* /*h_fftRealGrid*/,
                                             gmx_parallel_3dfft_t* /*fftSetup*/,
                                             const int /*gridIndex*/);
 
 template void convertPmeGridToFftGrid<false>(const PmeGpu* /*pmeGpu*/,
-                                             float* /*h_grid*/,
+                                             float* /*h_fftRealGrid*/,
                                              gmx_parallel_3dfft_t* /*fftSetup*/,
+                                             const int /*gridIndex*/);
+
+template void convertPmeGridToFftGrid<true>(const PmeGpu* /*pmeGpu*/,
+                                            DeviceBuffer<float>* /*d_fftRealGrid*/,
+                                            const int /*gridIndex*/);
+
+template void convertPmeGridToFftGrid<false>(const PmeGpu* /*pmeGpu*/,
+                                             DeviceBuffer<float>* /*d_fftRealGrid*/,
                                              const int /*gridIndex*/);
 
 #if defined(__clang__)

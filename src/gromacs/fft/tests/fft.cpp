@@ -528,12 +528,8 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 #    endif
 
         SCOPED_TRACE("Allocating the device buffers");
-        DeviceBuffer<float> realGrid, complexGrid;
+        DeviceBuffer<float> realGrid, complexGrid = nullptr;
         allocateDeviceBuffer(&realGrid, in_.size(), deviceContext);
-        if (sc_performOutOfPlaceFFT)
-        {
-            allocateDeviceBuffer(&complexGrid, complexGridValues.size(), deviceContext);
-        }
 
         MPI_Comm           comm                    = MPI_COMM_NULL;
         const bool         allocateGrid            = false;
@@ -611,10 +607,6 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 
         SCOPED_TRACE("Cleaning up");
         freeDeviceBuffer(&realGrid);
-        if (sc_performOutOfPlaceFFT)
-        {
-            freeDeviceBuffer(&complexGrid);
-        }
     }
 }
 

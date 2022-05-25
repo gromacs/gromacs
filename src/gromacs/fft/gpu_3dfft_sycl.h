@@ -64,7 +64,7 @@ class Gpu3dFft::ImplSycl : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplSycl(bool                 allocateGrids,
+    ImplSycl(bool                 allocateRealGrid,
              MPI_Comm             comm,
              ArrayRef<const int>  gridSizesInXForEachRank,
              ArrayRef<const int>  gridSizesInYForEachRank,

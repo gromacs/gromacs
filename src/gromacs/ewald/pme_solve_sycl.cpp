@@ -440,7 +440,7 @@ sycl::event PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subG
                 gridParams_->d_splineModuli[gridIndex],
                 solveKernelParams_,
                 constParams_->d_virialAndEnergy[gridIndex],
-                gridParams_->d_fourierGrid[gridIndex]);
+                gridParams_->d_fftComplexGrid[gridIndex]);
         cgh.parallel_for<KernelNameType>(range, kernel);
     });
 

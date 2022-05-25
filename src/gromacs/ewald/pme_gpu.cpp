@@ -255,8 +255,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
             /* solve in k-space for our local cells */
             if (settings.performGPUSolve)
             {
-                const auto gridOrdering =
-                        settings.useDecomposition ? GridOrdering::YZX : GridOrdering::XYZ;
+                const auto gridOrdering = GridOrdering::XYZ;
                 wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpu);
                 wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuPme);
                 pme_gpu_solve(pmeGpu, gridIndex, cfftgrid, gridOrdering, computeEnergyAndVirial);

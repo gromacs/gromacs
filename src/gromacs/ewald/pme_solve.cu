@@ -87,20 +87,23 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     const float* __restrict__ gm_splineValueMinor = kernelParams.grid.d_splineModuli[gridIndex]
                                                     + kernelParams.grid.splineValuesOffset[minorDim];
     float* __restrict__ gm_virialAndEnergy = kernelParams.constants.d_virialAndEnergy[gridIndex];
-    float2* __restrict__ gm_grid = reinterpret_cast<float2*>(kernelParams.grid.d_fourierGrid[gridIndex]);
+    float2* __restrict__ gm_grid =
+            reinterpret_cast<float2*>(kernelParams.grid.d_fftComplexGrid[gridIndex]);
 
     /* Various grid sizes and indices */
-    const int localOffsetMinor = 0, localOffsetMajor = 0, localOffsetMiddle = 0; // unused
-    const int localSizeMinor   = kernelParams.grid.complexGridSizePadded[minorDim];
-    const int localSizeMiddle  = kernelParams.grid.complexGridSizePadded[middleDim];
-    const int localCountMiddle = kernelParams.grid.complexGridSize[middleDim];
-    const int localCountMinor  = kernelParams.grid.complexGridSize[minorDim];
-    const int nMajor           = kernelParams.grid.realGridSize[majorDim];
-    const int nMiddle          = kernelParams.grid.realGridSize[middleDim];
-    const int nMinor           = kernelParams.grid.realGridSize[minorDim];
-    const int maxkMajor        = (nMajor + 1) / 2;  // X or Y
-    const int maxkMiddle       = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
-    const int maxkMinor        = (nMinor + 1) / 2;  // Z or X => only check for YZX
+    const int localOffsetMinor  = kernelParams.grid.kOffsets[minorDim];
+    const int localOffsetMiddle = kernelParams.grid.kOffsets[middleDim];
+    const int localOffsetMajor  = kernelParams.grid.kOffsets[majorDim];
+    const int localSizeMinor    = kernelParams.grid.localComplexGridSizePadded[minorDim];
+    const int localSizeMiddle   = kernelParams.grid.localComplexGridSizePadded[middleDim];
+    const int localCountMiddle  = kernelParams.grid.localComplexGridSize[middleDim];
+    const int localCountMinor   = kernelParams.grid.localComplexGridSize[minorDim];
+    const int nMajor            = kernelParams.grid.realGridSize[majorDim];
+    const int nMiddle           = kernelParams.grid.realGridSize[middleDim];
+    const int nMinor            = kernelParams.grid.realGridSize[minorDim];
+    const int maxkMajor         = (nMajor + 1) / 2;  // X or Y
+    const int maxkMiddle        = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
+    const int maxkMinor         = (nMinor + 1) / 2;  // Z or X => only check for YZX
 
     /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
      * Each block handles up to c_solveMaxThreadsPerBlock cells -
@@ -126,7 +129,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     float viryz  = 0.0F;
     float virzz  = 0.0F;
 
-    assert(indexMajor < kernelParams.grid.complexGridSize[majorDim]);
+    assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
     if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
         & (gridLineIndex < gridLinesPerBlock))
     {

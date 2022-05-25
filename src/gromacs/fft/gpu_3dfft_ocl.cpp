@@ -51,6 +51,7 @@
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -68,7 +69,7 @@ static void handleClfftError(clfftStatus status, const char* msg)
     }
 }
 
-Gpu3dFft::ImplOcl::ImplOcl(bool allocateGrids,
+Gpu3dFft::ImplOcl::ImplOcl(bool allocateRealGrid,
                            MPI_Comm /*comm*/,
                            ArrayRef<const int> gridSizesInXForEachRank,
                            ArrayRef<const int> gridSizesInYForEachRank,
@@ -81,11 +82,13 @@ Gpu3dFft::ImplOcl::ImplOcl(bool allocateGrids,
                            ivec                 complexGridSizePadded,
                            DeviceBuffer<float>* realGrid,
                            DeviceBuffer<float>* complexGrid) :
-    realGrid_(*realGrid), complexGrid_(*complexGrid)
+    Gpu3dFft::Impl::Impl(performOutOfPlaceFFT), realGrid_(*realGrid)
 {
-    GMX_RELEASE_ASSERT(allocateGrids == false, "Grids needs to be pre-allocated");
+    GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with OpenCL backend");
+
+    allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
 
     cl_context clContext = context.context();
     commandStreams_.push_back(pmeStream.stream());
@@ -142,6 +145,8 @@ Gpu3dFft::ImplOcl::ImplOcl(bool allocateGrids,
 
 Gpu3dFft::ImplOcl::~ImplOcl()
 {
+    deallocateComplexGrid();
+
     clfftDestroyPlan(&planR2C_);
     clfftDestroyPlan(&planC2R_);
 }
@@ -154,6 +159,7 @@ void Gpu3dFft::ImplOcl::perform3dFft(gmx_fft_direction dir, CommandEvent* timing
     clfftPlanHandle plan;
     clfftDirection  direction;
     cl_mem *        inputGrids, *outputGrids;
+    cl_mem          complexGrid = complexGrid_;
 
     switch (dir)
     {
@@ -161,12 +167,12 @@ void Gpu3dFft::ImplOcl::perform3dFft(gmx_fft_direction dir, CommandEvent* timing
             plan        = planR2C_;
             direction   = CLFFT_FORWARD;
             inputGrids  = &realGrid_;
-            outputGrids = &complexGrid_;
+            outputGrids = &complexGrid;
             break;
         case GMX_FFT_COMPLEX_TO_REAL:
             plan        = planC2R_;
             direction   = CLFFT_BACKWARD;
-            inputGrids  = &complexGrid_;
+            inputGrids  = &complexGrid;
             outputGrids = &realGrid_;
             break;
         default:

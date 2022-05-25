@@ -247,7 +247,7 @@
 #cmakedefine01 MPI_SUPPORTS_CUDA_AWARE_DETECTION
 
 /* Define if HeFFTe library found */
-#cmakedefine01 Heffte_FOUND
+#cmakedefine01 HAVE_Heffte
 
 /* Cluster size used by nonbonded kernel. Should be 8 for NVIDIA/AMD and 4 for Intel */
 #define GMX_GPU_NB_CLUSTER_SIZE @GMX_GPU_NB_CLUSTER_SIZE@

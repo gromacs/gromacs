@@ -60,7 +60,7 @@
 #    endif
 #endif
 
-#if Heffte_FOUND
+#if HAVE_Heffte
 #    include "gpu_3dfft_heffte.h"
 #endif
 
@@ -76,10 +76,8 @@ namespace gmx
 #    pragma clang diagnostic ignored "-Wmissing-noreturn"
 #endif
 
-#if (GMX_GPU_CUDA || GMX_GPU_OPENCL || GMX_GPU_SYCL)
-
 Gpu3dFft::Gpu3dFft(FftBackend           backend,
-                   bool                 allocateGrids,
+                   bool                 allocateRealGrid,
                    MPI_Comm             comm,
                    ArrayRef<const int>  gridSizesInXForEachRank,
                    ArrayRef<const int>  gridSizesInYForEachRank,
@@ -93,11 +91,11 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                    DeviceBuffer<float>* realGrid,
                    DeviceBuffer<float>* complexGrid)
 {
-#    if GMX_GPU_CUDA
+#if GMX_GPU_CUDA
     switch (backend)
     {
         case FftBackend::Cufft:
-            impl_ = std::make_unique<Gpu3dFft::ImplCuFft>(allocateGrids,
+            impl_ = std::make_unique<Gpu3dFft::ImplCuFft>(allocateRealGrid,
                                                           comm,
                                                           gridSizesInXForEachRank,
                                                           gridSizesInYForEachRank,
@@ -115,11 +113,11 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
             GMX_RELEASE_ASSERT(backend == FftBackend::HeFFTe_CUDA,
                                "Unsupported FFT backend requested");
     }
-#    elif GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL
     switch (backend)
     {
         case FftBackend::Ocl:
-            impl_ = std::make_unique<Gpu3dFft::ImplOcl>(allocateGrids,
+            impl_ = std::make_unique<Gpu3dFft::ImplOcl>(allocateRealGrid,
                                                         comm,
                                                         gridSizesInXForEachRank,
                                                         gridSizesInYForEachRank,
@@ -135,12 +133,12 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
             break;
         default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
     }
-#    elif GMX_GPU_SYCL
+#elif GMX_GPU_SYCL
     switch (backend)
     {
-#        if GMX_SYCL_DPCPP && GMX_FFT_MKL
+#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
         case FftBackend::SyclMkl:
-            impl_ = std::make_unique<Gpu3dFft::ImplSyclMkl>(allocateGrids,
+            impl_ = std::make_unique<Gpu3dFft::ImplSyclMkl>(allocateRealGrid,
                                                             comm,
                                                             gridSizesInXForEachRank,
                                                             gridSizesInYForEachRank,
@@ -154,10 +152,10 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                             realGrid,
                                                             complexGrid);
             break;
-#        endif
-#        if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
+#    endif
+#    if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
         case FftBackend::SyclRocfft:
-            impl_ = std::make_unique<Gpu3dFft::ImplSyclRocfft>(allocateGrids,
+            impl_ = std::make_unique<Gpu3dFft::ImplSyclRocfft>(allocateRealGrid,
                                                                comm,
                                                                gridSizesInXForEachRank,
                                                                gridSizesInYForEachRank,
@@ -171,9 +169,9 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                                realGrid,
                                                                complexGrid);
             break;
-#        endif
+#    endif
         case FftBackend::Sycl:
-            impl_ = std::make_unique<Gpu3dFft::ImplSycl>(allocateGrids,
+            impl_ = std::make_unique<Gpu3dFft::ImplSycl>(allocateRealGrid,
                                                          comm,
                                                          gridSizesInXForEachRank,
                                                          gridSizesInYForEachRank,
@@ -189,9 +187,9 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
             break;
         default: GMX_THROW(InternalError("Unsupported FFT backend requested"));
     }
-#    endif
+#endif
 
-#    if Heffte_FOUND
+#if HAVE_Heffte
     switch (backend)
     {
         case FftBackend::HeFFTe_CUDA:
@@ -201,7 +199,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
             GMX_RELEASE_ASSERT(heffte::backend::is_enabled<heffte::backend::cufft>::value,
                                "HeFFTe not compiled with CUDA support");
             impl_ = std::make_unique<Gpu3dFft::ImplHeFfte<heffte::backend::cufft>>(
-                    allocateGrids,
+                    allocateRealGrid,
                     comm,
                     gridSizesInXForEachRank,
                     gridSizesInYForEachRank,
@@ -218,30 +216,8 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
             break;
         default: GMX_RELEASE_ASSERT(impl_ != nullptr, "Unsupported FFT backend requested");
     }
-#    endif
-}
-
-#else
-
-Gpu3dFft::Gpu3dFft(FftBackend /*backend */,
-                   bool /*allocateGrids*/,
-                   MPI_Comm /*comm*/,
-                   ArrayRef<const int> /*gridSizesInXForEachRank*/,
-                   ArrayRef<const int> /*gridSizesInYForEachRank*/,
-                   const int /*nz*/,
-                   bool /*performOutOfPlaceFFT*/,
-                   const DeviceContext& /*context*/,
-                   const DeviceStream& /*pmeStream*/,
-                   ivec /*realGridSize*/,
-                   ivec /*realGridSizePadded*/,
-                   ivec /*complexGridSizePadded*/,
-                   DeviceBuffer<float>* /*realGrid*/,
-                   DeviceBuffer<float>* /*complexGrid*/)
-{
-    GMX_THROW(InternalError("Cannot run GPU routines in a CPU-only configuration"));
-}
-
 #endif
+}
 
 Gpu3dFft::~Gpu3dFft() = default;
 

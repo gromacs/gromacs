@@ -67,7 +67,7 @@ class Gpu3dFft::ImplOcl : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplOcl(bool                 allocateGrids,
+    ImplOcl(bool                 allocateRealGrid,
             MPI_Comm             comm,
             ArrayRef<const int>  gridSizesInXForEachRank,
             ArrayRef<const int>  gridSizesInYForEachRank,
@@ -92,7 +92,6 @@ private:
     clfftPlanHandle               planC2R_;
     std::vector<cl_command_queue> commandStreams_;
     cl_mem                        realGrid_;
-    cl_mem                        complexGrid_;
 };
 
 } // namespace gmx

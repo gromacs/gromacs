@@ -67,7 +67,7 @@ class Gpu3dFft::ImplHeFfte : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplHeFfte(bool                 allocateGrids,
+    ImplHeFfte(bool                 allocateRealGrid,
                MPI_Comm             comm,
                ArrayRef<const int>  gridSizesInXForEachRank,
                ArrayRef<const int>  gridSizesInYForEachRank,

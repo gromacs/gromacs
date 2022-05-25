@@ -127,16 +127,24 @@ struct PmeGpuGridParams
     /*! \brief Fourier grid dimensions (padded). This counts the complex numbers! */
     int complexGridSizePadded[DIM];
 
+    /*! \brief Local Fourier grid dimensions. This counts the complex numbers! */
+    int localComplexGridSize[DIM];
+    /*! \brief Local Fourier grid dimensions (padded). This counts the complex numbers! */
+    int localComplexGridSizePadded[DIM];
+
     /*! \brief Offsets for X/Y/Z components of d_splineModuli */
     int splineValuesOffset[DIM];
     /*! \brief Offsets for X/Y/Z components of d_fractShiftsTable and d_gridlineIndicesTable */
     int tablesOffsets[DIM];
 
+    /*! \brief Offsets for the complex grid in pme_solve */
+    int kOffsets[DIM];
+
     /* Grid arrays */
-    /*! \brief Real space grid. */
+    /*! \brief Real space PME grid. */
     HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<float>) d_realGrid[NUMFEPSTATES];
-    /*! \brief Complex grid - used in FFT/solve. If inplace cu/clFFT is used, then it is the same handle as realGrid. */
-    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<float>) d_fourierGrid[NUMFEPSTATES];
+    /*! \brief Complex grid - used in FFT/solve. If inplace cu/clFFT is used, then it is the same handle as fftRealGrid. */
+    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<float>) d_fftComplexGrid[NUMFEPSTATES];
 
     /*! \brief Grid spline values as in pme->bsp_mod
      * (laid out sequentially (XXX....XYYY......YZZZ.....Z))

@@ -67,7 +67,7 @@ class Gpu3dFft::ImplSyclMkl : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplSyclMkl(bool                 allocateGrids,
+    ImplSyclMkl(bool                 allocateRealGrid,
                 MPI_Comm             comm,
                 ArrayRef<const int>  gridSizesInXForEachRank,
                 ArrayRef<const int>  gridSizesInYForEachRank,
@@ -94,10 +94,8 @@ private:
 
 #if GMX_SYCL_USE_USM
     float* realGrid_;
-    float* complexGrid_;
 #else
     sycl::buffer<float, 1> realGrid_;
-    sycl::buffer<float, 1> complexGrid_;
 #endif
     sycl::queue queue_;
     Descriptor  r2cDescriptor_, c2rDescriptor_;

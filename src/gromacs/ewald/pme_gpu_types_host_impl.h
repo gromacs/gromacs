@@ -149,6 +149,13 @@ struct PmeGpuSpecific
     //! Indices of timingEvents actually used
     std::set<PmeStage> activeTimers;
 
+    /*! \brief Local FFT Real-space grid data dimensions. */
+    int localRealGridSize[DIM];
+    /*! \brief Local Real-space grid dimensions (padded). */
+    int localRealGridSizePadded[DIM];
+    /*! \brief real grid - used in FFT. If single PME rank is used, then it is the same handle as realGrid. */
+    DeviceBuffer<float> d_fftRealGrid[NUMFEPSTATES];
+
     /* GPU arrays element counts (not the arrays sizes in bytes!).
      * They might be larger than the actual meaningful data sizes.
      * These are paired: the actual element count + the maximum element count that can fit in the current allocated memory.
@@ -185,8 +192,6 @@ struct PmeGpuSpecific
     int realGridCapacity[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
     int complexGridSize[NUMFEPSTATES] = { 0, 0 };
-    /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
-    int complexGridCapacity[NUMFEPSTATES] = { 0, 0 };
 };
 
 /*! \internal \brief

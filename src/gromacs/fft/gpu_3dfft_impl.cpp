@@ -33,51 +33,57 @@
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for SYCL.
+ *  \brief Implements stub GPU 3D FFT routines for CPU-only builds
  *
- *  \author Andrey Alekseenko <al42and@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Gaurav Garg <gaugarg@nvidia.com>
  *  \ingroup module_fft
  */
 
 #include "gmxpre.h"
 
-#include "gpu_3dfft_sycl.h"
+#include "gpu_3dfft_impl.h"
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/exceptions.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
 
 namespace gmx
 {
 
-// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
+Gpu3dFft::Impl::Impl() : complexGrid_(nullptr) {}
 
-Gpu3dFft::ImplSycl::ImplSycl(bool /*allocateRealGrid*/,
-                             MPI_Comm /*comm*/,
-                             ArrayRef<const int> /*gridSizesInXForEachRank*/,
-                             ArrayRef<const int> /*gridSizesInYForEachRank*/,
-                             const int /*nz*/,
-                             bool /*performOutOfPlaceFFT*/,
-                             const DeviceContext& /*context*/,
-                             const DeviceStream& /*pmeStream*/,
-                             ivec /*realGridSize*/,
-                             ivec /*realGridSizePadded*/,
-                             ivec /*complexGridSizePadded*/,
-                             DeviceBuffer<float>* /*realGrid*/,
-                             DeviceBuffer<float>* /*complexGrid*/)
+Gpu3dFft::Impl::Impl(bool performOutOfPlaceFFT) :
+    performOutOfPlaceFFT_(performOutOfPlaceFFT), complexGrid_(nullptr)
 {
-    GMX_THROW(NotImplementedError("Using SYCL build without GPU 3DFFT support"));
 }
 
-Gpu3dFft::ImplSycl::~ImplSycl() = default;
-
-void Gpu3dFft::ImplSycl::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
+void Gpu3dFft::Impl::allocateComplexGrid(ivec                 complexGridSizePadded,
+                                         DeviceBuffer<float>* realGrid,
+                                         DeviceBuffer<float>* complexGrid,
+                                         const DeviceContext& context)
 {
-    GMX_THROW(NotImplementedError("Using SYCL build without GPU 3DFFT support"));
+    if (performOutOfPlaceFFT_)
+    {
+        const int newComplexGridSize =
+                complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ] * 2;
+
+        allocateDeviceBuffer(complexGrid, newComplexGridSize, context);
+    }
+    else
+    {
+        *complexGrid = *realGrid;
+    }
+
+    complexGrid_ = *complexGrid;
 }
 
-#pragma clang diagnostic pop
+void Gpu3dFft::Impl::deallocateComplexGrid()
+{
+    if (performOutOfPlaceFFT_)
+    {
+        freeDeviceBuffer(&complexGrid_);
+    }
+}
+
+Gpu3dFft::Impl::~Impl() = default;
 
 } // namespace gmx

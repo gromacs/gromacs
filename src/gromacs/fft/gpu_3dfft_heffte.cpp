@@ -51,7 +51,7 @@
 namespace gmx
 {
 template<typename backend_tag>
-Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
+Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateRealGrid,
                                               MPI_Comm            comm,
                                               ArrayRef<const int> gridSizesInXForEachRank,
                                               ArrayRef<const int> gridSizesInYForEachRank,
@@ -68,7 +68,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
     const int numDomainsX = gridSizesInXForEachRank.size();
     const int numDomainsY = gridSizesInYForEachRank.size();
 
-    GMX_RELEASE_ASSERT(allocateGrids == true, "Grids cannot be pre-allocated");
+    GMX_RELEASE_ASSERT(allocateRealGrid == true, "Grids cannot be pre-allocated");
     GMX_RELEASE_ASSERT(performOutOfPlaceFFT == true, "Only out-of-place FFT supported");
     GMX_RELEASE_ASSERT(numDomainsX * numDomainsY > 1,
                        "HeFFTe backend is expected to be used only with more than 1 rank");
@@ -107,40 +107,55 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                allocateGrids,
     const int nx = gridOffsetsInX[numDomainsX];
     const int ny = gridOffsetsInY[numDomainsY];
 
-    // define shape of local complex grid boxes
-    std::vector<int> gridOffsetsInY_transformed(numDomainsX + 1);
-    std::vector<int> gridOffsetsInZ_transformed(numDomainsY + 1);
-
-    for (int i = 0; i < numDomainsX; i++)
-    {
-        gridOffsetsInY_transformed[i] = (i * ny + 0) / numDomainsX;
-    }
-    gridOffsetsInY_transformed[numDomainsX] = ny;
-
     const int complexZDim = nz / 2 + 1;
-    for (int i = 0; i < numDomainsY; i++)
+
+    // if possible, keep complex data in slab decomposition along Z
+    // this allows heffte to have single communication phase
+    if (numDomainsY > 1 && complexZDim >= nProcs)
     {
-        gridOffsetsInZ_transformed[i] = (i * complexZDim + 0) / numDomainsY;
+        // define shape of local complex grid boxes
+        std::vector<int> gridOffsetsInZ_transformed(nProcs + 1);
+
+        for (int i = 0; i < nProcs; i++)
+        {
+            gridOffsetsInZ_transformed[i] = (i * complexZDim) / nProcs;
+        }
+        gridOffsetsInZ_transformed[nProcs] = complexZDim;
+
+        heffte::box3d<> const complexBox = { { gridOffsetsInZ_transformed[rank], 0, 0 },
+                                             { gridOffsetsInZ_transformed[rank + 1] - 1, ny - 1, nx - 1 } };
+
+        // Define 3D FFT plan
+        fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                pmeStream.stream(), realBox, complexBox, 0, comm, heffte::default_options<backend_tag>());
     }
-    gridOffsetsInZ_transformed[numDomainsY] = complexZDim;
+    else
+    {
+        // define shape of local complex grid boxes
+        std::vector<int> gridOffsetsInY_transformed(numDomainsX + 1);
+        std::vector<int> gridOffsetsInZ_transformed(numDomainsY + 1);
 
-    // output order - YZX
-    // this avoids reordering of data in final fft as final fft is done along x-dimension with
-    // x being contiguous, leave the data as is in YZX order and don't bring it back in XYZ
-    heffte::box3d<> const complexBox = {
-        { gridOffsetsInZ_transformed[procY], gridOffsetsInY_transformed[procX], 0 },
-        { gridOffsetsInZ_transformed[procY + 1] - 1, gridOffsetsInY_transformed[procX + 1] - 1, nx - 1 },
-        { 2, 0, 1 }
-    };
+        for (int i = 0; i < numDomainsX; i++)
+        {
+            gridOffsetsInY_transformed[i] = (i * ny + 0) / numDomainsX;
+        }
+        gridOffsetsInY_transformed[numDomainsX] = ny;
 
-    // ToDo: useReorder=true and reshape_algorithm::alltoallv gave me best results in past but, verify it once again
-    const bool useReorder = true;
-    const bool usePencils = true; // Not-used as GROMACS doesn't work with brick decomposition
-    heffte::plan_options options(useReorder, heffte::reshape_algorithm::alltoallv, usePencils);
+        for (int i = 0; i < numDomainsY; i++)
+        {
+            gridOffsetsInZ_transformed[i] = (i * complexZDim + 0) / numDomainsY;
+        }
+        gridOffsetsInZ_transformed[numDomainsY] = complexZDim;
 
-    // Define 3D FFT plan
-    fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-            pmeStream.stream(), realBox, complexBox, 0, comm, options);
+        heffte::box3d<> const complexBox = {
+            { gridOffsetsInZ_transformed[procY], gridOffsetsInY_transformed[procX], 0 },
+            { gridOffsetsInZ_transformed[procY + 1] - 1, gridOffsetsInY_transformed[procX + 1] - 1, nx - 1 }
+        };
+
+        // Define 3D FFT plan
+        fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                pmeStream.stream(), realBox, complexBox, 0, comm, heffte::default_options<backend_tag>());
+    }
 
     // allocate grid and workspace_
     localRealGrid_    = heffte::gpu::vector<float>(fftPlan_->size_inbox());

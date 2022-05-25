@@ -39,7 +39,6 @@ gmx_add_libgromacs_sources(
      fft.cpp
      fft5d.cpp
      parallel_3dfft.cpp
-     gpu_3dfft.cpp
      )
 
 if (GMX_FFT_FFTPACK)
@@ -53,7 +52,7 @@ endif()
 if (GMX_FFT_MKL)
     gmx_add_libgromacs_sources(fft_mkl.cpp)
 endif()
-if(Heffte_FOUND)
+if(HAVE_Heffte)
     gmx_add_libgromacs_sources(
         gpu_3dfft_heffte.cpp
         )
@@ -62,44 +61,55 @@ if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
         gpu_3dfft_cufft.cu
+        gpu_3dfft_impl.cpp
+        gpu_3dfft.cpp
         )
     _gmx_add_files_to_property(CUDA_SOURCES
         # Must add these files so they can include cuda_runtime.h
         gpu_3dfft.cpp
+        gpu_3dfft_impl.cpp
         )
 elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
         gpu_3dfft_ocl.cpp
+        gpu_3dfft_impl.cpp
+        gpu_3dfft.cpp
         )
 elseif (GMX_GPU_SYCL)
     if (NOT GMX_SYCL_HIPSYCL AND GMX_FFT_MKL)
             gmx_add_libgromacs_sources(
             gpu_3dfft_sycl_mkl.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
             )
         _gmx_add_files_to_property(SYCL_SOURCES
             gpu_3dfft_sycl_mkl.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
             )
     endif()
     if (GMX_SYCL_HIPSYCL AND GMX_HIPSYCL_HAVE_HIP_TARGET)
             gmx_add_libgromacs_sources(
             gpu_3dfft_sycl_rocfft.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
             )
         _gmx_add_files_to_property(SYCL_SOURCES
             gpu_3dfft_sycl_rocfft.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
             )
     endif()
     gmx_add_libgromacs_sources(
         gpu_3dfft_sycl.cpp
+        gpu_3dfft_impl.cpp
+        gpu_3dfft.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
         gpu_3dfft_sycl.cpp
         gpu_3dfft.cpp
-        )
-else()
-    gmx_add_libgromacs_sources(
-        # Stub sources for CPU-only build
-        gpu_3dfft.cpp
+        gpu_3dfft_impl.cpp
         )
 endif()
 

@@ -45,6 +45,7 @@
 #include "gpu_3dfft_cufft.h"
 
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -59,25 +60,26 @@ static void handleCufftError(cufftResult_t status, const char* msg)
     }
 }
 
-Gpu3dFft::ImplCuFft::ImplCuFft(bool allocateGrids,
+Gpu3dFft::ImplCuFft::ImplCuFft(bool allocateRealGrid,
                                MPI_Comm /*comm*/,
                                ArrayRef<const int> gridSizesInXForEachRank,
                                ArrayRef<const int> gridSizesInYForEachRank,
                                const int /*nz*/,
-                               bool /*performOutOfPlaceFFT*/,
-                               const DeviceContext& /*context*/,
+                               bool                 performOutOfPlaceFFT,
+                               const DeviceContext& context,
                                const DeviceStream&  pmeStream,
                                ivec                 realGridSize,
                                ivec                 realGridSizePadded,
                                ivec                 complexGridSizePadded,
                                DeviceBuffer<float>* realGrid,
                                DeviceBuffer<float>* complexGrid) :
-    realGrid_(reinterpret_cast<cufftReal*>(*realGrid)),
-    complexGrid_(reinterpret_cast<cufftComplex*>(*complexGrid))
+    Gpu3dFft::Impl::Impl(performOutOfPlaceFFT), realGrid_(reinterpret_cast<cufftReal*>(*realGrid))
 {
-    GMX_RELEASE_ASSERT(allocateGrids == false, "Grids needs to be pre-allocated");
+    GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with cuFFT backend");
+
+    allocateComplexGrid(complexGridSizePadded, realGrid, complexGrid, context);
 
     const int complexGridSizePaddedTotal =
             complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ];
@@ -136,6 +138,8 @@ Gpu3dFft::ImplCuFft::ImplCuFft(bool allocateGrids,
 
 Gpu3dFft::ImplCuFft::~ImplCuFft()
 {
+    deallocateComplexGrid();
+
     cufftResult_t result;
     result = cufftDestroy(planR2C_);
     handleCufftError(result, "cufftDestroy R2C failure");
@@ -148,12 +152,12 @@ void Gpu3dFft::ImplCuFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*ti
     cufftResult_t result;
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
-        result = cufftExecR2C(planR2C_, realGrid_, complexGrid_);
+        result = cufftExecR2C(planR2C_, realGrid_, reinterpret_cast<cufftComplex*>(complexGrid_));
         handleCufftError(result, "cuFFT R2C execution failure");
     }
     else
     {
-        result = cufftExecC2R(planC2R_, complexGrid_, realGrid_);
+        result = cufftExecC2R(planC2R_, reinterpret_cast<cufftComplex*>(complexGrid_), realGrid_);
         handleCufftError(result, "cuFFT C2R execution failure");
     }
 }

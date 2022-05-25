@@ -68,7 +68,7 @@ class Gpu3dFft::ImplCuFft : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplCuFft(bool                 allocateGrids,
+    ImplCuFft(bool                 allocateRealGrid,
               MPI_Comm             comm,
               ArrayRef<const int>  gridSizesInXForEachRank,
               ArrayRef<const int>  gridSizesInYForEachRank,
@@ -89,10 +89,9 @@ public:
     void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) override;
 
 private:
-    cufftHandle   planR2C_;
-    cufftHandle   planC2R_;
-    cufftReal*    realGrid_;
-    cufftComplex* complexGrid_;
+    cufftHandle planR2C_;
+    cufftHandle planC2R_;
+    cufftReal*  realGrid_;
 };
 
 } // namespace gmx
