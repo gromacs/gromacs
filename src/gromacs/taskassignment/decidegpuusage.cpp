@@ -785,10 +785,16 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
+    const bool buildSupportsDirectGpuComm = GMX_GPU_CUDA && GMX_MPI;
+    if (!buildSupportsDirectGpuComm)
+    {
+        return false;
+    }
+
     // Direct GPU communication is presently turned off due to insufficient testing
-    const bool gmx_unused enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
-                                                || (getenv("GMX_GPU_DD_COMMS") != nullptr)
-                                                || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
+    const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
+                                     || (getenv("GMX_GPU_DD_COMMS") != nullptr)
+                                     || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
 
     // Now check those flags that may cause, from the user perspective, an unexpected
     // fallback to CPU halo, and report accordingly
@@ -805,8 +811,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
 
     bool runUsesCompatibleFeatures = errorReasons.isEmpty();
 
-    bool runAndGpuSupportDirectGpuComm =
-            (runUsesCompatibleFeatures && enableDirectGpuComm && GMX_GPU_CUDA);
+    bool runAndGpuSupportDirectGpuComm = (runUsesCompatibleFeatures && enableDirectGpuComm);
 
     // Thread-MPI case on by default, can be disabled with env var.
     bool canUseDirectGpuCommWithThreadMpi = (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI);
