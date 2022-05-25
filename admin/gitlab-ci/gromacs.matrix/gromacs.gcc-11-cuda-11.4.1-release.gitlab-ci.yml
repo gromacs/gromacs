@@ -64,4 +64,3 @@ gromacs:gcc-11-cuda-11.4.1:release:test:
   needs:
     - job: gromacs:gcc-11-cuda-11.4.1:release:configure
     - job: gromacs:gcc-11-cuda-11.4.1:release:build
-

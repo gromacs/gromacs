@@ -1959,10 +1959,17 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
      * In most cases this is a large overestimate, because it assumes
      * non-interaction atoms.
      * We set the chance to 1 in a trillion steps.
+     * Note that any atom in the system should not have a too large
+     * displacement. Thus we use ChanceTarget::System. This means that
+     * the minimum cell size increases (slowly) with the sytem size.
      */
     constexpr real c_chanceThatAtomMovesBeyondDomain = 1e-12;
-    const real     limitForAtomDisplacement          = minCellSizeForAtomDisplacement(
-            mtop, ir, systemInfo.updateGroupingsPerMoleculeType, c_chanceThatAtomMovesBeyondDomain);
+    const real     limitForAtomDisplacement =
+            minCellSizeForAtomDisplacement(mtop,
+                                           ir,
+                                           systemInfo.updateGroupingsPerMoleculeType,
+                                           c_chanceThatAtomMovesBeyondDomain,
+                                           ChanceTarget::System);
     GMX_LOG(mdlog.info).appendTextFormatted("Minimum cell size due to atom displacement: %.3f nm", limitForAtomDisplacement);
 
     systemInfo.cellsizeLimit = std::max(systemInfo.cellsizeLimit, limitForAtomDisplacement);

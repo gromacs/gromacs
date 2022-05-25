@@ -85,7 +85,7 @@ std::string EnergyDriftTracker::energyDriftString(const std::string& partName) c
 
     if (timeInterval() > 0)
     {
-        mesg = formatString("Energy conservation over %s of length %g ns, time %g to %g ns\n",
+        mesg = formatString("Energy conservation over %s of length %g ps, time %g to %g ps\n",
                             partName.c_str(),
                             timeInterval(),
                             firstTime_,
@@ -95,7 +95,7 @@ std::string EnergyDriftTracker::energyDriftString(const std::string& partName) c
     else
     {
         mesg = formatString(
-                "Time interval for measuring conserved energy has length 0, time %g to %g\n",
+                "Time interval for measuring conserved energy has length 0, time %g to %g ps\n",
                 firstTime_,
                 lastTime_);
     }

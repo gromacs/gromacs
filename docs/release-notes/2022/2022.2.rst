@@ -16,8 +16,60 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect constraining in highly parallel runs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With domain decomposition, OpenMP and connected constraints (so not only
+bonds with hydrogens constrained), constraint correction could be applied
+when a domain would not have any constraints while it had constraints before.
+This is unlikely to have gone unnoticed in longer runs, as the chance is
+high that atoms would clash and the system would become unstable. But short
+runs might not crash and could therefore produce incorrect results. The correctness can
+be judged from the drift in the conserved energy quantity, which is reported
+at the end of the log file, and which will be one to two orders of magnitude
+larger than for a correct run.
+
+:issue:`4476`
+
+Fix missing PME mesh dV/dlambda with PME on GPU on a seperate PME rank
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When doing free-energy calculations with PME running on GPU on a separate
+PME rank, the dV/dlambda contribution for the PME mesh part was missing.
+The same contribution was missing from the foreign lambda energy differences.
+Note that the energies and forces were correct.
+
+:issues;`4474`
+Removed the (incorrect) output file size note/warning with mdrun -rerun
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4484`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Clarified pdb2gmx error message for undefined atom type in terminal database
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4481`
+
+Lower severity of grompp exclusion distance issues with energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With energy minimization, the error/warning about pair distances
+beyond/close to the cut-off has been changed to a warning/note,
+as energy minimization might fix such issues.
+
+:issue:`4480`
+
+Fixed missing cmap torsion correction for periodic pepdites
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using pdb2gmx with periodic peptides and the CHARMM27
+force field, the CMAP correction across the periodic boundary
+was missing (but not the torsion itself). Reprocess your
+PDB file with pdb2gmx from version 2022.2 or later to get a
+correct topology, or add it manually to the topology.
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

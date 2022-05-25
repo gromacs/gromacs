@@ -135,8 +135,10 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
     auto atomType = atype->atomTypeFromName(buf[i++]);
     if (atomType == std::nullopt)
     {
-        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
-                "Atomtype for atom name %s not found in terminal data base", buf[i - 1])));
+        GMX_THROW(gmx::InconsistentInputError(
+                gmx::formatString("Atom type %s specified in terminal database has not been "
+                                  "defined in the force field",
+                                  buf[i - 1])));
     }
     else
     {

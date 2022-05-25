@@ -1911,25 +1911,36 @@ int Mdrunner::mdrunner()
                                  : nullptr;
 
                 const t_inputrec* ir = inputrec.get();
-                pmedata              = gmx_pme_init(
-                        cr,
-                        getNumPmeDomains(cr->dd),
-                        ir,
-                        box,
-                        minCellSizeForAtomDisplacement(
-                                mtop, *ir, updateGroups.updateGroupingPerMoleculeType(), ir->ewald_rtol),
-                        nChargePerturbed != 0,
-                        nTypePerturbed != 0,
-                        mdrunOptions.reproducible,
-                        ewaldcoeff_q,
-                        ewaldcoeff_lj,
-                        gmx_omp_nthreads_get(ModuleMultiThread::Pme),
-                        pmeRunMode,
-                        nullptr,
-                        deviceContext,
-                        pmeStream,
-                        pmeGpuProgram.get(),
-                        mdlog);
+                /* For each atom we allow a relative (cut-off) error of up to ewald_rtol.
+                 * Thus we can also tolerate an error of an order of magnitude less due to
+                 * atoms being slightly outside the halo extent. This will only cause a fraction
+                 * of the charge to be missing on the grid. So we pass ewald_rtol as the allowed
+                 * chance per atom (ChanceTarget::Atom) to be outside the halo extent.
+                 */
+                const real haloExtentForAtomDisplacement =
+                        updateGroups.maxUpdateGroupRadius()
+                        + minCellSizeForAtomDisplacement(mtop,
+                                                         *ir,
+                                                         updateGroups.updateGroupingPerMoleculeType(),
+                                                         ir->ewald_rtol,
+                                                         ChanceTarget::Atom);
+                pmedata = gmx_pme_init(cr,
+                                       getNumPmeDomains(cr->dd),
+                                       ir,
+                                       box,
+                                       haloExtentForAtomDisplacement,
+                                       nChargePerturbed != 0,
+                                       nTypePerturbed != 0,
+                                       mdrunOptions.reproducible,
+                                       ewaldcoeff_q,
+                                       ewaldcoeff_lj,
+                                       gmx_omp_nthreads_get(ModuleMultiThread::Pme),
+                                       pmeRunMode,
+                                       nullptr,
+                                       deviceContext,
+                                       pmeStream,
+                                       pmeGpuProgram.get(),
+                                       mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }

@@ -1812,7 +1812,16 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
                 "%s, which is larger than the cut-off distance. This will "
                 "lead to missing long-range corrections in the forces and energies.",
                 distanceString.c_str());
-        warning_error(wi, text.c_str());
+        if (EI_ENERGY_MINIMIZATION(ir.eI))
+        {
+            text += " If you expect that minimization will bring such distances within the "
+                    "cut-off, you can ignore this warning.";
+            warning(wi, text.c_str());
+        }
+        else
+        {
+            warning_error(wi, text.c_str());
+        }
     }
     else if (maxExclusionDistance > 0.9_real * cutoffDistance)
     {
@@ -1821,7 +1830,14 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
                 "When excluded pairs go beyond the cut-off distance, this leads to missing "
                 "long-range corrections in the forces and energies.",
                 distanceString.c_str());
-        warning(wi, text.c_str());
+        if (EI_DYNAMICS(ir.eI))
+        {
+            warning(wi, text.c_str());
+        }
+        else
+        {
+            warning_note(wi, text.c_str());
+        }
     }
 }
 

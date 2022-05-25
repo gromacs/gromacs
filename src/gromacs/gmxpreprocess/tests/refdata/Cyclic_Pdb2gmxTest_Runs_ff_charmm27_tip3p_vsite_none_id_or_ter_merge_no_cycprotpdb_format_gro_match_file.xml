@@ -8319,6 +8319,7 @@ Protein_chain_A     3
   812   814   816   822   824     1
   822   824   826   841   843     1
   841   843   845   858   860     1
+  858   860   862   877     1     1
 
 ; Include Position restraint file
 #ifdef POSRES

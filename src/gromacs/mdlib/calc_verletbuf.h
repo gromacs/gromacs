@@ -76,6 +76,13 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
  */
 VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
 
+//! \brief Chance target to use in minCellSizeForAtomDisplacement()
+enum class ChanceTarget
+{
+    Atom,  //<! Indicates that the chance passed is applied to each atom individually
+    System //<! Indicates that the chance passed is for the max displacement over all atoms
+};
+
 /* Enum for choosing the list type for verletbufGetSafeListSetup() */
 enum class ListSetupType
 {
@@ -126,25 +133,37 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
 /* Convenience type */
 using PartitioningPerMoltype = gmx::ArrayRef<const gmx::RangePartitioning>;
 
-/* Determines the mininum cell size based on atom displacement
+/*! \brief Determines the minimum cell size based on atom displacement
  *
  * The value returned is the minimum size for which the chance that
- * an atom or update group crosses to non nearest-neighbor cells
- * is <= chanceRequested within ir.nstlist steps.
- * Update groups are used when !updateGrouping.empty().
+ * each atom (with \p chanceTarget=ChangeTarget::Atom) or any atom or
+ * update group (with \p chanceTarget=ChangeTarget::System) crosses into
+ * a non nearest-neighbor cell is <= chanceRequested within ir.nstlist steps.
+ * Update groups are used when !updateGrouping.empty(). In that case
+ * the displacement of the center of geometry of the update group is considered.
  * Without T-coupling, SD or BD, we can not estimate atom displacements
- * and fall back to the, crude, estimate of using the pairlist buffer size.
+ * and fall back to the, crude, estimate of using the pair list buffer size.
  *
  * Note: Like the Verlet buffer estimate, this estimate is based on
  *       non-interacting atoms and constrained atom-pairs. Therefore for
  *       any system that is not an ideal gas, this will be an overestimate.
  *
- * Note: This size increases (very slowly) with system size.
+ * Note: With \p chanceTarget=ChangeTarget::System this size increases
+ *       (very slowly) with the number of atoms in the system.
+ *
+ * \param[in] mtop            The system topology
+ * \param[in] ir              The input record
+ * \param[in] updateGrouping  The update grouping within each molecule type
+ * \param[in] chanceRequested The requested chance
+ * \param[in] chanceTarget    Whether \p chance refors to a displacement per-atom or maximum over all atoms
+ *
+ * \returns  The minimum cell size given \p chanceRequested.
  */
 real minCellSizeForAtomDisplacement(const gmx_mtop_t&      mtop,
                                     const t_inputrec&      ir,
                                     PartitioningPerMoltype updateGrouping,
-                                    real                   chanceRequested);
+                                    real                   chanceRequested,
+                                    ChanceTarget           chanceTarget);
 
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.

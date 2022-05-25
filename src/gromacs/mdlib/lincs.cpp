@@ -1705,7 +1705,7 @@ static void lincs_thread_setup(Lincs* li, int natoms)
 
                 for (int& b : li_task.updateConstraintIndicesRest)
                 {
-                    /* We let the constraint with the highest thread index
+                    /* We let the constraint with the lowest thread index
                      * operate on atoms with constraints from multiple threads.
                      */
                     if (bitmask_is_disjoint(atf[li->atoms[b].index1], mask)
@@ -1984,6 +1984,7 @@ void set_lincs(const InteractionDefinitions& idef,
         li->task[i].b0 = 0;
         li->task[i].b1 = 0;
         li->task[i].updateConstraintIndices1.clear();
+        li->task[i].updateConstraintIndices2.clear();
     }
     if (li->ntask > 1)
     {

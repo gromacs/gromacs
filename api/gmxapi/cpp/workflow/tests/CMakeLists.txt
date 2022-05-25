@@ -48,7 +48,7 @@ target_link_libraries(workflow-details-test
                         gmxapi-testsupport
                         mdrun_test_infrastructure)
 
-gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)
 
 set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
