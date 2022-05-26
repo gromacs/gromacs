@@ -180,8 +180,6 @@ private:
     const DeviceContext& deviceContext_;
     //! GPU stream
     const DeviceStream& deviceStream_;
-    //! GPU kernel launch config
-    KernelLaunchConfig coordinateScalingKernelLaunchConfig_;
 
     //! Periodic boundary data
     PbcAiuc pbcAiuc_;

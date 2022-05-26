@@ -231,8 +231,6 @@ private:
     std::vector<int> usedBlockIndices_;
     //! Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block
     std::vector<gmx_bitmask_t> reductionMask_;
-    //! The number of atoms forces are computed for
-    int numAtomsForce_ = 0;
 
     // Disallow copies to avoid sub-optimal ownership of allocated memory
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ThreadedForceBuffer);

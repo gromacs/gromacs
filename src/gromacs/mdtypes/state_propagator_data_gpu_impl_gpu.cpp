@@ -117,8 +117,6 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     nonLocalStream_ = nullptr;
     updateStream_   = nullptr;
 
-    isPmeOnly_ = true;
-
     // Only local/all coordinates are allowed to be copied in PME-only rank/ PME tests.
     // This it temporary measure to make it safe to use this class in those cases.
     xCopyStreams_[AtomLocality::Local]    = pmeStream_;

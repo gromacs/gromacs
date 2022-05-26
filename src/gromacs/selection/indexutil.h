@@ -234,11 +234,7 @@ struct gmx_ana_indexmap_t
 void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t** g, gmx_mtop_t* top, const char* fnm);
 /** Frees memory allocated for index groups. */
 void gmx_ana_indexgrps_free(gmx_ana_indexgrps_t* g);
-/** Returns true if the index group structure is emtpy. */
-bool gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t* g);
 
-/** Returns a pointer to an index group. */
-gmx_ana_index_t* gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t* g, int n);
 /** Extracts a single index group. */
 bool gmx_ana_indexgrps_extract(gmx_ana_index_t* dest, std::string* destName, gmx_ana_indexgrps_t* src, int n);
 /** Finds and extracts a single index group by name. */

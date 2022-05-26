@@ -87,8 +87,7 @@ struct t_trxstatus
     t_fileio*            fio;
     gmx_tng_trajectory_t tng;
     int                  natoms;
-    double               DT, BOX[3];
-    gmx_bool             bReadBox;
+    double               BOX[3];
     char*                persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t* vmdplugin;

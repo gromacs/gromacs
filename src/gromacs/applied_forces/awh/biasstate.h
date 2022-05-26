@@ -519,9 +519,6 @@ private:
 //! Linewidth used for warning output
 static const int c_linewidth = 80 - 2;
 
-//! Indent used for warning output
-static const int c_indent = 0;
-
 } // namespace gmx
 
 #endif /* GMX_AWH_BIASSTATE_H */

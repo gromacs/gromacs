@@ -57,16 +57,6 @@ using CommrecHandle = gmx::unique_cptr<t_commrec, done_commrec>;
 //! Allocate, initialize and return the commrec.
 CommrecHandle init_commrec(MPI_Comm communicator);
 
-struct t_commrec* reinitialize_commrec_for_this_thread(const t_commrec* cro);
-
-/* Initialize communication records for thread-parallel simulations.
-   Must be called on all threads before any communication takes place by
-   the individual threads. Copies the original commrec to
-   thread-local versions (a small memory leak results because we don't
-   deallocate the old shared version).  */
-
-void gmx_fill_commrec_from_mpi(t_commrec* cr);
-/* Continues t_commrec construction */
 
 void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
 /* Sets up fast global communication for clusters with multi-core nodes */

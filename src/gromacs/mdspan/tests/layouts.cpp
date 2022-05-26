@@ -139,6 +139,7 @@ TEST(LayoutTests, LayoutRightConstruction)
     test.check_rank_dynamic(2);
     test.check_extents(5, 4, 3, 2, 1);
     test.check_strides(24, 6, 2, 1, 1);
+    test.check_required_span_size(120);
 }
 
 TEST(LayoutTests, LayoutRightProperties)

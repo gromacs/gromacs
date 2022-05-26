@@ -756,13 +756,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
  */
 static const int zone_perm[3][4] = { { 0, 0, 0, 0 }, { 1, 0, 0, 0 }, { 3, 0, 1, 2 } };
 
-/*! \brief DD zone reordering to Cartesian order
- *
- * Index to reorder the zone such that the end up in Cartesian order
- * with dimension index 0 major and dimension index 2 minor.
- */
-static const int zone_reorder_cartesian[DD_MAXZONE] = { 0, 1, 3, 2, 5, 4, 6, 7 };
-
 /* dd_zo and dd_zp3 is set up such that i zones with non-zero
  * components see only j zones with that component 0.
  */

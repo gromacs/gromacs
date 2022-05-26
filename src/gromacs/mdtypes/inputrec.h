@@ -642,8 +642,6 @@ bool shouldPreserveBoxShape(const PressureCouplingOptions& pressureCoupling, con
 
 bool inputrecNeedMutot(const t_inputrec* ir);
 
-bool inputrecTwinRange(const t_inputrec* ir);
-
 bool inputrecExclForces(const t_inputrec* ir);
 
 bool inputrecNptTrotter(const t_inputrec* ir);

@@ -109,7 +109,4 @@ real orires(int                       nfa,
             t_oriresdata*             oriresdata,
             int*                      global_atom_index);
 
-//! Copies the new time averages that have been calculated in calc_orires_dev.
-void update_orires_history(const t_oriresdata& oriresdata, history_t* hist);
-
 #endif

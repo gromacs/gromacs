@@ -196,8 +196,6 @@ struct gmx_enfrotgrp
     real* m_loc;
 
     /* Flexible rotation only */
-    //! For this many slabs memory is allocated
-    int nslabs_alloc;
     //! Lowermost slab for that the calculation needs to be performed at a given time step
     int slab_first;
     //! Uppermost slab ...
@@ -3349,9 +3347,6 @@ static void allocate_slabs(gmx_enfrotgrp* erg, FILE* fplog, gmx_bool bVerbose)
 {
     /* More slabs than are defined for the reference are never needed */
     int nslabs = erg->slab_last_ref - erg->slab_first_ref + 1;
-
-    /* Remember how many we allocated */
-    erg->nslabs_alloc = nslabs;
 
     if ((nullptr != fplog) && bVerbose)
     {

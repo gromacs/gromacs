@@ -215,13 +215,6 @@ public:
     std::unique_ptr<Impl> impl_;
 };
 
-/*! \brief Returns a pointer to a constructed \p BalanceRegion struct
- *
- * Should be replaced by a proper constructor once BalanceRegion is a proper
- * class (requires restructering in domdec.cpp).
- */
-BalanceRegion* ddBalanceRegionAllocate();
-
 /*! \brief Start the force flop count */
 void dd_force_flop_start(struct gmx_domdec_t* dd, t_nrnb* nrnb);
 

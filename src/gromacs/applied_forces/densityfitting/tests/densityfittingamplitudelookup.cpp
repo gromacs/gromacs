@@ -55,7 +55,6 @@ namespace gmx
 class DensityFittingAmplitudeLookupTest : public ::testing::Test
 {
 protected:
-    int               numberOfAtoms_ = 3;
     std::vector<real> masses_        = { 2, 3, 4 };
     std::vector<real> charges_       = { 20, 30, 40 };
     t_mdatoms         atoms_         = {};

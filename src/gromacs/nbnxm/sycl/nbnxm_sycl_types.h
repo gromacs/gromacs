@@ -133,14 +133,6 @@ struct NbnxmGpu
      * local/nonlocal, if there is bonded GPU work, both flags
      * will be true. */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork = { { false } };
-
-    /*! \brief Pointer to event synchronizer triggered when the local
-     * GPU buffer ops / reduction is complete. Would be deprecated in SYCL.
-     *
-     * \note That the synchronizer is managed outside of this module
-     * in StatePropagatorDataGpu.
-     */
-    GpuEventSynchronizer* localFReductionDone = nullptr;
 };
 
 #endif /* NBNXM_SYCL_TYPES_H */
