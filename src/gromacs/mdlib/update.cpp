@@ -495,18 +495,18 @@ updateMDLeapfrogSimpleSimd(int                               start,
 
         if constexpr (numTempScaleValues == NumTempScaleValues::None)
         {
-            v0 = fma(f0 * invMass0, timestep, v0);
-            v1 = fma(f1 * invMass1, timestep, v1);
-            v2 = fma(f2 * invMass2, timestep, v2);
+            v0 = gmx::fma(f0 * invMass0, timestep, v0);
+            v1 = gmx::fma(f1 * invMass1, timestep, v1);
+            v2 = gmx::fma(f2 * invMass2, timestep, v2);
         }
         else
         {
             static_assert(
                     numTempScaleValues == NumTempScaleValues::Single,
                     "Invalid multiple temperature-scaling values (ie. groups) for SIMD leapfrog");
-            v0 = fma(f0 * invMass0, timestep, lambdaSystem * v0);
-            v1 = fma(f1 * invMass1, timestep, lambdaSystem * v1);
-            v2 = fma(f2 * invMass2, timestep, lambdaSystem * v2);
+            v0 = gmx::fma(f0 * invMass0, timestep, lambdaSystem * v0);
+            v1 = gmx::fma(f1 * invMass1, timestep, lambdaSystem * v1);
+            v2 = gmx::fma(f2 * invMass2, timestep, lambdaSystem * v2);
         }
         // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::Yes)
@@ -518,9 +518,9 @@ updateMDLeapfrogSimpleSimd(int                               start,
         UpdateSimdReal x0, x1, x2;
         simdLoadRvecs(x, a, &x0, &x1, &x2);
 
-        UpdateSimdReal xprime0 = fma(v0, timestep, x0);
-        UpdateSimdReal xprime1 = fma(v1, timestep, x1);
-        UpdateSimdReal xprime2 = fma(v2, timestep, x2);
+        UpdateSimdReal xprime0 = gmx::fma(v0, timestep, x0);
+        UpdateSimdReal xprime1 = gmx::fma(v1, timestep, x1);
+        UpdateSimdReal xprime2 = gmx::fma(v2, timestep, x2);
 
         simdStoreRvecs(xprime, a, xprime0, xprime1, xprime2);
     }
