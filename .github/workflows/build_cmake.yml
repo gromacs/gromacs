@@ -21,19 +21,22 @@ jobs:
             os: windows-2019,
             cc: "cl", cxx: "cl",
             environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
-            gpu_var: "Off"
+            gpu_var: "Off",
+            openmp_var: "Off"
           }
         - {
             name: "macOS Latest Clang", artifact: "macOS.7z",
             os: macos-latest,
             cc: "clang", cxx: "clang++",
-            gpu_var: "Off"
+            gpu_var: "Off",
+            openmp_var: "Off"
           }
         - {
             name: "macOS Latest gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
             os: macos-latest,
             cc: "gcc-10", cxx: "g++-10",
-            gpu_var: "OpenCL"
+            gpu_var: "OpenCL",
+            openmp_var: "On"
 
           }
 
@@ -122,10 +125,7 @@ jobs:
           set(path_separator ";")
         endif()
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
-        set(openmp_use "ON")
-        if ("${{ runner.os }}" STREQUAL "Windows")
-          set(openmp_use "OFF")
-        endif()
+        set(openmp_use ${{ matrix.config.openmp_var }})
         set(gpu_var ${{ matrix.config.gpu_var }})
 
         execute_process(
