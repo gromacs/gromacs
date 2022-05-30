@@ -36,18 +36,6 @@
 # See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more.
 cmake_minimum_required(VERSION 3.16.3)
 
-# This needs to be set before project() in order to pick up toolchain files
-#list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
-
-# OS X deployment target should be >=10.14 for modern C++ compatibility.
-# Reference https://scikit-build.readthedocs.io/en/latest/generators.html#macosx
-# and https://github.com/MacPython/wiki/wiki/Spinning-wheels
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14 CACHE STRING
-    "OS X deployment target below 10.14 does not use modern standard library")
-set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
-    "OS X should build Python package for 64-bit architecture"
-    FORCE)
-
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python
 # package version, but is likely to do so.
