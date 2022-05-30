@@ -70,7 +70,7 @@ from .exceptions import FeatureNotAvailableError
 # TODO(#3851): Version management policy and procedures.
 _major = 0
 _minor = 3
-_micro = 1
+_micro = 2
 _suffix = ''
 
 # Reference https://www.python.org/dev/peps/pep-0440/
