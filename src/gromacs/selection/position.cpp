@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "position.h"
+#include "gromacs/selection/position.h"
 
 #include <cstring>
 

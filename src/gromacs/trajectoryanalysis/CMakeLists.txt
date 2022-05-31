@@ -66,15 +66,6 @@ target_link_libraries(trajectoryanalysis INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(trajectoryanalysis PRIVATE legacy_modules)
 
-if(GMX_INSTALL_LEGACY_API)
-    install(FILES
-	    analysismodule.h
-	    analysissettings.h
-	    cmdlinerunner.h
-	    topologyinformation.h
-            DESTINATION include/gromacs/trajectoryanalysis)
-endif()
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

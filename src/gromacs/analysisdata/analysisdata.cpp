@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "analysisdata.h"
+#include "gromacs/analysisdata/analysisdata.h"
 
 #include <memory>
 

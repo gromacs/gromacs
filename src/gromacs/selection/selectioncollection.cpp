@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "selectioncollection.h"
+#include "gromacs/selection/selectioncollection.h"
 
 #include <cctype>
 #include <cstdio>

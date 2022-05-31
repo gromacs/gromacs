@@ -40,15 +40,15 @@
  */
 #include "gmxpre.h"
 
-#include "abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/optionflags.h"
 #include "gromacs/utility/any.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "basicoptionstorage.h"
-#include "optionflags.h"
 
 namespace gmx
 {

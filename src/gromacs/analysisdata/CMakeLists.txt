@@ -35,16 +35,6 @@ add_library(analysisdata INTERFACE)
 file(GLOB ANALYSISDATA_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ANALYSISDATA_SOURCES} PARENT_SCOPE)
 
-if(GMX_INSTALL_LEGACY_API)
-    install(FILES
-            abstractdata.h
-            analysisdata.h
-            arraydata.h
-            dataframe.h
-            datamodule.h
-            DESTINATION include/gromacs/analysisdata)
-endif()
-
 # Source files have the following private module dependencies.
 target_link_libraries(analysisdata PRIVATE
 #                      gmxlib
@@ -76,8 +66,6 @@ target_link_libraries(analysisdata INTERFACE
 #target_link_libraries(analysisdata PRIVATE tng_io)
 # TODO: Explicitly link specific modules.
 #target_link_libraries(analysisdata PRIVATE legacy_modules)
-
-add_subdirectory(modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

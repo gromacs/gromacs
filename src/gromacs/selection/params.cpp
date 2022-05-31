@@ -47,6 +47,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -55,7 +56,6 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "parsetree.h"
-#include "position.h"
 #include "scanner.h"
 #include "selelem.h"
 #include "selmethod.h"

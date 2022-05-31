@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "cmdlinerunner.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"

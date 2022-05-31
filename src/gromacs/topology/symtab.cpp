@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "symtab.h"
+#include "gromacs/topology/symtab.h"
 
 #include <cstdio>
 #include <cstring>

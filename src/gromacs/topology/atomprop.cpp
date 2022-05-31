@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "atomprop.h"
+#include "gromacs/topology/atomprop.h"
 
 #include <cctype>
 #include <cmath>

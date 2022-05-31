@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "stringutil.h"
+#include "gromacs/utility/stringutil.h"
 
 #include <cctype>
 #include <cstdarg>

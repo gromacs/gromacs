@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "dataframe.h"
+#include "gromacs/analysisdata/dataframe.h"
 
 #include "gromacs/utility/gmxassert.h"
 

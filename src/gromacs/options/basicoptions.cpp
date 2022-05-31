@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "basicoptions.h"
+#include "gromacs/options/basicoptions.h"
 
 #include <cerrno>
 #include <cstdio>

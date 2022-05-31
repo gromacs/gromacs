@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "arraydata.h"
+#include "gromacs/analysisdata/arraydata.h"
 
 #include <algorithm>
 

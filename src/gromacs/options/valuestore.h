@@ -43,9 +43,8 @@
 
 #include <vector>
 
+#include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
-
-#include "ivaluestore.h"
 
 namespace gmx
 {

@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "analysissettings.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/trxio.h"

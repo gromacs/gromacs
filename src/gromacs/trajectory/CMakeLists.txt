@@ -65,8 +65,3 @@ target_link_libraries(trajectory INTERFACE
 #target_link_libraries(trajectory PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.
 #target_link_libraries(trajectory PRIVATE legacy_modules)
-
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES trajectoryframe.h
-          DESTINATION include/gromacs/trajectory)
-endif()

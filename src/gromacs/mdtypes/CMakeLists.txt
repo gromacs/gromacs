@@ -108,10 +108,3 @@ if (BUILD_TESTING)
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MDTYPES_SOURCES} PARENT_SCOPE)
-
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-          inputrec.h
-          md_enums.h
-          DESTINATION include/gromacs/mdtypes)
-endif()

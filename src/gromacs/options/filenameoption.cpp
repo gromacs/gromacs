@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "filenameoption.h"
+#include "gromacs/options/filenameoption.h"
 
 #include <cstring>
 

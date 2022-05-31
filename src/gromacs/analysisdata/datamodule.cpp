@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "datamodule.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 

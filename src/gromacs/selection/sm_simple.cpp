@@ -42,13 +42,13 @@
 
 #include <cctype>
 
+#include "gromacs/selection/position.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "position.h"
 #include "selmethod.h"
 #include "selmethod_impl.h"
 

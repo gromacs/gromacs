@@ -37,21 +37,6 @@ add_library(topology INTERFACE)
 file(GLOB TOPOLOGY_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
 
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-	  atomprop.h
-	  atoms.h
-	  block.h
-	  forcefieldparameters.h
-	  idef.h
-	  ifunc.h
-	  index.h
-	  symtab.h
-	  topology.h
-          topology_enums.h
-	  DESTINATION include/gromacs/topology)
-endif()
-
 # Source files have the following private module dependencies.
 target_link_libraries(options PRIVATE
 		)

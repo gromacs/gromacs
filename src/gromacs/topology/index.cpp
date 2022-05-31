@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "index.h"
+#include "gromacs/topology/index.h"
 
 #include <cassert>
 #include <cctype>

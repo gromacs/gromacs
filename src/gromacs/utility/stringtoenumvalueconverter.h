@@ -53,9 +53,10 @@
 #include <optional>
 #include <string>
 
-#include "enumerationhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/stringutil.h"
+
 #include "stringcompare.h"
-#include "stringutil.h"
 
 namespace gmx
 {

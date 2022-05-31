@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "abstractdata.h"
+#include "gromacs/analysisdata/abstractdata.h"
 
 #include <utility>
 #include <vector>

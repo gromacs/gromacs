@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
 
 #include <map>
 #include <utility>

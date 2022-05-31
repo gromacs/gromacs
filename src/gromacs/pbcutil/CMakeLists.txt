@@ -66,12 +66,6 @@ target_link_libraries(pbcutil INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(pbcutil PRIVATE legacy_modules)
 
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-          pbc.h
-          DESTINATION include/gromacs/pbcutil)
-endif()
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

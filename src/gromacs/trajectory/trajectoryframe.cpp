@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "trajectoryframe.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 
 #include <cstdio>
 

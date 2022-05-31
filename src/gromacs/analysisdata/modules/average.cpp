@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "average.h"
+#include "gromacs/analysisdata/modules/average.h"
 
 #include <cmath>
 

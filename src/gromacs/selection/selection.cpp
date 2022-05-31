@@ -40,11 +40,12 @@
  */
 #include "gmxpre.h"
 
-#include "selection.h"
+#include "gromacs/selection/selection.h"
 
 #include <string>
 
 #include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
@@ -52,7 +53,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
 

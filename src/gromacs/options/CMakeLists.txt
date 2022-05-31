@@ -47,23 +47,6 @@ add_library(options OBJECT
     treesupport.cpp
     )
 
-if(GMX_INSTALL_LEGACY_API)
-    install(FILES
-	    abstractoption.h
-	    basicoptions.h
-	    filenameoption.h
-	    filenameoptionmanager.h
-	    ioptionsbehavior.h
-	    ioptionscontainer.h
-	    ioptionscontainerwithsections.h
-	    ivaluestore.h
-	    optionfiletype.h
-	    optionflags.h
-	    options.h
-	    timeunitmanager.h
-            DESTINATION include/gromacs/options)
-endif()
-
 # Source files have the following private module dependencies.
 target_link_libraries(options PRIVATE
                 legacy_modules

@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "block.h"
+#include "gromacs/topology/block.h"
 
 #include <cstdio>
 

@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "smalloc.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "config.h"
 

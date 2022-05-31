@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "plot.h"
+#include "gromacs/analysisdata/modules/plot.h"
 
 #include <cstdio>
 #include <cstring>

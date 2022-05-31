@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "displacement.h"
+#include "gromacs/analysisdata/modules/displacement.h"
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodulemanager.h"

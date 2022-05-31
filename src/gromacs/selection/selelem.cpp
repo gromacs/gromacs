@@ -45,6 +45,8 @@
 #include <cstring>
 
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -54,8 +56,6 @@
 #include "keywords.h"
 #include "mempool.h"
 #include "poscalc.h"
-#include "position.h"
-#include "selectionenums.h"
 #include "selmethod.h"
 
 /*!

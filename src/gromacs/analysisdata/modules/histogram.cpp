@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "histogram.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 
 #include <cmath>
 

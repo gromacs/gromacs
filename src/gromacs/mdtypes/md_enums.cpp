@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "md_enums.h"
+#include "gromacs/mdtypes/md_enums.h"
 
 #include "gromacs/utility/enumerationhelpers.h"
 

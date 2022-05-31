@@ -94,20 +94,6 @@ target_link_libraries(selection INTERFACE
 # TODO: Explicitly link specific modules.
 #target_link_libraries(selection PRIVATE legacy_modules)
 
-if(GMX_INSTALL_LEGACY_API)
-    install(FILES
-	    indexutil.h
-	    nbsearch.h
-	    position.h
-	    selectioncollection.h
-	    selectionenums.h
-	    selection.h
-	    selectionoptionbehavior.h
-	    selectionoption.h
-	    selectionoptionmanager.h
-            DESTINATION include/gromacs/selection)
-endif()
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

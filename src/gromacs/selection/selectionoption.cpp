@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "selectionoption.h"
+#include "gromacs/selection/selectionoption.h"
 
 #include <string>
 

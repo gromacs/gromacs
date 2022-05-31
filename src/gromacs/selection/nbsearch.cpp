@@ -50,7 +50,7 @@
  */
 #include "gmxpre.h"
 
-#include "nbsearch.h"
+#include "gromacs/selection/nbsearch.h"
 
 #include <cmath>
 #include <cstring>
@@ -62,14 +62,13 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/position.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "position.h"
 
 namespace gmx
 {

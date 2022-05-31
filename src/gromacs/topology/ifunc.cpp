@@ -34,7 +34,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "ifunc.h"
+#include "gromacs/topology/ifunc.h"
 
 #define def_bonded(str, lstr, nra, nrpa, nrpb)    \
     {                                             \

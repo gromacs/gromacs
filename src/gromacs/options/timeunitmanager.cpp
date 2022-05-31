@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "timeunitmanager.h"
+#include "gromacs/options/timeunitmanager.h"
 
 #include <cstdlib>
 
