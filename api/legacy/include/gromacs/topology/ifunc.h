@@ -118,7 +118,7 @@ struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Paddin
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
 
 /* this MUST correspond to the
-   t_interaction_function[F_NRE] in gmxlib/ifunc.cpp */
+   t_interaction_function[F_NRE] in src/gromacs/topology/ifunc.cpp */
 enum
 {
     F_BONDS,
