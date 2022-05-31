@@ -74,6 +74,7 @@ endif ()
 
 if(ENABLE_OPENMP)
   target_compile_definitions(muparser PRIVATE MUP_USE_OPENMP)
+  target_link_libraries(muparser PRIVATE OpenMP::OpenMP_CXX)
 endif()
 set_target_properties(muparser PROPERTIES
     VERSION ${MUPARSER_VERSION}

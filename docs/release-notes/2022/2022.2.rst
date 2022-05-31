@@ -74,6 +74,15 @@ correct topology, or add it manually to the topology.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed a possible software build error with OpenMP linking
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In some situations, software builds could have errors linking ``omp`` symbols.
+A minor update to the CMake configuration helps the ``muparser`` component
+to find the same OpenMP dependency used by the rest of the library.
+
+:issue:`4499`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
