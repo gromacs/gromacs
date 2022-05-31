@@ -587,7 +587,7 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
 
     commands.append(f'{venv_path}/bin/python -m pip install --upgrade pip setuptools')
     # Install dependencies for building and testing gmxapi Python package.
-    # WARNING: Please keep this list synchronized with python_packaging/requirements-test.txt
+    # WARNING: Please keep this list synchronized with python_packaging/src/requirements.txt
     # TODO: Get requirements.txt from an input argument.
     commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
             'breathe' \
@@ -596,13 +596,13 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'gcovr>=4.2' \
             'mpi4py>=3.0.3' \
             'networkx>=2.0' \
-            'numpy>=1' \
+            'numpy>1.7' \
+            'packaging' \
             'pip>=10.1' \
             'pybind11>2.6' \
             'Pygments>=2.2.0' \
-            'pytest>=3.9' \
+            'pytest>=4.6' \
             'setuptools>=42' \
-            'scikit-build>=0.10' \
             'Sphinx>=1.6.3' \
             'sphinxcontrib-plantuml>=0.14' \
             'wheel'""")

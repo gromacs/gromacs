@@ -35,9 +35,6 @@ RUN apt-get update && \
 
 FROM gmxapi/ci-mpich:$REF as cibuild
 
-RUN . $VENV/bin/activate && \
-    pip install -r /home/testing/gmxapi/requirements-docs.txt --no-cache-dir
-
 
 FROM docbuild-base as docbuild
 COPY --from=cibuild /usr/local/gromacs /usr/local/gromacs

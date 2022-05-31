@@ -1,13 +1,12 @@
 # Requirements for build, installation and testing are provided for convenient
 # use of `pip install -r requirements.txt`. To get a complete list of required
-# packages, such as for completely offline installation, install these pacakges
+# packages, such as for completely offline installation, install these packages
 # in an empty Python virtual environment and use `pip list` or `pip freeze` to
 # see the actual packages installed, including dependencies, with version info.
 #
 # Note that, ordinarily, build requirements are discovered from pyproject.toml,
 # and run time package dependencies (to be checked during installation) are
-# resolved by setuptools from the `install_requires` argument to setup() in
-# setup.py.
+# resolved by setuptools from the `install_requires` in `setup.cfg`.
 cmake>=3.16
 networkx>=2.0
 numpy>1.7
@@ -16,3 +15,11 @@ pip>=10.1
 pybind11>=2.6
 setuptools>=42
 wheel
+# The following packages are not strictly necessary, but allow documentation builds.
+Pygments>=2.2.0
+Sphinx>=1.6.3
+sphinxcontrib-plantuml>=0.14
+# Python package requirements for complete testing of gmxapi functionality.
+flake8>=3.7.7
+mpi4py>=3.0.3
+pytest>=4.6

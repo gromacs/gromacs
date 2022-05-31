@@ -1,5 +1,0 @@
-# Python package requirements for complete testing of gmxapi functionality.
-# Supplements the requirements.txt file in the package directory.
-flake8>=3.7.7
-mpi4py>=3.0.3
-pytest>=4.6

@@ -44,8 +44,6 @@ RUN python3 -m venv $VENV
 RUN . $VENV/bin/activate && \
     pip install --no-cache-dir --upgrade pip setuptools wheel
 
-ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
-
 #
 # Use gromacs installation from gmxapi/gromacs image
 #
@@ -59,10 +57,10 @@ FROM python-base
 COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 
 RUN $VENV/bin/python -m pip install --upgrade pip setuptools wheel
-RUN $VENV/bin/python -m pip install --no-cache-dir --no-build-isolation -r /home/testing/gmxapi/requirements-test.txt
 
 ADD --chown=testing:testing src /home/testing/gmxapi/src
 ADD --chown=testing:testing src/gmxapi /home/testing/gmxapi/src/gmxapi
+RUN $VENV/bin/python -m pip install --no-cache-dir --no-build-isolation -r /home/testing/gmxapi/src/requirements.txt
 
 # We use "--no-cache-dir" to reduce Docker image size.
 RUN . $VENV/bin/activate && \
@@ -83,6 +81,7 @@ RUN . $VENV/bin/activate && \
      mkdir build && \
      cd build && \
      cmake .. \
+             -C /usr/local/gromacs/share/cmake/gromacs/gromacs-hints.cmake \
              -DPYTHON_EXECUTABLE=$VENV/bin/python \
              -DDOWNLOAD_GOOGLETEST=ON \
              -DGMXAPI_EXTENSION_DOWNLOAD_PYBIND=ON && \
