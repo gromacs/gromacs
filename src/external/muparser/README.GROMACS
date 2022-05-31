@@ -12,4 +12,4 @@ attempting to return a size_t in an int.
 target_include_directories() is used so that GROMACS source files
 find the muparser headers.
 
-Test now links OpenMP target explicitly.
+Targets now link OpenMP::OpenMP_CXX target explicitly.
