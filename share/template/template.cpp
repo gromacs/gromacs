@@ -34,7 +34,18 @@
 #include <string>
 #include <vector>
 
-#include <gromacs/trajectoryanalysis.h>
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/options.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/selectionoption.h"
+#include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 using namespace gmx;
 

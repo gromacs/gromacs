@@ -50,7 +50,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"

@@ -142,15 +142,6 @@ if (WIN32)
 endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-	  analysisdata.h
-	  options.h
-	  selection.h
-	  trajectoryanalysis.h
-          DESTINATION include/gromacs)
-endif()
-
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
 # that contains the target that uses them.

@@ -31,7 +31,68 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-
+/*! \defgroup module_random Random engines and distributions (random)
+ * \ingroup group_utilitymodules
+ * \brief
+ * Provides efficient and portable random generators and distributions
+ *
+ * <H3>Basic Use</H3>
+ *
+ * \Gromacs relies on random numbers in several different modules, and in
+ * particular for methods that influence the integration we both require the
+ * generation to be very fast and the resulting numbers of high quality.
+ * In addition, it is highly desirable that we generate the same trajectories
+ * in parallel as for a single-core run.
+ *
+ * To realize this, we have implemented the ThreeFry2x64 counter-based random
+ * engine. In contrast to a normal random engine that is seeded and then keeps
+ * an internal state, ThreeFry2x64 is derived from cryptographic applications
+ * where we use a key to turn a highly regular counter int a stream of random
+ * numbers. This makes it possible to quickly set the counter in the random
+ * engine based e.g. on the timestep and atom index, and get the same random
+ * numbers regardless of parallelization.
+ *
+ * The TreeFry2x64 engine has been implemented to be fully compatible with
+ * standard C++11 random engines. There is a gmx::ThreeFry2x64General class that
+ * allows full control over the accuracy (more iterations means higher quality),
+ * and gmx::ThreeFry2x64 and gmx::ThreeFry2x64Fast that are specialized to 20
+ * and 13 iterations, respectively. With 20 iterations this engine passes all
+ * tests in the standard BigCrush test, and with 13 iterations only a single
+ * test fails (in comparision, Mersenne Twister fails two).
+ *
+ * All these engines take a template parameter that specifies the number of
+ * bits to reserve for an internal counter. This is based on an idea of
+ * John Salmon, and it makes it possible to set your external counter based
+ * on two simple values (usually timestep and particle index), but then it is
+ * still possible to draw more than one value for this external counter since
+ * the internal counter increments. If you run out of internal counter space
+ * the class will throw an exception to make sure you don't silently end up
+ * with corrupted/overlapping random data.
+ *
+ * <H3>But what if I just want a vanilla random number generator?</H3>
+ *
+ * We've thought about that. Just use the gmx::DefaultRandomEngine class and
+ * forget everything about counters. Initialize the class with a single value
+ * for the seed (up to 64 bits), and you are good to go.
+ *
+ * <H3>Random number distributions</H3>
+ *
+ * The ThreeFry random engine is fully compatible with all distributions from
+ * the C++11 standard library, but unfortunately implementation differences
+ * (and bugs) mean you will typically not get the same sequence of numbers from
+ * two different library implementations. Since this causes problems for our
+ * unit tests, we prefer to use our own implementations - they should work
+ * exactly like the corresponding C++11 versions.
+ *
+ * The normal distribution is frequently used in integration, and it can be
+ * a performance bottleneck. To avoid this, we use a special tabulated
+ * distribution gmx::TabulatedNormalDistribution that provides very high
+ * performance at the cost of slightly discretized values; the default 14-bit
+ * table gives us 16,384 unique values, but this has been thoroughly tested to
+ * be sufficient for all integration usage.
+ *
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
+ */
 /*! \file
  * \brief Implementation of the 2x64 ThreeFry random engine
  *

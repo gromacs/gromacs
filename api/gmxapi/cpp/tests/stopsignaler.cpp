@@ -37,7 +37,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
-#include "gromacs/utility.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
