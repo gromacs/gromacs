@@ -24,6 +24,7 @@
 **/.cproject
 **/build
 **/_build
+*build*
 **/dist
 **/CMakeLists.txt.user
 **/VersionInfo*.cmake
