@@ -439,7 +439,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     registerExistingElement(statePropagatorData_->element());
 
     // Multi sim is turned off
-    const bool simulationsShareState = false;
+    const bool simulationsShareHamiltonian = false;
 
     energyData_ = std::make_unique<EnergyData>(statePropagatorData_.get(),
                                                freeEnergyPerturbationData_.get(),
@@ -455,7 +455,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
                                                MASTER(legacySimulatorData->cr),
                                                legacySimulatorData->observablesHistory,
                                                legacySimulatorData->startingBehavior,
-                                               simulationsShareState,
+                                               simulationsShareHamiltonian,
                                                legacySimulatorData->pull_work);
     registerExistingElement(energyData_->element());
 

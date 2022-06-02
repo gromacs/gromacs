@@ -276,8 +276,9 @@ void gmx::LegacySimulator::do_md()
 
     t_fcdata& fcdata = *fr->fcdata;
 
-    bool simulationsShareState = false;
-    int  nstSignalComm         = nstglobalcomm;
+    bool simulationsShareState       = false;
+    bool simulationsShareHamiltonian = false;
+    int  nstSignalComm               = nstglobalcomm;
     {
         // TODO This implementation of ensemble orientation restraints is nasty because
         // a user can't just do multi-sim with single-sim orientation restraints.
@@ -291,6 +292,9 @@ void gmx::LegacySimulator::do_md()
         // simulations, not just within simulations.
         // TODO: Make algorithm initializers set these flags.
         simulationsShareState = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
+
+        // With AWH with bias sharing each simulation uses an non-shared, but identical, Hamiltonian
+        simulationsShareHamiltonian = useReplicaExchange || usingEnsembleRestraints;
 
         if (simulationsShareState)
         {
@@ -327,7 +331,7 @@ void gmx::LegacySimulator::do_md()
                                    mdoutf_get_fp_dhdl(outf),
                                    false,
                                    startingBehavior,
-                                   simulationsShareState,
+                                   simulationsShareHamiltonian,
                                    mdModulesNotifiers);
 
     gstat = global_stat_init(ir);

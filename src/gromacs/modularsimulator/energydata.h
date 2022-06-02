@@ -111,7 +111,7 @@ public:
                bool                        isMasterRank,
                ObservablesHistory*         observablesHistory,
                StartingBehavior            startingBehavior,
-               bool                        simulationsShareState,
+               bool                        simulationsShareHamiltonian,
                pull_t*                     pullWork);
 
     /*! \brief Final output
@@ -330,8 +330,8 @@ private:
     const SimulationGroups* groups_;
     //! History of simulation observables.
     ObservablesHistory* observablesHistory_;
-    //! Whether simulations share the state
-    bool simulationsShareState_;
+    //! Whether simulations do not have an individual Hamiltonian but share one
+    bool simulationsShareHamiltonian_;
     //! The pull work object.
     pull_t* pullWork_;
 };

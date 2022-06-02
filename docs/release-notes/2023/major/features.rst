@@ -7,3 +7,5 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+mdrun now also reports the conserved energy quantity with AWH bias sharing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
