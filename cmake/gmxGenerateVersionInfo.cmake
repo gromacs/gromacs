@@ -146,6 +146,19 @@ if("${GMX_REMOTES}" STREQUAL "")
     endif()
     set(GMX_VERSION_CENTRAL_BASE_HASH "unknown")
 else()
+    # Check whether git knows "git name-rev --annotate-stdin", which
+    # was new in 2.36.0. Using the former name for the parameter with
+    # such git versions issues a deprecation warning, which we must
+    # avoid for use in CI.
+    execute_process(COMMAND ${GIT_EXECUTABLE} name-rev --annotate-stdin
+        RESULT_VARIABLE GIT_NAME_REV_KNOWS_ANNOTATE_STDIN
+        OUTPUT_QUIET ERROR_QUIET)
+    if (GIT_NAME_REV_KNOWS_ANNOTATE_STDIN EQUAL 0)
+        set(GIT_NAME_REV_ARGUMENT "--annotate-stdin")
+    else()
+        set(GIT_NAME_REV_ARGUMENT "--stdin")
+    endif()
+
     string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
     # construct a command pipeline that produces a reverse-time-ordered
     # list of commits and their annotated names in GMX_REMOTES
@@ -153,7 +166,7 @@ else()
     set(BASEREVCOMMAND "COMMAND ${GIT_EXECUTABLE} rev-list --max-count=1000 HEAD")
     foreach(REMOTE ${GMX_REMOTES})
         string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
-        set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
+        set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev ${GIT_NAME_REV_ARGUMENT} --refs=refs/remotes/${REMOTE}/*")
     endforeach(REMOTE)
     # this is necessary for CMake to properly split the variable into
     # parameters for execute_process().
