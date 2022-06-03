@@ -517,8 +517,8 @@ int ConvertTpr::run()
 
 } // namespace
 
-const char ConvertTprInfo::name[]             = "convert-tpr";
-const char ConvertTprInfo::shortDescription[] = "Make a modifed run-input file";
+LIBGROMACS_EXPORT const char ConvertTprInfo::name[]             = "convert-tpr";
+LIBGROMACS_EXPORT const char ConvertTprInfo::shortDescription[] = "Make a modifed run-input file";
 ICommandLineOptionsModulePointer ConvertTprInfo::create()
 {
     return ICommandLineOptionsModulePointer(std::make_unique<ConvertTpr>());

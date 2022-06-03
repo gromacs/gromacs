@@ -239,8 +239,8 @@ int ReportMethods::run()
 
 } // namespace
 
-const char ReportMethodsInfo::name[] = "report-methods";
-const char ReportMethodsInfo::shortDescription[] =
+LIBGROMACS_EXPORT const char ReportMethodsInfo::name[] = "report-methods";
+LIBGROMACS_EXPORT const char ReportMethodsInfo::shortDescription[] =
         "Write short summary about the simulation setup to a text file "
         "and/or to the standard output.";
 ICommandLineOptionsModulePointer ReportMethodsInfo::create()

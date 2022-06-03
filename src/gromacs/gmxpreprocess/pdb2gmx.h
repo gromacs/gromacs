@@ -43,8 +43,8 @@ class pdb2gmxInfo
 {
 
 public:
-    static const char                       name[];
-    static const char                       shortDescription[];
+    static LIBGROMACS_EXPORT const char     name[];
+    static LIBGROMACS_EXPORT const char     shortDescription[];
     static ICommandLineOptionsModulePointer create();
 };
 

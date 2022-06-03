@@ -35,6 +35,7 @@ gmx_add_unit_test_library(mdrunutility-test-shared
                           threadaffinitytest.cpp)
 target_link_libraries(mdrunutility-test-shared PRIVATE common)
 target_link_libraries(mdrunutility-test-shared PUBLIC legacy_api)
+target_compile_definitions(mdrunutility-test-shared PRIVATE TMPI_USE_VISIBILITY)
 
 gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
     CPP_SOURCE_FILES

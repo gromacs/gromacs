@@ -44,9 +44,9 @@ class ConvertTprInfo
 {
 public:
     //! Name of the module.
-    static const char name[];
+    static LIBGROMACS_EXPORT const char name[];
     //! Short description what the module does.
-    static const char shortDescription[];
+    static LIBGROMACS_EXPORT const char shortDescription[];
     //! Instantiatiates the module.
     static ICommandLineOptionsModulePointer create();
 };
