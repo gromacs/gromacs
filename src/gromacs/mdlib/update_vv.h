@@ -93,7 +93,6 @@ enum class StartingBehavior : int;
  * \param[in]  shake_vir         Constraints virial.
  * \param[in]  force_vir         Force virial.
  * \param[in]  pres              Pressure tensor.
- * \param[in]  M                 Parrinello-Rahman velocity scaling matrix.
  * \param[in]  do_log            Do logging on this step.
  * \param[in]  do_ene            Print energies on this step.
  * \param[in]  bCalcEner         Compute energies on this step.
@@ -135,7 +134,6 @@ void integrateVVFirstStep(int64_t                   step,
                           tensor                    shake_vir,
                           tensor                    force_vir,
                           tensor                    pres,
-                          matrix                    M,
                           bool                      do_log,
                           bool                      do_ene,
                           bool                      bCalcEner,
@@ -177,7 +175,6 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  shake_vir         Constraints virial.
  * \param[in]  force_vir         Force virial.
  * \param[in]  pres              Pressure tensor.
- * \param[in]  M                 Parrinello-Rahman velocity scaling matrix.
  * \param[in]  lastbox           Last recorded PBC box.
  * \param[in]  do_log            Do logging on this step.
  * \param[in]  do_ene            Print energies on this step.
@@ -212,7 +209,6 @@ void integrateVVSecondStep(int64_t                   step,
                            tensor                    shake_vir,
                            tensor                    force_vir,
                            tensor                    pres,
-                           matrix                    M,
                            matrix                    lastbox,
                            bool                      do_log,
                            bool                      do_ene,
