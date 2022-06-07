@@ -83,6 +83,12 @@ to find the same OpenMP dependency used by the rest of the library.
 
 :issue:`4499`
 
+Avoid crash in gmx bar with invalid input
+"""""""""""""""""""""""""""""""""""""""""
+
+gmx bar could try to read an invalid input data file and would fail with a hard
+crash instead of a helpful error message.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

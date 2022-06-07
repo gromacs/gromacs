@@ -2683,6 +2683,12 @@ static void read_bar_xvg_lowlevel(const char* fn, const real* temp, xvg_t* ba, l
             native_lambda_read = TRUE;
         }
     }
+
+    if (!native_lambda_read)
+    {
+        gmx_fatal(FARGS, "File %s contains multiple sets but no indication of the native lambda", fn);
+    }
+
     snew(ba->lambda, ba->nset);
     if (legend == nullptr)
     {
@@ -2724,11 +2730,6 @@ static void read_bar_xvg_lowlevel(const char* fn, const real* temp, xvg_t* ba, l
                 ba->nset--;
             }
         }
-    }
-
-    if (!native_lambda_read)
-    {
-        gmx_fatal(FARGS, "File %s contains multiple sets but no indication of the native lambda", fn);
     }
 
     if (legend != nullptr)
