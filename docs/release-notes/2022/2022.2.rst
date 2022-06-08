@@ -16,6 +16,18 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix missing CPU-GPU synchronization when doing free-energy calculations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When GPU halo exchange with direct communication is enabled, CPU based 
+free-energy kernels were being run without waiting on non-local co-ordinates 
+to be available on host. This resulted in use of stale data on CPU side. 
+This issue can cause incorect output when GPU direct communication is enabled 
+using GMX_ENABLE_DIRECT_GPU_COMM environment variable and simulation contains 
+free-energy calculations.
+
+:issue:`4471`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

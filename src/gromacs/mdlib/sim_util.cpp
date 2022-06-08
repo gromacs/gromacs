@@ -1917,6 +1917,14 @@ void do_force(FILE*                               fplog,
         do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::Local, enbvClearFYes, step, nrnb, wcycle);
     }
 
+    if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
+    {
+        wallcycle_stop(wcycle, WallCycleCounter::Force);
+        /* Wait for non-local coordinate data to be copied from device */
+        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
+        wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
+    }
+
     if (fr->efep != FreeEnergyPerturbationType::No && stepWork.computeNonbondedForces)
     {
         /* Calculate the local and non-local free energy interactions here.
@@ -1975,14 +1983,6 @@ void do_force(FILE*                               fplog,
             nbnxn_atomdata_add_nbat_fshift_to_fshift(
                     *nbv->nbat, forceOutNonbonded->forceWithShiftForces().shiftForces());
         }
-    }
-
-    if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
-    {
-        wallcycle_stop(wcycle, WallCycleCounter::Force);
-        /* Wait for non-local coordinate data to be copied from device */
-        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
-        wallcycle_start_nocount(wcycle, WallCycleCounter::Force);
     }
 
     // Compute wall interactions, when present.
