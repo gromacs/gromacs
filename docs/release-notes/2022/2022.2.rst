@@ -112,3 +112,9 @@ TinyXML-2 (only relevant if ``-DGMX_EXTERNAL_TINYXML2=ON`` is used).
 
 :issue:`4477`
 
+Fixed warnings when using module-specific OpenMP thread-count environment variables
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+One of the arrays used to construct message strings wasn't updated
+properly, so sometimes an information message was wrong or may have
+printed garbage.
