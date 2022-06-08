@@ -41,13 +41,30 @@
 
 #include "gromacs/topology/atoms.h"
 
+#include <memory>
 #include <optional>
+#include <string>
 
+#include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/iserializer.h"
+#include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+#ifndef DOXYGEN
+
+template struct FEPStateValue<real>;
+template struct FEPStateValue<unsigned short>;
+template struct FEPStateValue<NameHolder>;
 
 namespace gmx
 {
@@ -99,6 +116,187 @@ TEST(PdbAtomEntryTest, CanCreateFullEntry)
     ASSERT_TRUE(testEntry.anisotropy().has_value());
     auto accessedMatrix = *testEntry.anisotropy();
     EXPECT_THAT(accessedMatrix, ::testing::Pointwise(::testing::Eq(), uij));
+}
+
+#endif
+
+template<typename T>
+void checkParticleValue(TestReferenceChecker* checker,
+                        bool                  haveBState,
+                        const T&              valueA,
+                        const T&              valueB,
+                        const std::string&    fieldName)
+{
+    TestReferenceChecker compound(checker->checkCompound(fieldName.c_str(), fieldName));
+    compound.checkBoolean(haveBState, "HaveBState");
+    compound.checkValue(valueA, "ValueA");
+    compound.checkValue(valueB, "ValueB");
+    EXPECT_EQ(haveBState, valueA != valueB);
+}
+
+void checkParticleMiscInfo(TestReferenceChecker* checker,
+                           ParticleType          type,
+                           gmx::index            resind,
+                           int                   atomnumber,
+                           const std::string&    elem)
+{
+    TestReferenceChecker compound(checker->checkCompound("Misc", "Misc"));
+    compound.checkInteger(static_cast<int>(type), "TypeAsInt");
+    compound.checkInt64(resind, "ResidueIndex");
+    compound.checkInteger(atomnumber, "AtomNumber");
+    compound.checkString(elem, "ElementString");
+}
+
+void checkParticle(TestReferenceChecker* checker, const SimulationParticle& particle)
+{
+    TestReferenceChecker compound(checker->checkCompound("Particle", nullptr));
+    compound.checkBoolean(particle.haveMass(), "HaveMass");
+    compound.checkBoolean(particle.haveCharge(), "HaveCharge");
+    compound.checkBoolean(particle.haveType(), "HaveType");
+    compound.checkBoolean(particle.haveParticleTypeName(), "HaveTypeName");
+    compound.checkBoolean(particle.haveParticleName(), "HaveName");
+    if (particle.haveParticleName())
+    {
+        compound.checkString(particle.particleName(), "Name");
+    }
+    if (particle.haveMass())
+    {
+        checkParticleValue<real>(
+                &compound, particle.haveBStateForAll(), particle.m(), particle.mB(), "Mass");
+    }
+    if (particle.haveCharge())
+    {
+        checkParticleValue<real>(
+                &compound, particle.haveBStateForAll(), particle.q(), particle.qB(), "Charge");
+    }
+    if (particle.haveType())
+    {
+        checkParticleValue<unsigned short>(&compound,
+                                           particle.haveBStateForAll(),
+                                           particle.type(),
+                                           particle.typeB(),
+                                           "TypeValue");
+    }
+    if (particle.haveParticleTypeName())
+    {
+        checkParticleValue<std::string>(&compound,
+                                        particle.haveBStateForAll(),
+                                        particle.particleTypeNameA(),
+                                        particle.particleTypeNameB(),
+                                        "TypeName");
+    }
+    checkParticleMiscInfo(
+            &compound, particle.ptype(), particle.resind(), particle.atomnumber(), particle.elem());
+}
+
+using SimulationParticleTestParameters =
+        std::tuple<std::optional<ParticleMass>, std::optional<ParticleCharge>, std::optional<ParticleTypeValue>, bool>;
+
+const ParticleMass      testParticleMassOneState{ 0.1 };
+const ParticleMass      testParticleMassTwoState{ 0.2, 0.3 };
+const ParticleCharge    testParticleChargeOneState{ 0.4 };
+const ParticleCharge    testParticleChargeTwoState{ 0.5, 0.6 };
+const ParticleTypeValue testParticleTypeValueOneState{ 7 };
+const ParticleTypeValue testParticleTypeValueTwoState{ 8, 9 };
+
+
+class SimulationParticleTest :
+    public ::testing::Test,
+    public ::testing::WithParamInterface<SimulationParticleTestParameters>
+{
+public:
+    SimulationParticleTest();
+    //! Access to table builder.
+    StringTableBuilder* builder() { return &tableBuilder_; }
+    //! Run tests.
+    void runTest(const SimulationParticle& particle);
+
+private:
+    //! Need a string table with test strings, initialized during setup.
+    StringTableBuilder tableBuilder_;
+    //! Handler for reference data.
+    TestReferenceData data_;
+    //! Handler for checking reference data.
+    TestReferenceChecker checker_;
+};
+
+SimulationParticleTest::SimulationParticleTest() : checker_(data_.rootChecker())
+{
+    std::string particleName = "Calpha";
+    std::string typeAName    = "cool";
+    std::string typeBName    = "boring";
+    tableBuilder_.addString(particleName);
+    tableBuilder_.addString(typeAName);
+    tableBuilder_.addString(typeBName);
+}
+
+void SimulationParticleTest::runTest(const SimulationParticle& particle)
+{
+    checkParticle(&checker_, particle);
+}
+
+TEST_P(SimulationParticleTest, CanCreate)
+{
+    const auto params          = GetParam();
+    const auto mass            = std::get<0>(params);
+    const auto charge          = std::get<1>(params);
+    const auto typeValue       = std::get<2>(params);
+    const auto useTwoStateName = std::get<3>(params);
+    const auto table           = builder()->build();
+
+    ParticleTypeName typeName = useTwoStateName ? ParticleTypeName(table.at(1), table.at(2))
+                                                : ParticleTypeName(table.at(1));
+
+    std::string elem("foo\n");
+    runTest(SimulationParticle(
+            mass, charge, typeValue, typeName, table.at(0), ParticleType::Atom, 3, 4, elem));
+}
+
+TEST_P(SimulationParticleTest, CanSerialize)
+{
+    const auto params          = GetParam();
+    const auto mass            = std::get<0>(params);
+    const auto charge          = std::get<1>(params);
+    const auto typeValue       = std::get<2>(params);
+    const auto useTwoStateName = std::get<3>(params);
+
+    const auto         table    = builder()->build();
+    ParticleTypeName   typeName = useTwoStateName ? ParticleTypeName(table.at(1), table.at(2))
+                                                  : ParticleTypeName(table.at(1));
+    std::string        elem("foo\n");
+    SimulationParticle testParticle(
+            mass, charge, typeValue, typeName, table.at(0), ParticleType::Atom, 3, 4, elem);
+
+    gmx::InMemorySerializer writer;
+    testParticle.serializeParticle(&writer);
+    auto                      buffer = writer.finishAndGetBuffer();
+    gmx::InMemoryDeserializer reader(buffer, GMX_DOUBLE);
+    runTest(SimulationParticle(&reader, table));
+}
+
+INSTANTIATE_TEST_SUITE_P(BuildsValidDataStructure,
+                         SimulationParticleTest,
+                         ::testing::Combine(::testing::Values(std::nullopt,
+                                                              std::optional(testParticleMassOneState),
+                                                              std::optional(testParticleMassTwoState)),
+                                            ::testing::Values(std::nullopt,
+                                                              std::optional(testParticleChargeOneState),
+                                                              std::optional(testParticleChargeTwoState)),
+                                            ::testing::Values(std::nullopt,
+                                                              std::optional(testParticleTypeValueOneState),
+                                                              std::optional(testParticleTypeValueTwoState)),
+                                            ::testing::Values(false, true)));
+
+TEST_F(SimulationParticleTest, DeathTestSerialize)
+{
+    const auto         mass      = testParticleMassOneState;
+    const auto         charge    = testParticleChargeOneState;
+    const auto         typeValue = testParticleTypeValueOneState;
+    SimulationParticle testParticle(
+            mass, charge, typeValue, {}, {}, ParticleType::Atom, 3, 4, "foo");
+    gmx::InMemorySerializer writer;
+    GMX_EXPECT_DEATH_IF_SUPPORTED(testParticle.serializeParticle(&writer),
+                                  "Can not access uninitialized element");
 }
 
 } // namespace

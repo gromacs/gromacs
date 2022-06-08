@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Particle>
+    <Bool Name="HaveMass">false</Bool>
+    <Bool Name="HaveCharge">true</Bool>
+    <Bool Name="HaveType">false</Bool>
+    <Bool Name="HaveTypeName">true</Bool>
+    <Bool Name="HaveName">true</Bool>
+    <String Name="Name">Calpha</String>
+    <Charge Name="Charge">
+      <Bool Name="HaveBState">false</Bool>
+      <Real Name="ValueA">0.5</Real>
+      <Real Name="ValueB">0.5</Real>
+    </Charge>
+    <TypeName Name="TypeName">
+      <Bool Name="HaveBState">false</Bool>
+      <String Name="ValueA">cool</String>
+      <String Name="ValueB">cool</String>
+    </TypeName>
+    <Misc Name="Misc">
+      <Int Name="TypeAsInt">0</Int>
+      <Int64 Name="ResidueIndex">3</Int64>
+      <Int Name="AtomNumber">4</Int>
+      <String Name="ElementString">foo
+</String>
+    </Misc>
+  </Particle>
+</ReferenceData>

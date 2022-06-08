@@ -39,6 +39,7 @@
 #include <optional>
 #include <vector>
 
+#include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -46,6 +47,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
+/* The particle type */
+enum class ParticleType : int;
 namespace gmx
 {
 class ISerializer;
@@ -132,6 +135,173 @@ private:
     std::optional<real> bFactor_;
     //! Tensor of anisotropy values.
     std::optional<std::array<real, 6>> anisotropyTensor_;
+};
+
+
+//! Typedef for names that might be set.
+using NameHolder = std::optional<StringTableEntry>;
+
+//! Template wrapper struct for particle FEP state values
+template<typename T>
+struct FEPStateValue
+{
+    //! Empty object.
+    FEPStateValue() = default;
+    //! Construct without FEP state changes.
+    explicit FEPStateValue(T value) : storage_({ value, T() }), haveBState_{ false } {}
+    //! Construct with FEP state changes.
+    FEPStateValue(T valueA, T valueB) : storage_({ valueA, valueB }), haveBState_{ true } {}
+    //! Internal storage.
+    std::array<T, 2> storage_ = {};
+    //! Whether this value has B state set or not.
+    bool haveBState_ = false;
+};
+
+//! Typedef for particle mass.
+using ParticleMass = FEPStateValue<real>;
+//! Typedef for particle charge.
+using ParticleCharge = FEPStateValue<real>;
+//! Typedef for particle type value.
+using ParticleTypeValue = FEPStateValue<unsigned short>;
+//! Typedef for particle type name.
+using ParticleTypeName = FEPStateValue<NameHolder>;
+
+//! Single particle in a simulation.
+class SimulationParticle
+{
+public:
+    //! Write info to serializer.
+    void serializeParticle(gmx::ISerializer* serializer);
+    //! Access mass. A state.
+    real m() const { return mass_.storage_[0]; }
+    //! Access charge. A state.
+    real q() const { return charge_.storage_[0]; }
+    //! Access atom type. A state.
+    unsigned short type() const { return particleTypeValue_.storage_[0]; }
+    //! Access mass. B state.
+    real mB() const { return haveBStateForAll() ? mass_.storage_[1] : mass_.storage_[0]; }
+    //! Access charge. B state.
+    real qB() const { return haveBStateForAll() ? charge_.storage_[1] : charge_.storage_[0]; }
+    //! Access atom type. B state.
+    unsigned short typeB() const
+    {
+        return haveBStateForAll() ? particleTypeValue_.storage_[1] : particleTypeValue_.storage_[0];
+    }
+    //! Access particle name.
+    std::string particleName() const
+    {
+        GMX_ASSERT(haveParticleName(), "Can not access uninitialized element");
+        return *particleName_.value();
+    }
+    //! Access type name for state A.
+    std::string particleTypeNameA() const
+    {
+        GMX_ASSERT(haveParticleTypeName(), "Can not access uninitialized element");
+        return *particleTypeName_.storage_[0].value();
+    }
+    //! Access type name for state B if it exists.
+    std::string particleTypeNameB() const
+    {
+        GMX_ASSERT(haveParticleTypeName(), "Can not access uninitialized element");
+        const auto entry =
+                haveBStateForAll() ? particleTypeName_.storage_[1] : particleTypeName_.storage_[0];
+        GMX_ASSERT(entry.has_value(), "Can not access uninitialized element");
+        return *entry.value();
+    }
+
+    //! Access particle type.
+    ParticleType ptype() const { return particleType_; }
+    //! Access residue index.
+    gmx::index resind() const { return residueIndex_; }
+    //! Access atomic number.
+    int atomnumber() const { return atomicNumber_; }
+    //! Access element name.
+    std::string elem() const { return elementName_; }
+    //! Do we have mass?
+    bool haveMass() const { return haveMass_; }
+    //! Do we have charge?
+    bool haveCharge() const { return haveCharge_; }
+    //! Do we have type?
+    bool haveType() const { return haveType_; }
+    //! Do we have particle name set?
+    bool haveParticleName() const { return haveParticleName_; }
+    //! Do we have the particle type name set.
+    bool haveParticleTypeName() const { return haveParticleTypeName_; }
+    //! Do we have B state?
+    bool haveBStateForAll() const { return haveBStateForAll_; }
+
+    //! Constructor with complete information. A and B states are equivalent.
+    SimulationParticle(const std::optional<ParticleMass>      mass,
+                       const std::optional<ParticleCharge>    charge,
+                       const std::optional<ParticleTypeValue> particleTypeValue,
+                       const std::optional<ParticleTypeName>  particleTypeName,
+                       NameHolder                             particleName,
+                       ParticleType                           particleType,
+                       gmx::index                             residueIndex,
+                       int                                    atomicNumber,
+                       const std::string&                     elementName) :
+        mass_(mass.has_value() ? *mass : ParticleMass()),
+        charge_(charge.has_value() ? *charge : ParticleCharge()),
+        particleTypeValue_(particleTypeValue.has_value() ? *particleTypeValue : ParticleTypeValue()),
+        particleTypeName_(particleTypeName.has_value() ? *particleTypeName : ParticleTypeName()),
+        particleName_(particleName),
+        particleType_(particleType),
+        residueIndex_(residueIndex),
+        atomicNumber_(atomicNumber),
+        elementName_(elementName),
+        haveMass_(mass.has_value()),
+        haveCharge_(charge.has_value()),
+        haveType_(particleTypeValue.has_value()),
+        haveParticleName_(particleName.has_value()),
+        haveParticleTypeName_(particleTypeName.has_value()),
+        haveBStateForAll_(mass_.haveBState_ && charge_.haveBState_ && particleTypeValue_.haveBState_
+                          && particleTypeName_.haveBState_)
+    {
+        GMX_ASSERT(elementName.length() <= 4, "Element name can only be three characters");
+    }
+    //! Construct new datastructure from deserialization.
+    SimulationParticle(gmx::ISerializer* serializer, const StringTable& table);
+
+    //! Copy constructor.
+    SimulationParticle(const SimulationParticle&) = default;
+    //! Copy assignment.
+    SimulationParticle& operator=(const SimulationParticle&) = default;
+    //! Default move constructor.
+    SimulationParticle(SimulationParticle&&) = default;
+    //! Default move assignment.
+    SimulationParticle& operator=(SimulationParticle&&) = default;
+
+private:
+    //! Mass of the particle. A and B state.
+    ParticleMass mass_;
+    //! Charge of the particle. A and B state.
+    ParticleCharge charge_;
+    //! Atom type. A and B state.
+    ParticleTypeValue particleTypeValue_;
+    //! Atom type name. A and B state.
+    ParticleTypeName particleTypeName_;
+    //! Atom name.
+    NameHolder particleName_;
+    //! Type of the particle.
+    ParticleType particleType_;
+    //! Residue this atoms is part of.
+    int64_t residueIndex_;
+    //! Atomic Number or 0.
+    int atomicNumber_;
+    //! Name of the element if applicable.
+    std::string elementName_;
+    //! If we have mass for the particle.
+    bool haveMass_;
+    //! If we have charge for the particle.
+    bool haveCharge_;
+    //! If the particle type is set.
+    bool haveType_;
+    //! If the particle name is set.
+    bool haveParticleName_;
+    //! If the particle type name is set.
+    bool haveParticleTypeName_;
+    //! If all fields have B state set.
+    bool haveBStateForAll_;
 };
 
 // Legacy types begin here
