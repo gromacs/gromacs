@@ -76,7 +76,7 @@ public:
     //! Constructor
     ParrinelloRahmanBarostat(int                  nstpcouple,
                              int                  offset,
-                             real                 couplingTimeStep,
+                             real                 couplingTimePeriod,
                              Step                 initStep,
                              StatePropagatorData* statePropagatorData,
                              EnergyData*          energyData,
@@ -141,8 +141,8 @@ private:
     const int nstpcouple_;
     //! If != 0, offset the step at which the barostat is applied
     const int offset_;
-    //! The coupling time step - simulation time step x nstcouple_
-    const real couplingTimeStep_;
+    //! The coupling time period, ie. simulation time step times nstcouple_
+    const real couplingTimePeriod_;
     //! The first step of the simulation
     const Step initStep_;
 

@@ -64,7 +64,7 @@ namespace gmx
 
 ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcouple,
                                                    int                  offset,
-                                                   real                 couplingTimeStep,
+                                                   real                 couplingTimePeriod,
                                                    Step                 initStep,
                                                    StatePropagatorData* statePropagatorData,
                                                    EnergyData*          energyData,
@@ -73,7 +73,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
                                                    const MDAtoms*       mdAtoms) :
     nstpcouple_(nstpcouple),
     offset_(offset),
-    couplingTimeStep_(couplingTimeStep),
+    couplingTimePeriod_(couplingTimePeriod),
     initStep_(initStep),
     mu_{ { 0 } },
     boxRel_{ { 0 } },
@@ -140,16 +140,15 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
                             step,
                             inputrec_->pressureCouplingOptions,
                             inputrec_->deform,
-                            couplingTimeStep_,
+                            couplingTimePeriod_,
                             energyData_->pressure(step),
                             box,
                             boxRel_,
                             boxVelocity_,
                             scalingTensor_.data(),
-                            mu_,
-                            false);
+                            mu_);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
-    msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
+    msmul(scalingTensor_.data(), couplingTimePeriod_, scalingTensor_.data());
 }
 
 void ParrinelloRahmanBarostat::scaleBoxAndPositions()
@@ -160,7 +159,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
     {
         for (int m = 0; m <= i; m++)
         {
-            box[i][m] += couplingTimeStep_ * boxVelocity_[i][m];
+            box[i][m] += couplingTimePeriod_ * boxVelocity_[i][m];
         }
     }
     preserveBoxShape(inputrec_->pressureCouplingOptions, inputrec_->deform, boxRel_, box);
@@ -227,20 +226,16 @@ void ParrinelloRahmanBarostat::elementSetup()
         // The call to parrinellorahman_pcoupl is using nullptr for fplog (since we don't expect any
         // output here) and for the pressure (since it might not be calculated yet, and we don't need it).
         const auto* box = statePropagatorData_->constBox();
-        parrinellorahman_pcoupl(nullptr,
-                                initStep_,
-                                inputrec_->pressureCouplingOptions,
-                                inputrec_->deform,
-                                couplingTimeStep_,
-                                nullptr,
-                                box,
-                                boxRel_,
-                                boxVelocity_,
-                                scalingTensor_.data(),
-                                mu_,
-                                true);
+        init_parrinellorahman(inputrec_->pressureCouplingOptions,
+                              inputrec_->deform,
+                              couplingTimePeriod_,
+                              box,
+                              boxRel_,
+                              boxVelocity_,
+                              scalingTensor_.data(),
+                              mu_);
         // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
-        msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
+        msmul(scalingTensor_.data(), couplingTimePeriod_, scalingTensor_.data());
 
         propagatorCallback_(initStep_);
     }

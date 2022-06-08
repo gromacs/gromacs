@@ -84,8 +84,7 @@ void update_pcouple_before_coordinates(FILE*                          fplog,
                                        real                           delta_t,
                                        t_state*                       state,
                                        matrix                         parrinellorahmanMu,
-                                       matrix                         M,
-                                       bool                           bInitStep);
+                                       matrix                         M);
 
 /* Update the box, to be called after the coordinate update.
  * For Berendsen P-coupling, also calculates the scaling factor
@@ -213,18 +212,89 @@ real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, 
  * The unit of pressure is bar.
  */
 
+/*! \brief Initialize the Parrinello-Rahman mu and M tensors
+ *
+ * mu describes the relative change in box vectors introduced by the
+ * coupling and applied at each step. This ensures there is no large
+ * jump in box-vector values.
+ *
+ * M is used in the update code to couple the change in particle
+ * velocities to that of the box vectors introduced by mu.
+ *
+ * \param[in]  pressureCouplingOptions  The pressure-coupling options
+ * \param[in]  deform                   The matrix describing any box deformation
+ * \param[in]  couplingTimePeriod       The period between changes to the pressure coupling
+ * \param[in]  box                      The simulation box vectors
+ * \param[in]  box_rel                  The relative box vectors
+ * \param[in]  boxv                     The simulation box vector velocity for Parrinello-Rahman coupling
+ * \param[out] M                        The scaling factor for particle velocities
+ * \param[out] mu                       The scaling factor for box vectors
+ */
+void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOptions,
+                           const tensor                   deform,
+                           real                           couplingTimePeriod,
+                           const tensor                   box,
+                           tensor                         box_rel,
+                           tensor                         boxv,
+                           tensor                         M,
+                           matrix                         mu);
+
+/*! \brief Calculate the change in box vectors due to Parrinello-Rahman pressure coupling
+ *
+ * \param[in]  fplog                    Log file for warning when pressure change is large
+ * \param[in]  step                     The MD step count for the above warning
+ * \param[in]  pressureCouplingOptions  The pressure-coupling options
+ * \param[in]  deform                   The matrix describing any box deformation
+ * \param[in]  couplingTimePeriod       The period between changes to the pressure coupling
+ * \param[in]  pres                     The current pressure
+ * \param[in]  box                      The simulation box vectors
+ * \param[in]  box_rel                  The relative box vectors
+ * \param[in]  boxv                     The simulation box vector velocity for Parrinello-Rahman coupling
+ * \param[out] M                        The scaling factor for particle velocities
+ * \param[out] mu                       The scaling factor for box vectors
+ *
+ * This doesn't do any coordinate updating. It just integrates the box
+ * vector equations from the calculated acceleration due to pressure
+ * difference. We also compute the tensor M which is used in update to
+ * couple the particle coordinates to the box vectors.
+ *
+ * We also do NOT update the box vectors themselves here, since we
+ * need them for shifting later. It is instead done last in the update
+ * routines.
+ *
+ * In Nose and Klein (Mol.Phys 50 (1983) no 5., p 1055) this is given
+ * as
+ *
+ *            -1    .           .     -1
+ * M_nk = (h')   * (h' * h + h' h) * h
+ *
+ * with the dots denoting time derivatives, apostrophes denoting
+ * transposition, and h is the transformation from the scaled frame to
+ * the real frame, i.e. the TRANSPOSE of the box. This also goes for
+ * the pressure and M tensors - they are transposed relative to
+ * ours. Our equation thus becomes:
+ *
+ *                  -1       .    .           -1
+ * M_gmx = M_nk' = b  * (b * b' + b * b') * b'
+ *
+ * where b is the gromacs box matrix. Our box accelerations are given
+ * by
+ *
+ *   ..                                    ..
+ *   b = vol/W inv(box') * (P-ref_P)     (=h')
+ *
+ */
 void parrinellorahman_pcoupl(FILE*                          fplog,
                              int64_t                        step,
-                             const PressureCouplingOptions& pressureCoupling,
+                             const PressureCouplingOptions& pressureCouplingOptions,
                              const tensor                   deform,
-                             real                           delta_t,
+                             real                           couplingTimePeriod,
                              const tensor                   pres,
                              const tensor                   box,
                              tensor                         box_rel,
                              tensor                         boxv,
                              tensor                         M,
-                             matrix                         mu,
-                             bool                           bFirstStep);
+                             matrix                         mu);
 
 /*! \brief Calculate the pressure coupling scaling matrix
  *

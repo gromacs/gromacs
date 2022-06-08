@@ -400,6 +400,16 @@ void gmx::LegacySimulator::do_md()
         fr->longRangeNonbondeds->updateAfterPartition(*md);
     }
 
+    // Now that the state is valid we can set up Parrinello-Rahman
+    init_parrinellorahman(ir->pressureCouplingOptions,
+                          ir->deform,
+                          ir->delta_t * ir->pressureCouplingOptions.nstpcouple,
+                          state->box,
+                          state->box_rel,
+                          state->boxv,
+                          M,
+                          pressureCouplingMu);
+
     std::unique_ptr<UpdateConstrainGpu> integrator;
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
@@ -1401,7 +1411,7 @@ void gmx::LegacySimulator::do_md()
         {
             update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
             update_pcouple_before_coordinates(
-                    fplog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M, bInitStep);
+                    fplog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M);
         }
 
         /* With leap-frog type integrators we compute the kinetic energy
