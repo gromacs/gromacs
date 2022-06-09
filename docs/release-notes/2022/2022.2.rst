@@ -58,6 +58,20 @@ Removed the (incorrect) output file size note/warning with mdrun -rerun
 
 :issue:`4484`
 
+Wait for PME coordinate padding clearing to complete after reinitialization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+As part of the irregular reinitialization of PME coordinate buffers,
+the padding area of the buffer on the GPU must be set to
+zero. Previously, a dependency was missing such that, with GPU direct
+communications enabled via the GMX_ENABLE_DIRECT_GPU_COMM, it was
+possible that the PME kernel could preceed before this initialization
+had completed, and this has now been fixed. The incorrect ordering is
+only expected to have occured in extreme benchmarking cases, causing
+an obvious crash.
+
+:issue:`4482`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

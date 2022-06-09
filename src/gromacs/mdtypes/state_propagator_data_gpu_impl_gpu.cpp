@@ -162,6 +162,8 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     {
         // The PME stream is used here because the padding region of d_x_ is only in the PME task.
         clearDeviceBufferAsync(&d_x_, numAtomsAll_, paddingAllocationSize, *pmeStream_);
+        // Wait for clearing to complete since with PME-PP pipelining PME will use different streams.
+        pmeStream_->synchronize();
     }
 
     reallocateDeviceBuffer(&d_v_, numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
