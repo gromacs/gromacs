@@ -53,7 +53,7 @@ if(APPLE)
         set(_gmx_osx_deployment_target_checked ${CMAKE_OSX_DEPLOYMENT_TARGET} CACHE STRING
                 "Last seen CMAKE_OSX_DEPLOYMENT_TARGET, if previously set." FORCE)
     endif()
-    if(DEFINED CMAKE_OSX_ARCHITECTURES)
+    if(CMAKE_OSX_ARCHITECTURES)
         string(FIND ${CMAKE_OSX_ARCHITECTURES} i386 _substring_index)
         if(_substring_index GREATER_EQUAL 0)
             message(FATAL_ERROR "CMAKE_OSX_ARCHITECTURES includes i386, but GROMACS requires 64-bit architecture.")
