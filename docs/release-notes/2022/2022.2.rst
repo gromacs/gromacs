@@ -51,7 +51,8 @@ PME rank, the dV/dlambda contribution for the PME mesh part was missing.
 The same contribution was missing from the foreign lambda energy differences.
 Note that the energies and forces were correct.
 
-:issues;`4474`
+:issue:`4474`
+
 Removed the (incorrect) output file size note/warning with mdrun -rerun
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
