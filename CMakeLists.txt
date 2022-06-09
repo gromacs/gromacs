@@ -250,6 +250,11 @@ gmx_dependent_option(
     "Use HeFFTe for FFT support. Used with CUDA backend"
     OFF
     "GMX_GPU STREQUAL CUDA;GMX_MPI")
+gmx_dependent_option(
+    GMX_USE_CUFFTMP
+    "Use cuFFTMp for FFT support. Used with CUDA backend"
+    OFF
+    "GMX_GPU STREQUAL CUDA;GMX_MPI")
 
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
@@ -680,7 +685,18 @@ if(GMX_USE_HEFFTE)
         message(FATAL_ERROR "HeFFTe support requires a library MPI build")
     endif()
     find_package(Heffte 2.2.0 REQUIRED CUDA)
-    set(HAVE_Heffte ${Heffte_FOUND})
+    set(GMX_USE_Heffte ${Heffte_FOUND})
+endif()
+
+if(GMX_USE_CUFFTMP)
+    if(NOT GMX_GPU_CUDA)
+        message(FATAL_ERROR "cuFFTMp support requires a CUDA build")
+    endif()
+    if(NOT GMX_LIB_MPI)
+        message(FATAL_ERROR "cuFFTMp support requires a library MPI build")
+    endif()
+    find_package(cuFFTMp REQUIRED CUDA)
+    set(GMX_USE_cuFFTMp ${cuFFTMp_FOUND})
 endif()
 
 if(WIN32)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2021- The GROMACS Authors
+ * Copyright 2022- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -38,10 +38,10 @@
  *  \ingroup module_fft
  */
 
-#ifndef GMX_FFT_GPU_3DFFT_HEFFTE_H
-#define GMX_FFT_GPU_3DFFT_HEFFTE_H
+#ifndef GMX_FFT_GPU_3DFFT_CUFFTMP_H
+#define GMX_FFT_GPU_3DFFT_CUFFTMP_H
 
-#include <heffte.h>
+#include <cufftMp.h>
 
 #include <memory>
 
@@ -60,29 +60,28 @@ namespace gmx
 {
 
 /*! \internal \brief
- * A 3D FFT wrapper class for performing R2C/C2R transforms using heffte
+ * A 3D FFT wrapper class for performing R2C/C2R transforms using cuFFTMp
  */
-template<typename backend_tag>
-class Gpu3dFft::ImplHeFfte : public Gpu3dFft::Impl
+class Gpu3dFft::ImplCuFftMp : public Gpu3dFft::Impl
 {
 public:
     //! \copydoc Gpu3dFft::Impl::Impl
-    ImplHeFfte(bool                 allocateRealGrid,
-               MPI_Comm             comm,
-               ArrayRef<const int>  gridSizesInXForEachRank,
-               ArrayRef<const int>  gridSizesInYForEachRank,
-               int                  nz,
-               bool                 performOutOfPlaceFFT,
-               const DeviceContext& context,
-               const DeviceStream&  pmeStream,
-               ivec                 realGridSize,
-               ivec                 realGridSizePadded,
-               ivec                 complexGridSizePadded,
-               DeviceBuffer<float>* realGrid,
-               DeviceBuffer<float>* complexGrid);
+    ImplCuFftMp(bool                 allocateRealGrid,
+                MPI_Comm             comm,
+                ArrayRef<const int>  gridSizesInXForEachRank,
+                ArrayRef<const int>  gridSizesInYForEachRank,
+                int                  nz,
+                bool                 performOutOfPlaceFFT,
+                const DeviceContext& context,
+                const DeviceStream&  pmeStream,
+                ivec                 realGridSize,
+                ivec                 realGridSizePadded,
+                ivec                 complexGridSizePadded,
+                DeviceBuffer<float>* realGrid,
+                DeviceBuffer<float>* complexGrid);
 
     /*! \brief Destroys the FFT plans. */
-    ~ImplHeFfte() override = default;
+    ~ImplCuFftMp() override;
 
     /*! \brief Performs the FFT transform in given direction
      *
@@ -92,11 +91,9 @@ public:
     void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent) override;
 
 private:
-    heffte::gpu::vector<float>               localRealGrid_;
-    heffte::gpu::vector<std::complex<float>> localComplexGrid_;
-    heffte::gpu::vector<std::complex<float>> workspace_;
-
-    std::unique_ptr<heffte::fft3d_r2c<backend_tag, int>> fftPlan_;
+    cufftHandle    planR2C_;
+    cufftHandle    planC2R_;
+    cudaLibXtDesc* desc_;
 };
 
 } // namespace gmx

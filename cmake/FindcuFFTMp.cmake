@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2012- The GROMACS Authors
+# Copyright 2022- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,18 +31,54 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# This test is slow with OpenCL or the OpenCL DPC++ SYCL back end so
-# label it as SLOW_TEST always. However when both those cases have
-# gone, it no longer needs this annotation.
-gmx_add_gtest_executable(fft-test HARDWARE_DETECTION
-    GPU_CPP_SOURCE_FILES
-        fft.cpp
-    )
-gmx_register_gtest_test(FFTUnitTests fft-test SLOW_TEST QUICK_GPU_TEST)
+# - Find cuFFTMp, NVIDIA's FFT library for multi-GPU multi-node
+#
+# This script does define cache variables
+#   CUFFTMP_INCLUDE_DIR    - Location of cuFFTMP's include directory.
+#   CUFFTMP_LIBRARY        - Location of cuFFTMP's libraries
+#
+# If your cuFFTMp installation is not in a standard installation
+# directory, you may provide a hint to where it may be found. Simply
+# set the value cuFFTMp_ROOT to the directory containing
+# 'include/cufftMp.h" prior to calling find_package().
 
-if(GMX_USE_Heffte OR GMX_USE_cuFFTMp)
-gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION
-    GPU_CPP_SOURCE_FILES
-        fft_mpi.cpp
-        )
+if(cuFFTMp_INCLUDE_DIR)
+  # Already in cache, be silent
+  set (cuFFTMp_FIND_QUIETLY TRUE)
 endif()
+
+find_package(PkgConfig)
+pkg_check_modules(PC_cuFFTMp QUIET cuFFTMp)
+
+find_path(cuFFTMp_ROOT_DIR
+    NAMES 
+    include/cufftmp_ea/cufftMp.h
+    include/cufftmp/cufftMp.h
+    HINTS ${cuFFTMp_ROOT}
+    DOC "cuFFTMp root directory.")
+
+find_path(cuFFTMp_INCLUDE_DIR
+    NAMES cufftMp.h
+    HINTS
+    ${cuFFTMp_ROOT_DIR}/include/cufftmp_ea
+    ${cuFFTMp_ROOT_DIR}/include/cufftmp
+    ${PC_cuFFTMp_INCLUDE_DIRS}
+    DOC "cuFFTMp Include directory")
+
+find_library(cuFFTMp_LIBRARY
+    NAMES cufftMp
+    HINTS
+    ${cuFFTMp_ROOT_DIR}/lib64
+    ${cuFFTMp_ROOT_DIR}/lib
+    ${PC_cuFFTMp_LIBRARY_DIRS}
+    )
+
+# handle the QUIETLY and REQUIRED arguments and set cuFFTMp_FOUND to TRUE if
+# all listed variables are TRUE
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(cuFFTMp
+    REQUIRED_VARS cuFFTMp_INCLUDE_DIR cuFFTMp_LIBRARY
+)
+
+mark_as_advanced(cuFFTMp_ROOT_DIR cuFFTMp_LIBRARY cuFFTMp_INCLUDE_DIR)
+

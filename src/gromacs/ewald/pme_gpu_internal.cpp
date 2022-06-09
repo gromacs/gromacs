@@ -767,6 +767,11 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
     pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
 
     pmeGpu->archSpecific->performOutOfPlaceFFT = true;
+    if (pmeGpu->settings.useDecomposition && GMX_USE_cuFFTMp)
+    {
+        pmeGpu->archSpecific->performOutOfPlaceFFT = false;
+    }
+
     /* This should give better performance, according to the cuFFT documentation.
      * The performance seems to be the same though.
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
@@ -804,6 +809,66 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
     }
 }
 
+/*! \internal \brief
+ * Wrapper for getting FFT backend depending on Gromacs GPU backend compilation flags.
+ *
+ * \param[in] pmeGpu  The PME GPU structure.
+ * \returns FftBackend enum value.
+ */
+static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
+{
+    if (GMX_GPU_CUDA)
+    {
+        if (!pmeGpu->settings.useDecomposition)
+        {
+            return gmx::FftBackend::Cufft;
+        }
+        else
+        {
+            if (GMX_USE_cuFFTMp)
+            {
+                return gmx::FftBackend::CuFFTMp;
+            }
+            else if (GMX_USE_Heffte)
+            {
+                return gmx::FftBackend::HeFFTe_CUDA;
+            }
+            else
+            {
+                GMX_RELEASE_ASSERT(
+                        false,
+                        "Gromacs must be built with cuFFTMp or Heffte to enable GPU-based "
+                        "PME decomposition on CUDA-compatible GPUs");
+                return gmx::FftBackend::Count;
+            }
+        }
+    }
+    else if (GMX_GPU_OPENCL)
+    {
+        return gmx::FftBackend::Ocl;
+    }
+    else if (GMX_GPU_SYCL)
+    {
+        if (GMX_SYCL_DPCPP && GMX_FFT_MKL)
+        {
+            return gmx::FftBackend::SyclMkl;
+        }
+        else if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
+        {
+            return gmx::FftBackend::SyclRocfft;
+        }
+        else
+        {
+            return gmx::FftBackend::Sycl;
+        }
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Unknown GPU backend");
+        return gmx::FftBackend::Count;
+    }
+}
+
 void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 {
     if (pme_gpu_settings(pmeGpu).performGPUFFT)
@@ -825,23 +890,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 
         const bool allocateRealGrid = pmeGpu->settings.useDecomposition;
 
-#if GMX_GPU_CUDA
-        const gmx::FftBackend backend = pmeGpu->settings.useDecomposition ? gmx::FftBackend::HeFFTe_CUDA
-                                                                          : gmx::FftBackend::Cufft;
-#elif GMX_GPU_OPENCL
-        const gmx::FftBackend backend = gmx::FftBackend::Ocl;
-#elif GMX_GPU_SYCL
-#    if GMX_SYCL_DPCPP && GMX_FFT_MKL
-        const gmx::FftBackend backend = gmx::FftBackend::SyclMkl;
-#    elif GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET
-        const gmx::FftBackend backend = gmx::FftBackend::SyclRocfft;
-#    else
-        const gmx::FftBackend backend = gmx::FftBackend::Sycl;
-#    endif
-#else
-        GMX_RELEASE_ASSERT(false, "Unknown GPU backend");
-        const gmx::FftBackend backend = gmx::FftBackend::Count;
-#endif
+        const gmx::FftBackend backend = getFftBackend(pmeGpu);
 
         PmeGpuGridParams& grid = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->grid;
         for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)

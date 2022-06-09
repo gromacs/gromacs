@@ -1375,8 +1375,6 @@ void convertPmeGridToFftGrid(const PmeGpu*         pmeGpu,
     else
     {
         // launch copy kernel
-        // ToDo: Experiment with different block size and decide on optimal configuration
-
         // Keeping threadsAlongZDim same as warp size for better coalescing,
         // Not keeping to higher value such as 64 to avoid high masked out
         // inactive threads as FFT grid sizes tend to be quite small
@@ -1461,8 +1459,6 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
     else
     {
         // launch copy kernel
-        // ToDo: Experiment with different block size and decide on optimal configuration
-
         // keeping same as warp size for better coalescing
         // Not keeping to higher value such as 64 to avoid high masked out
         // inactive threads as FFT grid sizes tend to be quite small

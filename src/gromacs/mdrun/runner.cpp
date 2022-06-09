@@ -321,8 +321,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            (devFlags.canUseGpuAwareMpi
-             && (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed));
+            (devFlags.canUseGpuAwareMpi && GMX_GPU_CUDA
+             && ((pmeRunMode == PmeRunMode::GPU && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
+                 || pmeRunMode == PmeRunMode::Mixed));
 
     const bool forcePmeGpuDecomposition = getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
 
@@ -350,10 +351,21 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     if (!pmeGpuDecompositionSupported && pmeGpuDecompositionRequested)
     {
-        gmx_fatal(FARGS,
-                  "PME tasks were required to run on GPUs, but that is not implemented with "
-                  "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
-                  "or permit PME tasks to be assigned to the CPU.");
+        if (GMX_GPU_CUDA)
+        {
+            gmx_fatal(FARGS,
+                      "PME tasks were required to run on more than one CUDA-devices. To enable "
+                      "this feature, "
+                      "use MPI with CUDA-aware support and build GROMACS with cuFFTMp support.");
+        }
+        else
+        {
+            gmx_fatal(
+                    FARGS,
+                    "PME tasks were required to run on GPUs, but that is not implemented with "
+                    "more than one PME rank. Use a single rank simulation, or a separate PME rank, "
+                    "or permit PME tasks to be assigned to the CPU.");
+        }
     }
 
     devFlags.enableGpuPmeDecomposition =

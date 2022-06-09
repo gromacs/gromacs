@@ -60,8 +60,12 @@
 #    endif
 #endif
 
-#if HAVE_Heffte
+#if GMX_USE_Heffte
 #    include "gpu_3dfft_heffte.h"
+#endif
+
+#if GMX_USE_cuFFTMp
+#    include "gpu_3dfft_cufftmp.h"
 #endif
 
 #include "gromacs/utility/arrayref.h"
@@ -109,6 +113,23 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                           realGrid,
                                                           complexGrid);
             break;
+#    if GMX_USE_cuFFTMp
+        case FftBackend::CuFFTMp:
+            impl_ = std::make_unique<Gpu3dFft::ImplCuFftMp>(allocateRealGrid,
+                                                            comm,
+                                                            gridSizesInXForEachRank,
+                                                            gridSizesInYForEachRank,
+                                                            nz,
+                                                            performOutOfPlaceFFT,
+                                                            context,
+                                                            pmeStream,
+                                                            realGridSize,
+                                                            realGridSizePadded,
+                                                            complexGridSizePadded,
+                                                            realGrid,
+                                                            complexGrid);
+            break;
+#    endif
         default:
             GMX_RELEASE_ASSERT(backend == FftBackend::HeFFTe_CUDA,
                                "Unsupported FFT backend requested");
@@ -189,7 +210,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
     }
 #endif
 
-#if HAVE_Heffte
+#if GMX_USE_Heffte
     switch (backend)
     {
         case FftBackend::HeFFTe_CUDA:
