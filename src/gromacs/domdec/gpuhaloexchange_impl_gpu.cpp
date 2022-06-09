@@ -91,26 +91,13 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
 
     const gmx_domdec_comm_t&     comm = *dd_->comm;
     const gmx_domdec_comm_dim_t& cd   = comm.cd[dimIndex_];
-    const gmx_domdec_ind_t&      ind  = cd.ind[pulse_];
-
-    if (dimIndex_ > 0 && cd.numPulses() > 1)
-    {
-        gmx_fatal(
-                FARGS,
-                "GPU direct communications cannot be used for multi-dimensional halo exchanges "
-                "with more than one pulse in the second or third dimension. Please try using fewer "
-                "ranks (or change the decomposition with '-dd'), or if that does not work then "
-                "disable GPU direct communications.");
-    }
-    GMX_RELEASE_ASSERT(cd.receiveInPlace,
-                       "The CUDA DD halo implementation only supports in place receive. "
-                       "The condition should be guaranteed by the check and fatal_error above.");
+    ind_                              = &cd.ind[pulse_];
+    receiveInPlace_                   = cd.receiveInPlace;
 
     numHomeAtoms_ = comm.atomRanges.numHomeAtoms(); // offset for data received by this rank
 
     // Determine receive offset for the dimension index and pulse of this halo exchange object
     int numZoneTemp   = 1;
-    int numZone       = 0;
     int numAtomsTotal = numHomeAtoms_;
     for (int i = 0; i <= dimIndex_; i++)
     {
@@ -122,13 +109,11 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
             const gmx_domdec_ind_t& indTemp = comm.cd[i].ind[p];
             numAtomsTotal += indTemp.nrecv[numZoneTemp + 1];
         }
-        numZone = numZoneTemp;
+        numZone_ = numZoneTemp;
         numZoneTemp += numZoneTemp;
     }
 
-    int newSize = ind.nsend[numZone + 1];
-
-    GMX_ASSERT(cd.receiveInPlace, "Out-of-place receive is not yet supported in GPU halo exchange");
+    int newSize = ind_->nsend[numZone_ + 1];
 
     // reallocates only if needed
     h_indexMap_.resize(newSize);
@@ -159,12 +144,19 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     fSendSize_ = xRecvSize_;
     fRecvSize_ = xSendSize_;
 
+    if (!receiveInPlace_)
+    {
+        // Same buffers will be used for both coordinates and forces
+        h_outOfPlaceSendBuffer_.resize(std::max(xSendSize_, fSendSize_));
+        h_outOfPlaceRecvBuffer_.resize(std::max(xRecvSize_, fRecvSize_));
+    }
+
     if (newSize > 0)
     {
-        GMX_ASSERT(ind.index.size() == h_indexMap_.size(),
+        GMX_ASSERT(ind_->index.size() == h_indexMap_.size(),
                    "Size mismatch between domain decomposition communication index array and GPU "
                    "halo exchange index mapping array");
-        std::copy(ind.index.begin(), ind.index.end(), h_indexMap_.begin());
+        std::copy(ind_->index.begin(), ind_->index.end(), h_indexMap_.begin());
 
         copyToDeviceBuffer(
                 &d_indexMap_, h_indexMap_.data(), 0, newSize, *haloStream_, GpuApiCallBehavior::Async, nullptr);
@@ -271,7 +263,16 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::communicateHaloCoordinates(const ma
     }
 
     Float3* recvPtr = GMX_THREAD_MPI ? asMpiPointer(remoteXPtr_) : (asMpiPointer(d_x_) + atomOffset_);
-    communicateHaloData(asMpiPointer(d_sendBuf_), xSendSize_, sendRankX_, recvPtr, xRecvSize_, recvRankX_);
+
+    if (receiveInPlace_)
+    {
+        communicateHaloData(
+                asMpiPointer(d_sendBuf_), xSendSize_, sendRankX_, recvPtr, xRecvSize_, recvRankX_);
+    }
+    else
+    {
+        communicateHaloCoordinatesOutOfPlace(d_sendBuf_, xSendSize_, sendRankX_, xRecvSize_, recvRankX_);
+    }
 
     coordinateHaloLaunched_.markEvent(*haloStream_);
 
@@ -300,8 +301,15 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces,
     Float3* recvPtr = asMpiPointer(GMX_THREAD_MPI ? remoteFPtr_ : d_recvBuf_);
 
     // Communicate halo data
-    communicateHaloData(
-            (asMpiPointer(d_f_) + atomOffset_), fSendSize_, sendRankF_, recvPtr, fRecvSize_, recvRankF_);
+    if (receiveInPlace_)
+    {
+        communicateHaloData(
+                (asMpiPointer(d_f_) + atomOffset_), fSendSize_, sendRankF_, recvPtr, fRecvSize_, recvRankF_);
+    }
+    else
+    {
+        communicateHaloForcesOutOfPlace(d_f_, fSendSize_, sendRankF_, fRecvSize_, recvRankF_);
+    }
 
     wallcycle_stop(wcycle_, WallCycleCounter::MoveF);
 
@@ -378,6 +386,89 @@ void GpuHaloExchange::Impl::communicateHaloDataGpuAwareMpi(Float3* sendPtr,
     GMX_UNUSED_VALUE(sendPtr);
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvPtr);
+    GMX_UNUSED_VALUE(recvSize);
+    GMX_UNUSED_VALUE(recvRank);
+#endif
+}
+
+// Note that this coordinate and the below force methods involve
+// staging data through host memory, which allows a simple
+// implementation with unified codepaths for thread-MPI and
+// lib-MPI. While it is possible to optimize, this path is only
+// expected to be triggered in etremely over-decomposed corner cases
+// which have very poor performance for other reasons.
+void GpuHaloExchange::Impl::communicateHaloCoordinatesOutOfPlace(DeviceBuffer<Float3> d_sendPtr,
+                                                                 int                  sendSize,
+                                                                 int                  sendRank,
+                                                                 int                  recvSize,
+                                                                 int                  recvRank)
+{
+#if GMX_MPI
+    MPI_Request request;
+    // copy entire halo buffer to staging send buffer in host memory
+    copyFromDeviceBuffer(
+            h_outOfPlaceSendBuffer_.data(), &d_sendPtr, 0, sendSize, *haloStream_, GpuApiCallBehavior::Async, nullptr);
+    haloStream_->synchronize();
+    // exchange host staging buffers with MPI
+    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpi_comm_mysim_, &request);
+    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
+    // copy sections of staging receive buffer, in turn, to final locations in device memory
+    int stageBufIndex = 0;
+    for (int zone = 0; zone < numZone_; zone++)
+    {
+        int numElements = ind_->cell2at1[zone] - ind_->cell2at0[zone];
+        copyToDeviceBuffer(&d_x_,
+                           &h_outOfPlaceRecvBuffer_.data()[stageBufIndex],
+                           ind_->cell2at0[zone],
+                           numElements,
+                           *haloStream_,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
+        stageBufIndex += numElements;
+    }
+    haloStream_->synchronize();
+#else
+    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(sendRank);
+    GMX_UNUSED_VALUE(recvSize);
+    GMX_UNUSED_VALUE(recvRank);
+#endif
+}
+
+void GpuHaloExchange::Impl::communicateHaloForcesOutOfPlace(DeviceBuffer<Float3> d_sendPtr,
+                                                            int                  sendSize,
+                                                            int                  sendRank,
+                                                            int                  recvSize,
+                                                            int                  recvRank)
+{
+#if GMX_MPI
+    MPI_Request request;
+    // copy sections of force buffer in device memory, in turn, to host staging buffer
+    int stageBufIndex = 0;
+    for (int zone = 0; zone < numZone_; zone++)
+    {
+        int numElements = ind_->cell2at1[zone] - ind_->cell2at0[zone];
+        copyFromDeviceBuffer(&h_outOfPlaceSendBuffer_.data()[stageBufIndex],
+                             &d_sendPtr,
+                             ind_->cell2at0[zone],
+                             numElements,
+                             *haloStream_,
+                             GpuApiCallBehavior::Async,
+                             nullptr);
+        stageBufIndex += numElements;
+    }
+    haloStream_->synchronize();
+    // exchange host staging buffers with MPI
+    MPI_Irecv(h_outOfPlaceRecvBuffer_.data(), recvSize * DIM, MPI_FLOAT, recvRank, 0, mpi_comm_mysim_, &request);
+    MPI_Send(h_outOfPlaceSendBuffer_.data(), sendSize * DIM, MPI_FLOAT, sendRank, 0, mpi_comm_mysim_);
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
+    // copy entire host staging receive buffer to device memory receive buffer
+    copyToDeviceBuffer(
+            &d_recvBuf_, h_outOfPlaceRecvBuffer_.data(), 0, recvSize, *haloStream_, GpuApiCallBehavior::Async, nullptr);
+#else
+    GMX_UNUSED_VALUE(sendPtr);
+    GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvSize);
     GMX_UNUSED_VALUE(recvRank);
 #endif

@@ -52,6 +52,8 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#include "domdec_internal.h"
+
 struct gmx_wallcycle;
 
 namespace gmx
@@ -147,6 +149,32 @@ private:
     //! Backend-specific function for launching force unpacking kernel
     void launchUnpackFKernel(bool accumulateForces);
 
+    /*! \brief Transfer GPU coordinate halo data out of place
+     * \param [in] sendPtr      send buffer address
+     * \param [in] sendSize     number of elements to send
+     * \param [in] sendRank     rank of destination
+     * \param [in] recvSize     number of elements to receive
+     * \param [in] recvRank     rank of source
+     */
+    void communicateHaloCoordinatesOutOfPlace(DeviceBuffer<Float3> sendPtr,
+                                              int                  sendSize,
+                                              int                  sendRank,
+                                              int                  recvSize,
+                                              int                  recvRank);
+
+    /*! \brief Transfer GPU force halo data out of place
+     * \param [in] sendPtr      send buffer address
+     * \param [in] sendSize     number of elements to send
+     * \param [in] sendRank     rank of destination
+     * \param [in] recvSize     number of elements to receive
+     * \param [in] recvRank     rank of source
+     */
+    void communicateHaloForcesOutOfPlace(DeviceBuffer<Float3> sendPtr,
+                                         int                  sendSize,
+                                         int                  sendRank,
+                                         int                  recvSize,
+                                         int                  recvRank);
+
     /*! \brief Exchange coordinate-ready event with neighbor ranks and enqueue wait in halo stream
      * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates/forces are ready to device.
      */
@@ -218,6 +246,8 @@ private:
     GpuEventSynchronizer fReadyOnDevice_;
     //! The dimension index corresponding to this halo exchange instance
     int dimIndex_ = 0;
+    //! Number of halo zones associated with this halo exchange instance
+    int numZone_ = 0;
     //! The pulse corresponding to this halo exchange instance
     int pulse_ = 0;
     //! The wallclock counter
@@ -226,6 +256,14 @@ private:
     int atomOffset_ = 0;
     //! Event triggered when coordinate halo has been launched
     GpuEventSynchronizer coordinateHaloLaunched_;
+    //! flag on whether the recieve for this halo exchange is performed in-place
+    bool receiveInPlace_ = true;
+    //! The indices to communicate for this halo exchange
+    const gmx_domdec_ind_t* ind_ = nullptr;
+    //! Buffer to stage out-of-place send data
+    gmx::HostVector<Float3> h_outOfPlaceSendBuffer_;
+    //! Buffer to stage out-of-place receive data
+    gmx::HostVector<Float3> h_outOfPlaceRecvBuffer_;
 };
 
 } // namespace gmx
