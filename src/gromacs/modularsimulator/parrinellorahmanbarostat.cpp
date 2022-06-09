@@ -68,7 +68,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
                                                    Step                 initStep,
                                                    StatePropagatorData* statePropagatorData,
                                                    EnergyData*          energyData,
-                                                   FILE*                fplog,
+                                                   const MDLogger&      mdlog,
                                                    const t_inputrec*    inputrec,
                                                    const MDAtoms*       mdAtoms) :
     nstpcouple_(nstpcouple),
@@ -81,7 +81,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     nextEnergyCalculationStep_(-1),
-    fplog_(fplog),
+    mdlog_(mdlog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
 {
@@ -136,7 +136,7 @@ void ParrinelloRahmanBarostat::scheduleTask(Step                       step,
 void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
 {
     const auto* box = statePropagatorData_->constBox();
-    parrinellorahman_pcoupl(fplog_,
+    parrinellorahman_pcoupl(mdlog_,
                             step,
                             inputrec_->pressureCouplingOptions,
                             inputrec_->deform,
@@ -217,14 +217,10 @@ void ParrinelloRahmanBarostat::elementSetup()
     const bool scaleOnInitStep = do_per_step(initStep_ + nstpcouple_ + offset_, nstpcouple_);
     if (scaleOnInitStep)
     {
-        // If we need to scale on the first step, we need to set the scaling matrix using the current
-        // box velocity. If this is a fresh start, we will hence not move the box (this does currently
-        // never happen as the offset is set to -1 in all cases). If this is a restart, we will use
-        // the saved box velocity which we would have updated right before checkpointing.
-        // Setting bFirstStep = true in parrinellorahman_pcoupl (last argument) makes sure that only
-        // the scaling matrix is calculated, without updating the box velocities.
-        // The call to parrinellorahman_pcoupl is using nullptr for fplog (since we don't expect any
-        // output here) and for the pressure (since it might not be calculated yet, and we don't need it).
+        // If we need to scale on the first step, we need to set the scaling matrix using the
+        // current box velocity. If this is a fresh start, we will hence not move the box (this does
+        // currently never happen as the offset is set to -1 in all cases). If this is a restart, we
+        // will use the saved box velocity which we would have updated right before checkpointing.
         const auto* box = statePropagatorData_->constBox();
         init_parrinellorahman(inputrec_->pressureCouplingOptions,
                               inputrec_->deform,
@@ -362,7 +358,7 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
             legacySimulatorData->inputrec->init_step,
             statePropagatorData,
             energyData,
-            legacySimulatorData->fplog,
+            legacySimulatorData->mdlog,
             legacySimulatorData->inputrec,
             legacySimulatorData->mdAtoms));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);

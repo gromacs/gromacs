@@ -68,6 +68,7 @@
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -165,7 +166,7 @@ void update_tcouple(int64_t                             step,
     }
 }
 
-void update_pcouple_before_coordinates(FILE*                          fplog,
+void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        int64_t                        step,
                                        const PressureCouplingOptions& pressureCouplingOptions,
                                        const tensor                   deform,
@@ -182,7 +183,7 @@ void update_pcouple_before_coordinates(FILE*                          fplog,
     {
         const real couplingTimePeriod = pressureCouplingOptions.nstpcouple * delta_t;
 
-        parrinellorahman_pcoupl(fplog,
+        parrinellorahman_pcoupl(mdlog,
                                 step,
                                 pressureCouplingOptions,
                                 deform,
@@ -753,7 +754,7 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
     calculateMu(pressureCouplingOptions, deform, box_rel, box, invbox, boxv, couplingTimePeriod, mu);
 }
 
-void parrinellorahman_pcoupl(FILE*                          fplog,
+void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
                              int64_t                        step,
                              const PressureCouplingOptions& pressureCouplingOptions,
                              const tensor                   deform,
@@ -886,16 +887,17 @@ void parrinellorahman_pcoupl(FILE*                          fplog,
             }
         }
 
-        if (maxchange > 0.01 && fplog)
+        if (maxchange > 0.01)
         {
-            char buf[22];
-            fprintf(fplog,
-                    "\nStep %s  Warning: Pressure scaling more than 1%%. "
-                    "This may mean your system\n is not yet equilibrated. "
-                    "Use of Parrinello-Rahman pressure coupling during\n"
-                    "equilibration can lead to simulation instability, "
-                    "and is discouraged.\n",
-                    gmx_step_str(step, buf));
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted("Step %" PRId64
+                                         " Pressure scaling more than 1%%. "
+                                         "This may mean your system is not yet equilibrated. "
+                                         "Use of Parrinello-Rahman pressure coupling during "
+                                         "equilibration can lead to simulation instability, "
+                                         "and is discouraged.",
+                                         step);
         }
     }
 

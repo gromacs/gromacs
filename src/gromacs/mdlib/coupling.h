@@ -59,6 +59,7 @@ struct PressureCouplingOptions;
 namespace gmx
 {
 class BoxDeformation;
+class MDLogger;
 class Constraints;
 class Update;
 template<typename>
@@ -77,7 +78,7 @@ void update_tcouple(int64_t                             step,
                     gmx::ArrayRef<const unsigned short> cTC);
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
-void update_pcouple_before_coordinates(FILE*                          fplog,
+void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        int64_t                        step,
                                        const PressureCouplingOptions& pressureCoupling,
                                        const tensor                   deform,
@@ -241,7 +242,7 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
 
 /*! \brief Calculate the change in box vectors due to Parrinello-Rahman pressure coupling
  *
- * \param[in]  fplog                    Log file for warning when pressure change is large
+ * \param[in]  mdlog                    Log file for warning when pressure change is large
  * \param[in]  step                     The MD step count for the above warning
  * \param[in]  pressureCouplingOptions  The pressure-coupling options
  * \param[in]  deform                   The matrix describing any box deformation
@@ -284,7 +285,7 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
  *   b = vol/W inv(box') * (P-ref_P)     (=h')
  *
  */
-void parrinellorahman_pcoupl(FILE*                          fplog,
+void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
                              int64_t                        step,
                              const PressureCouplingOptions& pressureCouplingOptions,
                              const tensor                   deform,

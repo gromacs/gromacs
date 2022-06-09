@@ -1411,7 +1411,7 @@ void gmx::LegacySimulator::do_md()
         {
             update_tcouple(step, ir, state, ekind, &MassQ, md->homenr, md->cTC);
             update_pcouple_before_coordinates(
-                    fplog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M);
+                    mdlog, step, ir->pressureCouplingOptions, ir->deform, ir->delta_t, state, pressureCouplingMu, M);
         }
 
         /* With leap-frog type integrators we compute the kinetic energy

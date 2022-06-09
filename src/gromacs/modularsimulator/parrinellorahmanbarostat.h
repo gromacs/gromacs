@@ -44,6 +44,7 @@
 #define GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/logger.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"
@@ -80,7 +81,7 @@ public:
                              Step                 initStep,
                              StatePropagatorData* statePropagatorData,
                              EnergyData*          energyData,
-                             FILE*                fplog,
+                             const MDLogger&      mdlog,
                              const t_inputrec*    inputrec,
                              const MDAtoms*       mdAtoms);
 
@@ -190,7 +191,7 @@ private:
 
     // Access to ISimulator data
     //! Handles logging.
-    FILE* fplog_;
+    MDLogger mdlog_;
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
     //! Atom parameters for this domain.
