@@ -287,6 +287,7 @@ INSTANTIATE_TEST_SUITE_P(BuildsValidDataStructure,
                                                               std::optional(testParticleTypeValueTwoState)),
                                             ::testing::Values(false, true)));
 
+#if !defined(NDEBUG)
 TEST_F(SimulationParticleTest, DeathTestSerialize)
 {
     const auto         mass      = testParticleMassOneState;
@@ -298,6 +299,15 @@ TEST_F(SimulationParticleTest, DeathTestSerialize)
     GMX_EXPECT_DEATH_IF_SUPPORTED(testParticle.serializeParticle(&writer),
                                   "Can not access uninitialized element");
 }
+
+#else
+
+TEST(DISABLED_SimulationParticleTest, DeathTestSerialize)
+{
+    ADD_FAILURE() << "Need to have assertions enabled to run tests for program abort";
+}
+
+#endif
 
 } // namespace
 
