@@ -85,7 +85,15 @@ _output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype
 
 class OutputDataProxy(_op.DataProxyBase,
                       descriptors=_output_descriptors):
-    """Implement the 'output' attribute of MDRun operations."""
+    """Implement the 'output' attribute of `mdrun` operations.
+
+    Attributes:
+        checkpoint: Full path to ``cpt`` file.
+        parameters: Dictionary of parameters with which the simulation was run.
+        trajectory: Full path to trajectory output (corresponding to the ``-o``
+                    flag, if provided).
+
+    """
 
 
 class PublishingDataProxy(_op.DataProxyBase,
@@ -821,8 +829,8 @@ def mdrun(input,
     Returns:
         runnable operation to perform the specified simulation
 
-    The *output* attribute of the returned operation handle contains dynamically
-    determined outputs from the operation.
+    See :py:class:`~gmxapi.simulation.mdrun.OutputDataProxy` for members of the
+    *output* attribute.
 
     *input* may be a TPR file name or a an object providing the SimulationInput interface.
 

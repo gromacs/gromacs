@@ -35,7 +35,7 @@ file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 gmx_target_compile_options(mdrun_objlib)
-target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H)
+target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H TMPI_USE_VISIBILITY)
 target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 # Should be possible to remove this when resolving #3290
 target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)

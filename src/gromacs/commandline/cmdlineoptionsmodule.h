@@ -46,6 +46,7 @@
 #include <memory>
 
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/libgromacs_export.h"
 
 namespace gmx
 {

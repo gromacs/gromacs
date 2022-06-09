@@ -16,6 +16,21 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect constraining in highly parallel runs
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With domain decomposition, OpenMP and connected constraints (so not only
+bonds with hydrogens constrained), constraint correction could be applied
+when a domain would not have any constraints while it had constraints before.
+This is unlikely to have gone unnoticed in longer runs, as the chance is
+high that atoms would clash and the system would become unstable. But short
+runs might not crash and could therefore produce incorrect results. The correctness can
+be judged from the drift in the conserved energy quantity, which is reported
+at the end of the log file, and which will be one to two orders of magnitude
+larger than for a correct run.
+
+:issue:`4476`
+
 Fix missing CPU-GPU synchronization when doing free-energy calculations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -28,12 +43,86 @@ free-energy calculations.
 
 :issue:`4471`
 
+Fix missing PME mesh dV/dlambda with PME on GPU on a seperate PME rank
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When doing free-energy calculations with PME running on GPU on a separate
+PME rank, the dV/dlambda contribution for the PME mesh part was missing.
+The same contribution was missing from the foreign lambda energy differences.
+Note that the energies and forces were correct.
+
+:issues;`4474`
+Removed the (incorrect) output file size note/warning with mdrun -rerun
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4484`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Clarified pdb2gmx error message for undefined atom type in terminal database
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`4481`
+
+Lower severity of grompp exclusion distance issues with energy minimization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With energy minimization, the error/warning about pair distances
+beyond/close to the cut-off has been changed to a warning/note,
+as energy minimization might fix such issues.
+
+:issue:`4480`
+
+Fixed missing cmap torsion correction for periodic pepdites
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using pdb2gmx with periodic peptides and the CHARMM27
+force field, the CMAP correction across the periodic boundary
+was missing (but not the torsion itself). Reprocess your
+PDB file with pdb2gmx from version 2022.2 or later to get a
+correct topology, or add it manually to the topology.
+
+Avoid crash in gmx bar with invalid input
+"""""""""""""""""""""""""""""""""""""""""
+
+gmx bar could try to read an invalid input data file and would fail with a hard
+crash instead of a helpful error message.
+
+Fix printing of incorrect data from analysis tools
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A change on how we handle selections caused the analysis tools in the
+trajectoryanalysis framework to print data for wrong selections.
+
+:issue:`4508`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed a possible software build error with OpenMP linking
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In some situations, software builds could have errors linking ``omp`` symbols.
+A minor update to the CMake configuration helps the ``muparser`` component
+to find the same OpenMP dependency used by the rest of the library.
+
+:issue:`4499`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed detection of external TinyXML-2
+"""""""""""""""""""""""""""""""""""""
+
+Updated the code to properly detect the presence and the version of external
+TinyXML-2 (only relevant if ``-DGMX_EXTERNAL_TINYXML2=ON`` is used).
+
+:issue:`4477`
+
+Fixed warnings when using module-specific OpenMP thread-count environment variables
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+One of the arrays used to construct message strings wasn't updated
+properly, so sometimes an information message was wrong or may have
+printed garbage.

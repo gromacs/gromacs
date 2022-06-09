@@ -1451,11 +1451,14 @@ static void gen_cmap(InteractionsOfType*                    psb,
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
-                if ((cyclicBondsIndex.empty() && ((strchr(pname, '-') != nullptr) && (residx == 0)))
-                    || ((strchr(pname, '+') != nullptr) && (residx == nres - 1)))
+                if (cyclicBondsIndex.empty())
                 {
-                    bAddCMAP = false;
-                    break;
+                    if (((strchr(pname, '-') != nullptr) && (residx == 0))
+                        || ((strchr(pname, '+') != nullptr) && (residx == nres - 1)))
+                    {
+                        bAddCMAP = false;
+                        break;
+                    }
                 }
 
                 cmap_atomid[k] = search_atom(pname, i, atoms, ptr, TRUE, cyclicBondsIndex);

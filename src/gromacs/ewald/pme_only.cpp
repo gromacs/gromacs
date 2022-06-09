@@ -534,12 +534,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 }
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
-static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
-                                        gmx_pme_pp*      pme_pp,
-                                        const PmeOutput& output,
-                                        real             dvdlambda_q,
-                                        real             dvdlambda_lj,
-                                        float            cycles)
+static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme, gmx_pme_pp* pme_pp, const PmeOutput& output, float cycles)
 {
 #if GMX_MPI
     gmx_pme_comm_vir_ene_t cve;
@@ -603,8 +598,8 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     copy_mat(output.lennardJonesVirial_, cve.vir_lj);
     cve.energy_q     = output.coulombEnergy_;
     cve.energy_lj    = output.lennardJonesEnergy_;
-    cve.dvdlambda_q  = dvdlambda_q;
-    cve.dvdlambda_lj = dvdlambda_lj;
+    cve.dvdlambda_q  = output.coulombDvdl_;
+    cve.dvdlambda_lj = output.lennardJonesDvdl_;
     /* check for the signals to send back to a PP node */
     cve.stop_cond = gmx_get_stop_condition();
 
@@ -623,8 +618,6 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
-    GMX_UNUSED_VALUE(dvdlambda_q);
-    GMX_UNUSED_VALUE(dvdlambda_lj);
     GMX_UNUSED_VALUE(cycles);
 #endif
 }
@@ -645,7 +638,6 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
     real    lambda_q   = 0;
     real    lambda_lj  = 0;
     int     maxshift_x = 0, maxshift_y = 0;
-    real    dvdlambda_q, dvdlambda_lj;
     float   cycles;
     int     count;
     bool    computeEnergyAndVirial = false;
@@ -745,9 +737,6 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
 
         wallcycle_start(wcycle, WallCycleCounter::PmeMesh);
 
-        dvdlambda_q  = 0;
-        dvdlambda_lj = 0;
-
         // TODO Make a struct of array refs onto these per-atom fields
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
@@ -814,14 +803,14 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
                        &output.lennardJonesEnergy_,
                        lambda_q,
                        lambda_lj,
-                       &dvdlambda_q,
-                       &dvdlambda_lj,
+                       &output.coulombDvdl_,
+                       &output.lennardJonesDvdl_,
                        stepWork);
             output.forces_ = pme_pp->f;
         }
 
         cycles = wallcycle_stop(wcycle, WallCycleCounter::PmeMesh);
-        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, dvdlambda_q, dvdlambda_lj, cycles);
+        gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles);
 
         count++;
     } /***** end of quasi-loop, we stop with the break above */

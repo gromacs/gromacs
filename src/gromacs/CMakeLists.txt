@@ -128,6 +128,7 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/src)
 add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
 target_compile_definitions(thread_mpi PRIVATE HAVE_CONFIG_H)
+target_compile_definitions(thread_mpi PRIVATE TMPI_EXPORTS TMPI_USE_VISIBILITY)
 if(CYGWIN)
     # Needs POSIX-isms for strdup, not just std-isms
     target_compile_definitions(thread_mpi PRIVATE _POSIX_C_SOURCE=200809L)
@@ -219,7 +220,10 @@ foreach(object_library ${libgromacs_object_library_dependencies})
     target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:${object_library}>)
 endforeach()
 gmx_target_compile_options(libgromacs)
-target_compile_definitions(libgromacs PRIVATE HAVE_CONFIG_H)
+target_compile_definitions(libgromacs PRIVATE HAVE_CONFIG_H
+                                              TMPI_EXPORTS
+                                      PUBLIC TMPI_USE_VISIBILITY)
+
 target_include_directories(libgromacs SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 if (GMX_GPU_OPENCL)
@@ -529,3 +533,6 @@ if(GMX_GPU_OPENCL)
         DESTINATION ${GMX_INSTALL_OCLDIR}/gromacs/ewald
         COMPONENT libraries)
 endif()
+
+include(GenerateExportHeader)
+generate_export_header(libgromacs EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/api/legacy/include/gromacs/libgromacs_export.h")

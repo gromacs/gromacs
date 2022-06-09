@@ -55,11 +55,28 @@ Simulation module
 
 .. py:currentmodule:: gmxapi
 
+Preparing simulations
+---------------------
+
 .. autofunction:: read_tpr
+
+.. For the OutputDataProxy classes, the creation signatures are distracting.
+   As of Sphinx 6.0, however, the autodoc_class_signature configuration option
+   cannot be overridden for individual 'autoclass' directives, and in general
+   the default "mixed" value seems appropriate for this documentation.
+
+.. autoclass:: gmxapi.simulation.read_tpr.OutputDataProxy
 
 .. autofunction:: modify_input
 
+.. autoclass:: gmxapi.simulation.modify_input.OutputDataProxy
+
+Running simulations
+-------------------
+
 .. autofunction:: mdrun
+
+.. autoclass:: gmxapi.simulation.mdrun.OutputDataProxy
 
 Utilities
 =========

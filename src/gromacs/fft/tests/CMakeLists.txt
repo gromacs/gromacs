@@ -38,7 +38,7 @@ gmx_add_gtest_executable(fft-test HARDWARE_DETECTION
     GPU_CPP_SOURCE_FILES
         fft.cpp
     )
-gmx_register_gtest_test(FFTUnitTests fft-test SLOW_TEST)
+gmx_register_gtest_test(FFTUnitTests fft-test SLOW_TEST QUICK_GPU_TEST)
 
 if(Heffte_FOUND)
 gmx_add_mpi_unit_test(FFTMpiUnitTests fft-mpi-test 4 HARDWARE_DETECTION

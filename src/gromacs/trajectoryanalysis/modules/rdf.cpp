@@ -475,8 +475,8 @@ void Rdf::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAna
 {
     AnalysisDataHandle   dh        = pdata->dataHandle(pairDist_);
     AnalysisDataHandle   nh        = pdata->dataHandle(normFactors_);
-    const Selection&     refSel    = pdata->parallelSelection(refSel_);
-    const SelectionList& sel       = pdata->parallelSelections(sel_);
+    const Selection&     refSel    = TrajectoryAnalysisModuleData::parallelSelection(refSel_);
+    const SelectionList& sel       = TrajectoryAnalysisModuleData::parallelSelections(sel_);
     RdfModuleData&       frameData = *static_cast<RdfModuleData*>(pdata);
     const bool           bSurface  = !frameData.surfaceDist2_.empty();
 

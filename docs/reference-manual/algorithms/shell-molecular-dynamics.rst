@@ -12,7 +12,7 @@ applications of shell models in |Gromacs| have been published for
 Optimization of the shell positions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The force :math:`\mathbf{F}`\ :math:`_S` on a shell
+The force :math:`\mathbf{F}_S` on a shell
 particle :math:`S` can be decomposed into two components
 
 .. math:: \mathbf{F}_S ~=~ \mathbf{F}_{bond} + \mathbf{F}_{nb}
@@ -24,7 +24,7 @@ harmonic potential and :math:`\mathbf{F}_{nb}` is the sum of Coulomb
 and van der Waals interactions. If we assume that
 :math:`\mathbf{F}_{nb}` is almost constant we
 can analytically derive the optimal position of the shell, i.e. where
-:math:`\mathbf{F}_S` = 0. If we have the shell S connected to atom A we have
+:math:`\mathbf{F}_S = 0`. If we have the shell S connected to atom A we have
 
 .. math:: \mathbf{F}_{bond} ~=~ k_b \left( \mathbf{x}_S - \mathbf{x}_A\right).
           :label: eqnshell

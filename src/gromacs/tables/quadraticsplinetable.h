@@ -68,6 +68,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/libgromacs_export.h"
 
 namespace gmx
 {
@@ -204,7 +205,7 @@ public:
      *  \note Even for double precision builds we set the tolerance to
      *        one order of magnitude above the single precision epsilon.
      */
-    static const real defaultTolerance;
+    static LIBGROMACS_EXPORT const real defaultTolerance;
 
     /*! \brief Initialize table data from function
      *

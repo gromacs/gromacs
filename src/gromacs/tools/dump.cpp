@@ -740,8 +740,8 @@ int Dump::run()
 
 } // namespace
 
-const char                       DumpInfo::name[]             = "dump";
-const char                       DumpInfo::shortDescription[] = "Make binary files human readable";
+LIBGROMACS_EXPORT const char     DumpInfo::name[]             = "dump";
+LIBGROMACS_EXPORT const char     DumpInfo::shortDescription[] = "Make binary files human readable";
 ICommandLineOptionsModulePointer DumpInfo::create()
 {
     return std::make_unique<Dump>();

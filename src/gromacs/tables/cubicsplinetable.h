@@ -54,6 +54,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/libgromacs_export.h"
 
 namespace gmx
 {
@@ -165,7 +166,7 @@ public:
      * table generation code will lead to some precision loss even
      * in double precision.
      */
-    static const real defaultTolerance;
+    static LIBGROMACS_EXPORT const real defaultTolerance;
 
     /*! \brief Initialize table data from function
      *

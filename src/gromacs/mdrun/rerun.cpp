@@ -71,7 +71,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
-#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/enerdata_utils.h"
@@ -321,14 +320,6 @@ void gmx::LegacySimulator::do_rerun()
                                  ir->nstcalcenergy,
                                  haveDDAtomOrdering(*cr),
                                  runScheduleWork->simulationWork.useGpuPme);
-
-    {
-        double io = compute_io(ir, top_global.natoms, *groups, energyOutput.numEnergyTerms(), 1);
-        if ((io > 2000) && MASTER(cr))
-        {
-            fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
-        }
-    }
 
     if (haveDDAtomOrdering(*cr))
     {

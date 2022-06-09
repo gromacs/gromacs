@@ -72,7 +72,14 @@ _output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype
 class OutputDataProxy(ModuleObject,
                       _op.DataProxyBase,
                       descriptors=_output_descriptors):
-    """Implement the 'output' attribute of ReadTpr operations."""
+    """Implement the 'output' attribute of `modify_input` operations.
+
+    Attributes:
+        parameters: Aggregated dictionary simulation parameters for the resulting simulation input.
+
+    Additionally (through an unspecified interface), the object serves as a
+    complete simulation input to other gmxapi operations.
+    """
 
     def __init__(self, *args, **kwargs):
         _op.DataProxyBase.__init__(self, *args, **kwargs)
@@ -365,6 +372,9 @@ def modify_input(input,
 
     Given simulation input *input*, override components of simulation input with
     additional arguments, such as *parameters*.
+
+    See :py:class:`~gmxapi.simulation.modify_input.OutputDataProxy` for *output*
+    attribute members.
     """
     handle_context = context
     if handle_context is not None:

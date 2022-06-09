@@ -49,6 +49,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/libgromacs_export.h"
 
 struct gmx_cmap_t;
 struct t_fcdata;
@@ -141,7 +142,7 @@ enum class BondedKernelFlavor
 };
 
 //! Helper strings for human-readable messages
-extern const gmx::EnumerationArray<BondedKernelFlavor, std::string, BondedKernelFlavor::Count> c_bondedKernelFlavorStrings;
+extern LIBGROMACS_EXPORT const gmx::EnumerationArray<BondedKernelFlavor, std::string, BondedKernelFlavor::Count> c_bondedKernelFlavorStrings;
 
 /*! \brief Returns whether the energy should be computed */
 static constexpr inline bool computeEnergy(const BondedKernelFlavor flavor)

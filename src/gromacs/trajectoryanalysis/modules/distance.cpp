@@ -323,7 +323,7 @@ void Distance::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, Trajecto
 {
     AnalysisDataHandle   distHandle = pdata->dataHandle(distances_);
     AnalysisDataHandle   xyzHandle  = pdata->dataHandle(xyz_);
-    const SelectionList& sel        = pdata->parallelSelections(sel_);
+    const SelectionList& sel        = TrajectoryAnalysisModuleData::parallelSelections(sel_);
 
     checkSelections(sel);
 

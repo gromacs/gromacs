@@ -87,11 +87,8 @@ static const char* enumValueToEnvVariableString(ModuleMultiThread enumValue)
 static const char* enumValueToString(ModuleMultiThread enumValue)
 {
     constexpr gmx::EnumerationArray<ModuleMultiThread, const char*> moduleMultiThreadNames = {
-        "default",     "domain decomposition",
-        "pair search", "non-bonded",
-        "bonded",      "PME",
-        "update",      "LINCS",
-        "SETTLE"
+        "default", "domain decomposition", "pair search", "non-bonded", "bonded", "PME",
+        "update",  "virtual sites",        "LINCS",       "SETTLE"
     };
     return moduleMultiThreadNames[enumValue];
 }
@@ -161,9 +158,9 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted("%s=%d set, overriding the default number of %s threads",
-                                         enumValueToString(m),
+                                         enumValueToEnvVariableString(m),
                                          nth,
-                                         enumValueToEnvVariableString(m));
+                                         enumValueToString(m));
         }
     }
     else

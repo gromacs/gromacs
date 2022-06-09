@@ -239,13 +239,15 @@ endfunction()
 #   SLOW_TEST             requires the use of the SlowTest label in CTest, and
 #                         increase the length of the ctest timeout.
 #   IGNORE_LEAKS          Skip some memory safety checks.
+#   QUICK_GPU_TEST        marks tests that use GPUs and are fast (< 10 seconds on a desktop GPU in Release build);
+#                         currently this label is used to select tests for CUDA Compute Sanitizer runs.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS)
+        set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS QUICK_GPU_TEST)
         set(_one_value_args MPI_RANKS OPENMP_THREADS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
@@ -255,7 +257,7 @@ function (gmx_register_gtest_test NAME EXENAME)
             list(APPEND _labels IntegrationTest)
             # Slow build configurations should have longer timeouts.
             # Both OpenCL (from JIT) and ThreadSanitizer (from how it
-            # checks) can take signficantly more time than other
+            # checks) can take significantly more time than other
             # configurations.
             if (GMX_GPU_OPENCL OR GMX_GPU_SYCL)
                 set(_timeout 240)
@@ -294,6 +296,9 @@ function (gmx_register_gtest_test NAME EXENAME)
                 list(APPEND _cmd -ntmpi ${ARG_MPI_RANKS})
             endif()
         endif()
+        if (ARG_QUICK_GPU_TEST)
+            list(APPEND _labels QuickGpuTest)
+        endif()
         add_test(NAME ${NAME}
                  COMMAND ${_cmd} --gtest_output=xml:${_xml_path})
         set_tests_properties(${NAME} PROPERTIES LABELS "${_labels}")
@@ -303,13 +308,25 @@ function (gmx_register_gtest_test NAME EXENAME)
 endfunction ()
 
 function (gmx_add_unit_test NAME EXENAME)
+    cmake_parse_arguments(ARG "HARDWARE_DETECTION" "" "" ${ARGN})
     gmx_add_gtest_executable(${EXENAME} ${ARGN})
-    gmx_register_gtest_test(${NAME} ${EXENAME})
+    set(_test_labels "")
+    if (ARG_HARDWARE_DETECTION)
+        # All unit tests should be quick, so mark them as QUICK_GPU_TEST if they use GPU
+        set(_test_labels "QUICK_GPU_TEST")
+    endif()
+    gmx_register_gtest_test(${NAME} ${EXENAME} ${_test_labels})
 endfunction()
 
 function (gmx_add_mpi_unit_test NAME EXENAME RANKS)
+    cmake_parse_arguments(ARG "HARDWARE_DETECTION" "" "" ${ARGN})
     if (GMX_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE))
         gmx_add_gtest_executable(${EXENAME} MPI ${ARGN})
-        gmx_register_gtest_test(${NAME} ${EXENAME} MPI_RANKS ${RANKS})
+        set(_test_labels "")
+        if (ARG_HARDWARE_DETECTION)
+            # All unit tests should be quick, so mark them as QUICK_GPU_TEST if they use GPU
+            set(_test_labels "QUICK_GPU_TEST")
+        endif()
+        gmx_register_gtest_test(${NAME} ${EXENAME} ${_test_labels} MPI_RANKS ${RANKS})
     endif()
 endfunction()

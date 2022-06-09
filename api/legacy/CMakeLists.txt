@@ -61,4 +61,6 @@ if(GMX_INSTALL_LEGACY_API)
     # Install "configured" files from the build tree.
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gromacs/version.h
             DESTINATION include/gromacs)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gromacs/libgromacs_export.h
+            DESTINATION include/gromacs)
 endif()
