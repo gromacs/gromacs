@@ -1239,7 +1239,7 @@ void fftpack_cffti1(int n, Treal wa[], int ifac[MAXFAC+2])
 
     factorize(n,ifac,ntryh);
     nf = ifac[1];
-    argh = twopi/(Treal)n;
+    argh = twopi/Treal(n);
     i = 1;
     l1 = 1;
     for (k1=1; k1<=nf; k1++) {
@@ -1419,7 +1419,7 @@ void fftpack_rffti1(int n, Treal wa[], int ifac[MAXFAC+2])
       for (j = 1; j <= ipm; ++j) {
         ld += l1;
         i = is;
-        argld = (Treal) ld*argh;
+        argld = Treal(ld)*argh;
         fi = 0;
         for (ii = 3; ii <= ido; ii += 2) {
           i += 2;
