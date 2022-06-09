@@ -83,6 +83,20 @@ was missing (but not the torsion itself). Reprocess your
 PDB file with pdb2gmx from version 2022.2 or later to get a
 correct topology, or add it manually to the topology.
 
+Avoid crash in gmx bar with invalid input
+"""""""""""""""""""""""""""""""""""""""""
+
+gmx bar could try to read an invalid input data file and would fail with a hard
+crash instead of a helpful error message.
+
+Fix printing of incorrect data from analysis tools
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A change on how we handle selections caused the analysis tools in the
+trajectoryanalysis framework to print data for wrong selections.
+
+:issue:`4508`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -94,12 +108,6 @@ A minor update to the CMake configuration helps the ``muparser`` component
 to find the same OpenMP dependency used by the rest of the library.
 
 :issue:`4499`
-
-Avoid crash in gmx bar with invalid input
-"""""""""""""""""""""""""""""""""""""""""
-
-gmx bar could try to read an invalid input data file and would fail with a hard
-crash instead of a helpful error message.
 
 Miscellaneous
 ^^^^^^^^^^^^^

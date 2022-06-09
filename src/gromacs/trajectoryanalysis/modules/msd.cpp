@@ -667,6 +667,7 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
 
     for (MsdGroupData& msdData : groupData_)
     {
+        //NOLINTNEXTLINE(readability-static-accessed-through-instance)
         const Selection& sel = pdata->parallelSelection(msdData.sel);
 
         ArrayRef<const RVec> coords = msdData.coordinateManager_.buildCoordinates(sel, pbc);
