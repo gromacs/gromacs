@@ -1096,6 +1096,44 @@ static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug cons
     return result;
 }
 
+/*! \brief Compute the number of times the "local forces ready on device" GPU event will be used as a synchronization point.
+ *
+ * In GROMACS, we usually follow the "mark once - wait once" approach. But this event is "consumed"
+ * (that is, waited upon either on host or on the device) multiple times, since many tasks
+ * in different streams depend on the local forces.
+ *
+ * \param simulationWork Simulation workload flags.
+ * \param domainWork Domain workload flags.
+ * \param stepWork Step workload flags.
+ * \param useOrEmulateGpuNb Whether GPU non-bonded calculations are used or emulated.
+ * \param alternateGpuWait Whether alternating wait/reduce scheme is used.
+ * \return The number of times the event will be consumed based on this step's workload.
+ */
+static int getExpectedLocalFReadyOnDeviceConsumptionCount(const SimulationWorkload& simulationWork,
+                                                          const DomainLifetimeWorkload& domainWork,
+                                                          const StepWorkload&           stepWork,
+                                                          bool useOrEmulateGpuNb,
+                                                          bool alternateGpuWait)
+{
+    int  counter = 0;
+    bool eventUsedInGpuForceReduction =
+            (domainWork.haveCpuLocalForceWork
+             || (simulationWork.havePpDomainDecomposition && !simulationWork.useGpuHaloExchange));
+    bool gpuForceReductionUsed = useOrEmulateGpuNb && !alternateGpuWait && stepWork.useGpuFBufferOps
+                                 && stepWork.computeNonbondedForces;
+    if (gpuForceReductionUsed && eventUsedInGpuForceReduction)
+    {
+        counter++;
+    }
+    bool gpuForceHaloUsed = simulationWork.havePpDomainDecomposition && stepWork.computeForces
+                            && stepWork.useGpuFHalo;
+    if (gpuForceHaloUsed)
+    {
+        counter++;
+    }
+    return counter;
+}
+
 //! \brief Data structure to hold dipole-related data and staging arrays
 struct DipoleData
 {
@@ -2234,6 +2272,24 @@ void do_force(FILE*                               fplog,
                          inputrec.mtsLevels[1].stepFactor);
     }
 
+    // With both nonbonded and PME offloaded a GPU on the same rank, we use
+    // an alternating wait/reduction scheme.
+    // When running free energy perturbations steered by AWH and calculating PME on GPU,
+    // i.e. if needEarlyPmeResults == true, the PME results have already been reduced above.
+    const bool alternateGpuWait = (!c_disableAlternatingWait && stepWork.haveGpuPmeOnThisRank
+                                   && simulationWork.useGpuNonbonded && !simulationWork.havePpDomainDecomposition
+                                   && !stepWork.useGpuFBufferOps && !needEarlyPmeResults);
+
+
+    const int expectedLocalFReadyOnDeviceConsumptionCount = getExpectedLocalFReadyOnDeviceConsumptionCount(
+            simulationWork, domainWork, stepWork, useOrEmulateGpuNb, alternateGpuWait);
+    // If expectedLocalFReadyOnDeviceConsumptionCount == 0, stateGpu can be uninitialized
+    if (expectedLocalFReadyOnDeviceConsumptionCount > 0)
+    {
+        stateGpu->setFReadyOnDeviceEventExpectedConsumptionCount(
+                AtomLocality::Local, expectedLocalFReadyOnDeviceConsumptionCount);
+    }
+
     if (simulationWork.havePpDomainDecomposition)
     {
         /* We are done with the CPU compute.
@@ -2278,13 +2334,6 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // With both nonbonded and PME offloaded a GPU on the same rank, we use
-    // an alternating wait/reduction scheme.
-    // When running free energy perturbations steered by AWH and calculating PME on GPU,
-    // i.e. if needEarlyPmeResults == true, the PME results have already been reduced above.
-    bool alternateGpuWait = (!c_disableAlternatingWait && stepWork.haveGpuPmeOnThisRank
-                             && simulationWork.useGpuNonbonded && !simulationWork.havePpDomainDecomposition
-                             && !stepWork.useGpuFBufferOps && !needEarlyPmeResults);
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(),
@@ -2431,6 +2480,13 @@ void do_force(FILE*                               fplog,
             ArrayRef<gmx::RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
             nbv->atomdata_add_nbat_f_to_f(AtomLocality::Local, forceWithShift);
         }
+    }
+
+    if (expectedLocalFReadyOnDeviceConsumptionCount > 0)
+    {
+        /* The same fReadyOnDevice device synchronizer is later used to track buffer clearing,
+         * so we reset the expected consumption value back to the default (1). */
+        stateGpu->setFReadyOnDeviceEventExpectedConsumptionCount(AtomLocality::Local, 1);
     }
 
     launchGpuEndOfStepTasks(

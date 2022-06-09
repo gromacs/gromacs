@@ -223,6 +223,14 @@ public:
      */
     void setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount);
 
+    /*! \brief Set the expected consumption count for the event associated with GPU forces computation.
+     *
+     *  \param[in] atomLocality  Locality of the particles.
+     *  \param[in] expectedConsumptionCount  New value.
+     */
+    void setFReadyOnDeviceEventExpectedConsumptionCount(AtomLocality atomLocality,
+                                                        int          expectedConsumptionCount);
+
     /*! \brief Copy positions from the GPU memory, with an optional explicit dependency.
      *
      *  \param[in] h_x           Positions buffer in the host memory.
