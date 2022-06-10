@@ -63,7 +63,7 @@ static void string2dvec(char buf[], dvec nums)
 }
 
 
-extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, warninp_t wi)
+extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, WarningHandler* wi)
 {
     int       g, m;
     char      buf[STRLEN];
@@ -122,7 +122,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         else
         {
             sprintf(warn_buf, "rot-vec%d = 0", g);
-            warning_error(wi, warn_buf);
+            wi->addError(warn_buf);
         }
         fprintf(stderr,
                 "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
@@ -162,7 +162,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         if (rotg->k <= 0.0)
         {
             sprintf(warn_buf, "rot-k%d <= 0", g);
-            warning_note(wi, warn_buf);
+            wi->addNote(warn_buf);
         }
 
         printStringNoNewline(inp, "Slab distance for flexible axis rotation (nm)");
@@ -171,7 +171,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         if (rotg->slab_dist <= 0.0)
         {
             sprintf(warn_buf, "rot-slab-dist%d <= 0", g);
-            warning_error(wi, warn_buf);
+            wi->addError(warn_buf);
         }
 
         printStringNoNewline(inp,
@@ -182,7 +182,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         if (rotg->min_gaussian <= 0.0)
         {
             sprintf(warn_buf, "rot-min-gauss%d <= 0", g);
-            warning_error(wi, warn_buf);
+            wi->addError(warn_buf);
         }
 
         printStringNoNewline(
@@ -194,7 +194,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
                 || rotg->eType == EnforcedRotationGroupType::Flex2))
         {
             sprintf(warn_buf, "rot-eps%d <= 0", g);
-            warning_error(wi, warn_buf);
+            wi->addError(warn_buf);
         }
 
         printStringNoNewline(
@@ -210,7 +210,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
         if ((rotg->eFittype == RotationGroupFitting::Pot) && (rotg->PotAngle_nstep < 1))
         {
             sprintf(warn_buf, "rot-potfit-nsteps%d < 1", g);
-            warning_error(wi, warn_buf);
+            wi->addError(warn_buf);
         }
         printStringNoNewline(
                 inp, "For fit type 'potential', distance in degrees between two consecutive angles");
@@ -223,7 +223,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
 
 
 /* Check whether the box is unchanged */
-static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warninp_t wi)
+static void check_box_unchanged(matrix f_box, matrix box, const char fn[], WarningHandler* wi)
 {
     int  i, ii;
     bool bSame = TRUE;
@@ -243,7 +243,7 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
     if (!bSame)
     {
         sprintf(warn_buf, "%s Box size in reference file %s differs from actual box size!", RotStr.c_str(), fn);
-        warning(wi, warn_buf);
+        wi->addWarning(warn_buf);
         pr_rvecs(stderr, 0, "Your box is:", box, 3);
         pr_rvecs(stderr, 0, "Box in file:", f_box, 3);
     }
@@ -251,7 +251,7 @@ static void check_box_unchanged(matrix f_box, matrix box, const char fn[], warni
 
 
 /* Extract the reference positions for the rotation group(s) */
-extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, warninp_t wi)
+extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char* fn, bool bSet, WarningHandler* wi)
 {
     int              i, ii;
     t_rotgrp*        rotg;

@@ -131,13 +131,13 @@ static void process_pull_dim(char* dim_buf, ivec dim, const t_pull_coord* pcrd)
     }
 }
 
-static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t& pull, warninp_t wi)
+static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t& pull, WarningHandler* wi)
 {
     const int coord_index_for_output = pull.coord.size() + 1;
     if (pcrd->eType == PullingAlgorithm::Constraint)
     {
-        warning_error(
-                wi,
+        wi->addError(
+
                 gmx::formatString(
                         "pull-coord%d cannot have type 'constraint' and geometry 'transformation'",
                         coord_index_for_output));
@@ -146,8 +146,9 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
     /*Validate the mathematical expression to epullgTRANSFORMATION*/
     if (pcrd->expression.empty())
     {
-        warning_error(
-                wi, gmx::formatString("pull-coord%d-expression not set for pull coordinate of geometry 'transformation'", coord_index_for_output));
+        wi->addError(gmx::formatString(
+                "pull-coord%d-expression not set for pull coordinate of geometry 'transformation'",
+                coord_index_for_output));
     }
     else if (pcrd->expression[0] == '"' || pcrd->expression[0] == '\'')
     {
@@ -157,8 +158,8 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
     }
     if (pcrd->dx == 0)
     {
-        warning_error(
-                wi,
+        wi->addError(
+
                 gmx::formatString(
                         "pull-coord%d-dx cannot be set to zero for pull coordinate of geometry "
                         "'transformation'",
@@ -186,17 +187,17 @@ static void initTransformationPullCoord(t_pull_coord* pcrd, const pull_params_t&
 
         if (previousPcrd.eType == PullingAlgorithm::Constraint)
         {
-            warning_error(wi,
-                          gmx::formatString("pull-coord%d can not use pull-coord%d in the "
-                                            "transformation since this is a "
-                                            "constraint",
-                                            coord_index_for_output,
-                                            previousCoordOutputIndex));
+            wi->addError(
+                    gmx::formatString("pull-coord%d can not use pull-coord%d in the "
+                                      "transformation since this is a "
+                                      "constraint",
+                                      coord_index_for_output,
+                                      previousCoordOutputIndex));
         }
         else if (previousPcrd.k != 0 && pcrd->k != 0)
         {
-            warning_note(
-                    wi,
+            wi->addNote(
+
                     gmx::formatString("pull-coord%d has a non-zero force constant and is also "
                                       "referenced in pull-coord%d-expression. "
                                       "Make sure that this is intended. "
@@ -214,7 +215,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                             const char*          origin_buf,
                             const char*          vec_buf,
                             const pull_params_t& pull,
-                            warninp_t            wi)
+                            WarningHandler*      wi)
 {
     const int coord_index_for_output = pull.coord.size() + 1;
 
@@ -247,7 +248,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     "pull-coord",
                     coord_index_for_output,
                     "-potential-provider");
-            warning_error(wi, buf);
+            wi->addError(buf);
         }
 
         if (pcrd->rate != 0)
@@ -257,7 +258,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     "is zero",
                     enumValueToString(pcrd->eType),
                     coord_index_for_output);
-            warning_error(wi, buf);
+            wi->addError(buf);
         }
 
         if (pcrd->eGeom == PullGroupGeometry::Cylinder)
@@ -271,7 +272,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     "group should be smaller than half the box length",
                     enumValueToString(pcrd->eType),
                     enumValueToString(pcrd->eGeom));
-            warning_note(wi, buf);
+            wi->addNote(buf);
         }
     }
 
@@ -297,7 +298,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     pcrd->init,
                     enumValueToString(pcrd->eGeom),
                     enumValueToString(PullGroupGeometry::Direction));
-            warning(wi, buf);
+            wi->addWarning(buf);
         }
     }
     else if (pcrd->eGeom == PullGroupGeometry::Angle || pcrd->eGeom == PullGroupGeometry::AngleAxis)
@@ -312,7 +313,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     "this value, but only for certain starting angles.",
                     pcrd->init,
                     enumValueToString(pcrd->eGeom));
-            warning(wi, buf);
+            wi->addWarning(buf);
         }
     }
     else if (pcrd->eGeom == PullGroupGeometry::Dihedral)
@@ -326,7 +327,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     "this value, but only for certain starting angles.",
                     pcrd->init,
                     enumValueToString(pcrd->eGeom));
-            warning(wi, buf);
+            wi->addWarning(buf);
         }
     }
 
@@ -373,7 +374,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
                     pcrd->eGeom == PullGroupGeometry::Angle
                             ? enumValueToString(PullGroupGeometry::AngleAxis)
                             : enumValueToString(PullGroupGeometry::Direction));
-            warning(wi, buf);
+            wi->addWarning(buf);
         }
     }
     if (pcrd->eGeom == PullGroupGeometry::Transformation)
@@ -388,7 +389,7 @@ static void init_pull_coord(t_pull_coord*        pcrd,
     }
 }
 
-std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, warninp_t wi)
+std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, WarningHandler* wi)
 {
     int  nscan, idum;
     char buf[STRLEN];
@@ -502,8 +503,8 @@ std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_param
                     pullCoord.ngroup,
                     enumValueToString(pullCoord.eGeom),
                     nscan);
-            set_warning_line(wi, nullptr, -1);
-            warning_error(wi, message);
+            wi->setFileAndLineNumber(nullptr, -1);
+            wi->addError(message);
         }
         for (int g = 0; g < pullCoord.ngroup; g++)
         {
@@ -665,7 +666,7 @@ pull_t* set_pull_init(t_inputrec*                    ir,
                       gmx::ArrayRef<const gmx::RVec> x,
                       matrix                         box,
                       real                           lambda,
-                      warninp_t                      wi)
+                      WarningHandler*                wi)
 {
     pull_t* pull_work;
     t_pbc   pbc;
@@ -709,7 +710,7 @@ pull_t* set_pull_init(t_inputrec*                    ir,
                         "a specific atom selected as reference atom.",
                         c_pullGroupSmallGroupThreshold,
                         g);
-                warning_error(wi, buf);
+                wi->addError(buf);
             }
             else if (!pull->bSetPbcRefToPrevStepCOM)
             {
@@ -721,7 +722,7 @@ pull_t* set_pull_init(t_inputrec*                    ir,
                         pull->group[g].pbcatom + 1,
                         g,
                         c_pullGroupSmallGroupThreshold);
-                warning_error(wi, buf);
+                wi->addError(buf);
             }
         }
         if (groupObeysPbc)
@@ -738,8 +739,8 @@ pull_t* set_pull_init(t_inputrec*                    ir,
                         g,
                         c_pullGroupPbcMargin,
                         pull->group[g].pbcatom + 1);
-                set_warning_line(wi, nullptr, -1);
-                warning(wi, buf);
+                wi->setFileAndLineNumber(nullptr, -1);
+                wi->addWarning(buf);
             }
         }
     }

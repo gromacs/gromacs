@@ -49,7 +49,7 @@ struct t_nbparam;
 class InteractionOfType;
 struct InteractionsOfType;
 struct PreprocessResidue;
-struct warninp;
+class WarningHandler;
 enum class CombinationRule : int;
 namespace gmx
 {
@@ -62,7 +62,7 @@ void generate_nbparams(CombinationRule         comb,
                        int                     funct,
                        InteractionsOfType*     plist,
                        PreprocessingAtomTypes* atype,
-                       warninp*                wi);
+                       WarningHandler*         wi);
 
 void push_at(PreprocessingAtomTypes*    at,
              PreprocessingBondAtomType* bat,
@@ -70,7 +70,7 @@ void push_at(PreprocessingAtomTypes*    at,
              int                        nb_funct,
              t_nbparam***               nbparam,
              t_nbparam***               pair,
-             warninp*                   wi);
+             WarningHandler*            wi);
 
 void push_bt(Directive                         d,
              gmx::ArrayRef<InteractionsOfType> bt,
@@ -78,13 +78,13 @@ void push_bt(Directive                         d,
              PreprocessingAtomTypes*           at,
              PreprocessingBondAtomType*        bat,
              char*                             line,
-             warninp*                          wi);
+             WarningHandler*                   wi);
 
 void push_dihedraltype(Directive                         d,
                        gmx::ArrayRef<InteractionsOfType> bt,
                        PreprocessingBondAtomType*        bat,
                        char*                             line,
-                       warninp*                          wi);
+                       WarningHandler*                   wi);
 
 void push_cmaptype(Directive                         d,
                    gmx::ArrayRef<InteractionsOfType> bt,
@@ -92,11 +92,11 @@ void push_cmaptype(Directive                         d,
                    PreprocessingAtomTypes*           at,
                    PreprocessingBondAtomType*        bat,
                    char*                             line,
-                   warninp*                          wi);
+                   WarningHandler*                   wi);
 
-void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atype, char* plines, int nb_funct, warninp* wi);
+void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atype, char* plines, int nb_funct, WarningHandler* wi);
 
-void push_atom(struct t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atype, char* line, warninp* wi);
+void push_atom(struct t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atype, char* line, WarningHandler* wi);
 
 void push_bond(Directive                         d,
                gmx::ArrayRef<InteractionsOfType> bondtype,
@@ -109,7 +109,7 @@ void push_bond(Directive                         d,
                real                              fudgeQQ,
                bool                              bZero,
                bool*                             bWarn_copy_A_B,
-               warninp*                          wi);
+               WarningHandler*                   wi);
 
 void push_cmap(Directive                         d,
                gmx::ArrayRef<InteractionsOfType> bondtype,
@@ -117,15 +117,15 @@ void push_cmap(Directive                         d,
                t_atoms*                          at,
                PreprocessingAtomTypes*           atype,
                char*                             line,
-               warninp*                          wi);
+               WarningHandler*                   wi);
 
-void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, warninp* wi);
+void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, WarningHandler* wi);
 
-void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, warninp* wi);
+void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, WarningHandler* wi);
 
-void push_molt(struct t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, warninp* wi);
+void push_molt(struct t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, WarningHandler* wi);
 
-void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp* wi);
+void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, WarningHandler* wi);
 
 int copy_nbparams(t_nbparam** param, int ftype, InteractionsOfType* plist, int nr);
 
@@ -144,7 +144,7 @@ void convert_moltype_couple(MoleculeInformation* mol,
                             bool                 bCoupleIntra,
                             int                  nb_funct,
                             InteractionsOfType*  nbp,
-                            warninp*             wi);
+                            WarningHandler*      wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */

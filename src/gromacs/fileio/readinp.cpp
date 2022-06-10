@@ -40,7 +40,6 @@
 
 #include <algorithm>
 
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -55,7 +54,7 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
-std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn, warninp_t wi)
+std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn, WarningHandler* wi)
 {
     std::vector<t_inpfile> inp;
 
@@ -72,7 +71,7 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn
     while (reader.readLine(&line))
     {
         indexOfLineReadFromFile++;
-        set_warning_line(wi, fn, indexOfLineReadFromFile);
+        wi->setFileAndLineNumber(fn, indexOfLineReadFromFile);
 
         if (line.empty())
         {
@@ -85,7 +84,7 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn
             auto message = gmx::formatString(
                     "No '=' to separate .mdp parameter key and value was found on line:\n'%s'",
                     line.c_str());
-            warning_error(wi, message);
+            wi->addError(message);
             continue;
         }
         if (tokens.size() > 2)
@@ -105,7 +104,7 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn
         {
             auto message = gmx::formatString(
                     "No .mdp parameter name or value was found on line:\n'%s'", line.c_str());
-            warning_error(wi, message);
+            wi->addError(message);
             continue;
         }
         if (tokens[0].empty())
@@ -113,7 +112,7 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn
             auto message = gmx::formatString(
                     "No .mdp parameter name was found on the left-hand side of '=' on line:\n'%s'",
                     line.c_str());
-            warning_error(wi, message);
+            wi->addError(message);
             continue;
         }
         if (tokens[1].empty())
@@ -136,14 +135,14 @@ std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn
         else
         {
             auto message = gmx::formatString("Parameter \"%s\" doubly defined\n", tokens[0].c_str());
-            warning_error(wi, message);
+            wi->addError(message);
         }
     }
     /* This preserves the behaviour of the old code, which issues some
        warnings after completing parsing. Regenerating regressiontest
        warning files is not worth the effort. */
     indexOfLineReadFromFile++;
-    set_warning_line(wi, fn, indexOfLineReadFromFile);
+    wi->setFileAndLineNumber(fn, indexOfLineReadFromFile);
 
     if (debug)
     {
@@ -195,7 +194,7 @@ void write_inpfile(gmx::TextOutputStream*  stream,
                    std::vector<t_inpfile>* inp,
                    gmx_bool                bHaltOnUnknown,
                    WriteMdpHeader          writeHeader,
-                   warninp_t               wi)
+                   WarningHandler*         wi)
 {
     using gmx::formatString;
 
@@ -233,16 +232,16 @@ void write_inpfile(gmx::TextOutputStream*  stream,
                     formatString("Unknown left-hand '%s' in parameter file\n", local.name_.c_str());
             if (bHaltOnUnknown)
             {
-                warning_error(wi, message.c_str());
+                wi->addError(message);
             }
             else
             {
-                warning(wi, message.c_str());
+                wi->addWarning(message);
             }
         }
     }
 
-    check_warning_error(wi, FARGS);
+    check_warning_error(*wi, FARGS);
 }
 
 void replace_inp_entry(gmx::ArrayRef<t_inpfile> inp, const char* old_entry, const char* new_entry)
@@ -340,10 +339,10 @@ int get_einp(std::vector<t_inpfile>* inp, const char* name)
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-int get_eint(std::vector<t_inpfile>* inp, const char* name, int def, warninp_t wi)
+int get_eint(std::vector<t_inpfile>* inp, const char* name, int def, WarningHandler* wi)
 {
     std::vector<t_inpfile>& inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                    buf[32], *ptr;
 
     int ii = get_einp(inp, name);
 
@@ -359,28 +358,27 @@ int get_eint(std::vector<t_inpfile>* inp, const char* name, int def, warninp_t w
         int ret = std::strtol(inpRef[ii].value_.c_str(), &ptr, 10);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf,
+            wi->addError(gmx::formatString(
                     "Right hand side '%s' for parameter '%s' in parameter file is not an integer "
                     "value\n",
                     inpRef[ii].value_.c_str(),
-                    inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+                    inpRef[ii].name_.c_str()));
         }
 
         return ret;
     }
 }
 
-int get_eint(std::vector<t_inpfile>* inp, const std::string& name, int def, warninp_t wi)
+int get_eint(std::vector<t_inpfile>* inp, const std::string& name, int def, WarningHandler* wi)
 {
     return get_eint(inp, name.c_str(), def, wi);
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-int64_t get_eint64(std::vector<t_inpfile>* inp, const char* name, int64_t def, warninp_t wi)
+int64_t get_eint64(std::vector<t_inpfile>* inp, const char* name, int64_t def, WarningHandler* wi)
 {
     std::vector<t_inpfile>& inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                    buf[32], *ptr;
 
     int ii = get_einp(inp, name);
 
@@ -396,28 +394,27 @@ int64_t get_eint64(std::vector<t_inpfile>* inp, const char* name, int64_t def, w
         int64_t ret = str_to_int64_t(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf,
+            wi->addError(gmx::formatString(
                     "Right hand side '%s' for parameter '%s' in parameter file is not an integer "
                     "value\n",
                     inpRef[ii].value_.c_str(),
-                    inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+                    inpRef[ii].name_.c_str()));
         }
 
         return ret;
     }
 }
 
-int64_t get_eint64(std::vector<t_inpfile>* inp, const std::string& name, int64_t def, warninp_t wi)
+int64_t get_eint64(std::vector<t_inpfile>* inp, const std::string& name, int64_t def, WarningHandler* wi)
 {
     return get_eint64(inp, name.c_str(), def, wi);
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, warninp_t wi)
+double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, WarningHandler* wi)
 {
     std::vector<t_inpfile>& inpRef = *inp;
-    char                    buf[32], *ptr, warn_buf[STRLEN];
+    char                    buf[32], *ptr;
 
     int ii = get_einp(inp, name);
 
@@ -433,19 +430,18 @@ double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, warn
         double ret = strtod(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
-            sprintf(warn_buf,
+            wi->addError(gmx::formatString(
                     "Right hand side '%s' for parameter '%s' in parameter file is not a real "
                     "value\n",
                     inpRef[ii].value_.c_str(),
-                    inpRef[ii].name_.c_str());
-            warning_error(wi, warn_buf);
+                    inpRef[ii].name_.c_str()));
         }
 
         return ret;
     }
 }
 
-double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double def, warninp_t wi)
+double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double def, WarningHandler* wi)
 {
     return get_ereal(inp, name.c_str(), def, wi);
 }
@@ -482,7 +478,7 @@ const char* get_estr(std::vector<t_inpfile>* inp, const std::string& name, const
 }
 
 /* Note that sanitizing the trailing part of inp[ii].value was the responsibility of read_inpfile() */
-int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs, warninp_t wi)
+int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs, WarningHandler* wi)
 {
     std::vector<t_inpfile>& inpRef = *inp;
     int                     n      = 0;
@@ -521,7 +517,7 @@ int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs,
         }
         if (wi != nullptr)
         {
-            warning_error(wi, buf);
+            wi->addError(buf);
         }
         else
         {
@@ -536,7 +532,7 @@ int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs,
     return i;
 }
 
-int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char** defs, warninp_t wi)
+int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char** defs, WarningHandler* wi)
 {
     return get_eeenum(inp, name.c_str(), defs, wi);
 }

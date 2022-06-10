@@ -253,7 +253,7 @@ public:
         notifier->preProcessingNotifier_.subscribe(setLoggerFunction);
 
         // Set warning output during pre-processing
-        const auto setWarninpFunction = [this](warninp* wi) { qmmmOptions_.setWarninp(wi); };
+        const auto setWarninpFunction = [this](WarningHandler* wi) { qmmmOptions_.setWarninp(wi); };
         notifier->preProcessingNotifier_.subscribe(setWarninpFunction);
 
         // Notification of the Coordinates, box and pbc during pre-processing

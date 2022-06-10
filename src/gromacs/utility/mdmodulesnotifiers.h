@@ -52,7 +52,7 @@
 
 struct t_commrec;
 struct gmx_mtop_t;
-struct warninp;
+class WarningHandler;
 enum class PbcType : int;
 
 namespace gmx
@@ -268,7 +268,7 @@ struct MDModulesNotifiers
      */
     BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed&,
                            const MDLogger&,
-                           warninp*,
+                           WarningHandler*,
                            EnergyCalculationFrequencyErrors*,
                            gmx_mtop_t*,
                            const IndexGroupsAndNames&,

@@ -40,223 +40,180 @@
 #include <string>
 
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
-struct warninp
+static const char* warningTypeString(const WarningType type)
 {
-    gmx_bool    bAllowWarnings;
-    int         nwarn_note;
-    int         nwarn_warn;
-    int         nwarn_error;
-    int         maxwarn;
-    int         lineno;
-    std::string filenm;
-};
-
-warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning)
-{
-    warninp_t wi = new warninp;
-
-    wi->bAllowWarnings = bAllowWarnings;
-    wi->maxwarn        = maxwarning;
-    warning_reset(wi);
-    wi->filenm = "unknown";
-    wi->lineno = 0;
-
-    return wi;
+    static constexpr gmx::EnumerationArray<WarningType, const char*> warningTypeName = { "NOTE",
+                                                                                         "WARNING",
+                                                                                         "ERROR" };
+    return warningTypeName[type];
 }
 
-void warning_reset(warninp_t wi)
+void WarningHandler::setFileAndLineNumber(const char* fileName, int lineNumber)
 {
-    wi->nwarn_note  = 0;
-    wi->nwarn_warn  = 0;
-    wi->nwarn_error = 0;
-}
-
-void set_warning_line(warninp_t wi, const char* s, int line)
-{
-    if (s != nullptr)
+    if (fileName != nullptr)
     {
-        wi->filenm = s;
+        fileName_ = fileName;
     }
-    wi->lineno = line;
+    lineNumber_ = lineNumber;
 }
 
-int get_warning_line(warninp_t wi)
+const char* WarningHandler::getFileName() const
 {
-    return wi->lineno;
+    return fileName_.c_str();
 }
 
-const char* get_warning_file(warninp_t wi)
+void WarningHandler::addLowLevel(std::string_view message, const WarningType type)
 {
-    return wi->filenm.c_str();
-}
-
-static void low_warning(warninp_t wi, const char* wtype, int n, const char* s)
-{
-#define indent 2
-    char *temp, *temp2;
-    int   i;
-
-    if (s == nullptr)
+    static constexpr int indent = 2;
+    if (message.empty())
     {
-        s = "Empty error message.";
+        message = "Empty error message.";
     }
-    snew(temp, std::strlen(s) + indent + 1);
-    for (i = 0; i < indent; i++)
+
+    gmx::TextLineWrapperSettings lineWrapperSettings{};
+    lineWrapperSettings.setIndent(indent);
+    lineWrapperSettings.setLineLength(77 - indent);
+    lineWrapperSettings.setFirstLineIndent(2);
+    gmx::TextLineWrapper wrapper(lineWrapperSettings);
+    const std::string    wrapped = wrapper.wrapToString(std::string(message));
+    if (!fileName_.empty())
     {
-        temp[i] = ' ';
-    }
-    temp[indent] = '\0';
-    std::strcat(temp, s);
-    temp2 = wrap_lines(temp, 78 - indent, indent, FALSE);
-    if (!wi->filenm.empty())
-    {
-        if (wi->lineno != -1)
+        if (lineNumber_ != -1)
         {
-            fprintf(stderr, "\n%s %d [file %s, line %d]:\n%s\n\n", wtype, n, wi->filenm.c_str(), wi->lineno, temp2);
+            fprintf(stderr,
+                    "\n%s %d [file %s, line %d]:\n%s\n\n",
+                    warningTypeString(type),
+                    numberOfEntries_[type],
+                    fileName_.c_str(),
+                    lineNumber_,
+                    wrapped.c_str());
         }
         else
         {
-            fprintf(stderr, "\n%s %d [file %s]:\n%s\n\n", wtype, n, wi->filenm.c_str(), temp2);
+            fprintf(stderr,
+                    "\n%s %d [file %s]:\n%s\n\n",
+                    warningTypeString(type),
+                    numberOfEntries_[type],
+                    fileName_.c_str(),
+                    wrapped.c_str());
         }
     }
     else
     {
-        fprintf(stderr, "\n%s %d:\n%s\n\n", wtype, n, temp2);
+        fprintf(stderr, "\n%s %d:\n%s\n\n", warningTypeString(type), numberOfEntries_[type], wrapped.c_str());
     }
-    sfree(temp);
-    sfree(temp2);
 }
 
-void warning(warninp_t wi, const char* s)
+void WarningHandler::addWarning(std::string_view message)
 {
-    if (wi->bAllowWarnings)
+    if (allowWarnings_)
     {
-        wi->nwarn_warn++;
-        low_warning(wi, "WARNING", wi->nwarn_warn, s);
+        numberOfEntries_[WarningType::Warning]++;
+        addLowLevel(message, WarningType::Warning);
     }
     else
     {
-        warning_error(wi, s);
+        addError(message);
     }
 }
 
-void warning(warninp_t wi, const std::string& s)
+void WarningHandler::addError(std::string_view message)
 {
-    warning(wi, s.c_str());
+    numberOfEntries_[WarningType::Error]++;
+    addLowLevel(message, WarningType::Error);
 }
 
-void warning_note(warninp_t wi, const char* s)
+void WarningHandler::addNote(std::string_view message)
 {
-    wi->nwarn_note++;
-    low_warning(wi, "NOTE", wi->nwarn_note, s);
+    numberOfEntries_[WarningType::Note]++;
+    addLowLevel(message, WarningType::Note);
 }
 
-void warning_note(warninp_t wi, const std::string& s)
-{
-    warning_note(wi, s.c_str());
-}
-
-void warning_error(warninp_t wi, const char* s)
-{
-    wi->nwarn_error++;
-    low_warning(wi, "ERROR", wi->nwarn_error, s);
-}
-
-void warning_error(warninp_t wi, const std::string& s)
-{
-    warning_error(wi, s.c_str());
-}
-
-static void print_warn_count(const char* type, int n)
+static void printWarningCount(const WarningType type, int n)
 {
     if (n > 0)
     {
-        fprintf(stderr, "\nThere %s %d %s%s\n", (n == 1) ? "was" : "were", n, type, (n == 1) ? "" : "s");
+        fprintf(stderr,
+                "\nThere %s %d %s%s\n",
+                (n == 1) ? "was" : "were",
+                n,
+                warningTypeString(type),
+                (n == 1) ? "" : "s");
     }
 }
 
 // Note it is the caller's responsibility to ensure that exiting is correct behaviour
-[[noreturn]] static void check_warning_error_impl(warninp_t wi, int f_errno, const char* file, int line)
+[[noreturn]] static void check_warning_error_impl(const WarningHandler& wi, int f_errno, const char* file, int line)
 {
-    print_warn_count("note", wi->nwarn_note);
-    print_warn_count("warning", wi->nwarn_warn);
+    printWarningCount(WarningType::Note, wi.noteCount());
+    printWarningCount(WarningType::Warning, wi.warningCount());
 
     gmx_fatal(f_errno,
               file,
               line,
               "There %s %d error%s in input file(s)",
-              (wi->nwarn_error == 1) ? "was" : "were",
-              wi->nwarn_error,
-              (wi->nwarn_error == 1) ? "" : "s");
+              (wi.errorCount() == 1) ? "was" : "were",
+              wi.errorCount(),
+              (wi.errorCount() == 1) ? "" : "s");
 }
 
-void check_warning_error(warninp_t wi, int f_errno, const char* file, int line)
+void check_warning_error(const WarningHandler& wi, int f_errno, const char* file, int line)
 {
-    if (wi->nwarn_error > 0)
+    if (wi.errorCount() > 0)
     {
         check_warning_error_impl(wi, f_errno, file, line);
     }
 }
 
-void warning_error_and_exit(warninp_t wi, const char* s, int f_errno, const char* file, int line)
+void warning_error_and_exit(WarningHandler* wi, const char* s, int f_errno, const char* file, int line)
 {
-    warning_error(wi, s);
-    check_warning_error_impl(wi, f_errno, file, line);
+    wi->addError(s);
+    check_warning_error_impl(*wi, f_errno, file, line);
 }
 
-void warning_error_and_exit(warninp_t wi, const std::string& s, int f_errno, const char* file, int line)
+void warning_error_and_exit(WarningHandler* wi, const std::string& s, int f_errno, const char* file, int line)
 {
     warning_error_and_exit(wi, s.c_str(), f_errno, file, line);
 }
 
-gmx_bool warning_errors_exist(warninp_t wi)
+bool warning_errors_exist(const WarningHandler& wi)
 {
-    return (wi->nwarn_error > 0);
+    return (wi.errorCount() > 0);
 }
 
-void done_warning(warninp_t wi, int f_errno, const char* file, int line)
+void done_warning(const WarningHandler& wi, int f_errno, const char* file, int line)
 {
     // If we've had an error, then this will report the number of
     // notes and warnings, and then exit.
     check_warning_error(wi, f_errno, file, line);
 
     // Otherwise, we report the number of notes and warnings.
-    print_warn_count("note", wi->nwarn_note);
-    print_warn_count("warning", wi->nwarn_warn);
+    printWarningCount(WarningType::Note, wi.noteCount());
+    printWarningCount(WarningType::Warning, wi.warningCount());
 
-    if (wi->maxwarn >= 0 && wi->nwarn_warn > wi->maxwarn)
+    if (wi.warningCount() > wi.maxWarningCount())
     {
         gmx_fatal(f_errno,
                   file,
                   line,
                   "Too many warnings (%d).\n"
                   "If you are sure all warnings are harmless, use the -maxwarn option.",
-                  wi->nwarn_warn);
+                  wi.warningCount());
     }
-
-    free_warning(wi);
 }
 
-void free_warning(warninp_t wi)
+void too_few_function(WarningHandler* wi, const char* fn, int line)
 {
-    delete wi;
+    wi->addWarning(gmx::formatString("Too few parameters on line (source file %s, line %d)", fn, line));
 }
 
-void too_few_function(warninp_t wi, const char* fn, int line)
+void incorrect_n_param_function(WarningHandler* wi, const char* fn, int line)
 {
-    char buf[STRLEN];
-
-    sprintf(buf, "Too few parameters on line (source file %s, line %d)", fn, line);
-    warning(wi, buf);
-}
-
-void incorrect_n_param_function(warninp_t wi, const char* fn, int line)
-{
-    char buf[STRLEN];
-
-    sprintf(buf, "Incorrect number of parameters on line (source file %s, line %d)", fn, line);
-    warning(wi, buf);
+    wi->addWarning(gmx::formatString(
+            "Incorrect number of parameters on line (source file %s, line %d)", fn, line));
 }

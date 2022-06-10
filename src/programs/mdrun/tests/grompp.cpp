@@ -48,8 +48,10 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
 
 #include "moduletest.h"
@@ -98,6 +100,39 @@ TEST_F(GromppTest, SimulatedAnnealingWorksWithMultipleGroups)
             "annealing-time = 0 3 6 0 2 4 6\n"
             "annealing-temp = 298 280 270 298 320 320 298\n");
     runTest();
+}
+
+/* Test for making sure that we need to set maxwarn correctly for grompp to run */
+TEST_F(GromppTest, DeathTestHandlesNoMaxwarnError)
+{
+    runner_.useStringAsMdpFile(
+            "Tcoupl  = Berendsen\n"
+            "tc-grps = System\n"
+            "tau-t   = 0.1\n"
+            "ref_t   = 298\n");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(), "");
+}
+
+TEST_F(GromppTest, HandlesMaxwarn)
+{
+    runner_.useStringAsMdpFile(
+            "Tcoupl  = Berendsen\n"
+            "tc-grps = System\n"
+            "tau-t   = 0.1\n"
+            "ref_t   = 298\n");
+    runner_.setMaxWarn(1);
+    runTest();
+}
+
+TEST_F(GromppTest, MaxwarnShouldBePositive)
+{
+    runner_.useStringAsMdpFile(
+            "Tcoupl  = Berendsen\n"
+            "tc-grps = System\n"
+            "tau-t   = 0.1\n"
+            "ref_t   = 298\n");
+    runner_.setMaxWarn(-1);
+    EXPECT_THROW_GMX(runTest(), gmx::InconsistentInputError);
 }
 
 #if HAVE_MUPARSER

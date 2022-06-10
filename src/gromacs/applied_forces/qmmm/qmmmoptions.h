@@ -49,7 +49,7 @@
 #include "qmmmtypes.h"
 
 struct gmx_mtop_t;
-struct warninp;
+class WarningHandler;
 
 namespace gmx
 {
@@ -133,7 +133,7 @@ public:
     void setLogger(const MDLogger& logger);
 
     //! Set the warninp instance
-    void setWarninp(warninp* wi);
+    void setWarninp(WarningHandler* wi);
 
 private:
     //! Write message to the log
@@ -181,7 +181,7 @@ private:
     const MDLogger* logger_ = nullptr;
 
     //! Instance of warning bookkeeper
-    warninp* wi_ = nullptr;
+    WarningHandler* wi_ = nullptr;
 
     //! QM index group name, Default whole System
     std::string groupString_ = "System";

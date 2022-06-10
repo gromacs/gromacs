@@ -70,7 +70,7 @@ namespace test
 class GetIrTest : public ::testing::Test
 {
 public:
-    GetIrTest() : wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
+    GetIrTest()
     {
         snew(opts_.include, STRLEN);
         snew(opts_.define, STRLEN);
@@ -105,8 +105,9 @@ public:
         const bool compareOutput = testBehavior == TestBehavior::ErrorAndCompareOutput
                                    || testBehavior == TestBehavior::NoErrorAndCompareOutput;
 
-        std::string inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp");
-        std::string outputMdpFilename;
+        WarningHandler wi{ false, 0 };
+        std::string    inputMdpFilename = fileManager_.getTemporaryFilePath("input.mdp");
+        std::string    outputMdpFilename;
         if (compareOutput)
         {
             outputMdpFilename = fileManager_.getTemporaryFilePath("output.mdp");
@@ -127,11 +128,11 @@ public:
                &ir_,
                &opts_,
                WriteMdpHeader::no,
-               wi_);
+               &wi);
 
-        check_ir(inputMdpFilename.c_str(), mdModules_.notifiers(), &ir_, &opts_, wi_);
+        check_ir(inputMdpFilename.c_str(), mdModules_.notifiers(), &ir_, &opts_, &wi);
         // Now check
-        bool failure = warning_errors_exist(wi_);
+        bool failure = warning_errors_exist(wi);
         EXPECT_EQ(failure, expectError);
 
         if (compareOutput)
@@ -139,24 +140,21 @@ public:
             TestReferenceData    data;
             TestReferenceChecker checker(data.rootChecker());
             checker.checkBoolean(failure, "Error parsing mdp file");
-            warning_reset(wi_);
 
             auto outputMdpContents = TextReader::readFileToString(outputMdpFilename);
             checker.checkString(outputMdpContents, "OutputMdpFile");
         }
     }
 
-    TestFileManager                    fileManager_;
-    t_inputrec                         ir_;
-    MDModules                          mdModules_;
-    t_gromppopts                       opts_;
-    warninp_t                          wi_;
-    unique_cptr<warninp, free_warning> wiGuard_;
+    TestFileManager fileManager_;
+    t_inputrec      ir_;
+    MDModules       mdModules_;
+    t_gromppopts    opts_;
 };
 
 TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
 {
-    const char* inputMdpFile[] = { "; File to run my simulation",
+    const char*    inputMdpFile[] = { "; File to run my simulation",
                                    "title = simulation",
                                    "define = -DBOOLVAR -DVAR=VALUE",
                                    ";",
@@ -169,12 +167,14 @@ TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
                                    "init_step = 0",
                                    "nstcomm = 100",
                                    "integrator = steep" };
+    WarningHandler wi{ false, 0 };
     runTest(joinStrings(inputMdpFile, "\n"));
 }
 
 TEST_F(GetIrTest, RejectsNonCommentLineWithNoEquals)
 {
     const char* inputMdpFile = "title simulation";
+
     GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No '=' to separate");
 }
 

@@ -48,8 +48,7 @@ struct t_inputrec;
 struct MoleculeInformation;
 struct InteractionsOfType;
 struct t_symtab;
-struct warninp;
-typedef warninp* warninp_t;
+class WarningHandler;
 enum class CombinationRule : int;
 
 namespace gmx
@@ -59,7 +58,7 @@ class ArrayRef;
 class MDLogger;
 } // namespace gmx
 
-double check_mol(const gmx_mtop_t* mtop, warninp_t wi);
+double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi);
 /* Check mass and charge */
 
 char** do_top(bool                                  bVerbose,
@@ -78,7 +77,7 @@ char** do_top(bool                                  bVerbose,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
-              warninp_t                             wi,
+              WarningHandler*                       wi,
               const gmx::MDLogger&                  logger);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */

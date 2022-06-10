@@ -319,7 +319,7 @@ static int check_atom_names(const char*          fn1,
     return nmismatch;
 }
 
-static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, warninp* wi)
+static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandler* wi)
 {
     /* This check is not intended to ensure accurate integration,
      * rather it is to signal mistakes in the mdp settings.
@@ -450,11 +450,11 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, warninp* wi)
                        : "Maybe you forgot to change the constraints mdp option.");
         if (bWarn)
         {
-            warning(wi, warningMessage.c_str());
+            wi->addWarning(warningMessage);
         }
         else
         {
-            warning_note(wi, warningMessage.c_str());
+            wi->addNote(warningMessage);
         }
     }
 }
@@ -473,7 +473,7 @@ static void check_vel(gmx_mtop_t* mtop, rvec v[])
     }
 }
 
-static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, warninp* wi)
+static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, WarningHandler* wi)
 {
     int nshells = 0;
 
@@ -487,11 +487,11 @@ static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, warninp* wi)
     }
     if ((nshells > 0) && (ir->nstcalcenergy != 1))
     {
-        set_warning_line(wi, "unknown", -1);
+        wi->setFileAndLineNumber("unknown", -1);
         std::string warningMessage = gmx::formatString(
                 "There are %d shells, changing nstcalcenergy from %d to 1", nshells, ir->nstcalcenergy);
         ir->nstcalcenergy = 1;
-        warning(wi, warningMessage.c_str());
+        wi->addWarning(warningMessage);
     }
 }
 
@@ -588,7 +588,7 @@ static void new_status(const char*                           topfile,
                        double*                               reppow,
                        real*                                 fudgeQQ,
                        gmx_bool                              bMorse,
-                       warninp*                              wi,
+                       WarningHandler*                       wi,
                        const gmx::MDLogger&                  logger)
 {
     std::vector<gmx_molblock_t> molblock;
@@ -649,10 +649,10 @@ static void new_status(const char*                           topfile,
         i = rm_interactions(F_DISRES, *mi);
         if (i > 0)
         {
-            set_warning_line(wi, "unknown", -1);
+            wi->setFileAndLineNumber("unknown", -1);
             std::string warningMessage =
                     gmx::formatString("disre = no, removed %d distance restraints", i);
-            warning_note(wi, warningMessage.c_str());
+            wi->addNote(warningMessage);
         }
     }
     if (!opts->bOrire)
@@ -660,10 +660,10 @@ static void new_status(const char*                           topfile,
         i = rm_interactions(F_ORIRES, *mi);
         if (i > 0)
         {
-            set_warning_line(wi, "unknown", -1);
+            wi->setFileAndLineNumber("unknown", -1);
             std::string warningMessage =
                     gmx::formatString("orire = no, removed %d orientation restraints", i);
-            warning_note(wi, warningMessage.c_str());
+            wi->addWarning(warningMessage);
         }
     }
 
@@ -679,12 +679,12 @@ static void new_status(const char*                           topfile,
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
         && gmx_mtop_ftype_count(*sys, F_VSITE3FD) == 0)
     {
-        set_warning_line(wi, "unknown", -1);
-        warning_note(wi,
-                     "You are using constraints on all bonds, whereas the forcefield "
-                     "has been parametrized only with constraints involving hydrogen atoms. "
-                     "We suggest using constraints = h-bonds instead, this will also improve "
-                     "performance.");
+        wi->setFileAndLineNumber("unknown", -1);
+        wi->addNote(
+                "You are using constraints on all bonds, whereas the forcefield "
+                "has been parametrized only with constraints involving hydrogen atoms. "
+                "We suggest using constraints = h-bonds instead, this will also improve "
+                "performance.");
     }
 
     /* COORDINATE file processing */
@@ -742,7 +742,7 @@ static void new_status(const char*                           topfile,
                 (nmismatch == 1) ? "" : "s",
                 topfile,
                 confin);
-        warning(wi, warningMessage.c_str());
+        wi->addWarning(warningMessage);
     }
 
     /* Do more checks, mostly related to constraints */
@@ -919,7 +919,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         RefCoordScaling                          rc_scaling,
                         PbcType                                  pbcType,
                         rvec                                     com,
-                        warninp*                                 wi,
+                        WarningHandler*                          wi,
                         const gmx::MDLogger&                     logger)
 {
     gmx_bool*   hadAtom;
@@ -947,7 +947,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                 mtop->natoms,
                 std::min(mtop->natoms, natoms),
                 fn);
-        warning(wi, warningMessage.c_str());
+        wi->addWarning(warningMessage);
     }
 
     npbcdim = numPbcDimensions(pbcType);
@@ -1123,7 +1123,7 @@ static void gen_posres(gmx_mtop_t*                              mtop,
                        PbcType                                  pbcType,
                        rvec                                     com,
                        rvec                                     comB,
-                       warninp*                                 wi,
+                       WarningHandler*                          wi,
                        const gmx::MDLogger&                     logger)
 {
     read_posres(mtop, mi, FALSE, fnA, rc_scaling, pbcType, com, wi, logger);
@@ -1136,7 +1136,7 @@ static void gen_posres(gmx_mtop_t*                              mtop,
 static void set_wall_atomtype(PreprocessingAtomTypes* at,
                               t_gromppopts*           opts,
                               t_inputrec*             ir,
-                              warninp*                wi,
+                              WarningHandler*         wi,
                               const gmx::MDLogger&    logger)
 {
     int i;
@@ -1152,7 +1152,7 @@ static void set_wall_atomtype(PreprocessingAtomTypes* at,
         {
             std::string warningMessage = gmx::formatString(
                     "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
-            warning_error(wi, warningMessage.c_str());
+            wi->addError(warningMessage);
         }
         else
         {
@@ -1326,7 +1326,9 @@ static void init_cmap_grid(gmx_cmap_t* cmap_grid, int ngrid, int grid_spacing)
 }
 
 
-static int count_constraints(const gmx_mtop_t* mtop, gmx::ArrayRef<const MoleculeInformation> mi, warninp* wi)
+static int count_constraints(const gmx_mtop_t*                        mtop,
+                             gmx::ArrayRef<const MoleculeInformation> mi,
+                             WarningHandler*                          wi)
 {
     int count, count_mol;
 
@@ -1357,7 +1359,7 @@ static int count_constraints(const gmx_mtop_t* mtop, gmx::ArrayRef<const Molecul
                     *mi[molb.type].name,
                     count_mol,
                     nrdf_internal(&mi[molb.type].atoms));
-            warning(wi, warningMessage.c_str());
+            wi->addWarning(warningMessage);
         }
         count += molb.nmol * count_mol;
     }
@@ -1384,7 +1386,7 @@ static real calc_temp(const gmx_mtop_t* mtop, const t_inputrec* ir, rvec* v)
     return sum_mv2 / (nrdf * gmx::c_boltz);
 }
 
-static real get_max_reference_temp(const t_inputrec* ir, warninp* wi)
+static real get_max_reference_temp(const t_inputrec* ir, WarningHandler* wi)
 {
     real ref_t;
     int  i;
@@ -1411,7 +1413,7 @@ static real get_max_reference_temp(const t_inputrec* ir, warninp* wi)
                 "their temperature is not more than %.3f K. If their temperature is higher, the "
                 "energy error and the Verlet buffer might be underestimated.",
                 ref_t);
-        warning(wi, warningMessage.c_str());
+        wi->addWarning(warningMessage);
     }
 
     return ref_t;
@@ -1420,7 +1422,10 @@ static real get_max_reference_temp(const t_inputrec* ir, warninp* wi)
 /* Checks if there are unbound atoms in moleculetype molt.
  * Prints a note for each unbound atoms and a warning if any is present.
  */
-static void checkForUnboundAtoms(const gmx_moltype_t* molt, gmx_bool bVerbose, warninp* wi, const gmx::MDLogger& logger)
+static void checkForUnboundAtoms(const gmx_moltype_t* molt,
+                                 gmx_bool             bVerbose,
+                                 WarningHandler*      wi,
+                                 const gmx::MDLogger& logger)
 {
     const t_atoms* atoms = &molt->atoms;
 
@@ -1480,12 +1485,15 @@ static void checkForUnboundAtoms(const gmx_moltype_t* molt, gmx_bool bVerbose, w
                 "definition by mistake. Run with -v to get information for each atom.",
                 *molt->name,
                 numDanglingAtoms);
-        warning_note(wi, warningMessage.c_str());
+        wi->addNote(warningMessage);
     }
 }
 
 /* Checks all moleculetypes for unbound atoms */
-static void checkForUnboundAtoms(const gmx_mtop_t* mtop, gmx_bool bVerbose, warninp* wi, const gmx::MDLogger& logger)
+static void checkForUnboundAtoms(const gmx_mtop_t*    mtop,
+                                 gmx_bool             bVerbose,
+                                 WarningHandler*      wi,
+                                 const gmx::MDLogger& logger)
 {
     for (const gmx_moltype_t& molt : mtop->moltype)
     {
@@ -1577,7 +1585,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
  * When decoupled modes are present and the accuracy in insufficient,
  * this routine issues a warning if the accuracy is insufficient.
  */
-static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec* ir, warninp* wi)
+static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec* ir, WarningHandler* wi)
 {
     /* We only have issues with decoupled modes with normal MD.
      * With stochastic dynamics equipartitioning is enforced strongly.
@@ -1657,7 +1665,7 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
                     "buffer size and thus over the energy drift.",
                     enumValueToString(CutoffScheme::Verlet));
         }
-        warning(wi, message);
+        wi->addWarning(message);
     }
 }
 
@@ -1665,7 +1673,7 @@ static void set_verlet_buffer(const gmx_mtop_t*    mtop,
                               t_inputrec*          ir,
                               real                 buffer_temp,
                               matrix               box,
-                              warninp*             wi,
+                              WarningHandler*      wi,
                               const gmx::MDLogger& logger)
 {
     GMX_LOG(logger.info)
@@ -1695,7 +1703,7 @@ static void set_verlet_buffer(const gmx_mtop_t*    mtop,
                 "energy error is approximated. In most cases this does not affect the error "
                 "significantly.",
                 n_nonlin_vsite);
-        warning_note(wi, warningMessage);
+        wi->addNote(warningMessage);
     }
 
     GMX_LOG(logger.info)
@@ -1790,7 +1798,7 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
                                     gmx::ArrayRef<const gmx::RVec> x,
                                     const matrix                   box,
                                     const gmx::MDLogger&           logger,
-                                    warninp*                       wi)
+                                    WarningHandler*                wi)
 {
     // Check the maximum distance for (non-perturbed) excluded pairs here,
     // as it should not be longer than the cut-off distance, but we can't
@@ -1816,11 +1824,11 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
         {
             text += " If you expect that minimization will bring such distances within the "
                     "cut-off, you can ignore this warning.";
-            warning(wi, text.c_str());
+            wi->addWarning(text);
         }
         else
         {
-            warning_error(wi, text.c_str());
+            wi->addError(text);
         }
     }
     else if (maxExclusionDistance > 0.9_real * cutoffDistance)
@@ -1832,11 +1840,11 @@ static void checkExclusionDistances(const gmx_mtop_t&              mtop,
                 distanceString.c_str());
         if (EI_DYNAMICS(ir.eI))
         {
-            warning(wi, text.c_str());
+            wi->addWarning(text);
         }
         else
         {
-            warning_note(wi, text.c_str());
+            wi->addNote(text);
         }
     }
 }
@@ -1949,7 +1957,6 @@ int gmx_grompp(int argc, char* argv[])
     bool                                 bNeedVel, bGenVel;
     gmx_output_env_t*                    oenv;
     gmx_bool                             bVerbose = FALSE;
-    warninp*                             wi;
 
     t_filenm fnm[] = { { efMDP, nullptr, nullptr, ffREAD },
                        { efMDP, "-po", "mdout", ffWRITE },
@@ -2023,14 +2030,14 @@ int gmx_grompp(int argc, char* argv[])
     const gmx::MDLogger logger(logOwner.logger());
 
 
-    wi = init_warning(TRUE, maxwarn);
+    WarningHandler wi{ true, maxwarn };
 
     /* PARAMETER file processing */
     mdparin = opt2fn("-f", NFILE, fnm);
-    set_warning_line(wi, mdparin, -1);
+    wi.setFileAndLineNumber(mdparin, -1);
     try
     {
-        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, wi);
+        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, &wi);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -2042,7 +2049,7 @@ int gmx_grompp(int argc, char* argv[])
     mdModules.notifiers().preProcessingNotifier_.notify(logger);
 
     // Notify MDModules of existing warninp
-    mdModules.notifiers().preProcessingNotifier_.notify(wi);
+    mdModules.notifiers().preProcessingNotifier_.notify(&wi);
 
     // Notify QMMM MDModule of external QM input file command-line option
     {
@@ -2056,7 +2063,7 @@ int gmx_grompp(int argc, char* argv[])
                 .asParagraph()
                 .appendTextFormatted("checking input for internal consistency...");
     }
-    check_ir(mdparin, mdModules.notifiers(), ir, opts, wi);
+    check_ir(mdparin, mdModules.notifiers(), ir, opts, &wi);
 
     if (ir->ld_seed == -1)
     {
@@ -2082,7 +2089,7 @@ int gmx_grompp(int argc, char* argv[])
                 "Generating velocities is inconsistent with attempting "
                 "to continue a previous run. Choose only one of "
                 "gen-vel = yes and continuation = yes.");
-        warning_error(wi, warningMessage);
+        wi.addError(warningMessage);
     }
 
     std::array<InteractionsOfType, F_NRE> interactions;
@@ -2118,7 +2125,7 @@ int gmx_grompp(int argc, char* argv[])
                &reppow,
                &fudgeQQ,
                opts->bMorse,
-               wi,
+               &wi,
                logger);
 
     if (debug)
@@ -2142,7 +2149,7 @@ int gmx_grompp(int argc, char* argv[])
         }
     }
 
-    if ((count_constraints(&sys, mi, wi) != 0) && (ir->eConstrAlg == ConstraintAlgorithm::Shake))
+    if ((count_constraints(&sys, mi, &wi) != 0) && (ir->eConstrAlg == ConstraintAlgorithm::Shake))
     {
         if (ir->eI == IntegrationAlgorithm::CG || ir->eI == IntegrationAlgorithm::LBFGS)
         {
@@ -2151,7 +2158,7 @@ int gmx_grompp(int argc, char* argv[])
                                       enumValueToString(ir->eI),
                                       enumValueToString(ConstraintAlgorithm::Shake),
                                       enumValueToString(ConstraintAlgorithm::Lincs));
-            warning_error(wi, warningMessage);
+            wi.addError(warningMessage);
         }
         if (ir->bPeriodicMols)
         {
@@ -2159,13 +2166,13 @@ int gmx_grompp(int argc, char* argv[])
                     gmx::formatString("Can not do periodic molecules with %s, use %s",
                                       enumValueToString(ConstraintAlgorithm::Shake),
                                       enumValueToString(ConstraintAlgorithm::Lincs));
-            warning_error(wi, warningMessage);
+            wi.addError(warningMessage);
         }
     }
 
     if (EI_SD(ir->eI) && ir->etc != TemperatureCoupling::No)
     {
-        warning_note(wi, "Temperature coupling is ignored with SD integrators.");
+        wi.addNote("Temperature coupling is ignored with SD integrators.");
     }
 
     /* Check for errors in the input now, since they might cause problems
@@ -2184,7 +2191,7 @@ int gmx_grompp(int argc, char* argv[])
                     "pressure coupling, we suggest to use %s pressure coupling instead.",
                     enumValueToString(ir->pressureCouplingOptions.epc),
                     enumValueToString(PressureCoupling::Berendsen));
-            warning_note(wi, warningMessage);
+            wi.addNote(warningMessage);
         }
 
         const char* fn = opt2fn("-r", NFILE, fnm);
@@ -2235,7 +2242,7 @@ int gmx_grompp(int argc, char* argv[])
                    ir->pbcType,
                    ir->posres_com,
                    ir->posres_comB,
-                   wi,
+                   &wi,
                    logger);
     }
 
@@ -2251,7 +2258,7 @@ int gmx_grompp(int argc, char* argv[])
                    &sys.ffparams.cmap_grid);
     }
 
-    set_wall_atomtype(&atypes, opts, ir, wi, logger);
+    set_wall_atomtype(&atypes, opts, ir, &wi, logger);
     if (bRenum)
     {
         atypes.renumberTypes(interactions, &sys, ir->wall_atomtype, bVerbose);
@@ -2297,31 +2304,30 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     /* check for shells and inpurecs */
-    check_shells_inputrec(&sys, ir, wi);
+    check_shells_inputrec(&sys, ir, &wi);
 
     /* check masses */
-    check_mol(&sys, wi);
+    check_mol(&sys, &wi);
 
     if (haveFepPerturbedMassesInSettles(sys))
     {
-        warning_error(wi,
-                      "SETTLE is not implemented for atoms whose mass is perturbed. "
-                      "You might instead use normal constraints.");
+        wi.addError(
+                "SETTLE is not implemented for atoms whose mass is perturbed. "
+                "You might instead use normal constraints.");
     }
 
-    checkForUnboundAtoms(&sys, bVerbose, wi, logger);
+    checkForUnboundAtoms(&sys, bVerbose, &wi, logger);
 
     if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::BD)
     {
-        check_bonds_timestep(&sys, ir->delta_t, wi);
+        check_bonds_timestep(&sys, ir->delta_t, &wi);
     }
 
-    checkDecoupledModeAccuracy(&sys, ir, wi);
+    checkDecoupledModeAccuracy(&sys, ir, &wi);
 
     if (EI_ENERGY_MINIMIZATION(ir->eI) && 0 == ir->nsteps)
     {
-        warning_note(
-                wi,
+        wi.addNote(
                 "Zero-step energy minimization will alter the coordinates before calculating the "
                 "energy. If you just want the energy of a single point, try zero-step MD (with "
                 "unconstrained_start = yes). To do multiple single-point energy evaluations of "
@@ -2334,7 +2340,7 @@ int gmx_grompp(int argc, char* argv[])
     {
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("initialising group options...");
     }
-    do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, wi);
+    do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, &wi);
 
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
@@ -2342,7 +2348,7 @@ int gmx_grompp(int argc, char* argv[])
     if (usingFullElectrostatics(ir->coulombtype) || usingLJPme(ir->vdwtype))
     {
         // We may have exclusion forces beyond the cut-off distance.
-        checkExclusionDistances(sys, *ir, state.x, state.box, logger, wi);
+        checkExclusionDistances(sys, *ir, state.x, state.box, logger, &wi);
     }
 
     if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0)
@@ -2367,7 +2373,7 @@ int gmx_grompp(int argc, char* argv[])
                             "NVE simulation: will use the initial temperature of %.3f K for "
                             "determining the Verlet buffer size",
                             buffer_temp);
-                    warning_note(wi, warningMessage);
+                    wi.addNote(warningMessage);
                 }
                 else
                 {
@@ -2375,12 +2381,12 @@ int gmx_grompp(int argc, char* argv[])
                             "NVE simulation with an initial temperature of zero: will use a Verlet "
                             "buffer of %d%%. Check your energy drift!",
                             gmx::roundToInt(verlet_buffer_ratio_NVE_T0 * 100));
-                    warning_note(wi, warningMessage);
+                    wi.addNote(warningMessage);
                 }
             }
             else
             {
-                buffer_temp = get_max_reference_temp(ir, wi);
+                buffer_temp = get_max_reference_temp(ir, &wi);
             }
 
             if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No && buffer_temp == 0)
@@ -2420,11 +2426,11 @@ int gmx_grompp(int argc, char* argv[])
                                 gmx::roundToInt(ir->verletbuf_tol / totalEnergyDriftPerAtomPerPicosecond * 100),
                                 gmx::roundToInt(100 * driftTolerance),
                                 driftTolerance * totalEnergyDriftPerAtomPerPicosecond);
-                        warning_note(wi, warningMessage);
+                        wi.addNote(warningMessage);
                     }
                 }
 
-                set_verlet_buffer(&sys, ir, buffer_temp, state.box, wi, logger);
+                set_verlet_buffer(&sys, ir, buffer_temp, state.box, &wi, logger);
             }
         }
     }
@@ -2437,7 +2443,7 @@ int gmx_grompp(int argc, char* argv[])
         pr_symtab(debug, 0, "After index", &sys.symtab);
     }
 
-    triple_check(mdparin, ir, &sys, wi);
+    triple_check(mdparin, ir, &sys, &wi);
     close_symtab(&sys.symtab);
     if (debug)
     {
@@ -2488,17 +2494,16 @@ int gmx_grompp(int argc, char* argv[])
         }
         else if (ir->nkx != 0 && ir->nky != 0 && ir->nkz != 0)
         {
-            set_warning_line(wi, mdparin, -1);
-            warning_error(
-                    wi, "Some of the Fourier grid sizes are set, but all of them need to be set.");
+            wi.setFileAndLineNumber(mdparin, -1);
+            wi.addError("Some of the Fourier grid sizes are set, but all of them need to be set.");
         }
         const int minGridSize = minimalPmeGridSize(ir->pme_order);
         calcFftGrid(stdout, scaledBox, ir->fourier_spacing, minGridSize, &(ir->nkx), &(ir->nky), &(ir->nkz));
         if (ir->nkx < minGridSize || ir->nky < minGridSize || ir->nkz < minGridSize)
         {
-            warning_error(wi,
-                          "The PME grid size should be >= 2*(pme-order - 1); either manually "
-                          "increase the grid size or decrease pme-order");
+            wi.addError(
+                    "The PME grid size should be >= 2*(pme-order - 1); either manually "
+                    "increase the grid size or decrease pme-order");
         }
     }
 
@@ -2534,7 +2539,7 @@ int gmx_grompp(int argc, char* argv[])
     if (ir->bPull)
     {
         pull = set_pull_init(
-                ir, sys, state.x, state.box, state.lambda[FreeEnergyPerturbationCouplingType::Mass], wi);
+                ir, sys, state.x, state.box, state.lambda[FreeEnergyPerturbationCouplingType::Mass], &wi);
     }
 
     /* Modules that supply external potential for pull coordinates
@@ -2561,7 +2566,7 @@ int gmx_grompp(int argc, char* argv[])
                         FreeEnergyPerturbationCouplingType::Fep)][ir->fepvals->init_fep_state]
                                                            : 0,
                 sys,
-                wi);
+                &wi);
     }
 
     if (ir->bPull)
@@ -2576,7 +2581,7 @@ int gmx_grompp(int argc, char* argv[])
                                 state.box,
                                 opt2fn("-ref", NFILE, fnm),
                                 opt2bSet("-ref", NFILE, fnm),
-                                wi);
+                                &wi);
     }
 
     /*  reset_multinr(sys); */
@@ -2595,16 +2600,15 @@ int gmx_grompp(int argc, char* argv[])
         if ((ir->efep == FreeEnergyPerturbationType::No && ratio > 1.0 / 2.0)
             || (ir->efep != FreeEnergyPerturbationType::No && ratio > 2.0 / 3.0))
         {
-            warning_note(
-                    wi,
+            wi.addNote(
                     "The optimal PME mesh load for parallel simulations is below 0.5\n"
                     "and for highly parallel simulations between 0.25 and 0.33,\n"
                     "for higher performance, increase the cut-off and the PME grid spacing.\n");
             if (ir->efep != FreeEnergyPerturbationType::No)
             {
-                warning_note(wi,
-                             "For free energy simulations, the optimal load limit increases from "
-                             "0.5 to 0.667\n");
+                wi.addNote(
+                        "For free energy simulations, the optimal load limit increases from "
+                        "0.5 to 0.667\n");
             }
         }
     }
@@ -2615,8 +2619,8 @@ int gmx_grompp(int argc, char* argv[])
                 gmx::formatString("This run will generate roughly %.0f Mb of data", cio);
         if (cio > 2000)
         {
-            set_warning_line(wi, mdparin, -1);
-            warning_note(wi, warningMessage);
+            wi.setFileAndLineNumber(mdparin, -1);
+            wi.addNote(warningMessage);
         }
         else
         {
@@ -2648,8 +2652,8 @@ int gmx_grompp(int argc, char* argv[])
         const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
         if (ir->nstcomm % nstglobalcomm != 0)
         {
-            warning_note(
-                    wi,
+            wi.addNote(
+
                     gmx::formatString(
                             "COM removal frequency is set to (%d).\n"
                             "Other settings require a global communication frequency of %d.\n"

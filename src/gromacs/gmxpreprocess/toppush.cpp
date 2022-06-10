@@ -70,7 +70,7 @@ void generate_nbparams(CombinationRule         comb,
                        int                     ftype,
                        InteractionsOfType*     interactions,
                        PreprocessingAtomTypes* atypes,
-                       warninp*                wi)
+                       WarningHandler*         wi)
 {
     constexpr int c_nrfp2 = 2;
 
@@ -205,7 +205,7 @@ void generate_nbparams(CombinationRule         comb,
         default:
             auto message = gmx::formatString("Invalid nonbonded type %s",
                                              interaction_function[ftype].longname);
-            warning_error(wi, message);
+            wi->addError(message);
     }
 }
 
@@ -301,7 +301,7 @@ void push_at(PreprocessingAtomTypes*    at,
              int                        nb_funct,
              t_nbparam***               nbparam,
              t_nbparam***               pair,
-             warninp*                   wi)
+             WarningHandler*            wi)
 {
     int     nfields, nfp0 = -1;
     int     nread;
@@ -579,7 +579,7 @@ void push_at(PreprocessingAtomTypes*    at,
                 "you should override the previous definition, then you could choose "
                 "to suppress this warning with -maxwarn.",
                 type);
-        warning(wi, message);
+        wi->addWarning(message);
         auto newAtomType = at->setType(*atomType, *atom, type, interactionType, batype_nr, atomnr);
         if (!newAtomType.has_value())
         {
@@ -609,7 +609,7 @@ static void push_bondtype(InteractionsOfType*      bt,
                           int                      ftype,
                           bool                     bAllowRepeat,
                           const char*              line,
-                          warninp*                 wi)
+                          WarningHandler*          wi)
 {
     int nr   = bt->size();
     int nrfp = NRFP(ftype);
@@ -675,11 +675,11 @@ static void push_bondtype(InteractionsOfType*      bt,
                      */
                     if (!isContinuationOfBlock && !haveErrored)
                     {
-                        warning_error(wi,
-                                      "Encountered a second block of parameters for dihedral "
-                                      "type 9 for the same atoms, with either different parameters "
-                                      "and/or the first block has multiple lines. This is not "
-                                      "supported.");
+                        wi->addError(
+                                "Encountered a second block of parameters for dihedral "
+                                "type 9 for the same atoms, with either different parameters "
+                                "and/or the first block has multiple lines. This is not "
+                                "supported.");
                         haveErrored = true;
                     }
                 }
@@ -699,7 +699,7 @@ static void push_bondtype(InteractionsOfType*      bt,
                                                  "lines are combined. Non-consective lines "
                                                  "overwrite each other."
                                                : "");
-                    warning(wi, message);
+                    wi->addWarning(message);
 
                     fprintf(stderr, "  old:                                         ");
                     gmx::ArrayRef<const real> forceParam = bt->interactionTypes[i].forceParam();
@@ -756,7 +756,7 @@ static void push_bondtype(InteractionsOfType*      bt,
 static std::vector<int> atomTypesFromAtomNames(const PreprocessingAtomTypes*    atomTypes,
                                                const PreprocessingBondAtomType* bondAtomTypes,
                                                gmx::ArrayRef<const char[20]>    atomNames,
-                                               warninp*                         wi)
+                                               WarningHandler*                  wi)
 {
 
     GMX_RELEASE_ASSERT(!(!atomNames.empty() && !atomTypes && !bondAtomTypes),
@@ -796,7 +796,7 @@ void push_bt(Directive                         d,
              PreprocessingAtomTypes*           at,
              PreprocessingBondAtomType*        bondAtomType,
              char*                             line,
-             warninp*                          wi)
+             WarningHandler*                   wi)
 {
     const char* formal[MAXATOMLIST + 1] = {
         "%s", "%s%s", "%s%s%s", "%s%s%s%s", "%s%s%s%s%s", "%s%s%s%s%s%s", "%s%s%s%s%s%s%s"
@@ -824,7 +824,7 @@ void push_bt(Directive                         d,
     if ((nn = sscanf(line, formal[nral], alc[0], alc[1], alc[2], alc[3], alc[4], alc[5])) != nral + 1)
     {
         auto message = gmx::formatString("Not enough atomtypes (%d instead of %d)", nn - 1, nral);
-        warning_error(wi, message);
+        wi->addError(message);
         return;
     }
 
@@ -847,15 +847,15 @@ void push_bt(Directive                         d,
         {
             if (nn < nrfpA)
             {
-                warning_error(wi, "Not enough parameters");
+                wi->addError("Not enough parameters");
             }
             else if (nn > nrfpA && nn < nrfp)
             {
-                warning_error(wi, "Too many parameters or not enough parameters for topology B");
+                wi->addError("Too many parameters or not enough parameters for topology B");
             }
             else if (nn > nrfp)
             {
-                warning_error(wi, "Too many parameters");
+                wi->addError("Too many parameters");
             }
             for (i = nn; (i < nrfp); i++)
             {
@@ -878,7 +878,7 @@ void push_dihedraltype(Directive                         d,
                        gmx::ArrayRef<InteractionsOfType> bt,
                        PreprocessingBondAtomType*        bondAtomType,
                        char*                             line,
-                       warninp*                          wi)
+                       WarningHandler*                   wi)
 {
     const char* formal[MAXATOMLIST + 1] = {
         "%s", "%s%s", "%s%s%s", "%s%s%s%s", "%s%s%s%s%s", "%s%s%s%s%s%s", "%s%s%s%s%s%s%s"
@@ -951,7 +951,7 @@ void push_dihedraltype(Directive                         d,
     {
         auto message = gmx::formatString(
                 "Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)", nn - 1);
-        warning_error(wi, message);
+        wi->addError(message);
         return;
     }
 
@@ -995,15 +995,15 @@ void push_dihedraltype(Directive                         d,
         {
             if (nn < nrfpA)
             {
-                warning_error(wi, "Not enough parameters");
+                wi->addError("Not enough parameters");
             }
             else if (nn > nrfpA && nn < nrfp)
             {
-                warning_error(wi, "Too many parameters or not enough parameters for topology B");
+                wi->addError("Too many parameters or not enough parameters for topology B");
             }
             else if (nn > nrfp)
             {
-                warning_error(wi, "Too many parameters");
+                wi->addError("Too many parameters");
             }
             for (i = nn; (i < nrfp); i++)
             {
@@ -1042,7 +1042,7 @@ void push_dihedraltype(Directive                         d,
 }
 
 
-void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char* pline, int nb_funct, warninp* wi)
+void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char* pline, int nb_funct, WarningHandler* wi)
 {
     /* swap the atoms */
     const char* form3 = "%*s%*s%*s%lf%lf%lf";
@@ -1068,7 +1068,7 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
         auto message = gmx::formatString("Trying to add %s while the default nonbond type is %s",
                                          interaction_function[ftype].longname,
                                          interaction_function[nb_funct].longname);
-        warning_error(wi, message);
+        wi->addError(message);
         return;
     }
 
@@ -1159,7 +1159,7 @@ void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atypes, char
                     "the contents of your files and remove such repetition. If you know "
                     "you should override the previous definitions, then you could choose "
                     "to suppress this warning with -maxwarn.");
-            warning(wi, message);
+            wi->addWarning(message);
             fprintf(stderr, "  old:");
             for (i = 0; i < nrfp; i++)
             {
@@ -1181,7 +1181,7 @@ void push_cmaptype(Directive                         d,
                    PreprocessingAtomTypes*           atomtypes,
                    PreprocessingBondAtomType*        bondAtomType,
                    char*                             line,
-                   warninp*                          wi)
+                   WarningHandler*                   wi)
 {
     const char* formal = "%s%s%s%s%s%s%s%s%n";
 
@@ -1202,7 +1202,7 @@ void push_cmaptype(Directive                         d,
     {
         auto message =
                 gmx::formatString("Incorrect number of atomtypes for cmap (%d instead of 5)", nn - 1);
-        warning_error(wi, message);
+        wi->addError(message);
         return;
     }
     start += nchar_consumed;
@@ -1216,7 +1216,7 @@ void push_cmaptype(Directive                         d,
     {
         auto message = gmx::formatString(
                 "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
-        warning_error(wi, message);
+        wi->addError(message);
     }
 
     ncmap = nxcmap * nycmap;
@@ -1250,7 +1250,7 @@ void push_cmaptype(Directive                         d,
                                       alc[2],
                                       alc[3],
                                       alc[4]);
-            warning_error(wi, message);
+            wi->addError(message);
         }
     }
 
@@ -1266,15 +1266,15 @@ void push_cmaptype(Directive                         d,
     {
         if (read_cmap < nrfpA)
         {
-            warning_error(wi, "Not enough cmap parameters");
+            wi->addError("Not enough cmap parameters");
         }
         else if (read_cmap > nrfpA && read_cmap < nrfp)
         {
-            warning_error(wi, "Too many cmap parameters or not enough parameters for topology B");
+            wi->addError("Too many cmap parameters or not enough parameters for topology B");
         }
         else if (read_cmap > nrfp)
         {
-            warning_error(wi, "Too many cmap parameters");
+            wi->addError("Too many cmap parameters");
         }
     }
 
@@ -1303,7 +1303,7 @@ void push_cmaptype(Directive                         d,
     {
         auto message = gmx::formatString(
                 "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].cmapAngles);
-        warning_error(wi, message);
+        wi->addError(message);
     }
     std::vector<int> atomTypes =
             atomTypesFromAtomNames(atomtypes, bondAtomType, gmx::constArrayRefFromArray(alc, nral), wi);
@@ -1314,23 +1314,23 @@ void push_cmaptype(Directive                         d,
 }
 
 
-static void push_atom_now(t_symtab*    symtab,
-                          t_atoms*     at,
-                          int          atomnr,
-                          int          atomicnumber,
-                          int          type,
-                          char*        ctype,
-                          ParticleType ptype,
-                          char*        resnumberic,
-                          char*        resname,
-                          char*        name,
-                          real         m0,
-                          real         q0,
-                          int          typeB,
-                          char*        ctypeB,
-                          real         mB,
-                          real         qB,
-                          warninp*     wi)
+static void push_atom_now(t_symtab*       symtab,
+                          t_atoms*        at,
+                          int             atomnr,
+                          int             atomicnumber,
+                          int             type,
+                          char*           ctype,
+                          ParticleType    ptype,
+                          char*           resnumberic,
+                          char*           resname,
+                          char*           name,
+                          real            m0,
+                          real            q0,
+                          int             typeB,
+                          char*           ctypeB,
+                          real            mB,
+                          real            qB,
+                          WarningHandler* wi)
 {
     int           j, resind = 0, resnr;
     unsigned char ric;
@@ -1414,7 +1414,7 @@ static void push_atom_now(t_symtab*    symtab,
     at->nr++;
 }
 
-void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, char* line, warninp* wi)
+void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, char* line, WarningHandler* wi)
 {
     int  cgnumber, atomnr, nscan;
     char id[STRLEN], ctype[STRLEN], ctypeB[STRLEN], resnumberic[STRLEN], resname[STRLEN],
@@ -1472,7 +1472,7 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
                         mB = mb;
                         if (nscan > 5)
                         {
-                            warning_error(wi, "Too many parameters");
+                            wi->addError("Too many parameters");
                         }
                     }
                 }
@@ -1499,14 +1499,14 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
                   wi);
 }
 
-void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, warninp* wi)
+void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, WarningHandler* wi)
 {
     char type[STRLEN];
     int  nrexcl;
 
     if ((sscanf(line, "%s%d", type, &nrexcl)) != 2)
     {
-        warning_error(wi, "Expected a molecule type name and nrexcl");
+        wi->addError("Expected a molecule type name and nrexcl");
     }
 
     /* Test if this moleculetype overwrites another */
@@ -1667,7 +1667,7 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
                                 bool                              bB,
                                 int*                              cmap_type,
                                 int*                              nparam_def,
-                                warninp*                          wi)
+                                WarningHandler*                   wi)
 {
     int  nparam_found;
     int  ct;
@@ -1845,7 +1845,7 @@ void push_bond(Directive                         d,
                real                              fudgeQQ,
                bool                              bZero,
                bool*                             bWarn_copy_A_B,
-               warninp*                          wi)
+               WarningHandler*                   wi)
 {
     const char* aaformat[MAXATOMLIST] = { "%d%d",       "%d%d%d",       "%d%d%d%d",
                                           "%d%d%d%d%d", "%d%d%d%d%d%d", "%d%d%d%d%d%d%d" };
@@ -1955,11 +1955,11 @@ void push_bond(Directive                         d,
                      * defines an angle between vectors, it can be useful
                      * to use one atom twice, so we only issue a note here.
                      */
-                    warning_note(wi, message);
+                    wi->addNote(message);
                 }
                 else
                 {
-                    warning_error(wi, message);
+                    wi->addError(message);
                 }
             }
         }
@@ -2100,7 +2100,7 @@ void push_bond(Directive                         d,
                         "Some parameters for bonded interaction involving "
                         "perturbed atoms are specified explicitly in "
                         "state A, but not B - copying A to B");
-                warning(wi, message);
+                wi->addWarning(message);
                 *bWarn_copy_A_B = FALSE;
             }
 
@@ -2162,7 +2162,7 @@ void push_bond(Directive                         d,
                         "form.\n"
                         "Please specify perturbed parameters manually for this torsion in your "
                         "topology!");
-                warning_error(wi, message);
+                wi->addError(message);
             }
         }
 
@@ -2171,7 +2171,7 @@ void push_bond(Directive                         d,
             /* Issue an error, do not use defaults */
             auto message = gmx::formatString(
                     "Not enough parameters, there should be at least %d (or 0 for defaults)", NRFPA(ftype));
-            warning_error(wi, message);
+            wi->addError(message);
         }
 
         if (nread == 0 || nread == EOF)
@@ -2202,7 +2202,7 @@ void push_bond(Directive                         d,
                     {
                         auto message = gmx::formatString("No default %s types",
                                                          interaction_function[ftype].longname);
-                        warning_error(wi, message);
+                        wi->addError(message);
                     }
                 }
             }
@@ -2233,7 +2233,7 @@ void push_bond(Directive                         d,
                             "No default %s types for perturbed atoms, "
                             "using normal values",
                             interaction_function[ftype].longname);
-                    warning(wi, message);
+                    wi->addWarning(message);
                 }
             }
         }
@@ -2307,7 +2307,7 @@ void push_cmap(Directive                         d,
                t_atoms*                          at,
                PreprocessingAtomTypes*           atypes,
                char*                             line,
-               warninp*                          wi)
+               WarningHandler*                   wi)
 {
     const char* aaformat[MAXATOMLIST + 1] = {
         "%d", "%d%d", "%d%d%d", "%d%d%d%d", "%d%d%d%d%d", "%d%d%d%d%d%d", "%d%d%d%d%d%d%d"
@@ -2358,7 +2358,7 @@ void push_cmap(Directive                         d,
             {
                 auto message = gmx::formatString(
                         "Duplicate atom index (%d) in %s", aa[i], enumValueToString(d));
-                warning_error(wi, message);
+                wi->addError(message);
             }
         }
     }
@@ -2396,7 +2396,7 @@ void push_cmap(Directive                         d,
 }
 
 
-void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, warninp* wi)
+void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, WarningHandler* wi)
 {
     char*   ptr;
     int     type, ftype, n, ret, nj, a;
@@ -2490,7 +2490,7 @@ void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* 
     sfree(weight);
 }
 
-void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, warninp* wi)
+void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, WarningHandler* wi)
 {
     char type[STRLEN];
 
@@ -2558,7 +2558,7 @@ void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmo
     }
 }
 
-void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp* wi)
+void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, WarningHandler* wi)
 {
     int  i, j;
     int  n;
@@ -2659,7 +2659,7 @@ static void convert_pairs_to_pairsQ(gmx::ArrayRef<InteractionsOfType> interactio
     interactions[F_LJ14].interactionTypes.clear();
 }
 
-static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, InteractionsOfType* nbp, warninp* wi)
+static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, InteractionsOfType* nbp, WarningHandler* wi)
 {
     int     n, ntype;
     t_atom* atom;
@@ -2723,12 +2723,12 @@ static void set_excl_all(gmx::ListOfLists<int>* excl)
     }
 }
 
-static void decouple_atoms(t_atoms*    atoms,
-                           int         atomtype_decouple,
-                           int         couple_lam0,
-                           int         couple_lam1,
-                           const char* mol_name,
-                           warninp*    wi)
+static void decouple_atoms(t_atoms*        atoms,
+                           int             atomtype_decouple,
+                           int             couple_lam0,
+                           int             couple_lam1,
+                           const char*     mol_name,
+                           WarningHandler* wi)
 {
     int i;
 
@@ -2778,7 +2778,7 @@ void convert_moltype_couple(MoleculeInformation* mol,
                             bool                 bCoupleIntra,
                             int                  nb_funct,
                             InteractionsOfType*  nbp,
-                            warninp*             wi)
+                            WarningHandler*      wi)
 {
     convert_pairs_to_pairsQ(mol->interactions, fudgeQQ, &mol->atoms);
     if (!bCoupleIntra)

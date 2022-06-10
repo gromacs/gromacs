@@ -138,7 +138,7 @@ static void gen_pairs(const InteractionsOfType& nbs, InteractionsOfType* pairs, 
     }
 }
 
-double check_mol(const gmx_mtop_t* mtop, warninp* wi)
+double check_mol(const gmx_mtop_t* mtop, WarningHandler* wi)
 {
     char   buf[256];
     int    i, ri;
@@ -170,7 +170,7 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
                         atoms->resinfo[ri].nr,
                         m,
                         mB);
-                warning_error(wi, buf);
+                wi->addError(buf);
             }
             else if (((m != 0) || (mB != 0)) && (pt == ParticleType::VSite))
             {
@@ -184,7 +184,7 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
                         atoms->resinfo[ri].nr,
                         m,
                         mB);
-                warning_error(wi, buf);
+                wi->addError(buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
             }
@@ -246,7 +246,7 @@ static void sum_q(const t_atoms* atoms, int numMols, double* qTotA, double* qTot
     *qTotB += numMols * roundedMoleculeCharge(qmolB, sumAbsQB);
 }
 
-static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, CombinationRule* comb, warninp* wi)
+static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, CombinationRule* comb, WarningHandler* wi)
 {
     *nb = VanDerWaalsPotential::Count;
     for (auto i : gmx::EnumerationArray<VanDerWaalsPotential, bool>::keys())
@@ -265,7 +265,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
                     gmx::formatString("Invalid nonbond function selector '%s' using %s",
                                       nb_str,
                                       enumValueToString(VanDerWaalsPotential::LJ));
-            warning_error(wi, message);
+            wi->addError(message);
             *nb = VanDerWaalsPotential::LJ;
         }
         else
@@ -290,7 +290,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
                     gmx::formatString("Invalid combination rule selector '%s' using %s",
                                       comb_str,
                                       enumValueToString(CombinationRule::Geometric));
-            warning_error(wi, message);
+            wi->addError(message);
             *comb = CombinationRule::Geometric;
         }
         else
@@ -305,7 +305,7 @@ static void get_nbparm(char* nb_str, char* comb_str, VanDerWaalsPotential* nb, C
  * Returns a vector of parsed include/define flags, with an extra nullptr entry at the back
  * for consumers that expect null-terminated char** structures.
  */
-static std::vector<char*> cpp_opts(const char* define, const char* include, warninp* wi)
+static std::vector<char*> cpp_opts(const char* define, const char* include, WarningHandler* wi)
 {
     int         n, len;
     const char* cppadds[2];
@@ -342,9 +342,9 @@ static std::vector<char*> cpp_opts(const char* define, const char* include, warn
                     strncpy(buf, ptr, len);
                     if (strstr(ptr, option[n]) != ptr)
                     {
-                        set_warning_line(wi, "mdp file", -1);
+                        wi->setFileAndLineNumber("mdp file", -1);
                         sprintf(warn_buf, "Malformed %s option %s", nopt[n], buf);
-                        warning(wi, warn_buf);
+                        wi->addWarning(warn_buf);
                     }
                     else
                     {
@@ -404,7 +404,7 @@ static char** read_topol(const char*                           infile,
                          bool                                  bFEP,
                          bool                                  bZero,
                          bool                                  usingFullRangeElectrostatics,
-                         warninp*                              wi,
+                         WarningHandler*                       wi,
                          const gmx::MDLogger&                  logger)
 {
     FILE*                out;
@@ -491,7 +491,7 @@ static char** read_topol(const char*                           infile,
                 fprintf(out, "%s\n", line);
             }
 
-            set_warning_line(wi, cpp_cur_file(&handle), cpp_cur_linenr(&handle));
+            wi->setFileAndLineNumber(cpp_cur_file(&handle), cpp_cur_linenr(&handle));
 
             pline = gmx_strdup(line);
 
@@ -506,7 +506,7 @@ static char** read_topol(const char*                           infile,
             while (continuing(line))
             {
                 status = cpp_read_line(&handle, STRLEN, line);
-                set_warning_line(wi, cpp_cur_file(&handle), cpp_cur_linenr(&handle));
+                wi->setFileAndLineNumber(cpp_cur_file(&handle), cpp_cur_linenr(&handle));
 
                 /* Since we depend on the '\' being present to continue to read, we copy line
                  * to a tmp string, strip the '\' from that string, and cat it to pline
@@ -560,7 +560,7 @@ static char** read_topol(const char*                           infile,
                     if ((newd = str2dir(dirstr)) == Directive::d_invalid)
                     {
                         sprintf(errbuf, "Invalid directive %s", dirstr);
-                        warning_error(wi, errbuf);
+                        wi->addError(errbuf);
                     }
                     else
                     {
@@ -943,7 +943,7 @@ static char** read_topol(const char*                           infile,
     std::string unusedDefineWarning = checkAndWarnForUnusedDefines(*handle);
     if (!unusedDefineWarning.empty())
     {
-        warning(wi, unusedDefineWarning);
+        wi->addWarning(unusedDefineWarning);
     }
 
     for (char* element : cpp_opts_return)
@@ -974,7 +974,7 @@ static char** read_topol(const char*                           infile,
 
     if (cpp_find_define(&handle, "_FF_GROMOS96") != nullptr)
     {
-        warning(wi,
+        wi->addWarning(
                 "The GROMOS force fields have been parametrized with a physically incorrect "
                 "multiple-time-stepping scheme for a twin-range cut-off. When used with "
                 "a single-range cut-off (or a correct Trotter multiple-time-stepping scheme), "
@@ -1014,16 +1014,16 @@ static char** read_topol(const char*                           infile,
     if (fabs(qt) > 1e-4)
     {
         sprintf(warn_buf, "System has non-zero total charge: %.6f\n%s\n", qt, floating_point_arithmetic_tip);
-        warning_note(wi, warn_buf);
+        wi->addNote(warn_buf);
     }
     if (fabs(qBt) > 1e-4 && !gmx_within_tol(qBt, qt, 1e-6))
     {
         sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
-        warning_note(wi, warn_buf);
+        wi->addNote(warn_buf);
     }
     if (usingFullRangeElectrostatics && (fabs(qt) > 1e-4 || fabs(qBt) > 1e-4))
     {
-        warning(wi,
+        wi->addWarning(
                 "You are using Ewald electrostatics in a system with net charge. This can lead to "
                 "severe artifacts, such as ions moving into regions with low dielectric, due to "
                 "the uniform background charge. We suggest to neutralize your system with counter "
@@ -1057,7 +1057,7 @@ char** do_top(bool                                  bVerbose,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
-              warninp*                              wi,
+              WarningHandler*                       wi,
               const gmx::MDLogger&                  logger)
 {
     /* Tmpfile might contain a long path */
@@ -1100,7 +1100,7 @@ char** do_top(bool                                  bVerbose,
 
     if ((*combination_rule != CombinationRule::Geometric) && (ir->vdwtype == VanDerWaalsType::User))
     {
-        warning(wi,
+        wi->addWarning(
                 "Using sigma/epsilon based combination rules with"
                 " user supplied potential function may produce unwanted"
                 " results");

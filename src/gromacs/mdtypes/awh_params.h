@@ -59,7 +59,7 @@
 struct t_inpfile;
 struct t_inputrec;
 struct pull_params_t;
-using warninp_t = struct warninp*;
+class WarningHandler;
 
 namespace gmx
 {
@@ -115,7 +115,7 @@ class AwhDimParams
 {
 public:
     //! Constructor from input file.
-    AwhDimParams(std::vector<t_inpfile>* inp, const std::string& prefix, warninp_t wi, bool bComment);
+    AwhDimParams(std::vector<t_inpfile>* inp, const std::string& prefix, WarningHandler* wi, bool bComment);
     //! Constructor to generate from file reading.
     explicit AwhDimParams(ISerializer* serializer);
 
@@ -178,7 +178,7 @@ class AwhBiasParams
 {
 public:
     //! Constructor from input file.
-    AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& prefix, warninp_t wi, bool bComment);
+    AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& prefix, WarningHandler* wi, bool bComment);
     //! Constructor to generate from file reading.
     explicit AwhBiasParams(ISerializer* serializer);
 
@@ -243,7 +243,7 @@ class AwhParams
 {
 public:
     //! Constructor from input file.
-    AwhParams(std::vector<t_inpfile>* inp, warninp_t wi);
+    AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi);
     //! Constructor used to generate awh parameter from file reading.
     explicit AwhParams(ISerializer* serializer);
 

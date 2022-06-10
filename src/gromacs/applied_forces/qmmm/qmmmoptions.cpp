@@ -214,7 +214,7 @@ void QMMMOptions::setLogger(const MDLogger& logger)
     logger_ = &logger;
 }
 
-void QMMMOptions::setWarninp(warninp* wi)
+void QMMMOptions::setWarninp(WarningHandler* wi)
 {
     // Exit if QMMM module is not active
     if (!parameters_.active_)
@@ -237,7 +237,7 @@ void QMMMOptions::appendWarning(const std::string& msg)
 {
     if (wi_)
     {
-        warning(wi_, msg);
+        wi_->addWarning(msg);
     }
 }
 

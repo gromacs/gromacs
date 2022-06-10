@@ -55,78 +55,76 @@ namespace testing
 class ReadTest : public ::testing::Test
 {
 public:
-    ReadTest() : inputField_{ { (t_inpfile(0, 0, false, false, false, "test", "")) } }, wi_()
+    ReadTest() :
+        inputField_{ { (t_inpfile(0, 0, false, false, false, "test", "")) } }, wi_({ false, 0 })
 
     {
-        wi_ = init_warning(FALSE, 0);
-        wiGuard_.reset(wi_);
     }
 
-    std::vector<t_inpfile>                         inputField_;
-    warninp_t                                      wi_;
-    gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
+    std::vector<t_inpfile> inputField_;
+    WarningHandler         wi_;
 };
 
 TEST_F(ReadTest, get_eint_ReadsInteger)
 {
     inputField_.front().value_.assign("1");
-    ASSERT_EQ(1, get_eint(&inputField_, "test", 2, wi_));
+    ASSERT_EQ(1, get_eint(&inputField_, "test", 2, &wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutFloat)
 {
     inputField_.front().value_.assign("0.8");
-    get_eint(&inputField_, "test", 2, wi_);
+    get_eint(&inputField_, "test", 2, &wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutString)
 {
     inputField_.front().value_.assign("hello");
-    get_eint(&inputField_, "test", 2, wi_);
+    get_eint(&inputField_, "test", 2, &wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_ReadsInteger)
 {
     inputField_.front().value_.assign("1");
-    ASSERT_EQ(1, get_eint64(&inputField_, "test", 2, wi_));
+    ASSERT_EQ(1, get_eint64(&inputField_, "test", 2, &wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutFloat)
 {
     inputField_.front().value_.assign("0.8");
-    get_eint64(&inputField_, "test", 2, wi_);
+    get_eint64(&inputField_, "test", 2, &wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutString)
 {
     inputField_.front().value_.assign("hello");
-    get_eint64(&inputField_, "test", 2, wi_);
+    get_eint64(&inputField_, "test", 2, &wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsInteger)
 {
     inputField_.front().value_.assign("1");
-    ASSERT_EQ(1, get_ereal(&inputField_, "test", 2, wi_));
+    ASSERT_EQ(1, get_ereal(&inputField_, "test", 2, &wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsFloat)
 {
     inputField_.front().value_.assign("0.8");
-    ASSERT_EQ(0.8, get_ereal(&inputField_, "test", 2, wi_));
+    ASSERT_EQ(0.8, get_ereal(&inputField_, "test", 2, &wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_WarnsAboutString)
 {
     inputField_.front().value_.assign("hello");
-    get_ereal(&inputField_, "test", 2, wi_);
+    get_ereal(&inputField_, "test", 2, &wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 

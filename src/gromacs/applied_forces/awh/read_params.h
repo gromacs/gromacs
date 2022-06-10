@@ -67,7 +67,7 @@ class ISerializer;
  * \param[in]     inputrec     Input parameter struct.
  * \param[in,out] wi           Struct for bookeeping warnings.
  */
-void checkAwhParams(const AwhParams& awhParams, const t_inputrec& inputrec, warninp_t wi);
+void checkAwhParams(const AwhParams& awhParams, const t_inputrec& inputrec, WarningHandler* wi);
 
 
 /*! \brief
@@ -96,7 +96,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const t_grpopts*     inputrecGroupOptions,
                                 real                 initLambda,
                                 const gmx_mtop_t&    mtop,
-                                warninp_t            wi);
+                                WarningHandler*      wi);
 
 //! Returns true when AWH has a bias with a free energy lambda state dimension
 bool awhHasFepLambdaDimension(const AwhParams& awhParams);

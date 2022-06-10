@@ -35,88 +35,130 @@
 #define GMX_FILEIO_WARNINP_H
 
 #include <string>
+#include <string_view>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 
-/* Abstract type for warning bookkeeping */
-typedef struct warninp* warninp_t;
+//! Different type of warnings
+enum class WarningType : int
+{
+    //! Useful note to the user.
+    Note,
+    //! Warning about potential issue.
+    Warning,
+    //! Error that can't be recovered.
+    Error,
+    Count
+};
 
-
-warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning);
-/* Initialize the warning data structure.
- * If bAllowWarnings=FALSE, all warnings (calls to warning()) will be
+/*! \brief
+ * General warning handling object.
+ *
+ * If \p allowWarnings is false, all warnings (calls to warning()) will be
  * transformed into errors, calls to warning_note still produce notes.
- * maxwarning determines the maximum number of warnings that are allowed
+ * \p maxNumberWarnings determines the maximum number of warnings that are allowed
  * for proceeding. When this number is exceeded check_warning_error
  * and done_warning will generate a fatal error.
- * bAllowWarnings=TRUE should only be used by programs that have
+ * allowWarnings should only be true in programs that have
  * a -maxwarn command line option.
  */
+class WarningHandler
+{
+public:
+    WarningHandler(bool allowWarnings, int maxNumberWarnings) :
+        allowWarnings_(allowWarnings), maxNumberWarnings_(maxNumberWarnings)
+    {
+        if (maxNumberWarnings_ < 0)
+        {
+            GMX_THROW(gmx::InconsistentInputError(
+                    "Max number of warnings need to be a positive integer"));
+        }
+    }
+    /*!\brief Set \p fileName and \p lineNumber for the warning
+     *
+     * Note that \p fileName can be nullptr, leading to no file
+     * information being printed.
+     */
+    void setFileAndLineNumber(const char* fileName, int lineNumber);
+    //! Get filename for the warning */
+    const char* getFileName() const;
 
-void set_warning_line(warninp_t wi, const char* fn, int line);
-/* Set filename and linenumber for the warning */
+    int errorCount() const { return numberOfEntries_[WarningType::Error]; }
 
-int get_warning_line(warninp_t wi);
-/* Get linenumber for the warning */
+    int warningCount() const { return numberOfEntries_[WarningType::Warning]; }
 
+    int noteCount() const { return numberOfEntries_[WarningType::Note]; }
 
-const char* get_warning_file(warninp_t wi);
-/* Get filename for the warning */
+    int maxWarningCount() const { return maxNumberWarnings_; }
 
-void warning(warninp_t wi, const char* s);
-/* Issue a warning, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_warn (local) is incremented.
- * A fatal error will be generated after processing the input
- * when nwarn_warn is larger than maxwarning passed to init_warning.
- * So warning should only be called for issues that should be resolved,
- * otherwise warning_note should be called.
- */
-//! Convenience wrapper.
-void warning(warninp_t wi, const std::string& s);
+    /*! \brief
+     * Issue a warning, with the string \p message.
+     *
+     * If \p message == nullptr, then warn_buf
+     * will be printed instead. The file and line set by setLine
+     * are printed, and the number of warnings is incremented.
+     * A fatal error will be generated after processing the input
+     * when number of warnings is larger than maxNumberWarning passed during construction.
+     * So addWarning should only be called for issues that should be resolved,
+     * otherwise addNote should be called.
+     */
+    void addWarning(std::string_view message);
+    /*! \brief
+     *  Issue a note, with the string \p message.
+     *
+     *   If \p message == nullptr, then warn_buf
+     * will be printed instead. The file and line set by setLine
+     * are printed, number of notes is incremented.
+     * This is for issues which could be a problem for some systems,
+     * but 100% ok for other systems.
+     */
+    void addNote(std::string_view message);
+    /*! \brief
+     *  Issue an error, with the string \p message.
+     *
+     *   If \p message == nullptr, then warn_buf
+     * will be printed instead. The file and line set by setLine
+     * are printed, number of errors is incremented.
+     */
+    void addError(std::string_view message);
 
-void warning_note(warninp_t wi, const char* s);
-/* Issue a note, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_note (local) is incremented.
- * This is for issues which could be a problem for some systems,
- * but 100% ok for other systems.
- */
-
-//! Convenience wrapper.
-void warning_note(warninp_t wi, const std::string& s);
-
-void warning_error(warninp_t wi, const char* s);
-/* Issue an error, with the string s. If s == NULL, then warn_buf
- * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn_error (local) is incremented.
- */
-
-//! Convenience wrapper.
-void warning_error(warninp_t wi, const std::string& s);
+private:
+    //! Internal method for adding specific warning \p type
+    void addLowLevel(std::string_view message, WarningType type);
+    //! Whether warnings are distinct from errors or not.
+    bool allowWarnings_;
+    //! Storage for number of different entries.
+    gmx::EnumerationArray<WarningType, int> numberOfEntries_ = { 0, 0, 0 };
+    //! How many warnings can be tolerated.
+    int maxNumberWarnings_;
+    //! Which line number corresponds to the message.
+    int lineNumber_ = -1;
+    //! Which file the message is coming from.
+    std::string fileName_ = "unknown";
+};
 
 /*! \brief Issue an error with warning_error() and prevent further
  * processing by calling check_warning_error().
  *
  * This is intended for use where there is no way to produce a data
  * structure that would prevent execution from segfaulting. */
-[[noreturn]] void warning_error_and_exit(warninp_t wi, const char* s, int f_errno, const char* file, int line);
-//! \copydoc warning_error_and_exit(warninp_t,const char *,int,const char *,int)
 [[noreturn]] void
-warning_error_and_exit(warninp_t wi, const std::string& s, int f_errno, const char* file, int line);
+warning_error_and_exit(WarningHandler* wi, const char* s, int f_errno, const char* file, int line);
+//! \copydoc warning_error_and_exit(WarningHandler*,const char *,int,const char *,int)
+[[noreturn]] void
+warning_error_and_exit(WarningHandler* wi, const std::string& s, int f_errno, const char* file, int line);
 
-gmx_bool warning_errors_exist(warninp_t wi);
-/* Return whether any error-level warnings were issued to wi. */
+//! Return whether any error-level warnings were issued to \p wi. */
+bool warning_errors_exist(const WarningHandler& wi);
 
-//! Resets the count for all kinds of warnings to zero.
-void warning_reset(warninp_t wi);
-
-void check_warning_error(warninp_t wi, int f_errno, const char* file, int line);
+void check_warning_error(const WarningHandler& wi, int f_errno, const char* file, int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void done_warning(warninp_t wi, int f_errno, const char* file, int line);
+void done_warning(const WarningHandler& wi, int f_errno, const char* file, int line);
 /* Should be called when finished processing the input file.
  * Prints the number of notes and warnings
  * and generates a fatal error when errors were found or too many
@@ -124,14 +166,12 @@ void done_warning(warninp_t wi, int f_errno, const char* file, int line);
  * Frees the data structure pointed to by wi.
  */
 
-void free_warning(warninp_t wi);
-/* Frees the data structure pointed to by wi. */
 
-void too_few_function(warninp_t wi, const char* fn, int line);
+void too_few_function(WarningHandler* wi, const char* fn, int line);
 #define too_few(wi) too_few_function(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void incorrect_n_param_function(warninp_t wi, const char* fn, int line);
+void incorrect_n_param_function(WarningHandler* wi, const char* fn, int line);
 #define incorrect_n_param(wi) incorrect_n_param_function(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
 
