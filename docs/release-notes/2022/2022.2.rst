@@ -112,6 +112,14 @@ trajectoryanalysis framework to print data for wrong selections.
 
 :issue:`4508`
 
+Remove broken charge zeroing function in convert-tpr
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This had been broken for a long time and no discernable use.
+
+:issue:`4226`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Fix external tinyXML version to below 7
