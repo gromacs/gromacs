@@ -52,7 +52,7 @@
  * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
  * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
  */
-void pmalloc(void** h_ptr, size_t nbytes)
+void pmalloc(void** h_ptr, size_t nbytes, const DeviceContext* /*context*/)
 {
     /* Need a temporary type whose size is 1 byte, so that the
      * implementation of snew_aligned can cope without issuing
@@ -71,11 +71,21 @@ void pmalloc(void** h_ptr, size_t nbytes)
  *
  * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
  */
-void pfree(void* h_ptr)
+void pfree(void* h_ptr, const DeviceContext* /*context*/)
 {
 
     if (h_ptr)
     {
         sfree_aligned(h_ptr);
     }
+}
+
+void pmallocSetDefaultDeviceContext(const DeviceContext* /*context*/)
+{
+    // We don't need context because we don't do anything device-specific.
+}
+
+void pmallocClearDefaultDeviceContext()
+{
+    // We don't need context because we don't do anything device-specific.
 }
