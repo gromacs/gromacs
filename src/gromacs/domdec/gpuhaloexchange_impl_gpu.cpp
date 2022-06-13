@@ -419,7 +419,7 @@ void GpuHaloExchange::Impl::communicateHaloCoordinatesOutOfPlace(DeviceBuffer<Fl
     {
         int numElements = ind_->cell2at1[zone] - ind_->cell2at0[zone];
         copyToDeviceBuffer(&d_x_,
-                           &h_outOfPlaceRecvBuffer_.data()[stageBufIndex],
+                           &h_outOfPlaceRecvBuffer_[stageBufIndex],
                            ind_->cell2at0[zone],
                            numElements,
                            *haloStream_,
@@ -449,7 +449,7 @@ void GpuHaloExchange::Impl::communicateHaloForcesOutOfPlace(DeviceBuffer<Float3>
     for (int zone = 0; zone < numZone_; zone++)
     {
         int numElements = ind_->cell2at1[zone] - ind_->cell2at0[zone];
-        copyFromDeviceBuffer(&h_outOfPlaceSendBuffer_.data()[stageBufIndex],
+        copyFromDeviceBuffer(&h_outOfPlaceSendBuffer_[stageBufIndex],
                              &d_sendPtr,
                              ind_->cell2at0[zone],
                              numElements,
