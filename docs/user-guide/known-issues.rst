@@ -14,3 +14,13 @@ We recommend using CUDA 11.4 or newer.
 
 :issue:`4037`
 
+Build is fragile with gcc 7 and CUDA
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Different forms of gcc 7 have different behaviour when compiling test
+programs with nvcc. This prevents |Gromacs| from reliably testing compilation
+flags for use with nvcc. So in this case we use flags unilaterally and this
+could lead to compilation errors. The best way to avoid these potential problems
+is to use a more recent version of gcc.
+
+:issue:`4478`

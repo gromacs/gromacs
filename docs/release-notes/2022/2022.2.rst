@@ -122,6 +122,20 @@ This had been broken for a long time and no discernable use.
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warn when using gcc version 7 with CUDA builds
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Different versions of gcc 7 behave differently in a way that makes it
+hard for |Gromacs| to check whether CUDA's ``nvcc`` compiler will
+accept compiler flags. |Gromacs| 2022 and 2022.1 sometimes would
+spuriously detect flags as invalid, avoid using them, and so produce
+slow CUDA kernels. Now |Gromacs| assumes all nvcc flags are valid in
+this case and the build system warns when this is occuring. If you
+then experience build failures, please use a newer version of gcc.
+
+:issue:`4478`
+
 Fix external tinyXML version to below 7
 """""""""""""""""""""""""""""""""""""""
 Newer versions are not compatible with |Gromacs|.
