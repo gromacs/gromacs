@@ -849,11 +849,11 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
     }
     else if (GMX_GPU_SYCL)
     {
-        if ((GMX_SYCL_DPCPP != 0) && (GMX_FFT_MKL != 0))
+        if ((GMX_SYCL_DPCPP != 0) && (GMX_FFT_MKL != 0)) // NOLINT(misc-redundant-expression)
         {
             return gmx::FftBackend::SyclMkl;
         }
-        else if ((GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET != 0))
+        else if ((GMX_SYCL_HIPSYCL != 0) && (GMX_HIPSYCL_HAVE_HIP_TARGET != 0)) // NOLINT(misc-redundant-expression)
         {
             return gmx::FftBackend::SyclRocfft;
         }
