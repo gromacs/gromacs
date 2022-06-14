@@ -56,7 +56,9 @@ gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl:
   needs:
     - job: gromacs:oneapi-2021.4.0-sycl-nightly:build
 
-gromacs:oneapi-2021.4.0-sycl-nightly:test-l0-upd:
+# We'd ideally want to have this test run with LevelZero, but it fails (loudly) with a specific configuration
+# we use in CI (Xe Max GPU, 5.18 kernel, 22.10.22597 compute-runtime). See #4219.
+gromacs:oneapi-2021.4.0-sycl-nightly:test-opencl-upd:
   extends:
     - .gromacs:base:test
     - .use-oneapi:base
@@ -66,7 +68,7 @@ gromacs:oneapi-2021.4.0-sycl-nightly:test-l0-upd:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-oneapi-2021.4.0-intel-compute-runtime:latest
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    SYCL_DEVICE_FILTER: "level_zero:gpu"
+    SYCL_DEVICE_FILTER: "opencl:gpu"
     GMX_FORCE_UPDATE_DEFAULT_GPU: 1
     # The following two variables are not used by k8s, since this job runs on a separate host
     # But it's easier to set them up and use the existing scripts for job preparation that rely on them

@@ -24,3 +24,19 @@ could lead to compilation errors. The best way to avoid these potential problems
 is to use a more recent version of gcc.
 
 :issue:`4478`
+
+SYCL build unstable when using oneAPI with LevelZero backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are multiple issues with different versions of Intel oneAPI when
+using the LevelZero backend. 
+
+In many cases, it works fine, and if it fails, it does so explicitly
+(either crash or hang), so it should be fine to experiment with.
+
+For most cases, we recommend using OpenCL backend (the default) when
+running SYCL build of |Gromacs| on Intel GPUs.
+
+:issue:`4219`
+:issue:`4354`
+
