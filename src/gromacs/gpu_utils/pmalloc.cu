@@ -50,7 +50,7 @@
  *  This memory should always be freed using pfree (or with the page-locked
  *  free functions provied by the CUDA library).
  */
-void pmalloc(void** h_ptr, size_t nbytes, const DeviceContext*)
+void pmalloc(void** h_ptr, size_t nbytes, const DeviceContext* /*context*/)
 {
     cudaError_t stat;
     char        strbuf[STRLEN];
@@ -73,7 +73,7 @@ void pmalloc(void** h_ptr, size_t nbytes, const DeviceContext*)
  *  This function can safely be called also with a pointer to a page-locked
  *  memory allocated directly with CUDA API calls.
  */
-void pfree(void* h_ptr, const DeviceContext*)
+void pfree(void* h_ptr, const DeviceContext* /*context*/)
 {
     cudaError_t stat;
 
@@ -88,7 +88,7 @@ void pfree(void* h_ptr, const DeviceContext*)
     CU_RET_ERR(stat, "cudaFreeHost failed");
 }
 
-void pmallocSetDefaultDeviceContext(const DeviceContext*)
+void pmallocSetDefaultDeviceContext(const DeviceContext* /*context*/)
 {
     // We don't need context for CUDA's pmalloc.
 }
