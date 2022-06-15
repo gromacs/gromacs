@@ -134,6 +134,9 @@ parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None
 parser.add_argument('--heffte', type=str, nargs='?', default=None,
                     help='Select heffte repository tag/commit/branch.')
 
+parser.add_argument('--nvhpcsdk', type=str, nargs='?', default=None,
+                    help='Select NVIDIA HPC SDK version.')
+
 parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
                     help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
 

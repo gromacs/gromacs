@@ -26,6 +26,7 @@ gromacs:gcc-11-cuda-11.4.1:configureMPI:
   variables:
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_CUFFTMP=ON -DcuFFTMp_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2022/math_libs"
     COMPILER_MAJOR_VERSION: 11
 
 gromacs:gcc-11-cuda-11.4.1:buildMPI:
