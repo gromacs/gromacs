@@ -42,9 +42,9 @@
 gmx_add_unit_test_library(nblib_test_infrastructure
         testsystems.cpp
     )
-target_include_directories(nblib_test_infrastructure PRIVATE ${PROJECT_SOURCE_DIR}/api)
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-target_link_libraries(nblib_test_infrastructure PUBLIC legacy_api)
+target_include_directories(nblib_test_infrastructure PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(nblib_test_infrastructure PUBLIC nblib legacy_api)
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")
@@ -94,7 +94,6 @@ gmx_add_gtest_executable(
         simstate.cpp
     )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
-target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 add_dependencies(nblib-tests ${exename})
 
@@ -108,7 +107,6 @@ gmx_add_gtest_executable(
         integrator.cpp
 )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
-target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 add_dependencies(nblib-tests ${exename})
 

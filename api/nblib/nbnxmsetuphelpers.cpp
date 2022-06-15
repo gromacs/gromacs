@@ -39,7 +39,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include "nbnxmsetuphelpers.h"
+#include "nblib/nbnxmsetuphelpers.h"
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"

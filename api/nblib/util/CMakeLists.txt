@@ -43,14 +43,6 @@ target_sources(nblib
         setup.cpp
         )
 
-if(GMX_INSTALL_NBLIB_API)
-    install(FILES
-            setup.h
-            traits.hpp
-            util.hpp
-            DESTINATION include/nblib/util)
-endif()
-
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

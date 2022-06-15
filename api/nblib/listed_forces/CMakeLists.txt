@@ -45,14 +45,6 @@ target_sources(nblib
         convertGmxToNblib.cpp
         )
 
-if(GMX_INSTALL_NBLIB_API)
-    install(FILES
-            bondtypes.h
-            calculator.h
-            definitions.h
-            DESTINATION include/nblib/listed_forces)
-endif()
-
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

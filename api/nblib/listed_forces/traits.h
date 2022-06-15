@@ -47,8 +47,8 @@
 
 #include <numeric>
 
-#include "bondtypes.h"
-#include "definitions.h"
+#include "nblib/listed_forces/bondtypes.h"
+#include "nblib/listed_forces/definitions.h"
 
 namespace nblib
 {

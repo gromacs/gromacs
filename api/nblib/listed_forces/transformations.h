@@ -48,7 +48,7 @@
 
 #include <algorithm>
 
-#include "definitions.h"
+#include "nblib/listed_forces/definitions.h"
 
 namespace nblib
 {
