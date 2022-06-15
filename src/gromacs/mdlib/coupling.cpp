@@ -227,7 +227,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
     // nearly always (much) smaller than the integral (and the
     // integrand has real precision).
 
-    /* now update boxes */
+    // Now update boxes, perhaps after calculating the box-scaling matrix mu
     switch (pressureCouplingOptions.epc)
     {
         case (PressureCoupling::No): break;
@@ -297,9 +297,11 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
             }
             break;
         case (PressureCoupling::ParrinelloRahman):
+            // Note that pressureCouplingMu and the box-velocity
+            // update was calculated before the coordinates update.
             if (do_per_step(step + pressureCouplingOptions.nstpcouple - 1, pressureCouplingOptions.nstpcouple))
             {
-                /* The box velocities were updated in do_pr_pcoupl,
+                /* The box velocities were updated in parrinellorahman_pcoupl,
                  * but we dont change the box vectors until we get here
                  * since we need to be able to shift/unshift above.
                  */
@@ -775,7 +777,9 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
     // Indentation preserved for review convenience, can be
     // removed later
     {
-        /* Note that c_presfac does not occur here.
+        /* First, calculate the acceleration of the box vectors.
+         *
+         * Note that c_presfac does not occur here.
          * The pressure and compressibility always occur as a product,
          * therefore the pressure unit drops out.
          */
@@ -865,6 +869,8 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
                           enumValueToString(pressureCouplingOptions.epct));
         }
 
+        // Update the box velocities from the box accelerations, and
+        // prepare to log a warning about large changes, if needed.
         real maxchange = 0;
         for (int d = 0; d < DIM; d++)
         {
@@ -901,6 +907,9 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
         }
     }
 
+    // The new box velocity has been calculated, but might need
+    // correcting for box shape, e.g. when rounding error has
+    // accumulated.
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
 
     calculateM(box, invbox, boxv, M);
@@ -1262,7 +1271,7 @@ void pressureCouplingScaleBoxAndCoordinates(const PressureCouplingOptions& press
         gmx::invertBoxMatrix(mu, inv_mu);
     }
 
-    /* Scale the positions and the velocities */
+    /* Scale the positions (for Berendsen and c-rescale) and perhaps the velocities (for c-rescale only) */
     if (scaleCoordinates)
     {
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);

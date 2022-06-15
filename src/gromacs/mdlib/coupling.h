@@ -77,7 +77,8 @@ void update_tcouple(int64_t                             step,
                     int                                 homenr,
                     gmx::ArrayRef<const unsigned short> cTC);
 
-/* Update Parrinello-Rahman, to be called before the coordinate update */
+/* Update Parrinello-Rahman, to be called before the coordinate update
+ * Returns the box-scaling matrix mu and the coordinate-scaling matrix M */
 void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        int64_t                        step,
                                        const PressureCouplingOptions& pressureCoupling,
@@ -87,10 +88,34 @@ void update_pcouple_before_coordinates(const gmx::MDLogger&           mdlog,
                                        matrix                         parrinellorahmanMu,
                                        matrix                         M);
 
-/* Update the box, to be called after the coordinate update.
- * For Berendsen P-coupling, also calculates the scaling factor
- * and scales the coordinates.
- * When the deform option is used, scales coordinates and box here.
+/*! \brief Implement aspects of pressure coupling.
+ *
+ * Always called after the coordinate update due to forces. This
+ * ensures that when the coordinates should be updated by pressure
+ * coupling, the box and the shift vectors remained consistent at the
+ * time of the coordinate update.
+ *
+ * For Berendsen and c-rescale, on pressure-coupling steps:
+ * - recalculate the scaling matrix mu,
+ * - use mu to scale coordinates iff \p scaleCoordinates,
+ *   doing positions always and velocites iff c-rescale
+ * - use mu to update box size
+ *
+ * For Parrinello-Rahman, on the step one before pressure-coupling
+ * steps:
+ * - update the box according to the new velocity computed in
+ *   parrinellorahman_pcoupl
+ * - use mu to scale positions iff \p scaleCoordinates
+ *
+ * For MTTK, on pressure-coupling steps:
+ * - update the box according to state->veta
+ * - recalculate the box velocity according to state->veta and the new box
+ * - the positions are NOT scaled, as they are already scaled during the integration
+ *
+ * When box deformation is active, always applies it.
+ *
+ * /param[out] pressureCouplingMu  Used later by the GPU update to scale the
+ *                                 coordinates to suit the new box size
  */
 void update_pcouple_after_coordinates(FILE*                               fplog,
                                       int64_t                             step,

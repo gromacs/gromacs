@@ -254,7 +254,8 @@ public:
     int fep_state; //!< indicates which of the alchemical states we are in
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda; //!< Free-energy lambda vector
     matrix                                                          box; //!< Matrix of box vectors
-    matrix              box_rel;        //!< Relative box vectors to preserve box shape
+    //!< Relative box vectors characteristic of the box shape, used to to preserve that box shape
+    matrix              box_rel;
     matrix              boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
     matrix              pres_prev;      //!< Pressure of the previous step for pcoupl
     matrix              svir_prev;      //!< Shake virial for previous step for pcoupl

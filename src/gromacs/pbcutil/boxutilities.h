@@ -40,7 +40,11 @@
 
 /*! \brief Change box components to preserve the relative box shape
  *
- * Change box components to box[XX][XX]*box_rel to preserve the relative box shape
+ * Typically used with bInit set to false, in which case it changes
+ * box components to b[XX][XX]*box_rel to preserve the relative box
+ * shape. If bInit is true, then the values in b are used to set
+ * those in box_rel so that subsquent calls can use that box_rel to
+ * adjust b to maintain a consistent box.
  */
 void do_box_rel(int ndim, const matrix deform, matrix box_rel, matrix b, bool bInit);
 

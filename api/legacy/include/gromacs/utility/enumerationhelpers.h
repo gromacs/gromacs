@@ -173,6 +173,8 @@ class EnumerationWrapper final
 public:
     //! Convenience alias.
     using IteratorType = EnumerationIterator<EnumType, Last, Step>;
+    //! Convenience alias
+    using value_type = EnumType;
 
     //! Functions required for range-based for statements to work.
     /*!@{*/

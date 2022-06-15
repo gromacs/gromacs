@@ -81,6 +81,28 @@ constexpr real trace(Matrix3x3ConstSpan matrixView)
     return matrixView(0, 0) + matrixView(1, 1) + matrixView(2, 2);
 }
 
+/*! \brief Create a diagonal matrix of ElementType with N * M elements.
+ *
+ * \tparam ElementType type of matrix elements
+ * \tparam N           number of rows
+ * \tparam M           number of columns, defaults to number of rows if not set
+ * \param  value       The value that fills the leading diagonal
+ *
+ * \returns a matrix with values \c value where row equals column index and null
+ *          where row does not equal column index
+ */
+template<typename ElementType, int N, int M = N>
+MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> diagonalMatrix(const ElementType value)
+{
+    std::array<ElementType, N * M>                               matrixEntries{};
+    MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> matrix(matrixEntries);
+    for (int i = 0; i < std::min(N, M); i++)
+    {
+        matrix(i, i) = value;
+    }
+    return matrix;
+}
+
 /*! \brief Create an identity matrix of ElementType with N * M elements.
  *
  * \tparam ElementType type of matrix elements
@@ -93,13 +115,7 @@ constexpr real trace(Matrix3x3ConstSpan matrixView)
 template<typename ElementType, int N, int M = N>
 MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> identityMatrix()
 {
-    std::array<ElementType, N * M>                               matrixEntries{};
-    MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> idMatrix(matrixEntries);
-    for (int i = 0; i < std::min(N, M); i++)
-    {
-        idMatrix(i, i) = 1;
-    }
-    return idMatrix;
+    return diagonalMatrix<ElementType, N, M>(1);
 }
 
 //! Calculate the transpose of a 3x3 matrix, from its view

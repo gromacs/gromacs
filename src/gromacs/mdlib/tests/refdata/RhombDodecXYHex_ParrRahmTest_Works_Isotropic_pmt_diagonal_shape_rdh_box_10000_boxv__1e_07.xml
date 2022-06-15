@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Box Velocities">
+    <Int Name="Length">9</Int>
+    <Real>-0.086538016075522098</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.043269008037761049</Real>
+    <Real>-0.07494412031450827</Real>
+    <Real>-0</Real>
+    <Real>-0.043269008037761049</Real>
+    <Real>-0.024981373438169422</Real>
+    <Real>-0.070657994245932373</Real>
+  </Sequence>
+</ReferenceData>
