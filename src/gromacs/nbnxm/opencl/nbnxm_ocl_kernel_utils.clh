@@ -61,8 +61,8 @@
 #    define USE_CJ_PREFETCH 0
 #endif
 
-#if defined cl_intel_subgroups || defined cl_khr_subgroups \
-        || (defined __OPENCL_VERSION__ && __OPENCL_VERSION__ >= 210)
+#if defined cl_intel_subgroups || defined cl_khr_subgroups || defined __opencl_c_subgroups \
+        || (defined __OPENCL_VERSION__ && __OPENCL_VERSION__ >= 210 && __OPENCL_VERSION__ < 300)
 #    define HAVE_SUBGROUP 1
 #else
 #    define HAVE_SUBGROUP 0
