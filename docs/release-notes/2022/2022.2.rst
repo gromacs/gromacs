@@ -72,6 +72,16 @@ an obvious crash.
 
 :issue:`4482`
 
+Note known issues with Verlet buffer estimation
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+There are known issues with the Verlet buffer estimate for imhonogeneous
+systems as well as for potentials with only the repulsive part of the
+Lennard Jones potential. These issues and workarounds are listed in
+the :ref:`known issues <gmx-users-known-issues>` section.
+
+:issue:`4509`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
