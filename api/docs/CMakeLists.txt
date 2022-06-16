@@ -37,8 +37,8 @@
 # gmxapi-cppdocs-dev produces more complete documentation in docs/api-dev
 # with internal interfaces and implementation details.
 
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../../../docs/api-user" GMXAPI_USERDOC_OUTPUT)
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/../../../docs/api-dev" GMXAPI_DEVDOC_OUTPUT)
+file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/docs/api-user" GMXAPI_USERDOC_OUTPUT)
+file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/docs/api-dev" GMXAPI_DEVDOC_OUTPUT)
 
 file(MAKE_DIRECTORY ${GMXAPI_USERDOC_OUTPUT})
 file(MAKE_DIRECTORY ${GMXAPI_DEVDOC_OUTPUT})
@@ -48,6 +48,7 @@ get_target_property(GMXAPI_BINARY_DIR gmxapi BINARY_DIR)
 
 # Use GMXAPI_PUBLIC_HEADERS to populate source files. Make a local copy with
 # the list converted to a space-delimited string.
+set(GMXAPI_PUBLIC_HEADERS ${GMXAPI_SOURCE_DIR}/include/gmxapi ${GMXAPI_BINARY_DIR}/include/gmxapi)
 string(REPLACE ";" " " GMXAPI_PUBLIC_HEADERS "${GMXAPI_PUBLIC_HEADERS}")
 configure_file(Doxyfile.in Doxyfile @ONLY)
 

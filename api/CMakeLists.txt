@@ -79,3 +79,5 @@ if (GMX_INSTALL_NBLIB_API)
         add_subdirectory(nblib)
     endif()
 endif()
+
+add_subdirectory(docs)
