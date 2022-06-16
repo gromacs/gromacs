@@ -115,8 +115,8 @@ const char* enumValueToString(PmeSolveAlgorithm enumValue)
 const char* enumValueToString(GridOrdering enumValue)
 {
     static constexpr gmx::EnumerationArray<GridOrdering, const char*> s_strings = {
-        "XYZ",
         "YZX",
+        "XYZ",
     };
     return s_strings[enumValue];
 }
