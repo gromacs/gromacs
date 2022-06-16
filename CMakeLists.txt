@@ -53,7 +53,7 @@ endif()
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-project(Gromacs VERSION 2022.2)
+project(Gromacs VERSION 2022.3)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -534,6 +534,9 @@ if(GMX_EXTERNAL_TINYXML2)
     set(HAVE_TINYXML2 ${TinyXML2_FOUND})
     if(NOT HAVE_TINYXML2)
         message(FATAL_ERROR "External TinyXML-2 could not be found, please adjust your search paths")
+    endif()
+    if (TinyXML2_FOUND AND TinyXML2_VERSION VERSION_GREATER "6")
+        message(FATAL_ERROR "External TinyXML-2 is later than the highest supported version 6. Please adjust your search paths to include a supported version")
     endif()
 endif()
 

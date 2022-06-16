@@ -1,7 +1,7 @@
 GROMACS 2022.2 release notes
 ----------------------------
 
-This version was released on TODO, 2022. These release notes
+This version was released on June 16th, 2022. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2022.1 version, to fix known issues. It also incorporates all
 fixes made in version 2021.5 and earlier, which you can find described
@@ -51,11 +51,36 @@ PME rank, the dV/dlambda contribution for the PME mesh part was missing.
 The same contribution was missing from the foreign lambda energy differences.
 Note that the energies and forces were correct.
 
-:issues;`4474`
+:issue:`4474`
+
 Removed the (incorrect) output file size note/warning with mdrun -rerun
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`4484`
+
+Wait for PME coordinate padding clearing to complete after reinitialization
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+As part of the irregular reinitialization of PME coordinate buffers,
+the padding area of the buffer on the GPU must be set to
+zero. Previously, a dependency was missing such that, with GPU direct
+communications enabled via the GMX_ENABLE_DIRECT_GPU_COMM, it was
+possible that the PME kernel could preceed before this initialization
+had completed, and this has now been fixed. The incorrect ordering is
+only expected to have occured in extreme benchmarking cases, causing
+an obvious crash.
+
+:issue:`4482`
+
+Note known issues with Verlet buffer estimation
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+There are known issues with the Verlet buffer estimate for imhonogeneous
+systems as well as for potentials with only the repulsive part of the
+Lennard Jones potential. These issues and workarounds are listed in
+the :ref:`known issues <gmx-users-known-issues>` section.
+
+:issue:`4509`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,8 +122,35 @@ trajectoryanalysis framework to print data for wrong selections.
 
 :issue:`4508`
 
+Remove broken charge zeroing function in convert-tpr
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This had been broken for a long time and no discernable use.
+
+:issue:`4226`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warn when using gcc version 7 with CUDA builds
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Different versions of gcc 7 behave differently in a way that makes it
+hard for |Gromacs| to check whether CUDA's ``nvcc`` compiler will
+accept compiler flags. |Gromacs| 2022 and 2022.1 sometimes would
+spuriously detect flags as invalid, avoid using them, and so produce
+slow CUDA kernels. Now |Gromacs| assumes all nvcc flags are valid in
+this case and the build system warns when this is occuring. If you
+then experience build failures, please use a newer version of gcc.
+
+:issue:`4478`
+
+Fix external tinyXML version to below 7
+"""""""""""""""""""""""""""""""""""""""
+Newer versions are not compatible with |Gromacs|.
+
+:issue:`4477`
 
 Fixed a possible software build error with OpenMP linking
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""

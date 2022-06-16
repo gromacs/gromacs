@@ -267,18 +267,6 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
     mtop->natoms = atoms.nr;
 }
 
-static void zeroq(const int index[], gmx_mtop_t* mtop)
-{
-    for (gmx_moltype_t& moltype : mtop->moltype)
-    {
-        for (int i = 0; i < moltype.atoms.nr; i++)
-        {
-            moltype.atoms.atom[index[i]].q  = 0;
-            moltype.atoms.atom[index[i]].qB = 0;
-        }
-    }
-}
-
 static void print_runtime_info(t_inputrec* ir)
 {
     char buf[STEPSTRSIZE];
@@ -330,8 +318,6 @@ private:
     int64_t maxSteps_ = 0;
     //! If the option to use maximumstep number is set.
     bool maxStepsIsSet_ = false;
-    //! If the option to zero charge is set.
-    bool zeroQIsSet_ = false;
 };
 
 void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -389,8 +375,6 @@ void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModu
                                .store(&maxSteps_)
                                .storeIsSet(&maxStepsIsSet_)
                                .description("Change the number of steps remaining to be made"));
-    options->addOption(
-            BooleanOption("zeroq").store(&zeroQIsSet_).description("Set the charges of a group (from the index) to zero"));
 }
 
 void ConvertTpr::optionsFinished() {}
@@ -409,9 +393,9 @@ int ConvertTpr::run()
         return 1;
     }
 
-    if ((extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_) && (zeroQIsSet_ || haveReadIndexFile_))
+    if ((extendTimeIsSet_ || maxStepsIsSet_ || runToMaxTimeIsSet_) && haveReadIndexFile_)
     {
-        printf("Cannot do both runtime modification and charge-zeroing/index group extraction in a "
+        printf("Cannot do both runtime modification and index group extraction in a "
                "single call.\n");
         return 1;
     }
@@ -467,26 +451,16 @@ int ConvertTpr::run()
     }
     else
     {
-        // If zeroQIsSet_, then we are doing charge zero-ing; otherwise index group extraction
-
         atoms                     = gmx_mtop_global_atoms(mtop);
         int         gnx           = 0;
         int*        index         = nullptr;
         char*       grpname       = nullptr;
         const char* indexFilename = haveReadIndexFile_ ? inputIndexFileName_.c_str() : nullptr;
         get_index(&atoms, indexFilename, 1, &gnx, &index, &grpname);
-        bool bSel = false;
-        if (!zeroQIsSet_)
+        bool bSel = (gnx != state.natoms);
+        for (int i = 0; ((i < gnx) && (!bSel)); i++)
         {
-            bSel = (gnx != state.natoms);
-            for (int i = 0; ((i < gnx) && (!bSel)); i++)
-            {
-                bSel = (i != index[i]);
-            }
-        }
-        else
-        {
-            bSel = false;
+            bSel = (i != index[i]);
         }
         if (bSel)
         {
@@ -497,11 +471,6 @@ int ConvertTpr::run()
                     gnx);
             reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
             state.natoms = gnx;
-        }
-        else if (zeroQIsSet_)
-        {
-            zeroq(index, &mtop);
-            fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
         }
         else
         {

@@ -293,7 +293,11 @@ void increaseNstlist(FILE*               fp,
                         "Changing nstlist with domain decomposition and unbounded dimensions is "
                         "not implemented yet");
             }
-            bDD = change_dd_cutoff(cr, box, gmx::ArrayRef<const gmx::RVec>(), rlist_new);
+            // nstlist tuning happens before GPU DD is initialized so we can't check
+            // whether the new cutoff would conflict with direct GPU communication.
+            const bool checkGpuDdLimitation = false;
+            bDD                             = change_dd_cutoff(
+                    cr, box, gmx::ArrayRef<const gmx::RVec>(), rlist_new, checkGpuDdLimitation);
         }
 
         if (debug)

@@ -5,7 +5,7 @@
 SYNOPSIS
 
 test convert-tpr [-s [<.tpr/.gro/...>]] [-n [<.ndx>]] [-o [<.tpr/.gro/...>]]
-             [-extend <time>] [-until <time>] [-nsteps <int>] [-[no]zeroq]
+             [-extend <time>] [-until <time>] [-nsteps <int>]
 
 DESCRIPTION
 
@@ -45,7 +45,5 @@ Other options:
            Extend runtime until this ending time (ps)
  -nsteps <int>              (0)
            Change the number of steps remaining to be made
- -[no]zeroq                 (no)
-           Set the charges of a group (from the index) to zero
 ]]></String>
 </ReferenceData>
