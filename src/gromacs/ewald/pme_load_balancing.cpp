@@ -715,7 +715,9 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
                 if (haveDDAtomOrdering(*cr))
                 {
-                    OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter);
+                    const bool checkGpuDdLimitation = true;
+                    OK                              = change_dd_cutoff(
+                            cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter, checkGpuDdLimitation);
                     if (!OK)
                     {
                         /* Failed: do not use this setup */
@@ -782,7 +784,8 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
     if (haveDDAtomOrdering(*cr) && pme_lb->stage > 0)
     {
-        OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter);
+        const bool checkGpuDdLimitation = true;
+        OK = change_dd_cutoff(cr, box, x, pme_lb->setup[pme_lb->cur].rlistOuter, checkGpuDdLimitation);
         if (!OK)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
