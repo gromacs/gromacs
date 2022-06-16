@@ -77,7 +77,14 @@ _output = _op.OutputCollectionDescription(**{descriptor._name: descriptor._dtype
 class OutputDataProxy(ModuleObject,
                       _op.DataProxyBase,
                       descriptors=_output_descriptors):
-    """Implement the 'output' attribute of ReadTpr operations."""
+    """Implement the 'output' attribute of `read_tpr` operations.
+
+    Attributes:
+        parameters: Dictionary of simulation parameters.
+
+    Additionally (through an unspecified interface), the object serves as a
+    complete simulation input to other gmxapi operations.
+    """
     def __init__(self, *args, **kwargs):
         _op.DataProxyBase.__init__(self, *args, **kwargs)
 
@@ -372,7 +379,7 @@ class StandardDirector(gmxapi.abc.OperationDirector):
 
 
 def read_tpr(filename, label: str = None, context=None):
-    """
+    """Get simulation input from a TPR file.
 
     Arguments:
         filename: input file name
@@ -383,6 +390,8 @@ def read_tpr(filename, label: str = None, context=None):
     Returns:
         Reference (handle) to the new operation instance (node).
 
+    See :py:class:`~gmxapi.simulation.read_tpr.OutputDataProxy` for members of
+    the *output* attribute.
     """
     handle_context = context
     if handle_context is not None:

@@ -120,7 +120,7 @@ Virtual interaction sites (called dummy atoms in
 |Gromacs| versions before 3.3) can be used in |Gromacs| in a number of ways.
 We write the position of the virtual site :math:`\mathbf{r}_s` as a function
 of the positions of other particles
-:math:`\mathbf{r}`\ :math:`_i`: :math:`\mathbf{r}_s =
+:math:`\mathbf{r}_i`: :math:`\mathbf{r}_s =
 f(\mathbf{r}_1..\mathbf{r}_n)`. The virtual site, which may carry charge or be
 involved in other interactions, can now be used in the force
 calculation. The force acting on the virtual site must be redistributed

@@ -47,6 +47,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/tableinput.h"
 #include "gromacs/utility/alignedallocator.h"
@@ -165,7 +166,7 @@ public:
      * table generation code will lead to some precision loss even
      * in double precision.
      */
-    static const real defaultTolerance;
+    static LIBGROMACS_EXPORT const real defaultTolerance;
 
     /*! \brief Initialize table data from function
      *

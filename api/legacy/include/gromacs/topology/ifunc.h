@@ -34,6 +34,7 @@
 #ifndef GMX_TOPOLOGY_IFUNC_H
 #define GMX_TOPOLOGY_IFUNC_H
 
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/math/vectypes.h"
 
 struct t_fcdata;
@@ -234,7 +235,7 @@ constexpr int NR_RBDIHS     = 6;
 constexpr int NR_CBTDIHS    = 6;
 constexpr int NR_FOURDIHS   = 4;
 
-extern const t_interaction_function interaction_function[F_NRE];
+LIBGROMACS_EXPORT extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 
 #endif

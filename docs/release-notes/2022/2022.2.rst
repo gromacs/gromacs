@@ -31,6 +31,18 @@ larger than for a correct run.
 
 :issue:`4476`
 
+Fix missing CPU-GPU synchronization when doing free-energy calculations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When GPU halo exchange with direct communication is enabled, CPU based 
+free-energy kernels were being run without waiting on non-local co-ordinates 
+to be available on host. This resulted in use of stale data on CPU side. 
+This issue can cause incorect output when GPU direct communication is enabled 
+using GMX_ENABLE_DIRECT_GPU_COMM environment variable and simulation contains 
+free-energy calculations.
+
+:issue:`4471`
+
 Fix missing PME mesh dV/dlambda with PME on GPU on a seperate PME rank
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -71,9 +83,46 @@ was missing (but not the torsion itself). Reprocess your
 PDB file with pdb2gmx from version 2022.2 or later to get a
 correct topology, or add it manually to the topology.
 
+Avoid crash in gmx bar with invalid input
+"""""""""""""""""""""""""""""""""""""""""
+
+gmx bar could try to read an invalid input data file and would fail with a hard
+crash instead of a helpful error message.
+
+Fix printing of incorrect data from analysis tools
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A change on how we handle selections caused the analysis tools in the
+trajectoryanalysis framework to print data for wrong selections.
+
+:issue:`4508`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed a possible software build error with OpenMP linking
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In some situations, software builds could have errors linking ``omp`` symbols.
+A minor update to the CMake configuration helps the ``muparser`` component
+to find the same OpenMP dependency used by the rest of the library.
+
+:issue:`4499`
 
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed detection of external TinyXML-2
+"""""""""""""""""""""""""""""""""""""
+
+Updated the code to properly detect the presence and the version of external
+TinyXML-2 (only relevant if ``-DGMX_EXTERNAL_TINYXML2=ON`` is used).
+
+:issue:`4477`
+
+Fixed warnings when using module-specific OpenMP thread-count environment variables
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+One of the arrays used to construct message strings wasn't updated
+properly, so sometimes an information message was wrong or may have
+printed garbage.

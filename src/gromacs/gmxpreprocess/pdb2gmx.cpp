@@ -2940,8 +2940,8 @@ int pdb2gmx::run()
 
 } // namespace
 
-const char pdb2gmxInfo::name[] = "pdb2gmx";
-const char pdb2gmxInfo::shortDescription[] =
+LIBGROMACS_EXPORT const char pdb2gmxInfo::name[] = "pdb2gmx";
+LIBGROMACS_EXPORT const char pdb2gmxInfo::shortDescription[] =
         "Convert coordinate files to topology and FF-compliant coordinate files";
 ICommandLineOptionsModulePointer pdb2gmxInfo::create()
 {

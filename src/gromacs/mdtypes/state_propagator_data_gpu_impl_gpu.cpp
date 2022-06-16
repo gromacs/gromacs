@@ -406,6 +406,12 @@ void StatePropagatorDataGpu::Impl::setXUpdatedOnDeviceEventExpectedConsumptionCo
     xUpdatedOnDeviceEvent_->setConsumptionLimits(expectedConsumptionCount, expectedConsumptionCount);
 }
 
+void StatePropagatorDataGpu::Impl::setFReadyOnDeviceEventExpectedConsumptionCount(AtomLocality atomLocality,
+                                                                                  int expectedConsumptionCount)
+{
+    fReadyOnDevice_[atomLocality].setConsumptionLimits(expectedConsumptionCount, expectedConsumptionCount);
+}
+
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x,
                                                           AtomLocality             atomLocality,
                                                           GpuEventSynchronizer*    dependency)
@@ -697,6 +703,12 @@ void StatePropagatorDataGpu::setXUpdatedOnDeviceEvent(GpuEventSynchronizer* xUpd
 void StatePropagatorDataGpu::setXUpdatedOnDeviceEventExpectedConsumptionCount(int expectedConsumptionCount)
 {
     impl_->setXUpdatedOnDeviceEventExpectedConsumptionCount(expectedConsumptionCount);
+}
+
+void StatePropagatorDataGpu::setFReadyOnDeviceEventExpectedConsumptionCount(AtomLocality atomLocality,
+                                                                            int expectedConsumptionCount)
+{
+    impl_->setFReadyOnDeviceEventExpectedConsumptionCount(atomLocality, expectedConsumptionCount);
 }
 
 void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<RVec>   h_x,

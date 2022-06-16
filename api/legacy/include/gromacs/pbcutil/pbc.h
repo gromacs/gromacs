@@ -38,6 +38,7 @@
 
 #include <string>
 
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -54,7 +55,7 @@ class ArrayRef;
 } // namespace gmx
 
 //! Names for all values in PBC types enumeration
-extern const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames;
+extern LIBGROMACS_EXPORT const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames;
 
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of

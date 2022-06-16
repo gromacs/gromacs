@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Define utility routines for SYCL
+ *  \brief Pinned memory allocation routines for SYCL
  *
  *  \author Andrey Alekseenko <al42and@gmail.com>
  */
@@ -44,16 +44,11 @@
 
 /*! \brief Allocates \p nbytes of host memory. Use \c pfree to free memory allocated with this function.
  *
- *  \todo
- *  This function was copied from OpenCL implementation, not tuned for SYCL at all.
- *  Once SYCL2020 is out, might be worthwhile to look into USM and sycl::malloc_host / sycl::aligned_alloc_host.
- *  Overall, it is better to directly use sycl::buffer instead of pinned arrays. But this function
- *  is needed to compile some PME code with SYCL enabled, even if it is never used.
- *
- * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
- * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
+ * \param[in,out] h_ptr   Pointer where to store the address of the newly allocated buffer.
+ * \param[in]     nbytes  Size in bytes of the buffer to be allocated.
+ * \param[in]     deviceContext SYCL context to use. Will use the default one (see \c pmallocSetDefaultDeviceContext) if not set.
  */
-void pmalloc(void** h_ptr, size_t nbytes)
+void pmalloc(void** h_ptr, size_t nbytes, const DeviceContext* gmx_unused deviceContext)
 {
     /* Need a temporary type whose size is 1 byte, so that the
      * implementation of snew_aligned can cope without issuing
@@ -66,12 +61,23 @@ void pmalloc(void** h_ptr, size_t nbytes)
 
 /*! \brief Frees memory allocated with pmalloc.
  *
- * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
+ * \param[in] h_ptr         Buffer allocated with pmalloc that needs to be freed.
+ * \param[in] deviceContext SYCL context to use. Will use the default one (see \c pmallocSetDefaultDeviceContext) if not set.
  */
-void pfree(void* h_ptr)
+void pfree(void* h_ptr, const DeviceContext* gmx_unused deviceContext)
 {
     if (h_ptr)
     {
         sfree_aligned(h_ptr);
     }
+}
+
+void pmallocSetDefaultDeviceContext(const DeviceContext* /*context*/)
+{
+    // TODO
+}
+
+void pmallocClearDefaultDeviceContext()
+{
+    // TODO
 }

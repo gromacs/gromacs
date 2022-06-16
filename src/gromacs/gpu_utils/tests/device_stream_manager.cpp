@@ -50,7 +50,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/hardware/device_management.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
@@ -112,8 +111,8 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
     const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
+        testDevice->activate();
         const DeviceInformation& deviceInfo = testDevice->deviceInfo();
-        setActiveDevice(deviceInfo);
 
         {
             SCOPED_TRACE("No DD, no PME rank, no GPU update");

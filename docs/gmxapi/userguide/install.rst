@@ -602,6 +602,27 @@ Refer to :file:`python_packaging/README.md` for more detailed information.
 Troubleshooting
 ===============
 
+ImportError at run time with dynamic linking error
+--------------------------------------------------
+
+Symptom: Python fails with a weird ``ImportError`` citing something like ``dlopen``::
+
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    ImportError: dlopen(/.../gmxapi/_gmxapi.so, 0x0002): Symbol not found:
+    __ZN12gmxapicompat11readTprFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+      Referenced from: /.../gmxapi/_gmxapi.so
+      Expected in: /path/to/gromacs/lib/libgmxapi_mpi_d.0.3.1.dylib
+
+Inconsistencies in the build and run time environments can cause dynamic linking problems at run time.
+This could occur if you reinstall GROMACS built with a different compiler,
+or if ``pip`` or ``CMake`` somehow get tricked into using the wrong compiler tool chain.
+
+Refer to the `gmxapi cmake hints`_ for notes about compiler toolchains.
+Rebuild and reinstall the gmxapi Python package with ``--no-cache-dir``
+and provide the ``gromacs-hints.cmake`` file for the GROMACS installation
+you intend to use.
+
 AttributeError: module 'enum' has no attribute 'IntFlag'
 --------------------------------------------------------
 

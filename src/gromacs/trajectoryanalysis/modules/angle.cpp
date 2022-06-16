@@ -684,8 +684,8 @@ void calc_vec(int natoms, rvec x[], t_pbc* pbc, rvec xout, rvec cout)
 void Angle::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle   dh   = pdata->dataHandle(angles_);
-    const SelectionList& sel1 = pdata->parallelSelections(sel1_);
-    const SelectionList& sel2 = pdata->parallelSelections(sel2_);
+    const SelectionList& sel1 = TrajectoryAnalysisModuleData::parallelSelections(sel1_);
+    const SelectionList& sel2 = TrajectoryAnalysisModuleData::parallelSelections(sel2_);
 
     checkSelections(sel1, sel2);
 

@@ -138,7 +138,7 @@ Kinetic Energy
 When the mass of a particle changes, there is also a contribution of the
 kinetic energy to the free energy (note that we can not write the
 momentum :math:`\mathbf{p}` as
-m :math:`\mathbf{v}`, since that would result in the
+:math:`m \mathbf{v}`, since that would result in the
 sign of :math:`{\frac{\partial E_k}{\partial {\lambda}}}` being
 incorrect \ :ref:`99 <refGunsteren98a>`):
 
@@ -148,7 +148,7 @@ incorrect \ :ref:`99 <refGunsteren98a>`):
           :label: eqnfepekin
 
 after taking the derivative, we *can* insert
-:math:`\mathbf{p}` = m :math:`\mathbf{v}`, such that:
+:math:`\mathbf{p}` = :math:`m \mathbf{v}`, such that:
 
 .. math:: {\frac{\partial E_k}{\partial {\lambda}}}~=~    -{\frac{1}{2}}\mathbf{v}^2(m^B-m^A)
           :label: eqnfepekinderivative

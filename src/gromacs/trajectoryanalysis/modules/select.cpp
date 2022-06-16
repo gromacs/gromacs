@@ -621,7 +621,7 @@ void Select::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* /* pbc */, Traj
     AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
     AnalysisDataHandle   idh = pdata->dataHandle(idata_);
     AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
-    const SelectionList& sel = pdata->parallelSelections(sel_);
+    const SelectionList& sel = TrajectoryAnalysisModuleData::parallelSelections(sel_);
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)

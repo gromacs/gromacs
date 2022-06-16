@@ -207,9 +207,9 @@ TEST(NbnxmSetupTest, CanCreateDeviceStreamManager)
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        const DeviceInformation& deviceInfo = testDevice->deviceInfo();
-        setActiveDevice(deviceInfo);
-        gmx::SimulationWorkload simulationWork = createSimulationWorkloadGpu();
+        testDevice->activate();
+        const DeviceInformation& deviceInfo     = testDevice->deviceInfo();
+        gmx::SimulationWorkload  simulationWork = createSimulationWorkloadGpu();
         EXPECT_NO_THROW(createDeviceStreamManager(deviceInfo, simulationWork));
     }
 }
@@ -219,13 +219,13 @@ TEST(NbnxmSetupTest, CanCreateNbnxmGPU)
     const auto& testDeviceList = gmx::test::getTestHardwareEnvironment()->getTestDeviceList();
     for (const auto& testDevice : testDeviceList)
     {
-        const DeviceInformation& deviceInfo = testDevice->deviceInfo();
-        setActiveDevice(deviceInfo);
-        size_t                  numParticles = 1;
-        NBKernelOptions         nbKernelOptions;
-        std::vector<real>       nonbondedParameters = { 1, 1 };
-        gmx::SimulationWorkload simulationWork      = createSimulationWorkloadGpu();
-        interaction_const_t     interactionConst    = createInteractionConst(nbKernelOptions);
+        testDevice->activate();
+        const DeviceInformation& deviceInfo   = testDevice->deviceInfo();
+        size_t                   numParticles = 1;
+        NBKernelOptions          nbKernelOptions;
+        std::vector<real>        nonbondedParameters = { 1, 1 };
+        gmx::SimulationWorkload  simulationWork      = createSimulationWorkloadGpu();
+        interaction_const_t      interactionConst    = createInteractionConst(nbKernelOptions);
         // set DeviceInformation and create the DeviceStreamManager
         auto deviceStreamManager = createDeviceStreamManager(deviceInfo, simulationWork);
         EXPECT_NO_THROW(createNbnxmGPU(

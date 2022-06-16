@@ -884,8 +884,8 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
     AnalysisDataHandle   aah        = pdata->dataHandle(atomArea_);
     AnalysisDataHandle   rah        = pdata->dataHandle(residueArea_);
     AnalysisDataHandle   vh         = pdata->dataHandle(volume_);
-    const Selection&     surfaceSel = pdata->parallelSelection(surfaceSel_);
-    const SelectionList& outputSel  = pdata->parallelSelections(outputSel_);
+    const Selection&     surfaceSel = TrajectoryAnalysisModuleData::parallelSelection(surfaceSel_);
+    const SelectionList& outputSel  = TrajectoryAnalysisModuleData::parallelSelections(outputSel_);
     SasaModuleData&      frameData  = *static_cast<SasaModuleData*>(pdata);
 
     const bool bResAt    = !frameData.res_a_.empty();

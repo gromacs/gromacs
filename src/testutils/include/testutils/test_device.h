@@ -77,6 +77,8 @@ public:
     const DeviceContext& deviceContext() const;
     //! Get the device stream
     const DeviceStream& deviceStream() const;
+    //! Set the device as currently active
+    void activate() const;
     //! Creates the device context and stream for tests on the GPU
     TestDevice(const char* description, const DeviceInformation& deviceInfo);
     //! Destructor

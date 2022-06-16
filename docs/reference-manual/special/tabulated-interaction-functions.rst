@@ -57,13 +57,13 @@ like this:
 
 #. Calculate distance vector
    (:math:`\mathbf{r}_{ij}`) and distance
-   r\ :math:`_{ij}`
+   :math:`r_{ij}`
 
-#. Multiply r\ :math:`_{ij}` by :math:`s` and truncate to an integer
+#. Multiply :math:`r_{ij}` by :math:`s` and truncate to an integer
    value :math:`n_0` to get a table index
 
 #. Calculate fractional component (:math:`\epsilon` =
-   :math:`s`\ r\ :math:`_{ij} - n_0`) and :math:`\epsilon^2`
+   :math:`s r_{ij} - n_0`) and :math:`\epsilon^2`
 
 #. Do the interpolation to calculate the potential :math:`V` and the
    scalar force :math:`f`

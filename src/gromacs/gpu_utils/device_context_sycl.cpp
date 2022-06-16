@@ -44,6 +44,7 @@
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/gpu_utils/pmalloc.h"
 #include "gromacs/hardware/device_information.h"
 
 
@@ -51,7 +52,11 @@
 DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) :
     deviceInfo_(deviceInfo), context_(sycl::context(deviceInfo.syclDevice))
 {
+    pmallocSetDefaultDeviceContext(this);
 }
 
 //! Destructor
-DeviceContext::~DeviceContext() = default;
+DeviceContext::~DeviceContext()
+{
+    pmallocClearDefaultDeviceContext();
+}

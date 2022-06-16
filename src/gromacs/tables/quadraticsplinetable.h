@@ -61,6 +61,7 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/libgromacs_export.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/tableinput.h"
 #include "gromacs/utility/alignedallocator.h"
@@ -204,7 +205,7 @@ public:
      *  \note Even for double precision builds we set the tolerance to
      *        one order of magnitude above the single precision epsilon.
      */
-    static const real defaultTolerance;
+    static LIBGROMACS_EXPORT const real defaultTolerance;
 
     /*! \brief Initialize table data from function
      *

@@ -2196,6 +2196,7 @@ int Mdrunner::mdrunner()
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     ddManager.reset(nullptr);
+    cr->dd = nullptr; // cr->dd is destroyed via ddManager
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     localStateInstance.reset(nullptr);
