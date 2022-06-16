@@ -161,9 +161,15 @@ bool dd_bonded_molpbc(const gmx_domdec_t& dd, PbcType pbcType);
  * \param[in] cr               Communication recrod
  * \param[in] box              Box matrix, used for computing the dimensions of the system
  * \param[in] x                Position vector, used for computing the dimensions of the system
- * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list cutoff distance
+ * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list
+ *                             cutoff distance
+ * \param[in] checkGpuDdLimitation Whether to check the GPU DD support limitation
  */
-bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested);
+bool change_dd_cutoff(t_commrec*                     cr,
+                      const matrix                   box,
+                      gmx::ArrayRef<const gmx::RVec> x,
+                      real                           cutoffRequested,
+                      bool                           checkGpuDdLimitation);
 
 /*! \brief Set up communication for averaging GPU wait times over domains
  *
