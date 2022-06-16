@@ -701,14 +701,10 @@ static void calcParrinelloRahmanInvMass(const PressureCouplingOptions& pressureC
  * velocities to that of the box vectors introduced by mu (see \c
  * calculateMu()).
  */
-static void calculateM(const matrix box, const matrix invbox, const matrix boxv, tensor M)
+static void calculateM(const matrix invbox, const matrix boxv, tensor M)
 {
-    tensor temp1, temp2;
-    // M = box^-1 * boxv * b' * box^-1'
-    // (Note that apostrophes denote transposition)
-    mtmul(boxv, box, temp1);
-    mmul(invbox, temp1, temp2);
-    mtmul(temp2, invbox, M);
+    // M = box^-1 * boxv
+    mmul(invbox, boxv, M);
 }
 
 /*! \brief Calculate the mu tensor for Parrinello-Rahman pressure coupling
@@ -752,7 +748,7 @@ void init_parrinellorahman(const PressureCouplingOptions& pressureCouplingOption
     tensor invbox;
     gmx::invertBoxMatrix(box, invbox);
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
-    calculateM(box, invbox, boxv, M);
+    calculateM(invbox, boxv, M);
     calculateMu(pressureCouplingOptions, deform, box_rel, box, invbox, boxv, couplingTimePeriod, mu);
 }
 
@@ -912,7 +908,7 @@ void parrinellorahman_pcoupl(const gmx::MDLogger&           mdlog,
     // accumulated.
     preserveBoxShape(pressureCouplingOptions, deform, box_rel, boxv);
 
-    calculateM(box, invbox, boxv, M);
+    calculateM(invbox, boxv, M);
 
     calculateMu(pressureCouplingOptions, deform, box_rel, box, invbox, boxv, couplingTimePeriod, mu);
 }
