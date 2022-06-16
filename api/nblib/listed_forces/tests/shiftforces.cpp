@@ -43,8 +43,8 @@
 
 #include "testutils/testasserts.h"
 
-#include "nblib/listed_forces/tests/listedtesthelpers.h"
-#include "nblib/pbc.hpp"
+#include "listedtesthelpers.h"
+#include "pbc.hpp"
 
 namespace nblib
 {

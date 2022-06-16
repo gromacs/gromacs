@@ -50,7 +50,8 @@
 #include "gromacs/topology/idef.h"
 
 #include "nblib/listed_forces/definitions.h"
-#include "nblib/listed_forces/traits.h"
+
+#include "traits.h"
 
 struct gmx_ffparams_t;
 

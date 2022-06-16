@@ -50,9 +50,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
-#include "nblib/pbc.hpp"
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/util/util.hpp"
+
+#include "pbc.hpp"
 
 #define NBLIB_ALWAYS_INLINE __attribute((always_inline))
 

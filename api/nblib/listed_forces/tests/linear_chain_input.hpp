@@ -45,8 +45,9 @@
 #define NBLIB_LINEAR_CHAIN_DATA_HPP
 
 #include "nblib/box.h"
-#include "nblib/topologyhelpers.h"
-#include "nblib/listed_forces/traits.h"
+
+#include "topologyhelpers.h"
+#include "listed_forces/traits.h"
 
 namespace nblib
 {

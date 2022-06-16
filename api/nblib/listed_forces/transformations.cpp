@@ -43,7 +43,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#include "nblib/listed_forces/transformations.h"
+#include "transformations.h"
 
 #include "nblib/util/util.hpp"
 

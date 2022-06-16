@@ -40,7 +40,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include "nblib/listed_forces/kernels.hpp"
+#include "listed_forces/kernels.hpp"
 
 #include "testutils/testasserts.h"
 

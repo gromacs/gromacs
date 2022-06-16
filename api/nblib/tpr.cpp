@@ -43,6 +43,8 @@
 
 #include "nblib/tpr.h"
 
+#include "listed_forces/conversionscommon.h"
+
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/listed_forces/listed_forces.h"
@@ -60,7 +62,6 @@
 #include "gromacs/utility/logger.h"
 
 #include "nblib/box.h"
-#include "nblib/listed_forces/conversionscommon.h"
 
 namespace nblib
 {

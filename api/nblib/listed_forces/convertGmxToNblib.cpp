@@ -51,7 +51,7 @@
 
 #include <memory>
 
-#include "nblib/listed_forces/conversionscommon.h"
+#include "listed_forces/conversionscommon.h"
 
 namespace nblib
 {

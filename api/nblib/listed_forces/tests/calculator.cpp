@@ -42,20 +42,19 @@
  */
 #include "gmxpre.h"
 
-// includesorter/check-source want this include here. IMO a bug
-
+#include "nblib/listed_forces/calculator.h"
 
 #include <valarray>
 
 #include <gtest/gtest.h>
 
+#include "listed_forces/dataflow.hpp"
+
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-#include "nblib/listed_forces/calculator.h"
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/listed_forces/tests/linear_chain_input.hpp"
-#include "nblib/tests/testhelpers.h"
+#include "linear_chain_input.hpp"
+#include "testhelpers.h"
 
 
 namespace nblib

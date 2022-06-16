@@ -51,12 +51,14 @@
 #include <tuple>
 #include <vector>
 
-#include "nblib/listed_forces/traits.h"
-#include "nblib/listed_forces/kernels.hpp"
-#include "nblib/util/util.hpp"
-#include "nblib/pbc.hpp"
-#include "nblib/vector.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "nblib/util/util.hpp"
+#include "nblib/vector.h"
+
+#include "listed_forces/traits.h"
+#include "listed_forces/kernels.hpp"
+#include "pbc.hpp"
 
 #define NBLIB_ALWAYS_INLINE __attribute((always_inline))
 

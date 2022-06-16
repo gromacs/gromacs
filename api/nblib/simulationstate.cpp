@@ -51,9 +51,10 @@
 #include "gromacs/utility/arrayref.h"
 
 #include "nblib/exception.h"
-#include "nblib/simulationstateimpl.h"
 #include "nblib/util/setup.h"
 #include "nblib/vector.h"
+
+#include "simulationstateimpl.h"
 
 namespace nblib
 {

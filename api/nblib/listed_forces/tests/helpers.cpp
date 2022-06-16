@@ -42,13 +42,13 @@
  */
 #include "gmxpre.h"
 
-#include "nblib/listed_forces/helpers.hpp"
+#include "listed_forces/helpers.hpp"
 
 #include <gtest/gtest.h>
 
-#include "testutils/testasserts.h"
+#include "listed_forces/traits.h"
 
-#include "nblib/listed_forces/traits.h"
+#include "testutils/testasserts.h"
 
 
 namespace nblib

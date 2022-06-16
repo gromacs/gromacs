@@ -47,8 +47,9 @@
 #include "nblib/gmxcalculatorcpu.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/simulationstate.h"
-#include "nblib/tests/testhelpers.h"
-#include "nblib/tests/testsystems.h"
+
+#include "testhelpers.h"
+#include "testsystems.h"
 
 namespace nblib
 {

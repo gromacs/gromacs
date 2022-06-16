@@ -52,9 +52,10 @@
 
 #include "nblib/exception.h"
 #include "nblib/particletype.h"
-#include "nblib/sequencing.hpp"
-#include "nblib/topologyhelpers.h"
 #include "nblib/util/util.hpp"
+
+#include "sequencing.hpp"
+#include "topologyhelpers.h"
 
 namespace nblib
 {

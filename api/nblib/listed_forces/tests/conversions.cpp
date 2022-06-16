@@ -44,14 +44,16 @@
 
 #include <gtest/gtest.h>
 
+#include "listed_forces/conversionscommon.h"
+
 #include "gromacs/topology/forcefieldparameters.h"
 
 #include "testutils/testasserts.h"
 
 #include "nblib/box.h"
-#include "nblib/listed_forces/conversionscommon.h"
-#include "nblib/listed_forces/tests/listedtesthelpers.h"
-#include "nblib/tests/testhelpers.h"
+
+#include "listedtesthelpers.h"
+#include "testhelpers.h"
 
 namespace nblib
 {

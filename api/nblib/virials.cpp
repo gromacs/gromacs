@@ -41,7 +41,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#include "nblib/virials.h"
+#include "virials.h"
 
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/utility/arrayref.h"

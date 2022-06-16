@@ -43,7 +43,7 @@
 
 #include "nblib/util/traits.hpp"
 
-#include "nblib/tests/testhelpers.h"
+#include "testhelpers.h"
 
 namespace nblib
 {

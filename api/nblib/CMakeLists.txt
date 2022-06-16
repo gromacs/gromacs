@@ -99,7 +99,7 @@ gmx_target_compile_options(nblib)
 target_link_libraries(nblib PRIVATE libgromacs)
 target_include_directories(nblib PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/api>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                            $<INSTALL_INTERFACE:include>)
 target_link_libraries(nblib PRIVATE common)
 target_link_libraries(nblib PRIVATE

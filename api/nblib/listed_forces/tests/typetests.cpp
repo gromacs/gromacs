@@ -40,14 +40,15 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "listed_forces/dataflow.hpp"
+#include "listed_forces/tests/listedtesthelpers.h"
+
 #include "gromacs/utility/arrayref.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-#include "nblib/listed_forces/dataflow.hpp"
-#include "nblib/listed_forces/tests/listedtesthelpers.h"
-#include "nblib/tests/testhelpers.h"
+#include "testhelpers.h"
 
 namespace nblib
 {

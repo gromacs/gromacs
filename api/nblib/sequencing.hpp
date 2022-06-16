@@ -53,10 +53,11 @@
 #include <vector>
 
 #include "gromacs/utility/listoflists.h"
-#include "nblib/molecules.h"
 
-#include "nblib/listed_forces/transformations.h"
+#include "nblib/molecules.h"
 #include "nblib/particlesequencer.h"
+
+#include "listed_forces/transformations.h"
 
 namespace nblib
 {

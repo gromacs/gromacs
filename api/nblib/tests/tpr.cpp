@@ -52,8 +52,9 @@
 #include "programs/mdrun/tests/moduletest.h"
 
 #include "nblib/gmxcalculatorcpu.h"
-#include "nblib/tests/testhelpers.h"
-#include "nblib/tests/testsystems.h"
+
+#include "testhelpers.h"
+#include "testsystems.h"
 
 namespace nblib
 {

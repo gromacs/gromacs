@@ -53,13 +53,14 @@
 #include "gromacs/utility/range.h"
 
 #include "nblib/exception.h"
-#include "nblib/gmxbackenddata.h"
 #include "nblib/nbnxmsetuphelpers.h"
-#include "nblib/pbc.hpp"
-#include "nblib/systemdescription.h"
 #include "nblib/topology.h"
 #include "nblib/tpr.h"
-#include "nblib/virials.h"
+
+#include "gmxbackenddata.h"
+#include "pbc.hpp"
+#include "systemdescription.h"
+#include "virials.h"
 
 namespace nblib
 {
