@@ -20,6 +20,7 @@ admin/*.sh                              filter=copyright
 admin/git-pre-commit                    filter=copyright
 # Exceptions: files to exclude
 *.pc.cmakein                            !filter
+api/docs/Doxyfile*                      -filter -copyright
 cmake/CheckC*CompilerFlag.cmake         !filter
 cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
@@ -45,8 +46,6 @@ src/gromacs/selection/parser.cpp        -filter -gmx-doxygen
 src/gromacs/selection/parser.h          -filter -gmx-doxygen
 src/gromacs/selection/scanner.cpp       -filter -gmx-doxygen
 src/gromacs/selection/scanner_flex.h    -filter
-src/api/cpp/*cpp                        filter=clangformat
-src/api/cpp/tests/*cpp                  filter=clangformat
 *.eps                                   binary
 *.jpg                                   binary
 *.svg                                   binary
