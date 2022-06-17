@@ -1631,7 +1631,9 @@ std::string getCoolQuote()
         { "Numbers have life; they’re not just symbols on paper.", "Shakuntala Devi" },
         { "Not everyone is capable of madness; and of those lucky enough to be capable, not many "
           "have the courage for it.",
-          "August Strindberg" }
+          "August Strindberg" },
+        { "The historical meaning of QM/MM: Quanto Mangi, Mamma Mia!",
+          "Attilio Vittorio Vargiu, at BioExcel 2022 Summer School in Sardinia" }
     };
 
     if (beCool())
