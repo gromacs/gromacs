@@ -66,16 +66,13 @@ std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
 {
     const int        stride         = 1 + NRAL(F_CONSTR);
     const int        numConstraints = iatoms.ssize() / stride;
-    std::vector<int> numCoupledConstraints(numConstraints, -1);
+    std::vector<int> numCoupledConstraints(numConstraints);
     for (int c = 0; c < numConstraints; c++)
     {
-        const int a1 = iatoms[stride * c + 1];
-        const int a2 = iatoms[stride * c + 2];
-        if (numCoupledConstraints[c] == -1)
-        {
-            numCoupledConstraints[c] = countCoupled(a1, numCoupledConstraints, atomsAdjacencyList)
-                                       + countCoupled(a2, numCoupledConstraints, atomsAdjacencyList);
-        }
+        const int a1             = iatoms[stride * c + 1];
+        const int a2             = iatoms[stride * c + 2];
+        numCoupledConstraints[c] = countCoupled(a1, numCoupledConstraints, atomsAdjacencyList)
+                                   + countCoupled(a2, numCoupledConstraints, atomsAdjacencyList);
     }
 
     return numCoupledConstraints;
