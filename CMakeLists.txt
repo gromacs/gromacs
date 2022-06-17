@@ -884,8 +884,6 @@ mark_as_advanced(GMX_PYTHON_PACKAGE)
 find_package(ImageMagick QUIET COMPONENTS convert)
 include(gmxTestImageMagick)
 GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
-# TODO: Resolve circular dependency between docs, gromacs, and python_packaging
-add_subdirectory(docs)
 add_subdirectory(share)
 add_subdirectory(scripts)
 add_subdirectory(api)
@@ -898,6 +896,8 @@ endif()
 if(GMX_PYTHON_PACKAGE)
     add_subdirectory(python_packaging)
 endif()
+
+add_subdirectory(docs)
 
 gmx_cpack_write_config()
 

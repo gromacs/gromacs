@@ -1,5 +1,5 @@
 PROJECT_NAME           = "GROMACS external C++ API development"
-@INCLUDE                = Doxyfile
+@INCLUDE                = Doxyfile-gmxapi0
 OUTPUT_DIRECTORY       = @GMXAPI_DEVDOC_OUTPUT@
 EXTRACT_PRIVATE        = YES
 EXTRACT_STATIC         = YES

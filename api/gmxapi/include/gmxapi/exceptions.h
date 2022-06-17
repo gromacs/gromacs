@@ -152,7 +152,7 @@ public:
  * \deprecated \brief Intended feature is not implemented (Deprecated).
  *
  * This exception is no longer used.
- * See, instead, MissingImplementationError and \issue 4337.
+ * See, instead, MissingImplementationError and \issue{4337}.
  *
  * \ingroup gmxapi_exceptions
  */
@@ -170,7 +170,7 @@ public:
  * not exist.
  *
  * \version 0.3.1
- * This exception replaces `gmxapi::NotImplementedError`. See \issue 4337.
+ * This exception replaces `gmxapi::NotImplementedError`. See \issue{4337}.
  *
  * \ingroup gmxapi_exceptions
  */
