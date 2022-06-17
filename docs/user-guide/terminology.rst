@@ -406,7 +406,7 @@ Types / Ensembles
   (See :ref:`pressure coupling <gmx-pressure>` for more on *constant* pressure).
 
 .. _slides: https://extras.csc.fi/chem/courses/gmx2007/Erik_Talks/preworkshop_tutorial_introduction.pdf
-.. _video:  http://tv.funet.fi/medar/showRecordingInfo.do?id=/metadata/fi/csc/courses/gromacs_workshop_2007/IntroductiontoMolecularSimulationandGromacs.xml
+.. _video:  https://video.csc.fi/playlist/dedicated/0_7z3nas0q/0_tccn9xof
 
 .. _gmx-force-field:
 
