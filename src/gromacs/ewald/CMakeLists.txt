@@ -135,12 +135,6 @@ target_link_libraries(ewald INTERFACE
 #target_link_libraries(ewald PUBLIC legacy_api)
 #target_link_libraries(ewald PRIVATE common)
 
-# Module dependencies
-# This module convey transitive dependence on these modules.
-#target_link_libraries(ewald PUBLIC
-target_link_libraries(ewald INTERFACE
-                      #                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(ewald PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

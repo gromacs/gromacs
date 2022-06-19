@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "keyvaluetreeserializer.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
 
 #include <mutex>
 

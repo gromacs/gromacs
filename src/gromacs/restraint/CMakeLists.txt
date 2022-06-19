@@ -55,12 +55,6 @@ target_link_libraries(restraint INTERFACE
 #target_link_libraries(restraint PUBLIC legacy_api)
 #target_link_libraries(restraint PRIVATE common)
 
-# Module dependencies
-# restraint interfaces convey transitive dependence on these modules.
-#target_link_libraries(restraint PUBLIC
-target_link_libraries(restraint INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(restraint PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

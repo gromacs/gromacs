@@ -35,7 +35,7 @@
 
 #include "gmxpre.h"
 
-#include "compare.h"
+#include "gromacs/utility/compare.h"
 
 #include <cmath>
 #include <cstdio>

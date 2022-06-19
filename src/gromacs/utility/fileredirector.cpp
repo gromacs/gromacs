@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "fileredirector.h"
+#include "gromacs/utility/fileredirector.h"
 
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"

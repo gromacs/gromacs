@@ -55,12 +55,6 @@ target_link_libraries(imd INTERFACE
 #target_link_libraries(imd PUBLIC legacy_api)
 #target_link_libraries(imd PRIVATE common)
 
-# Module dependencies
-# imd interfaces convey transitive dependence on these modules.
-#target_link_libraries(imd PUBLIC
-target_link_libraries(imd INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(imd PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "basenetwork.h"
+#include "gromacs/utility/basenetwork.h"
 
 #include "config.h"
 

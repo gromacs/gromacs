@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "keyvaluetree.h"
+#include "gromacs/utility/keyvaluetree.h"
 
 #include <string>
 #include <vector>

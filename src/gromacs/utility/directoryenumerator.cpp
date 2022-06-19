@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "directoryenumerator.h"
+#include "gromacs/utility/directoryenumerator.h"
 
 #include "config.h"
 

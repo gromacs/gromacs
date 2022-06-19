@@ -55,12 +55,6 @@ target_link_libraries(timing INTERFACE
 #target_link_libraries(timing PUBLIC legacy_api)
 #target_link_libraries(timing PRIVATE common)
 
-# Module dependencies
-# timing interfaces convey transitive dependence on these modules.
-#target_link_libraries(timing PUBLIC
-target_link_libraries(timing INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(timing PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

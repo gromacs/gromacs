@@ -58,12 +58,6 @@ target_link_libraries(math INTERFACE
 #target_link_libraries(math PUBLIC legacy_api)
 #target_link_libraries(math PRIVATE common)
 
-# Module dependencies
-# fileio interfaces convey transitive dependence on these modules.
-#target_link_libraries(math PUBLIC
-target_link_libraries(math INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(math PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

@@ -56,12 +56,6 @@ target_link_libraries(analysisdata INTERFACE
 #target_link_libraries(analysisdata PUBLIC legacy_api)
 #target_link_libraries(analysisdata PRIVATE common)
 
-# Module dependencies
-# analysisdata interfaces convey transitive dependence on these modules.
-#target_link_libraries(analysisdata PUBLIC
-target_link_libraries(analysisdata INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(analysisdata PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

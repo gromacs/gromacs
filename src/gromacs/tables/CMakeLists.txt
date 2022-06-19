@@ -55,12 +55,6 @@ target_link_libraries(tables INTERFACE
 #target_link_libraries(tables PUBLIC legacy_api)
 #target_link_libraries(tables PRIVATE common)
 
-# Module dependencies
-# tables interfaces convey transitive dependence on these modules.
-#target_link_libraries(tables PUBLIC
-target_link_libraries(tables INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(tables PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

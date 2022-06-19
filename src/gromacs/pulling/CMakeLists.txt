@@ -55,12 +55,6 @@ target_link_libraries(pulling INTERFACE
 #target_link_libraries(pulling PUBLIC legacy_api)
 #target_link_libraries(pulling PRIVATE common)
 
-# Module dependencies
-# pulling interfaces convey transitive dependence on these modules.
-#target_link_libraries(pulling PUBLIC
-target_link_libraries(pulling INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(pulling PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

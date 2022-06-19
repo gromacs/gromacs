@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "alignedallocator.h"
+#include "gromacs/utility/alignedallocator.h"
 
 #include "config.h"
 

@@ -56,12 +56,6 @@ target_link_libraries(essentialdynamics INTERFACE
 #target_link_libraries(fileio PUBLIC legacy_api)
 #target_link_libraries(fileio PRIVATE common)
 
-# Module dependencies
-# fileio interfaces convey transitive dependence on these modules.
-#target_link_libraries(essentialdynamics PUBLIC
-target_link_libraries(essentialdynamics INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(essentialdynamics PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

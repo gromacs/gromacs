@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "inmemoryserializer.h"
+#include "gromacs/utility/inmemoryserializer.h"
 
 #include "config.h"
 

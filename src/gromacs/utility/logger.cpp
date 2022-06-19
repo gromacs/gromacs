@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "logger.h"
+#include "gromacs/utility/logger.h"
 
 #include <cstdarg>
 

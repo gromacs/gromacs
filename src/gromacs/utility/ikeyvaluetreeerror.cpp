@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "ikeyvaluetreeerror.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"

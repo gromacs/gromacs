@@ -54,13 +54,6 @@ target_link_libraries(topology INTERFACE
 #target_link_libraries(topology PUBLIC legacy_api)
 #target_link_libraries(topology PRIVATE common)
 
-# Module dependencies
-# topology interfaces convey transitive dependence on these modules.
-#target_link_libraries(topology PUBLIC
-target_link_libraries(topology INTERFACE
-                      utility
-        )
-
 if (BUILD_TESTING)
 	add_subdirectory(tests)
 endif()

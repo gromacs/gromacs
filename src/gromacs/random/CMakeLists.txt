@@ -55,12 +55,6 @@ target_link_libraries(random INTERFACE
 #target_link_libraries(random PUBLIC legacy_api)
 #target_link_libraries(random PRIVATE common)
 
-# Module dependencies
-# random interfaces convey transitive dependence on these modules.
-#target_link_libraries(random PUBLIC
-target_link_libraries(random INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(random PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

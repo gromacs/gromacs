@@ -55,12 +55,6 @@ target_link_libraries(applied_forces INTERFACE
 #target_link_libraries(applied_forces PUBLIC legacy_api)
 #target_link_libraries(applied_forces PRIVATE common)
 
-# Module dependencies
-# This module convey transitive dependence on these modules.
-#target_link_libraries(applied_forces PUBLIC
-target_link_libraries(applied_forces INTERFACE
-                      #                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(applied_forces PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

@@ -62,12 +62,6 @@ target_link_libraries(domdec INTERFACE
 #target_link_libraries(domdec PUBLIC legacy_api)
 #target_link_libraries(domdec PRIVATE common)
 
-# Module dependencies
-# domdec interfaces convey transitive dependence on these modules.
-#target_link_libraries(domdec PUBLIC
-target_link_libraries(domdec INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(domdec PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

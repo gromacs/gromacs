@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "fatalerror.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "config.h"
 

@@ -55,12 +55,6 @@ target_link_libraries(trajectory INTERFACE
 #target_link_libraries(trajectory PUBLIC legacy_api)
 #target_link_libraries(trajectory PRIVATE common)
 
-# Module dependencies
-# trajectory interfaces convey transitive dependence on these modules.
-#target_link_libraries(trajectory PUBLIC
-target_link_libraries(trajectory INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(trajectory PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

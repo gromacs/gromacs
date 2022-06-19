@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "textreader.h"
+#include "gromacs/utility/textreader.h"
 
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"

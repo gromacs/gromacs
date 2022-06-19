@@ -60,12 +60,6 @@ target_include_directories(options PUBLIC
 target_link_libraries(options PUBLIC legacy_api)
 target_link_libraries(options PRIVATE common)
 
-# Module dependencies
-# options interfaces convey transitive dependence on these modules.
-target_link_libraries(options PUBLIC
-                      utility
-		)
-
 if (BUILD_SHARED_LIBS)  
     set_target_properties(options PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()

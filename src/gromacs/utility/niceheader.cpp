@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "niceheader.h"
+#include "gromacs/utility/niceheader.h"
 
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"

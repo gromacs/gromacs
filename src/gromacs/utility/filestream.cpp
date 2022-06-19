@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "filestream.h"
+#include "gromacs/utility/filestream.h"
 
 #include "config.h"
 

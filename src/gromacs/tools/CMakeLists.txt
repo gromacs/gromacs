@@ -55,12 +55,6 @@ target_link_libraries(tools INTERFACE
 #target_link_libraries(tools PUBLIC legacy_api)
 #target_link_libraries(tools PRIVATE common)
 
-# Module dependencies
-# tools interfaces convey transitive dependence on these modules.
-#target_link_libraries(tools PUBLIC
-target_link_libraries(tools INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(tools PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

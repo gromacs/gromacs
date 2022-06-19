@@ -145,12 +145,6 @@ target_link_libraries(fft INTERFACE
 #target_link_libraries(fft PUBLIC legacy_api)
 #target_link_libraries(fft PRIVATE common)
 
-# Module dependencies
-# This module convey transitive dependence on these modules.
-#target_link_libraries(fft PUBLIC
-target_link_libraries(fft INTERFACE
-                      #                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(fft PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

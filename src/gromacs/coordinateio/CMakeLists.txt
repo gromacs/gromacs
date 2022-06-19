@@ -55,12 +55,6 @@ target_link_libraries(coordinateio INTERFACE
 #target_link_libraries(coordinateio PUBLIC legacy_api)
 #target_link_libraries(coordinateio PRIVATE common)
 
-# Module dependencies
-# coordinateio interfaces convey transitive dependence on these modules.
-#target_link_libraries(coordinateio PUBLIC
-target_link_libraries(coordinateio INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(coordinateio PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

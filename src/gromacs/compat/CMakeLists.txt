@@ -50,12 +50,6 @@ target_link_libraries(compat INTERFACE
 #target_link_libraries(compat PUBLIC legacy_api)
 #target_link_libraries(compat PRIVATE common)
 
-# Module dependencies
-# compat interfaces convey transitive dependence on these modules.
-#target_link_libraries(compat PUBLIC
-target_link_libraries(compat INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(compat PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

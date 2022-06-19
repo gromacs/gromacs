@@ -65,12 +65,6 @@ target_link_libraries(mimic INTERFACE
 #target_link_libraries(mimic PUBLIC legacy_api)
 #target_link_libraries(mimic PRIVATE common)
 
-# Module dependencies
-# mimic interfaces convey transitive dependence on these modules.
-#target_link_libraries(mimic PUBLIC
-target_link_libraries(mimic INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(mimic PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

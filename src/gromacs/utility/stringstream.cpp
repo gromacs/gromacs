@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "stringstream.h"
+#include "gromacs/utility/stringstream.h"
 
 #include <string>
 

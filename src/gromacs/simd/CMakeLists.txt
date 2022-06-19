@@ -48,12 +48,6 @@ target_link_libraries(simd INTERFACE
 #target_link_libraries(simd PUBLIC legacy_api)
 #target_link_libraries(simd PRIVATE common)
 
-# Module dependencies
-# simd interfaces convey transitive dependence on these modules.
-#target_link_libraries(simd PUBLIC
-target_link_libraries(simd INTERFACE
-                      utility
-                      )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

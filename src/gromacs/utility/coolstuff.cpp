@@ -38,7 +38,7 @@
  */
 #include "gmxpre.h"
 
-#include "coolstuff.h"
+#include "gromacs/utility/coolstuff.h"
 
 #include "config.h"
 

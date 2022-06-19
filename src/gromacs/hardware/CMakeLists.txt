@@ -83,17 +83,13 @@ target_include_directories(hardware INTERFACE
 target_link_libraries(hardware INTERFACE
                       legacy_api
                       )
+# The interface conveys transitive dependence on other module(s)
+target_link_libraries(hardware INTERFACE utility)
 
 # TODO: when hardware is an OBJECT target
 #target_link_libraries(hardware PUBLIC legacy_api)
 #target_link_libraries(hardware PRIVATE common)
 
-# Module dependencies
-# hardware interfaces convey transitive dependence on these modules.
-#target_link_libraries(hardware PUBLIC
-target_link_libraries(hardware INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(hardware PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

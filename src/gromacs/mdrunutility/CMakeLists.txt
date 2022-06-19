@@ -62,12 +62,6 @@ target_link_libraries(mdrunutility INTERFACE
 #target_link_libraries(mdrunutility PUBLIC legacy_api)
 #target_link_libraries(mdrunutility PRIVATE common)
 
-# Module dependencies
-# mdrunutility interfaces convey transitive dependence on these modules.
-#target_link_libraries(mdrunutility PUBLIC
-target_link_libraries(mdrunutility INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(mdrunutility PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

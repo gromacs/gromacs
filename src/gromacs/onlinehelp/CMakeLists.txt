@@ -55,12 +55,6 @@ target_link_libraries(onlinehelp INTERFACE
 #target_link_libraries(onlinehelp PUBLIC legacy_api)
 #target_link_libraries(onlinehelp PRIVATE common)
 
-# Module dependencies
-# onlinehelp interfaces convey transitive dependence on these modules.
-#target_link_libraries(onlinehelp PUBLIC
-target_link_libraries(onlinehelp INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(onlinehelp PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

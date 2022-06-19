@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "int64_to_int.h"
+#include "gromacs/utility/int64_to_int.h"
 
 #include <cstdio>
 

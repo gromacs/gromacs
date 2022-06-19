@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "loggerbuilder.h"
+#include "gromacs/utility/loggerbuilder.h"
 
 #include <memory>
 #include <vector>

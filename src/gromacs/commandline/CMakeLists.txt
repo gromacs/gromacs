@@ -56,12 +56,6 @@ target_link_libraries(commandline INTERFACE
 #target_link_libraries(commandline PUBLIC legacy_api)
 #target_link_libraries(commandline PRIVATE common)
 
-# Module dependencies
-# commandline interfaces convey transitive dependence on these modules.
-#target_link_libraries(commandline PUBLIC
-target_link_libraries(commandline INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(commandline PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

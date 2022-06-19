@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "textwriter.h"
+#include "gromacs/utility/textwriter.h"
 
 #include <cstring>
 

@@ -106,12 +106,6 @@ target_link_libraries(gpu_utils INTERFACE
 #target_link_libraries(gpu_utils PUBLIC legacy_api)
 #target_link_libraries(gpu_utils PRIVATE common)
 
-# Module dependencies
-# gpu_utils interfaces convey transitive dependence on these modules.
-#target_link_libraries(gpu_utils PUBLIC
-target_link_libraries(gpu_utils INTERFACE
-#                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(gpu_utils PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "sysinfo.h"
+#include "gromacs/utility/sysinfo.h"
 
 #include "config.h"
 

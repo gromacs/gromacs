@@ -67,7 +67,7 @@ else()
 endif()
 target_link_libraries(linearalgebra PRIVATE legacy_api)
 target_link_libraries(linearalgebra PRIVATE common)
-# TODO: Link specific modules.
-target_link_libraries(linearalgebra PRIVATE legacy_modules)
+# TODO: Remove `legacy_modules` once specific modules are explicitly linked.
+target_link_libraries(linearalgebra PRIVATE legacy_modules utility)
 list(APPEND libgromacs_object_library_dependencies linearalgebra)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)

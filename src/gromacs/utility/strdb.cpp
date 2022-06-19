@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "strdb.h"
+#include "gromacs/utility/strdb.h"
 
 #include <cstdio>
 #include <cstdlib>

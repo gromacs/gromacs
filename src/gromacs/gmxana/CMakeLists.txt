@@ -55,13 +55,6 @@ target_link_libraries(gmxana INTERFACE
 #target_link_libraries(gmxana PUBLIC legacy_api)
 #target_link_libraries(gmxana PRIVATE common)
 
-# Module dependencies
-# gmxana interfaces convey transitive dependence on these modules.
-#target_link_libraries(gmxana PUBLIC
-target_link_libraries(gmxana INTERFACE
-        utility
-        )
-
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

@@ -33,14 +33,14 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/txtdump.h"
+
 /* This file is completely threadsafe - please keep it that way! */
 
 #include <cstdio>
 #include <cstdlib>
 
 #include "gromacs/utility/cstringutil.h"
-
-#include "txtdump.h"
 
 int pr_indent(FILE* fp, int n)
 {

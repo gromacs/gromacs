@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "any.h"
+#include "gromacs/utility/any.h"
 
 #include <string>
 

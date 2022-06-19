@@ -55,12 +55,6 @@ target_link_libraries(trajectoryanalysis INTERFACE
 #target_link_libraries(trajectoryanalysis PUBLIC legacy_api)
 #target_link_libraries(trajectoryanalysis PRIVATE common)
 
-# Module dependencies
-# trajectoryanalysis interfaces convey transitive dependence on these modules.
-#target_link_libraries(trajectoryanalysis PUBLIC
-target_link_libraries(trajectoryanalysis INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(trajectoryanalysis PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

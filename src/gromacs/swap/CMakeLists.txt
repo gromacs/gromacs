@@ -55,12 +55,6 @@ target_link_libraries(swap INTERFACE
 #target_link_libraries(swap PUBLIC legacy_api)
 #target_link_libraries(swap PRIVATE common)
 
-# Module dependencies
-# swap interfaces convey transitive dependence on these modules.
-#target_link_libraries(swap PUBLIC
-target_link_libraries(swap INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(swap PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

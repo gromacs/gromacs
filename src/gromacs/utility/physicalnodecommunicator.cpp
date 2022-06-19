@@ -39,7 +39,7 @@
  */
 #include "gmxpre.h"
 
-#include "physicalnodecommunicator.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "config.h"
 

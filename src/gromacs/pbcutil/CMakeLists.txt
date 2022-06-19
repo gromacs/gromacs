@@ -55,12 +55,6 @@ target_link_libraries(pbcutil INTERFACE
 #target_link_libraries(pbcutil PUBLIC legacy_api)
 #target_link_libraries(pbcutil PRIVATE common)
 
-# Module dependencies
-# pbcutil interfaces convey transitive dependence on these modules.
-#target_link_libraries(pbcutil PUBLIC
-target_link_libraries(pbcutil INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(pbcutil PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.

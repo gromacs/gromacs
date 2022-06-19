@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "keyvaluetreemdpwriter.h"
+#include "gromacs/utility/keyvaluetreemdpwriter.h"
 
 #include <string>
 

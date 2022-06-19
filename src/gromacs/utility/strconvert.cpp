@@ -40,7 +40,7 @@
  */
 #include "gmxpre.h"
 
-#include "strconvert.h"
+#include "gromacs/utility/strconvert.h"
 
 #include <cerrno>
 #include <cstdlib>

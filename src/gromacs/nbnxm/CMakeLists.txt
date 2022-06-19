@@ -105,12 +105,6 @@ target_link_libraries(nbnxm INTERFACE
 #target_link_libraries(nbnxm PUBLIC legacy_api)
 #target_link_libraries(nbnxm PRIVATE common)
 
-# Module dependencies
-# nbnxm interfaces convey transitive dependence on these modules.
-#target_link_libraries(nbnxm PUBLIC
-target_link_libraries(nbnxm INTERFACE
-        utility
-        )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

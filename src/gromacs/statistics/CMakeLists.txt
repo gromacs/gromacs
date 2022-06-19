@@ -50,12 +50,6 @@ target_link_libraries(statistics INTERFACE
 #target_link_libraries(statistics PUBLIC legacy_api)
 #target_link_libraries(statistics PRIVATE common)
 
-# Module dependencies
-# statistics interfaces convey transitive dependence on these modules.
-#target_link_libraries(statistics PUBLIC
-target_link_libraries(statistics INTERFACE
-                      utility
-                      )
 # Source files have the following private module dependencies.
 #target_link_libraries(statistics PRIVATE NOTHING)
 # TODO: Explicitly link specific modules.
