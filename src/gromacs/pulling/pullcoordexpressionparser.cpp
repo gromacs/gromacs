@@ -33,16 +33,15 @@
  */
 #include "gmxpre.h"
 
-#include "pullcoordexpressionparser.h"
+#include "gromacs/pulling/pullcoordexpressionparser.h"
 
 #include "config.h"
 
+#include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "pull_internal.h"
 
 namespace gmx
 {

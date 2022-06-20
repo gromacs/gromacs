@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "pull_rotation.h"
+#include "gromacs/pulling/pull_rotation.h"
 
 #include "config.h"
 

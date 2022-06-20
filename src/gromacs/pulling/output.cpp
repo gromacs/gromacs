@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "output.h"
+#include "gromacs/pulling/output.h"
 
 #include <cstdio>
 
@@ -48,12 +48,11 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-
-#include "pull_internal.h"
 
 static std::string append_before_extension(const std::string& pathname, const std::string& to_append)
 {

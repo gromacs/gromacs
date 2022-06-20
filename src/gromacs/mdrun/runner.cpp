@@ -2033,6 +2033,7 @@ int Mdrunner::mdrunner()
         auto constr = makeConstraints(mtop,
                                       *inputrec,
                                       pull_work,
+                                      pull_work != nullptr ? pull_have_constraint(*pull_work) : false,
                                       doEssentialDynamics,
                                       fplog,
                                       cr,

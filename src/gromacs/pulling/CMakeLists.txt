@@ -32,19 +32,28 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 # Set up the module library
-add_library(pulling INTERFACE)
-file(GLOB PULLING_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${PULLING_SOURCES} PARENT_SCOPE)
+add_library(pulling OBJECT)
+target_sources(pulling PRIVATE
+        output.cpp
+        pull.cpp
+        pull_rotation.cpp
+        pullcoordexpressionparser.cpp
+        pullutil.cpp
+        transformationcoordinate.cpp)
+if (BUILD_SHARED_LIBS)
+    set_target_properties(pulling PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Source files have the following dependencies on library infrastructure.
-#target_link_libraries(pulling PRIVATE
-#                      common
-#                      legacy_modules
-#)
+target_link_libraries(pulling PRIVATE
+                      common
+                      legacy_modules
+        utility
+        muparser
+)
 
 # Public interface for modules, including dependencies and interfaces
-#target_include_directories(pulling PUBLIC
-target_include_directories(pulling INTERFACE
+target_include_directories(pulling PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(pulling PUBLIC
 target_link_libraries(pulling INTERFACE

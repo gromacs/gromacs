@@ -114,6 +114,7 @@ target_include_directories(mdlib INTERFACE
 target_link_libraries(mdlib INTERFACE
                       legacy_api
                       )
+target_link_libraries(mdlib INTERFACE pulling)
 
 # TODO: when mdlib is an OBJECT target
 #target_link_libraries(mdlib PUBLIC legacy_api)

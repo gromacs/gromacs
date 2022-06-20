@@ -47,7 +47,6 @@
 
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/pulling/pull.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 
@@ -97,6 +96,7 @@ template<typename... Args>
 std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t& mtop,
                                              const t_inputrec& ir,
                                              pull_t*           pull_work,
+                                             bool              havePullConstraintsWork,
                                              bool              doEssentialDynamics,
                                              Args&&... args)
 {
@@ -105,7 +105,7 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t& mtop,
     GMX_RELEASE_ASSERT(!ir.bPull || pull_work != nullptr,
                        "When COM pulling is active, it must be initialized before constraints are "
                        "initialized");
-    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(*pull_work);
+    bool doPullingWithConstraints = ir.bPull && havePullConstraintsWork;
     if (numConstraints + numSettles == 0 && !doPullingWithConstraints && !doEssentialDynamics)
     {
         // No work, so don't make a Constraints object.

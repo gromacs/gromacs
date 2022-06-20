@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "pull.h"
+#include "gromacs/pulling/pull.h"
 
 #include "config.h"
 
@@ -65,6 +65,8 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pulling/pull_internal.h"
+#include "gromacs/pulling/transformationcoordinate.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -79,9 +81,6 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "pull_internal.h"
-#include "transformationcoordinate.h"
 
 namespace gmx
 {
