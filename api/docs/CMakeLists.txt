@@ -43,8 +43,8 @@ file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/docs/api-dev" GMXAPI_DEVDOC_OUTPUT)
 file(MAKE_DIRECTORY ${GMXAPI_USERDOC_OUTPUT})
 file(MAKE_DIRECTORY ${GMXAPI_DEVDOC_OUTPUT})
 
-get_target_property(GMXAPI_SOURCE_DIR gmxapi SOURCE_DIR)
-get_target_property(GMXAPI_BINARY_DIR gmxapi BINARY_DIR)
+set(GMXAPI_SOURCE_DIR ${CMAKE_SOURCE_DIR}/api/gmxapi)
+set(GMXAPI_BINARY_DIR ${CMAKE_BINARY_DIR}/api/gmxapi)
 
 # Use GMXAPI_PUBLIC_HEADERS to populate source files. Make a local copy with
 # the list converted to a space-delimited string.
