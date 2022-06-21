@@ -1633,7 +1633,39 @@ std::string getCoolQuote()
           "have the courage for it.",
           "August Strindberg" },
         { "The historical meaning of QM/MM: Quanto Mangi, Mamma Mia!",
-          "Attilio Vittorio Vargiu, at BioExcel 2022 Summer School in Sardinia" }
+          "Attilio Vittorio Vargiu, at BioExcel 2022 Summer School in Sardinia" },
+        { "I wanted to have a real language where programmers could write real programs, "
+          "and see whether they would find the idea of data abstraction at all useful.",
+          "Barbara Liskov" },
+        { "I never thought about breaking barriers, I was just interested in what I was doing "
+          "and kept going.",
+          "Barbara Liskov" },
+        { "My husband was on the Internet everyday when I got the Turing award, and one day "
+          "he saw a quote by someone who said 'Why did she get the award? Everyone already knows "
+          "this!'",
+          "Barbara Liskov" },
+        { "When I got my first job as a programmer there were quite a number of women doing "
+          "programming "
+          "because there was no computer science education and people were hired from many "
+          "different "
+          "fields if it seemed like they could do the work. It was better then, probably, in terms "
+          "of "
+          "proportions, not necessarily in women being paid as much as men and so forth, but "
+          "definitely, "
+          "there were women around.",
+          "Barbara Liskov" },
+        { "Prior to 1965 there were none, and after 1965 there was a nun.",
+          "Sister Mary Kenneth Keller regarding women with PhDs in computer science" },
+        { "We're having an information explosion, among others, and it's certainly obvious that "
+          "information is of no use unless it's available.",
+          "Sister Mary Kenneth Keller" },
+        { "For the first time we can now mechanically simulate the cognitive process. We can "
+          "make studies in artificial intelligence. Beyond that, this mechanism can be used to "
+          "assist "
+          "humans in learning. As we are going to have more mature students in greater numbers as "
+          "time "
+          "goes on, this type of teaching will probably be increasingly important.",
+          "Sister Mary Kenneth Keller" }
     };
 
     if (beCool())
