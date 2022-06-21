@@ -44,7 +44,7 @@ gmx_add_unit_test_library(nblib_test_infrastructure
     )
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 target_include_directories(nblib_test_infrastructure PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(nblib_test_infrastructure PUBLIC nblib legacy_api)
+target_link_libraries(nblib_test_infrastructure PUBLIC nblib legacy_api simd)
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")

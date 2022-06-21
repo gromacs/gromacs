@@ -31,23 +31,21 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-add_library(simd INTERFACE)
-file(GLOB SIMD_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SIMD_SOURCES} PARENT_SCOPE)
+add_library(simd OBJECT)
+target_sources(simd PRIVATE support.cpp)
+if (BUILD_SHARED_LIBS)
+    set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Public interface for modules, including dependencies and interfaces
-#target_include_directories(simd PUBLIC
-target_include_directories(simd INTERFACE
+target_include_directories(simd PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-#target_link_libraries(simd PUBLIC
-target_link_libraries(simd INTERFACE
-                      legacy_api
+
+target_link_libraries(simd PRIVATE
+                      common
+                      legacy_modules
+                      utility
                       )
-
-# TODO: when simd is an OBJECT target
-#target_link_libraries(simd PUBLIC legacy_api)
-#target_link_libraries(simd PRIVATE common)
-
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
