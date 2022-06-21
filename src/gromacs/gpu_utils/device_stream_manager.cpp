@@ -124,7 +124,17 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-DeviceStreamManager::Impl::~Impl() = default;
+DeviceStreamManager::Impl::~Impl()
+{
+    // Wait for all the tasks to complete before destroying the streams. See #4519.
+    for (const auto& stream : streams_)
+    {
+        if (stream)
+        {
+            stream->synchronize();
+        }
+    }
+}
 
 // DeviceStreamManager
 DeviceStreamManager::DeviceStreamManager(const DeviceInformation& deviceInfo,

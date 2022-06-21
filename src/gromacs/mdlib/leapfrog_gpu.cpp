@@ -150,6 +150,8 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
 
 LeapFrogGpu::~LeapFrogGpu()
 {
+    // Wait for all the tasks to complete before freeing the memory. See #4519.
+    deviceStream_.synchronize();
     freeDeviceBuffer(&d_inverseMasses_);
 }
 

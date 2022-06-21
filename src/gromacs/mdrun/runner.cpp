@@ -2163,8 +2163,6 @@ int Mdrunner::mdrunner()
                pmedata,
                EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
 
-
-    deviceStreamManager.reset(nullptr);
     // Free PME data
     if (pmedata)
     {
@@ -2176,6 +2174,7 @@ int Mdrunner::mdrunner()
     // before we destroy the GPU context(s)
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
+    // Note: the current solution does not work when an exception gets thrown.
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     localStateInstance.reset(nullptr);
@@ -2185,6 +2184,9 @@ int Mdrunner::mdrunner()
     sfree(disresdata);
     done_domdec(cr->dd);
     cr->dd = nullptr;
+
+    // Destroy streams after all the structures using them
+    deviceStreamManager.reset(nullptr);
 
     if (!hwinfo_->deviceInfoList.empty())
     {

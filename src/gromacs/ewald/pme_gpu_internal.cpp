@@ -1118,6 +1118,9 @@ void pme_gpu_reinit(gmx_pme_t*           pme,
 
 void pme_gpu_destroy(PmeGpu* pmeGpu)
 {
+    // Wait for all the tasks to complete before freeing the memory. See #4519.
+    pmeGpu->archSpecific->pmeStream_.synchronize();
+
     /* Free lots of data */
     pme_gpu_free_energy_virial(pmeGpu);
     pme_gpu_free_bspline_values(pmeGpu);
