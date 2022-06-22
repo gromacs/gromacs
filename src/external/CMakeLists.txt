@@ -56,20 +56,20 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         PRIVATE
             _GNU_SOURCE=1
             GTEST_CAN_STREAM_RESULTS=0
-            GTEST_CREATE_SHARED_LIBRARY=1
         PUBLIC
             GTEST_LANG_CXX11
-        INTERFACE
-            GTEST_LINKED_AS_SHARED_LIBRARY=1
             )
-    target_compile_definitions(gtest
-        PRIVATE
-            GTEST_CREATE_SHARED_LIBRARY=1
-        PUBLIC
-            GTEST_LANG_CXX11
-        INTERFACE
-            GTEST_LINKED_AS_SHARED_LIBRARY=1
-            )
+    target_compile_definitions(gtest PUBLIC GTEST_LANG_CXX11)
+    if(BUILD_SHARED_LIBS)
+        foreach(_lib gmock gtest)
+            target_compile_definitions(${_lib}
+                PRIVATE
+                    GTEST_CREATE_SHARED_LIBRARY=1
+                INTERFACE
+                    GTEST_LINKED_AS_SHARED_LIBRARY=1
+                )
+        endforeach()
+    endif()
     if (CYGWIN)
         # Ensure GoogleTest and things that use it can find
         # POSIX things needed by GoogleTest
