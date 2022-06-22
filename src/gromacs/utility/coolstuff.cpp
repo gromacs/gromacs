@@ -1665,7 +1665,30 @@ std::string getCoolQuote()
           "humans in learning. As we are going to have more mature students in greater numbers as "
           "time "
           "goes on, this type of teaching will probably be increasingly important.",
-          "Sister Mary Kenneth Keller" }
+          "Sister Mary Kenneth Keller" },
+        { "Why would I pay GitHub $100/year for an AI to tell me what code to write when men "
+          "do it for free?",
+          "Safia Abdalla" },
+        { "So can we think of the canonical ensemble sort of like if you ran the same "
+          "season of temptation island over and over again and took statistics about how many "
+          "times each person hooks up with each other person?",
+          "Teddy Press" },
+        { "The biggest lie in science is 'data and code available upon request'", "Michael Eisen" },
+        { "What do you want out of life?", "Jack Kerouac, On The Road" },
+        { "Developer accused of unreadable code refuses to comment", "Molly Struve" },
+        { "It's hard to ignore 12 orders of magnitude", "John Urbanic" },
+        { "Success is going from one failure to another without loss of enthusiasm",
+          "Winston Churchill" },
+        { "Apologies to the astrophysics student I met at a party years ago. When you told me "
+          "how many hours a day you used 4chan and how much you love it, I gave you a funny "
+          "look and walked away. Now, a decade later, I realize you were talking about Fortran.",
+          "Anonymous" },
+        { "The only place success comes before work is in the dictionary", "Vince Lombardi" },
+        { "They call me 007: 0 pull requests reviewed, 0 features completed, 7 bugs created.",
+          "Anonymous" },
+        { "Optimist: The glass is 1/2 full. Pessimist: The glass is 1/2 empty. "
+          "Excel: The glass is January 2nd.",
+          "John Feminella" }
     };
 
     if (beCool())
