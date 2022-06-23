@@ -62,7 +62,7 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
 {
     // Create streams, events and flags to manage pushing of force buffers to remote PP ranks
     ppCommManagers_.reserve(ppRanks.size());
-    for (const auto& ppRank : ppRanks)
+    for (size_t i = 0; i != ppRanks.size(); ++i)
     {
         ppCommManagers_.emplace_back(PpForceCommManager{
                 std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false),
