@@ -542,8 +542,10 @@ void StatePropagatorDataGpu::Impl::clearForcesOnGpu(AtomLocality atomLocality, G
     GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
     DeviceStream* deviceStream = memsetStream_.get();
 
-    GMX_ASSERT(dependency != nullptr, "Dependency is not valid for clearing forces.");
-    dependency->enqueueWaitEvent(*deviceStream);
+    if (dependency != nullptr)
+    {
+        dependency->enqueueWaitEvent(*deviceStream);
+    }
 
     GMX_ASSERT(deviceStream != nullptr,
                "No stream is valid for clearing forces with given atom locality.");

@@ -1389,16 +1389,21 @@ void do_force(FILE*                               fplog,
         }
     }
 
+    auto* localXReadyOnDevice =
+            (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps || simulationWork.useGpuUpdate)
+                    ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local, simulationWork, stepWork)
+                    : nullptr;
+
     if (stepWork.useGpuFHalo && !runScheduleWork->domainWork.haveCpuLocalForceWork && !stepWork.doNeighborSearch)
     {
-        // GPU Force halo exchange will set a subset of local atoms with remote non-local data
+        // GPU Force halo exchange will set a subset of local atoms with remote non-local data.
         // First clear local portion of force array, so that untouched atoms are zero.
         // The dependency for this is that forces from previous timestep have been consumed,
-        // which is satisfied when getCoordinatesReadyOnDeviceEvent has been marked.
-        // On NS steps, the buffer could have already cleared in stateGpu->reinit.
-        stateGpu->clearForcesOnGpu(AtomLocality::Local,
-                                   stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                           AtomLocality::Local, simulationWork, stepWork));
+        // which is satisfied when localXReadyOnDevice has been marked for GPU update case.
+        // For CPU update, the forces are consumed by the beginning of the step, so no extra sync needed.
+        // On NS steps, the buffer is cleared in stateGpu->reinit, no need to clear it twice.
+        GpuEventSynchronizer* dependency = simulationWork.useGpuUpdate ? localXReadyOnDevice : nullptr;
+        stateGpu->clearForcesOnGpu(AtomLocality::Local, dependency);
     }
 
     /* At a search step we need to start the first balancing region
@@ -1440,11 +1445,6 @@ void do_force(FILE*                               fplog,
             simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
     const bool reinitGpuPmePpComms =
             simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
-
-    auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || simulationWork.useGpuXBufferOps)
-                                        ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                AtomLocality::Local, simulationWork, stepWork)
-                                        : nullptr;
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
                        == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
