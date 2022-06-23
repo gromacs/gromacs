@@ -46,7 +46,7 @@ External material
 ^^^^^^^^^^^^^^^^^
 
 * `Membrane simulations slides <https://extras.csc.fi/chem/courses/gmx2007/Erik_Talks/membrane_simulations.pdf>`_ ,
-  `membrane simulations video <http://tv.funet.fi/medar/showRecordingInfo.do?id=/metadata/fi/csc/courses/gromacs_workshop_2007/SpeedingupSimulationsAlgorithmsApplications.xml>`_ - (Erik Lindahl).
+  `membrane simulations video <https://video.csc.fi/playlist/dedicated/0_7z3nas0q/0_0tr9yd2p>`_ - (Erik Lindahl).
 * |Gromacs| `tutorial for membrane protein simulations
   <http://www.mdtutorials.com/gmx/membrane_protein/index.html>`__ - designed to demonstrate what sorts of
   questions and problems occur when simulating proteins that are embedded within a lipid bilayer.
