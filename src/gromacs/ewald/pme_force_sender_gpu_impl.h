@@ -69,6 +69,25 @@ typedef struct CacheLineAlignedFlag
     alignas(hardware_destructive_interference_size) bool flag;
 } CacheLineAlignedFlag;
 
+/*! \internal
+ *  \brief Object to manage communications with a specific PP rank
+ */
+struct PpForceCommManager
+{
+    //! Stream used communication with remote PP rank
+    std::unique_ptr<DeviceStream> stream;
+    //! Event used for manging sync with remote PP rank
+    std::unique_ptr<GpuEventSynchronizer> event;
+    //! Flag to track when PP transfer event has been recorded
+    std::unique_ptr<std::atomic<CacheLineAlignedFlag>> eventRecorded;
+    //! Address of local force buffer to send to remote PP rank
+    DeviceBuffer<RVec> localForcePtr;
+    //! CPU force buffer pointer for remote PP rank
+    float3* pmeRemoteCpuForcePtr;
+    //! GPU force buffer pointers for remote PP rank
+    float3* pmeRemoteGpuForcePtr;
+};
+
 class PmeForceSenderGpu::Impl
 {
 
@@ -117,20 +136,8 @@ private:
     MPI_Comm comm_;
     //! list of PP ranks
     gmx::ArrayRef<PpRanks> ppRanks_;
-    //! Streams used for pushing force to remote PP ranks
-    std::vector<std::unique_ptr<DeviceStream>> ppCommStream_;
-    //! Events used for manging sync with remote PP ranks
-    std::vector<std::unique_ptr<GpuEventSynchronizer>> ppCommEvent_;
-    //! Vector of flags to track when PP transfer events have been recorded
-    std::vector<std::atomic<CacheLineAlignedFlag>> ppCommEventRecorded_;
-    //! Addresses of local force buffers to send to remote PP ranks
-    std::vector<DeviceBuffer<RVec>> localForcePtr_;
     //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
-    //! Vector of CPU force buffer pointers for multiple remote PP tasks
-    std::vector<float3*> pmeRemoteCpuForcePtr_;
-    //! Vector of GPU force buffer pointers for multiple remote PP tasks
-    std::vector<float3*> pmeRemoteGpuForcePtr_;
     //! Whether GPU to CPU communication should be staged as GPU to
     //! GPU via P2P cudaMemcpy, then local D2H, for thread-MPI This
     //! may be beneficial when using servers with direct links between
@@ -138,6 +145,8 @@ private:
     //! for PCIe-only servers or for low atom counts (for which
     //! latency is important).
     bool stageThreadMpiGpuCpuComm_ = false;
+    //! Communication manager objects corresponding to multiple receiving PP ranks
+    std::vector<PpForceCommManager> ppCommManagers_;
 };
 
 } // namespace gmx

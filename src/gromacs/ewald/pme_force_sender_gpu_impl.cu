@@ -58,26 +58,19 @@ PmeForceSenderGpu::Impl::Impl(GpuEventSynchronizer*  pmeForcesReady,
                               MPI_Comm               comm,
                               const DeviceContext&   deviceContext,
                               gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeForcesReady_(pmeForcesReady),
-    comm_(comm),
-    ppRanks_(ppRanks),
-    ppCommStream_(ppRanks.size()),
-    ppCommEvent_(ppRanks.size()),
-    ppCommEventRecorded_(ppRanks.size()),
-    deviceContext_(deviceContext),
-    pmeRemoteCpuForcePtr_(ppRanks.size()),
-    pmeRemoteGpuForcePtr_(ppRanks.size())
+    pmeForcesReady_(pmeForcesReady), comm_(comm), ppRanks_(ppRanks), deviceContext_(deviceContext)
 {
-    // Create streams and events to manage pushing of force buffers to remote PP ranks
-    std::unique_ptr<DeviceStream>         stream;
-    std::unique_ptr<GpuEventSynchronizer> event;
-    size_t                                i = 0;
-    for (i = 0; i < ppRanks_.size(); i++)
+    // Create streams, events and flags to manage pushing of force buffers to remote PP ranks
+    ppCommManagers_.reserve(ppRanks.size());
+    for (const auto& ppRank : ppRanks)
     {
-        stream = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false);
-        ppCommStream_[i] = std::move(stream);
-        event            = std::make_unique<GpuEventSynchronizer>();
-        ppCommEvent_[i]  = std::move(event);
+        ppCommManagers_.emplace_back(PpForceCommManager{
+                std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::High, false),
+                std::make_unique<GpuEventSynchronizer>(),
+                std::make_unique<std::atomic<CacheLineAlignedFlag>>(),
+                nullptr,
+                nullptr,
+                nullptr });
     }
     stageThreadMpiGpuCpuComm_ = (getenv("GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM") != nullptr);
 }
@@ -97,10 +90,6 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 
 #if GMX_MPI
 
-    if (localForcePtr_.empty())
-    {
-        localForcePtr_.resize(ppRanks_.size());
-    }
     int ind_start = 0;
     int ind_end   = 0;
     int i         = 0;
@@ -111,17 +100,29 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 
         if (receiver.numAtoms > 0)
         {
-            localForcePtr_[i] = &d_f[ind_start];
+            ppCommManagers_[i].localForcePtr = &d_f[ind_start];
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&pmeRemoteGpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
+                     sizeof(float3*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     0,
+                     comm_,
+                     MPI_STATUS_IGNORE);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&pmeRemoteCpuForcePtr_[i], sizeof(float3*), MPI_BYTE, receiver.rankId, 0, comm_, MPI_STATUS_IGNORE);
+            MPI_Recv(&ppCommManagers_[i].pmeRemoteCpuForcePtr,
+                     sizeof(float3*),
+                     MPI_BYTE,
+                     receiver.rankId,
+                     0,
+                     comm_,
+                     MPI_STATUS_IGNORE);
             // Send address of event and associated flag to PP rank, to allow remote enqueueing
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Send(&ppCommEvent_[i], sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
+            MPI_Send(&ppCommManagers_[i].event, sizeof(GpuEventSynchronizer*), MPI_BYTE, receiver.rankId, 0, comm_);
 
             std::atomic<bool>* tmpPpCommEventRecordedPtr =
-                    reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[i]));
+                    reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
             tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
             // NOLINTNEXTLINE(bugprone-sizeof-expression)
             MPI_Send(&tmpPpCommEventRecordedPtr, sizeof(std::atomic<bool>*), MPI_BYTE, receiver.rankId, 0, comm_);
@@ -144,34 +145,34 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank, int numAtoms, bool
 
 #if GMX_MPI
     float3* pmeRemoteForcePtr = (sendForcesDirectToPpGpu || stageThreadMpiGpuCpuComm_)
-                                        ? pmeRemoteGpuForcePtr_[ppRank]
-                                        : pmeRemoteCpuForcePtr_[ppRank];
+                                        ? ppCommManagers_[ppRank].pmeRemoteGpuForcePtr
+                                        : ppCommManagers_[ppRank].pmeRemoteCpuForcePtr;
 
-    pmeForcesReady_->enqueueWaitEvent(*ppCommStream_[ppRank]);
+    pmeForcesReady_->enqueueWaitEvent(*ppCommManagers_[ppRank].stream);
 
     // Push data to remote GPU's memory
     cudaError_t stat = cudaMemcpyAsync(pmeRemoteForcePtr,
-                                       localForcePtr_[ppRank],
+                                       ppCommManagers_[ppRank].localForcePtr,
                                        numAtoms * sizeof(rvec),
                                        cudaMemcpyDefault,
-                                       ppCommStream_[ppRank]->stream());
+                                       ppCommManagers_[ppRank].stream->stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 
     if (stageThreadMpiGpuCpuComm_ && !sendForcesDirectToPpGpu)
     {
         // Perform local D2H (from remote GPU memory to remote PP rank's CPU memory)
         // to finalize staged data transfer
-        stat = cudaMemcpyAsync(pmeRemoteCpuForcePtr_[ppRank],
-                               pmeRemoteGpuForcePtr_[ppRank],
+        stat = cudaMemcpyAsync(ppCommManagers_[ppRank].pmeRemoteCpuForcePtr,
+                               ppCommManagers_[ppRank].pmeRemoteGpuForcePtr,
                                numAtoms * sizeof(rvec),
                                cudaMemcpyDefault,
-                               ppCommStream_[ppRank]->stream());
+                               ppCommManagers_[ppRank].stream->stream());
         CU_RET_ERR(stat, "cudaMemcpyAsync on local device to host transfer of PME forces failed");
     }
 
-    ppCommEvent_[ppRank]->markEvent(*ppCommStream_[ppRank]);
+    ppCommManagers_[ppRank].event->markEvent(*ppCommManagers_[ppRank].stream);
     std::atomic<bool>* tmpPpCommEventRecordedPtr =
-            reinterpret_cast<std::atomic<bool>*>(&(ppCommEventRecorded_[ppRank]));
+            reinterpret_cast<std::atomic<bool>*>(ppCommManagers_[ppRank].eventRecorded.get());
     tmpPpCommEventRecordedPtr->store(true, std::memory_order_release);
 #else
     GMX_UNUSED_VALUE(ppRank);
