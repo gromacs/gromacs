@@ -52,6 +52,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/builder.h"
@@ -474,14 +475,15 @@ void Mdrunner::spawnThreads(int numThreadsToLaunch)
 } // namespace gmx
 
 /*! \brief Initialize variables for Verlet scheme simulation */
-static void prepare_verlet_scheme(FILE*               fplog,
-                                  t_commrec*          cr,
-                                  t_inputrec*         ir,
-                                  int                 nstlist_cmdline,
-                                  const gmx_mtop_t&   mtop,
-                                  const matrix        box,
-                                  bool                makeGpuPairList,
-                                  const gmx::CpuInfo& cpuinfo)
+static void prepare_verlet_scheme(FILE*                          fplog,
+                                  t_commrec*                     cr,
+                                  t_inputrec*                    ir,
+                                  int                            nstlist_cmdline,
+                                  const gmx_mtop_t&              mtop,
+                                  gmx::ArrayRef<const gmx::RVec> coordinates,
+                                  const matrix                   box,
+                                  bool                           makeGpuPairList,
+                                  const gmx::CpuInfo&            cpuinfo)
 {
     // We checked the cut-offs in grompp, but double-check here.
     // We have PME+LJcutoff kernels for rcoulomb>rvdw.
@@ -495,6 +497,14 @@ static void prepare_verlet_scheme(FILE*               fplog,
         GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw,
                            "With Verlet lists and no PME rcoulomb and rvdw should be identical");
     }
+
+    std::optional<real> effectiveAtomDensity;
+    if (EI_DYNAMICS(ir->eI))
+    {
+        effectiveAtomDensity = computeEffectiveAtomDensity(
+                coordinates, box, std::max(ir->rcoulomb, ir->rvdw), cr->mpiDefaultCommunicator);
+    }
+
     /* For NVE simulations, we will retain the initial list buffer */
     if (EI_DYNAMICS(ir->eI) && ir->verletbuf_tol > 0
         && !(EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No))
@@ -509,8 +519,8 @@ static void prepare_verlet_scheme(FILE*               fplog,
                 (makeGpuPairList ? ListSetupType::Gpu : ListSetupType::CpuSimdWhenSupported);
         VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
-        const real rlist_new =
-                calcVerletBufferSize(mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+        const real rlist_new = calcVerletBufferSize(
+                mtop, effectiveAtomDensity.value(), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
 
         if (rlist_new != ir->rlist)
         {
@@ -537,7 +547,8 @@ static void prepare_verlet_scheme(FILE*               fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increaseNstlist(fplog, cr, ir, nstlist_cmdline, &mtop, box, makeGpuPairList, cpuinfo);
+        increaseNstlist(
+                fplog, cr, ir, nstlist_cmdline, &mtop, box, effectiveAtomDensity.value(), makeGpuPairList, cpuinfo);
     }
 }
 
@@ -1316,6 +1327,7 @@ int Mdrunner::mdrunner()
                           inputrec.get(),
                           nstlist_cmdline,
                           mtop,
+                          MASTER(cr) ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
                           box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo_->cpuInfo);
@@ -1761,16 +1773,18 @@ int Mdrunner::mdrunner()
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog,
-                                        *inputrec,
-                                        *fr,
-                                        cr,
-                                        *hwinfo_,
-                                        runScheduleWork.simulationWork.useGpuNonbonded,
-                                        deviceStreamManager.get(),
-                                        mtop,
-                                        box,
-                                        wcycle.get());
+        fr->nbv = Nbnxm::init_nb_verlet(
+                mdlog,
+                *inputrec,
+                *fr,
+                cr,
+                *hwinfo_,
+                runScheduleWork.simulationWork.useGpuNonbonded,
+                deviceStreamManager.get(),
+                mtop,
+                isSimulationMasterRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
+                box,
+                wcycle.get());
         // TODO: Move the logic below to a GPU bonded builder
         if (runScheduleWork.simulationWork.useGpuBonded)
         {

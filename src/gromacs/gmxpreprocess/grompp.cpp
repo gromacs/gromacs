@@ -1669,12 +1669,13 @@ static void checkDecoupledModeAccuracy(const gmx_mtop_t* mtop, const t_inputrec*
     }
 }
 
-static void set_verlet_buffer(const gmx_mtop_t*    mtop,
-                              t_inputrec*          ir,
-                              real                 buffer_temp,
-                              matrix               box,
-                              WarningHandler*      wi,
-                              const gmx::MDLogger& logger)
+static void set_verlet_buffer(const gmx_mtop_t*              mtop,
+                              t_inputrec*                    ir,
+                              real                           buffer_temp,
+                              gmx::ArrayRef<const gmx::RVec> coordinates,
+                              matrix                         box,
+                              WarningHandler*                wi,
+                              const gmx::MDLogger&           logger)
 {
     GMX_LOG(logger.info)
             .asParagraph()
@@ -1683,17 +1684,20 @@ static void set_verlet_buffer(const gmx_mtop_t*    mtop,
                     ir->verletbuf_tol,
                     buffer_temp);
 
+    const real effectiveAtomDensity = computeEffectiveAtomDensity(
+            coordinates, box, std::max(ir->rcoulomb, ir->rvdw), MPI_COMM_NULL);
+
     /* Calculate the buffer size for simple atom vs atoms list */
     VerletbufListSetup listSetup1x1;
     listSetup1x1.cluster_size_i = 1;
     listSetup1x1.cluster_size_j = 1;
     const real rlist_1x1        = calcVerletBufferSize(
-            *mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup1x1);
+            *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup1x1);
 
     /* Set the pair-list buffer size in ir */
     VerletbufListSetup listSetup4x4 = verletbufGetSafeListSetup(ListSetupType::CpuNoSimd);
     ir->rlist                       = calcVerletBufferSize(
-            *mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup4x4);
+            *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - 1, buffer_temp, listSetup4x4);
 
     const int n_nonlin_vsite = gmx::countNonlinearVsites(*mtop);
     if (n_nonlin_vsite > 0)
@@ -2430,7 +2434,7 @@ int gmx_grompp(int argc, char* argv[])
                     }
                 }
 
-                set_verlet_buffer(&sys, ir, buffer_temp, state.box, &wi, logger);
+                set_verlet_buffer(&sys, ir, buffer_temp, state.x, state.box, &wi, logger);
             }
         }
     }

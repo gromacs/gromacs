@@ -7,6 +7,15 @@ Bugs fixed
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Verlet buffer set correctly for inhomogeneous systems
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Verlet buffer estimation now uses an effective density for
+the system computing from the initial coordinates. This avoids
+underestimation of the buffer for (very) inhomogeneous systems.
+
+:issue:`4509`
+
 Density-guided simulation normalization
 """""""""""""""""""""""""""""""""""""""
 

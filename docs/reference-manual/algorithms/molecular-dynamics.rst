@@ -395,6 +395,17 @@ size, the error estimate is a factor of 6 higher than drift of the total
 energy, or alternatively the buffer estimate is 0.024 nm too large. This
 is because the protons don’t move freely over 18 fs, but rather vibrate.
 
+The only approximation that can lead to an underestimate of the buffer
+size is that of homogeneous atom density. This would be particularly
+problematic for systems with large amount of empty space in the unit cell.
+This issue is largely mitigated by computing the atom density on a grid
+with cells of the size of the non-bonded cut-off distance and weighting
+the density by the atom count in each cell. Thus empty space does not
+affect the effective atom density. This effective atom density is computed
+for the starting configuration passed to :ref:`mdrun <gmx mdrun>`.
+Thus there is only an issue with e.g. phase transitions that start from
+a gas and end up in a liquid.
+
 Cut-off artifacts and switched interactions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

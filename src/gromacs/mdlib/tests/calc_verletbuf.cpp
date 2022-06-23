@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "testutils/testasserts.h"
 
@@ -53,6 +54,39 @@ namespace gmx
 
 namespace
 {
+
+// Effective density test with 8 cells with 2 atoms in both a tight and large unit cell
+TEST(EffectiveAtomDensity, VolumeIndependence)
+{
+    const std::vector<RVec> coordinates      = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 3, 1 }, { 1, 3, 1 },
+                                            { 3, 1, 1 }, { 3, 1, 1 }, { 3, 3, 1 }, { 3, 3, 1 },
+                                            { 1, 1, 3 }, { 1, 1, 3 }, { 1, 3, 3 }, { 1, 3, 3 },
+                                            { 3, 1, 3 }, { 3, 1, 3 }, { 3, 3, 3 }, { 3, 3, 3 } };
+    const matrix            tightBox         = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+    const matrix            largeBox         = { { 40, 0, 0 }, { 0, 40, 0 }, { 0, 0, 4 } };
+    const real              cutoff           = 2;
+    const real              referenceDensity = coordinates.size() / real(4 * 4 * 4);
+
+    const real tightBoxDensity = computeEffectiveAtomDensity(coordinates, tightBox, cutoff, MPI_COMM_NULL);
+    EXPECT_FLOAT_EQ(tightBoxDensity, referenceDensity);
+
+    const real largeBoxDensity = computeEffectiveAtomDensity(coordinates, largeBox, cutoff, MPI_COMM_NULL);
+    EXPECT_FLOAT_EQ(largeBoxDensity, referenceDensity);
+}
+
+// Effective density test with 1 cell with 3 atoms, 7 cells with 1 atom
+TEST(EffectiveAtomDensity, WeightingWorks)
+{
+    const std::vector<RVec> coordinates = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 3, 1 },
+                                            { 3, 1, 1 }, { 3, 3, 1 }, { 1, 1, 3 }, { 1, 3, 3 },
+                                            { 3, 1, 3 }, { 3, 3, 3 } };
+    const matrix            box         = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+    const real              cutoff      = 2;
+    const real referenceDensity         = (3 * 3 + 7 * 1) / (coordinates.size() * real(2 * 2 * 2));
+
+    const real density = computeEffectiveAtomDensity(coordinates, box, cutoff, MPI_COMM_NULL);
+    EXPECT_FLOAT_EQ(density, referenceDensity);
+}
 
 class VerletBufferConstraintTest : public ::testing::Test
 {

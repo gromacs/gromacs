@@ -69,6 +69,7 @@ struct t_inputrec;
  * \param[in]     nstlistOnCmdline  The value of nstlist provided on the command line
  * \param[in]     mtop     The global topology
  * \param[in]     box      The unit cell
+ * \param[in]     effectiveAtomDensity  The effective atom density
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  * \param[in]     cpuinfo  Information about the CPU(s)
  */
@@ -78,6 +79,7 @@ void increaseNstlist(FILE*               fplog,
                      int                 nstlistOnCmdline,
                      const gmx_mtop_t*   mtop,
                      const matrix        box,
+                     real                effectiveAtomDensity,
                      bool                useOrEmulateGpuForNonbondeds,
                      const gmx::CpuInfo& cpuinfo);
 
@@ -86,14 +88,14 @@ void increaseNstlist(FILE*               fplog,
  * \param[in,out] mdlog            MD logger
  * \param[in]     inputrec         The input parameter record
  * \param[in]     mtop             The global topology
- * \param[in]     box              The unit cell
+ * \param[in]     effectiveAtomDensity  The effective atom density of the system
  * \param[in]     interactionConst The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
 void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
-                                 matrix                     box,
+                                 real                       effectiveAtomDensity,
                                  const interaction_const_t& interactionConst,
                                  PairlistParams*            listParams);
 

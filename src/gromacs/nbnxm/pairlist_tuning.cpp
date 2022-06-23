@@ -126,6 +126,7 @@ void increaseNstlist(FILE*               fp,
                      int                 nstlist_cmdline,
                      const gmx_mtop_t*   mtop,
                      const matrix        box,
+                     const real          effectiveAtomDensity,
                      bool                useOrEmulateGpuForNonbondeds,
                      const gmx::CpuInfo& cpuinfo)
 {
@@ -246,14 +247,14 @@ void increaseNstlist(FILE*               fp,
     /* Allow rlist to make the list a given factor larger than the list
      * would be with the reference value for nstlist (10*mtsFactor).
      */
-    int nstlist_prev = ir->nstlist;
-    ir->nstlist      = nbnxnReferenceNstlist * mtsFactor;
-    const real rlistWithReferenceNstlist =
-            calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+    int nstlist_prev                     = ir->nstlist;
+    ir->nstlist                          = nbnxnReferenceNstlist * mtsFactor;
+    const real rlistWithReferenceNstlist = calcVerletBufferSize(
+            *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
     ir->nstlist = nstlist_prev;
 
     /* Determine the pair list size increase due to zero interactions */
-    real rlist_inc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, mtop->natoms / det(box));
+    real rlist_inc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
     real rlist_ok  = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_ok) - rlist_inc;
     real rlist_max = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_max) - rlist_inc;
     if (debug)
@@ -274,7 +275,7 @@ void increaseNstlist(FILE*               fp,
 
         /* Set the pair-list buffer size in ir */
         rlist_new = calcVerletBufferSize(
-                *mtop, det(box), *ir, ir->nstlist, ir->nstlist - mtsFactor, -1, listSetup);
+                *mtop, effectiveAtomDensity, *ir, ir->nstlist, ir->nstlist - mtsFactor, -1, listSetup);
 
         /* Does rlist fit in the box? */
         bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
@@ -387,7 +388,7 @@ static const int c_nbnxnDynamicListPruningMinLifetime = 4;
  *
  * \param[in]     inputrec          The input parameter record
  * \param[in]     mtop        The global topology
- * \param[in]     box         The unit cell
+ * \param[in]     effectiveAtomDensity  The effective atom density of the system
  * \param[in]     useGpuList  Tells if we are using a GPU type pairlist
  * \param[in]     listSetup   The nbnxn pair list setup
  * \param[in]     userSetNstlistPrune  The user set ic->nstlistPrune (using an env.var.)
@@ -396,7 +397,7 @@ static const int c_nbnxnDynamicListPruningMinLifetime = 4;
  */
 static void setDynamicPairlistPruningParameters(const t_inputrec&          inputrec,
                                                 const gmx_mtop_t&          mtop,
-                                                const matrix               box,
+                                                const real                 effectiveAtomDensity,
                                                 const bool                 useGpuList,
                                                 const VerletbufListSetup&  listSetup,
                                                 const bool                 userSetNstlistPrune,
@@ -432,7 +433,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
         int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : mtsFactor);
         listParams->nstlistPrune = tunedNstlistPrune;
         listParams->rlistInner   = calcVerletBufferSize(
-                mtop, det(box), inputrec, tunedNstlistPrune, listLifetime, -1, listSetup);
+                mtop, effectiveAtomDensity, inputrec, tunedNstlistPrune, listLifetime, -1, listSetup);
 
         /* On the GPU we apply the dynamic pruning in a rolling fashion
          * every c_nbnxnGpuRollingListPruningInterval steps,
@@ -449,7 +450,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
     else
     {
         /* Determine the pair list size increase due to zero interactions */
-        real rlistInc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, mtop.natoms / det(box));
+        real rlistInc = nbnxn_get_rlist_effective_inc(listSetup.cluster_size_j, effectiveAtomDensity);
 
         /* Dynamic pruning is only useful when the inner list is smaller than
          * the outer. The factor 0.99 ensures at least 3% list size reduction.
@@ -506,7 +507,7 @@ static std::string formatListSetup(const std::string& listName,
 void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
-                                 matrix                     box,
+                                 const real                 effectiveAtomDensity,
                                  const interaction_const_t& interactionConst,
                                  PairlistParams*            listParams)
 {
@@ -555,7 +556,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
         }
 
         setDynamicPairlistPruningParameters(
-                inputrec, mtop, box, useGpuList, ls, userSetNstlistPrune, interactionConst, listParams);
+                inputrec, mtop, effectiveAtomDensity, useGpuList, ls, userSetNstlistPrune, interactionConst, listParams);
 
         if (listParams->useDynamicPruning && useGpuList)
         {
@@ -602,13 +603,13 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     {
         const VerletbufListSetup listSetup1x1 = { 1, 1 };
         const real               rlistOuter   = calcVerletBufferSize(
-                mtop, det(box), inputrec, inputrec.nstlist, inputrec.nstlist - 1, -1, listSetup1x1);
+                mtop, effectiveAtomDensity, inputrec, inputrec.nstlist, inputrec.nstlist - 1, -1, listSetup1x1);
         real rlistInner = rlistOuter;
         if (listParams->useDynamicPruning)
         {
             int listLifeTime = listParams->nstlistPrune - (useGpuList ? 0 : 1);
             rlistInner       = calcVerletBufferSize(
-                    mtop, det(box), inputrec, listParams->nstlistPrune, listLifeTime, -1, listSetup1x1);
+                    mtop, effectiveAtomDensity, inputrec, listParams->nstlistPrune, listLifeTime, -1, listSetup1x1);
         }
 
         mesg += gmx::formatString(

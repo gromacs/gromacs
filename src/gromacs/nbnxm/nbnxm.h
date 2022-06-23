@@ -457,8 +457,9 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    bool                 useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&               mtop,
-                                                   matrix                          box,
-                                                   gmx_wallcycle*                  wcycle);
+                                                   gmx::ArrayRef<const gmx::RVec> coordinates,
+                                                   matrix                         box,
+                                                   gmx_wallcycle*                 wcycle);
 
 } // namespace Nbnxm
 

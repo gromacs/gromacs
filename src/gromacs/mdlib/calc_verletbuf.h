@@ -35,7 +35,9 @@
 #ifndef GMX_MDLIB_CALC_VERLETBUF_H
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -97,6 +99,27 @@ enum class ListSetupType
  */
 VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
 
+/* Returns the atom density weighted over cells of size \p cutoff
+ *
+ * A grid is put over the unit cell with a grid size of, approximately, cutoff.
+ * The atom count is determined for each set. The effective density is then
+ * calculated as the cell density weighted by atom count.
+ * This in intended for passing to \p calcVerletBufferSize().
+ *
+ * \note This is an expensive function as it needs to loop over all atoms
+ *       in the system.
+ * \note When communicator!=MPI_COMM_NULL computes on rank 0 and broadcasts to the other ranks.
+ *
+ * \param[in] coordinates   The coordinates of all atoms, can be empty on non-master ranks
+ * \param[in] box           The simulation unit cell
+ * \param[in] cutoff        The maximum non-bonded interaction cut-off distance
+ * \param[in] communicator  MPI communicator, can be MPI_COMM_NULL when not called in parallel
+ */
+real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
+                                 const matrix                   box,
+                                 real                           cutoff,
+                                 MPI_Comm                       communicator);
+
 /* Returns the non-bonded pair-list radius including computed buffer
  *
  * Calculate the non-bonded pair-list buffer size for the Verlet list
@@ -113,7 +136,7 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
  *       contribution to the drift exaclty, so we approximate.
  *
  * \param[in] mtop          The system topology
- * \param[in] boxVolume     The volume of the unit cell
+ * \param[in] effectiveAtomDensity  The effective atom density, use computeEffectiveAtomDensity()
  * \param[in] inputrec      The input record
  * \param[in] nstlist       The pair list update frequency in steps (is not taken from \p inputrec)
  * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different
@@ -123,7 +146,7 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
  * \returns The computed pair-list radius including buffer
  */
 real calcVerletBufferSize(const gmx_mtop_t&         mtop,
-                          real                      boxVolume,
+                          real                      effectiveAtomDensity,
                           const t_inputrec&         inputrec,
                           int                       nstlist,
                           int                       listLifetime,
