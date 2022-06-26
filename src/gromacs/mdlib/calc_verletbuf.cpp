@@ -862,7 +862,7 @@ static real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinat
     for (int d = 0; d < DIM; d++)
     {
         GMX_RELEASE_ASSERT(cutoff < box[d][d], "The cutoff should be smaller than the boxsize");
-        numCells[d]    = int(box[d][d] / cutoff + 0.5);
+        numCells[d]    = int(lround(box[d][d] / cutoff));
         invCellSize[d] = numCells[d] / box[d][d];
     }
 
@@ -891,7 +891,7 @@ static real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinat
 real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinates,
                                  const matrix                   box,
                                  const real                     cutoff,
-                                 const MPI_Comm                 communicator)
+                                 MPI_Comm                       communicator)
 {
     int ourMpiRank = 0;
 #if GMX_MPI
