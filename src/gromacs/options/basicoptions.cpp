@@ -592,7 +592,7 @@ Any EnumOptionStorage::normalizeValue(const int& value) const
 void EnumOptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>([this](const std::string& value) {
-        return findEnumValue(this->allowed_, value) - this->allowed_.begin();
+        return static_cast<int>(findEnumValue(this->allowed_, value) - this->allowed_.begin());
     });
 }
 

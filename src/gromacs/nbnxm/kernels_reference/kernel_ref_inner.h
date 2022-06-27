@@ -294,14 +294,12 @@
 #endif
 
 #ifdef CALC_COULOMB
-            static constexpr bool sc_halfLJ =
-#    ifdef HALF_LJ
-                    true;
-#    else
-                    false;
-#    endif
             /* 2 flops for scalar LJ+Coulomb force if !HALF_LJ || (i < UNROLLI / 2) */
-            const real fscal = (!sc_halfLJ || (i < UNROLLI / 2)) ? frLJ * rinvsq + fcoul : fcoul;
+#    ifdef HALF_LJ
+            const real fscal = (i < UNROLLI / 2) ? frLJ * rinvsq + fcoul : fcoul;
+#    else
+            const real fscal = frLJ * rinvsq + fcoul;
+#    endif
 #else
             const real fscal = frLJ * rinvsq;
 #endif
