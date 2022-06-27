@@ -443,7 +443,7 @@ void atoms2md(const gmx_mtop_t&  mtop,
     if (md->nr > 0)
     {
         /* Pad invmass with 0 so a SIMD MD update does not change v and x */
-        for (int i = md->nr; i < md->nr + GMX_REAL_MAX_SIMD_WIDTH; i++)
+        for (int i = md->nr; i < md->invmass.paddedSize(); i++)
         {
             md->invmass[i] = 0;
         }
