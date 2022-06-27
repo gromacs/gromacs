@@ -88,6 +88,11 @@ else()
     if(GMX_X11)
         target_link_libraries(gmx PRIVATE ${X11_LIBRARIES})
     endif()
+    # Ensure that on Windows the application code page is set to utf8 mode so the behavior is
+    # like Linux. For proper UTF8 console output, the user needs to enable utf8 (chcp 65001).
+    if (MSVC)
+        target_sources(gmx PRIVATE utf8.manifest)
+    endif()
     set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
     set_target_properties(gmx PROPERTIES
         OUTPUT_NAME "${BINARY_NAME}")
