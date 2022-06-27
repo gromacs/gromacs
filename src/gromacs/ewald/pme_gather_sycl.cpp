@@ -73,7 +73,7 @@ inline float readGridSize(const float* realGridSizeFP, const int dimIndex)
         case YY: return realGridSizeFP[YY];
         case ZZ: return realGridSizeFP[ZZ];
     }
-    assert(false);
+    SYCL_ASSERT(false);
     return 0.0F;
 }
 
@@ -211,7 +211,7 @@ inline void sumForceComponents(sycl::private_ptr<float>            fx,
                 ix -= nx;
             }
             const int gridIndexGlobal = ix * pny * pnz + constOffset;
-            assert(gridIndexGlobal >= 0);
+            SYCL_ASSERT(gridIndexGlobal >= 0);
             const float gridValue = gm_grid[gridIndexGlobal];
             assertIsFinite(gridValue);
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
@@ -358,7 +358,7 @@ auto pmeGatherKernel(sycl::handler&                                     cgh,
 
     return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
     {
-        assert(blockSize == itemIdx.get_local_range().size());
+        SYCL_ASSERT(blockSize == itemIdx.get_local_range().size());
         /* These are the atom indices - for the shared and global memory */
         const int atomIndexLocal = itemIdx.get_local_id(XX);
         const int blockIndex =
@@ -382,12 +382,12 @@ auto pmeGatherKernel(sycl::handler&                                     cgh,
 
         const int threadLocalId    = itemIdx.get_local_linear_id();
         const int threadLocalIdMax = blockSize;
-        assert(threadLocalId < threadLocalIdMax);
+        SYCL_ASSERT(threadLocalId < threadLocalIdMax);
 
         const int lineIndex =
                 (itemIdx.get_local_id(XX) * (itemIdx.get_local_range(ZZ) * itemIdx.get_local_range(YY)))
                 + splineIndex; // And to all the block's particles
-        assert(lineIndex == threadLocalId);
+        SYCL_ASSERT(lineIndex == threadLocalId);
 
         if constexpr (readGlobal)
         {
@@ -400,7 +400,7 @@ auto pmeGatherKernel(sycl::handler&                                     cgh,
             {
                 sm_gridlineIndices[localGridlineIndicesIndex] =
                         a_gridlineIndices[globalGridlineIndicesIndex];
-                assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
+                SYCL_ASSERT(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
             }
             /* The loop needed for order threads per atom to make sure we load all data values, as each thread must load multiple values
                with order*order threads per atom, it is only required for each thread to load one data value */

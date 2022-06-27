@@ -403,7 +403,7 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
     subGroupBarrier(itemIdx);
 
     // reducing data 8-by-by elements on the leader of same threads as those storing above
-    assert(itemIdx.get_sub_group().get_local_range().size() >= c_clSize);
+    SYCL_ASSERT(itemIdx.get_sub_group().get_local_range().size() >= c_clSize);
 
     if (tidxi < 3)
     {
