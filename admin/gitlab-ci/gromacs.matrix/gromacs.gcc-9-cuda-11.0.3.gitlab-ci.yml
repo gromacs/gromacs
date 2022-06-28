@@ -12,8 +12,8 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: Debug
-#   Compiler: GCC 7
-#   GPU: CUDA 11.0
+#   Compiler: GCC 9
+#   GPU: CUDA 11.0.3
 #   GPU direct communication: on / default
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
@@ -21,36 +21,36 @@
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 #   Parallelism nt/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-7-cuda-11.0:configure:
+gromacs:gcc-9-cuda-11.0.3:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    COMPILER_MAJOR_VERSION: 7
+    COMPILER_MAJOR_VERSION: 9
 
-gromacs:gcc-7-cuda-11.0:build:
+gromacs:gcc-9-cuda-11.0.3:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:configure
+    - job: gromacs:gcc-9-cuda-11.0.3:configure
 
-gromacs:gcc-7-cuda-11.0:test:
+gromacs:gcc-9-cuda-11.0.3:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -58,13 +58,13 @@ gromacs:gcc-7-cuda-11.0:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:build
+    - job: gromacs:gcc-9-cuda-11.0.3:build
 
-gromacs:gcc-7-cuda-11.0:test-gpucommupd:
+gromacs:gcc-9-cuda-11.0.3:test-gpucommupd:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -73,13 +73,13 @@ gromacs:gcc-7-cuda-11.0:test-gpucommupd:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:build
+    - job: gromacs:gcc-9-cuda-11.0.3:build
 
-gromacs:gcc-7-cuda-11.0:regressiontest:
+gromacs:gcc-9-cuda-11.0.3:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -90,14 +90,14 @@ gromacs:gcc-7-cuda-11.0:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:build
+    - job: gromacs:gcc-9-cuda-11.0.3:build
     - job: regressiontests:prepare
 
-gromacs:gcc-7-cuda-11.0:regressiontest-gpucommupd-tMPI:
+gromacs:gcc-9-cuda-11.0.3:regressiontest-gpucommupd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -109,7 +109,7 @@ gromacs:gcc-7-cuda-11.0:regressiontest-gpucommupd-tMPI:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:build
+    - job: gromacs:gcc-9-cuda-11.0.3:build
     - job: regressiontests:prepare
   artifacts:
     paths:
@@ -117,11 +117,11 @@ gromacs:gcc-7-cuda-11.0:regressiontest-gpucommupd-tMPI:
     when: always
     expire_in: 1 week
 
-gromacs:gcc-7-cuda-11.0:regressiontest-upd-tMPI:
+gromacs:gcc-9-cuda-11.0.3:regressiontest-upd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-7-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cuda-11.0.3
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
@@ -132,7 +132,7 @@ gromacs:gcc-7-cuda-11.0:regressiontest-upd-tMPI:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-7-cuda-11.0:build
+    - job: gromacs:gcc-9-cuda-11.0.3:build
     - job: regressiontests:prepare
   artifacts:
     paths:
