@@ -2445,7 +2445,7 @@ Free energy calculations
    starting value for lambda (float). Generally, this should only be
    used with slow growth (*i.e.* nonzero :mdp:`delta-lambda`). In
    other cases, :mdp:`init-lambda-state` should be specified
-   instead. If a lambda vector is given, :mdp: `init-lambda` is used to
+   instead. If a lambda vector is given, :mdp:`init-lambda` is used to
    interpolate the vector instead of setting lambda directly.
    Must be greater than or equal to 0.
 
