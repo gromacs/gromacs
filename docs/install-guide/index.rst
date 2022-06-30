@@ -378,9 +378,6 @@ Other optional build components
   matrix manipulation, but they do not provide any benefits for normal
   simulations. Configuring these is discussed at
   `linear algebra libraries`_.
-* The built-in |Gromacs| trajectory viewer ``gmx view`` requires X11 and
-  Motif/Lesstif libraries and header files. You may prefer to use
-  third-party software for visualization, such as VMD_ or PyMol_.
 * An external TNG library for trajectory-file handling can be used
   by setting ``-DGMX_EXTERNAL_TNG=yes``, but TNG
   |GMX_TNG_MINIMUM_REQUIRED_VERSION| is bundled in the |Gromacs|

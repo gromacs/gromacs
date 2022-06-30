@@ -53,19 +53,6 @@ if(GMX_FAHCORE)
     target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES} legacy_api)
 else()
     file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
-    if(GMX_X11)
-        file(GLOB VIEW_SOURCES view/*.cpp)
-    else()
-        file(GLOB VIEW_SOURCES view/view.cpp)
-    endif()
-    add_library(view_objlib OBJECT ${VIEW_SOURCES})
-    gmx_target_compile_options(view_objlib)
-    target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
-    target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-    target_link_libraries(view_objlib PRIVATE common legacy_api)
-    # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
-    target_link_libraries(view_objlib PRIVATE legacy_modules)
-    target_link_libraries(view_objlib PRIVATE utility)
     add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
     target_link_libraries(gmx_objlib PRIVATE common legacy_api)
     # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
@@ -75,8 +62,7 @@ else()
     target_include_directories(gmx_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
     add_executable(gmx
         $<TARGET_OBJECTS:gmx_objlib>
-        $<TARGET_OBJECTS:mdrun_objlib>
-        $<TARGET_OBJECTS:view_objlib>)
+        $<TARGET_OBJECTS:mdrun_objlib>)
     add_executable(Gromacs::gmx ALIAS gmx)
     gmx_target_compile_options(gmx)
     target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
@@ -85,9 +71,6 @@ else()
                           libgromacs
                           ${GMX_COMMON_LIBRARIES}
                           ${GMX_EXE_LINKER_FLAGS})
-    if(GMX_X11)
-        target_link_libraries(gmx PRIVATE ${X11_LIBRARIES})
-    endif()
     # Ensure that on Windows the application code page is set to utf8 mode so the behavior is
     # like Linux. For proper UTF8 console output, the user needs to enable utf8 (chcp 65001).
     if (MSVC)

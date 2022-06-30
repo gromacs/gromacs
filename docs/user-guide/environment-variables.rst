@@ -61,9 +61,6 @@ Output Control
         This can be handy for debugging purposes, because it ensures
         that all files are always totally up-to-date.
 
-``GMX_LOGO_COLOR``
-        set display color for logo in :ref:`gmx view`.
-
 ``GMX_PRINT_LONGFORMAT``
         use long float format when printing
         decimal values.
@@ -505,9 +502,6 @@ Analysis and Core Functions
         Some force fields (like AMBER) use specific names for N- and C-
         terminal residues (NXXX and CXXX) as :ref:`rtp` entries that are normally renamed. Setting
         this environment variable disables this renaming.
-
-``GMX_FONT``
-        name of X11 font used by :ref:`gmx view`.
 
 ``GMXTIMEUNIT``
         the time unit used in output files, can be

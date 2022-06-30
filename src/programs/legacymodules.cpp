@@ -44,7 +44,6 @@
 
 #include "mdrun/mdrun_main.h"
 #include "mdrun/nonbonded_bench.h"
-#include "view/view.h"
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
@@ -386,7 +385,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
                    "wham",
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel", "Plot helical wheels");
-    registerModuleNoNice(manager, &gmx_view, "view", "View a trajectory on an X-Windows terminal");
 
     {
         gmx::CommandLineModuleGroup group =
@@ -409,7 +407,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
     {
         gmx::CommandLineModuleGroup group = manager->addModuleGroup("Viewing trajectories");
         group.addModule("nmtraj");
-        group.addModule("view");
     }
     {
         gmx::CommandLineModuleGroup group = manager->addModuleGroup("Processing energies");

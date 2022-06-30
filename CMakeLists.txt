@@ -568,19 +568,6 @@ if (GMX_EXTRAE)
   endif()
 endif()
 
-option(GMX_X11 "Use X window system" OFF)
-if (GMX_X11)
-    find_package(X11)
-    # X11 includes/libraries are only set in the ngmx subdirectory!
-    if(NOT X11_FOUND)
-        message(FATAL_ERROR
-                "X11 include files and/or libraries were not found. "
-                "Set GMX_X11=OFF to compile without X11 support. "
-                "gmx view will not be available.")
-    endif()
-    include_directories(SYSTEM ${X11_INCLUDE_DIR})
-endif()
-
 include(ThreadMPI)
 # Enable core threading facilities
 tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")

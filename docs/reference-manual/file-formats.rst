@@ -159,41 +159,6 @@ As it is not possible
 to categorize all data file formats, |Gromacs| has a generic file format called
 dat of which no format is given.
 
-.. _dlg:
-
-dlg
----
-
-The dlg file format is used as input for the :ref:`gmx view`
-trajectory viewer. These files are not meant to be altered by the end user.
-
-Sample
-++++++
-
-::
-
-    grid 39 18 {
-
-    group "Bond Options" 1 1 16 9 {
-      radiobuttons { " Thin Bonds"  " Fat Bonds" " Very Fat Bonds" " Spheres" }
-            "bonds" "Ok" " F" "help bonds"
-    }
-
-    group "Other Options" 18 1 20 13 {
-      checkbox " Show Hydrogens"      ""  "" "FALSE" "help opts"
-      checkbox " Draw plus for atoms" ""  "" "TRUE"  "help opts"
-      checkbox " Show Box"            ""  "" "TRUE"  "help opts"
-      checkbox " Remove PBC"          ""  "" "FALSE" "help opts"
-      checkbox " Depth Cueing"        ""  "" "TRUE"  "help opts"
-      edittext "Skip frames: "        ""  "" "0"     "help opts"
-    }
-
-    simple 1 15 37 2 {
-      defbutton "Ok" "Ok" "Ok" "Ok" "help bonds"
-    }
-
-    }
-
 .. _edi:
 
 edi
@@ -514,9 +479,7 @@ ndx
 
 The |Gromacs| index file (usually called index.ndx) contains some
 user definable sets of atoms. The file can be read by
-most analysis programs, by the graphics program
-(:ref:`gmx view`)
-and by the preprocessor (:ref:`gmx grompp`).
+most analysis programs and by the preprocessor (:ref:`gmx grompp`).
 Most of these programs create default index groups when no index
 file is supplied, so you only need to make an index file when you need special
 groups.

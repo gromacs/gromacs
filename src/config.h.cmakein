@@ -206,9 +206,6 @@
 /* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
-/* Define for X-Windows */
-#cmakedefine01 GMX_X11
-
 /* Enable x86 gcc inline assembly */
 #cmakedefine01 GMX_X86_GCC_INLINE_ASM
 

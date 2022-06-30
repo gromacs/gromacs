@@ -318,7 +318,6 @@ if (SPHINX_FOUND)
         reference-manual/analysis/plots/hbond.pdf
         reference-manual/analysis/plots/hpr-wheel.pdf
         reference-manual/analysis/plots/msdwater.pdf
-        reference-manual/analysis/plots/ngmxdump.pdf
         reference-manual/analysis/plots/phipsi.pdf
         reference-manual/analysis/plots/rama.pdf
         reference-manual/analysis/plots/rdfO-O.pdf

@@ -153,11 +153,6 @@ Doxygen documentation file for directories in the source tree.
 \dir src/programs/mdrun
 \brief Source code specific to `mdrun`.
  */
-/*!
-\libinternal
-\dir src/programs/view
-\brief Source code specific to `gmx view`, including all X11-dependent code.
- */
 
 /*!
 \libinternal

@@ -336,10 +336,6 @@ Variables affecting compilation/linking
 
    Path to VMD plugins for molfile I/O. Only used when ``GMX_USE_PLUGINS`` is enabled.
 
-.. cmake:: GMX_X11
-
-   Enable ``gmx view`` tool. Default: ``OFF``. Deprecated.
-
 .. cmake:: GMX_XML
 
    Currently, this option has no effect on the compilation or linking, since

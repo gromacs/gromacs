@@ -22,16 +22,13 @@ Some programs that are useful for visualizing either a trajectory file and/or a 
 * `Molscript`_ - This is a script-driven program form high-quality display of molecular 3D structures
   in both schematic and detailed representations. You can get an academic license for free from Avatar.
 
-Also if appropriate libraries were found at configure-time, :ref:`gmx view` can useful.
- 
 Topology bonds vs Rendered bonds
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Remember that each of these visualization tools is only looking at the coordinate file you gave it
-(except when you give :ref:`gmx view` a :ref:`tpr` file). Thus it's not using your topology which is
-described in either your :ref:`top` file or your :ref:`tpr` file. Each of these programs makes their
-own guesses about where the chemical bonds are for rendering purposes, so do not be surprised if the
-heuristics do not always match your topology.
+Remember that each of these visualization tools is only looking at the coordinate file you gave it.
+Thus it's not using your topology which is described in either your :ref:`top` file or your 
+:ref:`tpr` file. Each of these programs makes their own guesses about where the chemical bonds 
+are for rendering purposes, so do not be surprised if the heuristics do not always match your topology.
 
 .. _Rasmol: http://www.umass.edu/microbio/rasmol/index2.htm
 .. _Protein Explorer: http://www.umass.edu/microbio/rasmol/

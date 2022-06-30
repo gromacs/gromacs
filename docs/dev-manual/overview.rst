@@ -117,8 +117,7 @@ included at the root level.  All actual code is in subdirectories:
 :file:`src/programs/`
   The |Gromacs| executable ``gmx`` is built from code under this directory.
   Also found here is some of the driver code for the ``mdrun`` module called
-  by ``gmx``, the whole of the ``gmx view`` visualization module, and numerous
-  end-to-end tests of ``gmx mdrun``.
+  by ``gmx``, and numerous end-to-end tests of ``gmx mdrun``.
 
 :file:`src/{...}/tests/`
   Various subdirectories under :file:`src/` contain a subdirectory named
