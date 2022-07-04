@@ -47,7 +47,7 @@ if (BUILDING_SOURCE_PACKAGE)
     # directories to include to keep the probe file names at the same place.
     # And this does not detect if things have been built in the past, but are
     # outdated.
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/gmx-view.1" OR
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/gmx-mdrun.1" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/text/INSTALL" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash")
         message(FATAL_ERROR
