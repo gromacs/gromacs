@@ -114,7 +114,7 @@ You should strive to use the most recent version of your
 compiler. Since we require full C++17 support the minimum
 compiler versions supported by the GROMACS team are
 
-* GNU (gcc/libstdc++) 7
+* GNU (gcc/libstdc++) 9
 * LLVM (clang/libc++) 7
 * Microsoft (MSVC) 2019
 
@@ -1377,7 +1377,7 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it.
 Every commit in our git source code repository
 is currently tested with a range of configuration options on x86 with
-gcc versions including 7 and 11,
+gcc versions including 9 and 11,
 clang versions including 7 and 13,
 CUDA versions 11.0 and 11.4.2,
 and

@@ -119,23 +119,12 @@ static inline void gmx_simdcall store(float* m, SimdFloat a)
 
 static inline SimdFloat gmx_simdcall simdLoadU(const float* m, SimdFloatTag = {})
 {
-    return
-    {
-#if __GNUC__ < 7
-        *reinterpret_cast<const __vector float*>(m)
-#else
-        vec_xl(0, m)
-#endif
-    };
+    return { vec_xl(0, m) };
 }
 
 static inline void gmx_simdcall storeU(float* m, SimdFloat a)
 {
-#if __GNUC__ < 7
-    *reinterpret_cast<__vector float*>(m) = a.simdInternal_;
-#else
     vec_xst(a.simdInternal_, 0, m);
-#endif
 }
 
 static inline SimdFloat gmx_simdcall setZeroF()
@@ -155,23 +144,12 @@ static inline void gmx_simdcall store(std::int32_t* m, SimdFInt32 a)
 
 static inline SimdFInt32 gmx_simdcall simdLoadU(const std::int32_t* m, SimdFInt32Tag)
 {
-    return
-    {
-#if __GNUC__ < 7
-        *reinterpret_cast<const __vector int*>(m)
-#else
-        vec_xl(0, m)
-#endif
-    };
+    return { vec_xl(0, m) };
 }
 
 static inline void gmx_simdcall storeU(std::int32_t* m, SimdFInt32 a)
 {
-#if __GNUC__ < 7
-    *reinterpret_cast<__vector int*>(m) = a.simdInternal_;
-#else
     vec_xst(a.simdInternal_, 0, m);
-#endif
 }
 
 static inline SimdFInt32 gmx_simdcall setZeroFI()

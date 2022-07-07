@@ -197,11 +197,6 @@ public:
         {
             SCOPED_TRACE(formatString("Checking %s", interaction_function[vSite.type].longname));
 
-            // GCC 7 falsely flags unused "variables" in structured bindings, GCC 8+ fixed this
-            // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81767
-            // clang-format off
-            GCC_DIAGNOSTIC_IGNORE(-Wunused-variable)
-            // clang-format on
             /* Calculate start and end virtual position
              *
              * The reference implementation always calculates the virtual velocity, but
@@ -219,7 +214,6 @@ public:
              */
             const auto [halfStepVPositionUnused, halfStepVVelocity] =
                     vSite.calculate(halfStepPositions, halfStepVelocities);
-            GCC_DIAGNOSTIC_RESET
 
             // We can now integrate the virtual positions using the half step velocity
             const auto endVPosition2 = startVPosition + timeStep * halfStepVVelocity;

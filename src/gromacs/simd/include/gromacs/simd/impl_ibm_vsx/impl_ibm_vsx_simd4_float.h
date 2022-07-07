@@ -101,23 +101,12 @@ static inline void gmx_simdcall store4(float* m, Simd4Float a)
 
 static inline Simd4Float gmx_simdcall load4U(const float* m)
 {
-    return
-    {
-#if __GNUC__ < 7
-        *reinterpret_cast<const __vector float*>(m)
-#else
-        vec_xl(0, m)
-#endif
-    };
+    return { vec_xl(0, m) };
 }
 
 static inline void gmx_simdcall store4U(float* m, Simd4Float a)
 {
-#if __GNUC__ < 7
-    *reinterpret_cast<__vector float*>(m) = a.simdInternal_;
-#else
     vec_xst(a.simdInternal_, 0, m);
-#endif
 }
 
 static inline Simd4Float gmx_simdcall simd4SetZeroF()

@@ -55,7 +55,7 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
 **Reference**
   This build type compiles a version of |Gromacs| aimed solely at correctness. All
   parallelization and optimization possibilities are disabled. This build type is
-  compiled with GCC 7 to generate the regression test reference values, against
+  compiled with GCC 9 to generate the regression test reference values, against
   which all other |Gromacs| builds are tested.
 
 **RelWithAssert**

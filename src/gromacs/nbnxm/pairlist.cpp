@@ -3637,12 +3637,6 @@ static void copySelectedListRange(const nbnxn_ci_t* gmx_restrict       srcCi,
     }
 }
 
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 7
-/* Avoid gcc 7 avx512 loop vectorization bug (actually only needed with -mavx512f) */
-#    pragma GCC push_options
-#    pragma GCC optimize("no-tree-vectorize")
-#endif
-
 /* Returns the number of cluster pairs that are in use summed over all lists */
 static int countClusterpairs(gmx::ArrayRef<const NbnxnPairlistCpu> pairlists)
 {
@@ -3657,10 +3651,6 @@ static int countClusterpairs(gmx::ArrayRef<const NbnxnPairlistCpu> pairlists)
     }
     return ncjTotal;
 }
-
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 7
-#    pragma GCC pop_options
-#endif
 
 /* This routine re-balances the pairlists such that all are nearly equally
  * sized. Only whole i-entries are moved between lists. These are moved

@@ -284,14 +284,8 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-// const variables are best shared and MSVC requires it, but gcc-8 & gcc-9 don't agree how to write
-// that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f)
-#else
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
-            shared(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
-#endif
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v, f, invMassPerDim) \
+        shared(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -371,18 +365,9 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-// const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-// const variables are best shared and MSVC requires it, but gcc-8 & gcc-9 don't agree how to write
-// that... https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
-            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
-#else
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-            shared(x, xp, v, f, invMassPerDim)                               \
-                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
-#endif
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
+                firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -463,16 +448,9 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-// const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f) \
-            firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
-#else
-#    pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-            shared(x, xp, v, f, invMassPerDim)                               \
-                    firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
-#endif
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
+                firstprivate(nth, homenr, lambdaStart, lambdaEnd, isScalingMatrixDiagonal)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -547,10 +525,8 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-// const variables could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(v) \
-        firstprivate(nth, homenr, lambdaStart)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(v, lambdaStart, nth, homenr)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -914,9 +890,8 @@ template<IntegrationStage integrationStage>
 static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unused* propagator,
                                           const PropagatorTag&                     propagatorTag)
 {
-    // gmx_unused is needed because gcc-7 & gcc-8 can't see that
-    // propagator is used for all IntegrationStage options
-
+    // gmx_unused is needed because gcc-9 can't see that propagator is
+    // used for all IntegrationState options.
     PropagatorConnection propagatorConnection{ propagatorTag };
 
     if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>())

@@ -342,12 +342,6 @@ enum class VSiteCalculateVelocity
 #ifndef DOXYGEN
 /* Vsite construction routines */
 
-// GCC 8 falsely flags unused variables if constexpr prunes a code path, fixed in GCC 9
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85827
-// clang-format off
-GCC_DIAGNOSTIC_IGNORE(-Wunused-but-set-parameter)
-// clang-format on
-
 template<VSiteCalculatePosition calculatePosition, VSiteCalculateVelocity calculateVelocity>
 static void constr_vsite1(const rvec xi, rvec x, const rvec vi, rvec v)
 {
@@ -867,8 +861,6 @@ static int constr_vsiten(const t_iatom*            ia,
 
     return n3;
 }
-// End GCC 8 bug
-GCC_DIAGNOSTIC_RESET
 
 #endif // DOXYGEN
 
@@ -922,11 +914,6 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
     // clang-format off
     CLANG_DIAGNOSTIC_IGNORE(-Wunused-lambda-capture)
     // clang-format on
-    // GCC 8 falsely flags unused variables if constexpr prunes a code path, fixed in GCC 9
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85827
-    // clang-format off
-    GCC_DIAGNOSTIC_IGNORE(-Wunused-but-set-parameter)
-    // clang-format on
     // getVOrNull returns a velocity rvec if we need it, nullptr otherwise.
     auto getVOrNull = [v](int idx) -> real* {
         if (calculateVelocity == VSiteCalculateVelocity::Yes)
@@ -938,7 +925,6 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
             return nullptr;
         }
     };
-    GCC_DIAGNOSTIC_RESET
     CLANG_DIAGNOSTIC_RESET
 
     const PbcMode pbcMode = getPbcMode(pbc_null);

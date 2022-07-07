@@ -126,25 +126,19 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
     # If the check has already been run, do not re-run it
     if (NOT ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if nvcc accepts flags ${ARGN}")
-        # See detailed comment about gcc 7 below
-        if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
+        execute_process(
+            COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
+            RESULT_VARIABLE _cuda_success
+            OUTPUT_QUIET
+            ERROR_QUIET
+            )
+        # Convert the success value to a boolean and report status
+        if (_cuda_success EQUAL 0)
             set(_cache_variable_value TRUE)
-            message(STATUS "Checking if nvcc accepts flags ${ARGN} - Assuming success when using gcc 7")
+            message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
         else()
-            execute_process(
-                COMMAND ${CUDA_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
-                RESULT_VARIABLE _cuda_success
-                OUTPUT_QUIET
-                ERROR_QUIET
-                )
-            # Convert the success value to a boolean and report status
-            if (_cuda_success EQUAL 0)
-                set(_cache_variable_value TRUE)
-                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Success")
-            else()
-                set(_cache_variable_value FALSE)
-                message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
-            endif()
+            set(_cache_variable_value FALSE)
+            message(STATUS "Checking if nvcc accepts flags ${ARGN} - Failed")
         endif()
         set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE BOOL "Whether NVCC supports flag(s) ${ARGN}")
     endif()
@@ -154,21 +148,6 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
         set(${_output_variable_name_to_append_to} ${${_output_variable_name_to_append_to}} PARENT_SCOPE)
     endif()
 endfunction()
-
-# Versions of gcc 7 have differing behavior when executing
-#
-#  nvcc $args -ccbin gcc TestCUDA.cu
-#
-# and would need e.g. adding -lstdc++ to the command line so that
-# linking of a C++/CUDA object by the C-compiler flavor of gcc works.
-# This means we can't reliably test compiler flags in this case
-# without risking creating other problems. Instead we assume (above)
-# that all compiler flags will work, and issue this warning.
-# We also want to skip this warning during GROMACS CI testing.
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8
-    AND NOT DEFINED ENV{GITLAB_CI})
-    message(WARNING "You are using gcc version 7 with the CUDA compiler nvcc. GROMACS cannot reliably test compiler arguments for this combination, so if you later experience errors in building GROMACS, please use a more recent version of gcc.")
-endif()
 
 # If any of these manual override variables for target CUDA GPU architectures
 # or virtual architecture is set, parse the values and assemble the nvcc
@@ -234,16 +213,7 @@ endif()
 # FindCUDA.cmake is unaware of the mechanism used by cmake to embed
 # the compiler flag for the required C++ standard in the generated
 # build files, so we have to pass it ourselves
-
-# gcc-7 pre-dated C++17, so uses the -std=c++1z compiler flag for it,
-# which modern nvcc does not recognize. So we work around that by
-# compiling in C++14 mode. Clang doesn't have this problem because nvcc
-# only supports version of clang that already understood -std=c++17
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
-    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
-else()
-    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
-endif()
+list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
 
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")

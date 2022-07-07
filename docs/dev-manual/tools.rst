@@ -84,7 +84,7 @@ floating-point exceptions
   Such checks are *not* performed in the following configurations:
 
   - release build,
-  - any build by GCC 7.x or Clang with optimizations,
+  - any build by Clang with optimizations,
   - build with SYCL support.
 
   In these configurations, FPEs can be enabled by adding ``-fpexcept`` flag to ``gmx``

@@ -369,14 +369,7 @@ static void do_stopcm_grp(const t_mdatoms&         mdatoms,
         const gmx::ArrayRef<const unsigned short> group_id = mdatoms.cVCM;
 
         int gmx_unused nth = gmx_omp_nthreads_get(ModuleMultiThread::Default);
-        // homenr could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-        // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
-#    pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, mdatoms) firstprivate(homenr)
-#else
-#    pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdatoms) \
-            shared(homenr)
-#endif
+#pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdatoms) shared(homenr)
         {
             if (vcm.mode == ComRemovalAlgorithm::Linear || vcm.mode == ComRemovalAlgorithm::Angular
                 || (vcm.mode == ComRemovalAlgorithm::LinearAccelerationCorrection && x.empty()))

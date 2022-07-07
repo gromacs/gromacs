@@ -85,24 +85,11 @@
 #define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 0 // No need for half-simd, width is 2
 #define GMX_SIMD4_HAVE_FLOAT 1
 #define GMX_SIMD4_HAVE_DOUBLE 0
-
-// With GCC, only version 4.9 or later supports all parts of double precision VSX.
-// We check explicitly for xlc, since that compiler appears to like pretending it is gcc,
-// but there double precision seems to work fine.
-#if defined(__ibmxl__) || defined(__xlC__) \
-        || !(defined(__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ < 9))))
-#    define GMX_SIMD_HAVE_DOUBLE 1
-#    define GMX_SIMD_HAVE_DINT32_EXTRACT 1
-#    define GMX_SIMD_HAVE_DINT32_LOGICAL 1
-#    define GMX_SIMD_HAVE_DINT32_ARITHMETICS 1
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 1
-#else
-#    define GMX_SIMD_HAVE_DOUBLE 0
-#    define GMX_SIMD_HAVE_DINT32_EXTRACT 0
-#    define GMX_SIMD_HAVE_DINT32_LOGICAL 0
-#    define GMX_SIMD_HAVE_DINT32_ARITHMETICS 0
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 0
-#endif
+#define GMX_SIMD_HAVE_DOUBLE 1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT 1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS 1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 1
 
 // Implementation details
 #define GMX_SIMD_FLOAT_WIDTH 4
